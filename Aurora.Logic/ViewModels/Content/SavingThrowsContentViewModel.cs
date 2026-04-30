@@ -4,8 +4,10 @@
 // MVID: 09D35420-8FA0-4A71-9A21-FF952C48F8A3
 // Assembly location: C:\Program Files (x86)\Aurora\Aurora Character Builder\Aurora Builder.exe
 
+using Builder.Presentation.Models;
 using Builder.Presentation.Models.Collections;
 using Builder.Presentation.ViewModels.Base;
+using System.Collections.Generic;
 
 #nullable disable
 namespace Builder.Presentation.ViewModels.Content;
@@ -21,6 +23,8 @@ public sealed class SavingThrowsContentViewModel : ViewModelBase
   }
 
   public SavingThrowCollection SavingThrows => CharacterManager.Current.Character.SavingThrows;
+
+  public IEnumerable<SavingThrowItem> SavingThrowItems => this.SavingThrows.GetCollection();
 
   protected override void InitializeDesignData()
   {

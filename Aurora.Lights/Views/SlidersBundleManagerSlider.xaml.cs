@@ -21,6 +21,8 @@ public partial class BundleManagerSlider : Flyout
 {
   public BundleManagerSlider() => this.InitializeComponent();
 
+  private void CloseButton_OnClick(object sender, RoutedEventArgs e) => this.IsOpen = false;
+
   private void ExpandersControlPreviewMouseWheel(object sender, MouseWheelEventArgs e)
   {
     if (e.Handled)

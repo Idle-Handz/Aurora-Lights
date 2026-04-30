@@ -17,5 +17,5 @@ namespace Builder.Presentation.UserControls;
 
 public partial class SkillsContent : UserControl
 {
-    public SkillsContent() { }
+    public SkillsContent() => this.InitializeComponent();
 }

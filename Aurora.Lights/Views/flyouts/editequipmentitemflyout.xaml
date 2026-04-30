@@ -121,7 +121,8 @@
         <ColumnDefinition Width="20"/>
         <ColumnDefinition Width="*"/>
       </Grid.ColumnDefinitions>
-      <controls:CommandButton Content="Close Flyout" IsDefault="true" IsCancel="true"/>
+      <controls:CommandButton Content="Close Flyout" IsDefault="true" IsCancel="true"
+                              Click="ButtonBase_OnClick"/>
       <controls:CommandButton Grid.Column="2" Content="Delete Item" IsDefault="true" IsCancel="true"
                               Style="{StaticResource DangerCommandButtonStyle}"
                               Command="{Binding DeleteSelectedEquipmentCommand}"/>

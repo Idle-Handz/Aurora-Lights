@@ -31,6 +31,7 @@ public partial class NewCharacterSlider : Flyout
   {
     this.InitializeComponent();
     this.IsOpenChanged += new RoutedEventHandler(this.Page1_IsOpenChanged);
+    this.GetViewModel<NewCharacterSliderViewModel>().CloseRequested += this.ViewModel_CloseRequested;
   }
 
   private async void Page1_IsOpenChanged(object sender, RoutedEventArgs e)
@@ -44,6 +45,8 @@ public partial class NewCharacterSlider : Flyout
   private void PageSaveClicked(object sender, RoutedEventArgs e) => this.IsOpen = false;
 
   private void PageCloseClicked(object sender, RoutedEventArgs e) => this.IsOpen = false;
+
+  private void ViewModel_CloseRequested(object? sender, EventArgs e) => this.IsOpen = false;
 
   private void UIElement_OnMouseMove(object sender, MouseEventArgs e)
   {

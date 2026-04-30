@@ -38,8 +38,10 @@
     <ScrollViewer Grid.Row="1" Margin="20,0,20,10" VerticalScrollBarVisibility="Hidden"
                   Style="{StaticResource FlyoutScrollviewerStyle}">
       <StackPanel Margin="0,0,0,0">
-        <controls2:CommandButton CommandText="Official Core Rules" Margin="0,0,0,0"/>
-        <controls2:CommandButton CommandText="Official Supplements" Margin="0,10,0,50"/>
+        <controls2:CommandButton CommandText="Official Core Rules" Margin="0,0,0,0"
+                                 Click="RequestCoreContentOnClick"/>
+        <controls2:CommandButton CommandText="Official Supplements" Margin="0,10,0,50"
+                                 Click="RequestSupplementsContentOnClick"/>
       </StackPanel>
     </ScrollViewer>
   </Grid>

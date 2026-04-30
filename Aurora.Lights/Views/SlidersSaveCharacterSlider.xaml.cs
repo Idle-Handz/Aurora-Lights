@@ -28,6 +28,7 @@ public partial class SaveCharacterSlider : Flyout
   {
     this.InitializeComponent();
     this.IsOpenChanged += new RoutedEventHandler(this.Page1_IsOpenChanged);
+    this.GetViewModel<SaveSliderViewModel>().CloseRequested += this.ViewModel_CloseRequested;
   }
 
   public void SetFile(CharacterFile file) => this._file = file;
@@ -52,6 +53,8 @@ public partial class SaveCharacterSlider : Flyout
   private void PageSaveClicked(object sender, RoutedEventArgs e) => this.IsOpen = false;
 
   private void PageCloseClicked(object sender, RoutedEventArgs e) => this.IsOpen = false;
+
+  private void ViewModel_CloseRequested(object? sender, EventArgs e) => this.IsOpen = false;
 
 
 

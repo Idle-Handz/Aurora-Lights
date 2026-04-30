@@ -44,8 +44,9 @@
     </controls1:ElementDescriptionPanel>
     <UniformGrid Grid.Row="3" Margin="20,0,20,20" Columns="2" FirstColumn="0">
       <controls2:CommandButton Content="DOWNLOAD" IsDefault="true" Style="{StaticResource SuccessCommandButtonStyle}"
-                               Margin="0,0,10,0"/>
-      <controls2:CommandButton Content="CLOSE" Margin="10,0,0,0" IsCancel="true"/>
+                               Margin="0,0,10,0" Click="PageSaveClicked"/>
+      <controls2:CommandButton Content="CLOSE" Margin="10,0,0,0" IsCancel="true"
+                               Click="PageCloseClicked"/>
     </UniformGrid>
   </Grid>
 </controls:Flyout>

@@ -29,7 +29,7 @@
     <controls1:SliderTitleBlock Margin="20,20,20,20" Content="MANAGE COINS" Background="{DynamicResource AccentColorBrush3}"/>
     <Button Grid.Row="0" Style="{StaticResource ChromelessButtonStyle}" FontSize="11"
             HorizontalAlignment="Right" Margin="0,18,20,18" Padding="15"
-            Foreground="{DynamicResource IdealForegroundColorBrush}">
+            Foreground="{DynamicResource IdealForegroundColorBrush}" Click="PageCloseClicked">
       <iconPacks:PackIconFontAwesome Kind="TimesSolid" Padding="0,1" Width="16" Height="16"/>
     </Button>
     <UniformGrid Grid.Row="1" Margin="20,0,20,20" Columns="5" FirstColumn="0" VerticalAlignment="Center">

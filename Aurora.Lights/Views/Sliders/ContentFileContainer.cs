@@ -19,6 +19,4 @@ public class ContentFileContainer
   public string Name => this._file.Info.DisplayName;
 
   public string Description => this._file.Info.Description;
-
-  public bool Include { get; set; }
 }
