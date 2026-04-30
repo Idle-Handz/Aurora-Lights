@@ -89,6 +89,47 @@
     }
 </div>
 
+@* ── Content Bundles ── *@
+<div class="pref-section" style="margin-top: 24px;">
+    <div class="section-label">Content Bundles</div>
+    <div class="pref-row-desc" style="margin-bottom: 12px;">
+        Enable or disable individual content packages. Disabled packages are excluded from element
+        resolution. Reload elements after making changes for them to take effect.
+    </div>
+
+    @{
+        var packages = ContentDb.GetPackages();
+    }
+    @if (packages.Count == 0)
+    {
+        <div style="font-size: 13px; color: var(--mud-palette-text-disabled, #6c7086);">
+            No packages found. Sync the content database first.
+        </div>
+    }
+    else
+    {
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+            @foreach (var pkg in packages)
+            {
+                var p = pkg;
+                <div style="display: flex; align-items: center; gap: 10px; padding: 6px 10px; background: var(--mud-palette-background-grey, #181825); border-radius: 6px;">
+                    <MudSwitch Value="@p.IsEnabled"
+                               Color="Color.Primary"
+                               ValueChanged="@((bool v) => TogglePackageAsync(p.Id, v))"
+                               Style="margin: 0;" />
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-size: 13px; color: var(--mud-palette-text-primary, #cdd6f4); font-weight: 500;">@p.PackageName</div>
+                        <div style="font-size: 11px; color: var(--mud-palette-text-disabled, #6c7086); font-family: monospace;">@p.PackageKey</div>
+                    </div>
+                    <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; padding: 2px 8px; border-radius: 999px; background: #313244; color: @KindColor(p.PackageKind);">
+                        @p.PackageKind
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
 @* ── Content Sources ── *@
 <div class="pref-section" style="margin-top: 24px;">
     <div class="section-label">Content Sources</div>
@@ -229,6 +270,24 @@
         ContentDb.StateChanged += OnStateChanged;
         Content.Changed        += OnContentChanged;
     }
+
+    // ── Content bundle management ─────────────────────────────────────────────
+
+    private async Task TogglePackageAsync(long packageId, bool enabled)
+    {
+        await ContentDb.SetPackageEnabledAsync(packageId, enabled);
+        _needsContentReload = true;
+        StateHasChanged();
+    }
+
+    private static string KindColor(string kind) => kind switch
+    {
+        "core"        => "#a6e3a1",
+        "official"    => "#89b4fa",
+        "third-party" => "#fab387",
+        "homebrew"    => "#cba6f7",
+        _             => "#6c7086",
+    };
 
     private void OnStateChanged()  => InvokeAsync(StateHasChanged);
     private void OnContentChanged() => InvokeAsync(StateHasChanged);

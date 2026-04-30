@@ -8,6 +8,10 @@
                                      NamePlaceholder="Character Name"
                                      PlayerNamePlaceholder="Player Name"
                                      OnKeyDown="OnKeyDown" />
+            @if (_nameError != null)
+            {
+                <MudAlert Severity="Severity.Error" Dense="true" Class="mt-2">@_nameError</MudAlert>
+            }
         </div>
     </DialogContent>
     <DialogActions>
@@ -25,6 +29,9 @@
     [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
 
     private readonly CharacterCreationModel _model = new();
+    private string? _nameError;
+
+    private static readonly HashSet<char> _invalidChars = new(Path.GetInvalidFileNameChars());
 
     private void OnKeyDown(KeyboardEventArgs e)
     {
@@ -32,6 +39,18 @@
             Confirm();
     }
 
-    private void Cancel()  => MudDialog.Cancel();
-    private void Confirm() => MudDialog.Close(new NewCharacterInfo(_model.Name.Trim(), _model.PlayerName.Trim()));
+    private void Cancel() => MudDialog.Cancel();
+
+    private void Confirm()
+    {
+        var name = _model.Name.Trim();
+        var bad  = name.Where(c => _invalidChars.Contains(c)).Distinct().ToArray();
+        if (bad.Length > 0)
+        {
+            _nameError = $"Name cannot contain: {string.Join("  ", bad)}";
+            return;
+        }
+        _nameError = null;
+        MudDialog.Close(new NewCharacterInfo(name, _model.PlayerName.Trim()));
+    }
 }

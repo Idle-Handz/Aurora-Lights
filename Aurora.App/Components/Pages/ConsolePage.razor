@@ -2,6 +2,7 @@
 @implements IDisposable
 @inject DebugLogService Log
 @inject UserPreferencesService Prefs
+@inject IJSRuntime JS
 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
     <MudText Typo="Typo.h5">Console</MudText>
     <MudButton Variant="Variant.Outlined" Color="Color.Default" Size="Size.Small" OnClick="() => Log.Clear()">
@@ -21,7 +22,7 @@ else
             Showing latest @DisplayLimit of @_entries.Count entries. Clear to reset.
         </MudText>
     }
-    <div class="console-log">
+    <div class="console-log" @ref="_logDiv">
         <Virtualize Items="@_displayed" Context="entry" OverscanCount="10" ItemSize="44">
             <div class="console-entry console-entry-@entry.Level.ToString().ToLower()">
                 <span class="console-ts">@entry.Timestamp.ToString("HH:mm:ss.fff")</span>
@@ -44,16 +45,29 @@ else
 
     private IReadOnlyList<LogEntry> _entries   = [];
     private List<LogEntry>          _displayed = [];
+    private ElementReference        _logDiv;
+    private bool                    _shouldScrollToTop;
 
     protected override void OnInitialized()
     {
         Log.Changed += OnLogChanged;
         UpdateEntries(Log.GetSnapshot());
+        _shouldScrollToTop = true;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_shouldScrollToTop)
+        {
+            _shouldScrollToTop = false;
+            try { await JS.InvokeVoidAsync("scrollElementToTop", _logDiv); } catch { }
+        }
     }
 
     private void OnLogChanged() => InvokeAsync(() =>
     {
         UpdateEntries(Log.GetSnapshot());
+        _shouldScrollToTop = true;
         StateHasChanged();
     });
 

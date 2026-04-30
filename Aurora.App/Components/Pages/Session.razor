@@ -519,8 +519,9 @@
 
     private void AutoSave()
     {
-        if (_tab != null)
-            _tab.File.SaveSession(_s);
+        if (_tab == null) return;
+        try { _tab.File.SaveSession(_s); }
+        catch { /* non-critical — session state remains correct in memory */ }
     }
 
     private void SaveSession()

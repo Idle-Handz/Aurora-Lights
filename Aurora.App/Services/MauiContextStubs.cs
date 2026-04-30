@@ -21,6 +21,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using System.Runtime.InteropServices;
 
 namespace Aurora.App.Services;
 
@@ -151,18 +152,59 @@ internal sealed class MauiSpellcastingSectionHandler : ISpellcastingSectionHandl
 /// <summary>
 /// No-op IMessageDialogService — logs to debug output instead of showing WPF dialogs.
 /// </summary>
-internal sealed class MauiMessageDialogService : IMessageDialogService
+#if false
+internal sealed partial class MauiMessageDialogServiceStub : IMessageDialogService
 {
     public void Show(string message, string? caption = null)
-        => Debug.WriteLine($"[Dialog] {caption}: {message}");
+    {
+        string title = GetCaption(caption);
+        Debug.WriteLine($"[Dialog] {title}: {message}");
+
+#if WINDOWS
+        ShowWindowsMessageBox(message, title, MessageBoxStyle.Ok, MessageBoxIcon.Info);
+#else
+        _ = ShowAlertAsync(title, message);
+#endif
+    }
     public void ShowException(Exception ex, string? message = null, string? caption = null)
-        => Debug.WriteLine($"[Dialog:Exception] {caption}: {message}\n{ex}");
+    {
+        string title = GetCaption(caption ?? ex.GetType().Name);
+        string body = BuildExceptionMessage(ex, message);
+        Debug.WriteLine($"[Dialog:Exception] {title}: {body}");
+
+#if WINDOWS
+        ShowWindowsMessageBox(body, title, MessageBoxStyle.Ok, MessageBoxIcon.Error);
+#else
+        _ = ShowAlertAsync(title, body);
+#endif
+    }
     public bool Confirm(string message, string? caption = null)
     {
+        string title = GetCaption(caption ?? "Confirm");
+        Debug.WriteLine($"[Dialog:Confirm] {title}: {message}");
+
+#if WINDOWS
+        return ShowWindowsMessageBox(message, title, MessageBoxStyle.YesNo, MessageBoxIcon.Question) == MessageBoxResult.Yes;
+#else
+        Page? page = GetDialogPage();
+        if (page == null)
+            return false;
+
+        if (MainThread.IsMainThread)
+        {
+            Debug.WriteLine("[Dialog:Confirm] synchronous confirm requested on UI thread without native sync dialog support; returning false.");
+            _ = ShowAlertAsync(title, message);
+            return false;
+        }
+
+        return MainThread.InvokeOnMainThreadAsync(() => page.DisplayAlert(title, message, "Yes", "No"))
+            .GetAwaiter()
+            .GetResult();
+#endif
         Debug.WriteLine($"[Dialog:Confirm] {caption}: {message} → auto-returning false");
-        return false;
     }
 }
+#endif
 
 /// <summary>
 /// MAUI implementation of the shared launcher contract.

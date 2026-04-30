@@ -339,22 +339,25 @@
         }
     }
 
-    private Task ToggleSlotAsync(MagicSlotToggleModel change)
+    private void ToggleSlotAsync(MagicSlotToggleModel change)
     {
-        if (_snap is null)
-        {
-            return Task.CompletedTask;
-        }
+        var tab = Tabs.ActiveTab;
+        if (_snap is null || tab is null) return;
 
-        SpellLevelEntry? level = _snap.SpellLevels.FirstOrDefault(candidate => candidate.Level == change.Level);
+        // Same toggle logic as Session.razor: clicking a filled pip clears it,
+        // clicking an empty pip fills up to that index.
+        var used = tab.Session.SpellSlotsUsed.GetValueOrDefault(change.Level, 0);
+        int newUsed = used == change.SlotIndex ? change.SlotIndex - 1 : change.SlotIndex;
+        tab.Session.SpellSlotsUsed[change.Level] = newUsed;
+
+        // Keep snapshot in sync so BuildMagicModel renders correctly without a reload.
+        var level = _snap.SpellLevels.FirstOrDefault(l => l.Level == change.Level);
         if (level is not null)
-        {
-            if (change.SlotIndex < level.UsedSlots)
-                level.UsedSlots = change.SlotIndex;
-            else
-                level.UsedSlots = change.SlotIndex + 1;
-        }
+            level.UsedSlots = newUsed;
 
-        return Task.CompletedTask;
+        BuildMagicModel();
+
+        try { tab.File.SaveSession(tab.Session); }
+        catch { /* non-critical — state remains correct in memory */ }
     }
 }

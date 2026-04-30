@@ -520,6 +520,7 @@
     private void StopSubStepCycling()
     {
         _subStepCts?.Cancel();
+        _subStepCts?.Dispose();
         _subStepCts = null;
     }
 

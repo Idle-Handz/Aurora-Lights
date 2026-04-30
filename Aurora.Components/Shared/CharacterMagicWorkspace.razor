@@ -116,7 +116,6 @@
                         <button type="button"
                                 class="magic-spell-select"
                                 @onclick="() => OnSelectSpell.InvokeAsync(spell.Id)">
-                            <span class="magic-spell-dot @(spell.IsPrepared ? "prepared" : string.Empty)"></span>
                             <span class="magic-spell-name @(spell.IsPrepared ? "prepared" : string.Empty)">@spell.Name</span>
                         </button>
                     </div>

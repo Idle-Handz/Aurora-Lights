@@ -36,6 +36,33 @@ public sealed class ContentDatabaseService
     /// Fast staleness check — compares MD5 hashes in the DB against disk.
     /// Safe to call on any thread; reads the DB read-only.
     /// </summary>
+    // ── Package management ───────────────────────────────────────────────────
+
+    /// <summary>
+    /// Returns all content packages from the database, ordered by kind then name.
+    /// Returns an empty list when the database does not exist yet.
+    /// </summary>
+    public IReadOnlyList<ContentPackageInfo> GetPackages() =>
+        DatabasePath is { } p ? AuroraContentImporter.GetPackages(p) : [];
+
+    /// <summary>
+    /// Toggles a package's enabled state and rebuilds the resolution cache.
+    /// Fires <see cref="StateChanged"/> on completion so the UI can refresh.
+    /// The caller should prompt for an element reload after calling this.
+    /// </summary>
+    public Task SetPackageEnabledAsync(long packageId, bool enabled) => Task.Run(() =>
+    {
+        if (DatabasePath is not { } p) return;
+        AuroraContentImporter.SetPackageEnabled(p, packageId, enabled);
+        StateChanged?.Invoke();
+    });
+
+    // ── Staleness check ──────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Fast staleness check — compares MD5 hashes in the DB against disk.
+    /// Safe to call on any thread; reads the DB read-only.
+    /// </summary>
     public bool CheckIsStale()
     {
         if (DatabasePath is not { } dbPath || string.IsNullOrWhiteSpace(ContentDirectory))

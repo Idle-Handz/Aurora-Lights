@@ -44,7 +44,7 @@ internal static class AuroraSqliteImporter
         EnsureSchema(connection);
         // When the importer logic changes in a way that affects stored data (e.g. adding a new
         // column to element_supports), bump this constant so existing DBs get a full rebuild.
-        const int ExpectedDataVersion = 4;
+        const int ExpectedDataVersion = 8;
         int dbVersion = GetUserVersion(connection);
         if (dbVersion != ExpectedDataVersion)
         {
@@ -67,6 +67,8 @@ internal static class AuroraSqliteImporter
             sourceBookIds[sourceName!] = EnsureSourceBook(connection, transaction, sourceName!);
         }
 
+        var primarySourceByFile = BuildPrimarySourceByFile(catalog);
+
         var existingFiles = LoadExistingSourceFileHashes(connection, transaction);
         var sourceFileIds = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
         var changedPaths  = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -77,11 +79,12 @@ internal static class AuroraSqliteImporter
         var contentPackageIds = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
         foreach (var file in catalog.Files)
         {
-            string pkgKey = GetPackageKey(file.RelativePath);
+            primarySourceByFile.TryGetValue(file.RelativePath, out string? primarySource);
+            string pkgKey = GetPackageKey(file, primarySource);
             if (!contentPackageIds.ContainsKey(pkgKey))
                 contentPackageIds[pkgKey] = EnsureContentPackage(
                     connection, transaction, pkgKey,
-                    file.Name, DeterminePackageKind(pkgKey));
+                    GetPackageDisplayName(file, primarySource), DeterminePackageKind(file.RelativePath));
         }
 
         progress?.Report(new AuroraImportProgress(
@@ -95,7 +98,8 @@ internal static class AuroraSqliteImporter
             string hash = ComputeFileHash(file.FullPath);
             scanned++;
 
-            long? pkgId = contentPackageIds.TryGetValue(GetPackageKey(file.RelativePath), out var pid)
+            primarySourceByFile.TryGetValue(file.RelativePath, out string? primarySource);
+            long? pkgId = contentPackageIds.TryGetValue(GetPackageKey(file, primarySource), out var pid)
                 ? pid : null;
 
             if (existingFiles.TryGetValue(file.RelativePath, out var existing))
@@ -189,18 +193,21 @@ internal static class AuroraSqliteImporter
             addedElements++;
         }
 
-        if (changedPaths.Count > 0)
+        // Always refresh package kinds — fast, uses authoritative source element flags.
+        RefreshPackageKinds(connection, transaction);
+
+        // Rebuild the resolution cache and re-resolve FKs whenever content changed,
+        // or on first run after this feature was added (cache is empty but DB has data).
+        bool cacheEmpty = IsCacheEmpty(connection);
+        if (changedPaths.Count > 0 || cacheEmpty)
         {
             progress?.Report(new AuroraImportProgress(
                 AuroraImportPhase.Resolving, catalog.Files.Count, catalog.Files.Count,
                 changedPaths.Count, addedElements, null));
 
+            BuildResolutionCache(connection, transaction);
             ResolveDeferredRelationships(connection, transaction);
         }
-
-        // Always run — refines package_kind from authoritative source element flags
-        // even on incremental imports where no files changed.
-        RefreshPackageKinds(connection, transaction);
 
         transaction.Commit();
 
@@ -384,14 +391,25 @@ ON CONFLICT(package_key) DO NOTHING;";
         return (long)select.ExecuteScalar()!;
     }
 
-    private static string GetPackageKey(string relativePath)
+    private static string GetPackageKey(AuroraFileInfo file, string? primarySource)
     {
-        int sep = relativePath.IndexOfAny(['/', '\\']);
-        return sep > 0 ? relativePath[..sep] : relativePath;
+        string packageKind = DeterminePackageKind(file.RelativePath);
+        if (!string.IsNullOrWhiteSpace(primarySource))
+            return $"{packageKind}:{BuildPackageSlug(primarySource)}";
+
+        if (!string.IsNullOrWhiteSpace(file.Name))
+            return $"{packageKind}:{BuildPackageSlug(file.Name!)}";
+
+        int sep = file.RelativePath.IndexOfAny(['/', '\\']);
+        string topLevel = sep > 0 ? file.RelativePath[..sep] : file.RelativePath;
+        return $"{packageKind}:{BuildPackageSlug(topLevel)}";
     }
 
-    private static string DeterminePackageKind(string packageKey) =>
-        packageKey.ToLowerInvariant() switch
+    private static string DeterminePackageKind(string relativePath)
+    {
+        int sep = relativePath.IndexOfAny(['/', '\\']);
+        string topLevel = sep > 0 ? relativePath[..sep] : relativePath;
+        return topLevel.ToLowerInvariant() switch
         {
             "core"                 => "core",
             "supplements"
@@ -399,6 +417,91 @@ ON CONFLICT(package_key) DO NOTHING;";
             "user"                 => "homebrew",
             _                      => "third-party"
         };
+    }
+
+    private static string BuildPackageSlug(string name)
+    {
+        var builder = new System.Text.StringBuilder(name.Length);
+        bool previousDash = false;
+        foreach (char ch in name.ToLowerInvariant())
+        {
+            if (char.IsLetterOrDigit(ch))
+            {
+                builder.Append(ch);
+                previousDash = false;
+            }
+            else if (!previousDash)
+            {
+                builder.Append('-');
+                previousDash = true;
+            }
+        }
+
+        return builder.ToString().Trim('-');
+    }
+
+    private static string? GetPackageDisplayName(AuroraFileInfo file, string? primarySource)
+    {
+        if (!string.IsNullOrWhiteSpace(primarySource))
+            return primarySource;
+
+        return file.Name;
+    }
+
+    private static Dictionary<string, string?> BuildPrimarySourceByFile(AuroraImportCatalog catalog)
+    {
+        var result = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var group in catalog.Elements
+            .Where(x => !string.IsNullOrWhiteSpace(x.source_file_path))
+            .GroupBy(x => x.source_file_path!, StringComparer.OrdinalIgnoreCase))
+        {
+            result[group.Key] = SelectPrimarySource(group.Select(x => x.source));
+        }
+
+        foreach (var group in catalog.Spells
+            .Where(x => !string.IsNullOrWhiteSpace(x.source_file_path))
+            .GroupBy(x => x.source_file_path!, StringComparer.OrdinalIgnoreCase))
+        {
+            if (result.ContainsKey(group.Key))
+                continue;
+
+            result[group.Key] = SelectPrimarySource(group.Select(x => x.source));
+        }
+
+        return result;
+    }
+
+    private static string? SelectPrimarySource(IEnumerable<string?> sources)
+    {
+        var ranked = sources
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x!.Trim())
+            .GroupBy(x => x, StringComparer.OrdinalIgnoreCase)
+            .Select(g => new { Name = g.Key, Count = g.Count() })
+            .OrderByDescending(x => SourcePriority(x.Name))
+            .ThenByDescending(x => x.Count)
+            .ThenBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (ranked.Count == 0)
+            return null;
+
+        if (ranked.Count == 1 || ranked[0].Count > ranked[1].Count)
+            return ranked[0].Name;
+
+        if (ranked[0].Count == ranked[1].Count
+            && SourcePriority(ranked[0].Name) > SourcePriority(ranked[1].Name))
+            return ranked[0].Name;
+
+        return null;
+    }
+
+    private static int SourcePriority(string sourceName) =>
+        IsVirtualSource(sourceName) ? 0 : 1;
+
+    private static bool IsVirtualSource(string sourceName) =>
+        string.Equals(sourceName?.Trim(), "Internal", StringComparison.OrdinalIgnoreCase);
 
     private static int DefaultPrecedenceRank(string packageKind) =>
         packageKind switch
@@ -1052,126 +1155,350 @@ VALUES
         }
     }
 
+    // ── Public cache-only rebuild ────────────────────────────────────────────
+
+    /// <summary>
+    /// Re-runs the resolution cache build and FK resolve without re-importing any files.
+    /// Call this after toggling <c>content_packages.is_enabled</c> so that the new
+    /// enable/disable state is reflected in the cache and FK columns immediately.
+    /// </summary>
+    internal static void RebuildCacheOnly(string sqlitePath)
+    {
+        using var connection = new SqliteConnection(
+            new SqliteConnectionStringBuilder { DataSource = sqlitePath }.ToString());
+        connection.Open();
+        using var transaction = connection.BeginTransaction();
+        BuildResolutionCache(connection, transaction);
+        ResolveDeferredRelationships(connection, transaction);
+        transaction.Commit();
+    }
+
     // ── FK resolution ────────────────────────────────────────────────────────
+
+    // ── Resolution cache ─────────────────────────────────────────────────────
+
+    private static bool IsCacheEmpty(SqliteConnection connection)
+    {
+        using var cmd = connection.CreateCommand();
+        cmd.CommandText = "SELECT COUNT(*) FROM resolved_elements_cache;";
+        return (long)(cmd.ExecuteScalar() ?? 0L) == 0;
+    }
+
+    private static void BuildResolutionCache(SqliteConnection connection, SqliteTransaction transaction)
+    {
+        ExecuteSql(connection, transaction, "DELETE FROM resolved_unique_element_names_cache;");
+        ExecuteSql(connection, transaction, "DELETE FROM resolved_elements_cache;");
+
+        ExecuteSql(connection, transaction, @"
+INSERT INTO resolved_elements_cache
+(
+    aurora_id,
+    winning_element_id,
+    source_file_id,
+    content_package_id,
+    package_key,
+    package_name,
+    package_kind,
+    precedence_rank,
+    duplicate_count,
+    resolution_rank
+)
+WITH ranked AS
+(
+    SELECT
+        e.aurora_id,
+        e.element_id AS winning_element_id,
+        e.source_file_id,
+        sf.content_package_id,
+        cp.package_key,
+        cp.package_name,
+        cp.package_kind,
+        cp.precedence_rank,
+        COUNT(*) OVER (PARTITION BY e.aurora_id) AS duplicate_count,
+        ROW_NUMBER() OVER
+        (
+            PARTITION BY e.aurora_id
+            ORDER BY
+                COALESCE(cp.is_enabled, 1) DESC,
+                COALESCE(cp.precedence_rank, 500) DESC,
+                CASE COALESCE(cp.package_kind, 'local')
+                    WHEN 'local'        THEN 5
+                    WHEN 'homebrew'     THEN 4
+                    WHEN 'third-party'  THEN 3
+                    WHEN 'official'     THEN 2
+                    WHEN 'core'         THEN 1
+                    ELSE 0
+                END DESC,
+                e.source_file_id ASC,
+                e.element_id ASC
+        ) AS resolution_rank
+    FROM elements AS e
+    JOIN source_files AS sf
+        ON sf.source_file_id = e.source_file_id
+    LEFT JOIN content_packages AS cp
+        ON cp.content_package_id = sf.content_package_id
+    WHERE e.aurora_id IS NOT NULL
+      AND trim(e.aurora_id) <> ''
+      AND COALESCE(cp.is_enabled, 1) = 1
+)
+SELECT
+    aurora_id,
+    winning_element_id,
+    source_file_id,
+    content_package_id,
+    package_key,
+    package_name,
+    package_kind,
+    precedence_rank,
+    duplicate_count,
+    resolution_rank
+FROM ranked
+WHERE resolution_rank = 1;");
+
+        ExecuteSql(connection, transaction, @"
+INSERT INTO resolved_unique_element_names_cache
+(
+    normalized_name,
+    winning_element_id,
+    name
+)
+WITH named AS
+(
+    SELECT
+        rec.winning_element_id,
+        e.name,
+        lower(trim(e.name)) AS normalized_name,
+        COUNT(*) OVER (PARTITION BY lower(trim(e.name))) AS match_count
+    FROM resolved_elements_cache AS rec
+    JOIN elements AS e
+        ON e.element_id = rec.winning_element_id
+    WHERE e.name IS NOT NULL
+      AND trim(e.name) <> ''
+)
+SELECT
+    normalized_name,
+    winning_element_id,
+    name
+FROM named
+WHERE match_count = 1;");
+    }
+
+    // ── FK resolution ─────────────────────────────────────────────────────────
 
     private static void ResolveDeferredRelationships(SqliteConnection connection, SqliteTransaction transaction)
     {
+        // Reset all deferred FKs for a full, cache-driven rebuild.
+        ExecuteSql(connection, transaction, @"
+UPDATE grants
+SET target_element_id = NULL
+WHERE target_aurora_id IS NOT NULL;");
+
+        ExecuteSql(connection, transaction, "UPDATE element_extract_items SET linked_element_id = NULL;");
+        ExecuteSql(connection, transaction, "UPDATE select_items SET linked_element_id = NULL;");
+        ExecuteSql(connection, transaction, "UPDATE subraces SET race_element_id = NULL;");
+        ExecuteSql(connection, transaction, "UPDATE race_variants SET race_element_id = NULL;");
+        ExecuteSql(connection, transaction, "UPDATE background_variants SET background_element_id = NULL;");
+
+        ExecuteSql(connection, transaction, @"
+UPDATE features
+SET parent_element_id = NULL
+WHERE parent_support_text IS NOT NULL;");
+
+        ExecuteSql(connection, transaction, "UPDATE archetypes SET parent_class_element_id = NULL;");
+        ExecuteSql(connection, transaction, "DELETE FROM select_support_links;");
+        ExecuteSql(connection, transaction, "DELETE FROM element_support_links;");
+
+        ExecuteSql(connection, transaction, @"
+DELETE FROM support_tags
+WHERE support_text <> '[[inline-item]]'
+  AND NOT EXISTS (SELECT 1 FROM element_supports WHERE element_supports.support_text = support_tags.support_text)
+  AND NOT EXISTS (SELECT 1 FROM select_supports  WHERE select_supports.support_text  = support_tags.support_text);");
+
+        ExecuteSql(connection, transaction, @"
+UPDATE support_tags
+SET support_kind = 'unclassified'
+WHERE support_text <> '[[inline-item]]';");
+
+        // grants — direct aurora_id lookup via cache
         ExecuteSql(connection, transaction, @"
 UPDATE grants SET target_element_id =
-    (SELECT MIN(e.element_id) FROM elements AS e WHERE e.aurora_id = grants.target_aurora_id)
+(
+    SELECT rec.winning_element_id
+    FROM resolved_elements_cache AS rec
+    WHERE rec.aurora_id = grants.target_aurora_id
+)
 WHERE target_element_id IS NULL AND target_aurora_id IS NOT NULL;");
 
+        // element_extract_items — prefer aurora_id cache, fall back to unique name cache
         ExecuteSql(connection, transaction, @"
 UPDATE element_extract_items SET linked_element_id =
-    (SELECT MIN(e.element_id) FROM elements AS e WHERE e.aurora_id = element_extract_items.target_aurora_id
-       OR (element_extract_items.target_aurora_id IS NULL AND e.name = element_extract_items.item_text))
-WHERE linked_element_id IS NULL AND (target_aurora_id IS NOT NULL OR item_text IS NOT NULL);");
+(
+    SELECT COALESCE(
+        (SELECT rec.winning_element_id  FROM resolved_elements_cache             AS rec  WHERE rec.aurora_id       = element_extract_items.target_aurora_id),
+        (SELECT runc.winning_element_id FROM resolved_unique_element_names_cache AS runc WHERE runc.normalized_name = lower(trim(element_extract_items.item_text)))
+    )
+)
+WHERE linked_element_id IS NULL
+  AND (target_aurora_id IS NOT NULL OR item_text IS NOT NULL);");
 
+        // select_items — same pattern; skip text-choice options
         ExecuteSql(connection, transaction, @"
 UPDATE select_items SET linked_element_id =
-    (SELECT MIN(e.element_id) FROM elements AS e WHERE e.aurora_id = select_items.target_aurora_id
-       OR (select_items.target_aurora_id IS NULL AND e.name = select_items.item_text))
-WHERE linked_element_id IS NULL AND (target_aurora_id IS NOT NULL OR item_text IS NOT NULL);");
+(
+    SELECT COALESCE(
+        (SELECT rec.winning_element_id  FROM resolved_elements_cache             AS rec  WHERE rec.aurora_id       = select_items.target_aurora_id),
+        (SELECT runc.winning_element_id FROM resolved_unique_element_names_cache AS runc WHERE runc.normalized_name = lower(trim(select_items.item_text)))
+    )
+)
+WHERE option_kind <> 'text-choice'
+  AND linked_element_id IS NULL
+  AND (target_aurora_id IS NOT NULL OR item_text IS NOT NULL);");
 
+        // subraces — restrict parent to cache winners
         ExecuteSql(connection, transaction, @"
 UPDATE subraces SET race_element_id =
-    (SELECT MIN(parent.element_id) FROM races AS r JOIN elements AS parent ON parent.element_id = r.element_id
-     WHERE parent.aurora_id = subraces.parent_support_text OR parent.name = subraces.parent_support_text
-        OR subraces.parent_support_text = parent.name || ' Subrace'
-        OR subraces.parent_support_text = parent.name || ' Ancestry'
-        OR subraces.parent_support_text LIKE '% ' || parent.name)
+(
+    SELECT MIN(parent.element_id)
+    FROM races AS r
+    JOIN elements AS parent ON parent.element_id = r.element_id
+    JOIN resolved_elements_cache AS rec ON rec.winning_element_id = parent.element_id
+    WHERE parent.aurora_id = subraces.parent_support_text OR parent.name = subraces.parent_support_text
+       OR subraces.parent_support_text = parent.name || ' Subrace'
+       OR subraces.parent_support_text = parent.name || ' Ancestry'
+       OR subraces.parent_support_text LIKE '% ' || parent.name
+)
 WHERE race_element_id IS NULL AND parent_support_text IS NOT NULL;");
 
+        // race_variants — restrict parent to cache winners
         ExecuteSql(connection, transaction, @"
 UPDATE race_variants SET race_element_id =
-    (SELECT MIN(parent.element_id) FROM races AS r JOIN elements AS parent ON parent.element_id = r.element_id
-     WHERE parent.aurora_id = race_variants.parent_support_text OR parent.name = race_variants.parent_support_text
-        OR race_variants.parent_support_text = parent.name || ' Variant'
-        OR trim(replace(replace(race_variants.parent_support_text, 'Variant ', ''), ' Variant', '')) = parent.name)
+(
+    SELECT MIN(parent.element_id)
+    FROM races AS r
+    JOIN elements AS parent ON parent.element_id = r.element_id
+    JOIN resolved_elements_cache AS rec ON rec.winning_element_id = parent.element_id
+    WHERE parent.aurora_id = race_variants.parent_support_text OR parent.name = race_variants.parent_support_text
+       OR race_variants.parent_support_text = parent.name || ' Variant'
+       OR trim(replace(replace(race_variants.parent_support_text, 'Variant ', ''), ' Variant', '')) = parent.name
+)
 WHERE race_element_id IS NULL AND parent_support_text IS NOT NULL;");
 
+        // background_variants — restrict parent to cache winners
         ExecuteSql(connection, transaction, @"
 UPDATE background_variants SET background_element_id =
-    (SELECT MIN(parent.element_id) FROM backgrounds AS b JOIN elements AS parent ON parent.element_id = b.element_id
-     WHERE parent.aurora_id = background_variants.parent_support_text OR parent.name = background_variants.parent_support_text
-        OR background_variants.parent_support_text = 'Variant ' || parent.name
-        OR trim(replace(background_variants.parent_support_text, 'Variant ', '')) = parent.name)
+(
+    SELECT MIN(parent.element_id)
+    FROM backgrounds AS b
+    JOIN elements AS parent ON parent.element_id = b.element_id
+    JOIN resolved_elements_cache AS rec ON rec.winning_element_id = parent.element_id
+    WHERE parent.aurora_id = background_variants.parent_support_text OR parent.name = background_variants.parent_support_text
+       OR background_variants.parent_support_text = 'Variant ' || parent.name
+       OR trim(replace(background_variants.parent_support_text, 'Variant ', '')) = parent.name
+)
 WHERE background_element_id IS NULL AND parent_support_text IS NOT NULL;");
 
+        // features — restrict parent to cache winners
         ExecuteSql(connection, transaction, @"
 UPDATE features SET parent_element_id =
-    (SELECT MIN(parent.element_id) FROM elements AS parent
-     WHERE parent.aurora_id = features.parent_support_text OR parent.name = features.parent_support_text)
+(
+    SELECT MIN(parent.element_id)
+    FROM elements AS parent
+    JOIN resolved_elements_cache AS rec ON rec.winning_element_id = parent.element_id
+    WHERE parent.aurora_id = features.parent_support_text OR parent.name = features.parent_support_text
+)
 WHERE parent_element_id IS NULL AND parent_support_text IS NOT NULL;");
 
+        // archetypes — restrict class parent to cache winners, known alias list
         ExecuteSql(connection, transaction, @"
 UPDATE archetypes SET parent_class_element_id =
-    (SELECT MIN(class_element.element_id) FROM elements AS class_element
-     JOIN element_types AS et ON et.element_type_id = class_element.element_type_id
-     WHERE et.type_name = 'Class' AND
-     (class_element.name = archetypes.parent_support_text
-      OR archetypes.parent_support_text = class_element.name || ' Subclass'
-      OR (archetypes.parent_support_text = 'Sacred Oath' AND class_element.name = 'Paladin')
-      OR (archetypes.parent_support_text = 'Divine Domain' AND class_element.name = 'Cleric')
-      OR (archetypes.parent_support_text = 'Bard College' AND class_element.name = 'Bard')
-      OR (archetypes.parent_support_text = 'Druid Circle' AND class_element.name = 'Druid')
-      OR (archetypes.parent_support_text = 'Martial Archetype' AND class_element.name = 'Fighter')
-      OR (archetypes.parent_support_text = 'Monastic Tradition' AND class_element.name = 'Monk')
-      OR (archetypes.parent_support_text = 'Ranger Archetype' AND class_element.name = 'Ranger')
-      OR (archetypes.parent_support_text = 'Ranger Conclave' AND class_element.name = 'Ranger')
-      OR (archetypes.parent_support_text = 'Roguish Archetype' AND class_element.name = 'Rogue')
-      OR (archetypes.parent_support_text = 'Sorcerous Origin' AND class_element.name = 'Sorcerer')
-      OR (archetypes.parent_support_text = 'Arcane Tradition' AND class_element.name = 'Wizard')
-      OR (archetypes.parent_support_text = 'Otherworldly Patron' AND class_element.name = 'Warlock')
-      OR (archetypes.parent_support_text = 'Primal Path' AND class_element.name = 'Barbarian')))
+(
+    SELECT MIN(class_element.element_id)
+    FROM elements AS class_element
+    JOIN element_types AS et ON et.element_type_id = class_element.element_type_id
+    JOIN resolved_elements_cache AS rec ON rec.winning_element_id = class_element.element_id
+    WHERE et.type_name = 'Class' AND
+    (
+        class_element.name = archetypes.parent_support_text
+        OR archetypes.parent_support_text = class_element.name || ' Subclass'
+        OR (archetypes.parent_support_text = 'Sacred Oath'         AND class_element.name = 'Paladin')
+        OR (archetypes.parent_support_text = 'Divine Domain'       AND class_element.name = 'Cleric')
+        OR (archetypes.parent_support_text = 'Bard College'        AND class_element.name = 'Bard')
+        OR (archetypes.parent_support_text = 'Druid Circle'        AND class_element.name = 'Druid')
+        OR (archetypes.parent_support_text = 'Martial Archetype'   AND class_element.name = 'Fighter')
+        OR (archetypes.parent_support_text = 'Monastic Tradition'  AND class_element.name = 'Monk')
+        OR (archetypes.parent_support_text = 'Ranger Archetype'    AND class_element.name = 'Ranger')
+        OR (archetypes.parent_support_text = 'Ranger Conclave'     AND class_element.name = 'Ranger')
+        OR (archetypes.parent_support_text = 'Roguish Archetype'   AND class_element.name = 'Rogue')
+        OR (archetypes.parent_support_text = 'Sorcerous Origin'    AND class_element.name = 'Sorcerer')
+        OR (archetypes.parent_support_text = 'Arcane Tradition'    AND class_element.name = 'Wizard')
+        OR (archetypes.parent_support_text = 'Otherworldly Patron' AND class_element.name = 'Warlock')
+        OR (archetypes.parent_support_text = 'Primal Path'         AND class_element.name = 'Barbarian')
+    )
+)
 WHERE parent_class_element_id IS NULL AND parent_support_text IS NOT NULL;");
 
+        // archetypes fallback — same-file class
         ExecuteSql(connection, transaction, @"
 UPDATE archetypes SET parent_class_element_id =
-    (SELECT MIN(class_element.element_id) FROM elements AS archetype_element
-     JOIN elements AS class_element ON class_element.source_file_id = archetype_element.source_file_id
-     JOIN element_types AS et ON et.element_type_id = class_element.element_type_id
-     WHERE archetype_element.element_id = archetypes.element_id AND et.type_name = 'Class')
+(
+    SELECT MIN(class_element.element_id)
+    FROM elements AS archetype_element
+    JOIN elements AS class_element ON class_element.source_file_id = archetype_element.source_file_id
+    JOIN element_types AS et ON et.element_type_id = class_element.element_type_id
+    WHERE archetype_element.element_id = archetypes.element_id AND et.type_name = 'Class'
+)
 WHERE parent_class_element_id IS NULL;");
 
+        // support tags & links — use cache for element lookups
         ExecuteSql(connection, transaction, @"
 INSERT OR IGNORE INTO support_tags (support_text, normalized_text)
-SELECT support_text, lower(trim(support_text)) FROM
-(SELECT support_text FROM element_supports UNION SELECT support_text FROM select_supports);");
+SELECT support_text, lower(trim(support_text))
+FROM (SELECT support_text FROM element_supports UNION SELECT support_text FROM select_supports);");
 
         ExecuteSql(connection, transaction, @"
 INSERT OR IGNORE INTO support_tags (support_text, normalized_text, support_kind)
 VALUES ('[[inline-item]]', '[[inline-item]]', 'bounded-option-set');");
 
         ExecuteSql(connection, transaction, @"
-INSERT OR IGNORE INTO element_support_links (element_id, ordinal, support_tag_id, linked_element_id, resolution_kind, is_primary_parent)
-SELECT es.element_id, es.ordinal, st.support_tag_id,
+INSERT OR IGNORE INTO element_support_links
+    (element_id, ordinal, support_tag_id, linked_element_id, resolution_kind, is_primary_parent)
+SELECT
+    es.element_id,
+    es.ordinal,
+    st.support_tag_id,
     COALESCE(
-        (SELECT MIN(e.element_id) FROM elements AS e WHERE e.aurora_id = es.support_text),
-        (SELECT MIN(e.element_id) FROM elements AS e WHERE e.name = es.support_text)
+        (SELECT rec.winning_element_id  FROM resolved_elements_cache             AS rec  WHERE rec.aurora_id       = es.support_text),
+        (SELECT runc.winning_element_id FROM resolved_unique_element_names_cache AS runc WHERE runc.normalized_name = lower(trim(es.support_text)))
     ),
     CASE
-        WHEN EXISTS(SELECT 1 FROM elements AS e WHERE e.aurora_id = es.support_text) THEN 'aurora-id'
-        WHEN EXISTS(SELECT 1 FROM elements AS e WHERE e.name = es.support_text) THEN 'element-name'
+        WHEN EXISTS(SELECT 1 FROM resolved_elements_cache             AS rec  WHERE rec.aurora_id       = es.support_text)               THEN 'aurora-id'
+        WHEN EXISTS(SELECT 1 FROM resolved_unique_element_names_cache AS runc WHERE runc.normalized_name = lower(trim(es.support_text))) THEN 'element-name'
         WHEN es.support_text LIKE '$(%' THEN 'dynamic'
         ELSE 'support-category'
-    END, 0
-FROM element_supports AS es JOIN support_tags AS st ON st.support_text = es.support_text;");
+    END,
+    0
+FROM element_supports AS es
+JOIN support_tags AS st ON st.support_text = es.support_text;");
 
         ExecuteSql(connection, transaction, @"
-INSERT OR IGNORE INTO select_support_links (select_id, ordinal, support_tag_id, linked_element_id, resolution_kind)
-SELECT ss.select_id, ss.ordinal, st.support_tag_id,
+INSERT OR IGNORE INTO select_support_links
+    (select_id, ordinal, support_tag_id, linked_element_id, resolution_kind)
+SELECT
+    ss.select_id,
+    ss.ordinal,
+    st.support_tag_id,
     COALESCE(
-        (SELECT MIN(e.element_id) FROM elements AS e WHERE e.aurora_id = ss.support_text),
-        (SELECT MIN(e.element_id) FROM elements AS e WHERE e.name = ss.support_text)
+        (SELECT rec.winning_element_id  FROM resolved_elements_cache             AS rec  WHERE rec.aurora_id       = ss.support_text),
+        (SELECT runc.winning_element_id FROM resolved_unique_element_names_cache AS runc WHERE runc.normalized_name = lower(trim(ss.support_text)))
     ),
     CASE
-        WHEN EXISTS(SELECT 1 FROM elements AS e WHERE e.aurora_id = ss.support_text) THEN 'aurora-id'
-        WHEN EXISTS(SELECT 1 FROM elements AS e WHERE e.name = ss.support_text) THEN 'element-name'
+        WHEN EXISTS(SELECT 1 FROM resolved_elements_cache             AS rec  WHERE rec.aurora_id       = ss.support_text)               THEN 'aurora-id'
+        WHEN EXISTS(SELECT 1 FROM resolved_unique_element_names_cache AS runc WHERE runc.normalized_name = lower(trim(ss.support_text))) THEN 'element-name'
         WHEN ss.support_text LIKE '$(%' THEN 'dynamic'
         ELSE 'support-category'
     END
-FROM select_supports AS ss JOIN support_tags AS st ON st.support_text = ss.support_text;");
+FROM select_supports AS ss
+JOIN support_tags AS st ON st.support_text = ss.support_text;");
     }
 
     // ── Package kind refinement ──────────────────────────────────────────────
