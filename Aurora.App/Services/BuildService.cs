@@ -993,13 +993,50 @@ public static class BuildService
     public static (IReadOnlyList<BuildTabGroup> Tabs,
                    IReadOnlyList<SelectionRuleEntry> AsiEntries,
                    (string TabLabel, string StepLabel)? NextStep)
-        GetBuildData()
+        GetBuildData(bool preferClassFirst)
     {
-        var tabs = GetBuildTabs();
+        var tabs = GetBuildTabs(preferClassFirst);
         var asi  = GetAsiEntries();
 
         (string, string)? next = null;
-        foreach (var tab in tabs)
+        var coreOrder = preferClassFirst
+            ? new[] { "Class", "Race" }
+            : new[] { "Race", "Class" };
+
+        foreach (var label in coreOrder)
+        {
+            var tab = tabs.FirstOrDefault(t => t.Label == label);
+            if (tab == null) continue;
+            foreach (var group in tab.RuleGroups)
+            {
+                foreach (var rule in group.Rules)
+                {
+                    if (rule.CurrentName == null) { next = (tab.Label, rule.Label); goto done; }
+                }
+            }
+        }
+
+        if (NeedsInitialAbilityScores())
+        {
+            next = ("Ability Scores", "Assign your starting ability scores");
+            goto done;
+        }
+
+        foreach (var label in new[] { "Background", "Languages", "Proficiencies" })
+        {
+            var tab = tabs.FirstOrDefault(t => t.Label == label);
+            if (tab == null) continue;
+            foreach (var group in tab.RuleGroups)
+            {
+                foreach (var rule in group.Rules)
+                {
+                    if (rule.CurrentName == null) { next = (tab.Label, rule.Label); goto done; }
+                }
+            }
+        }
+
+        foreach (var tab in tabs.Where(t =>
+                     t.Label is not "Race" and not "Class" and not "Background" and not "Languages" and not "Proficiencies"))
         {
             foreach (var group in tab.RuleGroups)
             {
@@ -1009,6 +1046,7 @@ public static class BuildService
                 }
             }
         }
+
         foreach (var entry in asi)
         {
             if (entry.CurrentName == null) { next = ("Ability Scores", entry.Label); break; }
@@ -1017,7 +1055,7 @@ public static class BuildService
         return (tabs, asi, next);
     }
 
-    public static IReadOnlyList<BuildTabGroup> GetBuildTabs()
+    public static IReadOnlyList<BuildTabGroup> GetBuildTabs(bool preferClassFirst)
     {
         var cm       = CharacterManager.Current;
         var classMgrs = cm.ClassProgressionManagers;
@@ -1080,8 +1118,7 @@ public static class BuildService
 
         var tabs = new List<BuildTabGroup>();
 
-        // Class tab — always present; initial Class rule first, then per-PM groups (first tab because
-        // the level-up and HP controls sit outside the tabs and relate most directly to class choices)
+        // Class tab — always present; initial Class rule first, then per-PM groups.
         var classGroups = new List<SelectionRuleGroup>();
         if (classMainEntries.Count > 0)
             classGroups.Add(new SelectionRuleGroup("", Sort(classMainEntries)));
@@ -1092,13 +1129,24 @@ public static class BuildService
                 m.ClassElement?.Name ?? "Class",
                 Sort(entries)));
         }
-        tabs.Add(new BuildTabGroup("Class", classGroups));
+        var classTab = new BuildTabGroup("Class", classGroups);
 
         // Race tab
         var raceGroups = raceEntries.Count > 0
             ? new List<SelectionRuleGroup> { new("", Sort(raceEntries)) }
             : new List<SelectionRuleGroup>();
-        tabs.Add(new BuildTabGroup("Race", raceGroups));
+        var raceTab = new BuildTabGroup("Race", raceGroups);
+
+        if (preferClassFirst)
+        {
+            tabs.Add(classTab);
+            tabs.Add(raceTab);
+        }
+        else
+        {
+            tabs.Add(raceTab);
+            tabs.Add(classTab);
+        }
 
         // Background tab — always present
         var bgGroups = bgEntries.Count > 0
@@ -1163,7 +1211,11 @@ public static class BuildService
     /// </summary>
     public static (string TabLabel, string StepLabel)? GetNextRequiredStep()
     {
-        foreach (var tab in GetBuildTabs())
+        var (tabs, asi, next) = GetBuildData(preferClassFirst: false);
+        if (next != null)
+            return next;
+
+        foreach (var tab in tabs)
         {
             foreach (var group in tab.RuleGroups)
             {
@@ -1175,12 +1227,32 @@ public static class BuildService
             }
         }
         // Check ASI entries last
-        foreach (var entry in GetAsiEntries())
+        foreach (var entry in asi)
         {
             if (entry.CurrentName == null)
                 return ("Ability Scores", entry.Label);
         }
         return null;
+    }
+
+    private static bool NeedsInitialAbilityScores()
+    {
+        try
+        {
+            var abilities = CharacterManager.Current?.Character?.Abilities;
+            if (abilities == null) return false;
+
+            return abilities.Strength.BaseScore == 10 &&
+                   abilities.Dexterity.BaseScore == 10 &&
+                   abilities.Constitution.BaseScore == 10 &&
+                   abilities.Intelligence.BaseScore == 10 &&
+                   abilities.Wisdom.BaseScore == 10 &&
+                   abilities.Charisma.BaseScore == 10;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     /// <summary>

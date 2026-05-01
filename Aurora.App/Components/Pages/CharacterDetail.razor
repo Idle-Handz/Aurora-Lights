@@ -529,25 +529,41 @@
     @if (_snap.HasSpellcasting)
     {
         <MudTabPanel Text="Spells">
+            @if (_snap.SpellcastingSections.Count > 1)
+            {
+                <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;">
+                    @foreach (var magicSection in _snap.SpellcastingSections)
+                    {
+                        var id = magicSection.UniqueIdentifier;
+                        <MudChip T="string"
+                                 Variant="Variant.Outlined"
+                                 Color="@(id == _activeSpellSectionId ? Color.Primary : Color.Default)"
+                                 OnClick="@(() => SelectSpellSection(id))">
+                            @magicSection.Name
+                        </MudChip>
+                    }
+                </div>
+            }
+
             @* Spellcasting stats *@
             <div class="combat-strip" style="margin-bottom: 16px;">
                 <div class="combat-stat">
-                    <div class="combat-stat-value" style="font-size: 14px; font-weight: 600;">@_snap.SpellcastingClass</div>
+                    <div class="combat-stat-value" style="font-size: 14px; font-weight: 600;">@ActiveSpellSection?.Name</div>
                     <div class="combat-stat-label">Class</div>
                 </div>
                 <div class="combat-sep"></div>
                 <div class="combat-stat">
-                    <div class="combat-stat-value" style="font-size: 14px; font-weight: 600;">@_snap.SpellcastingAbility</div>
+                    <div class="combat-stat-value" style="font-size: 14px; font-weight: 600;">@ActiveSpellSection?.AbilityName</div>
                     <div class="combat-stat-label">Ability</div>
                 </div>
                 <div class="combat-sep"></div>
                 <div class="combat-stat">
-                    <div class="combat-stat-value">@_snap.SpellcastingDC</div>
+                    <div class="combat-stat-value">@ActiveSpellSection?.SpellcastingDc</div>
                     <div class="combat-stat-label">Spell DC</div>
                 </div>
                 <div class="combat-sep"></div>
                 <div class="combat-stat">
-                    <div class="combat-stat-value">@_snap.SpellcastingAttack</div>
+                    <div class="combat-stat-value">@ActiveSpellSection?.SpellcastingAttack</div>
                     <div class="combat-stat-label">Spell Attack</div>
                 </div>
             </div>
@@ -556,10 +572,10 @@
             <div class="spell-overview-layout">
                 @* ── Left: scrollable spell list (cantrips always shown; leveled spells filtered to prepared) ── *@
                 <div class="spell-overview-list">
-                    @if (_snap.Cantrips.Count > 0)
+                    @if (ActiveSpellSectionCantrips.Count > 0)
                     {
                         <div class="section-label">Cantrips</div>
-                        @foreach (var cantrip in _cantripEntries)
+                        @foreach (var cantrip in ActiveSpellSectionCantrips)
                         {
                             <div class="spell-overview-row @(_selectedSpellKey == cantrip.Id ? "spell-overview-selected" : "")"
                                  @onclick="() => SelectSpell(cantrip.Id)">
@@ -569,7 +585,7 @@
                         }
                     }
 
-                    @foreach (var lvl in _snap.SpellLevels)
+                    @foreach (var lvl in ActiveSpellLevels)
                     {
                         var preparedSpells = lvl.Spells.Where(s => s.IsPrepared).ToList();
                         @if (preparedSpells.Count > 0)
@@ -637,8 +653,15 @@
     private IReadOnlyList<AdvancementClassTimeline> _timeline = [];
     private string?      _selectedSpellKey;
     private SpellDetail? _spellDetail;
-    // Cantrip entries with IDs resolved from DataManager for click-to-detail.
-    private IReadOnlyList<(string Id, string Name)> _cantripEntries = [];
+    private string? _activeSpellSectionId;
+    private IReadOnlyList<(string Id, string Name)> _activeSpellCantrips = [];
+
+    private SpellcastingSectionEntry? ActiveSpellSection =>
+        _snap?.SpellcastingSections.FirstOrDefault(section => section.UniqueIdentifier == _activeSpellSectionId)
+        ?? _snap?.SpellcastingSections.FirstOrDefault();
+
+    private IReadOnlyList<(string Id, string Name)> ActiveSpellSectionCantrips => _activeSpellCantrips;
+    private IReadOnlyList<SpellLevelEntry> ActiveSpellLevels => ActiveSpellSection?.SpellLevels ?? [];
 
     protected override void OnInitialized()
     {
@@ -657,24 +680,8 @@
             ? BuildService.GetAdvancementTimeline()
             : [];
 
-        // Resolve cantrip IDs from DataManager so clicking them can show spell detail.
-        if (_snap != null)
-        {
-            _cantripEntries = _snap.Cantrips
-                .Select(name =>
-                {
-                    var found = Builder.Presentation.Services.Data.DataManager.Current
-                        .ElementsCollection
-                        .FirstOrDefault(e => e.Type == "Spell" &&
-                                             string.Equals(e.Name, name, StringComparison.OrdinalIgnoreCase));
-                    return (Id: found?.Id ?? name, Name: name);
-                })
-                .ToList();
-        }
-        else
-        {
-            _cantripEntries = [];
-        }
+        _activeSpellSectionId = _snap?.SpellcastingSections.FirstOrDefault()?.UniqueIdentifier;
+        RefreshActiveSpellCantrips();
     }
 
     private bool _disposed;
@@ -694,6 +701,22 @@
     {
         _disposed = true;
         Tabs.TabsChanged -= OnTabsChanged;
+    }
+
+    private void SelectSpellSection(string id)
+    {
+        _activeSpellSectionId = id;
+        _selectedSpellKey = null;
+        _spellDetail = null;
+        RefreshActiveSpellCantrips();
+    }
+
+    private void RefreshActiveSpellCantrips()
+    {
+        _activeSpellCantrips = ActiveSpellSection?.Cantrips
+            .Select(spell => (spell.Id, spell.Name))
+            .ToList()
+            ?? [];
     }
 
     private async Task OpenPortraitPickerAsync()

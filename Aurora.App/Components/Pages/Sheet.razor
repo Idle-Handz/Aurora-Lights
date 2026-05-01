@@ -73,6 +73,59 @@
 </div>
 
 <div class="sheet-options" style="margin-top: 20px;">
+    <MudText Typo="Typo.subtitle2" Color="Color.Secondary" Style="margin-bottom: 8px;">Sheet Layout</MudText>
+    <div class="sheet-options-row" style="margin-bottom: 12px;">
+        <MudTooltip Text="Generate the PDF as form-fillable so fields remain editable after export.">
+            <MudChip T="string"
+                     Icon="@(Prefs.EditableSheet ? Icons.Material.Filled.CheckBox : Icons.Material.Filled.CheckBoxOutlineBlank)"
+                     Color="@(Prefs.EditableSheet ? Color.Primary : Color.Default)"
+                     Variant="Variant.Outlined"
+                     OnClick="@(() => Prefs.EditableSheet = !Prefs.EditableSheet)">
+                Form Fillable
+            </MudChip>
+        </MudTooltip>
+        <MudTooltip Text="Apply styling to generated content like features and traits to improve readability.">
+            <MudChip T="string"
+                     Icon="@(Prefs.IncludeSheetFormatting ? Icons.Material.Filled.CheckBox : Icons.Material.Filled.CheckBoxOutlineBlank)"
+                     Color="@(Prefs.IncludeSheetFormatting ? Color.Primary : Color.Default)"
+                     Variant="Variant.Outlined"
+                     OnClick="@(() => Prefs.IncludeSheetFormatting = !Prefs.IncludeSheetFormatting)">
+                Formatting
+            </MudChip>
+        </MudTooltip>
+        <MudTooltip Text="Swap the displayed positions of ability scores and modifiers on the sheet.">
+            <MudChip T="string"
+                     Icon="@(Prefs.FlippedSheetAbilities ? Icons.Material.Filled.CheckBox : Icons.Material.Filled.CheckBoxOutlineBlank)"
+                     Color="@(Prefs.FlippedSheetAbilities ? Color.Primary : Color.Default)"
+                     Variant="Variant.Outlined"
+                     OnClick="@(() => Prefs.FlippedSheetAbilities = !Prefs.FlippedSheetAbilities)">
+                Invert Abilities
+            </MudChip>
+        </MudTooltip>
+    </div>
+
+    <MudText Typo="Typo.subtitle2" Color="Color.Secondary" Style="margin-bottom: 8px;">Spellcasting Page</MudText>
+    <div class="sheet-options-row" style="margin-bottom: 12px;">
+        <MudTooltip Text="Include known but currently unprepared spells on prepared-caster spell pages.">
+            <MudChip T="string"
+                     Icon="@(Prefs.IncludeNonPreparedSpellsOnSheet ? Icons.Material.Filled.CheckBox : Icons.Material.Filled.CheckBoxOutlineBlank)"
+                     Color="@(Prefs.IncludeNonPreparedSpellsOnSheet ? Color.Primary : Color.Default)"
+                     Variant="Variant.Outlined"
+                     OnClick="@(() => Prefs.IncludeNonPreparedSpellsOnSheet = !Prefs.IncludeNonPreparedSpellsOnSheet)">
+                Include Non-Prepared
+            </MudChip>
+        </MudTooltip>
+        <MudTooltip Text="Use the older single-page spellcasting layout instead of the dynamic spell page.">
+            <MudChip T="string"
+                     Icon="@(Prefs.UseLegacySpellcastingPage ? Icons.Material.Filled.CheckBox : Icons.Material.Filled.CheckBoxOutlineBlank)"
+                     Color="@(Prefs.UseLegacySpellcastingPage ? Color.Primary : Color.Default)"
+                     Variant="Variant.Outlined"
+                     OnClick="@(() => Prefs.UseLegacySpellcastingPage = !Prefs.UseLegacySpellcastingPage)">
+                Legacy Spellcasting
+            </MudChip>
+        </MudTooltip>
+    </div>
+
     <MudText Typo="Typo.subtitle2" Color="Color.Secondary" Style="margin-bottom: 8px;">Sheet Pages</MudText>
     <div class="sheet-options-row" style="margin-bottom: 12px;">
         <MudTooltip Text="Include the character background &amp; biography page">
@@ -133,6 +186,59 @@
             </MudChip>
         </MudTooltip>
     </div>
+    @if (Prefs.IncludeSpellCards || Prefs.IncludeItemCards || Prefs.IncludeAttackCards || Prefs.IncludeFeatureCards)
+    {
+        <div class="sheet-options-row" style="margin-top: 12px;">
+            @if (Prefs.IncludeSpellCards)
+            {
+                <MudTooltip Text="Start spell cards on a new page instead of reusing the prior page when possible.">
+                    <MudChip T="string"
+                             Icon="@(Prefs.StartSpellCardsOnNewPage ? Icons.Material.Filled.CheckBox : Icons.Material.Filled.CheckBoxOutlineBlank)"
+                             Color="@(Prefs.StartSpellCardsOnNewPage ? Color.Primary : Color.Default)"
+                             Variant="Variant.Outlined"
+                             OnClick="@(() => Prefs.StartSpellCardsOnNewPage = !Prefs.StartSpellCardsOnNewPage)">
+                        Spell Cards New Page
+                    </MudChip>
+                </MudTooltip>
+            }
+            @if (Prefs.IncludeItemCards)
+            {
+                <MudTooltip Text="Start item cards on a new page instead of reusing the prior page when possible.">
+                    <MudChip T="string"
+                             Icon="@(Prefs.StartItemCardsOnNewPage ? Icons.Material.Filled.CheckBox : Icons.Material.Filled.CheckBoxOutlineBlank)"
+                             Color="@(Prefs.StartItemCardsOnNewPage ? Color.Primary : Color.Default)"
+                             Variant="Variant.Outlined"
+                             OnClick="@(() => Prefs.StartItemCardsOnNewPage = !Prefs.StartItemCardsOnNewPage)">
+                        Item Cards New Page
+                    </MudChip>
+                </MudTooltip>
+            }
+            @if (Prefs.IncludeAttackCards)
+            {
+                <MudTooltip Text="Start attack cards on a new page instead of reusing the prior page when possible.">
+                    <MudChip T="string"
+                             Icon="@(Prefs.StartAttackCardsOnNewPage ? Icons.Material.Filled.CheckBox : Icons.Material.Filled.CheckBoxOutlineBlank)"
+                             Color="@(Prefs.StartAttackCardsOnNewPage ? Color.Primary : Color.Default)"
+                             Variant="Variant.Outlined"
+                             OnClick="@(() => Prefs.StartAttackCardsOnNewPage = !Prefs.StartAttackCardsOnNewPage)">
+                        Attack Cards New Page
+                    </MudChip>
+                </MudTooltip>
+            }
+            @if (Prefs.IncludeFeatureCards)
+            {
+                <MudTooltip Text="Start feature cards on a new page instead of reusing the prior page when possible.">
+                    <MudChip T="string"
+                             Icon="@(Prefs.StartFeatureCardsOnNewPage ? Icons.Material.Filled.CheckBox : Icons.Material.Filled.CheckBoxOutlineBlank)"
+                             Color="@(Prefs.StartFeatureCardsOnNewPage ? Color.Primary : Color.Default)"
+                             Variant="Variant.Outlined"
+                             OnClick="@(() => Prefs.StartFeatureCardsOnNewPage = !Prefs.StartFeatureCardsOnNewPage)">
+                        Feature Cards New Page
+                    </MudChip>
+                </MudTooltip>
+            }
+        </div>
+    }
 </div>
 
 @* Character summary card *@

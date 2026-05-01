@@ -27,6 +27,12 @@
                        Style="color: #6c7086; margin-top: 2px;" />
     </MudTooltip>
 </div>
+@if (!string.IsNullOrWhiteSpace(_saveError))
+{
+    <MudAlert Severity="Severity.Warning" Dense="true" Variant="Variant.Outlined" Style="margin-bottom: 16px;">
+        @_saveError
+    </MudAlert>
+}
 
 @* ── HP + Status side by side ── *@
 <div class="session-pair-row">
@@ -198,6 +204,10 @@
 {
     <div class="session-card">
         <div class="session-card-title">Spell Slots</div>
+        @if (!string.IsNullOrWhiteSpace(_spellcastingSummary))
+        {
+            <div class="session-status-label" style="margin-bottom: 8px;">@_spellcastingSummary</div>
+        }
         <div class="session-slots-grid">
             @foreach (var entry in _spellLevels)
             {
@@ -305,6 +315,8 @@
     private CharacterSnapshot? _snap;
     private SessionState _s = new();
     private List<SpellLevelEntry> _spellLevels = [];
+    private string _spellcastingSummary = string.Empty;
+    private string? _saveError;
 
     private static readonly string[] _allConditions =
     [
@@ -347,7 +359,10 @@
             _s = _tab.Session;
             _s.InitializeIfNew(_snap?.MaxHp ?? 0);
         }
-        _spellLevels = _snap?.SpellLevels.Where(l => l.TotalSlots > 0).ToList() ?? [];
+        _spellLevels = BuildAggregatedSpellLevels(_snap);
+        _spellcastingSummary = _snap?.SpellcastingSections.Count > 1
+            ? string.Join(", ", _snap.SpellcastingSections.Select(section => section.Name).Distinct(StringComparer.OrdinalIgnoreCase))
+            : string.Empty;
     }
 
     // ── HP ────────────────────────────────────────────────────────────────────
@@ -432,6 +447,22 @@
         AutoSave();
     }
 
+    private static List<SpellLevelEntry> BuildAggregatedSpellLevels(CharacterSnapshot? snap)
+    {
+        if (snap is null) return [];
+
+        return snap.SpellcastingSections
+            .SelectMany(section => section.SpellLevels)
+            .Where(level => level.TotalSlots > 0)
+            .GroupBy(level => level.Level)
+            .Select(group => new SpellLevelEntry(
+                group.Key,
+                [],
+                group.Max(level => level.TotalSlots)))
+            .OrderBy(level => level.Level)
+            .ToList();
+    }
+
     // ── Custom resources ──────────────────────────────────────────────────────
 
     private void ToggleResource(CustomResource r, int idx)
@@ -512,25 +543,39 @@
             case "gp": _snap.CoinGold     = val; break;
             case "pp": _snap.CoinPlatinum = val; break;
         }
-        if (_tab is { } tab) Tabs.MarkDirty(tab);
+        PersistSessionChanges();
     }
 
     // ── Persistence ───────────────────────────────────────────────────────────
 
     private void AutoSave()
     {
-        if (_tab == null) return;
-        try { _tab.File.SaveSession(_s); }
-        catch { /* non-critical — session state remains correct in memory */ }
+        PersistSessionChanges();
     }
 
     private void SaveSession()
     {
-        if (_tab != null)
+        if (PersistSessionChanges())
         {
-            _tab.File.SaveSession(_s);
             Snackbar.Add("Session saved.", Severity.Success);
         }
+    }
+
+    private bool PersistSessionChanges()
+    {
+        if (_tab is null || _snap is null) return false;
+
+        var sessionSaved = _tab.File.SaveSession(_s);
+        var currencySaved = _tab.File.SaveCurrency(_snap);
+        if (sessionSaved && currencySaved)
+        {
+            _saveError = null;
+            return true;
+        }
+
+        _saveError = "Some session changes could not be saved yet. Your current values are still in memory, but please try saving again after resolving any file access issues.";
+        _ = InvokeAsync(StateHasChanged);
+        return false;
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -561,3 +606,4 @@
         _                 => "Manual"
     };
 }
+

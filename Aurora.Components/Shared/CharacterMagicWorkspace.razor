@@ -5,164 +5,208 @@
     }
     else
     {
-    <section class="magic-stats-strip">
-        <div class="magic-stat">
-            <span class="magic-stat-value">@Model.SpellcastingClass</span>
-            <span class="magic-stat-label">Class</span>
-        </div>
-        <div class="magic-stat">
-            <span class="magic-stat-value">@Model.SpellcastingAbility</span>
-            <span class="magic-stat-label">Ability</span>
-        </div>
-        <div class="magic-stat">
-            <span class="magic-stat-value">@Model.SpellcastingDc</span>
-            <span class="magic-stat-label">Spell DC</span>
-        </div>
-        <div class="magic-stat">
-            <span class="magic-stat-value">@Model.SpellcastingAttack</span>
-            <span class="magic-stat-label">Spell Attack</span>
-        </div>
-        @if (Model.IsPreparedCaster && Model.MaxPrepared > 0)
-        {
-            <div class="magic-stat">
-                <span class="magic-stat-value @(Model.PreparedCount >= Model.MaxPrepared ? "full" : string.Empty)">
-                    @Model.PreparedCount / @Model.MaxPrepared
-                </span>
-                <span class="magic-stat-label">Prepared</span>
-            </div>
-        }
-    </section>
+        var activeMagicSection = ActiveSection;
 
-    @if (Model.KnownSpellGroups.Count > 0)
-    {
-        @foreach (MagicKnownSpellGroupModel group in Model.KnownSpellGroups)
+        @if (Model.Sections.Count > 1)
         {
-            <section class="magic-section">
-                <div class="magic-section-label">@($"{group.Label} - Known Spells")</div>
-                <div class="magic-known-list">
-                    @foreach (MagicKnownSpellEntryModel entry in group.Entries)
-                    {
-                        <div class="magic-known-row">
-                            <div class="magic-known-label">@entry.Label</div>
-                            <div class="magic-known-value @(string.IsNullOrWhiteSpace(entry.CurrentName) ? "empty" : string.Empty)">
-                                @(entry.CurrentName ?? "-")
-                            </div>
-                            @if (OnChangeKnownSpell.HasDelegate)
-                            {
-                                <button type="button"
-                                        class="magic-action-button"
-                                        disabled="@Busy"
-                                        @onclick="() => OnChangeKnownSpell.InvokeAsync(entry.Id)">
-                                    Change
-                                </button>
-                            }
-                        </div>
-                    }
-                </div>
-            </section>
-        }
-    }
-
-    <div class="magic-layout">
-        <section class="magic-list">
-            @if (Model.Cantrips.Count > 0)
-            {
-                <div class="magic-level-header">
-                    <span class="magic-section-label">Cantrips</span>
-                </div>
-                @foreach (MagicSpellListEntryModel cantrip in Model.Cantrips)
+            <section class="magic-section-tabs">
+                @foreach (var item in Model.Sections)
                 {
                     <button type="button"
-                            class="magic-spell-row magic-spell-select @(SelectedSpellId == cantrip.Id ? "selected" : string.Empty)"
-                            @onclick="() => OnSelectSpell.InvokeAsync(cantrip.Id)">
-                        <span class="magic-spell-dot cantrip"></span>
-                        <span class="magic-spell-name">@cantrip.Name</span>
+                            class="magic-section-tab @(item.Id == _selectedSectionId ? "selected" : string.Empty)"
+                            @onclick="() => SelectSection(item.Id)">
+                        @item.Label
                     </button>
                 }
-            }
+            </section>
+        }
 
-            @foreach (MagicSpellLevelModel level in Model.SpellLevels)
+        <section class="magic-stats-strip">
+            <div class="magic-stat">
+                <span class="magic-stat-value">@activeMagicSection.Label</span>
+                <span class="magic-stat-label">Class</span>
+            </div>
+            <div class="magic-stat">
+                <span class="magic-stat-value">@activeMagicSection.SpellcastingAbility</span>
+                <span class="magic-stat-label">Ability</span>
+            </div>
+            <div class="magic-stat">
+                <span class="magic-stat-value">@activeMagicSection.SpellcastingDc</span>
+                <span class="magic-stat-label">Spell DC</span>
+            </div>
+            <div class="magic-stat">
+                <span class="magic-stat-value">@activeMagicSection.SpellcastingAttack</span>
+                <span class="magic-stat-label">Spell Attack</span>
+            </div>
+            @if (activeMagicSection.IsPreparedCaster && activeMagicSection.MaxPrepared > 0)
             {
-                <div class="magic-level-header">
-                    <span class="magic-section-label">@Ordinal(level.Level) Level Spells</span>
-                    @if (level.TotalSlots > 0)
+                <div class="magic-stat">
+                    <span class="magic-stat-value @(activeMagicSection.PreparedCount >= activeMagicSection.MaxPrepared ? "full" : string.Empty)">
+                        @activeMagicSection.PreparedCount / @activeMagicSection.MaxPrepared
+                    </span>
+                    <span class="magic-stat-label">Prepared</span>
+                </div>
+            }
+        </section>
+
+        <section class="magic-section">
+            <div class="magic-section-label">Browse Spells</div>
+            <div class="magic-browse-controls">
+                <input class="magic-filter-input"
+                       type="text"
+                       placeholder="Search spells..."
+                       @bind="_searchText"
+                       @bind:event="oninput" />
+                <select class="magic-filter-select" @bind="_levelFilter">
+                    <option value="">All levels</option>
+                    <option value="0">Cantrips</option>
+                    @for (int i = 1; i <= 9; i++)
                     {
-                        <div class="magic-slot-track">
-                            @for (int i = 0; i < level.TotalSlots; i++)
-                            {
-                                int levelValue = level.Level;
-                                int slotIndex = i;
-                                bool used = slotIndex < level.UsedSlots;
-                                <button type="button"
-                                        class="magic-slot-bubble @(used ? "used" : string.Empty)"
-                                        disabled="@(!OnToggleSlot.HasDelegate || Busy)"
-                                        @onclick="() => OnToggleSlot.InvokeAsync(new MagicSlotToggleModel(levelValue, slotIndex))">
-                                </button>
-                            }
-                            <span class="magic-slot-count">@(level.TotalSlots - level.UsedSlots)/@level.TotalSlots</span>
+                        <option value="@i">@Ordinal(i) level</option>
+                    }
+                </select>
+                <label class="magic-filter-check">
+                    <input type="checkbox" @bind="_preparedOnly" />
+                    <span>Prepared only</span>
+                </label>
+            </div>
+        </section>
+
+        @if (Model.KnownSpellGroups.Count > 0)
+        {
+            @foreach (MagicKnownSpellGroupModel group in Model.KnownSpellGroups)
+            {
+                <section class="magic-section">
+                    <div class="magic-section-label">@($"{group.Label} - Known Spells")</div>
+                    <div class="magic-known-list">
+                        @foreach (MagicKnownSpellEntryModel entry in group.Entries)
+                        {
+                            <div class="magic-known-row">
+                                <div class="magic-known-label">@entry.Label</div>
+                                <div class="magic-known-value @(string.IsNullOrWhiteSpace(entry.CurrentName) ? "empty" : string.Empty)">
+                                    @(entry.CurrentName ?? "-")
+                                </div>
+                                @if (OnChangeKnownSpell.HasDelegate)
+                                {
+                                    <button type="button"
+                                            class="magic-action-button"
+                                            disabled="@Busy"
+                                            @onclick="() => OnChangeKnownSpell.InvokeAsync(entry.Id)">
+                                        Change
+                                    </button>
+                                }
+                            </div>
+                        }
+                    </div>
+                </section>
+            }
+        }
+
+        <div class="magic-layout">
+            <section class="magic-list">
+                @if (FilteredCantrips.Count > 0)
+                {
+                    <div class="magic-level-header">
+                        <span class="magic-section-label">Cantrips</span>
+                    </div>
+                    @foreach (MagicSpellListEntryModel cantrip in FilteredCantrips)
+                    {
+                        <button type="button"
+                                class="magic-spell-row magic-spell-select @(SelectedSpellId == cantrip.Id ? "selected" : string.Empty)"
+                                @onclick="() => OnSelectSpell.InvokeAsync(cantrip.Id)">
+                            <span class="magic-spell-dot cantrip"></span>
+                            <span class="magic-spell-name">@cantrip.Name</span>
+                        </button>
+                    }
+                }
+
+                @foreach (MagicSpellLevelModel level in FilteredSpellLevels)
+                {
+                    <div class="magic-level-header">
+                        <span class="magic-section-label">@Ordinal(level.Level) Level Spells</span>
+                        @if (level.TotalSlots > 0)
+                        {
+                            <div class="magic-slot-track">
+                                @for (int i = 0; i < level.TotalSlots; i++)
+                                {
+                                    int levelValue = level.Level;
+                                    int slotIndex = i + 1;
+                                    bool used = slotIndex <= level.UsedSlots;
+                                    <button type="button"
+                                            class="magic-slot-bubble @(used ? "used" : string.Empty)"
+                                            disabled="@(!OnToggleSlot.HasDelegate || Busy)"
+                                            @onclick="() => OnToggleSlot.InvokeAsync(new MagicSlotToggleModel(levelValue, slotIndex))">
+                                    </button>
+                                }
+                                <span class="magic-slot-count">@(level.TotalSlots - level.UsedSlots)/@level.TotalSlots</span>
+                            </div>
+                        }
+                    </div>
+
+                    @foreach (MagicSpellListEntryModel spell in level.Spells)
+                    {
+                        <div class="magic-spell-row @(SelectedSpellId == spell.Id ? "selected" : string.Empty)">
+                            <input type="checkbox"
+                                   class="magic-spell-prep-check"
+                                   checked="@spell.IsPrepared"
+                                   disabled="@IsPreparationDisabled(spell)"
+                                   @onchange="args => ChangePreparedAsync(spell.Id, args)"
+                                   @onclick:stopPropagation="true" />
+                            <button type="button"
+                                    class="magic-spell-select"
+                                    @onclick="() => OnSelectSpell.InvokeAsync(spell.Id)">
+                                <span class="magic-spell-name @(spell.IsPrepared ? "prepared" : string.Empty)">@spell.Name</span>
+                            </button>
                         </div>
                     }
-                </div>
+                }
 
-                @foreach (MagicSpellListEntryModel spell in level.Spells)
+                @if (FilteredCantrips.Count == 0 && FilteredSpellLevels.All(l => l.Spells.Count == 0))
                 {
-                    <div class="magic-spell-row @(SelectedSpellId == spell.Id ? "selected" : string.Empty)">
-                        <input type="checkbox"
-                               class="magic-spell-prep-check"
-                               checked="@spell.IsPrepared"
-                               disabled="@IsPreparationDisabled(spell)"
-                               @onchange="args => ChangePreparedAsync(spell.Id, args)"
-                               @onclick:stopPropagation="true" />
-                        <button type="button"
-                                class="magic-spell-select"
-                                @onclick="() => OnSelectSpell.InvokeAsync(spell.Id)">
-                            <span class="magic-spell-name @(spell.IsPrepared ? "prepared" : string.Empty)">@spell.Name</span>
-                        </button>
+                    <p class="magic-empty">No spells match the current filters.</p>
+                }
+            </section>
+
+            <section class="magic-detail">
+                @if (SelectedSpell is null)
+                {
+                    <p class="magic-empty">Select a spell to see details.</p>
+                }
+                else
+                {
+                    var spellDetail = SelectedSpell!;
+                    <div class="magic-detail-name">@spellDetail.Name</div>
+                    <div class="magic-detail-meta">
+                        @if (!string.IsNullOrWhiteSpace(spellDetail.Subtitle))
+                        {
+                            <span>@spellDetail.Subtitle</span>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(spellDetail.Source))
+                        {
+                            <span>@spellDetail.Source</span>
+                        }
                     </div>
-                }
-            }
-        </section>
 
-        <section class="magic-detail">
-            @if (SelectedSpell is null)
-            {
-                <p class="magic-empty">Select a spell to see details.</p>
-            }
-            else
-            {
-                var spellDetail = SelectedSpell!;
-                <div class="magic-detail-name">@spellDetail.Name</div>
-                <div class="magic-detail-meta">
-                    @if (!string.IsNullOrWhiteSpace(spellDetail.Subtitle))
+                    @if (!string.IsNullOrWhiteSpace(spellDetail.CastingTime) ||
+                         !string.IsNullOrWhiteSpace(spellDetail.Range) ||
+                         !string.IsNullOrWhiteSpace(spellDetail.Components) ||
+                         !string.IsNullOrWhiteSpace(spellDetail.Duration))
                     {
-                        <span>@spellDetail.Subtitle</span>
+                        <div class="magic-detail-props">
+                            @SpellPropRow("Casting Time", spellDetail.CastingTime)
+                            @SpellPropRow("Range", spellDetail.Range)
+                            @SpellPropRow("Components", spellDetail.Components)
+                            @SpellPropRow("Duration", spellDetail.Duration)
+                        </div>
                     }
-                    @if (!string.IsNullOrWhiteSpace(spellDetail.Source))
+
+                    @if (!string.IsNullOrWhiteSpace(spellDetail.Description))
                     {
-                        <span>@spellDetail.Source</span>
+                        <div class="magic-detail-description">@spellDetail.Description</div>
                     }
-                </div>
-
-                @if (!string.IsNullOrWhiteSpace(spellDetail.CastingTime) ||
-                     !string.IsNullOrWhiteSpace(spellDetail.Range) ||
-                     !string.IsNullOrWhiteSpace(spellDetail.Components) ||
-                     !string.IsNullOrWhiteSpace(spellDetail.Duration))
-                {
-                    <div class="magic-detail-props">
-                        @SpellPropRow("Casting Time", spellDetail.CastingTime)
-                        @SpellPropRow("Range", spellDetail.Range)
-                        @SpellPropRow("Components", spellDetail.Components)
-                        @SpellPropRow("Duration", spellDetail.Duration)
-                    </div>
                 }
-
-                @if (!string.IsNullOrWhiteSpace(spellDetail.Description))
-                {
-                    <div class="magic-detail-description">@spellDetail.Description</div>
-                }
-            }
-        </section>
-    </div>
+            </section>
+        </div>
     }
 </div>
 
@@ -191,6 +235,76 @@
     [Parameter]
     public EventCallback<MagicSlotToggleModel> OnToggleSlot { get; set; }
 
+    private string _searchText = string.Empty;
+    private string _levelFilter = string.Empty;
+    private bool _preparedOnly;
+    private string? _selectedSectionId;
+
+    private MagicSpellcastingSectionModel ActiveSection =>
+        Model.Sections.FirstOrDefault(section => section.Id == _selectedSectionId)
+        ?? Model.Sections.FirstOrDefault()
+        ?? new MagicSpellcastingSectionModel();
+
+    private IReadOnlyList<MagicSpellListEntryModel> FilteredCantrips =>
+        ActiveSection.Cantrips.Where(MatchesSpellFilter).ToList();
+
+    private IReadOnlyList<MagicSpellLevelModel> FilteredSpellLevels =>
+        ActiveSection.SpellLevels
+            .Select(level => new MagicSpellLevelModel(
+                level.Level,
+                level.Spells.Where(MatchesSpellFilter).ToList(),
+                level.TotalSlots,
+                level.UsedSlots))
+            .Where(level => level.Spells.Count > 0 || LevelShouldRemainVisible(level.Level))
+            .ToList();
+
+    protected override void OnParametersSet()
+    {
+        if (Model.Sections.Count == 0)
+        {
+            _selectedSectionId = null;
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_selectedSectionId)
+            || !Model.Sections.Any(section => section.Id == _selectedSectionId))
+        {
+            _selectedSectionId = Model.Sections[0].Id;
+        }
+    }
+
+    private void SelectSection(string id) => _selectedSectionId = id;
+
+    private bool MatchesSpellFilter(MagicSpellListEntryModel spell)
+    {
+        if (!string.IsNullOrWhiteSpace(_searchText))
+        {
+            bool matchesText =
+                spell.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
+                (!string.IsNullOrWhiteSpace(spell.Source) &&
+                 spell.Source.Contains(_searchText, StringComparison.OrdinalIgnoreCase));
+
+            if (!matchesText) return false;
+        }
+
+        if (!string.IsNullOrWhiteSpace(_levelFilter) &&
+            int.TryParse(_levelFilter, out int levelFilter) &&
+            spell.Level != levelFilter)
+        {
+            return false;
+        }
+
+        if (_preparedOnly && !spell.IsPrepared && !spell.IsAlwaysPrepared)
+            return false;
+
+        return true;
+    }
+
+    private bool LevelShouldRemainVisible(int level)
+        => !string.IsNullOrWhiteSpace(_levelFilter)
+           && int.TryParse(_levelFilter, out int levelFilter)
+           && level == levelFilter;
+
     private bool IsPreparationDisabled(MagicSpellListEntryModel spell)
     {
         if (!OnPreparedChanged.HasDelegate || Busy || spell.IsAlwaysPrepared)
@@ -199,16 +313,17 @@
         }
 
         return !spell.IsPrepared
-               && Model.IsPreparedCaster
-               && Model.MaxPrepared > 0
-               && Model.PreparedCount >= Model.MaxPrepared;
+               && ActiveSection.IsPreparedCaster
+               && ActiveSection.MaxPrepared > 0
+               && ActiveSection.PreparedCount >= ActiveSection.MaxPrepared;
     }
 
     private Task ChangePreparedAsync(string spellId, ChangeEventArgs args)
     {
         if (!OnPreparedChanged.HasDelegate) return Task.CompletedTask;
-        bool value = args.Value is bool b ? b : false;
-        return OnPreparedChanged.InvokeAsync(new MagicPreparedChangeModel(spellId, value, Model.SpellcastingClass));
+        bool value = args.Value is bool b && b;
+        return OnPreparedChanged.InvokeAsync(
+            new MagicPreparedChangeModel(spellId, value, ActiveSection.Id, ActiveSection.Label));
     }
 
     private RenderFragment SpellPropRow(string label, string value) => builder =>

@@ -3,14 +3,20 @@ namespace Aurora.Components.Models;
 public sealed class MagicOverviewModel
 {
     public bool HasSpellcasting { get; set; }
+    public IReadOnlyList<MagicKnownSpellGroupModel> KnownSpellGroups { get; set; } = [];
+    public IReadOnlyList<MagicSpellcastingSectionModel> Sections { get; set; } = [];
+}
+
+public sealed class MagicSpellcastingSectionModel
+{
+    public string Id { get; set; } = string.Empty;
+    public string Label { get; set; } = string.Empty;
     public bool IsPreparedCaster { get; set; }
-    public string SpellcastingClass { get; set; } = string.Empty;
     public string SpellcastingAbility { get; set; } = string.Empty;
     public string SpellcastingDc { get; set; } = string.Empty;
     public string SpellcastingAttack { get; set; } = string.Empty;
     public int PreparedCount { get; set; }
     public int MaxPrepared { get; set; }
-    public IReadOnlyList<MagicKnownSpellGroupModel> KnownSpellGroups { get; set; } = [];
     public IReadOnlyList<MagicSpellListEntryModel> Cantrips { get; set; } = [];
     public IReadOnlyList<MagicSpellLevelModel> SpellLevels { get; set; } = [];
 }
@@ -23,19 +29,25 @@ public sealed class MagicSpellListEntryModel
 {
     public string Id { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
+    public int Level { get; set; }
+    public string Source { get; set; } = string.Empty;
     public bool IsPrepared { get; set; }
     public bool IsAlwaysPrepared { get; set; }
+    public bool IsCantrip { get; set; }
 
     public MagicSpellListEntryModel()
     {
     }
 
-    public MagicSpellListEntryModel(string id, string name, bool isPrepared, bool isAlwaysPrepared)
+    public MagicSpellListEntryModel(string id, string name, int level, string source, bool isPrepared, bool isAlwaysPrepared, bool isCantrip = false)
     {
         Id = id;
         Name = name;
+        Level = level;
+        Source = source;
         IsPrepared = isPrepared;
         IsAlwaysPrepared = isAlwaysPrepared;
+        IsCantrip = isCantrip;
     }
 }
 
@@ -71,6 +83,6 @@ public sealed record MagicSpellDetailModel(
     string Duration,
     string Description);
 
-public sealed record MagicPreparedChangeModel(string SpellId, bool Value, string SpellcastingClass);
+public sealed record MagicPreparedChangeModel(string SpellId, bool Value, string SpellcastingSectionId, string SpellcastingClass);
 
 public sealed record MagicSlotToggleModel(int Level, int SlotIndex);

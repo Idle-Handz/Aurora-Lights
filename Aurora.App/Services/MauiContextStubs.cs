@@ -289,14 +289,23 @@ internal sealed class MauiCharacterSheetGenerator : ICharacterSheetGenerator
         var sheet = new CharacterSheetEx();
         sheet.Configuration.IncludeBackgroundPage    = Preferences.Default.Get(UserPreferencesService.KeyBackgroundPage, defaultValue: true);
         sheet.Configuration.IncludeEquipmentPage     = Preferences.Default.Get(UserPreferencesService.KeyEquipmentPage,  defaultValue: true);
-        sheet.Configuration.IncludeSpellcastingPage  = spellInfos.Any();
-        sheet.Configuration.IncludeFormatting        = true;
+        sheet.Configuration.IncludeSpellcastingPage    = spellInfos.Any();
+#pragma warning disable CS0618 // IsEditable backs form-fillable behavior in the shared generator
+        sheet.Configuration.IsEditable                 = Preferences.Default.Get(UserPreferencesService.KeyEditableSheet, defaultValue: false);
+#pragma warning restore CS0618
+        sheet.Configuration.IncludeFormatting         = Preferences.Default.Get(UserPreferencesService.KeyIncludeFormatting, defaultValue: true);
+        sheet.Configuration.IsAttributeDisplayFlipped = Preferences.Default.Get(UserPreferencesService.KeyFlippedAbilities, defaultValue: false);
+        sheet.Configuration.UseLegacySpellcastingPage = Preferences.Default.Get(UserPreferencesService.KeyLegacySpellcastingPage, defaultValue: false);
 
         // Card pages — read directly from MAUI Preferences (same keys as UserPreferencesService).
         sheet.Configuration.IncludeSpellcards   = Preferences.Default.Get(UserPreferencesService.KeySpellCards,   defaultValue: false);
         sheet.Configuration.IncludeItemcards    = Preferences.Default.Get(UserPreferencesService.KeyItemCards,    defaultValue: false);
         sheet.Configuration.IncludeAttackCards  = Preferences.Default.Get(UserPreferencesService.KeyAttackCards,  defaultValue: false);
         sheet.Configuration.IncludeFeatureCards = Preferences.Default.Get(UserPreferencesService.KeyFeatureCards, defaultValue: false);
+        sheet.Configuration.StartNewSpellCardsPage   = Preferences.Default.Get(UserPreferencesService.KeyStartSpellCardsOnNewPage, defaultValue: false);
+        sheet.Configuration.StartNewItemCardsPage    = Preferences.Default.Get(UserPreferencesService.KeyStartItemCardsOnNewPage, defaultValue: false);
+        sheet.Configuration.StartNewAttackCardsPage  = Preferences.Default.Get(UserPreferencesService.KeyStartAttackCardsOnNewPage, defaultValue: false);
+        sheet.Configuration.StartNewFeatureCardsPage = Preferences.Default.Get(UserPreferencesService.KeyStartFeatureCardsOnNewPage, defaultValue: false);
 
         sheet.ExportContent = BuildExportContent(cm, character, elements, stats, sheet.Configuration);
 
@@ -805,13 +814,17 @@ internal sealed class MauiCharacterSheetGenerator : ICharacterSheetGenerator
             .OrderBy(t => t.Level).ThenBy(t => t.Element.Name)
             .ToList();
 
+        bool includeNonPreparedSpells = Preferences.Default.Get(
+            UserPreferencesService.KeyIncludeNonPreparedSpells,
+            defaultValue: false);
+
         foreach (var (spell, level) in registeredSpells)
         {
             bool alwaysPrepared = alwaysPreparedIds.Contains(spell.Id ?? "");
             bool isPrepared     = alwaysPrepared || preparedIds.Contains(spell.Id ?? "");
 
             // For prepared casters, only include cantrips + prepared spells.
-            if (level > 0 && info.Prepare && !isPrepared) continue;
+            if (level > 0 && info.Prepare && !isPrepared && !includeNonPreparedSpells) continue;
 
             string description = "";
             string castingTime = "", range = "", duration = "", components = "", subtitle = "";
