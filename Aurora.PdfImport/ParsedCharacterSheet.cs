@@ -85,6 +85,15 @@ public sealed class ParsedCharacterSheet
     public string? Flaws             { get; set; }
     public string? Backstory         { get; set; }
 
+    // ── Portrait ─────────────────────────────────────────────────────────────
+    public string? PortraitUrl       { get; set; }  // remote URL from decorations.avatarUrl
+    public string? PortraitLocalPath { get; set; }  // downloaded local file path (set by service)
+
+    // ── Choices resolved from D&D Beyond choiceDefinitions ───────────────────
+    // Names that didn't map to a known proficiency category; the inference
+    // engine tries them against multiple element types (Class Feature, etc.).
+    public List<string> ImportChoices { get; set; } = [];
+
     // ── Import metadata ──────────────────────────────────────────────────────
     public string? TemplateVersion { get; set; }  // "2018" etc.
 

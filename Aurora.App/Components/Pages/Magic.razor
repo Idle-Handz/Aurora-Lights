@@ -64,6 +64,7 @@
 @code {
     private CharacterSnapshot? _snap;
     private IReadOnlyList<SelectionRuleGroup> _spellRuleGroups = [];
+    private readonly Dictionary<string, SpellDetail?> _spellDetailCache = new(StringComparer.OrdinalIgnoreCase);
     private bool _saving;
     private string? _saveError;
     private string? _selectedId;
@@ -81,6 +82,7 @@
             KnownSpellGroups = _spellRuleGroups.Select((group, groupIndex) =>
                 new MagicKnownSpellGroupModel(
                     group.Label,
+                    ResolveKnownSpellSectionId(group.Label),
                     group.Rules.Select((entry, entryIndex) => new MagicKnownSpellEntryModel(
                         $"{groupIndex}:{entryIndex}",
                         entry.Label,
@@ -91,6 +93,7 @@
                 {
                     Id = section.UniqueIdentifier,
                     Label = section.Name,
+                    HasExtensions = section.HasExtensions,
                     IsPreparedCaster = section.IsPreparedCaster,
                     SpellcastingAbility = section.AbilityName,
                     SpellcastingDc = section.SpellcastingDc,
@@ -98,25 +101,12 @@
                     PreparedCount = section.PreparedCount,
                     MaxPrepared = section.MaxPrepared,
                     Cantrips = section.Cantrips
-                        .Select(spell => new MagicSpellListEntryModel(
-                            spell.Id,
-                            spell.Name,
-                            0,
-                            GetSpellSource(spell.Id),
-                            true,
-                            true,
-                            isCantrip: true))
+                        .Select(spell => CreateSpellListEntry(spell, 0, section.IsPreparedCaster, isCantrip: true))
                         .ToList(),
                     SpellLevels = section.SpellLevels
                         .Select(level => new MagicSpellLevelModel(
                             level.Level,
-                            level.Spells.Select(spell => new MagicSpellListEntryModel(
-                                spell.Id,
-                                spell.Name,
-                                level.Level,
-                                GetSpellSource(spell.Id),
-                                spell.IsPrepared,
-                                spell.IsAlwaysPrepared)).ToList(),
+                            level.Spells.Select(spell => CreateSpellListEntry(spell, level.Level, section.IsPreparedCaster)).ToList(),
                             level.TotalSlots,
                             slotUsage.GetValueOrDefault(level.Level, 0)))
                         .ToList()
@@ -140,6 +130,7 @@
         _snap = tab?.Snapshot;
         _selectedId = null;
         _spellDetail = null;
+        _spellDetailCache.Clear();
 
         if (tab != null && _snap != null)
         {
@@ -179,7 +170,7 @@
     private Task SelectSpellAsync(string id)
     {
         _selectedId = id;
-        _spellDetail = BuildService.GetSpellDetail(id);
+        _spellDetail = GetSpellDetailCached(id);
         _selectedSpellModel = _spellDetail is null
             ? null
             : new MagicSpellDetailModel(
@@ -188,6 +179,9 @@
                 _spellDetail.Source,
                 _spellDetail.Level,
                 _spellDetail.Subtitle,
+                _spellDetail.School,
+                _spellDetail.Ritual,
+                _spellDetail.Concentration,
                 _spellDetail.CastingTime,
                 _spellDetail.Range,
                 _spellDetail.Components,
@@ -196,8 +190,43 @@
         return Task.CompletedTask;
     }
 
-    private static string GetSpellSource(string id)
-        => BuildService.GetSpellDetail(id)?.Source ?? string.Empty;
+    private SpellDetail? GetSpellDetailCached(string id)
+    {
+        if (_spellDetailCache.TryGetValue(id, out var cached))
+            return cached;
+
+        var detail = BuildService.GetSpellDetail(id);
+        _spellDetailCache[id] = detail;
+        return detail;
+    }
+
+    private MagicSpellListEntryModel CreateSpellListEntry(SpellEntry spell, int level, bool isPreparedCaster, bool isCantrip = false)
+    {
+        SpellDetail? detail = GetSpellDetailCached(spell.Id);
+        var state = spell.IsAlwaysPrepared
+            ? MagicSpellDisplayState.AlwaysPrepared
+            : isPreparedCaster
+                ? (spell.IsPrepared ? MagicSpellDisplayState.Prepared : MagicSpellDisplayState.Available)
+                : MagicSpellDisplayState.Known;
+
+        return new MagicSpellListEntryModel(
+            spell.Id,
+            spell.Name,
+            level,
+            detail?.Source ?? string.Empty,
+            detail?.School ?? string.Empty,
+            detail?.Ritual ?? false,
+            detail?.Concentration ?? false,
+            spell.IsPrepared,
+            spell.IsAlwaysPrepared,
+            isCantrip,
+            state);
+    }
+
+    private string? ResolveKnownSpellSectionId(string label) =>
+        _snap?.SpellcastingSections
+            .FirstOrDefault(section => string.Equals(section.Name, label, StringComparison.OrdinalIgnoreCase))
+            ?.UniqueIdentifier;
 
     private async Task ManualSaveAsync()
     {
@@ -356,30 +385,6 @@
             Snackbar.Add(change.Value ? $"{spell.Name} prepared. Save when ready." : $"{spell.Name} unprepared. Save when ready.",
                 Severity.Info, cfg => cfg.VisibleStateDuration = 2200);
         }
-    }
-
-    private void ToggleSlotAsync(MagicSlotToggleModel change)
-    {
-        var tab = Tabs.ActiveTab;
-        if (_snap is null || tab is null) return;
-
-        // Same toggle logic as Session.razor: clicking a filled pip clears it,
-        // clicking an empty pip fills up to that index.
-        var used = tab.Session.SpellSlotsUsed.GetValueOrDefault(change.Level, 0);
-        int newUsed = used == change.SlotIndex ? change.SlotIndex - 1 : change.SlotIndex;
-        tab.Session.SpellSlotsUsed[change.Level] = newUsed;
-
-        foreach (var section in _snap.SpellcastingSections)
-        {
-            var level = section.SpellLevels.FirstOrDefault(l => l.Level == change.Level);
-            if (level is not null)
-                level.UsedSlots = newUsed;
-        }
-
-        BuildMagicModel();
-
-        try { tab.File.SaveSession(tab.Session); }
-        catch { /* non-critical — state remains correct in memory */ }
     }
 
     private Task PersistSlotToggleAsync(MagicSlotToggleModel change)

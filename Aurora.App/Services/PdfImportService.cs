@@ -52,6 +52,8 @@ public sealed class PdfImportService
             return engine.Infer(sheet);
         });
 
+        sheet.PortraitLocalPath = await TryExtractAndSavePdfPortraitAsync(pdfPath, sheet.CharacterName);
+
         return (sheet, result);
     }
 
@@ -68,14 +70,70 @@ public sealed class PdfImportService
         string? dbPath = _db.DatabasePath;
         if (dbPath == null || !File.Exists(dbPath)) return null;
 
-        var result = await Task.Run(() =>
+        var (sheet, result) = await Task.Run(() =>
         {
-            var sheet  = DndBeyondJsonImporter.Parse(jsonPath);
+            var s  = DndBeyondJsonImporter.Parse(jsonPath);
             var engine = new CharacterInferenceEngine(dbPath);
-            return (sheet, engine.Infer(sheet));
+            return (s, engine.Infer(s));
         });
 
-        return result;
+        // Try to download the portrait; failure is non-fatal — falls back to placeholder.
+        if (!string.IsNullOrWhiteSpace(sheet.PortraitUrl))
+            sheet.PortraitLocalPath = await TryDownloadPortraitAsync(sheet.PortraitUrl, sheet.CharacterName);
+
+        return (sheet, result);
+    }
+
+    private static async Task<string?> TryDownloadPortraitAsync(string url, string? characterName)
+    {
+        try
+        {
+            string ext = Path.GetExtension(new Uri(url).LocalPath);
+            if (string.IsNullOrEmpty(ext)) ext = ".jpg";
+
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
+            byte[] data = await http.GetByteArrayAsync(url);
+            return await SavePortraitBytesAsync(data, ext, characterName);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static async Task<string?> TryExtractAndSavePdfPortraitAsync(string pdfPath, string? characterName)
+    {
+        try
+        {
+            var portrait = await Task.Run(() => DndBeyondPdfParser.TryExtractPortrait(pdfPath));
+            if (portrait == null) return null;
+            return await SavePortraitBytesAsync(portrait.Value.Bytes, portrait.Value.Extension, characterName);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static async Task<string?> SavePortraitBytesAsync(byte[] data, string ext, string? characterName)
+    {
+        try
+        {
+            string portraitsDir = DataManager.Current.UserDocumentsPortraitsDirectory;
+            Directory.CreateDirectory(portraitsDir);
+
+            string safeName = string.Concat(
+                (characterName ?? "portrait").Where(c => !Path.GetInvalidFileNameChars().Contains(c))).Trim();
+            if (string.IsNullOrEmpty(safeName)) safeName = "portrait";
+
+            string filePath = Path.Combine(portraitsDir, safeName + ext);
+            await File.WriteAllBytesAsync(filePath, data);
+            return filePath;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     // ── File writing ──────────────────────────────────────────────────────────
@@ -125,7 +183,7 @@ public sealed class PdfImportService
         ApplyEditableFields(cm.Character, sheet, result);
         HarmonizeBaseAbilityScores(cm.Character, result);
         cm.ReprocessCharacter();
-        ApplyPreparedSpellState(sheet, resolved);
+        ApplyPreparedSpellState(sheet, resolved, result);
         AppendImportDiagnostics(result, pending, sheet, resolved);
 
         var file = new CharacterFile(outputPath);
@@ -294,7 +352,9 @@ public sealed class PdfImportService
         character.Eyes             = result.Eyes;
         character.Skin             = result.Skin;
         character.Hair             = result.Hair;
-        character.PortraitFilename = EnsureImportedPortraitPlaceholder();
+        character.PortraitFilename = !string.IsNullOrWhiteSpace(sheet.PortraitLocalPath)
+            ? sheet.PortraitLocalPath
+            : EnsureImportedPortraitPlaceholder();
 
         character.AgeField.Content    = result.Age;
         character.HeightField.Content = result.Height;
@@ -304,7 +364,10 @@ public sealed class PdfImportService
         {
             character.BackgroundStory.Content = result.Backstory;
         }
-        catch { }
+        catch (Exception ex)
+        {
+            result.ImportDiagnostics.Add($"Note: background story field could not be set ({ex.Message}).");
+        }
 
         try
         {
@@ -313,7 +376,10 @@ public sealed class PdfImportService
             character.FillableBackgroundCharacteristics.Bonds.Content  = result.Bonds;
             character.FillableBackgroundCharacteristics.Flaws.Content  = result.Flaws;
         }
-        catch { }
+        catch (Exception ex)
+        {
+            result.ImportDiagnostics.Add($"Note: personality traits/ideals/bonds/flaws could not be set ({ex.Message}).");
+        }
 
         character.Inventory.Coins.Set(0, 0, 0, 0, 0);
         character.Inventory.Equipment = "";
@@ -328,23 +394,28 @@ public sealed class PdfImportService
         Builder.Presentation.Models.Character character,
         ImportResult result)
     {
-        SetBaseScore(character.Abilities.Strength,     result.Strength);
-        SetBaseScore(character.Abilities.Dexterity,    result.Dexterity);
-        SetBaseScore(character.Abilities.Constitution, result.Constitution);
-        SetBaseScore(character.Abilities.Intelligence, result.Intelligence);
-        SetBaseScore(character.Abilities.Wisdom,       result.Wisdom);
-        SetBaseScore(character.Abilities.Charisma,     result.Charisma);
+        HarmonizeOne(character.Abilities.Strength,     result.Strength,     "Strength",     result);
+        HarmonizeOne(character.Abilities.Dexterity,    result.Dexterity,    "Dexterity",    result);
+        HarmonizeOne(character.Abilities.Constitution, result.Constitution, "Constitution", result);
+        HarmonizeOne(character.Abilities.Intelligence, result.Intelligence, "Intelligence", result);
+        HarmonizeOne(character.Abilities.Wisdom,       result.Wisdom,       "Wisdom",       result);
+        HarmonizeOne(character.Abilities.Charisma,     result.Charisma,     "Charisma",     result);
 
-        static void SetBaseScore(dynamic ability, int targetFinal)
+        static void HarmonizeOne(dynamic ability, int targetFinal, string statName, ImportResult result)
         {
-            int currentFinal = targetFinal;
-            int currentBase = 1;
-
-            try { currentFinal = (int)ability.FinalScore; } catch { }
-            try { currentBase = (int)ability.BaseScore; } catch { }
-
-            int delta = targetFinal - currentFinal;
-            ability.BaseScore = Math.Max(1, currentBase + delta);
+            try
+            {
+                int currentFinal = (int)ability.FinalScore;
+                int currentBase  = (int)ability.BaseScore;
+                int delta = targetFinal - currentFinal;
+                ability.BaseScore = Math.Max(1, currentBase + delta);
+            }
+            catch (Exception ex)
+            {
+                result.ImportDiagnostics.Add(
+                    $"Note: {statName} could not be harmonized ({ex.Message}); setting base score to {targetFinal} directly.");
+                try { ability.BaseScore = Math.Max(1, targetFinal); } catch { }
+            }
         }
     }
 
@@ -373,7 +444,8 @@ public sealed class PdfImportService
 
     private static void ApplyPreparedSpellState(
         ParsedCharacterSheet sheet,
-        IReadOnlyList<ResolvedElement> resolvedElements)
+        IReadOnlyList<ResolvedElement> resolvedElements,
+        ImportResult result)
     {
         SpellcastingInformation? spellInfo = CharacterManager.Current
             .GetSpellcastingInformations()
@@ -386,13 +458,20 @@ public sealed class PdfImportService
             .GroupBy(e => e.Name, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(g => g.Key, g => g.First().AuroraId, StringComparer.OrdinalIgnoreCase);
 
+        int missedPrepared = 0;
         foreach (ParsedSpell spell in sheet.Spells.Where(s => s.IsPrepared))
         {
             if (!byName.TryGetValue(spell.Name, out string? id))
+            {
+                missedPrepared++;
                 continue;
-
+            }
             SpellcastingSectionContext.Current?.SetPrepareSpell(spellInfo, id);
         }
+
+        if (missedPrepared > 0)
+            result.ImportDiagnostics.Add(
+                $"Note: {missedPrepared} prepared spell(s) could not be marked as prepared (name mismatch between sheet and resolved spell list).");
     }
 
     private static void OverrideSnapshotFields(
@@ -429,9 +508,9 @@ public sealed class PdfImportService
     private static int GetSelectionPriority(string? typeName) =>
         typeName switch
         {
-            "Race" => 0,
+            "Race"     => 0,
             "Sub Race" => 1,
-            "Class" => 2,
+            "Class"    => 2,
             "Background" => 3,
             "Archetype" => 4,
             "Feat" => 5,
@@ -465,11 +544,14 @@ public sealed class PdfImportService
         result.ImportDiagnostics.Add(
             $"Spells: parsed {parsedSpells}, resolved {resolvedSpells}, prepared {preparedSpells}.");
 
-        foreach (PendingImportSelection selection in pending.Where(p => !p.Applied).Take(20))
+        var unapplied = pending.Where(p => !p.Applied).ToList();
+        foreach (PendingImportSelection selection in unapplied.Take(20))
         {
             result.ImportDiagnostics.Add(
                 $"Unapplied {selection.Element.TypeName}: {selection.Element.Name} — {selection.LastFailureReason ?? "No diagnostic available."}");
         }
+        if (unapplied.Count > 20)
+            result.ImportDiagnostics.Add($"...and {unapplied.Count - 20} more unapplied selection(s) not shown.");
     }
 
     private sealed class PendingImportSelection

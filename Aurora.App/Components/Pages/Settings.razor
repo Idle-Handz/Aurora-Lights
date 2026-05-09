@@ -6,272 +6,460 @@
 @inject CharacterTabService Tabs
 @inject NavigationManager Nav
 @inject ISnackbar Snackbar
+@inject UserPreferencesService Prefs
+@inject DebugLogService DebugLog
 
-<MudText Typo="Typo.h5" Class="mb-6">Content DB</MudText>
+<MudText Typo="Typo.h5" Class="mb-4">Settings</MudText>
 
-<div class="pref-section">
-    <div class="section-label">Database Status</div>
+<MudTabs Elevation="0" Rounded="false" ApplyEffectsToContainer="true" PanelClass="pt-4">
 
-    <div style="margin-bottom: 12px;">
-        <div class="pref-row-title" style="margin-bottom: 4px;">Content directory</div>
-        <div style="font-family: monospace; font-size: 12px; color: var(--mud-palette-text-secondary, #a6adc8); word-break: break-all;">
-            @(string.IsNullOrWhiteSpace(ContentDb.ContentDirectory) ? "(not available)" : ContentDb.ContentDirectory)
-        </div>
-    </div>
+    <!-- ── General ─────────────────────────────────────────────────────────── -->
+    <MudTabPanel Text="General">
 
-    <div style="margin-bottom: 12px;">
-        <div class="pref-row-title" style="margin-bottom: 4px;">Database path</div>
-        <div style="font-family: monospace; font-size: 12px; color: var(--mud-palette-text-secondary, #a6adc8); word-break: break-all;">
-            @(ContentDb.DatabasePath ?? "(not available)")
-        </div>
-    </div>
+        <div class="pref-section">
+            <div class="section-label">Appearance</div>
 
-    <div style="margin-bottom: 16px;">
-        <div class="pref-row-title" style="margin-bottom: 4px;">Database state</div>
-        @if (ContentDb.SyncState == ContentDatabaseSyncState.Syncing)
-        {
-            <div style="color: #89b4fa; font-size: 13px;">
-                @(ContentDb.Progress?.PhaseLabel ?? "Syncing…")
-            </div>
-            <MudProgressLinear Indeterminate="false"
-                               Value="@SyncPercent"
-                               Min="0" Max="100"
-                               Color="Color.Primary"
-                               Class="mt-2" />
-        }
-        else if (ContentDb.LastResult != null)
-        {
-            <div style="color: @(ContentDb.LastResult.Success ? "#a6e3a1" : "#f38ba8"); font-size: 13px;">
-                @ContentDb.LastResult.Summary
-            </div>
-        }
-        else if (ContentDb.IsStale)
-        {
-            <div style="color: #fab387; font-size: 13px;">Database is out of date. Sync to update it.</div>
-        }
-        else
-        {
-            <div style="font-size: 13px; color: var(--mud-palette-text-disabled, #6c7086);">Not checked yet.</div>
-        }
-    </div>
-
-    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-        <MudButton Variant="Variant.Outlined"
-                   Color="Color.Default"
-                   Size="Size.Small"
-                   Disabled="@(ContentDb.SyncState == ContentDatabaseSyncState.Syncing)"
-                   OnClick="CheckStaleAsync">
-            Check for Changes
-        </MudButton>
-        <MudButton Variant="Variant.Filled"
-                   Color="Color.Primary"
-                   Size="Size.Small"
-                   Disabled="@(ContentDb.SyncState == ContentDatabaseSyncState.Syncing || string.IsNullOrWhiteSpace(ContentDb.ContentDirectory))"
-                   OnClick="SyncNowAsync">
-            Sync Now
-        </MudButton>
-        @if (ContentDb.SyncState == ContentDatabaseSyncState.Done && Tabs.Tabs.Count == 0)
-        {
-            <MudButton Variant="Variant.Outlined"
-                       Color="Color.Secondary"
-                       Size="Size.Small"
-                       OnClick="ReloadElementsAsync">
-                Reload Elements
-            </MudButton>
-        }
-    </div>
-
-    @if (ContentDb.SyncState == ContentDatabaseSyncState.Done && ContentDb.LastResult?.Success == true && Tabs.Tabs.Count > 0)
-    {
-        <MudAlert Severity="Severity.Info" Class="mt-4" Dense="true">
-            Close all character tabs and click <strong>Reload Elements</strong> to use the updated database.
-        </MudAlert>
-    }
-</div>
-
-@* ── Content Bundles ── *@
-<div class="pref-section" style="margin-top: 24px;">
-    <div class="section-label">Content Bundles</div>
-    <div class="pref-row-desc" style="margin-bottom: 12px;">
-        Enable or disable individual content packages. Disabled packages are excluded from element
-        resolution. Reload elements after making changes for them to take effect.
-    </div>
-
-    @{
-        var packages = ContentDb.GetPackages();
-    }
-    @if (packages.Count == 0)
-    {
-        <div style="font-size: 13px; color: var(--mud-palette-text-disabled, #6c7086);">
-            No packages found. Sync the content database first.
-        </div>
-    }
-    else
-    {
-        <div style="display: flex; flex-direction: column; gap: 4px;">
-            @foreach (var pkg in packages)
-            {
-                var p = pkg;
-                <div style="display: flex; align-items: center; gap: 10px; padding: 6px 10px; background: var(--mud-palette-background-grey, #181825); border-radius: 6px;">
-                    <MudSwitch Value="@p.IsEnabled"
-                               Color="Color.Primary"
-                               ValueChanged="@((bool v) => TogglePackageAsync(p.Id, v))"
-                               Style="margin: 0;" />
-                    <div style="flex: 1; min-width: 0;">
-                        <div style="font-size: 13px; color: var(--mud-palette-text-primary, #cdd6f4); font-weight: 500;">@p.PackageName</div>
-                        <div style="font-size: 11px; color: var(--mud-palette-text-disabled, #6c7086); font-family: monospace;">@p.PackageKey</div>
+            <div class="pref-row">
+                <div class="pref-row-text">
+                    <div class="pref-row-title">Light mode</div>
+                    <div class="pref-row-desc">
+                        Switch to a light colour palette. Most MudBlazor controls will update immediately;
+                        custom layout areas use the dark palette by design and are unaffected.
                     </div>
-                    <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; padding: 2px 8px; border-radius: 999px; background: #313244; color: @KindColor(p.PackageKind);">
-                        @p.PackageKind
+                </div>
+                <MudSwitch Value="Prefs.LightMode"
+                           ValueChanged="@((bool v) => Prefs.LightMode = v)"
+                           Color="Color.Primary" />
+            </div>
+        </div>
+
+        <div class="pref-section" style="margin-top: 24px;">
+            <div class="section-label">Build &amp; Magic</div>
+
+            <div class="pref-row">
+                <div class="pref-row-text">
+                    <div class="pref-row-title">Auto-save on selection change</div>
+                    <div class="pref-row-desc">
+                        When enabled, choosing a new option on the Build or Magic page immediately
+                        writes the character file to disk. Disable this if you want to experiment
+                        with different build choices and save only when satisfied.
+                    </div>
+                </div>
+                <MudSwitch Value="Prefs.AutoSaveBuildChanges"
+                           ValueChanged="@((bool v) => Prefs.AutoSaveBuildChanges = v)"
+                           Color="Color.Primary" />
+            </div>
+
+            <div class="pref-row" style="margin-top: 16px;">
+                <div class="pref-row-text">
+                    <div class="pref-row-title">Default HP method for new characters</div>
+                    <div class="pref-row-desc">
+                        Average uses the fixed value for each die size (for example, d8 → 5 per level, max at level 1).
+                        Rolled generates random dice values upfront and persists them. Either can be changed
+                        per-character on the Build page after creation.
+                    </div>
+                </div>
+                <MudRadioGroup Value="Prefs.DefaultHpMethod"
+                               ValueChanged="@((HpMethod v) => Prefs.DefaultHpMethod = v)">
+                    <MudRadio Value="HpMethod.Average" Color="Color.Primary">Average</MudRadio>
+                    <MudRadio Value="HpMethod.Rolled"  Color="Color.Primary">Rolled</MudRadio>
+                </MudRadioGroup>
+            </div>
+        </div>
+
+    </MudTabPanel>
+
+    <!-- ── Character Sheet ──────────────────────────────────────────────────── -->
+    <MudTabPanel Text="Character Sheet">
+
+        <div class="pref-section">
+            <div class="section-label">PDF Cards</div>
+            <div class="pref-row-desc" style="margin-bottom: 16px;">
+                Choose which extra card pages to append when generating a character sheet PDF.
+            </div>
+
+            <div class="pref-row">
+                <div class="pref-row-text">
+                    <div class="pref-row-title">Include spell cards</div>
+                    <div class="pref-row-desc">
+                        Adds a page of spell cards at the end of the PDF. Each spell the character knows
+                        or has prepared gets its own card with casting details and description.
+                    </div>
+                </div>
+                <MudSwitch Value="Prefs.IncludeSpellCards"
+                           ValueChanged="@((bool v) => Prefs.IncludeSpellCards = v)"
+                           Color="Color.Primary" />
+            </div>
+
+            <div class="pref-row" style="margin-top: 16px;">
+                <div class="pref-row-text">
+                    <div class="pref-row-title">Include item cards</div>
+                    <div class="pref-row-desc">
+                        Adds a page of item cards for equipment marked to show as a card. Each item
+                        gets its own card with its category, description, and source.
+                    </div>
+                </div>
+                <MudSwitch Value="Prefs.IncludeItemCards"
+                           ValueChanged="@((bool v) => Prefs.IncludeItemCards = v)"
+                           Color="Color.Primary" />
+            </div>
+
+            <div class="pref-row" style="margin-top: 16px;">
+                <div class="pref-row-text">
+                    <div class="pref-row-title">Include attack cards</div>
+                    <div class="pref-row-desc">
+                        Adds a page of attack cards for weapons and abilities configured to appear as cards,
+                        showing attack bonus, damage, range, and description.
+                    </div>
+                </div>
+                <MudSwitch Value="Prefs.IncludeAttackCards"
+                           ValueChanged="@((bool v) => Prefs.IncludeAttackCards = v)"
+                           Color="Color.Primary" />
+            </div>
+
+            <div class="pref-row" style="margin-top: 16px;">
+                <div class="pref-row-text">
+                    <div class="pref-row-title">Include feature cards</div>
+                    <div class="pref-row-desc">
+                        Adds a page of feature cards for class features, racial traits, feats, and other
+                        abilities that are enabled to display on the character sheet.
+                    </div>
+                </div>
+                <MudSwitch Value="Prefs.IncludeFeatureCards"
+                           ValueChanged="@((bool v) => Prefs.IncludeFeatureCards = v)"
+                           Color="Color.Primary" />
+            </div>
+        </div>
+
+    </MudTabPanel>
+
+    <!-- ── Content ──────────────────────────────────────────────────────────── -->
+    <MudTabPanel Text="Content">
+
+        <div class="pref-section">
+            <div class="section-label">Database</div>
+            <div class="pref-row-desc" style="margin-bottom: 16px;">
+                Manage the installed content database and keep it in sync with your content directory.
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <div class="pref-row-title" style="margin-bottom: 4px;">Content directory</div>
+                <div style="font-family: monospace; font-size: 12px; color: var(--mud-palette-text-secondary, #a6adc8); word-break: break-all;">
+                    @(string.IsNullOrWhiteSpace(ContentDb.ContentDirectory) ? "(not available)" : ContentDb.ContentDirectory)
+                </div>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <div class="pref-row-title" style="margin-bottom: 4px;">Database path</div>
+                <div style="font-family: monospace; font-size: 12px; color: var(--mud-palette-text-secondary, #a6adc8); word-break: break-all;">
+                    @(ContentDb.DatabasePath ?? "(not available)")
+                </div>
+            </div>
+
+            <div style="margin-bottom: 16px;">
+                <div class="pref-row-title" style="margin-bottom: 4px;">Status</div>
+                @if (ContentDb.SyncState == ContentDatabaseSyncState.Syncing)
+                {
+                    <div style="color: #89b4fa; font-size: 13px;">
+                        @(ContentDb.Progress?.PhaseLabel ?? "Syncing...")
+                    </div>
+                    <MudProgressLinear Indeterminate="false"
+                                       Value="@SyncPercent"
+                                       Min="0" Max="100"
+                                       Color="Color.Primary"
+                                       Class="mt-2" />
+                }
+                else if (ContentDb.LastResult != null)
+                {
+                    <div style="color: @(ContentDb.LastResult.Success ? "#a6e3a1" : "#f38ba8"); font-size: 13px;">
+                        @ContentDb.LastResult.Summary
+                    </div>
+                }
+                else if (ContentDb.IsStale)
+                {
+                    <div style="color: #fab387; font-size: 13px;">Database is out of date. Sync to update it.</div>
+                }
+                else
+                {
+                    <div style="font-size: 13px; color: var(--mud-palette-text-disabled, #6c7086);">Not checked yet.</div>
+                }
+            </div>
+
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Default"
+                           Size="Size.Small"
+                           Disabled="@(ContentDb.SyncState == ContentDatabaseSyncState.Syncing)"
+                           OnClick="CheckStaleAsync">
+                    Check for Changes
+                </MudButton>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           Size="Size.Small"
+                           Disabled="@(ContentDb.SyncState == ContentDatabaseSyncState.Syncing || string.IsNullOrWhiteSpace(ContentDb.ContentDirectory))"
+                           OnClick="SyncNowAsync">
+                    Sync Now
+                </MudButton>
+                @if (ContentDb.SyncState == ContentDatabaseSyncState.Done && Tabs.Tabs.Count == 0)
+                {
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Secondary"
+                               Size="Size.Small"
+                               OnClick="ReloadElementsAsync">
+                        Reload Elements
+                    </MudButton>
+                }
+            </div>
+
+            @if (ContentDb.SyncState == ContentDatabaseSyncState.Done && ContentDb.LastResult?.Success == true && Tabs.Tabs.Count > 0)
+            {
+                <MudAlert Severity="Severity.Info" Class="mt-4" Dense="true">
+                    Close all character tabs and click <strong>Reload Elements</strong> to use the updated database.
+                </MudAlert>
+            }
+        </div>
+
+        <div class="pref-section" style="margin-top: 24px;">
+            <div class="section-label">Packages</div>
+            <div class="pref-row-desc" style="margin-bottom: 12px;">
+                Enable or disable individual content packages. Disabled packages are excluded from element
+                resolution. Reload elements after making changes for them to take effect.
+            </div>
+
+            @{
+                var packages = ContentDb.GetPackages();
+            }
+            @if (packages.Count == 0)
+            {
+                <div style="font-size: 13px; color: var(--mud-palette-text-disabled, #6c7086);">
+                    No packages found. Sync the content database first.
+                </div>
+            }
+            else
+            {
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                    @foreach (var pkg in packages)
+                    {
+                        var p = pkg;
+                        <div style="display: flex; align-items: center; gap: 10px; padding: 6px 10px; background: var(--mud-palette-background-grey, #181825); border-radius: 6px;">
+                            <MudSwitch Value="@p.IsEnabled"
+                                       Color="Color.Primary"
+                                       ValueChanged="@((bool v) => TogglePackageAsync(p.Id, v))"
+                                       Style="margin: 0;" />
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="font-size: 13px; color: var(--mud-palette-text-primary, #cdd6f4); font-weight: 500;">@p.PackageName</div>
+                                <div style="font-size: 11px; color: var(--mud-palette-text-disabled, #6c7086); font-family: monospace;">@p.PackageKey</div>
+                            </div>
+                            <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; padding: 2px 8px; border-radius: 999px; background: #313244; color: @KindColor(p.PackageKind);">
+                                @p.PackageKind
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <div class="pref-section" style="margin-top: 24px;">
+            <div class="section-label">Sources</div>
+
+            <div style="margin-bottom: 16px;">
+                <div class="pref-row-title" style="margin-bottom: 4px;">Built-in custom directory</div>
+                <div style="font-family: monospace; font-size: 12px; color: var(--mud-palette-text-secondary, #a6adc8); word-break: break-all;">
+                    @Content.BuiltInCustomDirectory
+                </div>
+                <div class="pref-row-desc" style="margin-top: 4px;">
+                    Place XML files or .index files here and reload elements to pick them up.
+                </div>
+            </div>
+
+            <div style="margin-bottom: 6px;">
+                <div class="pref-row-title">Additional content directories</div>
+                <div class="pref-row-desc" style="margin-bottom: 10px;">
+                    Extra folders containing Aurora XML content, useful for homebrew or
+                    third-party content stored outside the built-in custom directory.
+                </div>
+
+                @if (Content.AdditionalDirectories.Count == 0)
+                {
+                    <div style="font-size: 13px; color: var(--mud-palette-text-disabled, #6c7086); margin-bottom: 8px;">No additional directories configured.</div>
+                }
+                else
+                {
+                    <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px;">
+                        @foreach (var dir in Content.AdditionalDirectories.ToList())
+                        {
+                            var d = dir;
+                            <div style="display: flex; align-items: center; gap: 8px; background: var(--mud-palette-background-grey, #181825); border-radius: 6px; padding: 6px 10px;">
+                                <span style="font-family: monospace; font-size: 12px; color: var(--mud-palette-text-primary, #cdd6f4); flex: 1; word-break: break-all;">@d</span>
+                                <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
+                                               Size="Size.Small"
+                                               title="Remove"
+                                               OnClick="() => RemoveDirectory(d)"
+                                               Style="padding: 2px; flex-shrink: 0;" />
+                            </div>
+                        }
+                    </div>
+                }
+
+                <div style="display: flex; gap: 8px; align-items: flex-start; margin-top: 4px;">
+                    <MudTextField @bind-Value="_newDirPath"
+                                  Label="Folder path"
+                                  Placeholder="C:\path\to\homebrew\content"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Style="flex: 1; font-size: 13px;"
+                                  Immediate="true"
+                                  @onkeydown="OnDirKeyDown" />
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Primary"
+                               Size="Size.Small"
+                               Disabled="@string.IsNullOrWhiteSpace(_newDirPath)"
+                               OnClick="AddDirectory"
+                               Style="margin-top: 4px; white-space: nowrap;">
+                        Add
+                    </MudButton>
+                </div>
+            </div>
+
+            <div style="margin-top: 24px;">
+                <div class="pref-row-title">Content index files (.index)</div>
+                <div class="pref-row-desc" style="margin-bottom: 10px;">
+                    Paste a URL ending in <code>.index</code> to register it, then check for updates
+                    to download the content. Requires a network connection.
+                </div>
+
+                <div style="display: flex; gap: 8px; align-items: flex-start; margin-bottom: 10px;">
+                    <MudTextField @bind-Value="_indexUrl"
+                                  Label="Index URL"
+                                  Placeholder="https://raw.githubusercontent.com/.../core.index"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Style="flex: 1; font-size: 13px;"
+                                  Disabled="_contentWorking" />
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Primary"
+                               Size="Size.Small"
+                               Disabled="@(_contentWorking || string.IsNullOrWhiteSpace(_indexUrl))"
+                               OnClick="FetchIndexAsync"
+                               Style="margin-top: 4px; white-space: nowrap;">
+                        Fetch Index
+                    </MudButton>
+                </div>
+
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Default"
+                           StartIcon="@Icons.Material.Filled.Sync"
+                           Size="Size.Small"
+                           Disabled="_contentWorking"
+                           OnClick="CheckForUpdatesAsync">
+                    Check for Updates
+                </MudButton>
+            </div>
+
+            @if (_needsContentReload)
+            {
+                <MudAlert Severity="Severity.Info" Class="mt-4" Dense="true">
+                    Content changes will not take effect until elements are reloaded.
+                    @if (Content.HasOpenTabs)
+                    {
+                        <span> Open characters will be closed.</span>
+                    }
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
+                               Disabled="_contentWorking"
+                               OnClick="ReloadContentAsync"
+                               Style="margin-left: 12px;">
+                        @(_contentWorking ? "Reloading..." : "Reload Now")
+                    </MudButton>
+                </MudAlert>
+            }
+
+            @if (_contentStatus != null)
+            {
+                <MudAlert Severity="@_contentStatusSeverity" Class="mt-3" Dense="true"
+                          ShowCloseIcon="true" CloseIconClicked="() => _contentStatus = null">
+                    @_contentStatus
+                </MudAlert>
+            }
+        </div>
+
+    </MudTabPanel>
+
+    <!-- ── Advanced ─────────────────────────────────────────────────────────── -->
+    <MudTabPanel Text="Advanced">
+
+        <div class="pref-section">
+            <div class="section-label">Developer</div>
+
+            <div class="pref-row">
+                <div class="pref-row-text">
+                    <div class="pref-row-title">Developer / debug mode</div>
+                    <div class="pref-row-desc">
+                        Shows a Console page in the navigation menu where runtime exceptions and
+                        diagnostic messages are captured. Useful for diagnosing crashes.
+                    </div>
+                </div>
+                <MudSwitch Value="Prefs.DevMode"
+                           ValueChanged="@((bool v) => Prefs.DevMode = v)"
+                           Color="Color.Secondary" />
+            </div>
+
+            @if (Prefs.DevMode)
+            {
+                <div class="pref-row" style="margin-top: 16px;">
+                    <div class="pref-row-text">
+                        <div class="pref-row-title">Log entries: @DebugLog.Entries.Count</div>
+                        <div class="pref-row-desc">Errors: @DebugLog.Entries.Count(e => e.Level == LogLevel.Error)</div>
+                    </div>
+                    <MudButton Variant="Variant.Outlined" Color="Color.Default" Size="Size.Small"
+                               Href="/console">Open Console</MudButton>
+                </div>
+
+                <div class="pref-row" style="margin-top: 16px;">
+                    <div class="pref-row-text">
+                        <div class="pref-row-title">Element data source: @Characters.ElementLoadSource</div>
+                        <div class="pref-row-desc">@Characters.ElementLoadSummary</div>
+                        @if (Characters.ElementLoadSchemaVersion.HasValue)
+                        {
+                            <div class="pref-row-desc">Schema version: @Characters.ElementLoadSchemaVersion.Value</div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(Characters.ElementLoadDatabasePath))
+                        {
+                            <div class="pref-row-desc" style="font-family: monospace; word-break: break-all;">
+                                DB path: @Characters.ElementLoadDatabasePath
+                            </div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(Characters.ElementLoadFailureReason))
+                        {
+                            <div class="pref-row-desc">Fallback reason: @Characters.ElementLoadFailureReason</div>
+                        }
+                        @if (Characters.ElementLoadSkippedElements > 0)
+                        {
+                            <div class="pref-row-desc">Skipped elements during DB load: @Characters.ElementLoadSkippedElements</div>
+                        }
                     </div>
                 </div>
             }
         </div>
-    }
-</div>
 
-@* ── Content Sources ── *@
-<div class="pref-section" style="margin-top: 24px;">
-    <div class="section-label">Content Sources</div>
+    </MudTabPanel>
 
-    <div style="margin-bottom: 16px;">
-        <div class="pref-row-title" style="margin-bottom: 4px;">Built-in custom directory</div>
-        <div style="font-family: monospace; font-size: 12px; color: var(--mud-palette-text-secondary, #a6adc8); word-break: break-all;">
-            @Content.BuiltInCustomDirectory
-        </div>
-        <div class="pref-row-desc" style="margin-top: 4px;">
-            Place XML files or .index files here and reload elements to pick them up.
-        </div>
-    </div>
-
-    <div style="margin-bottom: 6px;">
-        <div class="pref-row-title">Additional content directories</div>
-        <div class="pref-row-desc" style="margin-bottom: 10px;">
-            Extra folders containing Aurora XML content — useful for homebrew or
-            third-party content stored outside the built-in custom directory.
-        </div>
-
-        @if (Content.AdditionalDirectories.Count == 0)
-        {
-            <div style="font-size: 13px; color: var(--mud-palette-text-disabled, #6c7086); margin-bottom: 8px;">No additional directories configured.</div>
-        }
-        else
-        {
-            <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px;">
-                @foreach (var dir in Content.AdditionalDirectories.ToList())
-                {
-                    var d = dir;
-                    <div style="display: flex; align-items: center; gap: 8px; background: var(--mud-palette-background-grey, #181825); border-radius: 6px; padding: 6px 10px;">
-                        <span style="font-family: monospace; font-size: 12px; color: var(--mud-palette-text-primary, #cdd6f4); flex: 1; word-break: break-all;">@d</span>
-                        <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
-                                       Size="Size.Small"
-                                       title="Remove"
-                                       OnClick="() => RemoveDirectory(d)"
-                                       Style="padding: 2px; flex-shrink: 0;" />
-                    </div>
-                }
-            </div>
-        }
-
-        <div style="display: flex; gap: 8px; align-items: flex-start; margin-top: 4px;">
-            <MudTextField @bind-Value="_newDirPath"
-                          Label="Folder path"
-                          Placeholder="C:\path\to\homebrew\content"
-                          Variant="Variant.Outlined"
-                          Margin="Margin.Dense"
-                          Style="flex: 1; font-size: 13px;"
-                          Immediate="true"
-                          @onkeydown="OnDirKeyDown" />
-            <MudButton Variant="Variant.Outlined"
-                       Color="Color.Primary"
-                       Size="Size.Small"
-                       Disabled="@string.IsNullOrWhiteSpace(_newDirPath)"
-                       OnClick="AddDirectory"
-                       Style="margin-top: 4px; white-space: nowrap;">
-                Add
-            </MudButton>
-        </div>
-    </div>
-
-    <div style="margin-top: 24px;">
-        <div class="pref-row-title">Content index files (.index)</div>
-        <div class="pref-row-desc" style="margin-bottom: 10px;">
-            Paste a URL ending in <code>.index</code> to register it, then check for updates
-            to download the content. Requires a network connection.
-        </div>
-
-        <div style="display: flex; gap: 8px; align-items: flex-start; margin-bottom: 10px;">
-            <MudTextField @bind-Value="_indexUrl"
-                          Label="Index URL"
-                          Placeholder="https://raw.githubusercontent.com/…/core.index"
-                          Variant="Variant.Outlined"
-                          Margin="Margin.Dense"
-                          Style="flex: 1; font-size: 13px;"
-                          Disabled="_contentWorking" />
-            <MudButton Variant="Variant.Outlined"
-                       Color="Color.Primary"
-                       Size="Size.Small"
-                       Disabled="@(_contentWorking || string.IsNullOrWhiteSpace(_indexUrl))"
-                       OnClick="FetchIndexAsync"
-                       Style="margin-top: 4px; white-space: nowrap;">
-                Fetch Index
-            </MudButton>
-        </div>
-
-        <MudButton Variant="Variant.Outlined"
-                   Color="Color.Default"
-                   StartIcon="@Icons.Material.Filled.Sync"
-                   Size="Size.Small"
-                   Disabled="_contentWorking"
-                   OnClick="CheckForUpdatesAsync">
-            Check for Updates
-        </MudButton>
-    </div>
-
-    @if (_needsContentReload)
-    {
-        <MudAlert Severity="Severity.Info" Class="mt-4" Dense="true">
-            Content changes will not take effect until elements are reloaded.
-            @if (Content.HasOpenTabs)
-            {
-                <span> Open characters will be closed.</span>
-            }
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
-                       Disabled="_contentWorking"
-                       OnClick="ReloadContentAsync"
-                       Style="margin-left: 12px;">
-                @(_contentWorking ? "Reloading…" : "Reload Now")
-            </MudButton>
-        </MudAlert>
-    }
-
-    @if (_contentStatus != null)
-    {
-        <MudAlert Severity="@_contentStatusSeverity" Class="mt-3" Dense="true"
-                  ShowCloseIcon="true" CloseIconClicked="() => _contentStatus = null">
-            @_contentStatus
-        </MudAlert>
-    }
-</div>
+</MudTabs>
 
 @code {
     private CancellationTokenSource? _cts;
 
-    // ── Content source state ─────────────────────────────────────────────────
-    private string    _indexUrl             = "";
-    private string    _newDirPath           = "";
-    private string?   _contentStatus;
-    private Severity  _contentStatusSeverity = Severity.Success;
-    private bool      _contentWorking        = false;
-    private bool      _needsContentReload    = false;
+    private string _indexUrl = "";
+    private string _newDirPath = "";
+    private string? _contentStatus;
+    private Severity _contentStatusSeverity = Severity.Success;
+    private bool _contentWorking;
+    private bool _needsContentReload;
 
     protected override void OnInitialized()
     {
         ContentDb.StateChanged += OnStateChanged;
-        Content.Changed        += OnContentChanged;
+        Content.Changed += OnContentChanged;
     }
-
-    // ── Content bundle management ─────────────────────────────────────────────
 
     private async Task TogglePackageAsync(long packageId, bool enabled)
     {
@@ -282,17 +470,15 @@
 
     private static string KindColor(string kind) => kind switch
     {
-        "core"        => "#a6e3a1",
-        "official"    => "#89b4fa",
+        "core" => "#a6e3a1",
+        "official" => "#89b4fa",
         "third-party" => "#fab387",
-        "homebrew"    => "#cba6f7",
-        _             => "#6c7086",
+        "homebrew" => "#cba6f7",
+        _ => "#6c7086",
     };
 
-    private void OnStateChanged()  => InvokeAsync(StateHasChanged);
+    private void OnStateChanged() => InvokeAsync(StateHasChanged);
     private void OnContentChanged() => InvokeAsync(StateHasChanged);
-
-    // ── Database sync ────────────────────────────────────────────────────────
 
     private int SyncPercent
     {
@@ -302,10 +488,10 @@
             if (p == null || p.FilesTotal == 0) return 0;
             return p.Phase switch
             {
-                Aurora.Importer.AuroraImportPhase.Scanning  => (int)(p.FilesScanned * 50.0 / p.FilesTotal),
+                Aurora.Importer.AuroraImportPhase.Scanning => (int)(p.FilesScanned * 50.0 / p.FilesTotal),
                 Aurora.Importer.AuroraImportPhase.Importing => 50 + (int)(p.FilesScanned * 40.0 / Math.Max(1, p.FilesTotal)),
                 Aurora.Importer.AuroraImportPhase.Resolving => 90,
-                Aurora.Importer.AuroraImportPhase.Complete  => 100,
+                Aurora.Importer.AuroraImportPhase.Complete => 100,
                 _ => 0
             };
         }
@@ -330,8 +516,6 @@
         await Characters.ReloadElementsAsync();
     }
 
-    // ── Content source management ────────────────────────────────────────────
-
     private void RemoveDirectory(string path)
     {
         Content.RemoveDirectory(path);
@@ -350,58 +534,68 @@
 
         if (!Directory.Exists(path))
         {
-            _contentStatus         = $"Directory not found: {path}";
+            _contentStatus = $"Directory not found: {path}";
             _contentStatusSeverity = Severity.Error;
             return;
         }
 
         Content.AddDirectory(path);
-        _newDirPath         = "";
+        _newDirPath = "";
         _needsContentReload = true;
-        _contentStatus      = null;
+        _contentStatus = null;
     }
 
     private async Task FetchIndexAsync()
     {
         _contentWorking = true;
-        _contentStatus  = null;
+        _contentStatus = null;
         StateHasChanged();
         try
         {
-            var (success, msg)     = await Content.FetchIndexAsync(_indexUrl);
-            _contentStatus         = msg;
+            var (success, msg) = await Content.FetchIndexAsync(_indexUrl);
+            _contentStatus = msg;
             _contentStatusSeverity = success ? Severity.Success : Severity.Error;
-            if (success) { _indexUrl = ""; _needsContentReload = true; }
+            if (success)
+            {
+                _indexUrl = "";
+                _needsContentReload = true;
+            }
         }
-        finally { _contentWorking = false; }
+        finally
+        {
+            _contentWorking = false;
+        }
     }
 
     private async Task CheckForUpdatesAsync()
     {
         _contentWorking = true;
-        _contentStatus  = null;
+        _contentStatus = null;
         StateHasChanged();
         try
         {
-            var (updated, msg)     = await Content.CheckForUpdatesAsync();
-            _contentStatus         = msg;
+            var (updated, msg) = await Content.CheckForUpdatesAsync();
+            _contentStatus = msg;
             _contentStatusSeverity = Severity.Info;
             if (updated) _needsContentReload = true;
         }
-        finally { _contentWorking = false; }
+        finally
+        {
+            _contentWorking = false;
+        }
     }
 
     private async Task ReloadContentAsync()
     {
         _contentWorking = true;
-        _contentStatus  = null;
+        _contentStatus = null;
         StateHasChanged();
         try
         {
             string? error = await Content.ReloadContentAsync();
             if (error != null)
             {
-                _contentStatus         = $"Reload failed: {error}";
+                _contentStatus = $"Reload failed: {error}";
                 _contentStatusSeverity = Severity.Error;
             }
             else
@@ -411,13 +605,17 @@
                 Nav.NavigateTo("/");
             }
         }
-        finally { _contentWorking = false; }
+        finally
+        {
+            _contentWorking = false;
+        }
     }
 
     public void Dispose()
     {
         ContentDb.StateChanged -= OnStateChanged;
-        Content.Changed        -= OnContentChanged;
+        Content.Changed -= OnContentChanged;
         _cts?.Cancel();
+        _cts?.Dispose();
     }
 }

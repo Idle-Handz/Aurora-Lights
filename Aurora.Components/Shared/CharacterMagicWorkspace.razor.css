@@ -278,6 +278,60 @@
     color: #89b4fa;
 }
 
+.magic-spell-text {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.18rem;
+}
+
+.magic-spell-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    align-items: center;
+    font-size: 0.72rem;
+    color: #a6adc8;
+}
+
+.magic-spell-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.12rem 0.45rem;
+    border-radius: 999px;
+    border: 1px solid #585b70;
+    background: rgba(69, 71, 90, 0.35);
+    color: #cdd6f4;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.magic-spell-badge.cantrip {
+    border-color: rgba(137, 220, 235, 0.45);
+    color: #89dceb;
+}
+
+.magic-spell-badge-prepared {
+    border-color: rgba(137, 180, 250, 0.45);
+    color: #89b4fa;
+}
+
+.magic-spell-badge-always {
+    border-color: rgba(249, 226, 175, 0.45);
+    color: #f9e2af;
+}
+
+.magic-spell-badge-known {
+    border-color: rgba(166, 173, 200, 0.45);
+    color: #cdd6f4;
+}
+
+.magic-spell-badge-available {
+    border-color: rgba(148, 226, 213, 0.45);
+    color: #94e2d5;
+}
+
 .magic-detail {
     padding: 1rem;
 }

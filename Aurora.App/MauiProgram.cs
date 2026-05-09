@@ -38,6 +38,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<CharacterService>();
         builder.Services.AddSingleton<CharacterTabService>();
         builder.Services.AddSingleton<UserPreferencesService>();
+        builder.Services.AddSingleton<CompendiumService>();
         builder.Services.AddSingleton<ContentService>();
         builder.Services.AddSingleton<ContentDatabaseService>();
         builder.Services.AddSingleton<PdfImportService>();

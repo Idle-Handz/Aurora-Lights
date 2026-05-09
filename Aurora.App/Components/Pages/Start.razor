@@ -48,7 +48,7 @@ else
                             style="background: transparent; border-color: var(--mud-palette-primary); color: var(--mud-palette-primary);"
                             @onclick="OnImportPdf"
                             disabled="@_preloading">
-                        Import PDF
+                        Import Character
                     </button>
                 </AdditionalHeaderContent>
             </CharacterBrowser>
@@ -215,7 +215,7 @@ else
 
     private async Task OnImportPdf()
     {
-        var dialog = await DialogService.ShowAsync<PdfImportDialog>("Import from PDF",
+        var dialog = await DialogService.ShowAsync<PdfImportDialog>("Import Character",
             new DialogOptions { MaxWidth = MaxWidth.Medium, CloseButton = true });
         await dialog.Result;
         _characters = Characters.LoadCharacterFiles().ToList();

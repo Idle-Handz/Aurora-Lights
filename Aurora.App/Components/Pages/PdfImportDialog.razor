@@ -12,17 +12,20 @@
                 </MudText>
 
                 <div style="display: flex; flex-direction: column; gap: 10px;">
-                    <div>
-                        <MudButton Variant="Variant.Outlined"
-                                   Color="Color.Primary"
-                                   StartIcon="@Icons.Material.Filled.UploadFile"
-                                   OnClick="PickPdfAsync">
-                            Choose PDF File…
-                        </MudButton>
-                        <div style="font-size: 11px; color: var(--mud-palette-text-disabled); margin-top: 3px; margin-left: 2px;">
-                            Uses Windows OCR to read D&amp;D Beyond character sheet PDFs
+                    @if (OperatingSystem.IsWindows())
+                    {
+                        <div>
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.UploadFile"
+                                       OnClick="PickPdfAsync">
+                                Choose PDF File…
+                            </MudButton>
+                            <div style="font-size: 11px; color: var(--mud-palette-text-disabled); margin-top: 3px; margin-left: 2px;">
+                                Uses Windows OCR to read D&amp;D Beyond character sheet PDFs
+                            </div>
                         </div>
-                    </div>
+                    }
 
                     <div>
                         <MudButton Variant="Variant.Outlined"
@@ -32,10 +35,49 @@
                             Choose JSON Export…
                         </MudButton>
                         <div style="font-size: 11px; color: var(--mud-palette-text-disabled); margin-top: 3px; margin-left: 2px;">
-                            Use the D&amp;D Beyond site's Share → Export JSON feature
+                            Import from the D&amp;D Beyond character API (cross-platform)
                         </div>
                     </div>
                 </div>
+
+                <details style="margin-top: 14px;">
+                    <summary style="font-size: 12px; color: var(--mud-palette-text-secondary); cursor: pointer; user-select: none;">
+                        How to get a JSON file from D&amp;D Beyond
+                    </summary>
+                    <div style="margin-top: 10px; padding: 10px 12px; background: var(--mud-palette-background-grey); border-radius: 6px; display: flex; flex-direction: column; gap: 8px;">
+                        <MudText Style="font-size: 12px; color: var(--mud-palette-text-secondary);">
+                            Open your character on D&amp;D Beyond and paste the page URL below.
+                            Aurora will build the API address for you to open in your browser.
+                        </MudText>
+                        <MudTextField T="string"
+                                      @bind-Value="_ddbUrl"
+                                      Label="D&amp;D Beyond character URL"
+                                      Placeholder="https://www.dndbeyond.com/characters/12345678"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      Style="font-size: 12px;" />
+                        @if (DerivedApiUrl is string apiUrl)
+                        {
+                            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                                <code style="font-size: 10px; flex: 1; min-width: 0; padding: 4px 6px;
+                                             background: var(--mud-palette-surface); border-radius: 4px;
+                                             overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+                                             color: var(--mud-palette-text-secondary);">@apiUrl</code>
+                                <MudButton Size="Size.Small"
+                                           Variant="Variant.Outlined"
+                                           StartIcon="@Icons.Material.Filled.OpenInBrowser"
+                                           OnClick="@(() => OpenApiUrlAsync(apiUrl))">
+                                    Open
+                                </MudButton>
+                            </div>
+                            <MudText Style="font-size: 11px; color: var(--mud-palette-text-disabled);">
+                                Log in to D&amp;D Beyond if prompted. Once the page shows JSON text,
+                                use <strong>File → Save Page As</strong> (or right-click → Save As) to save
+                                the file. Then click <strong>Choose JSON Export</strong> above and select it.
+                            </MudText>
+                        }
+                    </div>
+                </details>
 
                 @if (_error != null)
                 {
@@ -136,7 +178,8 @@
                         Save as:
                     </MudText>
                     <div style="display: flex; gap: 8px; align-items: center;">
-                        <MudTextField @bind-Value="_outputFileName"
+                        <MudTextField Value="_outputFileName"
+                                      ValueChanged="@((string v) => { _outputFileName = v; _overwritePending = false; })"
                                       Placeholder="Character name"
                                       Variant="Variant.Outlined"
                                       Margin="Margin.Dense"
@@ -147,7 +190,7 @@
 
                 @if (_error != null)
                 {
-                    <MudAlert Severity="Severity.Error" Dense="true" Class="mt-3">@_error</MudAlert>
+                    <MudAlert Severity="@(_overwritePending ? Severity.Warning : Severity.Error)" Dense="true" Class="mt-3">@_error</MudAlert>
                 }
             }
 
@@ -166,11 +209,11 @@
         </MudButton>
         @if (_state == State.Review)
         {
-            <MudButton Color="Color.Primary"
+            <MudButton Color="@(_overwritePending ? Color.Warning : Color.Primary)"
                        Variant="Variant.Filled"
                        Disabled="@string.IsNullOrWhiteSpace(_outputFileName)"
                        OnClick="SaveAsync">
-                Import
+                @(_overwritePending ? "Overwrite" : "Import")
             </MudButton>
         }
     </DialogActions>
@@ -188,10 +231,31 @@
     private State  _state         = State.Idle;
     private string _statusMessage = "Parsing…";
     private string? _error;
+    private bool   _overwritePending;
     private string _outputFileName = "";
+    private string _ddbUrl         = "";
 
     private ParsedCharacterSheet? _sheet;
     private ImportResult? _result;
+
+    private string? DerivedApiUrl
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(_ddbUrl)) return null;
+            var m = System.Text.RegularExpressions.Regex.Match(
+                _ddbUrl.Trim(), @"dndbeyond\.com/characters/(\d+)");
+            return m.Success
+                ? $"https://character-service.dndbeyond.com/character/v5/character/{m.Groups[1].Value}?includeCustomItems=true"
+                : null;
+        }
+    }
+
+    private async Task OpenApiUrlAsync(string url)
+    {
+        try { await Launcher.OpenAsync(new Uri(url)); }
+        catch { }
+    }
 
     // ── PDF import ────────────────────────────────────────────────────────────
 
@@ -301,14 +365,26 @@
         if (_result == null || _sheet == null || string.IsNullOrWhiteSpace(_outputFileName)) return;
         _error = null;
 
+        string safeName = SanitiseFileName(_outputFileName);
+        if (string.IsNullOrWhiteSpace(safeName)) safeName = "Imported Character";
+
         try
         {
+            string dir      = Characters.CharactersDirectory;
+            string filePath = Path.Combine(dir, safeName + ".dnd5e");
+
+            if (File.Exists(filePath) && !_overwritePending)
+            {
+                _overwritePending = true;
+                _error = $"\"{safeName}.dnd5e\" already exists. Click Import again to overwrite it.";
+                StateHasChanged();
+                return;
+            }
+            _overwritePending = false;
+
             _state         = State.Working;
             _statusMessage = "Saving character file…";
             StateHasChanged();
-
-            string dir      = Characters.CharactersDirectory;
-            string filePath = Path.Combine(dir, _outputFileName.Trim() + ".dnd5e");
 
             await PdfImport.WriteCharacterFileAsync(_sheet, _result, filePath);
 

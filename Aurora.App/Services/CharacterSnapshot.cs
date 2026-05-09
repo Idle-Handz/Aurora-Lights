@@ -555,6 +555,7 @@ public sealed class CharacterSnapshot
                 UniqueIdentifier = info.UniqueIdentifier ?? "",
                 SourceId = info.ElementHeader?.Id ?? "",
                 Name = info.Name ?? "",
+                HasExtensions = extensionSupports.Count > 0,
                 AbilityName = info.AbilityName ?? "",
                 SpellcastingDc = spellDC,
                 SpellcastingAttack = spellAttack,
@@ -1064,6 +1065,7 @@ public sealed class SpellcastingSectionEntry
     public string UniqueIdentifier { get; init; } = "";
     public string SourceId { get; init; } = "";
     public string Name { get; init; } = "";
+    public bool HasExtensions { get; init; }
     public string AbilityName { get; init; } = "";
     public string SpellcastingDc { get; init; } = "";
     public string SpellcastingAttack { get; init; } = "";

@@ -116,7 +116,7 @@ public sealed class SpellHandlerTests
     [Fact]
     public void MagicPreparedChangeModel_CarriesSpellcastingClass()
     {
-        var model = new MagicPreparedChangeModel("ID_PHB_SPELL_HEROISM", true, "Paladin");
+        var model = new MagicPreparedChangeModel("ID_PHB_SPELL_HEROISM", true, "section-id", "Paladin");
 
         model.SpellId.Should().Be("ID_PHB_SPELL_HEROISM");
         model.Value.Should().BeTrue();
@@ -126,7 +126,7 @@ public sealed class SpellHandlerTests
     [Fact]
     public void MagicPreparedChangeModel_PrepareFalse_CarriesCorrectValue()
     {
-        var model = new MagicPreparedChangeModel("ID_PHB_SPELL_HEROISM", false, "Paladin");
+        var model = new MagicPreparedChangeModel("ID_PHB_SPELL_HEROISM", false, "section-id", "Paladin");
         model.Value.Should().BeFalse();
     }
 

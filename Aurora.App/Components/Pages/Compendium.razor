@@ -1,0 +1,671 @@
+@page "/compendium"
+@implements IDisposable
+@inject CompendiumService CompendiumData
+@inject CharacterTabService Tabs
+@using Builder.Presentation
+@using Microsoft.AspNetCore.Components
+
+<MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-4">
+    <div>
+        <MudText Typo="Typo.h4">Compendium</MudText>
+        <MudText Color="Color.Secondary">Browse installed content by name, type, and source.</MudText>
+    </div>
+    @if (_isLoadingCatalog)
+    {
+        <MudChip T="string" Variant="Variant.Outlined" Color="Color.Primary">
+            Loading...
+        </MudChip>
+    }
+    else if (!_hasSearched)
+    {
+        <MudChip T="string" Variant="Variant.Outlined" Color="Color.Default">
+            Ready to search
+        </MudChip>
+    }
+    else
+    {
+        <MudChip T="string" Variant="Variant.Outlined" Color="Color.Primary">
+            @_filteredEntries.Count result@( _filteredEntries.Count == 1 ? string.Empty : "s")
+        </MudChip>
+    }
+</MudStack>
+
+<MudGrid>
+    <MudItem xs="12" md="4" lg="3">
+        <MudPaper Class="pa-4 compendium-panel">
+            <MudStack Spacing="2">
+                <MudText Typo="Typo.subtitle1">Filters</MudText>
+                <MudTextField T="string"
+                              Label="Search"
+                              Placeholder="Name, source, or keyword"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              Value="_query"
+                              ValueChanged="OnQueryChanged"
+                              OnKeyDown="HandleSearchKeyDown"
+                              Disabled="_isLoadingCatalog" />
+
+                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="compendium-helper-text">
+                    @SearchHint
+                </MudText>
+
+                <MudSelect T="string" Label="Type" Value="_selectedType" ValueChanged="OnTypeChanged" Disabled="_isLoadingCatalog">
+                    @foreach (var type in _types)
+                    {
+                        <MudSelectItem Value="@type">@type</MudSelectItem>
+                    }
+                </MudSelect>
+
+                <MudSelect T="string" Label="Source" Value="_selectedSource" ValueChanged="OnSourceChanged" Disabled="_isLoadingCatalog">
+                    @foreach (var source in _sources)
+                    {
+                        <MudSelectItem Value="@source">@source</MudSelectItem>
+                    }
+                </MudSelect>
+
+                @if (ShowSpellFilters || ShowItemFilters || ShowCompanionFilters)
+                {
+                    <MudExpansionPanels Elevation="0" Outlined="true" Class="compendium-advanced-filters">
+                        <MudExpansionPanel Text="More filters">
+                            <MudStack Spacing="2" Class="pt-2">
+                                @if (ShowSpellFilters)
+                                {
+                                    <MudSelect T="string" Label="Spell Level" Value="_selectedSpellLevel" ValueChanged="OnSpellLevelChanged" Disabled="_isLoadingCatalog">
+                                        @foreach (var level in _spellLevels)
+                                        {
+                                            <MudSelectItem Value="@level">@level</MudSelectItem>
+                                        }
+                                    </MudSelect>
+
+                                    <MudSelect T="string" Label="School" Value="_selectedSpellSchool" ValueChanged="OnSpellSchoolChanged" Disabled="_isLoadingCatalog">
+                                        @foreach (var school in _spellSchools)
+                                        {
+                                            <MudSelectItem Value="@school">@school</MudSelectItem>
+                                        }
+                                    </MudSelect>
+
+                                    <MudSelect T="string" Label="Class" Value="_selectedSpellClass" ValueChanged="OnSpellClassChanged" Disabled="_isLoadingCatalog">
+                                        @foreach (var spellClass in _spellClasses)
+                                        {
+                                            <MudSelectItem Value="@spellClass">@spellClass</MudSelectItem>
+                                        }
+                                    </MudSelect>
+                                }
+
+                                @if (ShowItemFilters)
+                                {
+                                    <MudSelect T="string" Label="Rarity" Value="_selectedItemRarity" ValueChanged="OnItemRarityChanged" Disabled="_isLoadingCatalog">
+                                        @foreach (var rarity in _itemRarities)
+                                        {
+                                            <MudSelectItem Value="@rarity">@rarity</MudSelectItem>
+                                        }
+                                    </MudSelect>
+
+                                    <MudSelect T="string" Label="Attunement" Value="_selectedItemAttunement" ValueChanged="OnItemAttunementChanged" Disabled="_isLoadingCatalog">
+                                        <MudSelectItem T="string" Value="@("All")">All</MudSelectItem>
+                                        <MudSelectItem T="string" Value="@("Requires Attunement")">Requires Attunement</MudSelectItem>
+                                        <MudSelectItem T="string" Value="@("No Attunement")">No Attunement</MudSelectItem>
+                                    </MudSelect>
+                                }
+
+                                @if (ShowCompanionFilters)
+                                {
+                                    <MudSelect T="string" Label="Creature Type" Value="_selectedCreatureType" ValueChanged="OnCreatureTypeChanged" Disabled="_isLoadingCatalog">
+                                        @foreach (var creatureType in _creatureTypes)
+                                        {
+                                            <MudSelectItem Value="@creatureType">@creatureType</MudSelectItem>
+                                        }
+                                    </MudSelect>
+
+                                    <MudSelect T="string" Label="Size" Value="_selectedCreatureSize" ValueChanged="OnCreatureSizeChanged" Disabled="_isLoadingCatalog">
+                                        @foreach (var creatureSize in _creatureSizes)
+                                        {
+                                            <MudSelectItem Value="@creatureSize">@creatureSize</MudSelectItem>
+                                        }
+                                    </MudSelect>
+
+                                    <MudSelect T="string" Label="Challenge" Value="_selectedCreatureChallenge" ValueChanged="OnCreatureChallengeChanged" Disabled="_isLoadingCatalog">
+                                        @foreach (var challenge in _creatureChallenges)
+                                        {
+                                            <MudSelectItem Value="@challenge">@challenge</MudSelectItem>
+                                        }
+                                    </MudSelect>
+                                }
+                            </MudStack>
+                        </MudExpansionPanel>
+                    </MudExpansionPanels>
+                }
+
+                <MudSwitch T="bool"
+                           Value="_currentCharacterSourcesOnly"
+                           ValueChanged="OnCurrentSourcesOnlyChanged"
+                           Disabled="@(!CanUseCharacterSources || _isLoadingCatalog)"
+                           Color="Color.Primary"
+                           Label="Current character sources only" />
+
+                @if (!CanUseCharacterSources)
+                {
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        Open a character to filter results by that character's active source restrictions.
+                    </MudText>
+                }
+
+                <MudDivider Class="my-2" />
+
+                <MudButton Variant="Variant.Text"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Refresh"
+                           Disabled="_isLoadingCatalog"
+                           OnClick="ResetFilters">
+                    Reset Filters
+                </MudButton>
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Search"
+                           Disabled="_isLoadingCatalog"
+                           OnClick="@(() => ExecuteSearchAsync())">
+                    Search
+                </MudButton>
+            </MudStack>
+        </MudPaper>
+    </MudItem>
+
+    <MudItem xs="12" md="4" lg="4">
+        <MudPaper Class="pa-2 compendium-panel compendium-results-panel">
+            <div class="compendium-panel-header">
+                <MudText Typo="Typo.subtitle1">Results</MudText>
+                @if (_hasSearched && !_isLoadingCatalog)
+                {
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        @_filteredEntries.Count match@(_filteredEntries.Count == 1 ? string.Empty : "es")
+                    </MudText>
+                }
+            </div>
+            @if (_isLoadingCatalog)
+            {
+                <div class="compendium-empty-state">
+                    <MudProgressCircular Color="Color.Primary" Indeterminate="true" Class="mb-2" />
+                    <MudText Typo="Typo.h6">Building compendium index</MudText>
+                    <MudText Color="Color.Secondary">Loading installed content metadata for search.</MudText>
+                </div>
+            }
+            else if (!_hasSearched)
+            {
+                <div class="compendium-empty-state">
+                    <MudText Typo="Typo.h6">Run a search</MudText>
+                    <MudText Color="Color.Secondary">Choose filters, type a query if you want, then press Enter or click Search.</MudText>
+                </div>
+            }
+            else if (_filteredEntries.Count == 0)
+            {
+                <div class="compendium-empty-state">
+                    <MudText Typo="Typo.h6">No results found</MudText>
+                    <MudText Color="Color.Secondary">Try loosening the filters or switching back to all installed content.</MudText>
+                </div>
+            }
+            else
+            {
+                <MudList T="CompendiumEntryModel" Dense="true">
+                    @foreach (var entry in _filteredEntries)
+                    {
+                        <MudListItem T="CompendiumEntryModel"
+                                     Value="@entry"
+                                     OnClick="@(() => SelectEntryAsync(entry))"
+                                     Class="@(string.Equals(entry.Id, _selectedEntry?.Id, StringComparison.Ordinal) ? "compendium-result-selected" : "compendium-result-item")">
+                            <div class="compendium-result-body">
+                                <div class="compendium-result-header">
+                                    <MudText Typo="Typo.subtitle2">@entry.Name</MudText>
+                                    <MudText Typo="Typo.caption" Class="compendium-type-pill">@entry.Type</MudText>
+                                </div>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@entry.Source</MudText>
+                                @if (string.Equals(entry.Type, "Spell", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    <MudStack Row="true" Spacing="1" Class="mt-1 compendium-meta-row">
+                                        @if (!string.IsNullOrWhiteSpace(entry.SpellLevelLabel))
+                                        {
+                                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@entry.SpellLevelLabel</MudChip>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(entry.SpellSchool))
+                                        {
+                                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@entry.SpellSchool</MudChip>
+                                        }
+                                    </MudStack>
+                                }
+                                @if (entry.IsItemLike && (!string.IsNullOrWhiteSpace(entry.ItemRarity) || entry.RequiresAttunement))
+                                {
+                                    <MudStack Row="true" Spacing="1" Class="mt-1 compendium-meta-row">
+                                        @if (!string.IsNullOrWhiteSpace(entry.ItemRarity))
+                                        {
+                                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@entry.ItemRarity</MudChip>
+                                        }
+                                        @if (entry.RequiresAttunement)
+                                        {
+                                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">Attunement</MudChip>
+                                        }
+                                    </MudStack>
+                                }
+                                @if (entry.IsCompanionLike && (!string.IsNullOrWhiteSpace(entry.CreatureType) || !string.IsNullOrWhiteSpace(entry.CreatureSize) || !string.IsNullOrWhiteSpace(entry.ChallengeText)))
+                                {
+                                    <MudStack Row="true" Spacing="1" Class="mt-1 compendium-meta-row">
+                                        @if (!string.IsNullOrWhiteSpace(entry.CreatureType))
+                                        {
+                                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@entry.CreatureType</MudChip>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(entry.CreatureSize))
+                                        {
+                                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@entry.CreatureSize</MudChip>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(entry.ChallengeText))
+                                        {
+                                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">CR @entry.ChallengeText</MudChip>
+                                        }
+                                    </MudStack>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(entry.Summary))
+                                {
+                                    <MudText Typo="Typo.body2" Class="mt-1 compendium-result-summary">@entry.Summary</MudText>
+                                }
+                            </div>
+                        </MudListItem>
+                    }
+                </MudList>
+            }
+        </MudPaper>
+    </MudItem>
+
+    <MudItem xs="12" md="4" lg="5">
+        <MudPaper Class="pa-4 compendium-panel compendium-detail-panel">
+            <div class="compendium-panel-header">
+                <MudText Typo="Typo.subtitle1">Details</MudText>
+            </div>
+            @if (_isLoadingCatalog)
+            {
+                <div class="compendium-empty-state">
+                    <MudText Typo="Typo.h6">Loading details</MudText>
+                    <MudText Color="Color.Secondary">The compendium is still loading installed content metadata.</MudText>
+                </div>
+            }
+            else if (!_hasSearched)
+            {
+                <div class="compendium-empty-state">
+                    <MudText Typo="Typo.h6">No entry selected</MudText>
+                    <MudText Color="Color.Secondary">Search first, then choose a result to inspect its details.</MudText>
+                </div>
+            }
+            else if (_selectedEntry is null)
+            {
+                <div class="compendium-empty-state">
+                    <MudText Typo="Typo.h6">Select an entry</MudText>
+                    <MudText Color="Color.Secondary">Choose a result to inspect its details.</MudText>
+                </div>
+            }
+            else
+            {
+                <MudStack Spacing="1" Class="mb-3">
+                    <MudText Typo="Typo.h5">@_selectedEntry.Name</MudText>
+                    <MudStack Row="true" Spacing="1" Class="compendium-detail-meta">
+                        <MudText Typo="Typo.caption" Class="compendium-type-pill">@_selectedEntry.Type</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@_selectedEntry.Source</MudText>
+                        @if (string.Equals(_selectedEntry.Type, "Spell", StringComparison.OrdinalIgnoreCase))
+                        {
+                            @if (!string.IsNullOrWhiteSpace(_selectedEntry.SpellLevelLabel))
+                            {
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@_selectedEntry.SpellLevelLabel</MudText>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(_selectedEntry.SpellSchool))
+                            {
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@_selectedEntry.SpellSchool</MudText>
+                            }
+                        }
+                    </MudStack>
+                </MudStack>
+
+                @if (string.Equals(_selectedEntry.Type, "Spell", StringComparison.OrdinalIgnoreCase) && _selectedEntry.SpellClasses.Count > 0)
+                {
+                    <MudText Typo="Typo.subtitle2" Class="mb-1">Available To</MudText>
+                    <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="1" Class="mb-3">
+                        @foreach (var spellClass in _selectedEntry.SpellClasses)
+                        {
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@spellClass</MudChip>
+                        }
+                    </MudStack>
+                }
+
+                @if (_selectedEntry.IsItemLike && (!string.IsNullOrWhiteSpace(_selectedEntry.ItemRarity) || _selectedEntry.RequiresAttunement || !string.IsNullOrWhiteSpace(_selectedEntry.DisplayWeight)))
+                {
+                    <MudText Typo="Typo.subtitle2" Class="mb-1">Item Details</MudText>
+                    <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="1" Class="mb-3">
+                        @if (!string.IsNullOrWhiteSpace(_selectedEntry.ItemRarity))
+                        {
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@_selectedEntry.ItemRarity</MudChip>
+                        }
+                        @if (_selectedEntry.RequiresAttunement)
+                        {
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">Requires Attunement</MudChip>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(_selectedEntry.DisplayWeight))
+                        {
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">Weight: @_selectedEntry.DisplayWeight</MudChip>
+                        }
+                    </MudStack>
+                }
+
+                @if (_selectedEntry.IsCompanionLike && (!string.IsNullOrWhiteSpace(_selectedEntry.CreatureType) || !string.IsNullOrWhiteSpace(_selectedEntry.CreatureSize) || !string.IsNullOrWhiteSpace(_selectedEntry.ChallengeText)))
+                {
+                    <MudText Typo="Typo.subtitle2" Class="mb-1">Companion Details</MudText>
+                    <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="1" Class="mb-3">
+                        @if (!string.IsNullOrWhiteSpace(_selectedEntry.CreatureType))
+                        {
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@_selectedEntry.CreatureType</MudChip>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(_selectedEntry.CreatureSize))
+                        {
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@_selectedEntry.CreatureSize</MudChip>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(_selectedEntry.ChallengeText))
+                        {
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">CR @_selectedEntry.ChallengeText</MudChip>
+                        }
+                    </MudStack>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(_selectedEntry.Summary))
+                {
+                    <MudText Typo="Typo.body1" Class="mb-3">@_selectedEntry.Summary</MudText>
+                }
+
+                @if (string.IsNullOrWhiteSpace(_selectedEntry.DescriptionHtml))
+                {
+                    <MudText Color="Color.Secondary">No description is available for this entry.</MudText>
+                }
+                else
+                {
+                    <div class="compendium-description">@((MarkupString)_selectedEntry.DescriptionHtml)</div>
+                }
+            }
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code {
+    [SupplyParameterFromQuery(Name = "id")]
+    public string? RequestedId { get; set; }
+    [SupplyParameterFromQuery(Name = "q")]
+    public string? RequestedQuery { get; set; }
+
+    private readonly HashSet<string> _restrictedSources = new(StringComparer.OrdinalIgnoreCase);
+    private List<CompendiumEntryModel> _catalog = [];
+    private List<CompendiumEntryModel> _filteredEntries = [];
+    private IReadOnlyList<string> _types = ["All"];
+    private IReadOnlyList<string> _sources = ["All"];
+    private IReadOnlyList<string> _spellLevels = ["All"];
+    private IReadOnlyList<string> _spellSchools = ["All"];
+    private IReadOnlyList<string> _spellClasses = ["All"];
+    private IReadOnlyList<string> _itemRarities = ["All"];
+    private IReadOnlyList<string> _creatureTypes = ["All"];
+    private IReadOnlyList<string> _creatureSizes = ["All"];
+    private IReadOnlyList<string> _creatureChallenges = ["All"];
+    private CompendiumEntryModel? _selectedEntry;
+    private string _query = string.Empty;
+    private string _selectedType = "All";
+    private string _selectedSource = "All";
+    private string _selectedSpellLevel = "All";
+    private string _selectedSpellSchool = "All";
+    private string _selectedSpellClass = "All";
+    private string _selectedItemRarity = "All";
+    private string _selectedItemAttunement = "All";
+    private string _selectedCreatureType = "All";
+    private string _selectedCreatureSize = "All";
+    private string _selectedCreatureChallenge = "All";
+    private bool _currentCharacterSourcesOnly;
+    private bool _isLoadingCatalog = true;
+    private bool _hasSearched;
+    private bool _disposed;
+
+    private bool CanUseCharacterSources => Tabs.ActiveTab is { IsLoading: false };
+    private bool ShowSpellFilters => string.Equals(_selectedType, "Spell", StringComparison.OrdinalIgnoreCase);
+    private bool ShowItemFilters => _selectedType is "Weapon" or "Armor" or "Item" or "Magic Item" or "Ammunition" or "Tool" or "Mount" or "Vehicle" or "Pack" or "Gear" or "Adventuring Gear";
+    private bool ShowCompanionFilters => string.Equals(_selectedType, "Companion", StringComparison.OrdinalIgnoreCase);
+    private string SearchHint => string.Equals(_selectedType, "All", StringComparison.OrdinalIgnoreCase)
+        ? "Tip: choose a type like Spell, Item, or Companion first, then search within that category."
+        : $"Searching within {_selectedType}. Refine further with text or additional filters.";
+
+    protected override async Task OnInitializedAsync()
+    {
+        Tabs.TabsChanged += OnTabsChanged;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!string.IsNullOrWhiteSpace(RequestedQuery) &&
+            !string.Equals(RequestedQuery, _query, StringComparison.Ordinal))
+        {
+            _query = RequestedQuery;
+        }
+
+        if (_catalog.Count == 0 || _isLoadingCatalog)
+            return;
+
+        if (!string.IsNullOrWhiteSpace(RequestedQuery) || !string.IsNullOrWhiteSpace(RequestedId))
+            await ExecuteSearchAsync(selectRequestedId: true);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        await InvokeAsync(StateHasChanged);
+        _catalog = (await CompendiumData.BuildCatalogAsync()).ToList();
+        _types = CompendiumData.GetTypes(_catalog);
+        _sources = CompendiumData.GetSources(_catalog);
+        _spellLevels = CompendiumData.GetSpellLevels(_catalog);
+        _spellSchools = CompendiumData.GetSpellSchools(_catalog);
+        _spellClasses = CompendiumData.GetSpellClasses(_catalog);
+        _itemRarities = CompendiumData.GetItemRarities(_catalog);
+        _creatureTypes = CompendiumData.GetCreatureTypes(_catalog);
+        _creatureSizes = CompendiumData.GetCreatureSizes(_catalog);
+        _creatureChallenges = CompendiumData.GetCreatureChallenges(_catalog);
+        _isLoadingCatalog = false;
+        if (!string.IsNullOrWhiteSpace(RequestedQuery) || !string.IsNullOrWhiteSpace(RequestedId))
+            await ExecuteSearchAsync(selectRequestedId: true);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private Task OnQueryChanged(string value)
+    {
+        _query = value;
+        return _hasSearched ? RefreshAsync() : Task.CompletedTask;
+    }
+
+    private Task OnTypeChanged(string value)
+    {
+        _selectedType = value;
+        return _hasSearched ? RefreshAsync() : Task.CompletedTask;
+    }
+
+    private Task OnSourceChanged(string value)
+    {
+        _selectedSource = value;
+        return _hasSearched ? RefreshAsync() : Task.CompletedTask;
+    }
+
+    private Task OnSpellLevelChanged(string value)
+    {
+        _selectedSpellLevel = value;
+        return _hasSearched ? RefreshAsync() : Task.CompletedTask;
+    }
+
+    private Task OnSpellSchoolChanged(string value)
+    {
+        _selectedSpellSchool = value;
+        return _hasSearched ? RefreshAsync() : Task.CompletedTask;
+    }
+
+    private Task OnSpellClassChanged(string value)
+    {
+        _selectedSpellClass = value;
+        return _hasSearched ? RefreshAsync() : Task.CompletedTask;
+    }
+
+    private Task OnItemRarityChanged(string value)
+    {
+        _selectedItemRarity = value;
+        return _hasSearched ? RefreshAsync() : Task.CompletedTask;
+    }
+
+    private Task OnItemAttunementChanged(string value)
+    {
+        _selectedItemAttunement = value;
+        return _hasSearched ? RefreshAsync() : Task.CompletedTask;
+    }
+
+    private Task OnCreatureTypeChanged(string value)
+    {
+        _selectedCreatureType = value;
+        return _hasSearched ? RefreshAsync() : Task.CompletedTask;
+    }
+
+    private Task OnCreatureSizeChanged(string value)
+    {
+        _selectedCreatureSize = value;
+        return _hasSearched ? RefreshAsync() : Task.CompletedTask;
+    }
+
+    private Task OnCreatureChallengeChanged(string value)
+    {
+        _selectedCreatureChallenge = value;
+        return _hasSearched ? RefreshAsync() : Task.CompletedTask;
+    }
+
+    private async Task OnCurrentSourcesOnlyChanged(bool value)
+    {
+        _currentCharacterSourcesOnly = value;
+        if (_currentCharacterSourcesOnly)
+            await LoadRestrictedSourcesAsync();
+        else
+            _restrictedSources.Clear();
+
+        if (_hasSearched)
+            await RefreshAsync();
+    }
+
+    private async Task HandleSearchKeyDown(KeyboardEventArgs args)
+    {
+        if (string.Equals(args.Key, "Enter", StringComparison.OrdinalIgnoreCase))
+            await ExecuteSearchAsync();
+    }
+
+    private async Task ExecuteSearchAsync(bool selectRequestedId = false)
+    {
+        _hasSearched = true;
+        await RefreshAsync(selectRequestedId);
+    }
+
+    private async Task RefreshAsync(bool selectRequestedId = false)
+    {
+        if (_isLoadingCatalog)
+            return;
+
+        if (_currentCharacterSourcesOnly && CanUseCharacterSources && _restrictedSources.Count == 0)
+            await LoadRestrictedSourcesAsync();
+
+        _filteredEntries = CompendiumData.Filter(
+            _catalog,
+            _query,
+            _selectedType,
+            _selectedSource,
+            ShowSpellFilters ? _selectedSpellLevel : "All",
+            ShowSpellFilters ? _selectedSpellSchool : "All",
+            ShowSpellFilters ? _selectedSpellClass : "All",
+            ShowItemFilters ? _selectedItemRarity : "All",
+            ShowItemFilters ? _selectedItemAttunement : "All",
+            ShowCompanionFilters ? _selectedCreatureType : "All",
+            ShowCompanionFilters ? _selectedCreatureSize : "All",
+            ShowCompanionFilters ? _selectedCreatureChallenge : "All",
+            _currentCharacterSourcesOnly ? _restrictedSources : null).ToList();
+
+        if (selectRequestedId && !string.IsNullOrWhiteSpace(RequestedId))
+        {
+            _selectedEntry = _filteredEntries.FirstOrDefault(e => string.Equals(e.Id, RequestedId, StringComparison.Ordinal))
+                ?? _catalog.FirstOrDefault(e => string.Equals(e.Id, RequestedId, StringComparison.Ordinal));
+        }
+
+        if (_selectedEntry is not null && !_filteredEntries.Any(entry => string.Equals(entry.Id, _selectedEntry.Id, StringComparison.Ordinal)))
+            _selectedEntry = _filteredEntries.FirstOrDefault();
+
+        if (_selectedEntry is not null)
+            _selectedEntry = await CompendiumData.EnrichEntryAsync(_selectedEntry);
+    }
+
+    private async Task LoadRestrictedSourcesAsync()
+    {
+        _restrictedSources.Clear();
+
+        if (Tabs.ActiveTab is not { IsLoading: false } tab)
+            return;
+
+        using var scope = await CharacterContext.EnterAsync(tab);
+        foreach (var source in CharacterManager.Current.SourcesManager.GetRestrictedSources())
+        {
+            if (!string.IsNullOrWhiteSpace(source))
+                _restrictedSources.Add(source);
+        }
+    }
+
+    private async void OnTabsChanged()
+    {
+        if (_disposed) return;
+        await InvokeAsync(async () =>
+        {
+            if (_disposed) return;
+
+            if (!CanUseCharacterSources && _currentCharacterSourcesOnly)
+            {
+                _currentCharacterSourcesOnly = false;
+                _restrictedSources.Clear();
+            }
+            else if (_currentCharacterSourcesOnly)
+            {
+                await LoadRestrictedSourcesAsync();
+            }
+
+            if (_hasSearched)
+                await RefreshAsync(selectRequestedId: true);
+            StateHasChanged();
+        });
+    }
+
+    private async Task SelectEntryAsync(CompendiumEntryModel entry)
+    {
+        _selectedEntry = await CompendiumData.EnrichEntryAsync(entry);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private Task ResetFilters()
+    {
+        _query = string.Empty;
+        _selectedType = "All";
+        _selectedSource = "All";
+        _selectedSpellLevel = "All";
+        _selectedSpellSchool = "All";
+        _selectedSpellClass = "All";
+        _selectedItemRarity = "All";
+        _selectedItemAttunement = "All";
+        _selectedCreatureType = "All";
+        _selectedCreatureSize = "All";
+        _selectedCreatureChallenge = "All";
+        _currentCharacterSourcesOnly = false;
+        _restrictedSources.Clear();
+        _hasSearched = false;
+        _filteredEntries.Clear();
+        _selectedEntry = null;
+        return Task.CompletedTask;
+    }
+
+    public void Dispose()
+    {
+        _disposed = true;
+        Tabs.TabsChanged -= OnTabsChanged;
+    }
+}

@@ -26,6 +26,13 @@
                 <span class="magic-stat-value">@activeMagicSection.Label</span>
                 <span class="magic-stat-label">Class</span>
             </div>
+            @if (activeMagicSection.HasExtensions)
+            {
+                <div class="magic-stat">
+                    <span class="magic-stat-value">Extended</span>
+                    <span class="magic-stat-label">Granted Spells Included</span>
+                </div>
+            }
             <div class="magic-stat">
                 <span class="magic-stat-value">@activeMagicSection.SpellcastingAbility</span>
                 <span class="magic-stat-label">Ability</span>
@@ -65,16 +72,38 @@
                         <option value="@i">@Ordinal(i) level</option>
                     }
                 </select>
+                <select class="magic-filter-select" @bind="_sourceFilter">
+                    <option value="">All sources</option>
+                    @foreach (string source in AvailableSources)
+                    {
+                        <option value="@source">@source</option>
+                    }
+                </select>
+                <select class="magic-filter-select" @bind="_schoolFilter">
+                    <option value="">All schools</option>
+                    @foreach (string school in AvailableSchools)
+                    {
+                        <option value="@school">@school</option>
+                    }
+                </select>
                 <label class="magic-filter-check">
                     <input type="checkbox" @bind="_preparedOnly" />
                     <span>Prepared only</span>
                 </label>
+                <label class="magic-filter-check">
+                    <input type="checkbox" @bind="_ritualOnly" />
+                    <span>Rituals</span>
+                </label>
+                <label class="magic-filter-check">
+                    <input type="checkbox" @bind="_concentrationOnly" />
+                    <span>Concentration</span>
+                </label>
             </div>
         </section>
 
-        @if (Model.KnownSpellGroups.Count > 0)
+        @if (FilteredKnownSpellGroups.Count > 0)
         {
-            @foreach (MagicKnownSpellGroupModel group in Model.KnownSpellGroups)
+            @foreach (MagicKnownSpellGroupModel group in FilteredKnownSpellGroups)
             {
                 <section class="magic-section">
                     <div class="magic-section-label">@($"{group.Label} - Known Spells")</div>
@@ -115,7 +144,24 @@
                                 class="magic-spell-row magic-spell-select @(SelectedSpellId == cantrip.Id ? "selected" : string.Empty)"
                                 @onclick="() => OnSelectSpell.InvokeAsync(cantrip.Id)">
                             <span class="magic-spell-dot cantrip"></span>
-                            <span class="magic-spell-name">@cantrip.Name</span>
+                            <span class="magic-spell-text">
+                                <span class="magic-spell-name">@cantrip.Name</span>
+                                <span class="magic-spell-meta">
+                                    @if (!string.IsNullOrWhiteSpace(cantrip.Source))
+                                    {
+                                        <span>@cantrip.Source</span>
+                                    }
+                                    <span class="magic-spell-badge cantrip">Cantrip</span>
+                                    @if (cantrip.IsRitual)
+                                    {
+                                        <span class="magic-spell-badge">Ritual</span>
+                                    }
+                                    @if (cantrip.IsConcentration)
+                                    {
+                                        <span class="magic-spell-badge">Concentration</span>
+                                    }
+                                </span>
+                            </span>
                         </button>
                     }
                 }
@@ -155,7 +201,28 @@
                             <button type="button"
                                     class="magic-spell-select"
                                     @onclick="() => OnSelectSpell.InvokeAsync(spell.Id)">
-                                <span class="magic-spell-name @(spell.IsPrepared ? "prepared" : string.Empty)">@spell.Name</span>
+                                <span class="magic-spell-text">
+                                    <span class="magic-spell-name @(spell.IsPrepared ? "prepared" : string.Empty)">@spell.Name</span>
+                                    <span class="magic-spell-meta">
+                                        @if (!string.IsNullOrWhiteSpace(spell.Source))
+                                        {
+                                            <span>@spell.Source</span>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(spell.School))
+                                        {
+                                            <span>@spell.School</span>
+                                        }
+                                        <span class="magic-spell-badge @GetBadgeClass(spell.DisplayState)">@GetDisplayStateLabel(spell.DisplayState)</span>
+                                        @if (spell.IsRitual)
+                                        {
+                                            <span class="magic-spell-badge">Ritual</span>
+                                        }
+                                        @if (spell.IsConcentration)
+                                        {
+                                            <span class="magic-spell-badge">Concentration</span>
+                                        }
+                                    </span>
+                                </span>
                             </button>
                         </div>
                     }
@@ -180,6 +247,18 @@
                         @if (!string.IsNullOrWhiteSpace(spellDetail.Subtitle))
                         {
                             <span>@spellDetail.Subtitle</span>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(spellDetail.School))
+                        {
+                            <span>@spellDetail.School</span>
+                        }
+                        @if (spellDetail.Ritual)
+                        {
+                            <span>Ritual</span>
+                        }
+                        @if (spellDetail.Concentration)
+                        {
+                            <span>Concentration</span>
                         }
                         @if (!string.IsNullOrWhiteSpace(spellDetail.Source))
                         {
@@ -237,7 +316,11 @@
 
     private string _searchText = string.Empty;
     private string _levelFilter = string.Empty;
+    private string _sourceFilter = string.Empty;
+    private string _schoolFilter = string.Empty;
     private bool _preparedOnly;
+    private bool _ritualOnly;
+    private bool _concentrationOnly;
     private string? _selectedSectionId;
 
     private MagicSpellcastingSectionModel ActiveSection =>
@@ -256,6 +339,29 @@
                 level.TotalSlots,
                 level.UsedSlots))
             .Where(level => level.Spells.Count > 0 || LevelShouldRemainVisible(level.Level))
+            .ToList();
+
+    private IReadOnlyList<MagicKnownSpellGroupModel> FilteredKnownSpellGroups =>
+        Model.KnownSpellGroups
+            .Where(group => string.IsNullOrWhiteSpace(group.SectionId) || string.Equals(group.SectionId, ActiveSection.Id, StringComparison.Ordinal))
+            .ToList();
+
+    private IReadOnlyList<string> AvailableSources =>
+        ActiveSection.Cantrips
+            .Concat(ActiveSection.SpellLevels.SelectMany(level => level.Spells))
+            .Select(spell => spell.Source)
+            .Where(source => !string.IsNullOrWhiteSpace(source))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(source => source)
+            .ToList();
+
+    private IReadOnlyList<string> AvailableSchools =>
+        ActiveSection.Cantrips
+            .Concat(ActiveSection.SpellLevels.SelectMany(level => level.Spells))
+            .Select(spell => spell.School)
+            .Where(school => !string.IsNullOrWhiteSpace(school))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(school => school)
             .ToList();
 
     protected override void OnParametersSet()
@@ -295,6 +401,20 @@
         }
 
         if (_preparedOnly && !spell.IsPrepared && !spell.IsAlwaysPrepared)
+            return false;
+
+        if (!string.IsNullOrWhiteSpace(_sourceFilter)
+            && !string.Equals(spell.Source, _sourceFilter, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        if (!string.IsNullOrWhiteSpace(_schoolFilter)
+            && !string.Equals(spell.School, _schoolFilter, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        if (_ritualOnly && !spell.IsRitual)
+            return false;
+
+        if (_concentrationOnly && !spell.IsConcentration)
             return false;
 
         return true;
@@ -352,5 +472,21 @@
         2 => "2nd",
         3 => "3rd",
         _ => $"{level}th",
+    };
+
+    private static string GetDisplayStateLabel(MagicSpellDisplayState state) => state switch
+    {
+        MagicSpellDisplayState.AlwaysPrepared => "Always Prepared",
+        MagicSpellDisplayState.Known => "Known",
+        MagicSpellDisplayState.Available => "Available",
+        _ => "Prepared",
+    };
+
+    private static string GetBadgeClass(MagicSpellDisplayState state) => state switch
+    {
+        MagicSpellDisplayState.AlwaysPrepared => "magic-spell-badge-always",
+        MagicSpellDisplayState.Known => "magic-spell-badge-known",
+        MagicSpellDisplayState.Available => "magic-spell-badge-available",
+        _ => "magic-spell-badge-prepared",
     };
 }

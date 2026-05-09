@@ -84,9 +84,9 @@ public sealed class CharacterInferenceEngine
 
         using var connection = OpenDb();
 
-        // Race.
+        // Race (and Sub Race if D&D Beyond reported a subrace name like "High Elf").
         if (!string.IsNullOrWhiteSpace(sheet.Species))
-            ResolveByName(connection, "Race", sheet.Species, result, level: 1);
+            ResolveRaceWithSubrace(connection, sheet.Species, result);
 
         // Class.
         if (!string.IsNullOrWhiteSpace(className))
@@ -115,6 +115,11 @@ public sealed class CharacterInferenceEngine
         // Languages (from proficiencies block, supplementary to what elements grant).
         foreach (string lang in sheet.Languages)
             ResolveByName(connection, "Language", lang, result, level: 1, warnIfMissing: false);
+
+        // Choices resolved from D&D Beyond choiceDefinitions — things like infusions,
+        // artisan tools, and any other class/race/background pick not already categorised.
+        foreach (string choice in sheet.ImportChoices)
+            ResolveChoiceByName(connection, choice, result);
 
         // Saving throw proficiencies.
         AddSavingThrowProficiency(connection, result, "Strength", sheet.SaveStrength);
@@ -161,8 +166,17 @@ public sealed class CharacterInferenceEngine
                 level: 1,
                 warnIfMissing: false);
 
+        // Collect all resolved aurora IDs so we can detect feats that were automatically
+        // granted (not spent from ASI slots) before running ASI inference.
+        var allResolvedIds = result.Elements
+            .Concat(result.Ambiguities.Where(a => a.Chosen != null).Select(a => a.Chosen!))
+            .Select(e => e.AuroraId)
+            .Distinct()
+            .ToList();
+        int freeFeats = CountAutoGrantedFeats(connection, allResolvedIds);
+
         // ASI inference.
-        InferAsi(className, sheet, result);
+        InferAsi(className, sheet, result, freeFeats);
 
         return result;
     }
@@ -331,6 +345,27 @@ public sealed class CharacterInferenceEngine
         return results;
     }
 
+    private void ResolveChoiceByName(SqliteConnection conn, string name, ImportResult result)
+    {
+        // Try element types in priority order; stop at the first hit.
+        foreach (string type in (string[])[
+            "Class Feature", "Infusion", "Archetype Feature",
+            "Racial Trait", "Race Variant", "Vision",
+            "Feat", "Spell", "Proficiency"])
+        {
+            int before = result.Elements.Count + result.Ambiguities.Count;
+            ResolveByName(conn, type, name, result, level: 1, warnIfMissing: false);
+            if (result.Elements.Count + result.Ambiguities.Count > before) return;
+        }
+
+        result.Warnings.Add(new ImportWarning
+        {
+            Category = "Choice",
+            Item     = name,
+            Reason   = "Could not match to an installed element; set it manually in the Build tab.",
+        });
+    }
+
     private static IEnumerable<string> BuildToolProficiencyCandidates(string name)
     {
         string normalized = NormalizeProficiencyName(name);
@@ -377,6 +412,109 @@ public sealed class CharacterInferenceEngine
             .Replace("'", "’", StringComparison.Ordinal)
             .Replace("  ", " ", StringComparison.Ordinal)
             .Trim();
+
+    // ── Race / subrace resolution ─────────────────────────────────────────────
+
+    /// <summary>
+    /// Resolves the character's species against the content DB, handling both top-level
+    /// Race elements (Human, Half-Elf, Dragonborn) and Sub Race elements (High Elf, Hill
+    /// Dwarf) where D&D Beyond reports the subrace name rather than the parent race name.
+    /// When a Sub Race match is found, the parent Race element is looked up automatically
+    /// via the Sub Race's element_supports entry so that both are added to the result.
+    /// </summary>
+    private void ResolveRaceWithSubrace(SqliteConnection conn, string species, ImportResult result)
+    {
+        // First: try as a top-level Race element.
+        int elementsBefore   = result.Elements.Count;
+        int ambigsBefore     = result.Ambiguities.Count;
+        ResolveByName(conn, "Race", species, result, level: 1, warnIfMissing: false);
+        bool foundAsRace = result.Elements.Count > elementsBefore
+                        || result.Ambiguities.Count > ambigsBefore;
+        if (foundAsRace) return;
+
+        // Second: try as a Sub Race element (e.g., "High Elf", "Hill Dwarf").
+        var subRaceMatches = QueryByNameAndType(conn, "Sub Race", species);
+        if (subRaceMatches.Count == 0)
+        {
+            result.Warnings.Add(new ImportWarning
+            {
+                Category = "Race",
+                Item     = species,
+                Reason   = "No matching Race or Sub Race element found in installed content packages.",
+            });
+            return;
+        }
+
+        ResolvedElement subRace;
+        if (subRaceMatches.Count == 1)
+        {
+            subRace = subRaceMatches[0] with { Level = 1 };
+            result.Elements.Add(subRace);
+        }
+        else
+        {
+            var amb = new ImportAmbiguity
+            {
+                Category   = "Sub Race",
+                Item       = species,
+                Candidates = subRaceMatches.Select(m => m with { Level = 1 }).ToList(),
+            };
+            amb.Chosen = amb.Candidates[0];
+            result.Ambiguities.Add(amb);
+            subRace = amb.Chosen;
+        }
+
+        // Look up the parent Race element via the sub race's element_supports entry
+        // (the <supports> tag in the XML, e.g., "Elf" for High Elf).
+        var parentRace = QueryParentRaceForSubRace(conn, subRace.AuroraId);
+        if (parentRace != null)
+        {
+            result.Elements.Add(parentRace with { Level = 1 });
+        }
+        else
+        {
+            result.Warnings.Add(new ImportWarning
+            {
+                Category = "Race",
+                Item     = species,
+                Reason   = $"Resolved as Sub Race '{subRace.Name}' but could not locate the parent Race element.",
+            });
+        }
+    }
+
+    private ResolvedElement? QueryParentRaceForSubRace(SqliteConnection conn, string subRaceAuroraId)
+    {
+        const string sql = """
+            SELECT parent.aurora_id, parent_et.type_name, parent.name,
+                   cp.package_name
+            FROM elements sr
+            JOIN element_supports es   ON es.element_id        = sr.element_id
+            JOIN elements parent       ON parent.name          = es.support_text
+            JOIN element_types parent_et ON parent_et.element_type_id = parent.element_type_id
+            LEFT JOIN source_files sf  ON parent.source_file_id = sf.source_file_id
+            LEFT JOIN content_packages cp ON sf.content_package_id = cp.content_package_id
+            WHERE sr.aurora_id = $aurora_id
+              AND parent_et.type_name = 'Race'
+              AND (cp.is_enabled IS NULL OR cp.is_enabled = 1)
+            ORDER BY COALESCE(cp.precedence_rank, -2147483648) DESC
+            LIMIT 1;
+            """;
+
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = sql;
+        cmd.Parameters.AddWithValue("$aurora_id", subRaceAuroraId);
+
+        using var reader = cmd.ExecuteReader();
+        if (!reader.Read()) return null;
+
+        return new ResolvedElement
+        {
+            AuroraId    = reader.GetString(0),
+            TypeName    = reader.GetString(1),
+            Name        = reader.GetString(2),
+            PackageName = reader.IsDBNull(3) ? null : reader.GetString(3),
+        };
+    }
 
     // ── Level element inference ───────────────────────────────────────────────
 
@@ -450,7 +588,7 @@ public sealed class CharacterInferenceEngine
 
     // ── ASI inference ─────────────────────────────────────────────────────────
 
-    private void InferAsi(string? className, ParsedCharacterSheet sheet, ImportResult result)
+    private void InferAsi(string? className, ParsedCharacterSheet sheet, ImportResult result, int freeFeats)
     {
         if (className == null || result.Level < 4) return;
 
@@ -460,11 +598,10 @@ public sealed class CharacterInferenceEngine
         int[] relevantAsiLevels = asiLevels.Where(l => l <= result.Level).ToArray();
         if (relevantAsiLevels.Length == 0) return;
 
-        // Count feats that were explicitly chosen (not race/background grants).
-        // We know from sheet.Feats which feats the character has.
-        // Assume one feat = one ASI slot used for a feat.
-        int featCount = sheet.Feats.Count;
-        int asiCount  = relevantAsiLevels.Length - featCount;
+        // Subtract feats that were automatically granted by race/background/archetype
+        // (i.e. not chosen in place of an ASI) so we only count ASI-slot feats.
+        int featsFromAsi = Math.Max(0, sheet.Feats.Count - freeFeats);
+        int asiCount     = relevantAsiLevels.Length - featsFromAsi;
         if (asiCount <= 0) return;
 
         // Determine which stat to bump: highest stat that is < 20.
@@ -516,6 +653,50 @@ public sealed class CharacterInferenceEngine
             .OrderByDescending(kv => kv.Value)
             .Select(kv => kv.Key)
             .FirstOrDefault() ?? "Strength";
+    }
+
+    // ── Free-feat detection ───────────────────────────────────────────────────
+
+    /// <summary>
+    /// Counts feats that the character's resolved elements grant automatically
+    /// (direct grants or choice selects owned by non-class-feature elements).
+    /// These do NOT consume an ASI slot, so they must be excluded from the
+    /// feat-vs-ASI accounting in <see cref="InferAsi"/>.
+    /// </summary>
+    private int CountAutoGrantedFeats(SqliteConnection conn, List<string> resolvedAuroraIds)
+    {
+        if (resolvedAuroraIds.Count == 0) return 0;
+
+        using var cmd = conn.CreateCommand();
+
+        var paramNames = resolvedAuroraIds.Select((_, i) => $"$id{i}").ToList();
+        string inClause = string.Join(", ", paramNames);
+        for (int i = 0; i < resolvedAuroraIds.Count; i++)
+            cmd.Parameters.AddWithValue($"$id{i}", resolvedAuroraIds[i]);
+
+        // Direct grants of type "Feat" from any resolved element, plus
+        // <select type="Feat"> rules whose owning element is NOT a class
+        // feature template (those are ASI-replacing feat slots).
+        cmd.CommandText = $"""
+            SELECT
+                (SELECT COUNT(*)
+                 FROM grants g
+                 JOIN rule_scopes rs ON rs.rule_scope_id = g.rule_scope_id
+                 JOIN elements e     ON e.element_id     = rs.owner_element_id
+                 WHERE g.grant_type = 'Feat'
+                   AND e.aurora_id IN ({inClause}))
+                +
+                (SELECT COUNT(DISTINCT s.select_id)
+                 FROM selects s
+                 JOIN rule_scopes rs  ON rs.rule_scope_id  = s.rule_scope_id
+                 JOIN elements e      ON e.element_id      = rs.owner_element_id
+                 JOIN element_types et ON et.element_type_id = e.element_type_id
+                 WHERE s.select_type = 'Feat'
+                   AND et.type_name NOT IN ('Class Feature', 'Level', 'Grants')
+                   AND e.aurora_id IN ({inClause}))
+            """;
+
+        return Convert.ToInt32(cmd.ExecuteScalar() ?? 0);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

@@ -1184,6 +1184,42 @@ public static class DndBeyondPdfParser
         return m.Success ? m.Groups[1].Value : null;
     }
 
+    // ── Portrait extraction ───────────────────────────────────────────────────
+
+    /// <summary>
+    /// Tries to extract the character portrait image from page 1 of a D&amp;D Beyond PDF.
+    /// Returns the image bytes and a file extension, or null if nothing suitable was found.
+    /// </summary>
+    public static (byte[] Bytes, string Extension)? TryExtractPortrait(string pdfPath)
+    {
+        try
+        {
+            using var doc = PdfDocument.Open(pdfPath);
+            var page = doc.GetPage(1);
+            var images = page.GetImages()
+                .Where(img => !img.IsImageMask)
+                .ToList();
+            if (images.Count == 0) return null;
+
+            // Portrait is in the left half of page 1; pick the largest candidate.
+            var candidate = images
+                .Where(img => img.BoundingBox.Left < page.Width / 2)
+                .OrderByDescending(img => img.BoundingBox.Width * img.BoundingBox.Height)
+                .FirstOrDefault()
+                ?? images.OrderByDescending(img => img.BoundingBox.Width * img.BoundingBox.Height).First();
+
+            // TryGetPng works for PNG/FlateDecode images but does not convert JPEG.
+            if (candidate.TryGetPng(out byte[]? png) && png != null && png.Length > 0)
+                return (png, ".png");
+
+            var raw = candidate.RawMemory;
+            if (raw.Length > 0) return (raw.ToArray(), ".jpg");
+
+            return null;
+        }
+        catch { return null; }
+    }
+
     // ── Skill name list ───────────────────────────────────────────────────────
 
     private static readonly string[] AllSkills =
