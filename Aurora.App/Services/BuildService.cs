@@ -293,9 +293,14 @@ public static class BuildService
     private static IEnumerable<ElementBase> SpellFallbackOptions(
         SelectRule rule, IEnumerable<ElementBase> spellBase)
     {
-        // Determine cantrip vs levelled spell from the supports text.
-        bool isCantrip = rule.Attributes.ContainsSupports() &&
-                         rule.Attributes.Supports.Contains("Cantrip", StringComparison.OrdinalIgnoreCase);
+        // Determine cantrip vs levelled spell.
+        // Supports expressions use $(spellcasting:list), 0 for cantrips — the macro text
+        // doesn't contain "Cantrip", so we also check the rule name.
+        bool isCantrip = false;
+        if (rule.Attributes.ContainsSupports())
+            isCantrip = rule.Attributes.Supports.Contains("Cantrip", StringComparison.OrdinalIgnoreCase);
+        if (!isCantrip)
+            isCantrip = rule.Attributes.Name?.Contains("Cantrip", StringComparison.OrdinalIgnoreCase) == true;
 
         // Prefer the spellcasting class name from the rule attribute; fall back to parsing
         // the supports expression for the first plain word (strips macros like "$(...)").
@@ -318,18 +323,22 @@ public static class BuildService
         string scName = className;
 
         // Fast path: use the pre-resolved spell access map from the DB loader.
+        // Only use this path when it actually finds matches; if the map has the key but the
+        // element IDs don't match the loaded content (e.g. API-imported IDs vs XML-loaded IDs),
+        // fall through to the text-based scan instead of returning empty.
         if (DbElementLoader.SpellAccessMap.TryGetValue(scName, out var spellIds))
         {
-            return spellBase.Where(e =>
+            var fromMap = spellBase.Where(e =>
             {
                 if (!spellIds.Contains(e.Id)) return false;
                 int lvl = 0;
                 try { lvl = (int)((dynamic)e).Level; } catch { }
                 return isCantrip ? lvl == 0 : lvl > 0;
-            });
+            }).ToList();
+            if (fromMap.Count > 0) return fromMap;
         }
 
-        // Fallback: supports-text scan (used when DB loader was not active).
+        // Text-based scan: filter by class name in supports attribute.
         return spellBase.Where(e =>
         {
             if (e.Supports == null || !e.Supports.Contains(scName)) return false;
