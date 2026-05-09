@@ -15,15 +15,21 @@
                 }
             </div>
 
-            @if (ShowCreateButton)
-            {
-                <button class="character-browser-create"
-                        type="button"
-                        @onclick="OnCreate"
-                        disabled="@DisableCreateButton">
-                    @CreateButtonText
-                </button>
-            }
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                @if (AdditionalHeaderContent != null)
+                {
+                    @AdditionalHeaderContent
+                }
+                @if (ShowCreateButton)
+                {
+                    <button class="character-browser-create"
+                            type="button"
+                            @onclick="OnCreate"
+                            disabled="@DisableCreateButton">
+                        @CreateButtonText
+                    </button>
+                }
+            </div>
         </div>
     }
 
@@ -172,6 +178,9 @@
 
     [Parameter]
     public EventCallback OnCreate { get; set; }
+
+    [Parameter]
+    public RenderFragment? AdditionalHeaderContent { get; set; }
 
     protected override void OnParametersSet()
     {

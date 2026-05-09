@@ -50,6 +50,10 @@ internal sealed class PdfPreviewPage : ContentPage
                     saveBtn.Text          = "Saved!";
                     statusLabel.Text      = $"Saved to {savedPath}";
                     statusLabel.IsVisible = true;
+#if MACCATALYST
+                    // Reveal the saved file in Finder — standard macOS UX.
+                    System.Diagnostics.Process.Start("open", $"-R \"{savedPath}\"");
+#endif
                 }
                 else
                 {
@@ -127,11 +131,37 @@ internal sealed class PdfPreviewPage : ContentPage
         Content = root;
     }
 
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
+#if WINDOWS
+        if (Window?.Handler?.PlatformView is Microsoft.UI.Xaml.Window w)
+            w.Content.KeyDown += OnWindowKeyDown;
+#endif
+    }
+
     protected override void OnDisappearing()
     {
         base.OnDisappearing();
+#if WINDOWS
+        if (Window?.Handler?.PlatformView is Microsoft.UI.Xaml.Window w)
+            w.Content.KeyDown -= OnWindowKeyDown;
+#endif
         TryDeleteTempFile();
     }
+
+#if WINDOWS
+    private void OnWindowKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    {
+        if (e.Key == Windows.System.VirtualKey.Escape)
+        {
+            e.Handled = true;
+            if (Application.Current is { } app)
+                app.CloseWindow(Window);
+            TryDeleteTempFile();
+        }
+    }
+#endif
 
     private void TryDeleteTempFile()
     {

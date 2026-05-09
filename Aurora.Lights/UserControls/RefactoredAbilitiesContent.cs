@@ -26,7 +26,10 @@ namespace Builder.Presentation.UserControls;
 public partial class RefactoredAbilitiesContent : UserControl
 {
   private bool _isDragging;
-    public RefactoredAbilitiesContent() {}
+    public RefactoredAbilitiesContent()
+    {
+      this.InitializeComponent();
+    }
   private void UIElement_OnMouseMove(object sender, MouseEventArgs e)
   {
     if (e.LeftButton == MouseButtonState.Pressed)

@@ -1,0 +1,409 @@
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6" Style="font-size: 15px; font-weight: 600;">Import Character</MudText>
+    </TitleContent>
+    <DialogContent>
+        <div style="min-width: 480px; max-width: 640px;">
+
+            @if (_state == State.Idle)
+            {
+                <MudText Style="font-size: 13px; color: var(--mud-palette-text-secondary); margin-bottom: 16px;">
+                    Import a character from a D&amp;D Beyond export. Choose the format you have available.
+                </MudText>
+
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    @if (OperatingSystem.IsWindows())
+                    {
+                        <div>
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.UploadFile"
+                                       OnClick="PickPdfAsync">
+                                Choose PDF File…
+                            </MudButton>
+                            <div style="font-size: 11px; color: var(--mud-palette-text-disabled); margin-top: 3px; margin-left: 2px;">
+                                Uses Windows OCR to read D&amp;D Beyond character sheet PDFs
+                            </div>
+                        </div>
+                    }
+
+                    <div>
+                        <MudButton Variant="Variant.Outlined"
+                                   Color="Color.Secondary"
+                                   StartIcon="@Icons.Material.Filled.Code"
+                                   OnClick="PickJsonAsync">
+                            Choose JSON Export…
+                        </MudButton>
+                        <div style="font-size: 11px; color: var(--mud-palette-text-disabled); margin-top: 3px; margin-left: 2px;">
+                            Import from the D&amp;D Beyond character API (cross-platform)
+                        </div>
+                    </div>
+                </div>
+
+                <details style="margin-top: 14px;">
+                    <summary style="font-size: 12px; color: var(--mud-palette-text-secondary); cursor: pointer; user-select: none;">
+                        How to get a JSON file from D&amp;D Beyond
+                    </summary>
+                    <div style="margin-top: 10px; padding: 10px 12px; background: var(--mud-palette-background-grey); border-radius: 6px; display: flex; flex-direction: column; gap: 8px;">
+                        <MudText Style="font-size: 12px; color: var(--mud-palette-text-secondary);">
+                            Open your character on D&amp;D Beyond and paste the page URL below.
+                            Aurora will build the API address for you to open in your browser.
+                        </MudText>
+                        <MudTextField T="string"
+                                      @bind-Value="_ddbUrl"
+                                      Label="D&amp;D Beyond character URL"
+                                      Placeholder="https://www.dndbeyond.com/characters/12345678"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      Style="font-size: 12px;" />
+                        @if (DerivedApiUrl is string apiUrl)
+                        {
+                            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                                <code style="font-size: 10px; flex: 1; min-width: 0; padding: 4px 6px;
+                                             background: var(--mud-palette-surface); border-radius: 4px;
+                                             overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+                                             color: var(--mud-palette-text-secondary);">@apiUrl</code>
+                                <MudButton Size="Size.Small"
+                                           Variant="Variant.Outlined"
+                                           StartIcon="@Icons.Material.Filled.OpenInBrowser"
+                                           OnClick="@(() => OpenApiUrlAsync(apiUrl))">
+                                    Open
+                                </MudButton>
+                            </div>
+                            <MudText Style="font-size: 11px; color: var(--mud-palette-text-disabled);">
+                                Log in to D&amp;D Beyond if prompted. Once the page shows JSON text,
+                                use <strong>File → Save Page As</strong> (or right-click → Save As) to save
+                                the file. Then click <strong>Choose JSON Export</strong> above and select it.
+                            </MudText>
+                        }
+                    </div>
+                </details>
+
+                @if (_error != null)
+                {
+                    <MudAlert Severity="Severity.Error" Dense="true" Class="mt-3">@_error</MudAlert>
+                }
+            }
+
+            @if (_state == State.Working)
+            {
+                <div style="display: flex; align-items: center; gap: 12px; padding: 16px 0;">
+                    <MudProgressCircular Indeterminate="true" Size="Size.Small" Color="Color.Primary" />
+                    <MudText Style="font-size: 13px;">@_statusMessage</MudText>
+                </div>
+            }
+
+            @if (_state == State.Review && _result != null)
+            {
+                <MudText Style="font-size: 13px; margin-bottom: 12px;">
+                    Parsed <strong>@_result.CharacterName</strong> — @_result.DisplayRace @_result.DisplayClass @_result.Level
+                </MudText>
+
+                @if (_result.Ambiguities.Any())
+                {
+                    <MudText Typo="Typo.subtitle2" Style="margin-bottom: 8px;">Resolve ambiguities</MudText>
+                    @foreach (var amb in _result.Ambiguities)
+                    {
+                        var a = amb;
+                        <div style="margin-bottom: 10px;">
+                            <MudSelect T="ResolvedElement"
+                                       Label="@($"{a.Category}: {a.Item}")"
+                                       Value="@a.Chosen"
+                                       ValueChanged="@((ResolvedElement v) => a.Chosen = v)"
+                                       Variant="Variant.Outlined"
+                                       Margin="Margin.Dense"
+                                       ToStringFunc="@(e => e == null ? "" : $"{e.Name} ({e.PackageName ?? "unknown"})")">
+                                @foreach (var candidate in a.Candidates)
+                                {
+                                    <MudSelectItem T="ResolvedElement" Value="@candidate">
+                                        @candidate.Name <span style="color: var(--mud-palette-text-disabled); font-size: 11px;">— @candidate.PackageName</span>
+                                    </MudSelectItem>
+                                }
+                            </MudSelect>
+                        </div>
+                    }
+                }
+
+                @if (_result.Warnings.Any())
+                {
+                    <details style="margin-top: 8px;">
+                        <summary style="font-size: 12px; color: var(--mud-palette-text-secondary); cursor: pointer;">
+                            @_result.Warnings.Count warning(s) — items that could not be auto-resolved
+                        </summary>
+                        <div style="margin-top: 6px; display: flex; flex-direction: column; gap: 4px;">
+                            @foreach (var w in _result.Warnings)
+                            {
+                                <div style="font-size: 11px; padding: 4px 8px; background: var(--mud-palette-background-grey); border-radius: 4px;">
+                                    <span style="font-weight: 600; color: #fab387;">[@w.Category]</span>
+                                    <span style="color: var(--mud-palette-text-primary);"> @w.Item</span>
+                                    <span style="color: var(--mud-palette-text-disabled);"> — @w.Reason</span>
+                                </div>
+                            }
+                        </div>
+                    </details>
+                }
+
+                @if (!string.IsNullOrEmpty(_result.ParseDiagnostics))
+                {
+                    <details style="margin-top: 8px;">
+                        <summary style="font-size: 11px; color: var(--mud-palette-text-disabled); cursor: pointer;">
+                            Parser diagnostics
+                        </summary>
+                        <pre style="font-size: 10px; margin-top: 4px; padding: 6px 8px;
+                                    background: var(--mud-palette-background-grey); border-radius: 4px;
+                                    white-space: pre-wrap; overflow-x: auto; max-height: 180px; overflow-y: auto;
+                                    color: var(--mud-palette-text-secondary);">@_result.ParseDiagnostics</pre>
+                    </details>
+                }
+
+                @if (_result.ImportDiagnostics.Any())
+                {
+                    <details style="margin-top: 8px;" open>
+                        <summary style="font-size: 11px; color: var(--mud-palette-text-disabled); cursor: pointer;">
+                            Import diagnostics
+                        </summary>
+                        <div style="margin-top: 6px; display: flex; flex-direction: column; gap: 4px;">
+                            @foreach (var line in _result.ImportDiagnostics)
+                            {
+                                <div style="font-size: 11px; padding: 4px 8px; background: var(--mud-palette-background-grey); border-radius: 4px; color: var(--mud-palette-text-secondary);">
+                                    @line
+                                </div>
+                            }
+                        </div>
+                    </details>
+                }
+
+                <div style="margin-top: 16px;">
+                    <MudText Style="font-size: 12px; color: var(--mud-palette-text-secondary); margin-bottom: 4px;">
+                        Save as:
+                    </MudText>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <MudTextField Value="_outputFileName"
+                                      ValueChanged="@((string v) => { _outputFileName = v; _overwritePending = false; })"
+                                      Placeholder="Character name"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      Style="flex: 1; font-size: 13px;" />
+                        <span style="font-size: 12px; color: var(--mud-palette-text-disabled);">.dnd5e</span>
+                    </div>
+                </div>
+
+                @if (_error != null)
+                {
+                    <MudAlert Severity="@(_overwritePending ? Severity.Warning : Severity.Error)" Dense="true" Class="mt-3">@_error</MudAlert>
+                }
+            }
+
+            @if (_state == State.Done)
+            {
+                <MudAlert Severity="Severity.Success" Dense="true">
+                    Character imported successfully. Open it from the Characters list.
+                </MudAlert>
+            }
+
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Variant="Variant.Text">
+            @(_state == State.Done ? "Close" : "Cancel")
+        </MudButton>
+        @if (_state == State.Review)
+        {
+            <MudButton Color="@(_overwritePending ? Color.Warning : Color.Primary)"
+                       Variant="Variant.Filled"
+                       Disabled="@string.IsNullOrWhiteSpace(_outputFileName)"
+                       OnClick="SaveAsync">
+                @(_overwritePending ? "Overwrite" : "Import")
+            </MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
+@using Aurora.PdfImport
+@inject PdfImportService PdfImport
+@inject CharacterService Characters
+@inject ContentDatabaseService ContentDb
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+
+    private enum State { Idle, Working, Review, Done }
+    private State  _state         = State.Idle;
+    private string _statusMessage = "Parsing…";
+    private string? _error;
+    private bool   _overwritePending;
+    private string _outputFileName = "";
+    private string _ddbUrl         = "";
+
+    private ParsedCharacterSheet? _sheet;
+    private ImportResult? _result;
+
+    private string? DerivedApiUrl
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(_ddbUrl)) return null;
+            var m = System.Text.RegularExpressions.Regex.Match(
+                _ddbUrl.Trim(), @"dndbeyond\.com/characters/(\d+)");
+            return m.Success
+                ? $"https://character-service.dndbeyond.com/character/v5/character/{m.Groups[1].Value}?includeCustomItems=true"
+                : null;
+        }
+    }
+
+    private async Task OpenApiUrlAsync(string url)
+    {
+        try { await Launcher.OpenAsync(new Uri(url)); }
+        catch { }
+    }
+
+    // ── PDF import ────────────────────────────────────────────────────────────
+
+    private async Task PickPdfAsync()
+    {
+        _error = null;
+        try
+        {
+            var options = new PickOptions
+            {
+                PickerTitle = "Select D&D Beyond PDF",
+                FileTypes   = new FilePickerFileType(new Dictionary<DevicePlatform, IEnumerable<string>>
+                {
+                    { DevicePlatform.WinUI,   [".pdf"] },
+                    { DevicePlatform.macOS,   ["public.pdf"] },
+                    { DevicePlatform.Android, ["application/pdf"] },
+                    { DevicePlatform.iOS,     ["com.adobe.pdf"] },
+                }),
+            };
+
+            var file = await FilePicker.Default.PickAsync(options);
+            if (file == null) return;
+
+            _state         = State.Working;
+            _statusMessage = "Rendering PDF and running OCR…";
+            StateHasChanged();
+
+            var outcome = await PdfImport.ImportAsync(file.FullPath);
+            HandleOutcome(outcome, "Content database is not available. Sync in Content DB settings first.");
+        }
+        catch (Exception ex)
+        {
+            _state = State.Idle;
+            _error = $"Import failed: {ex.Message}";
+        }
+        finally { StateHasChanged(); }
+    }
+
+    // ── JSON import ───────────────────────────────────────────────────────────
+
+    private async Task PickJsonAsync()
+    {
+        _error = null;
+        try
+        {
+            var options = new PickOptions
+            {
+                PickerTitle = "Select D&D Beyond JSON Export",
+                FileTypes   = new FilePickerFileType(new Dictionary<DevicePlatform, IEnumerable<string>>
+                {
+                    { DevicePlatform.WinUI,   [".json"] },
+                    { DevicePlatform.macOS,   ["public.json"] },
+                    { DevicePlatform.Android, ["application/json"] },
+                    { DevicePlatform.iOS,     ["public.json"] },
+                }),
+            };
+
+            var file = await FilePicker.Default.PickAsync(options);
+            if (file == null) return;
+
+            _state         = State.Working;
+            _statusMessage = "Parsing JSON export…";
+            StateHasChanged();
+
+            var outcome = await PdfImport.ImportFromJsonAsync(file.FullPath);
+            HandleOutcome(outcome, "Content database is not available. Sync in Content DB settings first.");
+        }
+        catch (Exception ex)
+        {
+            _state = State.Idle;
+            _error = $"Import failed: {ex.Message}";
+        }
+        finally { StateHasChanged(); }
+    }
+
+    // ── Shared outcome handler ────────────────────────────────────────────────
+
+    private void HandleOutcome(
+        (Aurora.PdfImport.ParsedCharacterSheet Sheet, ImportResult Result)? outcome,
+        string noDbMessage)
+    {
+        if (outcome == null)
+        {
+            _state = State.Idle;
+            _error = noDbMessage;
+            return;
+        }
+
+        if (outcome.Value.Sheet.IsUnsupportedFormat)
+        {
+            _state = State.Idle;
+            _error = "This file doesn't appear to be a D&D Beyond character sheet. " +
+                     "Only D&D Beyond PDF exports (and JSON character exports) are currently supported.";
+            return;
+        }
+
+        _result         = outcome.Value.Result;
+        _sheet          = outcome.Value.Sheet;
+        _outputFileName = SanitiseFileName(_result.CharacterName);
+        _state          = State.Review;
+    }
+
+    // ── Save ──────────────────────────────────────────────────────────────────
+
+    private async Task SaveAsync()
+    {
+        if (_result == null || _sheet == null || string.IsNullOrWhiteSpace(_outputFileName)) return;
+        _error = null;
+
+        string safeName = SanitiseFileName(_outputFileName);
+        if (string.IsNullOrWhiteSpace(safeName)) safeName = "Imported Character";
+
+        try
+        {
+            string dir      = Characters.CharactersDirectory;
+            string filePath = Path.Combine(dir, safeName + ".dnd5e");
+
+            if (File.Exists(filePath) && !_overwritePending)
+            {
+                _overwritePending = true;
+                _error = $"\"{safeName}.dnd5e\" already exists. Click Import again to overwrite it.";
+                StateHasChanged();
+                return;
+            }
+            _overwritePending = false;
+
+            _state         = State.Working;
+            _statusMessage = "Saving character file…";
+            StateHasChanged();
+
+            await PdfImport.WriteCharacterFileAsync(_sheet, _result, filePath);
+
+            _state = State.Done;
+        }
+        catch (Exception ex)
+        {
+            _state = State.Review;
+            _error = $"Save failed: {ex.Message}";
+        }
+        finally { StateHasChanged(); }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private static string SanitiseFileName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "Imported Character";
+        var invalid = Path.GetInvalidFileNameChars();
+        return string.Concat(name.Where(c => !invalid.Contains(c))).Trim();
+    }
+}

@@ -1,6 +1,13 @@
 name: Build macOS MAUI (unsigned)
 on:
   push:
+    paths:
+      - 'Aurora.App/**'
+      - 'Aurora.Logic/**'
+      - 'Aurora.Components/**'
+      - 'Aurora.Importer/**'
+      - 'lib/**'
+      - '.github/workflows/build-macos.yml'
   workflow_dispatch:
 
 jobs:
@@ -34,7 +41,8 @@ jobs:
             -f net10.0-maccatalyst \
             -r maccatalyst-x64 \
             -c Release \
-            -p:CreatePackage=false
+            -p:CreatePackage=false \
+            -p:MtouchLink=None
 
       # MAUI ignores -o; find the .app and zip it with a colon-free name
       # so the artifact uploader (which enforces NTFS-safe paths) accepts it.
@@ -89,7 +97,8 @@ jobs:
             -f net10.0-maccatalyst \
             -r maccatalyst-arm64 \
             -c Release \
-            -p:CreatePackage=false
+            -p:CreatePackage=false \
+            -p:MtouchLink=None
 
       - name: Stage arm64 app bundle
         run: |

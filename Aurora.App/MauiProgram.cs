@@ -38,10 +38,14 @@ public static class MauiProgram
         builder.Services.AddSingleton<CharacterService>();
         builder.Services.AddSingleton<CharacterTabService>();
         builder.Services.AddSingleton<UserPreferencesService>();
+        builder.Services.AddSingleton<CompendiumService>();
         builder.Services.AddSingleton<ContentService>();
         builder.Services.AddSingleton<ContentDatabaseService>();
+        builder.Services.AddSingleton<PdfImportService>();
         var debugLog = new DebugLogService();
         DebugLogService.Instance = debugLog;
+        debugLog.InitializePersistentLog(FileSystem.Current.AppDataDirectory);
+        debugLog.Info("MauiProgram.CreateMauiApp", $"Persistent log path: {debugLog.PersistentLogPath ?? "(disabled)"}");
         builder.Services.AddSingleton(debugLog);
         CharacterContext.ExceptionLogged += (ex, ctx) => debugLog.LogException(ex, ctx);
 

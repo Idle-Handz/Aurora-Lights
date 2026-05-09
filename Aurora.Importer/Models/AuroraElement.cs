@@ -51,6 +51,7 @@ public class Stat
     public AuroraTextCollection? requirements { get; set; }
     public bool inline { get; set; }
     public string? alt { get; set; }
+    public string? rawXml { get; set; }
 }
 
 public class Select
@@ -65,6 +66,7 @@ public class Select
     public bool optional { get; set; }
     public string? spellcasting { get; set; }
     public List<AuroraItemEntry>? items { get; set; }
+    public string? rawXml { get; set; }
 }
 
 public class Grant
@@ -76,6 +78,7 @@ public class Grant
     public string? spellcasting { get; set; }
     public bool? prepared { get; set; }
     public AuroraTextCollection? requirements { get; set; }
+    public string? rawXml { get; set; }
 }
 
 public class Spellcasting

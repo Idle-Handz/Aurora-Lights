@@ -17,5 +17,5 @@ namespace Builder.Presentation.UserControls;
 
 public partial class SavingThrowsPanelContent : UserControl
 {
-    public SavingThrowsPanelContent() { }
+    public SavingThrowsPanelContent() => this.InitializeComponent();
 }

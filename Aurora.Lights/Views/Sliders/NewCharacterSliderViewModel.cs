@@ -19,7 +19,6 @@ using Builder.Presentation.ViewModels;
 using Builder.Presentation.ViewModels.Base;
 using Builder.Presentation.ViewModels.Content;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
@@ -41,6 +40,8 @@ public sealed class NewCharacterSliderViewModel : ViewModelBase
   private bool _isArrayOptionSelected;
   private string _previousPortraitPath;
   private string _nextPortraitsPath;
+
+  public event EventHandler? CloseRequested;
 
   public NewCharacterSliderViewModel()
   {
@@ -242,6 +243,7 @@ public sealed class NewCharacterSliderViewModel : ViewModelBase
     characterSliderViewModel.Manager.Status.HasChanges = false;
     CharacterManager.Current.Status.HasChanges = false;
     characterSliderViewModel.EventAggregator.Send<CharacterLoadingCompletedEvent>(new CharacterLoadingCompletedEvent());
+    characterSliderViewModel.CloseRequested?.Invoke(characterSliderViewModel, EventArgs.Empty);
     await Task.Delay(2000);
     characterSliderViewModel.EventAggregator.Send<CharacterLoadingSliderEventArgs>(new CharacterLoadingSliderEventArgs(false));
     AnalyticsEventHelper.CharacterCreate(characterSliderViewModel.Level.ToString(), generationOption.ToString());

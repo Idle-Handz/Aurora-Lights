@@ -17,5 +17,5 @@ namespace Builder.Presentation.UserControls;
 
 public partial class CompanionSkillsPanelContent : UserControl
 {
-    public CompanionSkillsPanelContent() {}
+    public CompanionSkillsPanelContent() => this.InitializeComponent();
 }

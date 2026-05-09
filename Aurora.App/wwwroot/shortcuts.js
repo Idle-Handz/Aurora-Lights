@@ -1,3 +1,5 @@
+window.scrollElementToTop = function (el) { if (el) el.scrollTop = 0; };
+
 window.AuroraShortcuts = {
     register: function (dotnetRef) {
         window._auroraShortcutRef = dotnetRef;

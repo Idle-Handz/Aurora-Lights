@@ -20,6 +20,20 @@
                        OnClick="ToggleDrawer" />
         <MudText Typo="Typo.h6" Class="ml-2">Aurora: Reflections</MudText>
         <MudSpacer />
+        <MudTextField T="string"
+                      Value="_compendiumQuickQuery"
+                      ValueChanged="OnCompendiumQueryChanged"
+                      Placeholder="Compendium search"
+                      Margin="Margin.Dense"
+                      Variant="Variant.Outlined"
+                      Class="appbar-compendium-search"
+                      Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search"
+                      OnKeyDown="HandleCompendiumSearchKeyDown" />
+        <MudIconButton Icon="@Icons.Material.Filled.Search"
+                       Color="Color.Inherit"
+                       title="Search compendium"
+                       OnClick="NavigateToCompendiumSearch" />
         @if (Tabs.ActiveTab?.IsDirty == true)
         {
             <MudIconButton Icon="@Icons.Material.Filled.Save"
@@ -77,6 +91,7 @@
     private bool _drawerOpen = true;
     private AppErrorBoundary? _errorBoundary;
     private DotNetObjectReference<MainLayout>? _selfRef;
+    private string _compendiumQuickQuery = string.Empty;
 
     private string ContentStyle => Tabs.Tabs.Count > 0
         ? "height: calc(100vh - 64px - 34px - 28px); overflow-y: auto;"
@@ -256,4 +271,26 @@
     };
 
     private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
+
+    private Task OnCompendiumQueryChanged(string value)
+    {
+        _compendiumQuickQuery = value;
+        return Task.CompletedTask;
+    }
+
+    private Task HandleCompendiumSearchKeyDown(KeyboardEventArgs args)
+    {
+        if (string.Equals(args.Key, "Enter", StringComparison.OrdinalIgnoreCase))
+            NavigateToCompendiumSearch();
+
+        return Task.CompletedTask;
+    }
+
+    private void NavigateToCompendiumSearch()
+    {
+        string query = _compendiumQuickQuery.Trim();
+        Nav.NavigateTo(string.IsNullOrWhiteSpace(query)
+            ? "/compendium"
+            : $"/compendium?q={Uri.EscapeDataString(query)}");
+    }
 }

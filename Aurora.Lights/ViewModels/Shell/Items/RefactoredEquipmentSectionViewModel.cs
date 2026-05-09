@@ -559,8 +559,9 @@ public class RefactoredEquipmentSectionViewModel :
 
     private void EquipSelectedEquipmentItem()
     {
-        if (this._selectedEquipmentItem != null)
-            throw new NotImplementedException();
+        if (this._selectedEquipmentItem == null || !this.CanEquipSelectedEquipmentItem())
+            return;
+        this.EquipEquipmentItem();
     }
 
     private bool CanEquipSelectedEquipmentItem()
@@ -921,6 +922,7 @@ public class RefactoredEquipmentSectionViewModel :
             this.DeleteAllSelectedEquipmentCommand = new RelayCommand(new Action(this.DeleteAllSelectedEquipment), new Func<bool>(this.CanDeleteAllSelectedEquipment));
             this.MoveSelectedEquipmentItemUpCommand = new RelayCommand(new Action(this.MoveSelectedEquipmentItemUp), new Func<bool>(this.CanMoveSelectedEquipmentItemUp));
             this.MoveSelectedEquipmentItemDownCommand = new RelayCommand(new Action(this.MoveSelectedEquipmentItemDown), new Func<bool>(this.CanMoveSelectedEquipmentItemDown));
+            this.EquipSelectedEquipmentItemCommand = new RelayCommand(new Action(this.EquipSelectedEquipmentItem), new Func<bool>(this.CanEquipSelectedEquipmentItem));
             this.ManageEquipmentItemCommand = new RelayCommand(new Action(this.ManageEquipmentItem), new Func<bool>(this.CanManageEquipmentItem));
             this.ActivateEquipmentItemCommand = new RelayCommand(new Action(this.ActivateEquipmentItem));
             this.EquipEquipmentItemCommand = new RelayCommand(new Action(this.EquipEquipmentItem), new Func<bool>(this.CanEquipEquipmentItem));

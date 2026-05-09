@@ -82,15 +82,32 @@
     <div class="build-guide-banner">
         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
             <MudIcon Icon="@Icons.Material.Filled.AutoAwesome" Style="color: #f9e2af; font-size: 18px;" />
-            <span><b>Next step:</b> @_nextStep.Value.StepLabel</span>
+            <span><b>Next step:</b> @_nextStep.StepLabel</span>
             <MudButton Size="Size.Small" Variant="Variant.Text"
                        Style="color: #f9e2af; padding: 0 6px; min-width: 0;"
                        OnClick="NavigateToNextStep">
-                → @_nextStep.Value.TabLabel tab
+                → @_nextStep.TargetLabel
             </MudButton>
         </div>
         <MudText Typo="Typo.caption" Style="color: #a6adc8; margin-top: 2px;">
-            Complete all selections to finish building your character.
+            Recommended 5e flow: Race → Class → Ability Scores → Describe Character → Equipment.
+        </MudText>
+    </div>
+}
+else if (_workflowSuggestion != null)
+{
+    <div class="build-guide-banner">
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <MudIcon Icon="@Icons.Material.Filled.Explore" Style="color: #89b4fa; font-size: 18px;" />
+            <span><b>Recommended next:</b> @_workflowSuggestion.Value.StepLabel</span>
+            <MudButton Size="Size.Small" Variant="Variant.Text"
+                       Style="color: #89b4fa; padding: 0 6px; min-width: 0;"
+                       OnClick="NavigateSuggestedStep">
+                → @_workflowSuggestion.Value.TargetLabel
+            </MudButton>
+        </div>
+        <MudText Typo="Typo.caption" Style="color: #a6adc8; margin-top: 2px;">
+            Recommended 5e flow: Race → Class → Ability Scores → Describe Character → Equipment.
         </MudText>
     </div>
 }
@@ -157,7 +174,7 @@
 
     @foreach (var tab in _buildTabs)
     {
-        <MudTabPanel Text="@tab.Label">
+        <MudTabPanel Text="@GetBuildTabLabel(tab)">
             @if (tab.RuleGroups.Count == 0)
             {
                 <div style="margin-top: 16px; padding: 12px; background: #181825; border-radius: 6px; border: 1px solid #313244;">
@@ -181,10 +198,10 @@
                         <div class="build-rule-list">
                             @foreach (var entry in group.Rules)
                             {
-                                <div class="build-rule-row">
+                                <div class="@GetRuleRowClass(entry)">
                                     <div class="build-rule-label">@entry.Label</div>
                                     <div class="build-rule-value @(entry.CurrentName == null ? "build-rule-empty" : "")">
-                                        @(entry.CurrentName ?? "—")
+                                        @(entry.CurrentName ?? "Choose...")
                                     </div>
                                     <button class="build-rule-btn" @onclick="() => OpenPickerAsync(entry)">Change</button>
                                 </div>
@@ -448,10 +465,10 @@
                     <div class="build-rule-list">
                         @foreach (var entry in _asiEntries)
                         {
-                            <div class="build-rule-row">
+                            <div class="@GetRuleRowClass(entry)">
                                 <div class="build-rule-label">@entry.Label</div>
                                 <div class="build-rule-value @(entry.CurrentName == null ? "build-rule-empty" : "")">
-                                    @(entry.CurrentName ?? "—")
+                                        @(entry.CurrentName ?? "Choose...")
                                 </div>
                                 <button class="build-rule-btn" @onclick="() => OpenPickerAsync(entry)">Change</button>
                             </div>
@@ -520,6 +537,7 @@
     private void StopSubStepCycling()
     {
         _subStepCts?.Cancel();
+        _subStepCts?.Dispose();
         _subStepCts = null;
     }
 
@@ -530,7 +548,9 @@
     private List<string>                                     _invalidated = [];
     private string?                                          _saveError;
     private bool                                             _saving;
-    private (string TabLabel, string StepLabel)?             _nextStep;
+    private BuildGuidanceTarget?                             _nextStep;
+    private (string StepLabel, string TargetLabel, string? TabLabel, string? Route)? _workflowSuggestion;
+    private string?                                          _highlightedEntryKey;
 
     // ── Tab navigation ────────────────────────────────────────────────────────────
     private MudTabs?  _tabs;
@@ -558,6 +578,8 @@
     private AbilityGenMethod                 _abilityMethod    = AbilityGenMethod.Manual;
     private readonly Dictionary<string, int> _arrayAssignments = new();
     private IReadOnlyList<SelectionRuleEntry> _asiEntries      = [];
+
+    private bool PreferClassFirst => Tabs.ActiveTab?.IsNew != true;
 
     // ── Lifecycle ────────────────────────────────────────────────────────────────
 
@@ -590,8 +612,10 @@
         {
             using (await CharacterContext.EnterAsync(tab))
             {
-                (_buildTabs, _asiEntries, _nextStep) = BuildService.GetBuildData();
+                (_buildTabs, _asiEntries, _nextStep) = BuildService.GetBuildData(PreferClassFirst);
+                _highlightedEntryKey = _nextStep?.EntryKey;
                 LoadAbilityRows();
+                _workflowSuggestion = ComputeWorkflowSuggestion();
             }
         }
         else
@@ -599,7 +623,9 @@
             _buildTabs  = [];
             _asiEntries = [];
             _nextStep   = null;
+            _highlightedEntryKey = null;
             LoadAbilityRows();
+            _workflowSuggestion = null;
         }
     }
 
@@ -662,9 +688,88 @@
     private void NavigateToNextStep()
     {
         if (_nextStep == null) return;
-        var idx = _buildTabs.ToList().FindIndex(t => t.Label == _nextStep.Value.TabLabel);
+        var idx = GetPanelIndexForLabel(_nextStep.TabLabel);
         if (idx >= 0)
             _activePanelIndex = idx;
+        _highlightedEntryKey = _nextStep.EntryKey;
+    }
+
+    private void NavigateSuggestedStep()
+    {
+        if (_workflowSuggestion == null) return;
+
+        if (!string.IsNullOrWhiteSpace(_workflowSuggestion.Value.Route))
+        {
+            Nav.NavigateTo(_workflowSuggestion.Value.Route!);
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(_workflowSuggestion.Value.TabLabel))
+        {
+            var idx = GetPanelIndexForLabel(_workflowSuggestion.Value.TabLabel!);
+            if (idx >= 0)
+                _activePanelIndex = idx;
+        }
+    }
+
+    private int GetPanelIndexForLabel(string label)
+    {
+        if (label == "Ability Scores")
+            return _buildTabs.Count;
+
+        return _buildTabs.ToList().FindIndex(t => t.Label == label);
+    }
+
+    private string GetBuildTabLabel(BuildTabGroup tab) =>
+        tab.UnresolvedCount > 0 ? $"{tab.Label} ({tab.UnresolvedCount})" : tab.Label;
+
+    private string GetRuleRowClass(SelectionRuleEntry entry)
+    {
+        bool unresolved = entry.CurrentName == null;
+        bool highlighted = unresolved && entry.EntryKey == _highlightedEntryKey;
+        return highlighted ? "build-rule-row build-rule-row-highlighted" :
+            unresolved ? "build-rule-row build-rule-row-unresolved" :
+            "build-rule-row";
+    }
+
+    private (string StepLabel, string TargetLabel, string? TabLabel, string? Route)? ComputeWorkflowSuggestion()
+    {
+        if (_snap == null) return null;
+
+        if (NeedsCharacterBackgroundDetails())
+            return ("Describe your character", "Background tab", "Background", null);
+
+        if (NeedsCharacterAppearanceDetails())
+            return ("Add appearance details", "Background tab", "Background", null);
+
+        return ("Review your equipment", "Equipment page", null, "/equipment");
+    }
+
+    private bool NeedsCharacterBackgroundDetails()
+    {
+        if (_snap == null) return false;
+
+        var fields = new[]
+        {
+            _snap.Backstory, _snap.Notes1, _snap.Notes2, _snap.Alignment, _snap.Deity,
+            _snap.Organisation, _snap.Allies
+        };
+
+        int filled = fields.Count(v => !string.IsNullOrWhiteSpace(v));
+        return filled < 3;
+    }
+
+    private bool NeedsCharacterAppearanceDetails()
+    {
+        if (_snap == null) return false;
+
+        var fields = new[]
+        {
+            _snap.Age, _snap.Height, _snap.Weight, _snap.Eyes, _snap.Hair, _snap.Skin, _snap.Gender
+        };
+
+        int filled = fields.Count(v => !string.IsNullOrWhiteSpace(v));
+        return filled < 3;
     }
 
     // ── Manual save ──────────────────────────────────────────────────────────────

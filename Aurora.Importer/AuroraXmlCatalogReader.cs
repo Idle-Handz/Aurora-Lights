@@ -316,7 +316,8 @@ internal static class AuroraXmlCatalogReader
         level        = e.Attribute("level")?.Value is { } lv ? Convert.ToInt32(lv) : null,
         spellcasting = e.Attribute("spellcasting")?.Value,
         prepared     = e.Attribute("prepared")?.Value is { } p ? p == "true" : null,
-        requirements = ParseTextCollection(e.Attribute("requirements")?.Value)
+        requirements = ParseTextCollection(e.Attribute("requirements")?.Value),
+        rawXml       = e.ToString(SaveOptions.DisableFormatting)
     };
 
     private static Select ParseSelect(XElement e) => new()
@@ -330,7 +331,8 @@ internal static class AuroraXmlCatalogReader
         defaultChoice = e.Attribute("default")?.Value,
         optional      = ParseBool(e.Attribute("optional")?.Value) ?? false,
         spellcasting  = e.Attribute("spellcasting")?.Value,
-        items         = ParseItemEntries(e)
+        items         = ParseItemEntries(e),
+        rawXml        = e.ToString(SaveOptions.DisableFormatting)
     };
 
     private static Stat ParseStat(XElement e) => new()
@@ -342,7 +344,8 @@ internal static class AuroraXmlCatalogReader
         level        = e.Attribute("level")?.Value is { } lv ? Convert.ToInt32(lv) : null,
         requirements = ParseTextCollection(e.Attribute("requirements")?.Value),
         inline       = ParseBool(e.Attribute("inline")?.Value) ?? false,
-        alt          = e.Attribute("alt")?.Value
+        alt          = e.Attribute("alt")?.Value,
+        rawXml       = e.ToString(SaveOptions.DisableFormatting)
     };
 
     // ── Setters ──────────────────────────────────────────────────────────────

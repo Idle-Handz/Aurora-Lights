@@ -92,7 +92,7 @@
                  Visibility="{Binding IsFileNameSanitized, Mode=OneWay, Converter={StaticResource InvertedBooleanToVisibilityConverter}}"/>
     </StackPanel>
     <UniformGrid Grid.Row="3" Margin="20,0,20,0">
-      <controls2:CommandButton Click="PageCloseClicked" Content="SAVE CHARACTER" IsDefault="true"
+      <controls2:CommandButton Content="SAVE CHARACTER" IsDefault="true"
                                Style="{StaticResource SuccessCommandButtonStyle}" FontSize="11" Margin="0,0,10,0"
                                Command="{Binding SaveCommand}"/>
       <controls2:CommandButton Click="PageCloseClicked" Content="CANCEL" Style="{StaticResource DangerCommandButtonStyle}"

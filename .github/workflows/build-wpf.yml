@@ -1,0 +1,46 @@
+name: Build WPF (Aurora.Lights)
+
+on:
+  push:
+    paths:
+      - 'Aurora.Lights/**'
+      - 'Aurora.Logic/**'
+      - 'lib/**'
+      - '.github/workflows/build-wpf.yml'
+  workflow_dispatch:
+
+jobs:
+  build-wpf:
+    runs-on: windows-latest
+    env:
+      PROJECT: Aurora.Lights/Aurora.Lights.csproj
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '10.0.101'
+
+      - name: Restore
+        shell: bash
+        run: dotnet restore "$PROJECT"
+
+      - name: Build
+        shell: bash
+        run: |
+          dotnet build "$PROJECT" \
+            -c Release \
+            --no-restore \
+            -o publish/wpf
+
+      - name: List publish output
+        shell: bash
+        run: ls -la publish/wpf
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: aurora-lights-wpf
+          path: publish/wpf

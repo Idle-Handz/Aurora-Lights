@@ -6,9 +6,11 @@
 
 using Builder.Core.Events;
 using Builder.Presentation.Events.Character;
+using Builder.Presentation.Models;
 using Builder.Presentation.Models.Collections;
 using Builder.Presentation.Services.Calculator;
 using Builder.Presentation.ViewModels.Base;
+using System.Collections.Generic;
 
 #nullable disable
 namespace Builder.Presentation.ViewModels.Content;
@@ -33,6 +35,8 @@ public class SkillsContentViewModel :
   public Builder.Presentation.Models.Character Character => CharacterManager.Current.Character;
 
   public SkillsCollection Skills => CharacterManager.Current.Character.Skills;
+
+  public IEnumerable<SkillItem> SkillItems => this.Skills.GetCollection();
 
   public int PassivePerception
   {

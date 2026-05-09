@@ -12,6 +12,46 @@ namespace Aurora.App.Services;
 public static class CharacterFileSaveExtensions
 {
     /// <summary>
+    /// Patches only the currency values in the character XML from the snapshot.
+    /// Used by the Session page so coin edits can persist without implicitly
+    /// saving unrelated pending text edits from other pages.
+    /// </summary>
+    public static bool SaveCurrency(this CharacterFile file, CharacterSnapshot snap)
+    {
+        var path = file.FilePath;
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+            return false;
+
+        try
+        {
+            var doc = new XmlDocument();
+            doc.Load(path);
+
+            var currency = doc.DocumentElement?["build"]?["input"]?["currency"];
+            if (currency == null) return false;
+
+            SetText(currency, "copper",   snap.CoinCopper.ToString());
+            SetText(currency, "silver",   snap.CoinSilver.ToString());
+            SetText(currency, "electrum", snap.CoinElectrum.ToString());
+            SetText(currency, "gold",     snap.CoinGold.ToString());
+            SetText(currency, "platinum", snap.CoinPlatinum.ToString());
+
+            using var writer = new XmlTextWriter(path, Encoding.UTF8)
+            {
+                Formatting = Formatting.Indented,
+                IndentChar = '\t',
+                Indentation = 1,
+            };
+            doc.Save(writer);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Patches every text-editable node in the character XML with values from
     /// the snapshot, then saves the file. Calculated and element-derived fields
     /// are left untouched.
@@ -94,21 +134,34 @@ public static class CharacterFileSaveExtensions
         // ── spell prepared state (prepared casters only) ─────────────────────
         // Only write prepared state for Cleric/Druid/Wizard/Paladin/Artificer etc.
         // Known casters (Sorcerer/Bard/etc.) have no per-spell prepared toggle.
-        if (snap.IsSpellcasterPrepared && snap.SpellLevels.Count > 0)
+        if (snap.SpellcastingSections.Count > 0)
         {
-            // Build lookups by both Id and Name so we can match against whatever the XML uses.
-            var preparedById   = snap.SpellLevels.SelectMany(lvl => lvl.Spells)
-                .Where(s => !string.IsNullOrEmpty(s.Id))
-                .ToDictionary(s => s.Id, s => s.IsPrepared, StringComparer.OrdinalIgnoreCase);
-            var preparedByName = snap.SpellLevels.SelectMany(lvl => lvl.Spells)
-                .ToDictionary(s => s.Name, s => s.IsPrepared, StringComparer.OrdinalIgnoreCase);
-
             var magic = buildNode["magic"];
             if (magic != null)
             {
                 foreach (XmlNode spellcasting in magic.ChildNodes)
                 {
                     if (spellcasting.Name != "spellcasting") continue;
+
+                    var spellcastingName = spellcasting.Attributes?["name"]?.Value ?? "";
+                    var spellcastingSource = spellcasting.Attributes?["source"]?.Value ?? "";
+                    var section = snap.SpellcastingSections.FirstOrDefault(candidate =>
+                        string.Equals(candidate.Name, spellcastingName, StringComparison.OrdinalIgnoreCase)
+                        && string.Equals(candidate.SourceId, spellcastingSource, StringComparison.OrdinalIgnoreCase));
+
+                    section ??= snap.SpellcastingSections.FirstOrDefault(candidate =>
+                        string.Equals(candidate.Name, spellcastingName, StringComparison.OrdinalIgnoreCase));
+
+                    if (section is null || !section.IsPreparedCaster || section.SpellLevels.Count == 0)
+                        continue;
+
+                    // Build lookups by both Id and Name so we can match against whatever the XML uses.
+                    var preparedById = section.SpellLevels.SelectMany(lvl => lvl.Spells)
+                        .Where(s => !string.IsNullOrEmpty(s.Id))
+                        .ToDictionary(s => s.Id, s => s.IsPrepared, StringComparer.OrdinalIgnoreCase);
+                    var preparedByName = section.SpellLevels.SelectMany(lvl => lvl.Spells)
+                        .ToDictionary(s => s.Name, s => s.IsPrepared, StringComparer.OrdinalIgnoreCase);
+
                     var spellsNode = spellcasting["spells"];
                     if (spellsNode == null) continue;
                     foreach (XmlNode spellNode in spellsNode.ChildNodes)

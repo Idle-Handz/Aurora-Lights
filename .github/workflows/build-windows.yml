@@ -1,6 +1,13 @@
 name: Build Windows MAUI (unsigned)
 on:
   push:
+    paths:
+      - 'Aurora.App/**'
+      - 'Aurora.Logic/**'
+      - 'Aurora.Components/**'
+      - 'Aurora.Importer/**'
+      - 'lib/**'
+      - '.github/workflows/build-windows.yml'
   workflow_dispatch:
 
 jobs:

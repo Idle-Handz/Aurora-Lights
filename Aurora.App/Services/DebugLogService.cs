@@ -19,8 +19,11 @@ public sealed class DebugLogService
 
     private const int MaxEntries = 500;
     private readonly List<LogEntry> _entries = [];
+    private readonly object _fileLock = new();
+    private string? _persistentLogPath;
 
     public IReadOnlyList<LogEntry> Entries => _entries;
+    public string? PersistentLogPath => _persistentLogPath;
 
     /// <summary>Fires on the UI thread after an entry is added or the log is cleared.</summary>
     public event Action? Changed;
@@ -34,7 +37,24 @@ public sealed class DebugLogService
             if (_entries.Count > MaxEntries)
                 _entries.RemoveAt(0);
         }
+        WriteToPersistentLog(entry);
         Changed?.Invoke();
+    }
+
+    public void InitializePersistentLog(string directoryPath, string fileName = "aurora-startup.log")
+    {
+        try
+        {
+            Directory.CreateDirectory(directoryPath);
+            _persistentLogPath = Path.Combine(directoryPath, fileName);
+            File.AppendAllText(
+                _persistentLogPath,
+                $"===== Aurora session started {DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss.fff zzz} ====={Environment.NewLine}");
+        }
+        catch
+        {
+            _persistentLogPath = null;
+        }
     }
 
     public void LogException(Exception ex, string context = "")
@@ -73,5 +93,28 @@ public sealed class DebugLogService
     {
         lock (_entries) _entries.Clear();
         Changed?.Invoke();
+    }
+
+    private void WriteToPersistentLog(LogEntry entry)
+    {
+        if (string.IsNullOrWhiteSpace(_persistentLogPath))
+            return;
+
+        try
+        {
+            string line = $"[{entry.Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz}] {entry.Level.ToString().ToUpperInvariant()}: {entry.Message}";
+            if (!string.IsNullOrWhiteSpace(entry.Details))
+                line += $"{Environment.NewLine}{entry.Details}";
+            line += Environment.NewLine;
+
+            lock (_fileLock)
+            {
+                File.AppendAllText(_persistentLogPath!, line);
+            }
+        }
+        catch
+        {
+            // Never let diagnostics crash the app.
+        }
     }
 }

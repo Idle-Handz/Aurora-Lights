@@ -44,7 +44,7 @@ internal static class AuroraSqliteImporter
         EnsureSchema(connection);
         // When the importer logic changes in a way that affects stored data (e.g. adding a new
         // column to element_supports), bump this constant so existing DBs get a full rebuild.
-        const int ExpectedDataVersion = 2;
+        const int ExpectedDataVersion = 8;
         int dbVersion = GetUserVersion(connection);
         if (dbVersion != ExpectedDataVersion)
         {
@@ -67,10 +67,25 @@ internal static class AuroraSqliteImporter
             sourceBookIds[sourceName!] = EnsureSourceBook(connection, transaction, sourceName!);
         }
 
+        var primarySourceByFile = BuildPrimarySourceByFile(catalog);
+
         var existingFiles = LoadExistingSourceFileHashes(connection, transaction);
         var sourceFileIds = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
         var changedPaths  = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var seenPaths     = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        // Build content_packages from the top-level directory of each source file path.
+        // ON CONFLICT DO NOTHING preserves any user-configured kind/rank from prior runs.
+        var contentPackageIds = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
+        foreach (var file in catalog.Files)
+        {
+            primarySourceByFile.TryGetValue(file.RelativePath, out string? primarySource);
+            string pkgKey = GetPackageKey(file, primarySource);
+            if (!contentPackageIds.ContainsKey(pkgKey))
+                contentPackageIds[pkgKey] = EnsureContentPackage(
+                    connection, transaction, pkgKey,
+                    GetPackageDisplayName(file, primarySource), DeterminePackageKind(file.RelativePath));
+        }
 
         progress?.Report(new AuroraImportProgress(
             AuroraImportPhase.Scanning, 0, catalog.Files.Count, 0, 0, null));
@@ -83,6 +98,10 @@ internal static class AuroraSqliteImporter
             string hash = ComputeFileHash(file.FullPath);
             scanned++;
 
+            primarySourceByFile.TryGetValue(file.RelativePath, out string? primarySource);
+            long? pkgId = contentPackageIds.TryGetValue(GetPackageKey(file, primarySource), out var pid)
+                ? pid : null;
+
             if (existingFiles.TryGetValue(file.RelativePath, out var existing))
             {
                 if (existing.Hash == hash)
@@ -93,7 +112,7 @@ internal static class AuroraSqliteImporter
                 DeleteSourceFile(connection, transaction, existing.Id);
             }
 
-            long newId = InsertSourceFile(connection, transaction, file, hash);
+            long newId = InsertSourceFile(connection, transaction, file, hash, pkgId);
             sourceFileIds[file.RelativePath] = newId;
             changedPaths.Add(file.RelativePath);
 
@@ -174,12 +193,19 @@ internal static class AuroraSqliteImporter
             addedElements++;
         }
 
-        if (changedPaths.Count > 0)
+        // Always refresh package kinds — fast, uses authoritative source element flags.
+        RefreshPackageKinds(connection, transaction);
+
+        // Rebuild the resolution cache and re-resolve FKs whenever content changed,
+        // or on first run after this feature was added (cache is empty but DB has data).
+        bool cacheEmpty = IsCacheEmpty(connection);
+        if (changedPaths.Count > 0 || cacheEmpty)
         {
             progress?.Report(new AuroraImportProgress(
                 AuroraImportPhase.Resolving, catalog.Files.Count, catalog.Files.Count,
                 changedPaths.Count, addedElements, null));
 
+            BuildResolutionCache(connection, transaction);
             ResolveDeferredRelationships(connection, transaction);
         }
 
@@ -253,6 +279,10 @@ internal static class AuroraSqliteImporter
 
     private static void EnsureSchema(SqliteConnection connection)
     {
+        // Migrations must run before the schema SQL so that indexes on newly-added
+        // columns (e.g. ix_source_files_package) succeed on existing databases.
+        ApplyMigrations(connection);
+
         string rawSql = LoadSchemaSql();
         string schemaSql = System.Text.RegularExpressions.Regex.Replace(
             rawSql,
@@ -264,8 +294,6 @@ internal static class AuroraSqliteImporter
         using var schema = connection.CreateCommand();
         schema.CommandText = schemaSql;
         schema.ExecuteNonQuery();
-
-        ApplyMigrations(connection);
     }
 
     private static int GetUserVersion(SqliteConnection connection)
@@ -284,15 +312,42 @@ internal static class AuroraSqliteImporter
 
     private static void ApplyMigrations(SqliteConnection connection)
     {
+        // v1→v2
+        AddColumnIfMissing(connection, "source_files", "file_hash", "TEXT");
+
+        // v2→v3: full 5eApiTranslator schema (content_packages FK, semantic grant
+        //        columns, raw_xml preservation, select_items option_kind)
+        AddColumnIfMissing(connection, "source_files",  "content_package_id",   "INTEGER");
+        AddColumnIfMissing(connection, "grants",        "target_semantic_key",  "TEXT");
+        AddColumnIfMissing(connection, "grants",        "target_semantic_kind", "TEXT");
+        AddColumnIfMissing(connection, "grants",        "target_semantic_name", "TEXT");
+        AddColumnIfMissing(connection, "grants",        "raw_xml",              "TEXT");
+        AddColumnIfMissing(connection, "selects",       "raw_xml",              "TEXT");
+        AddColumnIfMissing(connection, "select_items",  "option_kind",
+            "TEXT NOT NULL DEFAULT 'name-reference-candidate'");
+        AddColumnIfMissing(connection, "stats",         "raw_xml",              "TEXT");
+    }
+
+    private static void AddColumnIfMissing(SqliteConnection connection,
+        string table, string column, string columnDef)
+    {
+        // Skip if the table doesn't exist yet — CREATE TABLE in the schema SQL will
+        // define the column correctly on a fresh database.
+        using var tableCheck = connection.CreateCommand();
+        tableCheck.CommandText =
+            "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=$t;";
+        tableCheck.Parameters.AddWithValue("$t", table);
+        if ((long)tableCheck.ExecuteScalar()! == 0) return;
+
         using var colCheck = connection.CreateCommand();
         colCheck.CommandText =
-            "SELECT COUNT(*) FROM pragma_table_info('source_files') WHERE name = 'file_hash';";
-        if ((long)colCheck.ExecuteScalar()! == 0)
-        {
-            using var alter = connection.CreateCommand();
-            alter.CommandText = "ALTER TABLE source_files ADD COLUMN file_hash TEXT;";
-            alter.ExecuteNonQuery();
-        }
+            $"SELECT COUNT(*) FROM pragma_table_info('{table}') WHERE name=$col;";
+        colCheck.Parameters.AddWithValue("$col", column);
+        if ((long)colCheck.ExecuteScalar()! != 0) return;
+
+        using var alter = connection.CreateCommand();
+        alter.CommandText = $"ALTER TABLE \"{table}\" ADD COLUMN {column} {columnDef};";
+        alter.ExecuteNonQuery();
     }
 
     // ── Source book helpers ──────────────────────────────────────────────────
@@ -311,6 +366,152 @@ internal static class AuroraSqliteImporter
         select.Parameters.AddWithValue("$name", sourceName);
         return (long)select.ExecuteScalar()!;
     }
+
+    // ── Content package helpers ──────────────────────────────────────────────
+
+    private static long EnsureContentPackage(SqliteConnection connection, SqliteTransaction transaction,
+        string packageKey, string? packageName, string packageKind)
+    {
+        using var insert = connection.CreateCommand();
+        insert.Transaction = transaction;
+        insert.CommandText = @"
+INSERT INTO content_packages (package_key, package_name, package_kind, precedence_rank)
+VALUES ($package_key, $package_name, $package_kind, $precedence_rank)
+ON CONFLICT(package_key) DO NOTHING;";
+        insert.Parameters.AddWithValue("$package_key",      packageKey);
+        insert.Parameters.AddWithValue("$package_name",     packageName ?? packageKey);
+        insert.Parameters.AddWithValue("$package_kind",     packageKind);
+        insert.Parameters.AddWithValue("$precedence_rank",  DefaultPrecedenceRank(packageKind));
+        insert.ExecuteNonQuery();
+
+        using var select = connection.CreateCommand();
+        select.Transaction = transaction;
+        select.CommandText = "SELECT content_package_id FROM content_packages WHERE package_key = $package_key;";
+        select.Parameters.AddWithValue("$package_key", packageKey);
+        return (long)select.ExecuteScalar()!;
+    }
+
+    private static string GetPackageKey(AuroraFileInfo file, string? primarySource)
+    {
+        string packageKind = DeterminePackageKind(file.RelativePath);
+        if (!string.IsNullOrWhiteSpace(primarySource))
+            return $"{packageKind}:{BuildPackageSlug(primarySource)}";
+
+        if (!string.IsNullOrWhiteSpace(file.Name))
+            return $"{packageKind}:{BuildPackageSlug(file.Name!)}";
+
+        int sep = file.RelativePath.IndexOfAny(['/', '\\']);
+        string topLevel = sep > 0 ? file.RelativePath[..sep] : file.RelativePath;
+        return $"{packageKind}:{BuildPackageSlug(topLevel)}";
+    }
+
+    private static string DeterminePackageKind(string relativePath)
+    {
+        int sep = relativePath.IndexOfAny(['/', '\\']);
+        string topLevel = sep > 0 ? relativePath[..sep] : relativePath;
+        return topLevel.ToLowerInvariant() switch
+        {
+            "core"                 => "core",
+            "supplements"
+            or "unearthed-arcana" => "official",
+            "user"                 => "homebrew",
+            _                      => "third-party"
+        };
+    }
+
+    private static string BuildPackageSlug(string name)
+    {
+        var builder = new System.Text.StringBuilder(name.Length);
+        bool previousDash = false;
+        foreach (char ch in name.ToLowerInvariant())
+        {
+            if (char.IsLetterOrDigit(ch))
+            {
+                builder.Append(ch);
+                previousDash = false;
+            }
+            else if (!previousDash)
+            {
+                builder.Append('-');
+                previousDash = true;
+            }
+        }
+
+        return builder.ToString().Trim('-');
+    }
+
+    private static string? GetPackageDisplayName(AuroraFileInfo file, string? primarySource)
+    {
+        if (!string.IsNullOrWhiteSpace(primarySource))
+            return primarySource;
+
+        return file.Name;
+    }
+
+    private static Dictionary<string, string?> BuildPrimarySourceByFile(AuroraImportCatalog catalog)
+    {
+        var result = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var group in catalog.Elements
+            .Where(x => !string.IsNullOrWhiteSpace(x.source_file_path))
+            .GroupBy(x => x.source_file_path!, StringComparer.OrdinalIgnoreCase))
+        {
+            result[group.Key] = SelectPrimarySource(group.Select(x => x.source));
+        }
+
+        foreach (var group in catalog.Spells
+            .Where(x => !string.IsNullOrWhiteSpace(x.source_file_path))
+            .GroupBy(x => x.source_file_path!, StringComparer.OrdinalIgnoreCase))
+        {
+            if (result.ContainsKey(group.Key))
+                continue;
+
+            result[group.Key] = SelectPrimarySource(group.Select(x => x.source));
+        }
+
+        return result;
+    }
+
+    private static string? SelectPrimarySource(IEnumerable<string?> sources)
+    {
+        var ranked = sources
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x!.Trim())
+            .GroupBy(x => x, StringComparer.OrdinalIgnoreCase)
+            .Select(g => new { Name = g.Key, Count = g.Count() })
+            .OrderByDescending(x => SourcePriority(x.Name))
+            .ThenByDescending(x => x.Count)
+            .ThenBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (ranked.Count == 0)
+            return null;
+
+        if (ranked.Count == 1 || ranked[0].Count > ranked[1].Count)
+            return ranked[0].Name;
+
+        if (ranked[0].Count == ranked[1].Count
+            && SourcePriority(ranked[0].Name) > SourcePriority(ranked[1].Name))
+            return ranked[0].Name;
+
+        return null;
+    }
+
+    private static int SourcePriority(string sourceName) =>
+        IsVirtualSource(sourceName) ? 0 : 1;
+
+    private static bool IsVirtualSource(string sourceName) =>
+        string.Equals(sourceName?.Trim(), "Internal", StringComparison.OrdinalIgnoreCase);
+
+    private static int DefaultPrecedenceRank(string packageKind) =>
+        packageKind switch
+        {
+            "core"        => 100,
+            "official"    => 200,
+            "third-party" => 300,
+            "homebrew"    => 400,
+            _             => 500
+        };
 
     // ── Source file helpers ──────────────────────────────────────────────────
 
@@ -358,16 +559,17 @@ internal static class AuroraSqliteImporter
 
     private static long InsertSourceFile(
         SqliteConnection connection, SqliteTransaction transaction,
-        AuroraFileInfo file, string? hash = null)
+        AuroraFileInfo file, string? hash = null, long? contentPackageId = null)
     {
         using var command = connection.CreateCommand();
         command.Transaction = transaction;
         command.CommandText = @"
 INSERT INTO source_files
-(relative_path, package_name, package_description, version_text, update_file_name, update_url, author_name, author_url, file_hash)
+(relative_path, content_package_id, package_name, package_description, version_text, update_file_name, update_url, author_name, author_url, file_hash)
 VALUES
-($relative_path, $package_name, $package_description, $version_text, $update_file_name, $update_url, $author_name, $author_url, $file_hash);";
+($relative_path, $content_package_id, $package_name, $package_description, $version_text, $update_file_name, $update_url, $author_name, $author_url, $file_hash);";
         command.Parameters.AddWithValue("$relative_path",       file.RelativePath);
+        command.Parameters.AddWithValue("$content_package_id",  contentPackageId.HasValue ? contentPackageId.Value : DBNull.Value);
         command.Parameters.AddWithValue("$package_name",        (object?)file.Name ?? DBNull.Value);
         command.Parameters.AddWithValue("$package_description", (object?)file.Description ?? DBNull.Value);
         command.Parameters.AddWithValue("$version_text",        (object?)file.FileVersion?.versionString ?? DBNull.Value);
@@ -826,33 +1028,42 @@ VALUES
 
         foreach (var grant in rules.grants ?? Enumerable.Empty<Grant>())
         {
+            // target_aurora_id is set only for direct ID_* references; the raw id
+            // attribute is always preserved in target_semantic_key for diagnostics.
+            string? targetAuroraId = grant.id?.StartsWith("ID_", StringComparison.OrdinalIgnoreCase) == true
+                ? grant.id : null;
             ExecuteInsert(connection, transaction,
-                "INSERT INTO grants (rule_scope_id, ordinal, grant_type, target_aurora_id, name_text, grant_level, spellcasting_name, is_prepared, requirements_text) VALUES ($rule_scope_id, $ordinal, $grant_type, $target_aurora_id, $name_text, $grant_level, $spellcasting_name, $is_prepared, $requirements_text);",
-                ("$rule_scope_id",    ruleScopeId), ("$ordinal", ordinal++),
-                ("$grant_type",       grant.type ?? string.Empty),
-                ("$target_aurora_id", (object?)grant.id ?? DBNull.Value),
-                ("$name_text",        (object?)grant.name ?? DBNull.Value),
-                ("$grant_level",      grant.level.HasValue ? grant.level.Value : DBNull.Value),
-                ("$spellcasting_name",(object?)grant.spellcasting ?? DBNull.Value),
-                ("$is_prepared",      grant.prepared.HasValue ? (grant.prepared.Value ? 1 : 0) : DBNull.Value),
-                ("$requirements_text",(object?)grant.requirements?.raw ?? DBNull.Value));
+                "INSERT INTO grants (rule_scope_id, ordinal, grant_type, target_aurora_id, target_semantic_key, target_semantic_kind, target_semantic_name, raw_xml, name_text, grant_level, spellcasting_name, is_prepared, requirements_text) VALUES ($rule_scope_id, $ordinal, $grant_type, $target_aurora_id, $target_semantic_key, $target_semantic_kind, $target_semantic_name, $raw_xml, $name_text, $grant_level, $spellcasting_name, $is_prepared, $requirements_text);",
+                ("$rule_scope_id",         ruleScopeId), ("$ordinal", ordinal++),
+                ("$grant_type",            grant.type ?? string.Empty),
+                ("$target_aurora_id",      (object?)targetAuroraId ?? DBNull.Value),
+                ("$target_semantic_key",   (object?)grant.id ?? DBNull.Value),
+                ("$target_semantic_kind",  (object?)grant.type ?? DBNull.Value),
+                ("$target_semantic_name",  (object?)grant.name ?? DBNull.Value),
+                ("$raw_xml",               (object?)grant.rawXml ?? DBNull.Value),
+                ("$name_text",             (object?)grant.name ?? DBNull.Value),
+                ("$grant_level",           grant.level.HasValue ? grant.level.Value : DBNull.Value),
+                ("$spellcasting_name",     (object?)grant.spellcasting ?? DBNull.Value),
+                ("$is_prepared",           grant.prepared.HasValue ? (grant.prepared.Value ? 1 : 0) : DBNull.Value),
+                ("$requirements_text",     (object?)grant.requirements?.raw ?? DBNull.Value));
         }
 
         ordinal = 1;
         foreach (var select in rules.selects ?? Enumerable.Empty<Select>())
         {
             ExecuteInsert(connection, transaction,
-                "INSERT INTO selects (rule_scope_id, ordinal, select_type, name_text, supports_text, select_level, number_to_choose, default_choice_text, is_optional, spellcasting_profile_id, requirements_text) VALUES ($rule_scope_id, $ordinal, $select_type, $name_text, $supports_text, $select_level, $number_to_choose, $default_choice_text, $is_optional, $spellcasting_profile_id, $requirements_text);",
-                ("$rule_scope_id",         ruleScopeId), ("$ordinal", ordinal++),
-                ("$select_type",           select.type ?? string.Empty),
-                ("$name_text",             select.name ?? string.Empty),
-                ("$supports_text",         (object?)select.supports?.raw ?? DBNull.Value),
-                ("$select_level",          select.level.HasValue ? select.level.Value : DBNull.Value),
-                ("$number_to_choose",      select.number),
-                ("$default_choice_text",   (object?)select.defaultChoice ?? DBNull.Value),
-                ("$is_optional",           select.optional ? 1 : 0),
+                "INSERT INTO selects (rule_scope_id, ordinal, select_type, name_text, supports_text, select_level, number_to_choose, default_choice_text, is_optional, spellcasting_profile_id, raw_xml, requirements_text) VALUES ($rule_scope_id, $ordinal, $select_type, $name_text, $supports_text, $select_level, $number_to_choose, $default_choice_text, $is_optional, $spellcasting_profile_id, $raw_xml, $requirements_text);",
+                ("$rule_scope_id",           ruleScopeId), ("$ordinal", ordinal++),
+                ("$select_type",             select.type ?? string.Empty),
+                ("$name_text",               select.name ?? string.Empty),
+                ("$supports_text",           (object?)select.supports?.raw ?? DBNull.Value),
+                ("$select_level",            select.level.HasValue ? select.level.Value : DBNull.Value),
+                ("$number_to_choose",        select.number),
+                ("$default_choice_text",     (object?)select.defaultChoice ?? DBNull.Value),
+                ("$is_optional",             select.optional ? 1 : 0),
                 ("$spellcasting_profile_id", ResolveSpellcastingProfileId(connection, transaction, elementId, select.spellcasting)),
-                ("$requirements_text",     (object?)select.requirements?.raw ?? DBNull.Value));
+                ("$raw_xml",                 (object?)select.rawXml ?? DBNull.Value),
+                ("$requirements_text",       (object?)select.requirements?.raw ?? DBNull.Value));
 
             long selectId = GetLastInsertRowId(connection, transaction);
             int suppOrdinal = 1;
@@ -868,16 +1079,17 @@ VALUES
         foreach (var stat in rules.stats ?? Enumerable.Empty<Stat>())
         {
             ExecuteInsert(connection, transaction,
-                "INSERT INTO stats (rule_scope_id, ordinal, stat_name, value_expression_text, bonus_expression_text, equipped_expression_text, stat_level, inline_display, alt_text, requirements_text) VALUES ($rule_scope_id, $ordinal, $stat_name, $value_expression_text, $bonus_expression_text, $equipped_expression_text, $stat_level, $inline_display, $alt_text, $requirements_text);",
-                ("$rule_scope_id",          ruleScopeId), ("$ordinal", ordinal++),
-                ("$stat_name",              stat.name ?? string.Empty),
-                ("$value_expression_text",  (object?)stat.value ?? DBNull.Value),
-                ("$bonus_expression_text",  (object?)stat.bonus ?? DBNull.Value),
+                "INSERT INTO stats (rule_scope_id, ordinal, stat_name, value_expression_text, bonus_expression_text, equipped_expression_text, stat_level, inline_display, alt_text, raw_xml, requirements_text) VALUES ($rule_scope_id, $ordinal, $stat_name, $value_expression_text, $bonus_expression_text, $equipped_expression_text, $stat_level, $inline_display, $alt_text, $raw_xml, $requirements_text);",
+                ("$rule_scope_id",           ruleScopeId), ("$ordinal", ordinal++),
+                ("$stat_name",               stat.name ?? string.Empty),
+                ("$value_expression_text",   (object?)stat.value ?? DBNull.Value),
+                ("$bonus_expression_text",   (object?)stat.bonus ?? DBNull.Value),
                 ("$equipped_expression_text",(object?)stat.equipped?.raw ?? DBNull.Value),
-                ("$stat_level",             stat.level.HasValue ? stat.level.Value : DBNull.Value),
-                ("$inline_display",         stat.inline ? 1 : 0),
-                ("$alt_text",               (object?)stat.alt ?? DBNull.Value),
-                ("$requirements_text",      (object?)stat.requirements?.raw ?? DBNull.Value));
+                ("$stat_level",              stat.level.HasValue ? stat.level.Value : DBNull.Value),
+                ("$inline_display",          stat.inline ? 1 : 0),
+                ("$alt_text",                (object?)stat.alt ?? DBNull.Value),
+                ("$raw_xml",                 (object?)stat.rawXml ?? DBNull.Value),
+                ("$requirements_text",       (object?)stat.requirements?.raw ?? DBNull.Value));
         }
     }
 
@@ -887,11 +1099,13 @@ VALUES
         int ordinal = 1;
         foreach (var item in items)
         {
+            string? targetAuroraId = GetItemTargetAuroraId(item);
             ExecuteInsert(connection, transaction,
-                "INSERT INTO select_items (select_id, ordinal, item_text, target_aurora_id) VALUES ($select_id, $ordinal, $item_text, $target_aurora_id);",
+                "INSERT INTO select_items (select_id, ordinal, item_text, target_aurora_id, option_kind) VALUES ($select_id, $ordinal, $item_text, $target_aurora_id, $option_kind);",
                 ("$select_id", selectId), ("$ordinal", ordinal++),
                 ("$item_text",       (object?)item.value ?? DBNull.Value),
-                ("$target_aurora_id",(object?)GetItemTargetAuroraId(item) ?? DBNull.Value));
+                ("$target_aurora_id",(object?)targetAuroraId ?? DBNull.Value),
+                ("$option_kind",     targetAuroraId != null ? "aurora-reference" : "name-reference-candidate"));
 
             long selectItemId = GetLastInsertRowId(connection, transaction);
             int attrOrdinal = 1;
@@ -941,126 +1155,377 @@ VALUES
         }
     }
 
+    // ── Public cache-only rebuild ────────────────────────────────────────────
+
+    /// <summary>
+    /// Re-runs the resolution cache build and FK resolve without re-importing any files.
+    /// Call this after toggling <c>content_packages.is_enabled</c> so that the new
+    /// enable/disable state is reflected in the cache and FK columns immediately.
+    /// </summary>
+    internal static void RebuildCacheOnly(string sqlitePath)
+    {
+        using var connection = new SqliteConnection(
+            new SqliteConnectionStringBuilder { DataSource = sqlitePath }.ToString());
+        connection.Open();
+        using var transaction = connection.BeginTransaction();
+        BuildResolutionCache(connection, transaction);
+        ResolveDeferredRelationships(connection, transaction);
+        transaction.Commit();
+    }
+
     // ── FK resolution ────────────────────────────────────────────────────────
+
+    // ── Resolution cache ─────────────────────────────────────────────────────
+
+    private static bool IsCacheEmpty(SqliteConnection connection)
+    {
+        using var cmd = connection.CreateCommand();
+        cmd.CommandText = "SELECT COUNT(*) FROM resolved_elements_cache;";
+        return (long)(cmd.ExecuteScalar() ?? 0L) == 0;
+    }
+
+    private static void BuildResolutionCache(SqliteConnection connection, SqliteTransaction transaction)
+    {
+        ExecuteSql(connection, transaction, "DELETE FROM resolved_unique_element_names_cache;");
+        ExecuteSql(connection, transaction, "DELETE FROM resolved_elements_cache;");
+
+        ExecuteSql(connection, transaction, @"
+INSERT INTO resolved_elements_cache
+(
+    aurora_id,
+    winning_element_id,
+    source_file_id,
+    content_package_id,
+    package_key,
+    package_name,
+    package_kind,
+    precedence_rank,
+    duplicate_count,
+    resolution_rank
+)
+WITH ranked AS
+(
+    SELECT
+        e.aurora_id,
+        e.element_id AS winning_element_id,
+        e.source_file_id,
+        sf.content_package_id,
+        cp.package_key,
+        cp.package_name,
+        cp.package_kind,
+        cp.precedence_rank,
+        COUNT(*) OVER (PARTITION BY e.aurora_id) AS duplicate_count,
+        ROW_NUMBER() OVER
+        (
+            PARTITION BY e.aurora_id
+            ORDER BY
+                COALESCE(cp.is_enabled, 1) DESC,
+                COALESCE(cp.precedence_rank, 500) DESC,
+                CASE COALESCE(cp.package_kind, 'local')
+                    WHEN 'local'        THEN 5
+                    WHEN 'homebrew'     THEN 4
+                    WHEN 'third-party'  THEN 3
+                    WHEN 'official'     THEN 2
+                    WHEN 'core'         THEN 1
+                    ELSE 0
+                END DESC,
+                e.source_file_id ASC,
+                e.element_id ASC
+        ) AS resolution_rank
+    FROM elements AS e
+    JOIN source_files AS sf
+        ON sf.source_file_id = e.source_file_id
+    LEFT JOIN content_packages AS cp
+        ON cp.content_package_id = sf.content_package_id
+    WHERE e.aurora_id IS NOT NULL
+      AND trim(e.aurora_id) <> ''
+      AND COALESCE(cp.is_enabled, 1) = 1
+)
+SELECT
+    aurora_id,
+    winning_element_id,
+    source_file_id,
+    content_package_id,
+    package_key,
+    package_name,
+    package_kind,
+    precedence_rank,
+    duplicate_count,
+    resolution_rank
+FROM ranked
+WHERE resolution_rank = 1;");
+
+        ExecuteSql(connection, transaction, @"
+INSERT INTO resolved_unique_element_names_cache
+(
+    normalized_name,
+    winning_element_id,
+    name
+)
+WITH named AS
+(
+    SELECT
+        rec.winning_element_id,
+        e.name,
+        lower(trim(e.name)) AS normalized_name,
+        COUNT(*) OVER (PARTITION BY lower(trim(e.name))) AS match_count
+    FROM resolved_elements_cache AS rec
+    JOIN elements AS e
+        ON e.element_id = rec.winning_element_id
+    WHERE e.name IS NOT NULL
+      AND trim(e.name) <> ''
+)
+SELECT
+    normalized_name,
+    winning_element_id,
+    name
+FROM named
+WHERE match_count = 1;");
+    }
+
+    // ── FK resolution ─────────────────────────────────────────────────────────
 
     private static void ResolveDeferredRelationships(SqliteConnection connection, SqliteTransaction transaction)
     {
+        // Reset all deferred FKs for a full, cache-driven rebuild.
+        ExecuteSql(connection, transaction, @"
+UPDATE grants
+SET target_element_id = NULL
+WHERE target_aurora_id IS NOT NULL;");
+
+        ExecuteSql(connection, transaction, "UPDATE element_extract_items SET linked_element_id = NULL;");
+        ExecuteSql(connection, transaction, "UPDATE select_items SET linked_element_id = NULL;");
+        ExecuteSql(connection, transaction, "UPDATE subraces SET race_element_id = NULL;");
+        ExecuteSql(connection, transaction, "UPDATE race_variants SET race_element_id = NULL;");
+        ExecuteSql(connection, transaction, "UPDATE background_variants SET background_element_id = NULL;");
+
+        ExecuteSql(connection, transaction, @"
+UPDATE features
+SET parent_element_id = NULL
+WHERE parent_support_text IS NOT NULL;");
+
+        ExecuteSql(connection, transaction, "UPDATE archetypes SET parent_class_element_id = NULL;");
+        ExecuteSql(connection, transaction, "DELETE FROM select_support_links;");
+        ExecuteSql(connection, transaction, "DELETE FROM element_support_links;");
+
+        ExecuteSql(connection, transaction, @"
+DELETE FROM support_tags
+WHERE support_text <> '[[inline-item]]'
+  AND NOT EXISTS (SELECT 1 FROM element_supports WHERE element_supports.support_text = support_tags.support_text)
+  AND NOT EXISTS (SELECT 1 FROM select_supports  WHERE select_supports.support_text  = support_tags.support_text);");
+
+        ExecuteSql(connection, transaction, @"
+UPDATE support_tags
+SET support_kind = 'unclassified'
+WHERE support_text <> '[[inline-item]]';");
+
+        // grants — direct aurora_id lookup via cache
         ExecuteSql(connection, transaction, @"
 UPDATE grants SET target_element_id =
-    (SELECT MIN(e.element_id) FROM elements AS e WHERE e.aurora_id = grants.target_aurora_id)
+(
+    SELECT rec.winning_element_id
+    FROM resolved_elements_cache AS rec
+    WHERE rec.aurora_id = grants.target_aurora_id
+)
 WHERE target_element_id IS NULL AND target_aurora_id IS NOT NULL;");
 
+        // element_extract_items — prefer aurora_id cache, fall back to unique name cache
         ExecuteSql(connection, transaction, @"
 UPDATE element_extract_items SET linked_element_id =
-    (SELECT MIN(e.element_id) FROM elements AS e WHERE e.aurora_id = element_extract_items.target_aurora_id
-       OR (element_extract_items.target_aurora_id IS NULL AND e.name = element_extract_items.item_text))
-WHERE linked_element_id IS NULL AND (target_aurora_id IS NOT NULL OR item_text IS NOT NULL);");
+(
+    SELECT COALESCE(
+        (SELECT rec.winning_element_id  FROM resolved_elements_cache             AS rec  WHERE rec.aurora_id       = element_extract_items.target_aurora_id),
+        (SELECT runc.winning_element_id FROM resolved_unique_element_names_cache AS runc WHERE runc.normalized_name = lower(trim(element_extract_items.item_text)))
+    )
+)
+WHERE linked_element_id IS NULL
+  AND (target_aurora_id IS NOT NULL OR item_text IS NOT NULL);");
 
+        // select_items — same pattern; skip text-choice options
         ExecuteSql(connection, transaction, @"
 UPDATE select_items SET linked_element_id =
-    (SELECT MIN(e.element_id) FROM elements AS e WHERE e.aurora_id = select_items.target_aurora_id
-       OR (select_items.target_aurora_id IS NULL AND e.name = select_items.item_text))
-WHERE linked_element_id IS NULL AND (target_aurora_id IS NOT NULL OR item_text IS NOT NULL);");
+(
+    SELECT COALESCE(
+        (SELECT rec.winning_element_id  FROM resolved_elements_cache             AS rec  WHERE rec.aurora_id       = select_items.target_aurora_id),
+        (SELECT runc.winning_element_id FROM resolved_unique_element_names_cache AS runc WHERE runc.normalized_name = lower(trim(select_items.item_text)))
+    )
+)
+WHERE option_kind <> 'text-choice'
+  AND linked_element_id IS NULL
+  AND (target_aurora_id IS NOT NULL OR item_text IS NOT NULL);");
 
+        // subraces — restrict parent to cache winners
         ExecuteSql(connection, transaction, @"
 UPDATE subraces SET race_element_id =
-    (SELECT MIN(parent.element_id) FROM races AS r JOIN elements AS parent ON parent.element_id = r.element_id
-     WHERE parent.aurora_id = subraces.parent_support_text OR parent.name = subraces.parent_support_text
-        OR subraces.parent_support_text = parent.name || ' Subrace'
-        OR subraces.parent_support_text = parent.name || ' Ancestry'
-        OR subraces.parent_support_text LIKE '% ' || parent.name)
+(
+    SELECT MIN(parent.element_id)
+    FROM races AS r
+    JOIN elements AS parent ON parent.element_id = r.element_id
+    JOIN resolved_elements_cache AS rec ON rec.winning_element_id = parent.element_id
+    WHERE parent.aurora_id = subraces.parent_support_text OR parent.name = subraces.parent_support_text
+       OR subraces.parent_support_text = parent.name || ' Subrace'
+       OR subraces.parent_support_text = parent.name || ' Ancestry'
+       OR subraces.parent_support_text LIKE '% ' || parent.name
+)
 WHERE race_element_id IS NULL AND parent_support_text IS NOT NULL;");
 
+        // race_variants — restrict parent to cache winners
         ExecuteSql(connection, transaction, @"
 UPDATE race_variants SET race_element_id =
-    (SELECT MIN(parent.element_id) FROM races AS r JOIN elements AS parent ON parent.element_id = r.element_id
-     WHERE parent.aurora_id = race_variants.parent_support_text OR parent.name = race_variants.parent_support_text
-        OR race_variants.parent_support_text = parent.name || ' Variant'
-        OR trim(replace(replace(race_variants.parent_support_text, 'Variant ', ''), ' Variant', '')) = parent.name)
+(
+    SELECT MIN(parent.element_id)
+    FROM races AS r
+    JOIN elements AS parent ON parent.element_id = r.element_id
+    JOIN resolved_elements_cache AS rec ON rec.winning_element_id = parent.element_id
+    WHERE parent.aurora_id = race_variants.parent_support_text OR parent.name = race_variants.parent_support_text
+       OR race_variants.parent_support_text = parent.name || ' Variant'
+       OR trim(replace(replace(race_variants.parent_support_text, 'Variant ', ''), ' Variant', '')) = parent.name
+)
 WHERE race_element_id IS NULL AND parent_support_text IS NOT NULL;");
 
+        // background_variants — restrict parent to cache winners
         ExecuteSql(connection, transaction, @"
 UPDATE background_variants SET background_element_id =
-    (SELECT MIN(parent.element_id) FROM backgrounds AS b JOIN elements AS parent ON parent.element_id = b.element_id
-     WHERE parent.aurora_id = background_variants.parent_support_text OR parent.name = background_variants.parent_support_text
-        OR background_variants.parent_support_text = 'Variant ' || parent.name
-        OR trim(replace(background_variants.parent_support_text, 'Variant ', '')) = parent.name)
+(
+    SELECT MIN(parent.element_id)
+    FROM backgrounds AS b
+    JOIN elements AS parent ON parent.element_id = b.element_id
+    JOIN resolved_elements_cache AS rec ON rec.winning_element_id = parent.element_id
+    WHERE parent.aurora_id = background_variants.parent_support_text OR parent.name = background_variants.parent_support_text
+       OR background_variants.parent_support_text = 'Variant ' || parent.name
+       OR trim(replace(background_variants.parent_support_text, 'Variant ', '')) = parent.name
+)
 WHERE background_element_id IS NULL AND parent_support_text IS NOT NULL;");
 
+        // features — restrict parent to cache winners
         ExecuteSql(connection, transaction, @"
 UPDATE features SET parent_element_id =
-    (SELECT MIN(parent.element_id) FROM elements AS parent
-     WHERE parent.aurora_id = features.parent_support_text OR parent.name = features.parent_support_text)
+(
+    SELECT MIN(parent.element_id)
+    FROM elements AS parent
+    JOIN resolved_elements_cache AS rec ON rec.winning_element_id = parent.element_id
+    WHERE parent.aurora_id = features.parent_support_text OR parent.name = features.parent_support_text
+)
 WHERE parent_element_id IS NULL AND parent_support_text IS NOT NULL;");
 
+        // archetypes — restrict class parent to cache winners, known alias list
         ExecuteSql(connection, transaction, @"
 UPDATE archetypes SET parent_class_element_id =
-    (SELECT MIN(class_element.element_id) FROM elements AS class_element
-     JOIN element_types AS et ON et.element_type_id = class_element.element_type_id
-     WHERE et.type_name = 'Class' AND
-     (class_element.name = archetypes.parent_support_text
-      OR archetypes.parent_support_text = class_element.name || ' Subclass'
-      OR (archetypes.parent_support_text = 'Sacred Oath' AND class_element.name = 'Paladin')
-      OR (archetypes.parent_support_text = 'Divine Domain' AND class_element.name = 'Cleric')
-      OR (archetypes.parent_support_text = 'Bard College' AND class_element.name = 'Bard')
-      OR (archetypes.parent_support_text = 'Druid Circle' AND class_element.name = 'Druid')
-      OR (archetypes.parent_support_text = 'Martial Archetype' AND class_element.name = 'Fighter')
-      OR (archetypes.parent_support_text = 'Monastic Tradition' AND class_element.name = 'Monk')
-      OR (archetypes.parent_support_text = 'Ranger Archetype' AND class_element.name = 'Ranger')
-      OR (archetypes.parent_support_text = 'Ranger Conclave' AND class_element.name = 'Ranger')
-      OR (archetypes.parent_support_text = 'Roguish Archetype' AND class_element.name = 'Rogue')
-      OR (archetypes.parent_support_text = 'Sorcerous Origin' AND class_element.name = 'Sorcerer')
-      OR (archetypes.parent_support_text = 'Arcane Tradition' AND class_element.name = 'Wizard')
-      OR (archetypes.parent_support_text = 'Otherworldly Patron' AND class_element.name = 'Warlock')
-      OR (archetypes.parent_support_text = 'Primal Path' AND class_element.name = 'Barbarian')))
+(
+    SELECT MIN(class_element.element_id)
+    FROM elements AS class_element
+    JOIN element_types AS et ON et.element_type_id = class_element.element_type_id
+    JOIN resolved_elements_cache AS rec ON rec.winning_element_id = class_element.element_id
+    WHERE et.type_name = 'Class' AND
+    (
+        class_element.name = archetypes.parent_support_text
+        OR archetypes.parent_support_text = class_element.name || ' Subclass'
+        OR (archetypes.parent_support_text = 'Sacred Oath'         AND class_element.name = 'Paladin')
+        OR (archetypes.parent_support_text = 'Divine Domain'       AND class_element.name = 'Cleric')
+        OR (archetypes.parent_support_text = 'Bard College'        AND class_element.name = 'Bard')
+        OR (archetypes.parent_support_text = 'Druid Circle'        AND class_element.name = 'Druid')
+        OR (archetypes.parent_support_text = 'Martial Archetype'   AND class_element.name = 'Fighter')
+        OR (archetypes.parent_support_text = 'Monastic Tradition'  AND class_element.name = 'Monk')
+        OR (archetypes.parent_support_text = 'Ranger Archetype'    AND class_element.name = 'Ranger')
+        OR (archetypes.parent_support_text = 'Ranger Conclave'     AND class_element.name = 'Ranger')
+        OR (archetypes.parent_support_text = 'Roguish Archetype'   AND class_element.name = 'Rogue')
+        OR (archetypes.parent_support_text = 'Sorcerous Origin'    AND class_element.name = 'Sorcerer')
+        OR (archetypes.parent_support_text = 'Arcane Tradition'    AND class_element.name = 'Wizard')
+        OR (archetypes.parent_support_text = 'Otherworldly Patron' AND class_element.name = 'Warlock')
+        OR (archetypes.parent_support_text = 'Primal Path'         AND class_element.name = 'Barbarian')
+    )
+)
 WHERE parent_class_element_id IS NULL AND parent_support_text IS NOT NULL;");
 
+        // archetypes fallback — same-file class
         ExecuteSql(connection, transaction, @"
 UPDATE archetypes SET parent_class_element_id =
-    (SELECT MIN(class_element.element_id) FROM elements AS archetype_element
-     JOIN elements AS class_element ON class_element.source_file_id = archetype_element.source_file_id
-     JOIN element_types AS et ON et.element_type_id = class_element.element_type_id
-     WHERE archetype_element.element_id = archetypes.element_id AND et.type_name = 'Class')
+(
+    SELECT MIN(class_element.element_id)
+    FROM elements AS archetype_element
+    JOIN elements AS class_element ON class_element.source_file_id = archetype_element.source_file_id
+    JOIN element_types AS et ON et.element_type_id = class_element.element_type_id
+    WHERE archetype_element.element_id = archetypes.element_id AND et.type_name = 'Class'
+)
 WHERE parent_class_element_id IS NULL;");
 
+        // support tags & links — use cache for element lookups
         ExecuteSql(connection, transaction, @"
 INSERT OR IGNORE INTO support_tags (support_text, normalized_text)
-SELECT support_text, lower(trim(support_text)) FROM
-(SELECT support_text FROM element_supports UNION SELECT support_text FROM select_supports);");
+SELECT support_text, lower(trim(support_text))
+FROM (SELECT support_text FROM element_supports UNION SELECT support_text FROM select_supports);");
 
         ExecuteSql(connection, transaction, @"
 INSERT OR IGNORE INTO support_tags (support_text, normalized_text, support_kind)
 VALUES ('[[inline-item]]', '[[inline-item]]', 'bounded-option-set');");
 
         ExecuteSql(connection, transaction, @"
-INSERT OR IGNORE INTO element_support_links (element_id, ordinal, support_tag_id, linked_element_id, resolution_kind, is_primary_parent)
-SELECT es.element_id, es.ordinal, st.support_tag_id,
+INSERT OR IGNORE INTO element_support_links
+    (element_id, ordinal, support_tag_id, linked_element_id, resolution_kind, is_primary_parent)
+SELECT
+    es.element_id,
+    es.ordinal,
+    st.support_tag_id,
     COALESCE(
-        (SELECT MIN(e.element_id) FROM elements AS e WHERE e.aurora_id = es.support_text),
-        (SELECT MIN(e.element_id) FROM elements AS e WHERE e.name = es.support_text)
+        (SELECT rec.winning_element_id  FROM resolved_elements_cache             AS rec  WHERE rec.aurora_id       = es.support_text),
+        (SELECT runc.winning_element_id FROM resolved_unique_element_names_cache AS runc WHERE runc.normalized_name = lower(trim(es.support_text)))
     ),
     CASE
-        WHEN EXISTS(SELECT 1 FROM elements AS e WHERE e.aurora_id = es.support_text) THEN 'aurora-id'
-        WHEN EXISTS(SELECT 1 FROM elements AS e WHERE e.name = es.support_text) THEN 'element-name'
+        WHEN EXISTS(SELECT 1 FROM resolved_elements_cache             AS rec  WHERE rec.aurora_id       = es.support_text)               THEN 'aurora-id'
+        WHEN EXISTS(SELECT 1 FROM resolved_unique_element_names_cache AS runc WHERE runc.normalized_name = lower(trim(es.support_text))) THEN 'element-name'
         WHEN es.support_text LIKE '$(%' THEN 'dynamic'
         ELSE 'support-category'
-    END, 0
-FROM element_supports AS es JOIN support_tags AS st ON st.support_text = es.support_text;");
+    END,
+    0
+FROM element_supports AS es
+JOIN support_tags AS st ON st.support_text = es.support_text;");
 
         ExecuteSql(connection, transaction, @"
-INSERT OR IGNORE INTO select_support_links (select_id, ordinal, support_tag_id, linked_element_id, resolution_kind)
-SELECT ss.select_id, ss.ordinal, st.support_tag_id,
+INSERT OR IGNORE INTO select_support_links
+    (select_id, ordinal, support_tag_id, linked_element_id, resolution_kind)
+SELECT
+    ss.select_id,
+    ss.ordinal,
+    st.support_tag_id,
     COALESCE(
-        (SELECT MIN(e.element_id) FROM elements AS e WHERE e.aurora_id = ss.support_text),
-        (SELECT MIN(e.element_id) FROM elements AS e WHERE e.name = ss.support_text)
+        (SELECT rec.winning_element_id  FROM resolved_elements_cache             AS rec  WHERE rec.aurora_id       = ss.support_text),
+        (SELECT runc.winning_element_id FROM resolved_unique_element_names_cache AS runc WHERE runc.normalized_name = lower(trim(ss.support_text)))
     ),
     CASE
-        WHEN EXISTS(SELECT 1 FROM elements AS e WHERE e.aurora_id = ss.support_text) THEN 'aurora-id'
-        WHEN EXISTS(SELECT 1 FROM elements AS e WHERE e.name = ss.support_text) THEN 'element-name'
+        WHEN EXISTS(SELECT 1 FROM resolved_elements_cache             AS rec  WHERE rec.aurora_id       = ss.support_text)               THEN 'aurora-id'
+        WHEN EXISTS(SELECT 1 FROM resolved_unique_element_names_cache AS runc WHERE runc.normalized_name = lower(trim(ss.support_text))) THEN 'element-name'
         WHEN ss.support_text LIKE '$(%' THEN 'dynamic'
         ELSE 'support-category'
     END
-FROM select_supports AS ss JOIN support_tags AS st ON st.support_text = ss.support_text;");
+FROM select_supports AS ss
+JOIN support_tags AS st ON st.support_text = ss.support_text;");
+    }
+
+    // ── Package kind refinement ──────────────────────────────────────────────
+
+    private static void RefreshPackageKinds(SqliteConnection connection, SqliteTransaction transaction)
+    {
+        // Reclassify packages that defaulted to 'third-party' but whose Source
+        // element carries no affirmative is_third_party flag as 'homebrew'.
+        // Packages with explicit is_third_party=1 (e.g. Ryoko's Guide) are untouched.
+        // This runs unconditionally so incremental imports stay accurate too.
+        ExecuteSql(connection, transaction, @"
+UPDATE content_packages
+SET package_kind = 'homebrew'
+WHERE package_kind = 'third-party'
+  AND NOT EXISTS (
+      SELECT 1 FROM source_elements se
+      JOIN elements e  ON e.element_id  = se.element_id
+      JOIN source_files sf ON sf.source_file_id = e.source_file_id
+      WHERE sf.content_package_id = content_packages.content_package_id
+        AND se.is_third_party = 1
+  )
+  AND EXISTS (
+      SELECT 1 FROM source_elements se
+      JOIN elements e  ON e.element_id  = se.element_id
+      JOIN source_files sf ON sf.source_file_id = e.source_file_id
+      WHERE sf.content_package_id = content_packages.content_package_id
+  );");
     }
 
     // ── Scope helpers ────────────────────────────────────────────────────────

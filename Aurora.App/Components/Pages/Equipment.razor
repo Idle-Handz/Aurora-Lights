@@ -287,7 +287,7 @@
     private async Task ToggleEquippedAsync(string identifier)
     {
         var tab = Tabs.ActiveTab;
-        if (tab is null) return;
+        if (tab is not { Character: { } character, File: { } file }) return;
         using var scope = await CharacterContext.EnterAsync(tab);
 
         var item = FindLiveItem(identifier);
@@ -299,13 +299,14 @@
             item.Activate(equip: true, attune: item.IsAttuned);
 
         RefreshEquipment();
+        file.SaveInventoryItems(character);
         MarkDirty();
     }
 
     private async Task ToggleAttunedAsync(string identifier)
     {
         var tab = Tabs.ActiveTab;
-        if (tab is null) return;
+        if (tab is not { Character: { } character, File: { } file }) return;
         using var scope = await CharacterContext.EnterAsync(tab);
 
         var item = FindLiveItem(identifier);
@@ -317,6 +318,7 @@
             item.Activate(equip: item.IsEquipped, attune: true);
 
         RefreshEquipment();
+        file.SaveInventoryItems(character);
         MarkDirty();
     }
 

@@ -42,11 +42,15 @@ public static class BuildService
             for (int n = 1; n <= rule.Attributes.Number; n++)
             {
                 string? currentName = ResolveCurrentSelectionName(rule, n);
+                string ruleType = rule.Attributes.Type ?? "Other";
+                string ruleName = rule.Attributes.Name ?? ruleType;
                 string label = rule.Attributes.Number > 1
-                    ? $"{rule.Attributes.Name ?? rule.Attributes.Type} ({n})"
-                    : (rule.Attributes.Name ?? rule.Attributes.Type);
+                    ? $"{ruleName} ({n})"
+                    : ruleName;
 
-                var entry = new SelectionRuleEntry(rule, n, label, currentName, rule.Attributes.RequiredLevel);
+                var entry = new SelectionRuleEntry(
+                    rule, n, label, currentName, rule.Attributes.RequiredLevel,
+                    BuildEntryKey(ruleType, ruleName, n));
 
                 if (classMgr != null)
                 {
@@ -106,13 +110,17 @@ public static class BuildService
             for (int n = 1; n <= rule.Attributes.Number; n++)
             {
                 string? currentName = ResolveCurrentSelectionName(rule, n);
+                string ruleType = rule.Attributes.Type ?? "Spell";
+                string ruleName = rule.Attributes.Name ?? ruleType;
                 string label = rule.Attributes.Number > 1
-                    ? $"{rule.Attributes.Name ?? rule.Attributes.Type} ({n})"
-                    : (rule.Attributes.Name ?? rule.Attributes.Type);
+                    ? $"{ruleName} ({n})"
+                    : ruleName;
 
                 if (!byClass.ContainsKey(groupName))
                     byClass[groupName] = [];
-                byClass[groupName].Add(new SelectionRuleEntry(rule, n, label, currentName, rule.Attributes.RequiredLevel));
+                byClass[groupName].Add(new SelectionRuleEntry(
+                    rule, n, label, currentName, rule.Attributes.RequiredLevel,
+                    BuildEntryKey(ruleType, ruleName, n)));
             }
         }
 
@@ -285,9 +293,14 @@ public static class BuildService
     private static IEnumerable<ElementBase> SpellFallbackOptions(
         SelectRule rule, IEnumerable<ElementBase> spellBase)
     {
-        // Determine cantrip vs levelled spell from the supports text.
-        bool isCantrip = rule.Attributes.ContainsSupports() &&
-                         rule.Attributes.Supports.Contains("Cantrip", StringComparison.OrdinalIgnoreCase);
+        // Determine cantrip vs levelled spell.
+        // Supports expressions use $(spellcasting:list), 0 for cantrips — the macro text
+        // doesn't contain "Cantrip", so we also check the rule name.
+        bool isCantrip = false;
+        if (rule.Attributes.ContainsSupports())
+            isCantrip = rule.Attributes.Supports.Contains("Cantrip", StringComparison.OrdinalIgnoreCase);
+        if (!isCantrip)
+            isCantrip = rule.Attributes.Name?.Contains("Cantrip", StringComparison.OrdinalIgnoreCase) == true;
 
         // Prefer the spellcasting class name from the rule attribute; fall back to parsing
         // the supports expression for the first plain word (strips macros like "$(...)").
@@ -308,6 +321,24 @@ public static class BuildService
         if (className == null) return [];
 
         string scName = className;
+
+        // Fast path: use the pre-resolved spell access map from the DB loader.
+        // Only use this path when it actually finds matches; if the map has the key but the
+        // element IDs don't match the loaded content (e.g. API-imported IDs vs XML-loaded IDs),
+        // fall through to the text-based scan instead of returning empty.
+        if (DbElementLoader.SpellAccessMap.TryGetValue(scName, out var spellIds))
+        {
+            var fromMap = spellBase.Where(e =>
+            {
+                if (!spellIds.Contains(e.Id)) return false;
+                int lvl = 0;
+                try { lvl = (int)((dynamic)e).Level; } catch { }
+                return isCantrip ? lvl == 0 : lvl > 0;
+            }).ToList();
+            if (fromMap.Count > 0) return fromMap;
+        }
+
+        // Text-based scan: filter by class name in supports attribute.
         return spellBase.Where(e =>
         {
             if (e.Supports == null || !e.Supports.Contains(scName)) return false;
@@ -679,17 +710,23 @@ public static class BuildService
 
             int    level      = 0;
             string subtitle   = "";   // e.g. "1st-level abjuration (ritual)"
+            string school     = "";
             string castingTime = "";
             string range      = "";
             string components = "";
             string duration   = "";
+            bool ritual       = false;
+            bool concentration = false;
 
             try { level       = (int)(d.Level); }        catch { }
             try { subtitle    = (string)(d.Underline ?? ""); } catch { }
+            try { school      = (string)(d.MagicSchool ?? ""); } catch { }
             try { castingTime = (string)(d.CastingTime ?? ""); } catch { }
             try { range       = (string)(d.Range ?? ""); }       catch { }
             try { duration    = (string)(d.Duration ?? ""); }    catch { }
             try { components  = (string)(d.GetComponentsString()); } catch { }
+            try { ritual      = (bool)(d.IsRitual); } catch { }
+            try { concentration = (bool)(d.IsConcentration); } catch { }
 
             // Body description — use the plain-text generator on the raw XML description.
             string body = "";
@@ -724,6 +761,9 @@ public static class BuildService
                 Source:      e.Source ?? "",
                 Level:       level,
                 Subtitle:    subtitle,
+                School:      school,
+                Ritual:      ritual,
+                Concentration: concentration,
                 CastingTime: castingTime,
                 Range:       range,
                 Components:  components,
@@ -978,32 +1018,111 @@ public static class BuildService
     /// </summary>
     public static (IReadOnlyList<BuildTabGroup> Tabs,
                    IReadOnlyList<SelectionRuleEntry> AsiEntries,
-                   (string TabLabel, string StepLabel)? NextStep)
-        GetBuildData()
+                   BuildGuidanceTarget? NextStep)
+        GetBuildData(bool preferClassFirst)
     {
-        var tabs = GetBuildTabs();
+        var tabs = GetBuildTabs(preferClassFirst);
         var asi  = GetAsiEntries();
 
-        (string, string)? next = null;
-        foreach (var tab in tabs)
+        BuildGuidanceTarget? next = null;
+        var coreOrder = preferClassFirst
+            ? new[] { "Class", "Race" }
+            : new[] { "Race", "Class" };
+
+        foreach (var label in coreOrder)
+        {
+            var tab = tabs.FirstOrDefault(t => t.Label == label);
+            if (tab == null) continue;
+            foreach (var group in tab.RuleGroups)
+            {
+                foreach (var rule in group.Rules)
+                {
+                    if (rule.CurrentName == null)
+                    {
+                        next = new BuildGuidanceTarget(
+                            BuildGuidanceActionKind.Selection,
+                            tab.Label,
+                            rule.Label,
+                            rule.EntryKey,
+                            TargetLabel: $"{tab.Label} tab");
+                        goto done;
+                    }
+                }
+            }
+        }
+
+        if (NeedsInitialAbilityScores())
+        {
+            next = new BuildGuidanceTarget(
+                BuildGuidanceActionKind.AbilityScores,
+                "Ability Scores",
+                "Assign your starting ability scores",
+                EntryKey: null,
+                TargetLabel: "Ability Scores tab");
+            goto done;
+        }
+
+        foreach (var label in new[] { "Background", "Languages", "Proficiencies" })
+        {
+            var tab = tabs.FirstOrDefault(t => t.Label == label);
+            if (tab == null) continue;
+            foreach (var group in tab.RuleGroups)
+            {
+                foreach (var rule in group.Rules)
+                {
+                    if (rule.CurrentName == null)
+                    {
+                        next = new BuildGuidanceTarget(
+                            BuildGuidanceActionKind.Selection,
+                            tab.Label,
+                            rule.Label,
+                            rule.EntryKey,
+                            TargetLabel: $"{tab.Label} tab");
+                        goto done;
+                    }
+                }
+            }
+        }
+
+        foreach (var tab in tabs.Where(t =>
+                     t.Label is not "Race" and not "Class" and not "Background" and not "Languages" and not "Proficiencies"))
         {
             foreach (var group in tab.RuleGroups)
             {
                 foreach (var rule in group.Rules)
                 {
-                    if (rule.CurrentName == null) { next = (tab.Label, rule.Label); goto done; }
+                    if (rule.CurrentName == null)
+                    {
+                        next = new BuildGuidanceTarget(
+                            BuildGuidanceActionKind.Selection,
+                            tab.Label,
+                            rule.Label,
+                            rule.EntryKey,
+                            TargetLabel: $"{tab.Label} tab");
+                        goto done;
+                    }
                 }
             }
         }
+
         foreach (var entry in asi)
         {
-            if (entry.CurrentName == null) { next = ("Ability Scores", entry.Label); break; }
+            if (entry.CurrentName == null)
+            {
+                next = new BuildGuidanceTarget(
+                    BuildGuidanceActionKind.Selection,
+                    "Ability Scores",
+                    entry.Label,
+                    entry.EntryKey,
+                    TargetLabel: "Ability Scores tab");
+                break;
+            }
         }
         done:
         return (tabs, asi, next);
     }
 
-    public static IReadOnlyList<BuildTabGroup> GetBuildTabs()
+    public static IReadOnlyList<BuildTabGroup> GetBuildTabs(bool preferClassFirst)
     {
         var cm       = CharacterManager.Current;
         var classMgrs = cm.ClassProgressionManagers;
@@ -1032,7 +1151,9 @@ public static class BuildService
                     ? $"{ruleName} ({n})"
                     : ruleName;
 
-                var entry = new SelectionRuleEntry(rule, n, label, currentName, rule.Attributes.RequiredLevel);
+                var entry = new SelectionRuleEntry(
+                    rule, n, label, currentName, rule.Attributes.RequiredLevel,
+                    BuildEntryKey(ruleType, ruleName, n));
 
                 if (classMgr != null)
                 {
@@ -1066,8 +1187,7 @@ public static class BuildService
 
         var tabs = new List<BuildTabGroup>();
 
-        // Class tab — always present; initial Class rule first, then per-PM groups (first tab because
-        // the level-up and HP controls sit outside the tabs and relate most directly to class choices)
+        // Class tab — always present; initial Class rule first, then per-PM groups.
         var classGroups = new List<SelectionRuleGroup>();
         if (classMainEntries.Count > 0)
             classGroups.Add(new SelectionRuleGroup("", Sort(classMainEntries)));
@@ -1078,35 +1198,46 @@ public static class BuildService
                 m.ClassElement?.Name ?? "Class",
                 Sort(entries)));
         }
-        tabs.Add(new BuildTabGroup("Class", classGroups));
+        var classTab = new BuildTabGroup("Class", classGroups, CountUnresolved(classGroups));
 
         // Race tab
         var raceGroups = raceEntries.Count > 0
             ? new List<SelectionRuleGroup> { new("", Sort(raceEntries)) }
             : new List<SelectionRuleGroup>();
-        tabs.Add(new BuildTabGroup("Race", raceGroups));
+        var raceTab = new BuildTabGroup("Race", raceGroups, CountUnresolved(raceGroups));
+
+        if (preferClassFirst)
+        {
+            tabs.Add(classTab);
+            tabs.Add(raceTab);
+        }
+        else
+        {
+            tabs.Add(raceTab);
+            tabs.Add(classTab);
+        }
 
         // Background tab — always present
         var bgGroups = bgEntries.Count > 0
             ? new List<SelectionRuleGroup> { new("", Sort(bgEntries)) }
             : new List<SelectionRuleGroup>();
-        tabs.Add(new BuildTabGroup("Background", bgGroups));
+        tabs.Add(new BuildTabGroup("Background", bgGroups, CountUnresolved(bgGroups)));
 
         // Language tab — always present
         var langGroups = languageEntries.Count > 0
             ? new List<SelectionRuleGroup> { new("", Sort(languageEntries)) }
             : new List<SelectionRuleGroup>();
-        tabs.Add(new BuildTabGroup("Languages", langGroups));
+        tabs.Add(new BuildTabGroup("Languages", langGroups, CountUnresolved(langGroups)));
 
         // Proficiency tab — always present
         var profGroups = proficiencyEntries.Count > 0
             ? new List<SelectionRuleGroup> { new("", Sort(proficiencyEntries)) }
             : new List<SelectionRuleGroup>();
-        tabs.Add(new BuildTabGroup("Proficiencies", profGroups));
+        tabs.Add(new BuildTabGroup("Proficiencies", profGroups, CountUnresolved(profGroups)));
 
         // Overflow tabs — one per unrecognised type, alphabetical
         foreach (var (typeName, entries) in overflowEntries.OrderBy(kv => kv.Key))
-            tabs.Add(new BuildTabGroup(typeName, [new SelectionRuleGroup("", Sort(entries))]));
+            tabs.Add(new BuildTabGroup(typeName, [new SelectionRuleGroup("", Sort(entries))], entries.Count(e => e.CurrentName == null)));
 
         return tabs;
     }
@@ -1136,7 +1267,9 @@ public static class BuildService
                 string? currentName = ResolveCurrentSelectionName(rule, n);
                 string ruleName = rule.Attributes.Name ?? ruleType;
                 string label    = rule.Attributes.Number > 1 ? $"{ruleName} ({n})" : ruleName;
-                result.Add(new SelectionRuleEntry(rule, n, label, currentName, rule.Attributes.RequiredLevel));
+                result.Add(new SelectionRuleEntry(
+                    rule, n, label, currentName, rule.Attributes.RequiredLevel,
+                    BuildEntryKey(ruleType, ruleName, n)));
             }
         }
 
@@ -1147,26 +1280,66 @@ public static class BuildService
     /// Returns the tab label and rule label of the first unfilled required SelectionRule,
     /// or null when everything is complete for the current level.
     /// </summary>
-    public static (string TabLabel, string StepLabel)? GetNextRequiredStep()
+    public static BuildGuidanceTarget? GetNextRequiredStep()
     {
-        foreach (var tab in GetBuildTabs())
+        var (tabs, asi, next) = GetBuildData(preferClassFirst: false);
+        if (next != null)
+            return next;
+
+        foreach (var tab in tabs)
         {
             foreach (var group in tab.RuleGroups)
             {
                 foreach (var rule in group.Rules)
                 {
                     if (rule.CurrentName == null)
-                        return (tab.Label, rule.Label);
+                        return new BuildGuidanceTarget(
+                            BuildGuidanceActionKind.Selection,
+                            tab.Label,
+                            rule.Label,
+                            rule.EntryKey,
+                            TargetLabel: $"{tab.Label} tab");
                 }
             }
         }
         // Check ASI entries last
-        foreach (var entry in GetAsiEntries())
+        foreach (var entry in asi)
         {
             if (entry.CurrentName == null)
-                return ("Ability Scores", entry.Label);
+                return new BuildGuidanceTarget(
+                    BuildGuidanceActionKind.Selection,
+                    "Ability Scores",
+                    entry.Label,
+                    entry.EntryKey,
+                    TargetLabel: "Ability Scores tab");
         }
         return null;
+    }
+
+    private static int CountUnresolved(IEnumerable<SelectionRuleGroup> groups) =>
+        groups.SelectMany(group => group.Rules).Count(rule => rule.CurrentName == null);
+
+    private static string BuildEntryKey(string ruleType, string ruleName, int number) =>
+        $"{ruleType}|{ruleName}|{number}";
+
+    private static bool NeedsInitialAbilityScores()
+    {
+        try
+        {
+            var abilities = CharacterManager.Current?.Character?.Abilities;
+            if (abilities == null) return false;
+
+            return abilities.Strength.BaseScore == 10 &&
+                   abilities.Dexterity.BaseScore == 10 &&
+                   abilities.Constitution.BaseScore == 10 &&
+                   abilities.Intelligence.BaseScore == 10 &&
+                   abilities.Wisdom.BaseScore == 10 &&
+                   abilities.Charisma.BaseScore == 10;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     /// <summary>
@@ -1186,7 +1359,7 @@ public static class BuildService
 
 // ── Build tab group ───────────────────────────────────────────────────────────
 
-public sealed record BuildTabGroup(string Label, IReadOnlyList<SelectionRuleGroup> RuleGroups);
+public sealed record BuildTabGroup(string Label, IReadOnlyList<SelectionRuleGroup> RuleGroups, int UnresolvedCount = 0);
 
 // ── Value types ───────────────────────────────────────────────────────────────
 
@@ -1197,7 +1370,21 @@ public sealed record SelectionRuleEntry(
     int        Number,
     string     Label,
     string?    CurrentName,
-    int        RequiredLevel);
+    int        RequiredLevel,
+    string     EntryKey = "");
+
+public enum BuildGuidanceActionKind
+{
+    Selection,
+    AbilityScores,
+}
+
+public sealed record BuildGuidanceTarget(
+    BuildGuidanceActionKind ActionKind,
+    string TabLabel,
+    string StepLabel,
+    string? EntryKey,
+    string TargetLabel);
 
 public sealed record ElementOption(string Id, string Name, string Description, string Source = "", string Requirements = "");
 
@@ -1207,6 +1394,9 @@ public sealed record SpellDetail(
     string Source,
     int    Level,
     string Subtitle,     // e.g. "1st-level abjuration (ritual)" or "Transmutation Cantrip"
+    string School,
+    bool   Ritual,
+    bool   Concentration,
     string CastingTime,
     string Range,
     string Components,

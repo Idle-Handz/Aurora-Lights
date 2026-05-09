@@ -1,0 +1,63 @@
+<UserControl x:Class="Builder.Presentation.UserControls.SkillsPanelContent"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:converters="clr-namespace:Builder.Presentation.Converters"
+             xmlns:content="clr-namespace:Builder.Presentation.ViewModels.Content;assembly=Aurora.Logic"
+             mc:Ignorable="d">
+  <UserControl.Resources>
+    <converters:BonusStringValueConverter x:Key="BonusStringValueConverter"/>
+  </UserControl.Resources>
+  <Grid Margin="0,0,0,0">
+    <FrameworkElement.DataContext>
+      <content:SkillsContentViewModel/>
+    </FrameworkElement.DataContext>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+    <UniformGrid Grid.Row="0" Columns="2" Margin="0,0,0,6">
+      <Border Margin="0,0,6,0" Padding="6,4" Background="{DynamicResource AccentColorBrush4}">
+        <StackPanel>
+          <TextBlock Text="Passive Perception" Style="{StaticResource SectionSubHeaderTextBlockStyle}"/>
+          <TextBlock Text="{Binding PassivePerception}" Style="{StaticResource SectionHeaderTextBlockStyle}"
+                     Foreground="{DynamicResource HighlightBrush}"/>
+        </StackPanel>
+      </Border>
+      <Border Margin="6,0,0,0" Padding="6,4" Background="{DynamicResource AccentColorBrush4}">
+        <StackPanel>
+          <TextBlock Text="Passive Insight" Style="{StaticResource SectionSubHeaderTextBlockStyle}"/>
+          <TextBlock Text="{Binding PassiveInsight}" Style="{StaticResource SectionHeaderTextBlockStyle}"
+                     Foreground="{DynamicResource HighlightBrush}"/>
+        </StackPanel>
+      </Border>
+    </UniformGrid>
+    <ItemsControl Grid.Row="1" ItemsSource="{Binding SkillItems}">
+      <ItemsControl.ItemsPanel>
+        <ItemsPanelTemplate>
+          <UniformGrid Columns="2"/>
+        </ItemsPanelTemplate>
+      </ItemsControl.ItemsPanel>
+      <ItemsControl.ItemTemplate>
+        <DataTemplate>
+          <Grid Margin="0,1,0,1" Background="{DynamicResource AccentColorBrush4}">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="14"/>
+              <ColumnDefinition Width="Auto"/>
+              <ColumnDefinition Width="*"/>
+              <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Ellipse Width="8" Height="8" Margin="4,0,2,0" VerticalAlignment="Center"
+                     Fill="{DynamicResource HighlightBrush}"
+                     Visibility="{Binding IsProficient, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+            <TextBlock Grid.Column="1" Text="{Binding FinalBonus, Converter={StaticResource BonusStringValueConverter}}"
+                       Foreground="{DynamicResource HighlightBrush}" FontSize="12" FontWeight="SemiBold" Margin="0,1,6,1"/>
+            <TextBlock Grid.Column="2" Text="{Binding Name}" Foreground="{DynamicResource GrayBrush6}" FontSize="12" Margin="0,1,6,1"/>
+            <TextBlock Grid.Column="3" Text="{Binding KeyAbility.Abbreviation}" Foreground="{DynamicResource GrayBrush2}" FontSize="11" Margin="0,1,6,1"/>
+          </Grid>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+  </Grid>
+</UserControl>

@@ -60,7 +60,8 @@
       <Separator Style="{StaticResource Aurora.Styles.Separator.Flyout}"/>
     </StackPanel>
     <UniformGrid Grid.Row="3" Margin="20,0,20,20" Columns="1" FirstColumn="0">
-      <controls2:CommandButton Content="CLOSE" Margin="0,0,0,0" IsCancel="true"/>
+      <controls2:CommandButton Content="CLOSE" Margin="0,0,0,0" IsCancel="true"
+                               Click="ThemeManagerFlyoutCloseClicked"/>
     </UniformGrid>
   </Grid>
 </controls:Flyout>

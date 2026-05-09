@@ -6,7 +6,9 @@
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
 @inject UserPreferencesService Prefs
+@inject PdfImportService PdfImport
 @using Builder.Presentation
+@using Aurora.PdfImport
 
 @if (_loading)
 {
@@ -39,7 +41,17 @@ else
                               CreateButtonText="New Character"
                               DisableCreateButton="@_preloading"
                               OnCreate="OnNewCharacter"
-                              OnSelected="OnBrowserSelected" />
+                              OnSelected="OnBrowserSelected">
+                <AdditionalHeaderContent>
+                    <button class="character-browser-create"
+                            type="button"
+                            style="background: transparent; border-color: var(--mud-palette-primary); color: var(--mud-palette-primary);"
+                            @onclick="OnImportPdf"
+                            disabled="@_preloading">
+                        Import Character
+                    </button>
+                </AdditionalHeaderContent>
+            </CharacterBrowser>
         </BrowserContent>
     </CharacterLibraryShell>
 }
@@ -106,7 +118,12 @@ else
                 if (!string.IsNullOrEmpty(mruPath))
                 {
                     Builder.Presentation.Models.CharacterFile? mruFile = _characters.FirstOrDefault(file => file.FilePath == mruPath);
-                    if (mruFile != null && Tabs.FindTab(mruFile) == null)
+                    // Only preload if the character isn't already in memory — re-triggering
+                    // a load races against the fast path's CharacterSnapshot.From call:
+                    // the background file.Load() rebuilds CharacterManager.Current in-place
+                    // and resets SpellcastingSectionContext (prepared spells), producing
+                    // corrupted snapshots (wrong level, missing spells) on second open.
+                    if (mruFile != null && Tabs.FindTab(mruFile) == null && !Characters.IsPreloaded(mruFile))
                     {
                         Characters.BeginPreload(mruFile);
                     }
@@ -130,7 +147,7 @@ else
             return;
         }
 
-        if (Characters.IsPreloaded(characterFile))
+        if (Characters.IsPreloaded(characterFile) && !Characters.IsCharacterLoading)
         {
             CharacterTab tab = Tabs.OpenTab(characterFile, Characters.CurrentCharacter!);
             tab.Snapshot = CharacterSnapshot.From(Characters.CurrentCharacter!);
@@ -195,6 +212,15 @@ else
     }
 
     private void NavigateToCharacter() => Nav.NavigateTo("/character");
+
+    private async Task OnImportPdf()
+    {
+        var dialog = await DialogService.ShowAsync<PdfImportDialog>("Import Character",
+            new DialogOptions { MaxWidth = MaxWidth.Medium, CloseButton = true });
+        await dialog.Result;
+        _characters = Characters.LoadCharacterFiles().ToList();
+        StateHasChanged();
+    }
 
     private async Task OnNewCharacter()
     {

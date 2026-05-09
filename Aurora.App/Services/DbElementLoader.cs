@@ -128,6 +128,16 @@ internal static class DbElementLoader
             ["setter_entry_attributes"] = ["setter_entry_id", "ordinal", "attribute_name", "attribute_value"]
         };
 
+    // ── Runtime lookup caches (populated after a successful DB load) ────────
+
+    /// <summary>Archetype aurora_id → parent class aurora_id. Empty until a DB load succeeds.</summary>
+    public static IReadOnlyDictionary<string, string> ArchetypeParentMap { get; private set; } =
+        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Class/list name → set of spell aurora_ids that have access. Empty until a DB load succeeds.</summary>
+    public static IReadOnlyDictionary<string, IReadOnlySet<string>> SpellAccessMap { get; private set; } =
+        new Dictionary<string, IReadOnlySet<string>>(StringComparer.OrdinalIgnoreCase);
+
     public static string? DbPath =>
         DataManager.Current.LocalAppDataRootDirectory is { Length: > 0 } root
             ? Path.Combine(root, DbFileName)
@@ -246,6 +256,10 @@ internal static class DbElementLoader
         var classMap       = QueryClasses(conn);
         var multiclassMap  = QueryMulticlass(conn);
         var settersMap     = QuerySetters(conn);
+        // Optional tables — gracefully absent in older DBs.
+        var featureMinLevelMap  = QueryFeatureMinLevels(conn, existingTables);
+        var archetypeParentIds  = QueryArchetypeParentIds(conn, existingTables);
+        var spellAccessMap      = QuerySpellAccess(conn, existingTables);
 
         // Set up the ElementParser pipeline (identical to DataManager).
         var parsers = ElementParserFactory.GetParsers().ToList();
@@ -267,7 +281,8 @@ internal static class DbElementLoader
                 XmlElement node = BuildElementNode(doc, el,
                     supportsMap, requirementMap, textsMap,
                     grantsMap, selectsMap, statsMap,
-                    spellcastingMap, spellMap, classMap, multiclassMap, settersMap);
+                    spellcastingMap, spellMap, classMap, multiclassMap, settersMap,
+                    featureMinLevelMap);
 
                 // Attach to the document root so the parser sees a proper node tree.
                 docRoot.AppendChild(node);
@@ -299,6 +314,10 @@ internal static class DbElementLoader
         if (target.Count == 0)
             return DbLoadResult.Failed(dbPath, schemaVersion, "No elements could be reconstructed from the database.");
 
+        // Populate runtime caches for use by services after load.
+        ArchetypeParentMap = BuildArchetypeParentMap(elements, archetypeParentIds);
+        SpellAccessMap     = spellAccessMap;
+
         return DbLoadResult.Loaded(dbPath, schemaVersion, target.Count, skippedElements);
     }
 
@@ -317,13 +336,19 @@ internal static class DbElementLoader
         Dictionary<long, SpellRow> spellMap,
         Dictionary<long, ClassRow> classMap,
         Dictionary<long, MulticlassRow> multiclassMap,
-        Dictionary<long, List<SetterRow>> settersMap)
+        Dictionary<long, List<SetterRow>> settersMap,
+        Dictionary<long, int> featureMinLevelMap)
     {
         XmlElement node = doc.CreateElement("element");
         node.SetAttribute("id",     el.AuroraId);
         node.SetAttribute("name",   el.Name);
         node.SetAttribute("type",   el.TypeName);
         node.SetAttribute("source", el.Source);
+
+        // Level attribute — authoritative minimum level for feature elements.
+        // BuildService.GetAdvancementTimeline reads d.Attributes.Level via dynamic dispatch.
+        if (featureMinLevelMap.TryGetValue(el.Id, out int featureLevel) && featureLevel > 0)
+            node.SetAttribute("level", featureLevel.ToString());
 
         if (supportsMap.TryGetValue(el.Id, out string? supports) && !string.IsNullOrEmpty(supports))
         {
@@ -389,6 +414,8 @@ internal static class DbElementLoader
     private static void AppendTexts(XmlDocument doc, XmlElement node, List<TextRow> texts)
     {
         var description = texts.Where(t => t.Kind == "description").OrderBy(t => t.Ordinal).FirstOrDefault();
+        var summaryRows = texts.Where(t => t.Kind == "summary").OrderBy(t => t.Ordinal).ToList();
+
         if (description != null && !string.IsNullOrWhiteSpace(description.Body))
         {
             XmlElement desc = doc.CreateElement("description");
@@ -397,7 +424,16 @@ internal static class DbElementLoader
             // Fall back to InnerText for old DB rows that stored plain text.
             try { desc.InnerXml = description.Body; }
             catch (XmlException) { desc.InnerText = description.Body; }
+            // Append summary content (e.g. "At Higher Levels" for spells) into the same block.
+            AppendSummaryContent(doc, desc, summaryRows);
             node.AppendChild(desc);
+        }
+        else if (summaryRows.Any(s => !string.IsNullOrWhiteSpace(s.Body)))
+        {
+            XmlElement desc = doc.CreateElement("description");
+            AppendSummaryContent(doc, desc, summaryRows);
+            if (desc.HasChildNodes)
+                node.AppendChild(desc);
         }
 
         var sheetRows = texts.Where(t => t.Kind == "sheet").OrderBy(t => t.Ordinal).ToList();
@@ -430,6 +466,26 @@ internal static class DbElementLoader
                 }
             }
             node.AppendChild(sheet);
+        }
+    }
+
+    private static void AppendSummaryContent(XmlDocument doc, XmlElement desc, IEnumerable<TextRow> summaryRows)
+    {
+        foreach (var summary in summaryRows)
+        {
+            if (string.IsNullOrWhiteSpace(summary.Body)) continue;
+            try
+            {
+                XmlDocumentFragment frag = doc.CreateDocumentFragment();
+                frag.InnerXml = summary.Body;
+                desc.AppendChild(frag);
+            }
+            catch (XmlException)
+            {
+                XmlElement p = doc.CreateElement("p");
+                p.InnerText = summary.Body;
+                desc.AppendChild(p);
+            }
         }
     }
 
@@ -676,7 +732,7 @@ internal static class DbElementLoader
             SELECT element_id, text_kind, ordinal, level, display,
                    alt_text, action_text, usage_text, body
             FROM element_texts
-            WHERE text_kind IN ('description', 'sheet')
+            WHERE text_kind IN ('description', 'sheet', 'summary')
             ORDER BY element_id, text_kind, ordinal;";
         using var r = cmd.ExecuteReader();
         while (r.Read())
@@ -894,6 +950,83 @@ internal static class DbElementLoader
             list.Add(new SetterRow(name, value, attrs));
         }
         return map;
+    }
+
+    private static Dictionary<long, int> QueryFeatureMinLevels(
+        SqliteConnection conn, HashSet<string> existingTables)
+    {
+        var map = new Dictionary<long, int>();
+        if (!existingTables.Contains("features")) return map;
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            SELECT element_id, min_level
+            FROM features
+            WHERE min_level IS NOT NULL AND min_level > 0;";
+        using var r = cmd.ExecuteReader();
+        while (r.Read())
+            map[r.GetInt64(0)] = r.GetInt32(1);
+        return map;
+    }
+
+    private static Dictionary<long, string> QueryArchetypeParentIds(
+        SqliteConnection conn, HashSet<string> existingTables)
+    {
+        // Returns archetype element_id → parent class aurora_id.
+        var map = new Dictionary<long, string>();
+        if (!existingTables.Contains("archetypes")) return map;
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            SELECT a.element_id, parent.aurora_id
+            FROM archetypes a
+            JOIN elements parent ON parent.element_id = a.parent_class_element_id
+            WHERE a.parent_class_element_id IS NOT NULL;";
+        using var r = cmd.ExecuteReader();
+        while (r.Read())
+            map[r.GetInt64(0)] = r.GetString(1);
+        return map;
+    }
+
+    private static IReadOnlyDictionary<string, IReadOnlySet<string>> QuerySpellAccess(
+        SqliteConnection conn, HashSet<string> existingTables)
+    {
+        // Returns class/list name → set of spell aurora_ids that have access.
+        if (!existingTables.Contains("spell_access"))
+            return new Dictionary<string, IReadOnlySet<string>>(StringComparer.OrdinalIgnoreCase);
+
+        var map = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            SELECT sa.access_text, e.aurora_id
+            FROM spell_access sa
+            JOIN elements e ON e.element_id = sa.spell_element_id;";
+        using var r = cmd.ExecuteReader();
+        while (r.Read())
+        {
+            string access  = r.GetString(0);
+            string spellId = r.GetString(1);
+            if (!map.TryGetValue(access, out var set))
+                map[access] = set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            set.Add(spellId);
+        }
+        return map.ToDictionary(
+            kv => kv.Key,
+            kv => (IReadOnlySet<string>)kv.Value,
+            StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static IReadOnlyDictionary<string, string> BuildArchetypeParentMap(
+        List<ElementRow> elements, Dictionary<long, string> archetypeParentIds)
+    {
+        // archetypeParentIds: archetype element_id → parent class aurora_id
+        // Convert to: archetype aurora_id → parent class aurora_id for external use.
+        var idToAuroraId = elements.ToDictionary(e => e.Id, e => e.AuroraId);
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (elemId, parentAuroraId) in archetypeParentIds)
+        {
+            if (idToAuroraId.TryGetValue(elemId, out var archetypeAuroraId))
+                result[archetypeAuroraId] = parentAuroraId;
+        }
+        return result;
     }
 
     private static int? QuerySchemaVersion(SqliteConnection conn)

@@ -45,18 +45,6 @@
                 </ControlTemplate>
               </Setter.Value>
             </Setter>
-            <Style.Triggers>
-              <Trigger Property="UIElement.IsMouseOver" Value="true">
-                <Setter Property="Control.Background" Value="Red"/>
-                <Setter Property="Control.BorderBrush" Value="Transparent"/>
-                <Setter Property="Control.BorderThickness" Value="0"/>
-              </Trigger>
-              <Trigger Property="ListBoxItem.IsSelected" Value="true">
-                <Setter Property="Control.Background" Value="Yellow"/>
-                <Setter Property="Control.BorderBrush" Value="Transparent"/>
-                <Setter Property="Control.BorderThickness" Value="0"/>
-              </Trigger>
-            </Style.Triggers>
           </Style>
         </ItemsControl.ItemContainerStyle>
         <ItemsControl.ItemTemplate>
@@ -78,19 +66,14 @@
                 <Grid.RowDefinitions>
                   <RowDefinition Height="Auto"/>
                   <RowDefinition Height="*"/>
-                  <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                   <ColumnDefinition Width="*"/>
-                  <ColumnDefinition Width="Auto" MinWidth="0"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Margin="10,10,10,0" Grid.ColumnSpan="1" TextWrapping="Wrap" HorizontalAlignment="Left"
+                <TextBlock Margin="10,10,10,0" TextWrapping="Wrap" HorizontalAlignment="Left"
                            Foreground="{DynamicResource GrayBrush6}" Style="{StaticResource SectionHeaderTextBlockStyle}"
                            Text="{Binding Name, Converter={StaticResource UpperCaseConverter}}"/>
-                <CheckBox Grid.Column="1" HorizontalAlignment="Right" Margin="0,10,5,0" Content=""
-                          Foreground="{DynamicResource GrayBrush5}" FontSize="11" FontWeight="SemiBold"
-                          IsChecked="{Binding Include}"/>
-                <StackPanel Margin="10,10,5,10" Grid.Column="0" Grid.Row="1">
+                <StackPanel Margin="10,10,5,10" Grid.Row="1">
                   <TextBlock LineHeight="14" LineStackingStrategy="BlockLineHeight" MaxHeight="942"
                              Style="{StaticResource SectionSubHeaderTextBlockStyle}" Margin="0,0,0,10"
                              TextTrimming="WordEllipsis" Text="{Binding Description}"/>
@@ -109,8 +92,10 @@
                 HorizontalAlignment="Left"
                 IsChecked="{Binding IsCheckContentUpdatesOnStartupEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
       <UniformGrid Grid.Row="6" Margin="10,20,10,20" Columns="2" HorizontalAlignment="Right">
-        <Button Content="UPDATE FILES" Margin="10,0" Style="{StaticResource AuroraFlatButton}" IsDefault="true"/>
-        <Button Content="CANCEL" Margin="10,0" Style="{StaticResource AuroraFlatButton}" IsCancel="true"/>
+        <Button Content="UPDATE FILES" Margin="10,0" Style="{StaticResource AuroraFlatButton}" IsDefault="true"
+                Command="{Binding UpdateFilesCommand}"/>
+        <Button Content="CANCEL" Margin="10,0" Style="{StaticResource AuroraFlatButton}" IsCancel="true"
+                Click="CloseButton_OnClick"/>
       </UniformGrid>
     </StackPanel>
   </Grid>

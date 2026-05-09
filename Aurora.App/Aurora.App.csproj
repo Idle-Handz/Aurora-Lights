@@ -58,6 +58,7 @@
     <ProjectReference Include="..\Aurora.Components\Aurora.Components.csproj" />
     <ProjectReference Include="..\Aurora.Logic\Aurora.Logic.csproj" />
     <ProjectReference Include="..\Aurora.Importer\Aurora.Importer.csproj" />
+    <ProjectReference Include="..\Aurora.PdfImport\Aurora.PdfImport.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -2,12 +2,12 @@ PRAGMA foreign_keys = ON;
 
 BEGIN TRANSACTION;
 
--- Proof of concept:
+-- Aurora character loading schema:
 -- This schema is optimized for character/feature loading first.
 -- It captures the highest-value Aurora element families and the shared
 -- grant/select/stat rule path that drives most character state.
 --
--- Deliberate tradeoffs for the PoC:
+-- Current tradeoffs:
 -- - Descriptions are stored as text blobs instead of a normalized content DOM.
 -- - Requirement/support expressions are preserved as raw text and a lightweight AST,
 --   but are not yet evaluated by the importer itself.
@@ -31,10 +31,37 @@ CREATE TABLE IF NOT EXISTS source_books
     name TEXT NOT NULL UNIQUE
 );
 
+CREATE TABLE IF NOT EXISTS content_packages
+(
+    content_package_id INTEGER PRIMARY KEY,
+    package_key TEXT NOT NULL UNIQUE,
+    package_name TEXT NOT NULL,
+    package_kind TEXT NOT NULL DEFAULT 'local' CHECK
+    (
+        package_kind IN
+        (
+            'core',
+            'official',
+            'third-party',
+            'homebrew',
+            'local'
+        )
+    ),
+    precedence_rank INTEGER NOT NULL DEFAULT 500,
+    is_enabled INTEGER NOT NULL DEFAULT 1 CHECK (is_enabled IN (0, 1)),
+    package_description TEXT,
+    source_url TEXT,
+    created_utc TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS ix_content_packages_precedence
+    ON content_packages(is_enabled, precedence_rank DESC, package_kind, package_name);
+
 CREATE TABLE IF NOT EXISTS source_files
 (
     source_file_id  INTEGER PRIMARY KEY,
     relative_path   TEXT NOT NULL UNIQUE,
+    content_package_id INTEGER REFERENCES content_packages(content_package_id),
     package_name    TEXT,
     package_description TEXT,
     version_text    TEXT,
@@ -45,6 +72,37 @@ CREATE TABLE IF NOT EXISTS source_files
     -- MD5 of file contents; used to skip unchanged files on re-import.
     file_hash       TEXT
 );
+
+CREATE INDEX IF NOT EXISTS ix_source_files_package ON source_files(content_package_id, relative_path);
+
+CREATE TABLE IF NOT EXISTS resolved_elements_cache
+(
+    aurora_id TEXT NOT NULL PRIMARY KEY,
+    winning_element_id INTEGER NOT NULL REFERENCES elements(element_id) ON DELETE CASCADE,
+    source_file_id INTEGER REFERENCES source_files(source_file_id) ON DELETE CASCADE,
+    content_package_id INTEGER REFERENCES content_packages(content_package_id),
+    package_key TEXT,
+    package_name TEXT,
+    package_kind TEXT,
+    precedence_rank INTEGER,
+    duplicate_count INTEGER NOT NULL,
+    resolution_rank INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS ix_resolved_elements_cache_element
+    ON resolved_elements_cache(winning_element_id, content_package_id);
+CREATE INDEX IF NOT EXISTS ix_resolved_elements_cache_package
+    ON resolved_elements_cache(content_package_id, aurora_id);
+
+CREATE TABLE IF NOT EXISTS resolved_unique_element_names_cache
+(
+    normalized_name TEXT NOT NULL PRIMARY KEY,
+    winning_element_id INTEGER NOT NULL REFERENCES elements(element_id) ON DELETE CASCADE,
+    name TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS ix_resolved_unique_names_element
+    ON resolved_unique_element_names_cache(winning_element_id);
 
 CREATE TABLE IF NOT EXISTS element_types
 (
@@ -423,6 +481,21 @@ CREATE TABLE IF NOT EXISTS features
 CREATE INDEX IF NOT EXISTS ix_features_parent ON features(parent_element_id, min_level);
 CREATE INDEX IF NOT EXISTS ix_features_kind ON features(feature_kind, min_level);
 
+CREATE TABLE IF NOT EXISTS parent_family_aliases
+(
+    alias_text TEXT NOT NULL,
+    link_kind TEXT NOT NULL CHECK (link_kind IN ('feature-parent', 'archetype-parent')),
+    target_name TEXT,
+    target_type_name TEXT,
+    target_aurora_id TEXT,
+    resolution_kind TEXT NOT NULL DEFAULT 'target-name',
+    priority INTEGER NOT NULL DEFAULT 100,
+    PRIMARY KEY (alias_text, link_kind)
+);
+
+CREATE INDEX IF NOT EXISTS ix_parent_family_aliases_target_name
+    ON parent_family_aliases(link_kind, target_name, target_type_name);
+
 -- Setter scopes mirror rule scopes so raw Aurora <set> entries can be preserved
 -- for normal elements and class multiclass blocks without polymorphic FKs.
 CREATE TABLE IF NOT EXISTS setter_scopes
@@ -509,6 +582,10 @@ CREATE TABLE IF NOT EXISTS grants
     grant_type TEXT NOT NULL,
     target_aurora_id TEXT,
     target_element_id INTEGER REFERENCES elements(element_id) ON DELETE SET NULL,
+    target_semantic_key TEXT,
+    target_semantic_kind TEXT,
+    target_semantic_name TEXT,
+    raw_xml TEXT,
     name_text TEXT,
     grant_level INTEGER,
     spellcasting_name TEXT,
@@ -519,6 +596,7 @@ CREATE TABLE IF NOT EXISTS grants
 
 CREATE INDEX IF NOT EXISTS ix_grants_target ON grants(target_aurora_id, grant_type);
 CREATE INDEX IF NOT EXISTS ix_grants_owner_level ON grants(rule_scope_id, grant_level);
+CREATE INDEX IF NOT EXISTS ix_grants_semantic ON grants(target_semantic_key, target_semantic_kind);
 
 CREATE TABLE IF NOT EXISTS selects
 (
@@ -533,6 +611,7 @@ CREATE TABLE IF NOT EXISTS selects
     default_choice_text TEXT,
     is_optional INTEGER NOT NULL DEFAULT 0 CHECK (is_optional IN (0, 1)),
     spellcasting_profile_id INTEGER REFERENCES spellcasting_profiles(spellcasting_profile_id) ON DELETE SET NULL,
+    raw_xml TEXT,
     requirements_text TEXT,
     UNIQUE (rule_scope_id, ordinal)
 );
@@ -556,11 +635,21 @@ CREATE TABLE IF NOT EXISTS select_items
     ordinal INTEGER NOT NULL,
     item_text TEXT,
     target_aurora_id TEXT,
+    option_kind TEXT NOT NULL DEFAULT 'name-reference-candidate' CHECK
+    (
+        option_kind IN
+        (
+            'aurora-reference',
+            'name-reference-candidate',
+            'text-choice'
+        )
+    ),
     linked_element_id INTEGER REFERENCES elements(element_id) ON DELETE SET NULL,
     UNIQUE (select_id, ordinal)
 );
 
 CREATE INDEX IF NOT EXISTS ix_select_items_target ON select_items(target_aurora_id, linked_element_id);
+CREATE INDEX IF NOT EXISTS ix_select_items_kind ON select_items(option_kind, linked_element_id);
 
 CREATE TABLE IF NOT EXISTS select_item_attributes
 (
@@ -611,6 +700,7 @@ CREATE TABLE IF NOT EXISTS stats
     stat_level INTEGER,
     inline_display INTEGER NOT NULL DEFAULT 0 CHECK (inline_display IN (0, 1)),
     alt_text TEXT,
+    raw_xml TEXT,
     requirements_text TEXT,
     UNIQUE (rule_scope_id, ordinal)
 );
@@ -664,6 +754,445 @@ INSERT OR IGNORE INTO element_types (type_name, loader_family) VALUES ('Support'
 INSERT OR IGNORE INTO element_types (type_name, loader_family) VALUES ('Vision', 'reference');
 INSERT OR IGNORE INTO element_types (type_name, loader_family) VALUES ('Weapon Group', 'item');
 INSERT OR IGNORE INTO element_types (type_name, loader_family) VALUES ('Weapon Property', 'item');
+
+CREATE VIEW IF NOT EXISTS v_resolved_elements AS
+SELECT
+    aurora_id,
+    winning_element_id,
+    source_file_id,
+    content_package_id,
+    package_key,
+    package_name,
+    package_kind,
+    precedence_rank,
+    duplicate_count,
+    resolution_rank
+FROM resolved_elements_cache;
+
+CREATE VIEW IF NOT EXISTS v_resolved_unique_element_names AS
+SELECT
+    normalized_name,
+    winning_element_id,
+    name
+FROM resolved_unique_element_names_cache;
+
+CREATE VIEW IF NOT EXISTS v_duplicate_aurora_ids AS
+WITH duplicate_ids AS
+(
+    SELECT
+        e.aurora_id,
+        COUNT(*) AS duplicate_count
+    FROM elements AS e
+    WHERE e.aurora_id IS NOT NULL
+      AND trim(e.aurora_id) <> ''
+    GROUP BY e.aurora_id
+    HAVING COUNT(*) > 1
+)
+SELECT
+    e.aurora_id,
+    e.element_id,
+    e.name,
+    et.type_name,
+    sf.relative_path,
+    cp.package_key,
+    cp.package_name,
+    cp.package_kind,
+    cp.precedence_rank,
+    COALESCE(cp.is_enabled, 1) AS is_enabled,
+    duplicate_ids.duplicate_count,
+    CASE
+        WHEN rec.winning_element_id = e.element_id THEN 1
+        ELSE 0
+    END AS is_winner
+FROM duplicate_ids
+JOIN elements AS e
+    ON e.aurora_id = duplicate_ids.aurora_id
+JOIN element_types AS et
+    ON et.element_type_id = e.element_type_id
+JOIN source_files AS sf
+    ON sf.source_file_id = e.source_file_id
+LEFT JOIN content_packages AS cp
+    ON cp.content_package_id = sf.content_package_id
+LEFT JOIN resolved_elements_cache AS rec
+    ON rec.aurora_id = e.aurora_id;
+
+CREATE VIEW IF NOT EXISTS v_package_resolution_summary AS
+WITH file_counts AS
+(
+    SELECT content_package_id, COUNT(*) AS file_count
+    FROM source_files
+    GROUP BY content_package_id
+),
+winner_counts AS
+(
+    SELECT content_package_id, COUNT(*) AS winning_element_count
+    FROM resolved_elements_cache
+    GROUP BY content_package_id
+),
+duplicate_counts AS
+(
+    SELECT
+        sf.content_package_id,
+        COUNT(*) AS duplicate_element_count,
+        SUM(CASE WHEN dup.is_winner = 1 THEN 1 ELSE 0 END) AS duplicate_winner_count,
+        SUM(CASE WHEN dup.is_winner = 0 THEN 1 ELSE 0 END) AS duplicate_loser_count
+    FROM v_duplicate_aurora_ids AS dup
+    JOIN source_files AS sf
+        ON sf.relative_path = dup.relative_path
+    GROUP BY sf.content_package_id
+)
+SELECT
+    cp.content_package_id,
+    cp.package_key,
+    cp.package_name,
+    cp.package_kind,
+    cp.precedence_rank,
+    cp.is_enabled,
+    COALESCE(file_counts.file_count, 0) AS file_count,
+    COALESCE(winner_counts.winning_element_count, 0) AS winning_element_count,
+    COALESCE(duplicate_counts.duplicate_element_count, 0) AS duplicate_element_count,
+    COALESCE(duplicate_counts.duplicate_winner_count, 0) AS duplicate_winner_count,
+    COALESCE(duplicate_counts.duplicate_loser_count, 0) AS duplicate_loser_count
+FROM content_packages AS cp
+LEFT JOIN file_counts
+    ON file_counts.content_package_id = cp.content_package_id
+LEFT JOIN winner_counts
+    ON winner_counts.content_package_id = cp.content_package_id
+LEFT JOIN duplicate_counts
+    ON duplicate_counts.content_package_id = cp.content_package_id;
+
+CREATE VIEW IF NOT EXISTS v_unresolved_loader_links AS
+SELECT
+    'grant' AS link_kind,
+    owner.element_id AS owner_element_id,
+    owner.aurora_id AS owner_aurora_id,
+    owner.name AS owner_name,
+    owner_type.type_name AS owner_type_name,
+    CAST(g.grant_id AS TEXT) AS link_id,
+    g.target_aurora_id AS unresolved_key,
+    g.name_text AS unresolved_text
+FROM grants AS g
+JOIN rule_scopes AS rs
+    ON rs.rule_scope_id = g.rule_scope_id
+JOIN elements AS owner
+    ON owner.element_id = rs.owner_element_id
+JOIN element_types AS owner_type
+    ON owner_type.element_type_id = owner.element_type_id
+WHERE g.target_aurora_id IS NOT NULL
+  AND g.target_element_id IS NULL
+  AND COALESCE(g.target_semantic_key, '') = ''
+
+UNION ALL
+
+SELECT
+    'extract-item' AS link_kind,
+    owner.element_id AS owner_element_id,
+    owner.aurora_id AS owner_aurora_id,
+    owner.name AS owner_name,
+    owner_type.type_name AS owner_type_name,
+    CAST(ei.extract_item_id AS TEXT) AS link_id,
+    ei.target_aurora_id AS unresolved_key,
+    ei.item_text AS unresolved_text
+FROM element_extract_items AS ei
+JOIN element_extracts AS ex
+    ON ex.element_id = ei.element_id
+JOIN elements AS owner
+    ON owner.element_id = ex.element_id
+JOIN element_types AS owner_type
+    ON owner_type.element_type_id = owner.element_type_id
+WHERE ei.linked_element_id IS NULL
+  AND (ei.target_aurora_id IS NOT NULL OR ei.item_text IS NOT NULL)
+
+UNION ALL
+
+SELECT
+    'select-item' AS link_kind,
+    owner.element_id AS owner_element_id,
+    owner.aurora_id AS owner_aurora_id,
+    owner.name AS owner_name,
+    owner_type.type_name AS owner_type_name,
+    CAST(si.select_item_id AS TEXT) AS link_id,
+    si.target_aurora_id AS unresolved_key,
+    si.item_text AS unresolved_text
+FROM select_items AS si
+JOIN selects AS s
+    ON s.select_id = si.select_id
+JOIN rule_scopes AS rs
+    ON rs.rule_scope_id = s.rule_scope_id
+JOIN elements AS owner
+    ON owner.element_id = rs.owner_element_id
+JOIN element_types AS owner_type
+    ON owner_type.element_type_id = owner.element_type_id
+WHERE si.linked_element_id IS NULL
+  AND si.option_kind <> 'text-choice'
+  AND (si.target_aurora_id IS NOT NULL OR si.item_text IS NOT NULL)
+
+UNION ALL
+
+SELECT
+    'feature-parent' AS link_kind,
+    feature.element_id AS owner_element_id,
+    feature.aurora_id AS owner_aurora_id,
+    feature.name AS owner_name,
+    feature_type.type_name AS owner_type_name,
+    CAST(feature.element_id AS TEXT) AS link_id,
+    feature_meta.parent_support_text AS unresolved_key,
+    feature_meta.parent_support_text AS unresolved_text
+FROM features AS feature_meta
+JOIN elements AS feature
+    ON feature.element_id = feature_meta.element_id
+JOIN element_types AS feature_type
+    ON feature_type.element_type_id = feature.element_type_id
+WHERE feature_meta.parent_support_text IS NOT NULL
+  AND feature_meta.parent_element_id IS NULL
+
+UNION ALL
+
+SELECT
+    'archetype-parent' AS link_kind,
+    archetype.element_id AS owner_element_id,
+    archetype.aurora_id AS owner_aurora_id,
+    archetype.name AS owner_name,
+    archetype_type.type_name AS owner_type_name,
+    CAST(archetype.element_id AS TEXT) AS link_id,
+    archetype_meta.parent_support_text AS unresolved_key,
+    archetype_meta.parent_support_text AS unresolved_text
+FROM archetypes AS archetype_meta
+JOIN elements AS archetype
+    ON archetype.element_id = archetype_meta.element_id
+JOIN element_types AS archetype_type
+    ON archetype_type.element_type_id = archetype.element_type_id
+WHERE archetype_meta.parent_support_text IS NOT NULL
+  AND archetype_meta.parent_class_element_id IS NULL;
+
+CREATE VIEW IF NOT EXISTS v_unresolved_loader_link_diagnostics AS
+WITH background_file_counts AS
+(
+    SELECT
+        bg.source_file_id,
+        COUNT(*) AS background_count
+    FROM backgrounds AS b
+    JOIN elements AS bg
+        ON bg.element_id = b.element_id
+    GROUP BY bg.source_file_id
+),
+feature_parent_family_counts AS
+(
+    SELECT
+        unresolved_text,
+        COUNT(*) AS family_count
+    FROM v_unresolved_loader_links
+    WHERE link_kind = 'feature-parent'
+      AND unresolved_text IS NOT NULL
+    GROUP BY unresolved_text
+)
+SELECT
+    raw.link_kind,
+    raw.owner_element_id,
+    raw.owner_aurora_id,
+    raw.owner_name,
+    raw.owner_type_name,
+    raw.link_id,
+    raw.unresolved_key,
+    raw.unresolved_text,
+    CASE
+        WHEN raw.link_kind = 'feature-parent'
+         AND raw.unresolved_text = 'Background Feature'
+         AND COALESCE(background_file_counts.background_count, 0) = 0
+            THEN 'option-pool'
+        WHEN raw.link_kind = 'feature-parent'
+         AND
+         (
+             COALESCE(feature_parent_family_counts.family_count, 0) > 1
+             OR raw.unresolved_text LIKE '%Option%'
+             OR raw.unresolved_text LIKE 'PHB24 %'
+             OR raw.unresolved_text LIKE 'Starry Form %'
+             OR raw.unresolved_text LIKE 'Elemental Initiate %'
+             OR raw.unresolved_text IN
+                (
+                    'BH Variant',
+                    'MAgic of the Blade',
+                    'Monster Type',
+                    'Necromancer Variant Feature',
+                    'Pactd Boon',
+                    'vampire'
+                )
+         )
+            THEN 'option-pool'
+        WHEN raw.link_kind = 'archetype-parent'
+         AND raw.unresolved_text = 'Training Paradigm'
+            THEN 'missing-source'
+        WHEN raw.link_kind = 'grant'
+         AND COALESCE(trim(raw.unresolved_key), '') = ''
+            THEN 'missing-source'
+        ELSE 'actionable'
+    END AS diagnostic_status,
+    CASE
+        WHEN raw.link_kind = 'feature-parent'
+         AND raw.unresolved_text = 'Background Feature'
+         AND COALESCE(background_file_counts.background_count, 0) = 0
+            THEN 'background-feature-option-pool'
+        WHEN raw.link_kind = 'feature-parent'
+         AND
+         (
+             COALESCE(feature_parent_family_counts.family_count, 0) > 1
+             OR raw.unresolved_text LIKE '%Option%'
+             OR raw.unresolved_text LIKE 'PHB24 %'
+             OR raw.unresolved_text LIKE 'Starry Form %'
+             OR raw.unresolved_text LIKE 'Elemental Initiate %'
+             OR raw.unresolved_text IN
+                (
+                    'BH Variant',
+                    'MAgic of the Blade',
+                    'Monster Type',
+                    'Necromancer Variant Feature',
+                    'Pactd Boon',
+                    'vampire'
+                )
+         )
+            THEN 'feature-family-option-pool'
+        WHEN raw.link_kind = 'archetype-parent'
+         AND raw.unresolved_text = 'Training Paradigm'
+            THEN 'archetype-base-class-not-imported'
+        WHEN raw.link_kind = 'grant'
+         AND COALESCE(trim(raw.unresolved_key), '') = ''
+            THEN 'grant-empty-target-id'
+        ELSE NULL
+    END AS diagnostic_reason
+FROM v_unresolved_loader_links AS raw
+LEFT JOIN elements AS owner
+    ON owner.element_id = raw.owner_element_id
+LEFT JOIN background_file_counts
+    ON background_file_counts.source_file_id = owner.source_file_id
+LEFT JOIN feature_parent_family_counts
+    ON feature_parent_family_counts.unresolved_text = raw.unresolved_text;
+
+CREATE VIEW IF NOT EXISTS v_source_integrity_issues AS
+SELECT
+    'grant-target-id-in-name-attribute' AS issue_kind,
+    sf.source_file_id,
+    sf.relative_path,
+    owner.element_id AS owner_element_id,
+    owner.aurora_id AS owner_aurora_id,
+    owner.name AS owner_name,
+    owner_type.type_name AS owner_type_name,
+    CAST(g.grant_id AS TEXT) AS issue_key,
+    COALESCE(
+        NULLIF(trim(g.raw_xml), ''),
+        '<grant type="' || COALESCE(g.grant_type, '') || '" name="' || COALESCE(g.name_text, '') || '" />'
+    ) AS issue_text
+FROM grants AS g
+JOIN rule_scopes AS rs
+    ON rs.rule_scope_id = g.rule_scope_id
+JOIN elements AS owner
+    ON owner.element_id = rs.owner_element_id
+JOIN element_types AS owner_type
+    ON owner_type.element_type_id = owner.element_type_id
+JOIN source_files AS sf
+    ON sf.source_file_id = owner.source_file_id
+WHERE COALESCE(trim(g.target_aurora_id), '') <> ''
+  AND COALESCE(trim(g.name_text), '') <> ''
+  AND upper(trim(g.name_text)) LIKE 'ID\_%' ESCAPE '\'
+  AND trim(g.target_aurora_id) = trim(g.name_text)
+
+UNION ALL
+
+SELECT
+    'blank-grant-target-id' AS issue_kind,
+    sf.source_file_id,
+    sf.relative_path,
+    owner.element_id AS owner_element_id,
+    owner.aurora_id AS owner_aurora_id,
+    owner.name AS owner_name,
+    owner_type.type_name AS owner_type_name,
+    CAST(g.grant_id AS TEXT) AS issue_key,
+    COALESCE(
+        NULLIF(trim(g.raw_xml), ''),
+        '<grant type="' || COALESCE(g.grant_type, '') || '" id="" />'
+    ) AS issue_text
+FROM grants AS g
+JOIN rule_scopes AS rs
+    ON rs.rule_scope_id = g.rule_scope_id
+JOIN elements AS owner
+    ON owner.element_id = rs.owner_element_id
+JOIN element_types AS owner_type
+    ON owner_type.element_type_id = owner.element_type_id
+JOIN source_files AS sf
+    ON sf.source_file_id = owner.source_file_id
+WHERE COALESCE(trim(g.target_aurora_id), '') = ''
+  AND COALESCE(trim(g.grant_type), '') <> ''
+
+UNION ALL
+
+SELECT
+    'blank-select-type' AS issue_kind,
+    sf.source_file_id,
+    sf.relative_path,
+    owner.element_id AS owner_element_id,
+    owner.aurora_id AS owner_aurora_id,
+    owner.name AS owner_name,
+    owner_type.type_name AS owner_type_name,
+    CAST(s.select_id AS TEXT) AS issue_key,
+    COALESCE(s.raw_xml, '<select />') AS issue_text
+FROM selects AS s
+JOIN rule_scopes AS rs
+    ON rs.rule_scope_id = s.rule_scope_id
+JOIN elements AS owner
+    ON owner.element_id = rs.owner_element_id
+JOIN element_types AS owner_type
+    ON owner_type.element_type_id = owner.element_type_id
+JOIN source_files AS sf
+    ON sf.source_file_id = owner.source_file_id
+WHERE COALESCE(trim(s.select_type), '') = ''
+
+UNION ALL
+
+SELECT
+    'blank-stat-name' AS issue_kind,
+    sf.source_file_id,
+    sf.relative_path,
+    owner.element_id AS owner_element_id,
+    owner.aurora_id AS owner_aurora_id,
+    owner.name AS owner_name,
+    owner_type.type_name AS owner_type_name,
+    CAST(st.stat_id AS TEXT) AS issue_key,
+    COALESCE(st.raw_xml, '<stat />') AS issue_text
+FROM stats AS st
+JOIN rule_scopes AS rs
+    ON rs.rule_scope_id = st.rule_scope_id
+JOIN elements AS owner
+    ON owner.element_id = rs.owner_element_id
+JOIN element_types AS owner_type
+    ON owner_type.element_type_id = owner.element_type_id
+JOIN source_files AS sf
+    ON sf.source_file_id = owner.source_file_id
+WHERE COALESCE(trim(st.stat_name), '') = ''
+
+UNION ALL
+
+SELECT
+    'duplicate-element-id-in-file' AS issue_kind,
+    dup.source_file_id,
+    sf.relative_path,
+    NULL AS owner_element_id,
+    NULL AS owner_aurora_id,
+    NULL AS owner_name,
+    NULL AS owner_type_name,
+    dup.aurora_id AS issue_key,
+    'duplicate-count=' || dup.duplicate_count AS issue_text
+FROM
+(
+    SELECT
+        source_file_id,
+        aurora_id,
+        COUNT(*) AS duplicate_count
+    FROM elements
+    WHERE COALESCE(trim(aurora_id), '') <> ''
+    GROUP BY source_file_id, aurora_id
+    HAVING COUNT(*) > 1
+) AS dup
+JOIN source_files AS sf
+    ON sf.source_file_id = dup.source_file_id;
 
 -- Aurora companion stat blocks.
 -- Populated from Aurora XML Companion elements (type="Companion").
@@ -844,19 +1373,35 @@ GROUP BY
     st.support_text,
     st.support_kind;
 
-CREATE VIEW IF NOT EXISTS v_class_feature_progression AS
+DROP VIEW IF EXISTS v_class_feature_progression;
+CREATE VIEW v_class_feature_progression AS
 SELECT
     c.element_id AS class_element_id,
     class_element.aurora_id AS class_aurora_id,
     class_element.name AS class_name,
-    g.grant_level,
+    class_rec.package_key AS class_package_key,
+    class_sf.relative_path AS class_source_path,
+    c.hit_die,
+    c.short_text AS class_short_text,
+    g.grant_id,
+    g.ordinal AS grant_ordinal,
+    COALESCE(g.grant_level, feature_meta.min_level) AS unlock_level,
     feature_element.element_id AS feature_element_id,
     feature_element.aurora_id AS feature_aurora_id,
     feature_element.name AS feature_name,
-    feature_type.type_name AS feature_type_name
+    feature_rec.package_key AS feature_package_key,
+    feature_sf.relative_path AS feature_source_path,
+    feature_type.type_name AS feature_type_name,
+    feature_meta.parent_element_id,
+    feature_meta.parent_support_text,
+    COALESCE(feature_summary.body, feature_sheet.body, feature_description.body) AS feature_summary_text
 FROM classes AS c
+JOIN resolved_elements_cache AS class_rec
+    ON class_rec.winning_element_id = c.element_id
 JOIN elements AS class_element
     ON class_element.element_id = c.element_id
+JOIN source_files AS class_sf
+    ON class_sf.source_file_id = class_element.source_file_id
 JOIN rule_scopes AS rs
     ON rs.owner_kind = 'element'
    AND rs.owner_element_id = c.element_id
@@ -864,11 +1409,499 @@ JOIN rule_scopes AS rs
 JOIN grants AS g
     ON g.rule_scope_id = rs.rule_scope_id
 JOIN elements AS feature_element
-    ON feature_element.aurora_id = g.target_aurora_id
+    ON feature_element.element_id = g.target_element_id
+JOIN resolved_elements_cache AS feature_rec
+    ON feature_rec.winning_element_id = feature_element.element_id
 JOIN element_types AS feature_type
     ON feature_type.element_type_id = feature_element.element_type_id
-WHERE g.grant_type IN ('Class Feature', 'Archetype Feature')
-ORDER BY class_name, g.grant_level, feature_name;
+JOIN source_files AS feature_sf
+    ON feature_sf.source_file_id = feature_element.source_file_id
+LEFT JOIN features AS feature_meta
+    ON feature_meta.element_id = feature_element.element_id
+LEFT JOIN element_texts AS feature_summary
+    ON feature_summary.element_id = feature_element.element_id
+   AND feature_summary.text_kind = 'summary'
+   AND feature_summary.ordinal = 1
+LEFT JOIN element_texts AS feature_sheet
+    ON feature_sheet.element_id = feature_element.element_id
+   AND feature_sheet.text_kind = 'sheet'
+   AND feature_sheet.ordinal = 1
+LEFT JOIN element_texts AS feature_description
+    ON feature_description.element_id = feature_element.element_id
+   AND feature_description.text_kind = 'description'
+   AND feature_description.ordinal = 1
+WHERE g.grant_type = 'Class Feature'
+  AND g.target_element_id IS NOT NULL;
+
+DROP VIEW IF EXISTS v_class_archetype_slots;
+CREATE VIEW v_class_archetype_slots AS
+SELECT
+    cfp.class_element_id,
+    cfp.class_aurora_id,
+    cfp.class_name,
+    cfp.class_package_key,
+    cfp.class_source_path,
+    cfp.unlock_level,
+    cfp.feature_element_id AS slot_feature_element_id,
+    cfp.feature_aurora_id AS slot_feature_aurora_id,
+    cfp.feature_name AS slot_feature_name,
+    cfp.feature_package_key AS slot_feature_package_key,
+    cfp.feature_source_path AS slot_feature_source_path,
+    cfp.feature_summary_text AS slot_feature_summary_text,
+    s.select_id,
+    s.name_text AS select_name,
+    s.select_type,
+    s.number_to_choose,
+    s.is_optional
+FROM v_class_feature_progression AS cfp
+JOIN rule_scopes AS rs
+    ON rs.owner_kind = 'element'
+   AND rs.owner_element_id = cfp.feature_element_id
+   AND rs.scope_key = 'element'
+JOIN selects AS s
+    ON s.rule_scope_id = rs.rule_scope_id
+WHERE s.select_type = 'Archetype';
+
+DROP VIEW IF EXISTS v_archetype_feature_progression;
+CREATE VIEW v_archetype_feature_progression AS
+SELECT
+    a.element_id AS archetype_element_id,
+    archetype_element.aurora_id AS archetype_aurora_id,
+    archetype_element.name AS archetype_name,
+    archetype_rec.package_key AS archetype_package_key,
+    archetype_sf.relative_path AS archetype_source_path,
+    class_element.element_id AS class_element_id,
+    class_element.aurora_id AS class_aurora_id,
+    class_element.name AS class_name,
+    class_rec.package_key AS class_package_key,
+    class_sf.relative_path AS class_source_path,
+    g.grant_id,
+    g.ordinal AS grant_ordinal,
+    COALESCE(g.grant_level, feature_meta.min_level) AS unlock_level,
+    feature_element.element_id AS feature_element_id,
+    feature_element.aurora_id AS feature_aurora_id,
+    feature_element.name AS feature_name,
+    feature_rec.package_key AS feature_package_key,
+    feature_sf.relative_path AS feature_source_path,
+    feature_type.type_name AS feature_type_name,
+    COALESCE(feature_summary.body, feature_sheet.body, feature_description.body) AS feature_summary_text
+FROM archetypes AS a
+JOIN resolved_elements_cache AS archetype_rec
+    ON archetype_rec.winning_element_id = a.element_id
+JOIN elements AS archetype_element
+    ON archetype_element.element_id = a.element_id
+JOIN source_files AS archetype_sf
+    ON archetype_sf.source_file_id = archetype_element.source_file_id
+LEFT JOIN elements AS class_element
+    ON class_element.element_id = a.parent_class_element_id
+LEFT JOIN resolved_elements_cache AS class_rec
+    ON class_rec.winning_element_id = class_element.element_id
+LEFT JOIN source_files AS class_sf
+    ON class_sf.source_file_id = class_element.source_file_id
+JOIN rule_scopes AS rs
+    ON rs.owner_kind = 'element'
+   AND rs.owner_element_id = a.element_id
+   AND rs.scope_key = 'element'
+JOIN grants AS g
+    ON g.rule_scope_id = rs.rule_scope_id
+JOIN elements AS feature_element
+    ON feature_element.element_id = g.target_element_id
+JOIN resolved_elements_cache AS feature_rec
+    ON feature_rec.winning_element_id = feature_element.element_id
+JOIN element_types AS feature_type
+    ON feature_type.element_type_id = feature_element.element_type_id
+JOIN source_files AS feature_sf
+    ON feature_sf.source_file_id = feature_element.source_file_id
+LEFT JOIN features AS feature_meta
+    ON feature_meta.element_id = feature_element.element_id
+LEFT JOIN element_texts AS feature_summary
+    ON feature_summary.element_id = feature_element.element_id
+   AND feature_summary.text_kind = 'summary'
+   AND feature_summary.ordinal = 1
+LEFT JOIN element_texts AS feature_sheet
+    ON feature_sheet.element_id = feature_element.element_id
+   AND feature_sheet.text_kind = 'sheet'
+   AND feature_sheet.ordinal = 1
+LEFT JOIN element_texts AS feature_description
+    ON feature_description.element_id = feature_element.element_id
+   AND feature_description.text_kind = 'description'
+   AND feature_description.ordinal = 1
+WHERE g.grant_type = 'Archetype Feature'
+  AND g.target_element_id IS NOT NULL;
+
+DROP VIEW IF EXISTS v_background_core;
+CREATE VIEW v_background_core AS
+SELECT
+    b.element_id AS background_element_id,
+    background_element.aurora_id AS background_aurora_id,
+    background_element.name AS background_name,
+    background_rec.package_key AS background_package_key,
+    background_sf.relative_path AS background_source_path,
+    feature_element.element_id AS feature_element_id,
+    feature_element.aurora_id AS feature_aurora_id,
+    feature_element.name AS feature_name,
+    feature_rec.package_key AS feature_package_key,
+    feature_sf.relative_path AS feature_source_path,
+    COALESCE(background_summary.body, background_sheet.body, background_description.body) AS background_summary_text,
+    COALESCE(feature_summary.body, feature_sheet.body, feature_description.body) AS feature_summary_text
+FROM backgrounds AS b
+JOIN resolved_elements_cache AS background_rec
+    ON background_rec.winning_element_id = b.element_id
+JOIN elements AS background_element
+    ON background_element.element_id = b.element_id
+JOIN source_files AS background_sf
+    ON background_sf.source_file_id = background_element.source_file_id
+LEFT JOIN element_texts AS background_summary
+    ON background_summary.element_id = b.element_id
+   AND background_summary.text_kind = 'summary'
+   AND background_summary.ordinal = 1
+LEFT JOIN element_texts AS background_sheet
+    ON background_sheet.element_id = b.element_id
+   AND background_sheet.text_kind = 'sheet'
+   AND background_sheet.ordinal = 1
+LEFT JOIN element_texts AS background_description
+    ON background_description.element_id = b.element_id
+   AND background_description.text_kind = 'description'
+   AND background_description.ordinal = 1
+LEFT JOIN features AS feature_meta
+    ON feature_meta.parent_element_id = b.element_id
+   AND feature_meta.feature_kind = 'Background Feature'
+LEFT JOIN elements AS feature_element
+    ON feature_element.element_id = feature_meta.element_id
+LEFT JOIN resolved_elements_cache AS feature_rec
+    ON feature_rec.winning_element_id = feature_element.element_id
+LEFT JOIN source_files AS feature_sf
+    ON feature_sf.source_file_id = feature_element.source_file_id
+LEFT JOIN element_texts AS feature_summary
+    ON feature_summary.element_id = feature_meta.element_id
+   AND feature_summary.text_kind = 'summary'
+   AND feature_summary.ordinal = 1
+LEFT JOIN element_texts AS feature_sheet
+    ON feature_sheet.element_id = feature_meta.element_id
+   AND feature_sheet.text_kind = 'sheet'
+   AND feature_sheet.ordinal = 1
+LEFT JOIN element_texts AS feature_description
+    ON feature_description.element_id = feature_meta.element_id
+   AND feature_description.text_kind = 'description'
+   AND feature_description.ordinal = 1
+WHERE feature_element.element_id IS NULL
+   OR feature_rec.winning_element_id = feature_element.element_id;
+
+DROP VIEW IF EXISTS v_race_core;
+CREATE VIEW v_race_core AS
+SELECT
+    r.element_id AS race_element_id,
+    race_element.aurora_id AS race_aurora_id,
+    race_element.name AS race_name,
+    race_rec.package_key AS race_package_key,
+    race_sf.relative_path AS race_source_path,
+    COALESCE(r.names_format_text, '') AS names_format_text,
+    COALESCE(race_summary.body, race_sheet.body, race_description.body) AS race_summary_text,
+    (
+        SELECT COUNT(*)
+        FROM subraces AS sr
+        JOIN resolved_elements_cache AS sr_rec
+            ON sr_rec.winning_element_id = sr.element_id
+        WHERE sr.race_element_id = r.element_id
+    ) AS subrace_count,
+    (
+        SELECT COUNT(*)
+        FROM race_variants AS rv
+        JOIN resolved_elements_cache AS rv_rec
+            ON rv_rec.winning_element_id = rv.element_id
+        WHERE rv.race_element_id = r.element_id
+    ) AS variant_count,
+    (
+        SELECT COUNT(*)
+        FROM features AS f
+        JOIN resolved_elements_cache AS feature_rec
+            ON feature_rec.winning_element_id = f.element_id
+        WHERE f.parent_element_id = r.element_id
+          AND f.feature_kind IN ('Racial Trait', 'Dragonmark')
+    ) AS racial_trait_count
+FROM races AS r
+JOIN resolved_elements_cache AS race_rec
+    ON race_rec.winning_element_id = r.element_id
+JOIN elements AS race_element
+    ON race_element.element_id = r.element_id
+JOIN source_files AS race_sf
+    ON race_sf.source_file_id = race_element.source_file_id
+LEFT JOIN element_texts AS race_summary
+    ON race_summary.element_id = r.element_id
+   AND race_summary.text_kind = 'summary'
+   AND race_summary.ordinal = 1
+LEFT JOIN element_texts AS race_sheet
+    ON race_sheet.element_id = r.element_id
+   AND race_sheet.text_kind = 'sheet'
+   AND race_sheet.ordinal = 1
+LEFT JOIN element_texts AS race_description
+    ON race_description.element_id = r.element_id
+   AND race_description.text_kind = 'description'
+   AND race_description.ordinal = 1;
+
+DROP VIEW IF EXISTS v_subrace_core;
+CREATE VIEW v_subrace_core AS
+SELECT
+    sr.element_id AS subrace_element_id,
+    subrace_element.aurora_id AS subrace_aurora_id,
+    subrace_element.name AS subrace_name,
+    subrace_rec.package_key AS subrace_package_key,
+    subrace_sf.relative_path AS subrace_source_path,
+    race_element.element_id AS race_element_id,
+    race_element.aurora_id AS race_aurora_id,
+    race_element.name AS race_name,
+    race_rec.package_key AS race_package_key,
+    race_sf.relative_path AS race_source_path,
+    COALESCE(subrace_summary.body, subrace_sheet.body, subrace_description.body) AS subrace_summary_text
+FROM subraces AS sr
+JOIN resolved_elements_cache AS subrace_rec
+    ON subrace_rec.winning_element_id = sr.element_id
+JOIN elements AS subrace_element
+    ON subrace_element.element_id = sr.element_id
+JOIN source_files AS subrace_sf
+    ON subrace_sf.source_file_id = subrace_element.source_file_id
+LEFT JOIN elements AS race_element
+    ON race_element.element_id = sr.race_element_id
+LEFT JOIN resolved_elements_cache AS race_rec
+    ON race_rec.winning_element_id = race_element.element_id
+LEFT JOIN source_files AS race_sf
+    ON race_sf.source_file_id = race_element.source_file_id
+LEFT JOIN element_texts AS subrace_summary
+    ON subrace_summary.element_id = sr.element_id
+   AND subrace_summary.text_kind = 'summary'
+   AND subrace_summary.ordinal = 1
+LEFT JOIN element_texts AS subrace_sheet
+    ON subrace_sheet.element_id = sr.element_id
+   AND subrace_sheet.text_kind = 'sheet'
+   AND subrace_sheet.ordinal = 1
+LEFT JOIN element_texts AS subrace_description
+    ON subrace_description.element_id = sr.element_id
+   AND subrace_description.text_kind = 'description'
+   AND subrace_description.ordinal = 1;
+
+DROP VIEW IF EXISTS v_race_variant_core;
+CREATE VIEW v_race_variant_core AS
+SELECT
+    rv.element_id AS variant_element_id,
+    variant_element.aurora_id AS variant_aurora_id,
+    variant_element.name AS variant_name,
+    variant_rec.package_key AS variant_package_key,
+    variant_sf.relative_path AS variant_source_path,
+    race_element.element_id AS race_element_id,
+    race_element.aurora_id AS race_aurora_id,
+    race_element.name AS race_name,
+    race_rec.package_key AS race_package_key,
+    race_sf.relative_path AS race_source_path,
+    COALESCE(variant_summary.body, variant_sheet.body, variant_description.body) AS variant_summary_text
+FROM race_variants AS rv
+JOIN resolved_elements_cache AS variant_rec
+    ON variant_rec.winning_element_id = rv.element_id
+JOIN elements AS variant_element
+    ON variant_element.element_id = rv.element_id
+JOIN source_files AS variant_sf
+    ON variant_sf.source_file_id = variant_element.source_file_id
+LEFT JOIN elements AS race_element
+    ON race_element.element_id = rv.race_element_id
+LEFT JOIN resolved_elements_cache AS race_rec
+    ON race_rec.winning_element_id = race_element.element_id
+LEFT JOIN source_files AS race_sf
+    ON race_sf.source_file_id = race_element.source_file_id
+LEFT JOIN element_texts AS variant_summary
+    ON variant_summary.element_id = rv.element_id
+   AND variant_summary.text_kind = 'summary'
+   AND variant_summary.ordinal = 1
+LEFT JOIN element_texts AS variant_sheet
+    ON variant_sheet.element_id = rv.element_id
+   AND variant_sheet.text_kind = 'sheet'
+   AND variant_sheet.ordinal = 1
+LEFT JOIN element_texts AS variant_description
+    ON variant_description.element_id = rv.element_id
+   AND variant_description.text_kind = 'description'
+   AND variant_description.ordinal = 1;
+
+DROP VIEW IF EXISTS v_granted_proficiencies;
+CREATE VIEW v_granted_proficiencies AS
+SELECT
+    owner.element_id AS owner_element_id,
+    owner.aurora_id AS owner_aurora_id,
+    owner.name AS owner_name,
+    owner_rec.package_key AS owner_package_key,
+    owner_sf.relative_path AS owner_source_path,
+    owner_type.type_name AS owner_type_name,
+    g.grant_id,
+    g.ordinal AS grant_ordinal,
+    g.grant_level,
+    proficiency.element_id AS proficiency_element_id,
+    proficiency.aurora_id AS proficiency_aurora_id,
+    proficiency.name AS proficiency_name,
+    proficiency_rec.package_key AS proficiency_package_key,
+    proficiency_sf.relative_path AS proficiency_source_path
+FROM grants AS g
+JOIN rule_scopes AS rs
+    ON rs.rule_scope_id = g.rule_scope_id
+JOIN elements AS owner
+    ON owner.element_id = rs.owner_element_id
+JOIN resolved_elements_cache AS owner_rec
+    ON owner_rec.winning_element_id = owner.element_id
+JOIN source_files AS owner_sf
+    ON owner_sf.source_file_id = owner.source_file_id
+JOIN element_types AS owner_type
+    ON owner_type.element_type_id = owner.element_type_id
+JOIN elements AS proficiency
+    ON proficiency.element_id = g.target_element_id
+JOIN resolved_elements_cache AS proficiency_rec
+    ON proficiency_rec.winning_element_id = proficiency.element_id
+JOIN source_files AS proficiency_sf
+    ON proficiency_sf.source_file_id = proficiency.source_file_id
+JOIN element_types AS proficiency_type
+    ON proficiency_type.element_type_id = proficiency.element_type_id
+WHERE proficiency_type.type_name = 'Proficiency';
+
+DROP VIEW IF EXISTS v_granted_languages;
+CREATE VIEW v_granted_languages AS
+SELECT
+    owner.element_id AS owner_element_id,
+    owner.aurora_id AS owner_aurora_id,
+    owner.name AS owner_name,
+    owner_rec.package_key AS owner_package_key,
+    owner_sf.relative_path AS owner_source_path,
+    owner_type.type_name AS owner_type_name,
+    g.grant_id,
+    g.ordinal AS grant_ordinal,
+    g.grant_level,
+    language.element_id AS language_element_id,
+    language.aurora_id AS language_aurora_id,
+    language.name AS language_name,
+    language_rec.package_key AS language_package_key,
+    language_sf.relative_path AS language_source_path
+FROM grants AS g
+JOIN rule_scopes AS rs
+    ON rs.rule_scope_id = g.rule_scope_id
+JOIN elements AS owner
+    ON owner.element_id = rs.owner_element_id
+JOIN resolved_elements_cache AS owner_rec
+    ON owner_rec.winning_element_id = owner.element_id
+JOIN source_files AS owner_sf
+    ON owner_sf.source_file_id = owner.source_file_id
+JOIN element_types AS owner_type
+    ON owner_type.element_type_id = owner.element_type_id
+JOIN elements AS language
+    ON language.element_id = g.target_element_id
+JOIN resolved_elements_cache AS language_rec
+    ON language_rec.winning_element_id = language.element_id
+JOIN source_files AS language_sf
+    ON language_sf.source_file_id = language.source_file_id
+JOIN element_types AS language_type
+    ON language_type.element_type_id = language.element_type_id
+WHERE language_type.type_name = 'Language';
+
+DROP VIEW IF EXISTS v_selectable_options;
+CREATE VIEW v_selectable_options AS
+SELECT
+    owner.element_id AS owner_element_id,
+    owner.aurora_id AS owner_aurora_id,
+    owner.name AS owner_name,
+    owner_rec.package_key AS owner_package_key,
+    owner_sf.relative_path AS owner_source_path,
+    owner_type.type_name AS owner_type_name,
+    s.select_id,
+    s.name_text AS select_name,
+    s.select_type,
+    s.select_level,
+    s.number_to_choose,
+    s.is_optional,
+    'element' AS option_kind,
+    option_element.element_id AS option_element_id,
+    option_element.aurora_id AS option_aurora_id,
+    option_element.name AS option_name,
+    option_rec.package_key AS option_package_key,
+    option_sf.relative_path AS option_source_path,
+    option_type.type_name AS option_type_name,
+    NULL AS option_text,
+    GROUP_CONCAT(DISTINCT sol.match_kind) AS match_kinds,
+    GROUP_CONCAT(DISTINCT st.support_text) AS support_tags
+FROM selects AS s
+JOIN rule_scopes AS rs
+    ON rs.rule_scope_id = s.rule_scope_id
+JOIN elements AS owner
+    ON owner.element_id = rs.owner_element_id
+JOIN resolved_elements_cache AS owner_rec
+    ON owner_rec.winning_element_id = owner.element_id
+JOIN source_files AS owner_sf
+    ON owner_sf.source_file_id = owner.source_file_id
+JOIN element_types AS owner_type
+    ON owner_type.element_type_id = owner.element_type_id
+JOIN select_option_links AS sol
+    ON sol.select_id = s.select_id
+JOIN elements AS option_element
+    ON option_element.element_id = sol.option_element_id
+JOIN resolved_elements_cache AS option_rec
+    ON option_rec.winning_element_id = option_element.element_id
+JOIN source_files AS option_sf
+    ON option_sf.source_file_id = option_element.source_file_id
+JOIN element_types AS option_type
+    ON option_type.element_type_id = option_element.element_type_id
+LEFT JOIN support_tags AS st
+    ON st.support_tag_id = sol.support_tag_id
+GROUP BY
+    owner.element_id,
+    owner.aurora_id,
+    owner.name,
+    owner_rec.package_key,
+    owner_sf.relative_path,
+    owner_type.type_name,
+    s.select_id,
+    s.name_text,
+    s.select_type,
+    s.select_level,
+    s.number_to_choose,
+    s.is_optional,
+    option_element.element_id,
+    option_element.aurora_id,
+    option_element.name,
+    option_rec.package_key,
+    option_sf.relative_path,
+    option_type.type_name
+
+UNION ALL
+
+SELECT
+    owner.element_id AS owner_element_id,
+    owner.aurora_id AS owner_aurora_id,
+    owner.name AS owner_name,
+    owner_rec.package_key AS owner_package_key,
+    owner_sf.relative_path AS owner_source_path,
+    owner_type.type_name AS owner_type_name,
+    s.select_id,
+    s.name_text AS select_name,
+    s.select_type,
+    s.select_level,
+    s.number_to_choose,
+    s.is_optional,
+    'text-choice' AS option_kind,
+    NULL AS option_element_id,
+    NULL AS option_aurora_id,
+    NULL AS option_name,
+    NULL AS option_package_key,
+    NULL AS option_source_path,
+    NULL AS option_type_name,
+    si.item_text AS option_text,
+    NULL AS match_kinds,
+    NULL AS support_tags
+FROM selects AS s
+JOIN rule_scopes AS rs
+    ON rs.rule_scope_id = s.rule_scope_id
+JOIN elements AS owner
+    ON owner.element_id = rs.owner_element_id
+JOIN resolved_elements_cache AS owner_rec
+    ON owner_rec.winning_element_id = owner.element_id
+JOIN source_files AS owner_sf
+    ON owner_sf.source_file_id = owner.source_file_id
+JOIN element_types AS owner_type
+    ON owner_type.element_type_id = owner.element_type_id
+JOIN select_items AS si
+    ON si.select_id = s.select_id
+WHERE si.option_kind = 'text-choice';
 
 CREATE VIEW IF NOT EXISTS v_grant_loader AS
 SELECT
@@ -881,6 +1914,10 @@ SELECT
     g.grant_type,
     g.name_text,
     g.target_aurora_id,
+    g.target_semantic_key,
+    g.target_semantic_kind,
+    g.target_semantic_name,
+    g.raw_xml,
     g.grant_level,
     g.requirements_text,
     target.element_id AS target_element_id,

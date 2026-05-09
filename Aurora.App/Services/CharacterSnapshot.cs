@@ -86,6 +86,7 @@ public sealed class CharacterSnapshot
     public string SpellcastingAttack     { get; init; } = "";
     public IReadOnlyList<string>          Cantrips     { get; init; } = [];
     public IReadOnlyList<SpellLevelEntry> SpellLevels  { get; init; } = [];
+    public IReadOnlyList<SpellcastingSectionEntry> SpellcastingSections { get; init; } = [];
     /// <summary>Maximum number of spells the character may have prepared (0 for known casters).</summary>
     public int MaxPrepared { get; init; }
     /// <summary>Count of spells currently prepared by choice (excludes always-prepared).</summary>
@@ -116,21 +117,15 @@ public sealed class CharacterSnapshot
         // Spellcasting: SpellcastingCollection is never populated in MAUI (it relies on
         // SpellContentViewModel which is WPF-only). Use SpellcastingInformation instead.
         var cm = CharacterManager.Current;
-        var spellInfo = cm.GetSpellcastingInformations().FirstOrDefault(x => !x.IsExtension);
-
-        string spellDC     = "";
-        string spellAttack = "";
-        try
-        {
-            if (spellInfo != null)
-            {
-                int dc  = cm.StatisticsCalculator.StatisticValues.GetValue(spellInfo.GetSpellcasterSpellSaveStatisticName());
-                int atk = cm.StatisticsCalculator.StatisticValues.GetValue(spellInfo.GetSpellcasterSpellAttackStatisticName());
-                spellDC     = dc.ToString();
-                spellAttack = atk >= 0 ? $"+{atk}" : $"{atk}";
-            }
-        }
-        catch { }
+        var allSpellInfos = cm.GetSpellcastingInformations()
+            .GroupBy(x => x.UniqueIdentifier)
+            .Select(g => g.First())
+            .ToList();
+        var spellInfos = allSpellInfos
+            .Where(x => !x.IsExtension)
+            .ToList();
+        var spellSections = CollectSpellcastingSections(cm, spellInfos, allSpellInfos);
+        var primarySpellSection = spellSections.FirstOrDefault();
 
         return new CharacterSnapshot
         {
@@ -239,23 +234,16 @@ public sealed class CharacterSnapshot
                     a.Range.Content ?? ""))
                 .ToList(),
 
-            HasSpellcasting        = cm.Status.HasSpellcasting,
-            IsSpellcasterPrepared  = spellInfo?.Prepare ?? false,
-            MaxPrepared            = spellInfo?.Prepare == true
-                ? cm.StatisticsCalculator.StatisticValues.GetValue(spellInfo.GetPrepareAmountStatisticName())
-                : 0,
-            SpellcastingClass      = spellInfo?.Name      ?? "",
-            SpellcastingAbility    = spellInfo?.AbilityName ?? "",
-            SpellcastingDC         = spellDC,
-            SpellcastingAttack     = spellAttack,
-            Cantrips               = CollectCantrips(),
-            SpellLevels            = CollectSpellLevels(
-                spellInfo?.Prepare ?? false,
-                spellInfo?.InitialSupportedSpellsExpression?.Supports ?? "",
-                GetPreparedIds(spellInfo?.Name ?? ""),
-                isSpellbookCaster: (spellInfo?.Prepare ?? false)
-                    && cm.SelectionRules.Any(r => r.Attributes.Type == "Spell")
-                    && string.IsNullOrEmpty(spellInfo?.InitialSupportedSpellsExpression?.Supports)),
+            HasSpellcasting        = spellSections.Count > 0,
+            IsSpellcasterPrepared  = primarySpellSection?.IsPreparedCaster ?? false,
+            MaxPrepared            = primarySpellSection?.MaxPrepared ?? 0,
+            SpellcastingClass      = primarySpellSection?.Name ?? "",
+            SpellcastingAbility    = primarySpellSection?.AbilityName ?? "",
+            SpellcastingDC         = primarySpellSection?.SpellcastingDc ?? "",
+            SpellcastingAttack     = primarySpellSection?.SpellcastingAttack ?? "",
+            Cantrips               = primarySpellSection?.Cantrips.Select(s => s.Name).ToList() ?? [],
+            SpellLevels            = primarySpellSection?.SpellLevels ?? [],
+            SpellcastingSections   = spellSections,
 
             Languages           = CollectLanguages(),
             ArmorProficiencies  = CollectArmorProficiencies(),
@@ -518,6 +506,76 @@ public sealed class CharacterSnapshot
             .ToList();
     }
 
+    private static IReadOnlyList<SpellcastingSectionEntry> CollectSpellcastingSections(
+        CharacterManager cm,
+        IReadOnlyList<SpellcastingInformation> spellInfos,
+        IReadOnlyList<SpellcastingInformation> allSpellInfos)
+    {
+        var sections = new List<SpellcastingSectionEntry>();
+        bool filterKnownBySupports = spellInfos.Count > 1;
+
+        foreach (var info in spellInfos)
+        {
+            string spellDC = "";
+            string spellAttack = "";
+            try
+            {
+                int dc = cm.StatisticsCalculator.StatisticValues.GetValue(info.GetSpellcasterSpellSaveStatisticName());
+                int atk = cm.StatisticsCalculator.StatisticValues.GetValue(info.GetSpellcasterSpellAttackStatisticName());
+                spellDC = dc.ToString();
+                spellAttack = atk >= 0 ? $"+{atk}" : $"{atk}";
+            }
+            catch { }
+
+            bool isPreparedCaster = info.Prepare;
+            bool isSpellbookCaster = isPreparedCaster
+                && cm.SelectionRules.Any(r => r.Attributes.Type == "Spell")
+                && string.IsNullOrEmpty(info.InitialSupportedSpellsExpression?.Supports);
+            var extensionSupports = allSpellInfos
+                .Where(candidate => candidate.IsExtension
+                    && string.Equals(candidate.Name, info.Name, StringComparison.OrdinalIgnoreCase))
+                .SelectMany(candidate => candidate.ExtendedSupportedSpellsExpressions
+                    .Where(expression => expression.Known)
+                    .Select(expression => (expression.Supports, expression.IsId)))
+                .Concat(info.ExtendedSupportedSpellsExpressions
+                    .Where(expression => expression.Known)
+                    .Select(expression => (expression.Supports, expression.IsId)))
+                .ToList();
+
+            int maxPrepared = 0;
+            try
+            {
+                if (isPreparedCaster)
+                    maxPrepared = cm.StatisticsCalculator.StatisticValues.GetValue(info.GetPrepareAmountStatisticName());
+            }
+            catch { }
+
+            sections.Add(new SpellcastingSectionEntry
+            {
+                UniqueIdentifier = info.UniqueIdentifier ?? "",
+                SourceId = info.ElementHeader?.Id ?? "",
+                Name = info.Name ?? "",
+                HasExtensions = extensionSupports.Count > 0,
+                AbilityName = info.AbilityName ?? "",
+                SpellcastingDc = spellDC,
+                SpellcastingAttack = spellAttack,
+                IsPreparedCaster = isPreparedCaster,
+                MaxPrepared = maxPrepared,
+                Cantrips = CollectCantrips(info, filterKnownBySupports, isSpellbookCaster, extensionSupports),
+                SpellLevels = CollectSpellLevels(
+                    isPreparedCaster,
+                    info.Name ?? "",
+                    info.InitialSupportedSpellsExpression?.Supports ?? "",
+                    GetPreparedIds(info.Name ?? ""),
+                    isSpellbookCaster,
+                    filterKnownBySupports,
+                    extensionSupports)
+            });
+        }
+
+        return sections;
+    }
+
     /// <summary>Gets prepared spell IDs captured by the active client during XML load.</summary>
     private static IReadOnlyCollection<string> GetPreparedIds(string spellcastingName)
         => SpellcastingSectionContext.Current?.GetPreparedIds(spellcastingName) ?? Array.Empty<string>();
@@ -526,15 +584,75 @@ public sealed class CharacterSnapshot
     /// Collects cantrips from the character's registered elements.
     /// Cantrips are always acquired via SelectRule/GrantRule regardless of caster type.
     /// </summary>
-    private static IReadOnlyList<string> CollectCantrips()
+    private static IReadOnlyList<SpellEntry> CollectCantrips(
+        SpellcastingInformation info,
+        bool filterBySupports,
+        bool isSpellbookCaster,
+        IReadOnlyList<(string Supports, bool IsId)> extensionSupports)
     {
-        return CharacterManager.Current.GetElements()
-            .Where(e => e.Type == "Spell" && GetSpellLevel(e) == 0)
-            .Select(e => e.Name ?? "")
-            .Where(n => !string.IsNullOrEmpty(n))
-            .Distinct()
-            .OrderBy(n => n)
+        var cantrips = CharacterManager.Current.GetElements()
+            .Where(e => e.Type == "Spell" && GetSpellLevel(e) == 0);
+
+        string supportsExpr = info.InitialSupportedSpellsExpression?.Supports ?? "";
+        if (filterBySupports)
+        {
+            if (!string.IsNullOrWhiteSpace(supportsExpr))
+                cantrips = cantrips.Where(e => e.Supports?.Contains(supportsExpr) == true);
+            else if (!string.IsNullOrWhiteSpace(info.Name))
+                cantrips = cantrips.Where(e => e.Supports?.Contains(info.Name) == true);
+        }
+
+        // If support-based filtering strips everything out, fall back to the global
+        // registered cantrip list so single-source and unusual grants still show up.
+        var entries = cantrips
+            .Select(e => new SpellEntry
+            {
+                Name = e.Name ?? "",
+                Id = e.Id ?? "",
+                IsPrepared = true,
+                IsAlwaysPrepared = true,
+            })
+            .Where(s => !string.IsNullOrWhiteSpace(s.Name))
+            .GroupBy(s => s.Id, StringComparer.OrdinalIgnoreCase)
+            .Select(g => g.First())
+            .OrderBy(s => s.Name)
             .ToList();
+
+        foreach (var extra in ResolveExtendedSpells(extensionSupports, maxLevel: 0))
+        {
+            if (entries.All(entry => !entry.Id.Equals(extra.Id, StringComparison.OrdinalIgnoreCase)))
+            {
+                entries.Add(new SpellEntry
+                {
+                    Name = extra.Name,
+                    Id = extra.Id,
+                    IsPrepared = true,
+                    IsAlwaysPrepared = true,
+                });
+            }
+        }
+
+        entries = entries.OrderBy(s => s.Name).ToList();
+
+        if (entries.Count == 0 && filterBySupports && !isSpellbookCaster)
+        {
+            entries = CharacterManager.Current.GetElements()
+                .Where(e => e.Type == "Spell" && GetSpellLevel(e) == 0)
+                .Select(e => new SpellEntry
+                {
+                    Name = e.Name ?? "",
+                    Id = e.Id ?? "",
+                    IsPrepared = true,
+                    IsAlwaysPrepared = true,
+                })
+                .Where(s => !string.IsNullOrWhiteSpace(s.Name))
+                .GroupBy(s => s.Id, StringComparer.OrdinalIgnoreCase)
+                .Select(g => g.First())
+                .OrderBy(s => s.Name)
+                .ToList();
+        }
+
+        return entries;
     }
 
     /// <summary>
@@ -547,16 +665,22 @@ public sealed class CharacterSnapshot
     /// </summary>
     private static IReadOnlyList<SpellLevelEntry> CollectSpellLevels(
         bool isPreparedCaster,
+        string spellcastingName,
         string supportsExpr,
         IReadOnlyCollection<string> preparedIds,
-        bool isSpellbookCaster = false)
+        bool isSpellbookCaster = false,
+        bool filterKnownBySupports = false,
+        IReadOnlyList<(string Supports, bool IsId)>? extensionSupports = null)
     {
+        extensionSupports ??= [];
+
         // Get slot counts for each level.
         int[] totalSlots = new int[10];
         try
         {
             var cm   = CharacterManager.Current;
-            var info = cm.GetSpellcastingInformations().FirstOrDefault(x => !x.IsExtension);
+            var info = cm.GetSpellcastingInformations().FirstOrDefault(x =>
+                !x.IsExtension && string.Equals(x.Name, spellcastingName, StringComparison.OrdinalIgnoreCase));
             if (info != null)
             {
                 for (int n = 1; n <= 9; n++)
@@ -573,18 +697,33 @@ public sealed class CharacterSnapshot
         // from selection rules. Use the prepared-caster path with the spellbook flag so that only
         // registered spells are shown with individual prepare checkboxes.
         if (isPreparedCaster && isSpellbookCaster)
-            return CollectPreparedCasterSpellLevels("", preparedIds, totalSlots, maxSlot, isSpellbookCaster: true);
+            return CollectPreparedCasterSpellLevels("", preparedIds, totalSlots, maxSlot, isSpellbookCaster: true, extensionSupports);
 
         // Full-list prepared casters (Cleric, Druid, Paladin, Artificer, etc.): filter the entire
         // class spell list by the supports expression and show all of them with prepare checkboxes.
         if (isPreparedCaster && !string.IsNullOrEmpty(supportsExpr))
-            return CollectPreparedCasterSpellLevels(supportsExpr, preparedIds, totalSlots, maxSlot, isSpellbookCaster: false);
+            return CollectPreparedCasterSpellLevels(supportsExpr, preparedIds, totalSlots, maxSlot, isSpellbookCaster: false, extensionSupports);
 
         // Known caster: spells the character has selected/been granted — all always available.
-        var spellsByLevel = CharacterManager.Current.GetElements()
-            .Where(e => e.Type == "Spell")
-            .Select(e => (Name: e.Name ?? "", Id: e.Id ?? "", Level: GetSpellLevel(e)))
+        var knownSpells = CharacterManager.Current.GetElements()
+            .Where(e => e.Type == "Spell");
+
+        if (filterKnownBySupports)
+        {
+            if (!string.IsNullOrWhiteSpace(supportsExpr))
+                knownSpells = knownSpells.Where(e => e.Supports?.Contains(supportsExpr) == true);
+            else if (!string.IsNullOrWhiteSpace(spellcastingName))
+                knownSpells = knownSpells.Where(e => e.Supports?.Contains(spellcastingName) == true);
+        }
+
+        var knownSpellList = knownSpells
+            .Select(e => (Name: e.Name ?? "", Id: e.Id ?? "", Level: GetSpellLevel(e), Source: e.Source ?? ""))
             .Where(s => s.Level > 0 && !string.IsNullOrEmpty(s.Name))
+            .ToList();
+
+        knownSpellList.AddRange(ResolveExtendedSpells(extensionSupports, maxLevel: 9));
+
+        var spellsByLevel = knownSpellList
             .GroupBy(s => s.Level)
             .ToDictionary(g => g.Key, g =>
                 g.GroupBy(s => s.Id).Select(g2 => g2.First()).OrderBy(s => s.Name).ToList());
@@ -611,8 +750,10 @@ public sealed class CharacterSnapshot
         IReadOnlyCollection<string> preparedIds,
         int[] totalSlots,
         int maxSlot,
-        bool isSpellbookCaster = false)
+        bool isSpellbookCaster = false,
+        IReadOnlyList<(string Supports, bool IsId)>? extensionSupports = null)
     {
+        extensionSupports ??= [];
         int effectiveMax = maxSlot > 0 ? maxSlot : 9;
 
         // Track which registered spells are always-prepared (granted via a grant rule
@@ -691,6 +832,8 @@ public sealed class CharacterSnapshot
                 .Where(s => s.Level > 0 && s.Level <= effectiveMax && !string.IsNullOrEmpty(s.Name))
                 .ToList();
 
+            classSpells.AddRange(ResolveExtendedSpells(extensionSupports, effectiveMax));
+
             var classSpellIds = new HashSet<string>(classSpells.Select(s => s.Id), StringComparer.OrdinalIgnoreCase);
 
             var extraSpells = CharacterManager.Current.GetElements()
@@ -745,11 +888,77 @@ public sealed class CharacterSnapshot
         return result;
     }
 
+    private static List<(string Name, string Id, int Level, string Source)> ResolveExtendedSpells(
+        IReadOnlyList<(string Supports, bool IsId)> extensionSupports,
+        int maxLevel)
+    {
+        if (extensionSupports.Count == 0) return [];
+
+        var spells = new List<(string Name, string Id, int Level, string Source)>();
+        var spellBase = DataManager.Current.ElementsCollection.Where(e => e.Type == "Spell");
+        var interpreter = new Builder.Presentation.Services.ExpressionInterpreter();
+
+        foreach (var expression in extensionSupports)
+        {
+            if (string.IsNullOrWhiteSpace(expression.Supports))
+                continue;
+
+            if (expression.IsId)
+            {
+                var byId = DataManager.Current.ElementsCollection.GetElement(expression.Supports);
+                if (byId != null)
+                {
+                    int level = GetSpellLevel(byId);
+                    if (level <= maxLevel)
+                        spells.Add((byId.Name ?? "", byId.Id ?? "", level, byId.Source ?? ""));
+                }
+                continue;
+            }
+
+            try
+            {
+                spells.AddRange(interpreter.EvaluateSupportsExpression(expression.Supports, spellBase.Cast<object>())
+                    .Cast<object>()
+                    .Select(e => (
+                        Name: GetDynamicString(e, "Name"),
+                        Id: GetDynamicString(e, "Id"),
+                        Level: GetSpellLevel(e),
+                        Source: GetDynamicString(e, "Source")))
+                    .Where(s => !string.IsNullOrWhiteSpace(s.Name) && s.Level <= maxLevel));
+            }
+            catch
+            {
+                spells.AddRange(spellBase
+                    .Where(e => e.Supports?.Contains(expression.Supports) == true)
+                    .Select(e => (e.Name ?? "", e.Id ?? "", GetSpellLevel(e), e.Source ?? ""))
+                    .Where(s => !string.IsNullOrWhiteSpace(s.Item1) && s.Item3 <= maxLevel));
+            }
+        }
+
+        return spells
+            .GroupBy(s => s.Id, StringComparer.OrdinalIgnoreCase)
+            .Select(g => g.First())
+            .ToList();
+    }
+
     /// <summary>Gets the spell level via dynamic dispatch (avoids Builder.Data.Elements import).</summary>
     private static int GetSpellLevel(object e)
     {
         try { return (int)((dynamic)e).Level; }
         catch { return 0; }
+    }
+
+    private static string GetDynamicString(object e, string propertyName)
+    {
+        try
+        {
+            var value = ((dynamic)e).GetType().GetProperty(propertyName)?.GetValue((dynamic)e, null);
+            return value?.ToString() ?? "";
+        }
+        catch
+        {
+            return "";
+        }
     }
 
     /// <summary>
@@ -849,6 +1058,22 @@ public sealed class SpellEntry
     /// disabled for these entries.
     /// </summary>
     public bool   IsAlwaysPrepared { get; init; }
+}
+
+public sealed class SpellcastingSectionEntry
+{
+    public string UniqueIdentifier { get; init; } = "";
+    public string SourceId { get; init; } = "";
+    public string Name { get; init; } = "";
+    public bool HasExtensions { get; init; }
+    public string AbilityName { get; init; } = "";
+    public string SpellcastingDc { get; init; } = "";
+    public string SpellcastingAttack { get; init; } = "";
+    public bool IsPreparedCaster { get; init; }
+    public int MaxPrepared { get; init; }
+    public int PreparedCount => SpellLevels.SelectMany(l => l.Spells).Count(s => s.IsPrepared && !s.IsAlwaysPrepared);
+    public IReadOnlyList<SpellEntry> Cantrips { get; init; } = [];
+    public IReadOnlyList<SpellLevelEntry> SpellLevels { get; init; } = [];
 }
 
 public sealed record CompanionAbilityEntry(string Abbreviation, int FinalScore, string ModifierString);

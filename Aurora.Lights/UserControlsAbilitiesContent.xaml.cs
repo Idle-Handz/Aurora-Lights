@@ -19,5 +19,6 @@ public partial class AbilitiesContent : UserControl
 {
   public AbilitiesContent()
   {
+    this.InitializeComponent();
   }
 }

@@ -9,6 +9,36 @@
     color: #6c7086;
 }
 
+.magic-section-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+}
+
+.magic-section-tab {
+    border: 1px solid #45475a;
+    background: #1e1e2e;
+    color: #a6adc8;
+    border-radius: 999px;
+    padding: 0.45rem 0.9rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.magic-section-tab:hover {
+    background: #313244;
+    border-color: #585b70;
+    color: #cdd6f4;
+}
+
+.magic-section-tab.selected {
+    background: #1e3a5a;
+    border-color: #89b4fa;
+    color: #cdd6f4;
+}
+
 .magic-stats-strip {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
@@ -54,6 +84,44 @@
     display: flex;
     flex-direction: column;
     gap: 0.7rem;
+}
+
+.magic-browse-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.magic-filter-input,
+.magic-filter-select {
+    min-height: 2.4rem;
+    border: 1px solid #45475a;
+    border-radius: 0.65rem;
+    background: #313244;
+    color: #cdd6f4;
+    padding: 0.55rem 0.8rem;
+    font-size: 0.9rem;
+}
+
+.magic-filter-input {
+    flex: 1 1 240px;
+}
+
+.magic-filter-select {
+    flex: 0 0 auto;
+}
+
+.magic-filter-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: #a6adc8;
+    font-size: 0.9rem;
+}
+
+.magic-filter-check input {
+    accent-color: #89b4fa;
 }
 
 .magic-known-list,
@@ -174,6 +242,7 @@
     min-width: 0;
     display: flex;
     align-items: center;
+    justify-content: flex-start;
     gap: 0.65rem;
     padding: 0.8rem 0.9rem;
     border: none;
@@ -207,6 +276,60 @@
 .magic-spell-name.prepared {
     font-weight: 700;
     color: #89b4fa;
+}
+
+.magic-spell-text {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.18rem;
+}
+
+.magic-spell-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    align-items: center;
+    font-size: 0.72rem;
+    color: #a6adc8;
+}
+
+.magic-spell-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.12rem 0.45rem;
+    border-radius: 999px;
+    border: 1px solid #585b70;
+    background: rgba(69, 71, 90, 0.35);
+    color: #cdd6f4;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.magic-spell-badge.cantrip {
+    border-color: rgba(137, 220, 235, 0.45);
+    color: #89dceb;
+}
+
+.magic-spell-badge-prepared {
+    border-color: rgba(137, 180, 250, 0.45);
+    color: #89b4fa;
+}
+
+.magic-spell-badge-always {
+    border-color: rgba(249, 226, 175, 0.45);
+    color: #f9e2af;
+}
+
+.magic-spell-badge-known {
+    border-color: rgba(166, 173, 200, 0.45);
+    color: #cdd6f4;
+}
+
+.magic-spell-badge-available {
+    border-color: rgba(148, 226, 213, 0.45);
+    color: #94e2d5;
 }
 
 .magic-detail {

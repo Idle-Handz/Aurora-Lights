@@ -37,6 +37,8 @@ public sealed class SaveSliderViewModel : ViewModelBase
   private string _groupName;
   private string _filepath;
 
+  public event EventHandler? CloseRequested;
+
   public Builder.Presentation.Models.Character Character => CharacterManager.Current.Character;
 
   public SaveSliderViewModel()
@@ -221,6 +223,7 @@ public sealed class SaveSliderViewModel : ViewModelBase
           CharacterManager.Current.Status.HasChanges = false;
           this.EventAggregator.Send<CharacterSavedEvent>(new CharacterSavedEvent(file));
           AnalyticsEventHelper.CharacterSave(file.DisplayRace, file.DisplayClass, file.DisplayBackground, file.DisplayLevel, CharacterManager.Current.Status.HasMulticlass, CharacterManager.Current.Status.HasSpellcasting, CharacterManager.Current.Status.HasCompanion);
+          this.CloseRequested?.Invoke(this, EventArgs.Empty);
         }
         if (!file.FilePath.Contains(DataManager.Current.UserDocumentsRootDirectory))
           DataManager.Current.AppendCharacterFileLocation(file.FilePath);

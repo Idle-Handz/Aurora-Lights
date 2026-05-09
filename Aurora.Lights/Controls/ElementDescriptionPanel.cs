@@ -54,11 +54,18 @@ public class ElementDescriptionPanel : Control
     public override void OnApplyTemplate()
     {
         base.OnApplyTemplate();
+        if (this._snapButton != null)
+            this._snapButton.Click -= new RoutedEventHandler(this._snapButton_Click);
+        if (this._panel != null)
+            this._panel.LinkClicked -= new TheArtOfDev.HtmlRenderer.WPF.RoutedEventHandler<HtmlLinkClickedEventArgs>(this._panel_LinkClicked);
         this._scrollViewer = this.Template.FindName("PART_ScrollViewer", (FrameworkElement)this) as ScrollViewer;
         this._panel = this.Template.FindName("PART_HtmlPanel", (FrameworkElement)this) as HtmlPanel;
         this._image = this.Template.FindName("PART_Image", (FrameworkElement)this) as Image;
         this._snapButton = this.Template.FindName("PART_SnapShotButton", (FrameworkElement)this) as Button;
-        this._snapButton.Click += new RoutedEventHandler(this._snapButton_Click);
+        if (this._snapButton != null)
+            this._snapButton.Click += new RoutedEventHandler(this._snapButton_Click);
+        if (this._panel != null)
+            this._panel.LinkClicked += new TheArtOfDev.HtmlRenderer.WPF.RoutedEventHandler<HtmlLinkClickedEventArgs>(this._panel_LinkClicked);
         if (this.StartAudioCommand == null)
             this.StartAudioCommand = (ICommand)new RelayCommand(new Action(this.StartSpeech));
         if (this.StopAudioCommand != null)
@@ -70,16 +77,29 @@ public class ElementDescriptionPanel : Control
     {
         try
         {
-            if (!args.Link.Contains("ID_"))
+            if (args == null || string.IsNullOrWhiteSpace(args.Link))
                 return;
-            ElementBase element = DataManager.Current.ElementsCollection.GetElement(args.Attributes["href"].Trim('#').Trim());
-            if (element != null)
+            string str = args.Attributes != null && args.Attributes.ContainsKey("href") ? args.Attributes["href"] : args.Link;
+            string id = str.Trim('#').Trim();
+            if (id.Contains("ID_"))
             {
-                this.Element = element;
-                this.Description = element.HasGeneratedDescription ? element.GeneratedDescription : element.Description;
+                ElementBase element = DataManager.Current.ElementsCollection.GetElement(id);
+                if (element != null)
+                {
+                    this.Element = element;
+                    this.Description = element.HasGeneratedDescription ? element.GeneratedDescription : element.Description;
+                    args.Handled = true;
+                    return;
+                }
+            }
+            if (Uri.TryCreate(args.Link, UriKind.Absolute, out Uri result))
+            {
+                Process.Start(new ProcessStartInfo(result.AbsoluteUri)
+                {
+                    UseShellExecute = true
+                });
                 args.Handled = true;
             }
-            int num = (int)MessageBox.Show("Hello you!");
         }
         catch (Exception ex)
         {
@@ -87,9 +107,12 @@ public class ElementDescriptionPanel : Control
         }
     }
 
-    private void _panel_LinkClicked(object sender, RoutedEventArgs args)
+    private void _panel_LinkClicked(object sender, TheArtOfDev.HtmlRenderer.WPF.RoutedEventArgs<HtmlLinkClickedEventArgs> args)
     {
-        throw new NotImplementedException();
+        if (args == null)
+            return;
+        this.DisplayLinkedDescription(args.Data);
+        args.Handled = args.Data != null && args.Data.Handled;
     }
 
     private void _snapButton_Click(object sender, RoutedEventArgs e) => this.GenerateImage();

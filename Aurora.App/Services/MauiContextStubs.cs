@@ -21,6 +21,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using System.Runtime.InteropServices;
 
 namespace Aurora.App.Services;
 
@@ -151,18 +152,59 @@ internal sealed class MauiSpellcastingSectionHandler : ISpellcastingSectionHandl
 /// <summary>
 /// No-op IMessageDialogService — logs to debug output instead of showing WPF dialogs.
 /// </summary>
-internal sealed class MauiMessageDialogService : IMessageDialogService
+#if false
+internal sealed partial class MauiMessageDialogServiceStub : IMessageDialogService
 {
     public void Show(string message, string? caption = null)
-        => Debug.WriteLine($"[Dialog] {caption}: {message}");
+    {
+        string title = GetCaption(caption);
+        Debug.WriteLine($"[Dialog] {title}: {message}");
+
+#if WINDOWS
+        ShowWindowsMessageBox(message, title, MessageBoxStyle.Ok, MessageBoxIcon.Info);
+#else
+        _ = ShowAlertAsync(title, message);
+#endif
+    }
     public void ShowException(Exception ex, string? message = null, string? caption = null)
-        => Debug.WriteLine($"[Dialog:Exception] {caption}: {message}\n{ex}");
+    {
+        string title = GetCaption(caption ?? ex.GetType().Name);
+        string body = BuildExceptionMessage(ex, message);
+        Debug.WriteLine($"[Dialog:Exception] {title}: {body}");
+
+#if WINDOWS
+        ShowWindowsMessageBox(body, title, MessageBoxStyle.Ok, MessageBoxIcon.Error);
+#else
+        _ = ShowAlertAsync(title, body);
+#endif
+    }
     public bool Confirm(string message, string? caption = null)
     {
+        string title = GetCaption(caption ?? "Confirm");
+        Debug.WriteLine($"[Dialog:Confirm] {title}: {message}");
+
+#if WINDOWS
+        return ShowWindowsMessageBox(message, title, MessageBoxStyle.YesNo, MessageBoxIcon.Question) == MessageBoxResult.Yes;
+#else
+        Page? page = GetDialogPage();
+        if (page == null)
+            return false;
+
+        if (MainThread.IsMainThread)
+        {
+            Debug.WriteLine("[Dialog:Confirm] synchronous confirm requested on UI thread without native sync dialog support; returning false.");
+            _ = ShowAlertAsync(title, message);
+            return false;
+        }
+
+        return MainThread.InvokeOnMainThreadAsync(() => page.DisplayAlert(title, message, "Yes", "No"))
+            .GetAwaiter()
+            .GetResult();
+#endif
         Debug.WriteLine($"[Dialog:Confirm] {caption}: {message} → auto-returning false");
-        return false;
     }
 }
+#endif
 
 /// <summary>
 /// MAUI implementation of the shared launcher contract.
@@ -247,14 +289,23 @@ internal sealed class MauiCharacterSheetGenerator : ICharacterSheetGenerator
         var sheet = new CharacterSheetEx();
         sheet.Configuration.IncludeBackgroundPage    = Preferences.Default.Get(UserPreferencesService.KeyBackgroundPage, defaultValue: true);
         sheet.Configuration.IncludeEquipmentPage     = Preferences.Default.Get(UserPreferencesService.KeyEquipmentPage,  defaultValue: true);
-        sheet.Configuration.IncludeSpellcastingPage  = spellInfos.Any();
-        sheet.Configuration.IncludeFormatting        = true;
+        sheet.Configuration.IncludeSpellcastingPage    = spellInfos.Any();
+#pragma warning disable CS0618 // IsEditable backs form-fillable behavior in the shared generator
+        sheet.Configuration.IsEditable                 = Preferences.Default.Get(UserPreferencesService.KeyEditableSheet, defaultValue: false);
+#pragma warning restore CS0618
+        sheet.Configuration.IncludeFormatting         = Preferences.Default.Get(UserPreferencesService.KeyIncludeFormatting, defaultValue: true);
+        sheet.Configuration.IsAttributeDisplayFlipped = Preferences.Default.Get(UserPreferencesService.KeyFlippedAbilities, defaultValue: false);
+        sheet.Configuration.UseLegacySpellcastingPage = Preferences.Default.Get(UserPreferencesService.KeyLegacySpellcastingPage, defaultValue: false);
 
         // Card pages — read directly from MAUI Preferences (same keys as UserPreferencesService).
         sheet.Configuration.IncludeSpellcards   = Preferences.Default.Get(UserPreferencesService.KeySpellCards,   defaultValue: false);
         sheet.Configuration.IncludeItemcards    = Preferences.Default.Get(UserPreferencesService.KeyItemCards,    defaultValue: false);
         sheet.Configuration.IncludeAttackCards  = Preferences.Default.Get(UserPreferencesService.KeyAttackCards,  defaultValue: false);
         sheet.Configuration.IncludeFeatureCards = Preferences.Default.Get(UserPreferencesService.KeyFeatureCards, defaultValue: false);
+        sheet.Configuration.StartNewSpellCardsPage   = Preferences.Default.Get(UserPreferencesService.KeyStartSpellCardsOnNewPage, defaultValue: false);
+        sheet.Configuration.StartNewItemCardsPage    = Preferences.Default.Get(UserPreferencesService.KeyStartItemCardsOnNewPage, defaultValue: false);
+        sheet.Configuration.StartNewAttackCardsPage  = Preferences.Default.Get(UserPreferencesService.KeyStartAttackCardsOnNewPage, defaultValue: false);
+        sheet.Configuration.StartNewFeatureCardsPage = Preferences.Default.Get(UserPreferencesService.KeyStartFeatureCardsOnNewPage, defaultValue: false);
 
         sheet.ExportContent = BuildExportContent(cm, character, elements, stats, sheet.Configuration);
 
@@ -763,13 +814,17 @@ internal sealed class MauiCharacterSheetGenerator : ICharacterSheetGenerator
             .OrderBy(t => t.Level).ThenBy(t => t.Element.Name)
             .ToList();
 
+        bool includeNonPreparedSpells = Preferences.Default.Get(
+            UserPreferencesService.KeyIncludeNonPreparedSpells,
+            defaultValue: false);
+
         foreach (var (spell, level) in registeredSpells)
         {
             bool alwaysPrepared = alwaysPreparedIds.Contains(spell.Id ?? "");
             bool isPrepared     = alwaysPrepared || preparedIds.Contains(spell.Id ?? "");
 
             // For prepared casters, only include cantrips + prepared spells.
-            if (level > 0 && info.Prepare && !isPrepared) continue;
+            if (level > 0 && info.Prepare && !isPrepared && !includeNonPreparedSpells) continue;
 
             string description = "";
             string castingTime = "", range = "", duration = "", components = "", subtitle = "";
