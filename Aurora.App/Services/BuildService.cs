@@ -5,6 +5,7 @@ using Builder.Presentation.Models;
 using Builder.Presentation.Services;
 using Builder.Presentation.Services.Data;
 using Builder.Presentation.Utilities;
+using System.Text.RegularExpressions;
 
 namespace Aurora.App.Services;
 
@@ -141,6 +142,16 @@ public static class BuildService
     {
         try
         {
+            // List-type rules (Bond, Ideal, Flaw, Personality Trait, etc.) have their options
+            // as inline <item> children of the <select> tag, not in the element collection.
+            if (rule.Attributes.IsList)
+            {
+                var listItems = rule.Attributes.ListItems ?? [];
+                return listItems
+                    .Select(li => new ElementOption(li.ID.ToString(), li.Text, li.Text, "", ""))
+                    .ToList();
+            }
+
             // Use the same approach as SelectionRuleCollectionService / SelectionRuleComboBoxViewModel:
             // • InitializeWithSelectionRule so level-based expressions can resolve
             // • Pass SupportsElementIdRange() as the containsElementIDs flag (correct vs ElementsOrganizerRefactored's heuristic)
@@ -193,9 +204,50 @@ public static class BuildService
                         e.HasRequirements ? FormatRequirements(e.Requirements) : ""))
                     .ToList();
 
+            // Case-insensitive fallback: only used when the main expression returned nothing AND
+            // this is not a Spell rule (Spell rules use SpellFallbackOptions above). Catches
+            // content that uses internal ID aliases like ID_INTERNAL_SUPPORT_LANGUAGE_EXOTIC
+            // whose plain-word token ("Exotic") fails the evaluator's case-sensitive Contains.
+            // Running it as a union (even when the main evaluator found results) risks adding
+            // wrong elements that pass substring-matching but fail proper rule validation on reload.
+            if (list.Count == 0 && rule.Attributes.ContainsSupports()
+                && !string.Equals(rule.Attributes.Type, "Spell", StringComparison.OrdinalIgnoreCase))
+            {
+                list = FilterBySupportsCaseInsensitive(rule.Attributes.Supports, baseCollection)
+                    .Where(e => !string.IsNullOrWhiteSpace(e.Name))
+                    .OrderBy(e => e.Name)
+                    .Select(e => new ElementOption(
+                        e.Id, e.Name!, GetFeatureDescription(e),
+                        e.Source ?? "",
+                        e.HasRequirements ? FormatRequirements(e.Requirements) : ""))
+                    .ToList();
+            }
+
             return DeduplicateOptions(list);
         }
         catch { return []; }
+    }
+
+    /// <summary>
+    /// Filters elements whose Supports field contains any of the label terms parsed from
+    /// <paramref name="supportsExpression"/>, using case-insensitive matching. This catches
+    /// elements that use internal ID aliases like ID_INTERNAL_SUPPORT_LANGUAGE_EXOTIC which
+    /// contain "exotic" but not the mixed-case literal "Exotic" that the expression uses.
+    /// </summary>
+    private static IEnumerable<ElementBase> FilterBySupportsCaseInsensitive(
+        string supportsExpression, IEnumerable<ElementBase> elements)
+    {
+        var terms = Regex.Matches(supportsExpression, @"[A-Za-z][A-Za-z0-9_]*")
+            .Cast<Match>()
+            .Select(m => m.Value)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (terms.Count == 0) return Enumerable.Empty<ElementBase>();
+
+        return elements.Where(e =>
+            e.Supports != null &&
+            e.Supports.Any(s => terms.Any(t => s.IndexOf(t, StringComparison.OrdinalIgnoreCase) >= 0)));
     }
 
     /// <summary>
@@ -434,6 +486,20 @@ public static class BuildService
             // 4. Reprocess after any invalidations.
             if (invalidated.Count > 0)
                 cm.ReprocessCharacter();
+
+            // 4.5. For background list selections (Bond, Ideal, Flaw, Personality Trait),
+            //      CharacterManager.SetCharacterDetails has now populated
+            //      FillableBackgroundCharacteristics from SelectionRuleListItems.
+            //      Copy those into the snapshot so FlushSnapshotToCharacter (step 5) writes
+            //      them back to the character's editable text fields.
+            if (rule.Attributes.IsList && tab.Snapshot != null)
+            {
+                var bgChar = cm.Character.FillableBackgroundCharacteristics;
+                if (!string.IsNullOrEmpty(bgChar.Traits.Content)) tab.Snapshot.Notes1 = bgChar.Traits.Content;
+                if (!string.IsNullOrEmpty(bgChar.Ideals.Content)) tab.Snapshot.Notes2 = bgChar.Ideals.Content;
+                if (!string.IsNullOrEmpty(bgChar.Bonds.Content))  tab.Snapshot.Allies = bgChar.Bonds.Content;
+                if (!string.IsNullOrEmpty(bgChar.Flaws.Content))  tab.Snapshot.Organisation = bgChar.Flaws.Content;
+            }
 
             // 5. Flush snapshot text edits back into the Character object so they
             //    survive a full Save() which regenerates the XML from CharacterManager state.
@@ -801,6 +867,72 @@ public static class BuildService
     /// </summary>
     public static bool IsUsingAverageHp =>
         CharacterManager.Current.ContainsAverageHitPointsOption();
+
+    private static string FeatsOptionId         => Builder.Data.Strings.InternalOptions.AllowFeats;
+    private static string MulticlassOptionId    => Builder.Data.Strings.InternalOptions.AllowMulticlassing;
+    private const  string CustomOriginOptionId      = "ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI";
+    private const  string CustomLanguageOptionId    = "ID_WOTC_TCOE_OPTION_CUSTOMIZED_LANGUAGE";
+    private const  string CustomProficiencyOptionId = "ID_WOTC_TCOE_OPTION_CUSTOMIZED_PROFICIENCY";
+
+    public static bool IsUsingFeats =>
+        CharacterManager.Current.ContainsOption(FeatsOptionId);
+
+    public static bool IsUsingMulticlassing =>
+        CharacterManager.Current.ContainsOption(MulticlassOptionId);
+
+    public static bool IsUsingCustomOrigin =>
+        CharacterManager.Current.ContainsOption(CustomOriginOptionId);
+
+    public static bool IsUsingCustomLanguage =>
+        CharacterManager.Current.ContainsOption(CustomLanguageOptionId);
+
+    public static bool IsUsingCustomProficiency =>
+        CharacterManager.Current.ContainsOption(CustomProficiencyOptionId);
+
+    public static async Task<string?> SetFeatsOptionAsync(CharacterTab tab, bool enabled)
+        => await SetOptionAsync(tab, FeatsOptionId, enabled, "BuildService.SetFeatsOptionAsync");
+
+    public static async Task<string?> SetMulticlassingOptionAsync(CharacterTab tab, bool enabled)
+        => await SetOptionAsync(tab, MulticlassOptionId, enabled, "BuildService.SetMulticlassingOptionAsync");
+
+    public static async Task<string?> SetCustomOriginOptionAsync(CharacterTab tab, bool enabled)
+        => await SetOptionAsync(tab, CustomOriginOptionId, enabled, "BuildService.SetCustomOriginOptionAsync");
+
+    public static async Task<string?> SetCustomLanguageOptionAsync(CharacterTab tab, bool enabled)
+        => await SetOptionAsync(tab, CustomLanguageOptionId, enabled, "BuildService.SetCustomLanguageOptionAsync");
+
+    public static async Task<string?> SetCustomProficiencyOptionAsync(CharacterTab tab, bool enabled)
+        => await SetOptionAsync(tab, CustomProficiencyOptionId, enabled, "BuildService.SetCustomProficiencyOptionAsync");
+
+    private static async Task<string?> SetOptionAsync(CharacterTab tab, string optionId, bool enabled, string callerName)
+    {
+        using var scope = await CharacterContext.EnterAsync(tab);
+        return await Task.Run(() =>
+        {
+            try
+            {
+                var cm = CharacterManager.Current;
+                bool has = cm.ContainsOption(optionId);
+                if (enabled && !has)
+                {
+                    var element = DataManager.Current.ElementsCollection
+                        .FirstOrDefault(e => e.Id == optionId);
+                    if (element != null) cm.RegisterElement(element);
+                }
+                else if (!enabled && has)
+                {
+                    var element = cm.GetElements()
+                        .FirstOrDefault(e => e.Id == optionId);
+                    if (element != null) cm.UnregisterElement(element);
+                }
+                cm.ReprocessCharacter();
+                ResnapTab(tab);
+                SaveCharacterFile(tab);
+                return (string?)null;
+            }
+            catch (Exception ex) { return DebugLogService.Catch(ex, callerName); }
+        });
+    }
 
     /// <summary>
     /// Registers or unregisters the AllowAverageHitPoints option element, then reprocesses
@@ -1351,7 +1483,9 @@ public static class BuildService
         try
         {
             var current = SelectionRuleExpanderContext.Current?.GetRegisteredElement(rule, n);
-            return current is null ? null : (string?)((dynamic)current).Name;
+            if (current is null) return null;
+            if (current is SelectionRuleListItem listItem) return listItem.Text;
+            return (string?)((dynamic)current).Name;
         }
         catch { return null; }
     }

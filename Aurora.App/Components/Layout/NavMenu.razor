@@ -19,7 +19,7 @@
         Console
         @if (DebugLog.Entries.Any(e => e.Level == LogLevel.Error))
         {
-            <span style="margin-left: 6px; color: #f38ba8; font-size: 10px; font-weight: 700;">●</span>
+            <span style="margin-left: 6px; color: var(--mud-palette-error); font-size: 10px; font-weight: 700;">●</span>
         }
     </MudNavLink>
 
@@ -33,7 +33,7 @@
             <div style="display: flex; align-items: center; gap: 8px; padding: 6px 16px;">
                 <MudProgressCircular Size="Size.Small" Indeterminate="true" Color="Color.Primary"
                                      Style="width: 14px; height: 14px;" />
-                <MudText Typo="Typo.caption" Style="color: #a6adc8;">Loading character…</MudText>
+                <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">Loading character…</MudText>
             </div>
         }
         <MudTooltip Text="@(_loading ? "Loading character…" : "")" Placement="Placement.Right" Delay="300" Style="display:block">

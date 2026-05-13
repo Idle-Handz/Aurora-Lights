@@ -44,7 +44,7 @@ internal static class AuroraSqliteImporter
         EnsureSchema(connection);
         // When the importer logic changes in a way that affects stored data (e.g. adding a new
         // column to element_supports), bump this constant so existing DBs get a full rebuild.
-        const int ExpectedDataVersion = 8;
+        const int ExpectedDataVersion = AuroraDatabaseVersions.DataVersion;
         int dbVersion = GetUserVersion(connection);
         if (dbVersion != ExpectedDataVersion)
         {
@@ -73,6 +73,7 @@ internal static class AuroraSqliteImporter
         var sourceFileIds = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
         var changedPaths  = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var seenPaths     = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var fileHashesByPath = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         // Build content_packages from the top-level directory of each source file path.
         // ON CONFLICT DO NOTHING preserves any user-configured kind/rank from prior runs.
@@ -96,6 +97,7 @@ internal static class AuroraSqliteImporter
             cancellationToken.ThrowIfCancellationRequested();
             seenPaths.Add(file.RelativePath);
             string hash = ComputeFileHash(file.FullPath);
+            fileHashesByPath[file.RelativePath] = hash;
             scanned++;
 
             primarySourceByFile.TryGetValue(file.RelativePath, out string? primarySource);
@@ -209,6 +211,13 @@ internal static class AuroraSqliteImporter
             ResolveDeferredRelationships(connection, transaction);
         }
 
+        UpsertDatabaseMetadata(
+            connection,
+            transaction,
+            sourceFileCount: catalog.Files.Count,
+            elementCount: QueryElementCount(connection, transaction),
+            contentRootHash: ComputeContentRootHash(fileHashesByPath));
+
         transaction.Commit();
 
         progress?.Report(new AuroraImportProgress(
@@ -275,6 +284,102 @@ internal static class AuroraSqliteImporter
         }
     }
 
+    public static ContentDatabaseMetadata? GetMetadata(string sqlitePath)
+    {
+        if (!File.Exists(sqlitePath)) return null;
+
+        using var conn = new SqliteConnection(
+            new SqliteConnectionStringBuilder { DataSource = sqlitePath, Mode = SqliteOpenMode.ReadOnly }.ToString());
+        conn.Open();
+
+        using (var tableCheck = conn.CreateCommand())
+        {
+            tableCheck.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='database_metadata';";
+            if ((long)(tableCheck.ExecuteScalar() ?? 0L) == 0) return null;
+        }
+
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+SELECT schema_version,
+       data_version,
+       importer_version,
+       built_utc,
+       source_file_count,
+       element_count,
+       content_root_hash
+FROM database_metadata
+WHERE singleton_id = 1;";
+        using var reader = cmd.ExecuteReader();
+        if (!reader.Read()) return null;
+
+        return new ContentDatabaseMetadata(
+            SchemaVersion: reader.GetInt32(0),
+            DataVersion: reader.GetInt32(1),
+            ImporterVersion: reader.GetString(2),
+            BuiltUtc: reader.GetString(3),
+            SourceFileCount: reader.GetInt32(4),
+            ElementCount: reader.GetInt32(5),
+            ContentRootHash: reader.IsDBNull(6) ? null : reader.GetString(6));
+    }
+
+    public static ContentDatabaseHealthReport? GetHealthReport(string sqlitePath)
+    {
+        if (!File.Exists(sqlitePath)) return null;
+
+        using var conn = new SqliteConnection(
+            new SqliteConnectionStringBuilder { DataSource = sqlitePath, Mode = SqliteOpenMode.ReadOnly }.ToString());
+        conn.Open();
+
+        int actionableUnresolvedLinks = ExecuteCount(
+            conn,
+            "SELECT COUNT(*) FROM v_unresolved_loader_link_diagnostics WHERE diagnostic_status = 'actionable';");
+        int classifiedUnresolvedLinks = ExecuteCount(
+            conn,
+            "SELECT COUNT(*) FROM v_unresolved_loader_link_diagnostics WHERE diagnostic_status <> 'actionable';");
+        int sourceIntegrityIssues = ExecuteCount(conn, "SELECT COUNT(*) FROM v_source_integrity_issues;");
+        int missingResolvedSpellRows = ExecuteCount(conn, @"
+SELECT COUNT(*)
+FROM v_resolved_elements AS re
+JOIN elements AS e
+    ON e.element_id = re.winning_element_id
+JOIN element_types AS et
+    ON et.element_type_id = e.element_type_id
+LEFT JOIN spells AS s
+    ON s.element_id = e.element_id
+WHERE et.type_name = 'Spell'
+  AND s.element_id IS NULL;");
+        int missingResolvedItemRows = ExecuteCount(conn, @"
+SELECT COUNT(*)
+FROM v_resolved_elements AS re
+JOIN elements AS e
+    ON e.element_id = re.winning_element_id
+JOIN element_types AS et
+    ON et.element_type_id = e.element_type_id
+LEFT JOIN items AS i
+    ON i.element_id = e.element_id
+WHERE et.type_name = 'Item'
+  AND i.element_id IS NULL;");
+        int missingResolvedCompanionRows = ExecuteCount(conn, @"
+SELECT COUNT(*)
+FROM v_resolved_elements AS re
+JOIN elements AS e
+    ON e.element_id = re.winning_element_id
+JOIN element_types AS et
+    ON et.element_type_id = e.element_type_id
+LEFT JOIN companions AS c
+    ON c.element_id = e.element_id
+WHERE et.type_name = 'Companion'
+  AND c.element_id IS NULL;");
+
+        return new ContentDatabaseHealthReport(
+            actionableUnresolvedLinks,
+            classifiedUnresolvedLinks,
+            sourceIntegrityIssues,
+            missingResolvedSpellRows,
+            missingResolvedItemRows,
+            missingResolvedCompanionRows);
+    }
+
     // ── Schema / DB setup ────────────────────────────────────────────────────
 
     private static void EnsureSchema(SqliteConnection connection)
@@ -326,6 +431,7 @@ internal static class AuroraSqliteImporter
         AddColumnIfMissing(connection, "select_items",  "option_kind",
             "TEXT NOT NULL DEFAULT 'name-reference-candidate'");
         AddColumnIfMissing(connection, "stats",         "raw_xml",              "TEXT");
+        AddColumnIfMissing(connection, "database_metadata", "content_root_hash", "TEXT");
     }
 
     private static void AddColumnIfMissing(SqliteConnection connection,
@@ -1528,6 +1634,55 @@ WHERE package_kind = 'third-party'
   );");
     }
 
+    private static void UpsertDatabaseMetadata(
+        SqliteConnection connection,
+        SqliteTransaction transaction,
+        int sourceFileCount,
+        int elementCount,
+        string contentRootHash)
+    {
+        using var cmd = connection.CreateCommand();
+        cmd.Transaction = transaction;
+        cmd.CommandText = @"
+INSERT INTO database_metadata
+(
+    singleton_id,
+    schema_version,
+    data_version,
+    importer_version,
+    built_utc,
+    source_file_count,
+    element_count,
+    content_root_hash
+)
+VALUES
+(
+    1,
+    $schema_version,
+    $data_version,
+    $importer_version,
+    CURRENT_TIMESTAMP,
+    $source_file_count,
+    $element_count,
+    $content_root_hash
+)
+ON CONFLICT(singleton_id) DO UPDATE SET
+    schema_version = excluded.schema_version,
+    data_version = excluded.data_version,
+    importer_version = excluded.importer_version,
+    built_utc = excluded.built_utc,
+    source_file_count = excluded.source_file_count,
+    element_count = excluded.element_count,
+    content_root_hash = excluded.content_root_hash;";
+        cmd.Parameters.AddWithValue("$schema_version", AuroraDatabaseVersions.SchemaVersion);
+        cmd.Parameters.AddWithValue("$data_version", AuroraDatabaseVersions.DataVersion);
+        cmd.Parameters.AddWithValue("$importer_version", GetImporterVersion());
+        cmd.Parameters.AddWithValue("$source_file_count", sourceFileCount);
+        cmd.Parameters.AddWithValue("$element_count", elementCount);
+        cmd.Parameters.AddWithValue("$content_root_hash", contentRootHash);
+        cmd.ExecuteNonQuery();
+    }
+
     // ── Scope helpers ────────────────────────────────────────────────────────
 
     private static long InsertRuleScope(SqliteConnection connection, SqliteTransaction transaction, string ownerKind, long ownerElementId)
@@ -1615,6 +1770,36 @@ WHERE package_kind = 'third-party'
             _ => double.TryParse(crText.Trim(), out var d) ? (object)d : DBNull.Value
         };
     }
+
+    private static int ExecuteCount(SqliteConnection connection, string sql)
+    {
+        using var cmd = connection.CreateCommand();
+        cmd.CommandText = sql;
+        return Convert.ToInt32(cmd.ExecuteScalar() ?? 0);
+    }
+
+    private static int QueryElementCount(SqliteConnection connection, SqliteTransaction transaction)
+    {
+        using var cmd = connection.CreateCommand();
+        cmd.Transaction = transaction;
+        cmd.CommandText = "SELECT COUNT(*) FROM elements;";
+        return Convert.ToInt32((long)(cmd.ExecuteScalar() ?? 0L));
+    }
+
+    private static string ComputeContentRootHash(IReadOnlyDictionary<string, string> fileHashesByPath)
+    {
+        using var md5 = MD5.Create();
+        string payload = string.Join(
+            "\n",
+            fileHashesByPath
+                .OrderBy(kvp => kvp.Key, StringComparer.OrdinalIgnoreCase)
+                .Select(kvp => $"{kvp.Key}|{kvp.Value}"));
+        byte[] hash = md5.ComputeHash(System.Text.Encoding.UTF8.GetBytes(payload));
+        return Convert.ToHexString(hash);
+    }
+
+    private static string GetImporterVersion() =>
+        Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown";
 
     private static int? GetMinimumLevel(AuroraElement element)
     {

@@ -59,13 +59,14 @@ else
 @code {
     private bool _disposed;
     private List<Builder.Presentation.Models.CharacterFile> _characters = [];
+    private List<CharacterBrowserEntry> _browserEntries = [];
+    private CancellationTokenSource? _portraitCts;
     private bool _loading = true;
     private bool _preloading;
     private string? _error;
     private bool _warning;
 
-    private IReadOnlyList<CharacterBrowserEntry> BrowserEntries =>
-        _characters.Select(ToBrowserEntry).ToList();
+    private IReadOnlyList<CharacterBrowserEntry> BrowserEntries => _browserEntries;
 
     private string DirectoryCaption =>
         _characters.Count == 0
@@ -80,6 +81,8 @@ else
     public void Dispose()
     {
         _disposed = true;
+        _portraitCts?.Cancel();
+        _portraitCts?.Dispose();
     }
 
     protected override Task OnInitializedAsync()
@@ -87,6 +90,7 @@ else
         try
         {
             _characters = Characters.LoadCharacterFiles().ToList();
+            RebuildBrowserEntries();
         }
         catch (Exception ex)
         {
@@ -100,6 +104,42 @@ else
 
         _ = RunPreloadAsync();
         return Task.CompletedTask;
+    }
+
+    private void RebuildBrowserEntries()
+    {
+        _portraitCts?.Cancel();
+        _portraitCts?.Dispose();
+        _portraitCts = new CancellationTokenSource();
+        _browserEntries = _characters.Select(ToBrowserEntry).ToList();
+        _ = LoadPortraitsAsync(_portraitCts.Token);
+    }
+
+    private async Task LoadPortraitsAsync(CancellationToken ct)
+    {
+        var snapshot = _characters.ToList();
+        List<string?> portraits;
+        try
+        {
+            portraits = await Task.Run(() => snapshot.Select(ToPortraitDataUrl).ToList(), ct);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+        if (ct.IsCancellationRequested || _disposed) return;
+
+        bool anyUpdated = false;
+        for (int i = 0; i < portraits.Count && i < _browserEntries.Count; i++)
+        {
+            if (portraits[i] != null)
+            {
+                _browserEntries[i] = _browserEntries[i] with { PortraitDataUrl = portraits[i] };
+                anyUpdated = true;
+            }
+        }
+        if (anyUpdated && !_disposed)
+            await InvokeAsync(StateHasChanged);
     }
 
     private async Task RunPreloadAsync()
@@ -219,6 +259,7 @@ else
             new DialogOptions { MaxWidth = MaxWidth.Medium, CloseButton = true });
         await dialog.Result;
         _characters = Characters.LoadCharacterFiles().ToList();
+        RebuildBrowserEntries();
         StateHasChanged();
     }
 
@@ -237,7 +278,9 @@ else
         try
         {
             (Builder.Presentation.Models.CharacterFile? file, string? error) =
-                await Characters.CreateNewCharacterAsync(info.Name, info.PlayerName, Prefs.DefaultHpMethod);
+                await Characters.CreateNewCharacterAsync(info.Name, info.PlayerName, Prefs.DefaultHpMethod,
+                    Prefs.DefaultFeats, Prefs.DefaultMulticlassing,
+                    Prefs.DefaultCustomOrigin, Prefs.DefaultCustomLanguage, Prefs.DefaultCustomProficiency);
 
             if (file == null || Characters.CurrentCharacter == null)
             {
@@ -253,6 +296,7 @@ else
             CharacterContext.ClaimAfterLoad(tab);
 
             _characters = Characters.LoadCharacterFiles().ToList();
+            RebuildBrowserEntries();
             Nav.NavigateTo("/build");
         }
         catch (Exception ex)
@@ -286,7 +330,7 @@ else
             string.IsNullOrWhiteSpace(character.CollectionGroupName) ? null : character.CollectionGroupName,
             character.CollectionGroupName,
             character.IsFavorite,
-            ToPortraitDataUrl(character));
+            PortraitDataUrl: null);  // loaded asynchronously by LoadPortraitsAsync
 
     private static string? ToPortraitDataUrl(Builder.Presentation.Models.CharacterFile character)
     {

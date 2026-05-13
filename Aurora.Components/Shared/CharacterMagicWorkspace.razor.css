@@ -124,11 +124,94 @@
     accent-color: #89b4fa;
 }
 
+.magic-view-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid #45475a;
+}
+
+.magic-view-tab {
+    border: none;
+    background: transparent;
+    color: #6c7086;
+    padding: 0.4rem 1rem 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.magic-view-tab:hover {
+    color: #cdd6f4;
+}
+
+.magic-view-tab.selected {
+    color: #89b4fa;
+    border-bottom-color: #89b4fa;
+}
+
+.magic-group-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0.1rem 0;
+    gap: 0.5rem;
+    text-align: left;
+}
+
+.magic-group-header:hover .magic-section-label {
+    color: #a6adc8;
+}
+
+.magic-level-toggle {
+    cursor: pointer;
+    user-select: none;
+}
+
+.magic-level-toggle:hover .magic-section-label {
+    color: #a6adc8;
+}
+
+.magic-level-right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.magic-chevron {
+    font-size: 0.9rem;
+    color: #6c7086;
+    transition: transform 0.18s;
+    display: inline-block;
+    line-height: 1;
+    transform: rotate(-90deg);
+}
+
+.magic-chevron.open {
+    transform: rotate(0deg);
+}
+
 .magic-known-list,
 .magic-list {
     display: flex;
     flex-direction: column;
     gap: 0.6rem;
+}
+
+.magic-list {
+    max-height: calc(100vh - 425px);
+    min-height: 200px;
+    overflow-y: auto;
+}
+
+.magic-list > * {
+    flex-shrink: 0;
 }
 
 .magic-known-row {
@@ -207,11 +290,12 @@
 
 .magic-spell-row {
     display: flex;
-    align-items: center;
+    align-items: stretch;
     padding: 0;
     overflow: hidden;
     border-radius: 6px;
     transition: background 0.1s;
+    min-height: 2.75rem;
 }
 
 .magic-spell-row:hover {
@@ -226,6 +310,7 @@
     cursor: pointer;
     width: 1rem;
     height: 1rem;
+    min-height: 0;
 }
 
 .magic-spell-prep-check:disabled {
@@ -238,13 +323,13 @@
 }
 
 .magic-spell-select {
-    flex: 1;
+    flex: 1 1 auto;
     min-width: 0;
     display: flex;
     align-items: center;
     justify-content: flex-start;
     gap: 0.65rem;
-    padding: 0.8rem 0.9rem;
+    padding: 0.65rem 0.9rem;
     border: none;
     background: transparent;
     cursor: pointer;

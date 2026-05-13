@@ -8,11 +8,16 @@ public enum HpMethod { Average, Rolled }
 /// </summary>
 public sealed class UserPreferencesService
 {
-    private const string KeyAutoSave      = "build.auto_save";
-    private const string KeyHpMethod      = "build.hp_method";
-    private const string KeyDevMode       = "dev.mode";
-    private const string KeyMruCharacter  = "app.mru_character";
-    private const string KeyLightMode     = "app.light_mode";
+    private const string KeyAutoSave           = "build.auto_save";
+    private const string KeyHpMethod           = "build.hp_method";
+    private const string KeyFeats              = "build.allow_feats";
+    private const string KeyMulticlassing      = "build.allow_multiclassing";
+    private const string KeyCustomOrigin       = "build.tce_custom_origin";
+    private const string KeyCustomLanguage     = "build.tce_custom_language";
+    private const string KeyCustomProficiency  = "build.tce_custom_proficiency";
+    private const string KeyDevMode            = "dev.mode";
+    private const string KeyMruCharacter       = "app.mru_character";
+    private const string KeyLightMode          = "app.light_mode";
 
     public event Action? ThemeChanged;
 
@@ -76,6 +81,50 @@ public sealed class UserPreferencesService
         get => Preferences.Default.Get(KeyHpMethod, defaultValue: (int)HpMethod.Average) == (int)HpMethod.Rolled
                ? HpMethod.Rolled : HpMethod.Average;
         set => Preferences.Default.Set(KeyHpMethod, (int)value);
+    }
+
+    /// <summary>Default: true. Applied when creating a new character.</summary>
+    public bool DefaultFeats
+    {
+        get => Preferences.Default.Get(KeyFeats, defaultValue: true);
+        set => Preferences.Default.Set(KeyFeats, value);
+    }
+
+    /// <summary>Default: true. Applied when creating a new character.</summary>
+    public bool DefaultMulticlassing
+    {
+        get => Preferences.Default.Get(KeyMulticlassing, defaultValue: true);
+        set => Preferences.Default.Set(KeyMulticlassing, value);
+    }
+
+    /// <summary>
+    /// When true, new characters default to using the TCE Customized Ability Score Increases option.
+    /// Reflects the active character's state when one is open. Default: true.
+    /// </summary>
+    public bool DefaultCustomOrigin
+    {
+        get => Preferences.Default.Get(KeyCustomOrigin, defaultValue: true);
+        set => Preferences.Default.Set(KeyCustomOrigin, value);
+    }
+
+    /// <summary>
+    /// When true, new characters default to using the TCE Customized Language option.
+    /// Reflects the active character's state when one is open. Default: true.
+    /// </summary>
+    public bool DefaultCustomLanguage
+    {
+        get => Preferences.Default.Get(KeyCustomLanguage, defaultValue: true);
+        set => Preferences.Default.Set(KeyCustomLanguage, value);
+    }
+
+    /// <summary>
+    /// When true, new characters default to using the TCE Customized Proficiencies option.
+    /// Reflects the active character's state when one is open. Default: true.
+    /// </summary>
+    public bool DefaultCustomProficiency
+    {
+        get => Preferences.Default.Get(KeyCustomProficiency, defaultValue: true);
+        set => Preferences.Default.Set(KeyCustomProficiency, value);
     }
 
     /// <summary>

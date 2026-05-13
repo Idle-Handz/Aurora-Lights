@@ -10,7 +10,7 @@
                 @* From inventory *@
                 @if (InventoryOptions.Count > 0)
                 {
-                    <div style="font-size: 11px; color: #6c7086; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">From Inventory</div>
+                    <div style="font-size: 11px; color: var(--mud-palette-text-disabled); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">From Inventory</div>
                     <div class="picker-list" style="max-height: 120px; margin-bottom: 10px;">
                         @foreach (var opt in InventoryOptions)
                         {
@@ -56,7 +56,7 @@
                             <div class="picker-item @(sel ? "picker-item-selected" : "")"
                                  @onclick="() => SelectNew(r)">
                                 <div class="picker-item-name">@r.Name</div>
-                                <div style="font-size: 10px; color: #6c7086; margin-top: 1px;">@r.Type</div>
+                                <div style="font-size: 10px; color: var(--mud-palette-text-disabled); margin-top: 1px;">@r.Type</div>
                             </div>
                         }
                     </div>
@@ -68,10 +68,10 @@
                 @if (_detailName != null)
                 {
                     <div class="picker-detail-name">@_detailName</div>
-                    <div style="font-size: 11px; color: #89b4fa; margin-bottom: 4px;">@_detailType</div>
+                    <div style="font-size: 11px; color: var(--mud-palette-primary); margin-bottom: 4px;">@_detailType</div>
                     @if (!string.IsNullOrWhiteSpace(_detailSource))
                     {
-                        <div style="font-size: 10px; color: #6c7086; margin-bottom: 8px;">@_detailSource</div>
+                        <div style="font-size: 10px; color: var(--mud-palette-text-disabled); margin-bottom: 8px;">@_detailSource</div>
                     }
 
                     @if (!string.IsNullOrWhiteSpace(_detailDesc))

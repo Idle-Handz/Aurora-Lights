@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Text.RegularExpressions;
 using Aurora.Importer;
 using Builder.Presentation.Services.Data;
 
@@ -30,6 +32,17 @@ public sealed class ContentDatabaseService
     public string ContentDirectory =>
         DataManager.Current.UserDocumentsCustomElementsDirectory ?? string.Empty;
 
+    /// <summary>
+    /// Path to the bundled AuroraTranslator snapshot published via tools/publish-translator.ps1.
+    /// Null (on non-Windows) or a path that may not exist yet on first run.
+    /// </summary>
+    private static string? BundledTranslatorPath =>
+#if WINDOWS
+        Path.Combine(AppContext.BaseDirectory, "BundledTools", "AuroraTranslator", "AuroraTranslator.exe");
+#else
+        null;
+#endif
+
     // ── Public API ───────────────────────────────────────────────────────────
 
     /// <summary>
@@ -44,6 +57,12 @@ public sealed class ContentDatabaseService
     /// </summary>
     public IReadOnlyList<ContentPackageInfo> GetPackages() =>
         DatabasePath is { } p ? AuroraContentImporter.GetPackages(p) : [];
+
+    public ContentDatabaseMetadata? GetMetadata() =>
+        DatabasePath is { } p ? AuroraContentImporter.GetMetadata(p) : null;
+
+    public ContentDatabaseHealthReport? GetHealthReport() =>
+        DatabasePath is { } p ? AuroraContentImporter.GetHealthReport(p) : null;
 
     /// <summary>
     /// Toggles a package's enabled state and rebuilds the resolution cache.
@@ -106,15 +125,23 @@ public sealed class ContentDatabaseService
             Progress  = null;
             StateChanged?.Invoke();
 
-            var reportProgress = new Progress<AuroraImportProgress>(p =>
-            {
-                Progress = p;
-                StateChanged?.Invoke();
-            });
+            AuroraImportResult result;
 
-            AuroraImportResult result = await Task.Run(
-                () => AuroraContentImporter.Import(ContentDirectory, dbPath, reportProgress, cancellationToken),
-                cancellationToken);
+            if (BundledTranslatorPath is { } exePath && File.Exists(exePath))
+            {
+                result = await SyncWithBundledTranslatorAsync(exePath, ContentDirectory, dbPath, cancellationToken);
+            }
+            else
+            {
+                var reportProgress = new Progress<AuroraImportProgress>(p =>
+                {
+                    Progress = p;
+                    StateChanged?.Invoke();
+                });
+                result = await Task.Run(
+                    () => AuroraContentImporter.Import(ContentDirectory, dbPath, reportProgress, cancellationToken),
+                    cancellationToken);
+            }
 
             LastResult = result;
             IsStale    = false;
@@ -142,5 +169,55 @@ public sealed class ContentDatabaseService
         {
             _lock.Release();
         }
+    }
+
+    private async Task<AuroraImportResult> SyncWithBundledTranslatorAsync(
+        string exePath, string contentDirectory, string dbPath, CancellationToken cancellationToken)
+    {
+        Progress = new AuroraImportProgress(AuroraImportPhase.Scanning, 0, 0, 0, 0, null);
+        StateChanged?.Invoke();
+
+        using var process = new Process();
+        process.StartInfo = new ProcessStartInfo
+        {
+            FileName               = exePath,
+            Arguments              = $"sqlite-import \"{contentDirectory}\" \"{dbPath}\"",
+            UseShellExecute        = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError  = true,
+            CreateNoWindow         = true
+        };
+        process.Start();
+
+        using var reg = cancellationToken.Register(() =>
+        {
+            try { process.Kill(entireProcessTree: true); } catch { }
+        });
+
+        string stdout = await process.StandardOutput.ReadToEndAsync(cancellationToken);
+        string stderr = await process.StandardError.ReadToEndAsync(cancellationToken);
+
+        await process.WaitForExitAsync(cancellationToken);
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (process.ExitCode != 0)
+        {
+            string msg = stderr.Length > 0 ? stderr.Trim() : $"AuroraTranslator exited with code {process.ExitCode}";
+            return AuroraImportResult.Failed(msg);
+        }
+
+        // Parse "Aurora import: N elements processed (M files changed, K unchanged)."
+        var match = Regex.Match(stdout,
+            @"Aurora import: (\d+) elements processed \((\d+) files changed, (\d+) unchanged\)");
+        if (match.Success)
+        {
+            int elements  = int.Parse(match.Groups[1].Value);
+            int changed   = int.Parse(match.Groups[2].Value);
+            int unchanged = int.Parse(match.Groups[3].Value);
+            return AuroraImportResult.Succeeded(changed, unchanged, elements);
+        }
+
+        return AuroraImportResult.Succeeded(0, 0, 0);
     }
 }

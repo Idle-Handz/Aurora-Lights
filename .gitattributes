@@ -1,0 +1,46 @@
+# Normalize all text files to LF in the repository.
+# Git converts to the platform line ending on checkout (CRLF on Windows, LF on macOS/Linux).
+* text=auto
+
+# ── Files that must always be LF (shell interpreters, YAML CI runners) ──────
+*.yml       text eol=lf
+*.yaml      text eol=lf
+*.sh        text eol=lf
+*.csx       text eol=lf
+
+# ── Source / markup ──────────────────────────────────────────────────────────
+*.cs        text
+*.razor     text
+*.xaml      text
+*.xml       text
+*.sql       text
+*.json      text
+*.css       text
+*.js        text
+*.html      text
+*.md        text
+*.txt       text
+*.ps1       text
+*.resx      text
+*.csproj    text
+*.sln       text
+*.manifest  text
+*.appxmanifest text
+*.plist     text
+*.gitignore text
+*.LICENSE   text
+
+# ── Binary — never diff or convert ───────────────────────────────────────────
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.svg       binary
+*.ico       binary
+*.otf       binary
+*.ttf       binary
+*.pdf       binary
+*.dll       binary
+*.exe       binary
+*.pdb       binary
+*.sqlite    binary
+*.zip       binary

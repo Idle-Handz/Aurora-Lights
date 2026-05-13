@@ -134,7 +134,7 @@
                             @foreach (var w in _result.Warnings)
                             {
                                 <div style="font-size: 11px; padding: 4px 8px; background: var(--mud-palette-background-grey); border-radius: 4px;">
-                                    <span style="font-weight: 600; color: #fab387;">[@w.Category]</span>
+                                    <span style="font-weight: 600; color: var(--mud-palette-warning);">[@w.Category]</span>
                                     <span style="color: var(--mud-palette-text-primary);"> @w.Item</span>
                                     <span style="color: var(--mud-palette-text-disabled);"> — @w.Reason</span>
                                 </div>
@@ -362,7 +362,19 @@
 
     private async Task SaveAsync()
     {
-        if (_result == null || _sheet == null || string.IsNullOrWhiteSpace(_outputFileName)) return;
+        if (_result == null || _sheet == null)
+        {
+            _error = "There is no parsed character ready to import yet.";
+            StateHasChanged();
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_outputFileName))
+        {
+            _error = "Enter a file name for the imported character.";
+            StateHasChanged();
+            return;
+        }
         _error = null;
 
         string safeName = SanitiseFileName(_outputFileName);
@@ -393,7 +405,7 @@
         catch (Exception ex)
         {
             _state = State.Review;
-            _error = $"Save failed: {ex.Message}";
+            _error = $"Save failed: {ex.GetType().Name}: {ex.Message}";
         }
         finally { StateHasChanged(); }
     }

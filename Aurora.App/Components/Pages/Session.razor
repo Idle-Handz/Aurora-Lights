@@ -24,12 +24,12 @@
         <MudIconButton Icon="@Icons.Material.Filled.Save"
                        Size="Size.Small"
                        OnClick="SaveSession"
-                       Style="color: #6c7086; margin-top: 2px;" />
+                       Style="color: var(--mud-palette-text-disabled); margin-top: 2px;" />
     </MudTooltip>
 </div>
 @if (!string.IsNullOrWhiteSpace(_saveError))
 {
-    <MudAlert Severity="Severity.Warning" Dense="true" Variant="Variant.Outlined" Style="margin-bottom: 16px;">
+    <MudAlert Severity="Severity.Error" Dense="true" Variant="Variant.Outlined" Style="margin-bottom: 16px;">
         @_saveError
     </MudAlert>
 }
@@ -106,7 +106,7 @@
         @* Death saves *@
         <div class="session-death-row">
             <div class="session-death-block">
-                <div class="session-death-label" style="color: #a6e3a1;">Saves</div>
+                <div class="session-death-label" style="color: var(--mud-palette-success);">Saves</div>
                 <div class="session-pips">
                     @for (int i = 1; i <= 3; i++)
                     {
@@ -118,7 +118,7 @@
                 </div>
             </div>
             <div class="session-death-block">
-                <div class="session-death-label" style="color: #f38ba8;">Fails</div>
+                <div class="session-death-label" style="color: var(--mud-palette-error);">Fails</div>
                 <div class="session-pips">
                     @for (int i = 1; i <= 3; i++)
                     {
@@ -238,7 +238,7 @@
         <MudIconButton Icon="@Icons.Material.Filled.AddCircleOutline"
                        Size="Size.Small"
                        OnClick="OpenAddResourceDialog"
-                       Style="color: #89b4fa; padding: 2px;" />
+                       Style="color: var(--mud-palette-primary); padding: 2px;" />
     </div>
 
     @if (_s.CustomResources.Count == 0)
@@ -281,11 +281,11 @@
                         <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                        Size="Size.Small"
                                        OnClick="() => OpenEditResourceDialog(r)"
-                                       Style="color: #6c7086; padding: 2px;" />
+                                       Style="color: var(--mud-palette-text-disabled); padding: 2px;" />
                         <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
                                        Size="Size.Small"
                                        OnClick="() => RemoveResource(r)"
-                                       Style="color: #6c7086; padding: 2px;" />
+                                       Style="color: var(--mud-palette-text-disabled); padding: 2px;" />
                     </div>
                 </div>
             }

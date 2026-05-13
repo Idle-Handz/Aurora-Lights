@@ -42,7 +42,7 @@
 @if (!Prefs.AutoSaveBuildChanges)
 {
     <div class="page-save-bar">
-        <MudText Typo="Typo.caption" Style="color: #a6adc8;">Auto-save off</MudText>
+        <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">Auto-save off</MudText>
         <MudButton StartIcon="@Icons.Material.Filled.Save"
                    Color="Color.Primary"
                    Variant="Variant.Filled"
@@ -81,15 +81,15 @@
 {
     <div class="build-guide-banner">
         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-            <MudIcon Icon="@Icons.Material.Filled.AutoAwesome" Style="color: #f9e2af; font-size: 18px;" />
+            <MudIcon Icon="@Icons.Material.Filled.AutoAwesome" Style="color: var(--mud-palette-warning); font-size: 18px;" />
             <span><b>Next step:</b> @_nextStep.StepLabel</span>
             <MudButton Size="Size.Small" Variant="Variant.Text"
-                       Style="color: #f9e2af; padding: 0 6px; min-width: 0;"
+                       Style="color: var(--mud-palette-warning); padding: 0 6px; min-width: 0;"
                        OnClick="NavigateToNextStep">
                 → @_nextStep.TargetLabel
             </MudButton>
         </div>
-        <MudText Typo="Typo.caption" Style="color: #a6adc8; margin-top: 2px;">
+        <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary); margin-top: 2px;">
             Recommended 5e flow: Race → Class → Ability Scores → Describe Character → Equipment.
         </MudText>
     </div>
@@ -98,15 +98,15 @@ else if (_workflowSuggestion != null)
 {
     <div class="build-guide-banner">
         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-            <MudIcon Icon="@Icons.Material.Filled.Explore" Style="color: #89b4fa; font-size: 18px;" />
+            <MudIcon Icon="@Icons.Material.Filled.Explore" Style="color: var(--mud-palette-primary); font-size: 18px;" />
             <span><b>Recommended next:</b> @_workflowSuggestion.Value.StepLabel</span>
             <MudButton Size="Size.Small" Variant="Variant.Text"
-                       Style="color: #89b4fa; padding: 0 6px; min-width: 0;"
+                       Style="color: var(--mud-palette-primary); padding: 0 6px; min-width: 0;"
                        OnClick="NavigateSuggestedStep">
                 → @_workflowSuggestion.Value.TargetLabel
             </MudButton>
         </div>
-        <MudText Typo="Typo.caption" Style="color: #a6adc8; margin-top: 2px;">
+        <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary); margin-top: 2px;">
             Recommended 5e flow: Race → Class → Ability Scores → Describe Character → Equipment.
         </MudText>
     </div>
@@ -155,7 +155,7 @@ else if (_workflowSuggestion != null)
                     @onclick="() => SetHpMethodAsync(HpMethod.Rolled)">Roll</button>
         </div>
 
-        <MudText Typo="Typo.caption" Style="color: #6c7086;">
+        <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-disabled);">
             Level @(_snap.Level)
             @if (!BuildService.CanLevelUp)   { <span> · Max level</span>   }
             @if (!BuildService.CanLevelDown) { <span> · Level 1 min</span> }
@@ -177,7 +177,7 @@ else if (_workflowSuggestion != null)
         <MudTabPanel Text="@GetBuildTabLabel(tab)">
             @if (tab.RuleGroups.Count == 0)
             {
-                <div style="margin-top: 16px; padding: 12px; background: #181825; border-radius: 6px; border: 1px solid #313244;">
+                <div style="margin-top: 16px; padding: 12px; background: var(--mud-palette-background-grey); border-radius: 6px; border: 1px solid var(--mud-palette-lines-default);">
                     <MudText Color="Color.Secondary" Typo="Typo.body2">
                         No selections are available for <b>@tab.Label</b> at your current level.
                     </MudText>
@@ -198,12 +198,13 @@ else if (_workflowSuggestion != null)
                         <div class="build-rule-list">
                             @foreach (var entry in group.Rules)
                             {
-                                <div class="@GetRuleRowClass(entry)">
+                                <div class="@GetRuleRowClass(entry)" @ondblclick="() => OpenPickerAsync(entry)">
                                     <div class="build-rule-label">@entry.Label</div>
                                     <div class="build-rule-value @(entry.CurrentName == null ? "build-rule-empty" : "")">
                                         @(entry.CurrentName ?? "Choose...")
                                     </div>
-                                    <button class="build-rule-btn" @onclick="() => OpenPickerAsync(entry)">Change</button>
+                                    <button class="build-rule-btn" @onclick="() => OpenPickerAsync(entry)"
+                                            @ondblclick:stopPropagation="true">Change</button>
                                 </div>
                             }
                         </div>
@@ -319,7 +320,7 @@ else if (_workflowSuggestion != null)
                         <span>Points spent: <b>@(27 - remaining) / 27</b></span>
                         <span style="margin-left: 16px;">Remaining: <b>@remaining</b></span>
                     </div>
-                    <MudText Typo="Typo.caption" Style="color: #6c7086; margin-top: 4px;">
+                    <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-disabled); margin-top: 4px;">
                         Scores range from 8 (free) to 15 (9 pts). Cost increases at 14 and 15.
                     </MudText>
                 }
@@ -329,7 +330,7 @@ else if (_workflowSuggestion != null)
                         <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
                                    StartIcon="@Icons.Material.Filled.Casino"
                                    OnClick="RollAllAsync">Roll All</MudButton>
-                        <MudText Typo="Typo.caption" Style="color: #6c7086;">
+                        <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-disabled);">
                             Use the 🎲 button on each stat to reroll individually.
                         </MudText>
                     </div>
@@ -337,14 +338,14 @@ else if (_workflowSuggestion != null)
                 else if (_abilityMethod == AbilityGenMethod.StandardArray)
                 {
                     <div style="margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
-                        <MudText Typo="Typo.caption" Style="color: #a6adc8;">Array:</MudText>
+                        <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">Array:</MudText>
                         @foreach (var v in _standardArray)
                         {
                             bool used = _arrayAssignments.Values.Any(a => a == v);
                             <span class="ability-array-chip @(used ? "used" : "")">@v</span>
                         }
                     </div>
-                    <MudText Typo="Typo.caption" Style="color: #6c7086; margin-top: 2px;">
+                    <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-disabled); margin-top: 2px;">
                         Assign each value to exactly one ability score.
                     </MudText>
                 }
@@ -364,55 +365,7 @@ else if (_workflowSuggestion != null)
                         }
                     </div>
 
-                    @* Row 2: base score input *@
-                    <div class="ability-stats-row ability-row-base">
-                        @foreach (var row in _abilityRows)
-                        {
-                            <div class="ability-stats-cell">
-                                @if (_abilityMethod == AbilityGenMethod.Manual)
-                                {
-                                    <input class="ability-manual-input"
-                                           type="number" min="1" max="30"
-                                           value="@row.Item.BaseScore"
-                                           @onchange="e => OnManualScoreChanged(row.Item, int.TryParse(e.Value?.ToString(), out var v) ? v : row.Item.BaseScore)" />
-                                }
-                                else if (_abilityMethod == AbilityGenMethod.PointBuy)
-                                {
-                                    <div class="ability-score-adj">
-                                        <button class="ability-adj-btn-sm"
-                                                disabled="@(!CanDecrement(row.Item))"
-                                                @onclick="() => DecrementScore(row.Item)">−</button>
-                                        <span class="ability-score-num">@row.Item.BaseScore</span>
-                                        <button class="ability-adj-btn-sm"
-                                                disabled="@(!CanIncrement(row.Item))"
-                                                @onclick="() => IncrementScore(row.Item)">+</button>
-                                    </div>
-                                }
-                                else if (_abilityMethod is AbilityGenMethod.Roll3d6 or AbilityGenMethod.Roll4d6)
-                                {
-                                    <div class="ability-score-adj">
-                                        <span class="ability-score-num">@row.Item.BaseScore</span>
-                                        <button class="ability-roll-btn-sm" title="Reroll @row.Name"
-                                                @onclick="() => RollStatAsync(row.Item)">🎲</button>
-                                    </div>
-                                }
-                                else if (_abilityMethod == AbilityGenMethod.StandardArray)
-                                {
-                                    <select class="ability-array-select-sm"
-                                            @onchange="e => AssignArrayValue(row.Item, row.Abbrev, int.TryParse(e.Value?.ToString(), out var v) ? v : 0)">
-                                        <option value="0">—</option>
-                                        @foreach (var v in GetAvailableArrayValues(row.Abbrev))
-                                        {
-                                            <option value="@v" selected="@(_arrayAssignments.TryGetValue(row.Abbrev, out var cur) && cur == v)">@v</option>
-                                        }
-                                    </select>
-                                }
-                                <div class="ability-sublabel">base</div>
-                            </div>
-                        }
-                    </div>
-
-                    @* Row 3: ASI bonuses — only shown when at least one ability has a bonus *@
+                    @* Row 2: ASI bonuses — only shown when at least one ability has a bonus *@
                     @if (_hasAsi)
                     {
                         <div class="ability-stats-row ability-row-asi">
@@ -431,18 +384,73 @@ else if (_workflowSuggestion != null)
                         </div>
                     }
 
-                    @* Row 4: total (final) score *@
+                    @* Row 3: interactive controls.
+                       Roll/PointBuy show the BASE score (what you're setting); Manual shows
+                       the TOTAL (most natural for typing). When a racial/feat ASI applies,
+                       a "→ N total" annotation makes the relationship explicit. *@
                     <div class="ability-stats-row ability-row-total">
                         @foreach (var row in _abilityRows)
                         {
                             <div class="ability-stats-cell">
-                                <div class="ability-total-val">@row.Item.FinalScore</div>
-                                @if (_hasAsi) { <div class="ability-sublabel">total</div> }
+                                @if (_abilityMethod == AbilityGenMethod.Manual)
+                                {
+                                    <input class="ability-manual-input" type="number" min="1" max="30"
+                                           value="@row.Item.FinalScore"
+                                           @onchange="async e => await OnManualTotalChanged(row.Item, int.TryParse(e.Value?.ToString(), out var v) ? v : row.Item.FinalScore)" />
+                                    @if (row.Item.AdditionalScore != 0)
+                                    {
+                                        <div class="ability-sublabel">base: @row.Item.BaseScore</div>
+                                    }
+                                }
+                                else if (_abilityMethod == AbilityGenMethod.PointBuy)
+                                {
+                                    <div class="ability-score-adj">
+                                        <button class="ability-adj-btn-sm" disabled="@(!CanDecrement(row.Item))"
+                                                @onclick="() => DecrementScore(row.Item)">−</button>
+                                        <span class="ability-score-num">@row.Item.BaseScore</span>
+                                        <button class="ability-adj-btn-sm" disabled="@(!CanIncrement(row.Item))"
+                                                @onclick="() => IncrementScore(row.Item)">+</button>
+                                    </div>
+                                    @if (row.Item.AdditionalScore != 0)
+                                    {
+                                        <div class="ability-sublabel">→ @row.Item.FinalScore total</div>
+                                    }
+                                }
+                                else if (_abilityMethod is AbilityGenMethod.Roll3d6 or AbilityGenMethod.Roll4d6)
+                                {
+                                    <div class="ability-score-adj">
+                                        <span class="ability-score-num">@row.Item.BaseScore</span>
+                                        <button class="ability-roll-btn-sm" @onclick="() => RollStatAsync(row.Item)" title="Reroll">🎲</button>
+                                    </div>
+                                    @if (row.Item.AdditionalScore != 0)
+                                    {
+                                        <div class="ability-sublabel">→ @row.Item.FinalScore total</div>
+                                    }
+                                }
+                                else if (_abilityMethod == AbilityGenMethod.StandardArray)
+                                {
+                                    <select class="ability-array-select-sm"
+                                            value="@_arrayAssignments.GetValueOrDefault(row.Abbrev, 0)"
+                                            @onchange="async e => await AssignArrayValue(row.Item, row.Abbrev, int.TryParse(e.Value?.ToString(), out var sv) ? sv : 0)">
+                                        @if (_arrayAssignments.GetValueOrDefault(row.Abbrev, 0) == 0)
+                                        {
+                                            <option value="0">–</option>
+                                        }
+                                        @foreach (var av in GetAvailableArrayValues(row.Abbrev))
+                                        {
+                                            <option value="@av" selected="@(av == _arrayAssignments.GetValueOrDefault(row.Abbrev, 0))">@av</option>
+                                        }
+                                    </select>
+                                    @if (_arrayAssignments.GetValueOrDefault(row.Abbrev, 0) != 0 && row.Item.AdditionalScore != 0)
+                                    {
+                                        <div class="ability-sublabel">→ @row.Item.FinalScore total</div>
+                                    }
+                                }
                             </div>
                         }
                     </div>
 
-                    @* Row 5: modifier *@
+                    @* Row 4: modifier *@
                     <div class="ability-stats-row ability-row-mod">
                         @foreach (var row in _abilityRows)
                         {
@@ -465,12 +473,13 @@ else if (_workflowSuggestion != null)
                     <div class="build-rule-list">
                         @foreach (var entry in _asiEntries)
                         {
-                            <div class="@GetRuleRowClass(entry)">
+                            <div class="@GetRuleRowClass(entry)" @ondblclick="() => OpenPickerAsync(entry)">
                                 <div class="build-rule-label">@entry.Label</div>
                                 <div class="build-rule-value @(entry.CurrentName == null ? "build-rule-empty" : "")">
                                         @(entry.CurrentName ?? "Choose...")
                                 </div>
-                                <button class="build-rule-btn" @onclick="() => OpenPickerAsync(entry)">Change</button>
+                                <button class="build-rule-btn" @onclick="() => OpenPickerAsync(entry)"
+                                        @ondblclick:stopPropagation="true">Change</button>
                             </div>
                         }
                     </div>
@@ -777,7 +786,11 @@ else if (_workflowSuggestion != null)
     private async Task ManualSaveAsync()
     {
         var tab = Tabs.ActiveTab;
-        if (tab == null) return;
+        if (tab == null)
+        {
+            WarnUnavailable("There is no active character to save right now.");
+            return;
+        }
         _saving = true;
         StateHasChanged();
         var error = await BuildService.SaveTabAsync(tab);
@@ -800,7 +813,11 @@ else if (_workflowSuggestion != null)
     {
         var tab  = Tabs.ActiveTab;
         var file = Characters.CurrentCharacterFile;
-        if (tab == null || file == null) return;
+        if (tab == null || file == null)
+        {
+            WarnUnavailable("That choice is not available right now. Try again once the character finishes loading.");
+            return;
+        }
 
         _saving = true;
         StateHasChanged();
@@ -892,7 +909,11 @@ else if (_workflowSuggestion != null)
     private async Task LevelUpAsync()
     {
         var tab = Tabs.ActiveTab;
-        if (tab == null) return;
+        if (tab == null)
+        {
+            WarnUnavailable("There is no active character to level up.");
+            return;
+        }
         _saving = true;
         StateHasChanged();
         var (error, hpGained, isAverage) = await BuildService.LevelUpMainAsync(tab);
@@ -921,7 +942,11 @@ else if (_workflowSuggestion != null)
     private async Task SetHpMethodAsync(HpMethod method)
     {
         var tab = Tabs.ActiveTab;
-        if (tab == null) return;
+        if (tab == null)
+        {
+            WarnUnavailable("There is no active character to update.");
+            return;
+        }
         _saving = true;
         StateHasChanged();
         var error = await BuildService.SetHpMethodAsync(tab, method);
@@ -945,7 +970,11 @@ else if (_workflowSuggestion != null)
     private async Task LevelDownAsync()
     {
         var tab = Tabs.ActiveTab;
-        if (tab == null) return;
+        if (tab == null)
+        {
+            WarnUnavailable("There is no active character to level down.");
+            return;
+        }
         _saving = true;
         StateHasChanged();
         var error = await BuildService.LevelDownAsync(tab);
@@ -968,7 +997,11 @@ else if (_workflowSuggestion != null)
     private async Task OpenMulticlassDialog()
     {
         var tab = Tabs.ActiveTab;
-        if (tab == null) return;
+        if (tab == null)
+        {
+            WarnUnavailable("There is no active character to multiclass.");
+            return;
+        }
 
         _saving = true;
         StateHasChanged();
@@ -1045,10 +1078,10 @@ else if (_workflowSuggestion != null)
 
     // ── Ability scores: manual ────────────────────────────────────────────────────
 
-    private async Task OnManualScoreChanged(AbilityItem item, int newScore)
+    private async Task OnManualTotalChanged(AbilityItem item, int desiredTotal)
     {
-        if (newScore < 1 || newScore > 30) return;
-        item.BaseScore = newScore;
+        int newBase = Math.Clamp(desiredTotal - item.AdditionalScore, 1, 30);
+        item.BaseScore = newBase;
         await ApplyAbilityChangesAsync();
     }
 
@@ -1127,7 +1160,11 @@ else if (_workflowSuggestion != null)
     {
         var tab       = Tabs.ActiveTab;
         var character = CharacterManager.Current?.Character;
-        if (tab == null || character == null) return;
+        if (tab == null || character == null)
+        {
+            WarnUnavailable("Ability score changes could not be applied because the character is no longer active.");
+            return;
+        }
 
         _abilities?.CalculateAvailablePoints();
 
@@ -1156,4 +1193,7 @@ else if (_workflowSuggestion != null)
         }
         StateHasChanged();
     }
+
+    private void WarnUnavailable(string message) =>
+        Snackbar.Add(message, Severity.Warning, cfg => cfg.VisibleStateDuration = 2500);
 }

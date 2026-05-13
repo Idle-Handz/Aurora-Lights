@@ -249,4 +249,119 @@
 
   <!-- todo: include feat asi here -->
 
+  <!-- TCE Customized Ability Score Increase options (Customizing Your Origin)                    -->
+  <!-- +2 pool: one element per ability; each requires the option is on and the +1 for that       -->
+  <!--          ability is NOT already selected (mutual exclusion prevents +2 and +1 to same).    -->
+  <!-- +1 pool: one element per ability; likewise mutual-excludes its matching +2.                -->
+
+  <element name="Strength" type="Ability Score Improvement" source="Internal" id="ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_STRENGTH_INCREASE_2">
+    <compendium display="false" />
+    <supports>Custom Ability Score Increase 2</supports>
+    <requirements>ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI,!ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_STRENGTH_INCREASE_1</requirements>
+    <description><p>Your Strength score increases by 2.</p></description>
+    <sheet display="false" />
+    <setters><set name="allow duplicate">false</set></setters>
+    <rules><stat name="strength" value="2" alt="Racial Ability Score Increase" /></rules>
+  </element>
+  <element name="Dexterity" type="Ability Score Improvement" source="Internal" id="ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_DEXTERITY_INCREASE_2">
+    <compendium display="false" />
+    <supports>Custom Ability Score Increase 2</supports>
+    <requirements>ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI,!ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_DEXTERITY_INCREASE_1</requirements>
+    <description><p>Your Dexterity score increases by 2.</p></description>
+    <sheet display="false" />
+    <setters><set name="allow duplicate">false</set></setters>
+    <rules><stat name="dexterity" value="2" alt="Racial Ability Score Increase" /></rules>
+  </element>
+  <element name="Constitution" type="Ability Score Improvement" source="Internal" id="ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_CONSTITUTION_INCREASE_2">
+    <compendium display="false" />
+    <supports>Custom Ability Score Increase 2</supports>
+    <requirements>ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI,!ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_CONSTITUTION_INCREASE_1</requirements>
+    <description><p>Your Constitution score increases by 2.</p></description>
+    <sheet display="false" />
+    <setters><set name="allow duplicate">false</set></setters>
+    <rules><stat name="constitution" value="2" alt="Racial Ability Score Increase" /></rules>
+  </element>
+  <element name="Intelligence" type="Ability Score Improvement" source="Internal" id="ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_INTELLIGENCE_INCREASE_2">
+    <compendium display="false" />
+    <supports>Custom Ability Score Increase 2</supports>
+    <requirements>ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI,!ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_INTELLIGENCE_INCREASE_1</requirements>
+    <description><p>Your Intelligence score increases by 2.</p></description>
+    <sheet display="false" />
+    <setters><set name="allow duplicate">false</set></setters>
+    <rules><stat name="intelligence" value="2" alt="Racial Ability Score Increase" /></rules>
+  </element>
+  <element name="Wisdom" type="Ability Score Improvement" source="Internal" id="ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_WISDOM_INCREASE_2">
+    <compendium display="false" />
+    <supports>Custom Ability Score Increase 2</supports>
+    <requirements>ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI,!ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_WISDOM_INCREASE_1</requirements>
+    <description><p>Your Wisdom score increases by 2.</p></description>
+    <sheet display="false" />
+    <setters><set name="allow duplicate">false</set></setters>
+    <rules><stat name="wisdom" value="2" alt="Racial Ability Score Increase" /></rules>
+  </element>
+  <element name="Charisma" type="Ability Score Improvement" source="Internal" id="ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_CHARISMA_INCREASE_2">
+    <compendium display="false" />
+    <supports>Custom Ability Score Increase 2</supports>
+    <requirements>ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI,!ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_CHARISMA_INCREASE_1</requirements>
+    <description><p>Your Charisma score increases by 2.</p></description>
+    <sheet display="false" />
+    <setters><set name="allow duplicate">false</set></setters>
+    <rules><stat name="charisma" value="2" alt="Racial Ability Score Increase" /></rules>
+  </element>
+
+  <element name="Strength" type="Ability Score Improvement" source="Internal" id="ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_STRENGTH_INCREASE_1">
+    <compendium display="false" />
+    <supports>Custom Ability Score Increase 1</supports>
+    <requirements>ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI,!ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_STRENGTH_INCREASE_2</requirements>
+    <description><p>Your Strength score increases by 1.</p></description>
+    <sheet display="false" />
+    <setters><set name="allow duplicate">false</set></setters>
+    <rules><stat name="strength" value="1" alt="Racial Ability Score Increase" /></rules>
+  </element>
+  <element name="Dexterity" type="Ability Score Improvement" source="Internal" id="ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_DEXTERITY_INCREASE_1">
+    <compendium display="false" />
+    <supports>Custom Ability Score Increase 1</supports>
+    <requirements>ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI,!ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_DEXTERITY_INCREASE_2</requirements>
+    <description><p>Your Dexterity score increases by 1.</p></description>
+    <sheet display="false" />
+    <setters><set name="allow duplicate">false</set></setters>
+    <rules><stat name="dexterity" value="1" alt="Racial Ability Score Increase" /></rules>
+  </element>
+  <element name="Constitution" type="Ability Score Improvement" source="Internal" id="ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_CONSTITUTION_INCREASE_1">
+    <compendium display="false" />
+    <supports>Custom Ability Score Increase 1</supports>
+    <requirements>ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI,!ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_CONSTITUTION_INCREASE_2</requirements>
+    <description><p>Your Constitution score increases by 1.</p></description>
+    <sheet display="false" />
+    <setters><set name="allow duplicate">false</set></setters>
+    <rules><stat name="constitution" value="1" alt="Racial Ability Score Increase" /></rules>
+  </element>
+  <element name="Intelligence" type="Ability Score Improvement" source="Internal" id="ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_INTELLIGENCE_INCREASE_1">
+    <compendium display="false" />
+    <supports>Custom Ability Score Increase 1</supports>
+    <requirements>ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI,!ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_INTELLIGENCE_INCREASE_2</requirements>
+    <description><p>Your Intelligence score increases by 1.</p></description>
+    <sheet display="false" />
+    <setters><set name="allow duplicate">false</set></setters>
+    <rules><stat name="intelligence" value="1" alt="Racial Ability Score Increase" /></rules>
+  </element>
+  <element name="Wisdom" type="Ability Score Improvement" source="Internal" id="ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_WISDOM_INCREASE_1">
+    <compendium display="false" />
+    <supports>Custom Ability Score Increase 1</supports>
+    <requirements>ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI,!ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_WISDOM_INCREASE_2</requirements>
+    <description><p>Your Wisdom score increases by 1.</p></description>
+    <sheet display="false" />
+    <setters><set name="allow duplicate">false</set></setters>
+    <rules><stat name="wisdom" value="1" alt="Racial Ability Score Increase" /></rules>
+  </element>
+  <element name="Charisma" type="Ability Score Improvement" source="Internal" id="ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_CHARISMA_INCREASE_1">
+    <compendium display="false" />
+    <supports>Custom Ability Score Increase 1</supports>
+    <requirements>ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI,!ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_CHARISMA_INCREASE_2</requirements>
+    <description><p>Your Charisma score increases by 1.</p></description>
+    <sheet display="false" />
+    <setters><set name="allow duplicate">false</set></setters>
+    <rules><stat name="charisma" value="1" alt="Racial Ability Score Increase" /></rules>
+  </element>
+
 </elements>

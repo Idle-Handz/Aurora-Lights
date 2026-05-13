@@ -31,7 +31,7 @@
                             <div class="picker-item @(isSelected ? "picker-item-selected" : "")"
                                  @onclick="() => SelectResult(r)">
                                 <div class="picker-item-name">@r.Name</div>
-                                <div style="font-size: 10px; color: #6c7086; margin-top: 1px;">@r.Type</div>
+                                <div style="font-size: 10px; color: var(--mud-palette-text-disabled); margin-top: 1px;">@r.Type</div>
                             </div>
                         }
                     </div>
@@ -43,10 +43,10 @@
                 @if (_selected != null)
                 {
                     <div class="picker-detail-name">@_selected.Name</div>
-                    <div style="font-size: 11px; color: #89b4fa; margin-bottom: 4px;">@_selected.Type</div>
+                    <div style="font-size: 11px; color: var(--mud-palette-primary); margin-bottom: 4px;">@_selected.Type</div>
                     @if (!string.IsNullOrWhiteSpace(_selected.Source))
                     {
-                        <div style="font-size: 10px; color: #6c7086; margin-bottom: 8px;">@_selected.Source</div>
+                        <div style="font-size: 10px; color: var(--mud-palette-text-disabled); margin-bottom: 8px;">@_selected.Source</div>
                     }
 
                     @if (!string.IsNullOrWhiteSpace(_selected.Description))
@@ -59,7 +59,7 @@
                     }
 
                     <div style="margin-top: 16px; display: flex; align-items: center; gap: 10px;">
-                        <MudText Style="font-size: 13px; color: #cdd6f4;">Quantity:</MudText>
+                        <MudText Style="font-size: 13px; color: var(--mud-palette-text-primary);">Quantity:</MudText>
                         <MudNumericField @bind-Value="_amount"
                                          Min="1" Max="999"
                                          Variant="Variant.Outlined"

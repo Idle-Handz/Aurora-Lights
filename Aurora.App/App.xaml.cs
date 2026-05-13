@@ -14,7 +14,10 @@ public partial class App : Application
     protected override Window CreateWindow(IActivationState? activationState)
     {
         DebugLogService.Instance.Info("App.CreateWindow entered.");
-        var window = new Window(new MainPage());
+        var window = new Window(new MainPage())
+        {
+            Title = AppIdentityService.DefaultAppName
+        };
         DebugLogService.Instance.Info("App.CreateWindow completed.");
         return window;
     }

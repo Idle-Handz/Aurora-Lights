@@ -37,7 +37,7 @@
                 <button type="button"
                         class="source-restrictions-toggle"
                         @onclick="() => OnToggleGroup.InvokeAsync(group.Id)"
-                        disabled="@Busy || !group.AllowUnchecking">
+                        disabled="@(Busy || !group.AllowUnchecking)">
                     <span class="source-restrictions-checkbox @(GetCheckClass(group.IsChecked, group.AllowUnchecking))"></span>
                     <span style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0;">
                         <strong>@group.Name</strong>
@@ -52,7 +52,7 @@
                     <button type="button"
                             class="source-restrictions-item @(item.AllowUnchecking ? string.Empty : "locked")"
                             @onclick="() => OnToggleItem.InvokeAsync(item.Id)"
-                            disabled="@Busy || !item.AllowUnchecking">
+                            disabled="@(Busy || !item.AllowUnchecking)">
                         <span class="source-restrictions-checkbox @(GetCheckClass(item.IsChecked, item.AllowUnchecking))"></span>
                         <span class="source-restrictions-item-name">@item.Name</span>
                         @if (item.IsCore)

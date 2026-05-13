@@ -64,6 +64,40 @@ internal sealed class MauiSelectionRuleExpanderHandler : ISelectionRuleExpanderH
         if (selectionRule == null || string.IsNullOrEmpty(id))
             return;
 
+        var key = $"{selectionRule.UniqueIdentifier}:{number}";
+
+        // List-type rules (Bond, Ideal, Flaw, Personality Trait, etc.) use inline <item>
+        // elements rather than element IDs. Register the list item directly and add it to
+        // the parent element's SelectionRuleListItems so CharacterManager.SetCharacterDetails
+        // can pick it up and populate FillableBackgroundCharacteristics.
+        if (selectionRule.Attributes.IsList)
+        {
+            var listItem = selectionRule.Attributes.ListItems?
+                .FirstOrDefault(li => li.ID.ToString() == id);
+            if (listItem == null)
+            {
+                Logger.Warning($"[MauiExpander] list item {id} not found in rule '{selectionRule.Attributes.Name}'");
+                return;
+            }
+
+            _registered[key] = listItem;
+
+            // Add to parent element's dictionary so SetCharacterDetails picks it up.
+            string itemKey = $"{selectionRule.Attributes.Name}:{number}";
+            try
+            {
+                var parentEl = CharacterManager.Current.GetElements()
+                    .FirstOrDefault(e => e.Id == selectionRule.ElementHeader.Id);
+                if (parentEl != null)
+                {
+                    parentEl.SelectionRuleListItems.Remove(itemKey);
+                    parentEl.SelectionRuleListItems.Add(itemKey, listItem);
+                }
+            }
+            catch { }
+            return;
+        }
+
         var element = DataManager.Current.ElementsCollection.GetElement(id);
         if (element == null)
         {
@@ -73,7 +107,6 @@ internal sealed class MauiSelectionRuleExpanderHandler : ISelectionRuleExpanderH
 
         // If this slot already has a selection (e.g. user is changing a feat mid-session),
         // unregister the previous element first so it doesn't persist alongside the new one.
-        var key = $"{selectionRule.UniqueIdentifier}:{number}";
         if (_registered.TryGetValue(key, out var previous) && previous is Builder.Data.ElementBase prev)
         {
             try { CharacterManager.Current.UnregisterElement(prev); }
@@ -279,6 +312,9 @@ internal sealed class MauiCharacterSheetGenerator : ICharacterSheetGenerator
 {
     public FileInfo GenerateNewSheet(string outputPath, bool isPreview)
     {
+#if ANDROID
+        throw new PlatformNotSupportedException("PDF export is not available on Android.");
+#else
         var cm          = CharacterManager.Current;
         var character   = cm.Character;
         var elements    = cm.GetElements();
@@ -352,6 +388,7 @@ internal sealed class MauiCharacterSheetGenerator : ICharacterSheetGenerator
         }
 
         return sheet.Save(outputPath);
+#endif
     }
 
     // ── Main sheet content ───────────────────────────────────────────────────

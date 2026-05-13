@@ -1,8 +1,10 @@
 @page "/settings"
 @implements IDisposable
+@using Aurora.Importer
 @inject ContentDatabaseService ContentDb
 @inject ContentService Content
 @inject CharacterService Characters
+@inject ContentDatabaseParityService Parity
 @inject CharacterTabService Tabs
 @inject NavigationManager Nav
 @inject ISnackbar Snackbar
@@ -64,6 +66,74 @@
                     <MudRadio Value="HpMethod.Average" Color="Color.Primary">Average</MudRadio>
                     <MudRadio Value="HpMethod.Rolled"  Color="Color.Primary">Rolled</MudRadio>
                 </MudRadioGroup>
+            </div>
+
+            <div class="pref-row" style="margin-top: 16px;">
+                <div class="pref-row-text">
+                    <div class="pref-row-title">Allow feats</div>
+                    <div class="pref-row-desc">
+                        When enabled, new characters can forgo an Ability Score Improvement to take a feat
+                        instead. Per-character control is available on the Manage page.
+                    </div>
+                </div>
+                <MudSwitch Value="Prefs.DefaultFeats"
+                           ValueChanged="@((bool v) => Prefs.DefaultFeats = v)"
+                           Color="Color.Primary" />
+            </div>
+
+            <div class="pref-row" style="margin-top: 16px;">
+                <div class="pref-row-text">
+                    <div class="pref-row-title">Allow multiclassing</div>
+                    <div class="pref-row-desc">
+                        When enabled, new characters can gain levels in more than one class.
+                        Per-character control is available on the Manage page.
+                    </div>
+                </div>
+                <MudSwitch Value="Prefs.DefaultMulticlassing"
+                           ValueChanged="@((bool v) => Prefs.DefaultMulticlassing = v)"
+                           Color="Color.Primary" />
+            </div>
+
+            <div class="pref-row" style="margin-top: 16px;">
+                <div class="pref-row-text">
+                    <div class="pref-row-title">Customized ability score increases</div>
+                    <div class="pref-row-desc">
+                        When enabled, new characters default to allowing racial ability score increases to be
+                        moved to any ability scores of your choice — keeping the same split (+2 to one, +1 to another).
+                        Per-character control is available on the Manage page.
+                    </div>
+                </div>
+                <MudSwitch Value="Prefs.DefaultCustomOrigin"
+                           ValueChanged="@((bool v) => Prefs.DefaultCustomOrigin = v)"
+                           Color="Color.Primary" />
+            </div>
+
+            <div class="pref-row" style="margin-top: 16px;">
+                <div class="pref-row-text">
+                    <div class="pref-row-title">Customized language</div>
+                    <div class="pref-row-desc">
+                        When enabled, new characters default to allowing the fixed racial language to be
+                        swapped for any other standard language of your choice.
+                        Per-character control is available on the Manage page.
+                    </div>
+                </div>
+                <MudSwitch Value="Prefs.DefaultCustomLanguage"
+                           ValueChanged="@((bool v) => Prefs.DefaultCustomLanguage = v)"
+                           Color="Color.Primary" />
+            </div>
+
+            <div class="pref-row" style="margin-top: 16px;">
+                <div class="pref-row-text">
+                    <div class="pref-row-title">Customized proficiencies</div>
+                    <div class="pref-row-desc">
+                        When enabled, new characters default to allowing fixed racial skill proficiencies to be
+                        swapped for any other skill proficiency of your choice.
+                        Per-character control is available on the Manage page.
+                    </div>
+                </div>
+                <MudSwitch Value="Prefs.DefaultCustomProficiency"
+                           ValueChanged="@((bool v) => Prefs.DefaultCustomProficiency = v)"
+                           Color="Color.Primary" />
             </div>
         </div>
 
@@ -136,251 +206,290 @@
     <!-- ── Content ──────────────────────────────────────────────────────────── -->
     <MudTabPanel Text="Content">
 
-        <div class="pref-section">
-            <div class="section-label">Database</div>
-            <div class="pref-row-desc" style="margin-bottom: 16px;">
-                Manage the installed content database and keep it in sync with your content directory.
-            </div>
+        <MudTabs Elevation="0" Rounded="false" ApplyEffectsToContainer="true" PanelClass="pt-3">
 
-            <div style="margin-bottom: 12px;">
-                <div class="pref-row-title" style="margin-bottom: 4px;">Content directory</div>
-                <div style="font-family: monospace; font-size: 12px; color: var(--mud-palette-text-secondary, #a6adc8); word-break: break-all;">
-                    @(string.IsNullOrWhiteSpace(ContentDb.ContentDirectory) ? "(not available)" : ContentDb.ContentDirectory)
-                </div>
-            </div>
+            <!-- ── Data sub-tab ───────────────────────────────────────────────── -->
+            <MudTabPanel Text="Data">
 
-            <div style="margin-bottom: 12px;">
-                <div class="pref-row-title" style="margin-bottom: 4px;">Database path</div>
-                <div style="font-family: monospace; font-size: 12px; color: var(--mud-palette-text-secondary, #a6adc8); word-break: break-all;">
-                    @(ContentDb.DatabasePath ?? "(not available)")
-                </div>
-            </div>
-
-            <div style="margin-bottom: 16px;">
-                <div class="pref-row-title" style="margin-bottom: 4px;">Status</div>
-                @if (ContentDb.SyncState == ContentDatabaseSyncState.Syncing)
-                {
-                    <div style="color: #89b4fa; font-size: 13px;">
-                        @(ContentDb.Progress?.PhaseLabel ?? "Syncing...")
+                <div class="pref-section">
+                    <div class="section-label">Database</div>
+                    <div class="pref-row-desc" style="margin-bottom: 16px;">
+                        Manage the installed content database and keep it in sync with your content directory.
                     </div>
-                    <MudProgressLinear Indeterminate="false"
-                                       Value="@SyncPercent"
-                                       Min="0" Max="100"
-                                       Color="Color.Primary"
-                                       Class="mt-2" />
-                }
-                else if (ContentDb.LastResult != null)
-                {
-                    <div style="color: @(ContentDb.LastResult.Success ? "#a6e3a1" : "#f38ba8"); font-size: 13px;">
-                        @ContentDb.LastResult.Summary
-                    </div>
-                }
-                else if (ContentDb.IsStale)
-                {
-                    <div style="color: #fab387; font-size: 13px;">Database is out of date. Sync to update it.</div>
-                }
-                else
-                {
-                    <div style="font-size: 13px; color: var(--mud-palette-text-disabled, #6c7086);">Not checked yet.</div>
-                }
-            </div>
 
-            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <MudButton Variant="Variant.Outlined"
-                           Color="Color.Default"
-                           Size="Size.Small"
-                           Disabled="@(ContentDb.SyncState == ContentDatabaseSyncState.Syncing)"
-                           OnClick="CheckStaleAsync">
-                    Check for Changes
-                </MudButton>
-                <MudButton Variant="Variant.Filled"
-                           Color="Color.Primary"
-                           Size="Size.Small"
-                           Disabled="@(ContentDb.SyncState == ContentDatabaseSyncState.Syncing || string.IsNullOrWhiteSpace(ContentDb.ContentDirectory))"
-                           OnClick="SyncNowAsync">
-                    Sync Now
-                </MudButton>
-                @if (ContentDb.SyncState == ContentDatabaseSyncState.Done && Tabs.Tabs.Count == 0)
-                {
-                    <MudButton Variant="Variant.Outlined"
-                               Color="Color.Secondary"
-                               Size="Size.Small"
-                               OnClick="ReloadElementsAsync">
-                        Reload Elements
-                    </MudButton>
-                }
-            </div>
-
-            @if (ContentDb.SyncState == ContentDatabaseSyncState.Done && ContentDb.LastResult?.Success == true && Tabs.Tabs.Count > 0)
-            {
-                <MudAlert Severity="Severity.Info" Class="mt-4" Dense="true">
-                    Close all character tabs and click <strong>Reload Elements</strong> to use the updated database.
-                </MudAlert>
-            }
-        </div>
-
-        <div class="pref-section" style="margin-top: 24px;">
-            <div class="section-label">Packages</div>
-            <div class="pref-row-desc" style="margin-bottom: 12px;">
-                Enable or disable individual content packages. Disabled packages are excluded from element
-                resolution. Reload elements after making changes for them to take effect.
-            </div>
-
-            @{
-                var packages = ContentDb.GetPackages();
-            }
-            @if (packages.Count == 0)
-            {
-                <div style="font-size: 13px; color: var(--mud-palette-text-disabled, #6c7086);">
-                    No packages found. Sync the content database first.
-                </div>
-            }
-            else
-            {
-                <div style="display: flex; flex-direction: column; gap: 4px;">
-                    @foreach (var pkg in packages)
-                    {
-                        var p = pkg;
-                        <div style="display: flex; align-items: center; gap: 10px; padding: 6px 10px; background: var(--mud-palette-background-grey, #181825); border-radius: 6px;">
-                            <MudSwitch Value="@p.IsEnabled"
-                                       Color="Color.Primary"
-                                       ValueChanged="@((bool v) => TogglePackageAsync(p.Id, v))"
-                                       Style="margin: 0;" />
-                            <div style="flex: 1; min-width: 0;">
-                                <div style="font-size: 13px; color: var(--mud-palette-text-primary, #cdd6f4); font-weight: 500;">@p.PackageName</div>
-                                <div style="font-size: 11px; color: var(--mud-palette-text-disabled, #6c7086); font-family: monospace;">@p.PackageKey</div>
-                            </div>
-                            <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; padding: 2px 8px; border-radius: 999px; background: #313244; color: @KindColor(p.PackageKind);">
-                                @p.PackageKind
-                            </div>
+                    <div style="margin-bottom: 12px;">
+                        <div class="pref-row-title" style="margin-bottom: 4px;">Content directory</div>
+                        <div style="font-family: monospace; font-size: 12px; color: var(--mud-palette-text-secondary); word-break: break-all;">
+                            @(string.IsNullOrWhiteSpace(ContentDb.ContentDirectory) ? "(not available)" : ContentDb.ContentDirectory)
                         </div>
-                    }
-                </div>
-            }
-        </div>
+                    </div>
 
-        <div class="pref-section" style="margin-top: 24px;">
-            <div class="section-label">Sources</div>
+                    <div style="margin-bottom: 12px;">
+                        <div class="pref-row-title" style="margin-bottom: 4px;">Database path</div>
+                        <div style="font-family: monospace; font-size: 12px; color: var(--mud-palette-text-secondary); word-break: break-all;">
+                            @(ContentDb.DatabasePath ?? "(not available)")
+                        </div>
+                    </div>
 
-            <div style="margin-bottom: 16px;">
-                <div class="pref-row-title" style="margin-bottom: 4px;">Built-in custom directory</div>
-                <div style="font-family: monospace; font-size: 12px; color: var(--mud-palette-text-secondary, #a6adc8); word-break: break-all;">
-                    @Content.BuiltInCustomDirectory
-                </div>
-                <div class="pref-row-desc" style="margin-top: 4px;">
-                    Place XML files or .index files here and reload elements to pick them up.
-                </div>
-            </div>
-
-            <div style="margin-bottom: 6px;">
-                <div class="pref-row-title">Additional content directories</div>
-                <div class="pref-row-desc" style="margin-bottom: 10px;">
-                    Extra folders containing Aurora XML content, useful for homebrew or
-                    third-party content stored outside the built-in custom directory.
-                </div>
-
-                @if (Content.AdditionalDirectories.Count == 0)
-                {
-                    <div style="font-size: 13px; color: var(--mud-palette-text-disabled, #6c7086); margin-bottom: 8px;">No additional directories configured.</div>
-                }
-                else
-                {
-                    <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px;">
-                        @foreach (var dir in Content.AdditionalDirectories.ToList())
+                    <div style="margin-bottom: 16px;">
+                        <div class="pref-row-title" style="margin-bottom: 4px;">Status</div>
+                        @if (ContentDb.SyncState == ContentDatabaseSyncState.Syncing)
                         {
-                            var d = dir;
-                            <div style="display: flex; align-items: center; gap: 8px; background: var(--mud-palette-background-grey, #181825); border-radius: 6px; padding: 6px 10px;">
-                                <span style="font-family: monospace; font-size: 12px; color: var(--mud-palette-text-primary, #cdd6f4); flex: 1; word-break: break-all;">@d</span>
-                                <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
-                                               Size="Size.Small"
-                                               title="Remove"
-                                               OnClick="() => RemoveDirectory(d)"
-                                               Style="padding: 2px; flex-shrink: 0;" />
+                            <div style="color: var(--mud-palette-primary); font-size: 13px;">
+                                @(ContentDb.Progress?.PhaseLabel ?? "Syncing...")
+                            </div>
+                            <MudProgressLinear Indeterminate="false"
+                                               Value="@SyncPercent"
+                                               Min="0" Max="100"
+                                               Color="Color.Primary"
+                                               Class="mt-2" />
+                        }
+                        else if (ContentDb.LastResult != null)
+                        {
+                            <div style="color: @(ContentDb.LastResult.Success ? "var(--mud-palette-success)" : "var(--mud-palette-error)"); font-size: 13px;">
+                                @ContentDb.LastResult.Summary
                             </div>
                         }
+                        else if (ContentDb.IsStale)
+                        {
+                            <div style="color: var(--mud-palette-warning); font-size: 13px;">Database is out of date. Sync to update it.</div>
+                        }
+                        else
+                        {
+                            <div style="font-size: 13px; color: var(--mud-palette-text-disabled);">Not checked yet.</div>
+                        }
                     </div>
-                }
 
-                <div style="display: flex; gap: 8px; align-items: flex-start; margin-top: 4px;">
-                    <MudTextField @bind-Value="_newDirPath"
-                                  Label="Folder path"
-                                  Placeholder="C:\path\to\homebrew\content"
-                                  Variant="Variant.Outlined"
-                                  Margin="Margin.Dense"
-                                  Style="flex: 1; font-size: 13px;"
-                                  Immediate="true"
-                                  @onkeydown="OnDirKeyDown" />
-                    <MudButton Variant="Variant.Outlined"
-                               Color="Color.Primary"
-                               Size="Size.Small"
-                               Disabled="@string.IsNullOrWhiteSpace(_newDirPath)"
-                               OnClick="AddDirectory"
-                               Style="margin-top: 4px; white-space: nowrap;">
-                        Add
-                    </MudButton>
-                </div>
-            </div>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <MudButton Variant="Variant.Outlined"
+                                   Color="Color.Default"
+                                   Size="Size.Small"
+                                   Disabled="@(ContentDb.SyncState == ContentDatabaseSyncState.Syncing)"
+                                   OnClick="CheckStaleAsync">
+                            Check for Changes
+                        </MudButton>
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   Size="Size.Small"
+                                   Disabled="@(ContentDb.SyncState == ContentDatabaseSyncState.Syncing || string.IsNullOrWhiteSpace(ContentDb.ContentDirectory))"
+                                   OnClick="SyncNowAsync">
+                            Sync Now
+                        </MudButton>
+                        @if (ContentDb.SyncState == ContentDatabaseSyncState.Done && Tabs.Tabs.Count == 0)
+                        {
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Secondary"
+                                       Size="Size.Small"
+                                       OnClick="ReloadElementsAsync">
+                                Reload Elements
+                            </MudButton>
+                        }
+                    </div>
 
-            <div style="margin-top: 24px;">
-                <div class="pref-row-title">Content index files (.index)</div>
-                <div class="pref-row-desc" style="margin-bottom: 10px;">
-                    Paste a URL ending in <code>.index</code> to register it, then check for updates
-                    to download the content. Requires a network connection.
-                </div>
-
-                <div style="display: flex; gap: 8px; align-items: flex-start; margin-bottom: 10px;">
-                    <MudTextField @bind-Value="_indexUrl"
-                                  Label="Index URL"
-                                  Placeholder="https://raw.githubusercontent.com/.../core.index"
-                                  Variant="Variant.Outlined"
-                                  Margin="Margin.Dense"
-                                  Style="flex: 1; font-size: 13px;"
-                                  Disabled="_contentWorking" />
-                    <MudButton Variant="Variant.Outlined"
-                               Color="Color.Primary"
-                               Size="Size.Small"
-                               Disabled="@(_contentWorking || string.IsNullOrWhiteSpace(_indexUrl))"
-                               OnClick="FetchIndexAsync"
-                               Style="margin-top: 4px; white-space: nowrap;">
-                        Fetch Index
-                    </MudButton>
-                </div>
-
-                <MudButton Variant="Variant.Outlined"
-                           Color="Color.Default"
-                           StartIcon="@Icons.Material.Filled.Sync"
-                           Size="Size.Small"
-                           Disabled="_contentWorking"
-                           OnClick="CheckForUpdatesAsync">
-                    Check for Updates
-                </MudButton>
-            </div>
-
-            @if (_needsContentReload)
-            {
-                <MudAlert Severity="Severity.Info" Class="mt-4" Dense="true">
-                    Content changes will not take effect until elements are reloaded.
-                    @if (Content.HasOpenTabs)
+                    @if (ContentDb.SyncState == ContentDatabaseSyncState.Done && ContentDb.LastResult?.Success == true && Tabs.Tabs.Count > 0)
                     {
-                        <span> Open characters will be closed.</span>
+                        <MudAlert Severity="Severity.Info" Class="mt-4" Dense="true">
+                            Close all character tabs and click <strong>Reload Elements</strong> to use the updated database.
+                        </MudAlert>
                     }
-                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
-                               Disabled="_contentWorking"
-                               OnClick="ReloadContentAsync"
-                               Style="margin-left: 12px;">
-                        @(_contentWorking ? "Reloading..." : "Reload Now")
-                    </MudButton>
-                </MudAlert>
-            }
+                </div>
 
-            @if (_contentStatus != null)
-            {
-                <MudAlert Severity="@_contentStatusSeverity" Class="mt-3" Dense="true"
-                          ShowCloseIcon="true" CloseIconClicked="() => _contentStatus = null">
-                    @_contentStatus
-                </MudAlert>
-            }
-        </div>
+            </MudTabPanel>
+
+            <!-- ── Sources sub-tab ────────────────────────────────────────────── -->
+            <MudTabPanel Text="Sources">
+
+                <div class="pref-section" style="margin-bottom: 24px;">
+                    <div class="section-label">Sources</div>
+                    <div class="pref-row-desc" style="margin-bottom: 10px;">
+                        Enable or disable individual content sources. Disabled sources are excluded
+                        from element resolution. Reload elements after making changes for them to take effect.
+                    </div>
+                    @{
+                        var packages = ContentDb.GetPackages();
+                        IReadOnlyList<ContentPackageInfo> filteredPackages = string.IsNullOrWhiteSpace(_packageSearch)
+                            ? packages
+                            : packages.Where(p =>
+                                p.PackageName.Contains(_packageSearch, StringComparison.OrdinalIgnoreCase) ||
+                                p.PackageKey.Contains(_packageSearch, StringComparison.OrdinalIgnoreCase) ||
+                                p.PackageKind.Contains(_packageSearch, StringComparison.OrdinalIgnoreCase)).ToList();
+                    }
+                    @if (packages.Count == 0)
+                    {
+                        <div style="font-size: 13px; color: var(--mud-palette-text-disabled);">
+                            No sources found. Sync the content database first.
+                        </div>
+                    }
+                    else
+                    {
+                        <MudTextField @bind-Value="_packageSearch"
+                                      Placeholder="Search sources…"
+                                      Adornment="Adornment.Start"
+                                      AdornmentIcon="@Icons.Material.Filled.Search"
+                                      Clearable="true"
+                                      Immediate="true"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      Class="mb-3" />
+                        @if (!filteredPackages.Any())
+                        {
+                            <div style="font-size: 13px; color: var(--mud-palette-text-disabled);">No sources match your search.</div>
+                        }
+                        else
+                        {
+                            <div style="display: flex; flex-direction: column; gap: 4px; max-height: 320px; overflow-y: auto;">
+                                @foreach (var pkg in filteredPackages)
+                                {
+                                    var p = pkg;
+                                    <div style="display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 6px; background: var(--mud-palette-background-grey);">
+                                        <MudSwitch Value="p.IsEnabled"
+                                                   ValueChanged="@((bool v) => TogglePackageAsync(p.Id, v))"
+                                                   Color="Color.Primary"
+                                                   Style="margin: 0;" />
+                                        <span style="font-size: 13px; color: var(--mud-palette-text-primary); flex: 1;">@p.PackageName</span>
+                                        <MudChip T="string" Size="Size.Small"
+                                                 Style="@($"background: {KindColor(p.PackageKind)}22; color: {KindColor(p.PackageKind)}; font-size: 11px; height: 20px; border-radius: 4px;")">
+                                            @p.PackageKind
+                                        </MudChip>
+                                    </div>
+                                }
+                            </div>
+                            @if (filteredPackages.Count < packages.Count)
+                            {
+                                <div style="font-size: 12px; color: var(--mud-palette-text-disabled); margin-top: 6px;">
+                                    Showing @filteredPackages.Count of @packages.Count sources.
+                                </div>
+                            }
+                        }
+                    }
+                </div>
+
+                <div class="pref-section">
+
+                    <div style="margin-bottom: 16px;">
+                        <div class="pref-row-title" style="margin-bottom: 4px;">Built-in custom directory</div>
+                        <div style="font-family: monospace; font-size: 12px; color: var(--mud-palette-text-secondary); word-break: break-all;">
+                            @Content.BuiltInCustomDirectory
+                        </div>
+                        <div class="pref-row-desc" style="margin-top: 4px;">
+                            Place XML files or .index files here and reload elements to pick them up.
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 6px;">
+                        <div class="pref-row-title">Additional content directories</div>
+                        <div class="pref-row-desc" style="margin-bottom: 10px;">
+                            Extra folders containing Aurora XML content, useful for homebrew or
+                            third-party content stored outside the built-in custom directory.
+                        </div>
+
+                        @if (Content.AdditionalDirectories.Count == 0)
+                        {
+                            <div style="font-size: 13px; color: var(--mud-palette-text-disabled); margin-bottom: 8px;">No additional directories configured.</div>
+                        }
+                        else
+                        {
+                            <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px;">
+                                @foreach (var dir in Content.AdditionalDirectories.ToList())
+                                {
+                                    var d = dir;
+                                    <div style="display: flex; align-items: center; gap: 8px; background: var(--mud-palette-background-grey); border-radius: 6px; padding: 6px 10px;">
+                                        <span style="font-family: monospace; font-size: 12px; color: var(--mud-palette-text-primary); flex: 1; word-break: break-all;">@d</span>
+                                        <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
+                                                       Size="Size.Small"
+                                                       title="Remove"
+                                                       OnClick="() => RemoveDirectory(d)"
+                                                       Style="padding: 2px; flex-shrink: 0;" />
+                                    </div>
+                                }
+                            </div>
+                        }
+
+                        <div style="display: flex; gap: 8px; align-items: flex-start; margin-top: 4px;">
+                            <MudTextField @bind-Value="_newDirPath"
+                                          Label="Folder path"
+                                          Placeholder="C:\path\to\homebrew\content"
+                                          Variant="Variant.Outlined"
+                                          Margin="Margin.Dense"
+                                          Style="flex: 1; font-size: 13px;"
+                                          Immediate="true"
+                                          @onkeydown="OnDirKeyDown" />
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Primary"
+                                       Size="Size.Small"
+                                       Disabled="@string.IsNullOrWhiteSpace(_newDirPath)"
+                                       OnClick="AddDirectory"
+                                       Style="margin-top: 4px; white-space: nowrap;">
+                                Add
+                            </MudButton>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 24px;">
+                        <div class="pref-row-title">Content index files (.index)</div>
+                        <div class="pref-row-desc" style="margin-bottom: 10px;">
+                            Paste a URL ending in <code>.index</code> to register it, then check for updates
+                            to download the content. Requires a network connection.
+                        </div>
+
+                        <div style="display: flex; gap: 8px; align-items: flex-start; margin-bottom: 10px;">
+                            <MudTextField @bind-Value="_indexUrl"
+                                          Label="Index URL"
+                                          Placeholder="https://raw.githubusercontent.com/.../core.index"
+                                          Variant="Variant.Outlined"
+                                          Margin="Margin.Dense"
+                                          Style="flex: 1; font-size: 13px;"
+                                          Disabled="_contentWorking" />
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Primary"
+                                       Size="Size.Small"
+                                       Disabled="@(_contentWorking || string.IsNullOrWhiteSpace(_indexUrl))"
+                                       OnClick="FetchIndexAsync"
+                                       Style="margin-top: 4px; white-space: nowrap;">
+                                Fetch Index
+                            </MudButton>
+                        </div>
+
+                        <MudButton Variant="Variant.Outlined"
+                                   Color="Color.Default"
+                                   StartIcon="@Icons.Material.Filled.Sync"
+                                   Size="Size.Small"
+                                   Disabled="_contentWorking"
+                                   OnClick="CheckForUpdatesAsync">
+                            Check for Updates
+                        </MudButton>
+                    </div>
+
+                    @if (_needsContentReload)
+                    {
+                        <MudAlert Severity="Severity.Info" Class="mt-4" Dense="true">
+                            Content changes will not take effect until elements are reloaded.
+                            @if (Content.HasOpenTabs)
+                            {
+                                <span> Open characters will be closed.</span>
+                            }
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
+                                       Disabled="_contentWorking"
+                                       OnClick="ReloadContentAsync"
+                                       Style="margin-left: 12px;">
+                                @(_contentWorking ? "Reloading..." : "Reload Now")
+                            </MudButton>
+                        </MudAlert>
+                    }
+
+                    @if (_contentStatus != null)
+                    {
+                        <MudAlert Severity="@_contentStatusSeverity" Class="mt-3" Dense="true"
+                                  ShowCloseIcon="true" CloseIconClicked="() => _contentStatus = null">
+                            @_contentStatus
+                        </MudAlert>
+                    }
+
+                </div>
+
+            </MudTabPanel>
+
+        </MudTabs>
 
     </MudTabPanel>
 
@@ -422,10 +531,32 @@
                         {
                             <div class="pref-row-desc">Schema version: @Characters.ElementLoadSchemaVersion.Value</div>
                         }
+                        @if (Characters.ElementLoadDataVersion.HasValue)
+                        {
+                            <div class="pref-row-desc">Data version: @Characters.ElementLoadDataVersion.Value</div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(Characters.ElementLoadImporterVersion))
+                        {
+                            <div class="pref-row-desc">Importer version: @Characters.ElementLoadImporterVersion</div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(Characters.ElementLoadBuiltUtc))
+                        {
+                            <div class="pref-row-desc">DB built: @FormatUtc(Characters.ElementLoadBuiltUtc)</div>
+                        }
+                        @if (Characters.ElementLoadSourceFileCount.HasValue)
+                        {
+                            <div class="pref-row-desc">Indexed files: @Characters.ElementLoadSourceFileCount.Value</div>
+                        }
                         @if (!string.IsNullOrWhiteSpace(Characters.ElementLoadDatabasePath))
                         {
                             <div class="pref-row-desc" style="font-family: monospace; word-break: break-all;">
                                 DB path: @Characters.ElementLoadDatabasePath
+                            </div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(Characters.ElementLoadContentRootHash))
+                        {
+                            <div class="pref-row-desc" style="font-family: monospace; word-break: break-all;">
+                                Content hash: @Characters.ElementLoadContentRootHash
                             </div>
                         }
                         @if (!string.IsNullOrWhiteSpace(Characters.ElementLoadFailureReason))
@@ -441,6 +572,117 @@
             }
         </div>
 
+        @if (Prefs.DevMode)
+        {
+            <div class="pref-section" style="margin-top: 24px;">
+                <div class="section-label">Database Diagnostics</div>
+
+                @{
+                    var dbMeta = ContentDb.GetMetadata();
+                }
+                @if (dbMeta != null)
+                {
+                    <div style="margin-bottom: 16px;">
+                        <div class="pref-row-title" style="margin-bottom: 4px;">Database metadata</div>
+                        <div class="pref-row-desc">Schema v@dbMeta.SchemaVersion, data v@dbMeta.DataVersion, importer @dbMeta.ImporterVersion</div>
+                        <div class="pref-row-desc">Built: @FormatUtc(dbMeta.BuiltUtc)</div>
+                        <div class="pref-row-desc">Indexed files: @dbMeta.SourceFileCount, elements: @dbMeta.ElementCount</div>
+                    </div>
+                }
+
+                @if (_dbHealth != null)
+                {
+                    <div style="margin-bottom: 16px;">
+                        <div class="pref-row-title" style="margin-bottom: 6px;">Content health</div>
+                        <MudAlert Severity="@HealthSeverity(_dbHealth)"
+                                  Dense="true"
+                                  Variant="Variant.Outlined"
+                                  Class="mb-2">
+                            @HealthSummary(_dbHealth)
+                        </MudAlert>
+                        <div class="pref-row-desc">Actionable unresolved links: @_dbHealth.ActionableUnresolvedLinks</div>
+                        <div class="pref-row-desc">Classified unresolved links: @_dbHealth.ClassifiedUnresolvedLinks</div>
+                        <div class="pref-row-desc">Source integrity issues: @_dbHealth.SourceIntegrityIssues</div>
+                        <div class="pref-row-desc">Missing spell rows: @_dbHealth.MissingResolvedSpellRows</div>
+                        <div class="pref-row-desc">Missing item rows: @_dbHealth.MissingResolvedItemRows</div>
+                        <div class="pref-row-desc">Missing companion rows: @_dbHealth.MissingResolvedCompanionRows</div>
+                    </div>
+                }
+
+                <div style="margin-bottom: 16px;">
+                    <div class="pref-row-title" style="margin-bottom: 6px;">Database vs XML parity</div>
+                    <div class="pref-row-desc" style="margin-bottom: 10px;">
+                        Runs the XML parser pipeline in isolation and compares its element snapshot to the SQLite reconstruction path.
+                        This is slower than the health check, so it runs only when requested.
+                    </div>
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Secondary"
+                               Size="Size.Small"
+                               Disabled="_parityRunning"
+                               OnClick="RunParityAuditAsync">
+                        @(_parityRunning ? "Running parity audit..." : "Run Parity Audit")
+                    </MudButton>
+                </div>
+
+                @if (_dbParity != null)
+                {
+                    <div style="margin-bottom: 16px;">
+                        <MudAlert Severity="@ParitySeverity(_dbParity)"
+                                  Dense="true"
+                                  Variant="Variant.Outlined"
+                                  Class="mb-2">
+                            @ParitySummary(_dbParity)
+                        </MudAlert>
+                        @if (_dbParity.Success)
+                        {
+                            <div class="pref-row-desc">XML elements: @_dbParity.XmlElementCount</div>
+                            <div class="pref-row-desc">Database elements: @_dbParity.DatabaseElementCount</div>
+                            <div class="pref-row-desc">XML skipped during audit: @_dbParity.XmlSkippedElements</div>
+                            <div class="pref-row-desc">Database skipped during audit: @_dbParity.DatabaseSkippedElements</div>
+                            <div class="pref-row-desc">Missing from DB: @_dbParity.MissingInDatabaseCount</div>
+                            <div class="pref-row-desc">Missing from XML: @_dbParity.MissingInXmlCount</div>
+                            @if (_dbParity.MissingInDatabaseSample.Count > 0)
+                            {
+                                <div class="pref-row-title" style="margin-top: 10px; margin-bottom: 4px;">Present in XML but missing from DB (sample)</div>
+                                @foreach (string id in _dbParity.MissingInDatabaseSample)
+                                {
+                                    <div class="pref-row-desc" style="font-family: monospace;">@id</div>
+                                }
+                            }
+                            @if (_dbParity.MissingInXmlSample.Count > 0)
+                            {
+                                <div class="pref-row-title" style="margin-top: 10px; margin-bottom: 4px;">Present in DB but missing from XML (sample)</div>
+                                @foreach (string id in _dbParity.MissingInXmlSample)
+                                {
+                                    <div class="pref-row-desc" style="font-family: monospace;">@id</div>
+                                }
+                            }
+                            @if (_dbParity.TypeMismatches.Count > 0)
+                            {
+                                <div class="pref-row-title" style="margin-top: 10px; margin-bottom: 4px;">Type count mismatches</div>
+                                @foreach (var mismatch in _dbParity.TypeMismatches)
+                                {
+                                    <div class="pref-row-desc">@mismatch.Key: XML @mismatch.XmlCount, DB @mismatch.DatabaseCount</div>
+                                }
+                            }
+                            @if (_dbParity.SourceMismatches.Count > 0)
+                            {
+                                <div class="pref-row-title" style="margin-top: 10px; margin-bottom: 4px;">Source count mismatches</div>
+                                @foreach (var mismatch in _dbParity.SourceMismatches)
+                                {
+                                    <div class="pref-row-desc">@mismatch.Key: XML @mismatch.XmlCount, DB @mismatch.DatabaseCount</div>
+                                }
+                            }
+                        }
+                        else if (!string.IsNullOrWhiteSpace(_dbParity.FailureReason))
+                        {
+                            <div class="pref-row-desc">@_dbParity.FailureReason</div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+
     </MudTabPanel>
 
 </MudTabs>
@@ -450,15 +692,20 @@
 
     private string _indexUrl = "";
     private string _newDirPath = "";
+    private string _packageSearch = "";
     private string? _contentStatus;
     private Severity _contentStatusSeverity = Severity.Success;
     private bool _contentWorking;
+    private bool _parityRunning;
     private bool _needsContentReload;
+    private ContentDatabaseHealthReport? _dbHealth;
+    private ContentDatabaseParityReport? _dbParity;
 
     protected override void OnInitialized()
     {
         ContentDb.StateChanged += OnStateChanged;
         Content.Changed += OnContentChanged;
+        RefreshDatabaseDiagnostics();
     }
 
     private async Task TogglePackageAsync(long packageId, bool enabled)
@@ -477,7 +724,11 @@
         _ => "#6c7086",
     };
 
-    private void OnStateChanged() => InvokeAsync(StateHasChanged);
+    private void OnStateChanged() => InvokeAsync(() =>
+    {
+        RefreshDatabaseDiagnostics();
+        StateHasChanged();
+    });
     private void OnContentChanged() => InvokeAsync(StateHasChanged);
 
     private int SyncPercent
@@ -508,12 +759,14 @@
         _cts?.Cancel();
         _cts = new CancellationTokenSource();
         await ContentDb.SyncAsync(_cts.Token);
+        RefreshDatabaseDiagnostics();
     }
 
     private async Task ReloadElementsAsync()
     {
         Tabs.CloseAllTabs();
         await Characters.ReloadElementsAsync();
+        RefreshDatabaseDiagnostics();
     }
 
     private void RemoveDirectory(string path)
@@ -530,7 +783,12 @@
     private void AddDirectory()
     {
         string path = _newDirPath.Trim();
-        if (string.IsNullOrEmpty(path)) return;
+        if (string.IsNullOrEmpty(path))
+        {
+            _contentStatus = "Enter a directory path first.";
+            _contentStatusSeverity = Severity.Warning;
+            return;
+        }
 
         if (!Directory.Exists(path))
         {
@@ -544,6 +802,74 @@
         _needsContentReload = true;
         _contentStatus = null;
     }
+
+    private static string FormatUtc(string? utcText)
+    {
+        if (string.IsNullOrWhiteSpace(utcText)) return "Unknown";
+        return DateTime.TryParse(
+            utcText,
+            System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal,
+            out var parsed)
+            ? parsed.ToString("yyyy-MM-dd HH:mm:ss 'UTC'")
+            : utcText;
+    }
+
+    private void RefreshDatabaseDiagnostics()
+    {
+        _dbHealth = ContentDb.GetHealthReport();
+    }
+
+    private static Severity ParitySeverity(ContentDatabaseParityReport report) => report.Status switch
+    {
+        ContentDatabaseParityStatus.Healthy => Severity.Success,
+        ContentDatabaseParityStatus.Warning => Severity.Warning,
+        ContentDatabaseParityStatus.Error => Severity.Error,
+        _ => Severity.Info
+    };
+
+    private static string ParitySummary(ContentDatabaseParityReport report) => report.Status switch
+    {
+        ContentDatabaseParityStatus.Healthy => "SQLite and XML snapshots matched in this audit run.",
+        ContentDatabaseParityStatus.Warning => "Parity audit matched structurally, but one of the loaders skipped elements during reconstruction.",
+        ContentDatabaseParityStatus.Error when !report.Success => $"Parity audit failed: {report.FailureReason}",
+        ContentDatabaseParityStatus.Error => $"Parity audit found {report.TotalMismatchCount} mismatch bucket(s) between XML and SQLite snapshots.",
+        _ => "Parity audit status is unavailable."
+    };
+
+    private async Task RunParityAuditAsync()
+    {
+        _parityRunning = true;
+        try
+        {
+            _dbParity = await Parity.RunAsync();
+        }
+        finally
+        {
+            _parityRunning = false;
+        }
+    }
+
+    private static Severity HealthSeverity(ContentDatabaseHealthReport health) => health.Status switch
+    {
+        ContentDatabaseHealthStatus.Healthy => Severity.Success,
+        ContentDatabaseHealthStatus.Warning => Severity.Warning,
+        ContentDatabaseHealthStatus.Error => Severity.Error,
+        _ => Severity.Info
+    };
+
+    private static string HealthSummary(ContentDatabaseHealthReport health) => health.Status switch
+    {
+        ContentDatabaseHealthStatus.Healthy
+            => health.ClassifiedUnresolvedLinks > 0
+                ? $"Content database looks healthy. {health.ClassifiedUnresolvedLinks} known unresolved link(s) were classified as non-actionable."
+                : "Content database looks healthy.",
+        ContentDatabaseHealthStatus.Warning
+            => $"Content database has {health.ActionableUnresolvedLinks} actionable unresolved link(s) to review.",
+        ContentDatabaseHealthStatus.Error
+            => $"Content database has {health.TotalIssues} issue(s) affecting trust or typed projections.",
+        _ => "Content health is unavailable."
+    };
 
     private async Task FetchIndexAsync()
     {

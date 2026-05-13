@@ -1,0 +1,11 @@
+<svg width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="auroraGrad" x1="18" y1="82" x2="73" y2="14" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F38BA8"/>
+      <stop offset="0.45" stop-color="#F97316"/>
+      <stop offset="1" stop-color="#F9E2AF"/>
+    </linearGradient>
+  </defs>
+  <path d="M48 10L72 34L61 36L75 60L57 57L48 84L39 57L21 60L35 36L24 34L48 10Z" fill="url(#auroraGrad)"/>
+  <path d="M48 26L57 44H51L58 57L48 72L38 57L45 44H39L48 26Z" fill="#1E1E2E"/>
+</svg>

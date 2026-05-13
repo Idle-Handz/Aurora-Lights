@@ -82,6 +82,115 @@ a {
     color: inherit;
 }
 
+.mud-layout {
+    min-height: 100vh;
+    background: var(--aurora-bg);
+}
+
+.web-main-content {
+    min-height: calc(100vh - 64px - 28px);
+    padding-bottom: 3rem !important;
+}
+
+.app-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.app-brand-mark {
+    display: grid;
+    width: 34px;
+    height: 34px;
+    flex: 0 0 auto;
+    place-items: center;
+    border: 1px solid rgba(137, 180, 250, 0.48);
+    border-radius: 8px;
+    background: #313244;
+    color: var(--aurora-primary);
+    font-size: 1rem;
+    font-weight: 900;
+}
+
+.app-brand-text {
+    display: grid;
+    min-width: 0;
+    line-height: 1.1;
+}
+
+.app-brand-title {
+    overflow: hidden;
+    color: var(--aurora-ink);
+    font-size: 0.95rem;
+    font-weight: 800;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.app-brand-subtitle {
+    color: var(--aurora-muted);
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+
+.appbar-search-form {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    width: min(32vw, 360px);
+    min-width: 260px;
+    height: 40px;
+    border: 1px solid var(--aurora-border);
+    border-radius: 4px;
+    background: var(--aurora-panel-soft);
+}
+
+.appbar-search-icon {
+    margin-left: 12px;
+    color: var(--aurora-muted);
+}
+
+.appbar-search-input {
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--aurora-ink);
+    font: inherit;
+}
+
+.appbar-search-input::placeholder {
+    color: var(--aurora-muted);
+}
+
+.appbar-search-submit {
+    display: grid;
+    width: 40px;
+    height: 38px;
+    place-items: center;
+    border: 0;
+    background: transparent;
+    color: var(--aurora-ink);
+    cursor: pointer;
+}
+
+.web-status-bar {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    height: 28px;
+    padding: 0 12px;
+    border-top: 1px solid var(--aurora-border);
+    background: var(--aurora-panel-soft);
+    color: var(--aurora-muted);
+}
+
 .shell {
     display: grid;
     grid-template-columns: 280px minmax(0, 1fr);
@@ -632,6 +741,11 @@ button.action-link:disabled {
 }
 
 @media (max-width: 640px) {
+    .app-brand-subtitle,
+    .appbar-search-form {
+        display: none;
+    }
+
     .shell-main {
         padding: 1rem;
     }

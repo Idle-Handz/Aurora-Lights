@@ -1,11 +1,13 @@
 using Aurora.Web.Components;
 using Aurora.Web.Services;
+using MudBlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+builder.Services.AddMudServices();
 builder.Services.AddOptions<PhaseZeroSessionOptions>()
     .Bind(builder.Configuration.GetSection(PhaseZeroSessionOptions.SectionName));
 builder.Services.AddSingleton<BaselineContentCatalogService>();

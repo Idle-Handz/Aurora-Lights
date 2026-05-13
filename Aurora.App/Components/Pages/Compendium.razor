@@ -16,6 +16,12 @@
             Loading...
         </MudChip>
     }
+    else if (_isSearching)
+    {
+        <MudChip T="string" Variant="Variant.Outlined" Color="Color.Primary">
+            Searching...
+        </MudChip>
+    }
     else if (!_hasSearched)
     {
         <MudChip T="string" Variant="Variant.Outlined" Color="Color.Default">
@@ -30,149 +36,101 @@
     }
 </MudStack>
 
-<MudGrid>
-    <MudItem xs="12" md="4" lg="3">
-        <MudPaper Class="pa-4 compendium-panel">
-            <MudStack Spacing="2">
-                <MudText Typo="Typo.subtitle1">Filters</MudText>
-                <MudTextField T="string"
-                              Label="Search"
-                              Placeholder="Name, source, or keyword"
-                              Adornment="Adornment.Start"
-                              AdornmentIcon="@Icons.Material.Filled.Search"
-                              Value="_query"
-                              ValueChanged="OnQueryChanged"
-                              OnKeyDown="HandleSearchKeyDown"
-                              Disabled="_isLoadingCatalog" />
-
-                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="compendium-helper-text">
-                    @SearchHint
-                </MudText>
-
-                <MudSelect T="string" Label="Type" Value="_selectedType" ValueChanged="OnTypeChanged" Disabled="_isLoadingCatalog">
-                    @foreach (var type in _types)
-                    {
-                        <MudSelectItem Value="@type">@type</MudSelectItem>
-                    }
+@* ── Filter bar ── *@
+<MudPaper Class="pa-3 mb-3 compendium-panel">
+    <div class="compendium-filter-row">
+        <MudTextField T="string"
+                      Placeholder="Name, source, or keyword"
+                      Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search"
+                      Value="_query"
+                      ValueChanged="OnQueryChanged"
+                      OnKeyDown="HandleSearchKeyDown"
+                      Disabled="_isLoadingCatalog"
+                      Margin="Margin.Dense"
+                      Variant="Variant.Outlined"
+                      Class="compendium-filter-search" />
+        <MudSelect T="string" Label="Type" Value="_selectedType" ValueChanged="OnTypeChanged" Disabled="_isLoadingCatalog" Margin="Margin.Dense" Variant="Variant.Outlined" Class="compendium-filter-select">
+            @foreach (var type in _types) { <MudSelectItem Value="@type">@type</MudSelectItem> }
+        </MudSelect>
+        <MudSelect T="string" Label="Source" Value="_selectedSource" ValueChanged="OnSourceChanged" Disabled="_isLoadingCatalog" Margin="Margin.Dense" Variant="Variant.Outlined" Class="compendium-filter-select">
+            @foreach (var source in _sources) { <MudSelectItem Value="@source">@source</MudSelectItem> }
+        </MudSelect>
+        <div class="compendium-filter-actions">
+            <MudSwitch T="bool"
+                       Value="_currentCharacterSourcesOnly"
+                       ValueChanged="OnCurrentSourcesOnlyChanged"
+                       Disabled="@(!CanUseCharacterSources || _isLoadingCatalog)"
+                       Color="Color.Primary"
+                       Label="Current sources only" />
+            <MudButton Variant="Variant.Text"
+                       Color="Color.Default"
+                       StartIcon="@Icons.Material.Filled.Refresh"
+                       Disabled="_isLoadingCatalog"
+                       OnClick="ResetFilters">
+                Reset
+            </MudButton>
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Search"
+                       Disabled="@(_isLoadingCatalog || _isSearching)"
+                       OnClick="@(() => ExecuteSearchAsync())">
+                Search
+            </MudButton>
+        </div>
+    </div>
+    @if (ShowSpellFilters || ShowItemFilters || ShowCompanionFilters)
+    {
+        <div class="compendium-filter-row compendium-filter-row-secondary">
+            @if (ShowSpellFilters)
+            {
+                <MudSelect T="string" Label="Spell Level" Value="_selectedSpellLevel" ValueChanged="OnSpellLevelChanged" Disabled="_isLoadingCatalog" Margin="Margin.Dense" Variant="Variant.Outlined" Class="compendium-filter-select">
+                    @foreach (var level in _spellLevels) { <MudSelectItem Value="@level">@level</MudSelectItem> }
                 </MudSelect>
-
-                <MudSelect T="string" Label="Source" Value="_selectedSource" ValueChanged="OnSourceChanged" Disabled="_isLoadingCatalog">
-                    @foreach (var source in _sources)
-                    {
-                        <MudSelectItem Value="@source">@source</MudSelectItem>
-                    }
+                <MudSelect T="string" Label="School" Value="_selectedSpellSchool" ValueChanged="OnSpellSchoolChanged" Disabled="_isLoadingCatalog" Margin="Margin.Dense" Variant="Variant.Outlined" Class="compendium-filter-select">
+                    @foreach (var school in _spellSchools) { <MudSelectItem Value="@school">@school</MudSelectItem> }
                 </MudSelect>
+                <MudSelect T="string" Label="Class" Value="_selectedSpellClass" ValueChanged="OnSpellClassChanged" Disabled="_isLoadingCatalog" Margin="Margin.Dense" Variant="Variant.Outlined" Class="compendium-filter-select">
+                    @foreach (var spellClass in _spellClasses) { <MudSelectItem Value="@spellClass">@spellClass</MudSelectItem> }
+                </MudSelect>
+            }
+            @if (ShowItemFilters)
+            {
+                <MudSelect T="string" Label="Rarity" Value="_selectedItemRarity" ValueChanged="OnItemRarityChanged" Disabled="_isLoadingCatalog" Margin="Margin.Dense" Variant="Variant.Outlined" Class="compendium-filter-select">
+                    @foreach (var rarity in _itemRarities) { <MudSelectItem Value="@rarity">@rarity</MudSelectItem> }
+                </MudSelect>
+                <MudSelect T="string" Label="Attunement" Value="_selectedItemAttunement" ValueChanged="OnItemAttunementChanged" Disabled="_isLoadingCatalog" Margin="Margin.Dense" Variant="Variant.Outlined" Class="compendium-filter-select">
+                    <MudSelectItem T="string" Value="@("All")">All</MudSelectItem>
+                    <MudSelectItem T="string" Value="@("Requires Attunement")">Requires Attunement</MudSelectItem>
+                    <MudSelectItem T="string" Value="@("No Attunement")">No Attunement</MudSelectItem>
+                </MudSelect>
+            }
+            @if (ShowCompanionFilters)
+            {
+                <MudSelect T="string" Label="Creature Type" Value="_selectedCreatureType" ValueChanged="OnCreatureTypeChanged" Disabled="_isLoadingCatalog" Margin="Margin.Dense" Variant="Variant.Outlined" Class="compendium-filter-select">
+                    @foreach (var creatureType in _creatureTypes) { <MudSelectItem Value="@creatureType">@creatureType</MudSelectItem> }
+                </MudSelect>
+                <MudSelect T="string" Label="Size" Value="_selectedCreatureSize" ValueChanged="OnCreatureSizeChanged" Disabled="_isLoadingCatalog" Margin="Margin.Dense" Variant="Variant.Outlined" Class="compendium-filter-select">
+                    @foreach (var creatureSize in _creatureSizes) { <MudSelectItem Value="@creatureSize">@creatureSize</MudSelectItem> }
+                </MudSelect>
+                <MudSelect T="string" Label="Challenge" Value="_selectedCreatureChallenge" ValueChanged="OnCreatureChallengeChanged" Disabled="_isLoadingCatalog" Margin="Margin.Dense" Variant="Variant.Outlined" Class="compendium-filter-select">
+                    @foreach (var challenge in _creatureChallenges) { <MudSelectItem Value="@challenge">@challenge</MudSelectItem> }
+                </MudSelect>
+            }
+        </div>
+    }
+    <div class="compendium-filter-hints">
+        <MudText Typo="Typo.caption" Color="Color.Secondary">@SearchHint</MudText>
+        @if (!CanUseCharacterSources)
+        {
+            <MudText Typo="Typo.caption" Color="Color.Secondary">Open a character to filter by its active source restrictions.</MudText>
+        }
+    </div>
+</MudPaper>
 
-                @if (ShowSpellFilters || ShowItemFilters || ShowCompanionFilters)
-                {
-                    <MudExpansionPanels Elevation="0" Outlined="true" Class="compendium-advanced-filters">
-                        <MudExpansionPanel Text="More filters">
-                            <MudStack Spacing="2" Class="pt-2">
-                                @if (ShowSpellFilters)
-                                {
-                                    <MudSelect T="string" Label="Spell Level" Value="_selectedSpellLevel" ValueChanged="OnSpellLevelChanged" Disabled="_isLoadingCatalog">
-                                        @foreach (var level in _spellLevels)
-                                        {
-                                            <MudSelectItem Value="@level">@level</MudSelectItem>
-                                        }
-                                    </MudSelect>
-
-                                    <MudSelect T="string" Label="School" Value="_selectedSpellSchool" ValueChanged="OnSpellSchoolChanged" Disabled="_isLoadingCatalog">
-                                        @foreach (var school in _spellSchools)
-                                        {
-                                            <MudSelectItem Value="@school">@school</MudSelectItem>
-                                        }
-                                    </MudSelect>
-
-                                    <MudSelect T="string" Label="Class" Value="_selectedSpellClass" ValueChanged="OnSpellClassChanged" Disabled="_isLoadingCatalog">
-                                        @foreach (var spellClass in _spellClasses)
-                                        {
-                                            <MudSelectItem Value="@spellClass">@spellClass</MudSelectItem>
-                                        }
-                                    </MudSelect>
-                                }
-
-                                @if (ShowItemFilters)
-                                {
-                                    <MudSelect T="string" Label="Rarity" Value="_selectedItemRarity" ValueChanged="OnItemRarityChanged" Disabled="_isLoadingCatalog">
-                                        @foreach (var rarity in _itemRarities)
-                                        {
-                                            <MudSelectItem Value="@rarity">@rarity</MudSelectItem>
-                                        }
-                                    </MudSelect>
-
-                                    <MudSelect T="string" Label="Attunement" Value="_selectedItemAttunement" ValueChanged="OnItemAttunementChanged" Disabled="_isLoadingCatalog">
-                                        <MudSelectItem T="string" Value="@("All")">All</MudSelectItem>
-                                        <MudSelectItem T="string" Value="@("Requires Attunement")">Requires Attunement</MudSelectItem>
-                                        <MudSelectItem T="string" Value="@("No Attunement")">No Attunement</MudSelectItem>
-                                    </MudSelect>
-                                }
-
-                                @if (ShowCompanionFilters)
-                                {
-                                    <MudSelect T="string" Label="Creature Type" Value="_selectedCreatureType" ValueChanged="OnCreatureTypeChanged" Disabled="_isLoadingCatalog">
-                                        @foreach (var creatureType in _creatureTypes)
-                                        {
-                                            <MudSelectItem Value="@creatureType">@creatureType</MudSelectItem>
-                                        }
-                                    </MudSelect>
-
-                                    <MudSelect T="string" Label="Size" Value="_selectedCreatureSize" ValueChanged="OnCreatureSizeChanged" Disabled="_isLoadingCatalog">
-                                        @foreach (var creatureSize in _creatureSizes)
-                                        {
-                                            <MudSelectItem Value="@creatureSize">@creatureSize</MudSelectItem>
-                                        }
-                                    </MudSelect>
-
-                                    <MudSelect T="string" Label="Challenge" Value="_selectedCreatureChallenge" ValueChanged="OnCreatureChallengeChanged" Disabled="_isLoadingCatalog">
-                                        @foreach (var challenge in _creatureChallenges)
-                                        {
-                                            <MudSelectItem Value="@challenge">@challenge</MudSelectItem>
-                                        }
-                                    </MudSelect>
-                                }
-                            </MudStack>
-                        </MudExpansionPanel>
-                    </MudExpansionPanels>
-                }
-
-                <MudSwitch T="bool"
-                           Value="_currentCharacterSourcesOnly"
-                           ValueChanged="OnCurrentSourcesOnlyChanged"
-                           Disabled="@(!CanUseCharacterSources || _isLoadingCatalog)"
-                           Color="Color.Primary"
-                           Label="Current character sources only" />
-
-                @if (!CanUseCharacterSources)
-                {
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">
-                        Open a character to filter results by that character's active source restrictions.
-                    </MudText>
-                }
-
-                <MudDivider Class="my-2" />
-
-                <MudButton Variant="Variant.Text"
-                           Color="Color.Primary"
-                           StartIcon="@Icons.Material.Filled.Refresh"
-                           Disabled="_isLoadingCatalog"
-                           OnClick="ResetFilters">
-                    Reset Filters
-                </MudButton>
-
-                <MudButton Variant="Variant.Filled"
-                           Color="Color.Primary"
-                           StartIcon="@Icons.Material.Filled.Search"
-                           Disabled="_isLoadingCatalog"
-                           OnClick="@(() => ExecuteSearchAsync())">
-                    Search
-                </MudButton>
-            </MudStack>
-        </MudPaper>
-    </MudItem>
-
-    <MudItem xs="12" md="4" lg="4">
-        <MudPaper Class="pa-2 compendium-panel compendium-results-panel">
+@* ── Results + Details ── *@
+<div class="compendium-body">
+    <MudPaper Class="pa-2 compendium-panel compendium-results-panel">
             <div class="compendium-panel-header">
                 <MudText Typo="Typo.subtitle1">Results</MudText>
                 @if (_hasSearched && !_isLoadingCatalog)
@@ -188,6 +146,13 @@
                     <MudProgressCircular Color="Color.Primary" Indeterminate="true" Class="mb-2" />
                     <MudText Typo="Typo.h6">Building compendium index</MudText>
                     <MudText Color="Color.Secondary">Loading installed content metadata for search.</MudText>
+                </div>
+            }
+            else if (_isSearching)
+            {
+                <div class="compendium-empty-state">
+                    <MudProgressCircular Color="Color.Primary" Indeterminate="true" Class="mb-2" />
+                    <MudText Typo="Typo.h6">Searching...</MudText>
                 </div>
             }
             else if (!_hasSearched)
@@ -272,10 +237,7 @@
                 </MudList>
             }
         </MudPaper>
-    </MudItem>
-
-    <MudItem xs="12" md="4" lg="5">
-        <MudPaper Class="pa-4 compendium-panel compendium-detail-panel">
+    <MudPaper Class="pa-4 compendium-panel compendium-detail-panel">
             <div class="compendium-panel-header">
                 <MudText Typo="Typo.subtitle1">Details</MudText>
             </div>
@@ -385,8 +347,7 @@
                 }
             }
         </MudPaper>
-    </MudItem>
-</MudGrid>
+</div>
 
 @code {
     [SupplyParameterFromQuery(Name = "id")]
@@ -420,6 +381,7 @@
     private string _selectedCreatureChallenge = "All";
     private bool _currentCharacterSourcesOnly;
     private bool _isLoadingCatalog = true;
+    private bool _isSearching;
     private bool _hasSearched;
     private bool _disposed;
 
@@ -570,32 +532,50 @@
         if (_currentCharacterSourcesOnly && CanUseCharacterSources && _restrictedSources.Count == 0)
             await LoadRestrictedSourcesAsync();
 
-        _filteredEntries = CompendiumData.Filter(
-            _catalog,
-            _query,
-            _selectedType,
-            _selectedSource,
-            ShowSpellFilters ? _selectedSpellLevel : "All",
-            ShowSpellFilters ? _selectedSpellSchool : "All",
-            ShowSpellFilters ? _selectedSpellClass : "All",
-            ShowItemFilters ? _selectedItemRarity : "All",
-            ShowItemFilters ? _selectedItemAttunement : "All",
-            ShowCompanionFilters ? _selectedCreatureType : "All",
-            ShowCompanionFilters ? _selectedCreatureSize : "All",
-            ShowCompanionFilters ? _selectedCreatureChallenge : "All",
-            _currentCharacterSourcesOnly ? _restrictedSources : null).ToList();
+        _isSearching = true;
+        await InvokeAsync(StateHasChanged);
 
-        if (selectRequestedId && !string.IsNullOrWhiteSpace(RequestedId))
+        try
         {
-            _selectedEntry = _filteredEntries.FirstOrDefault(e => string.Equals(e.Id, RequestedId, StringComparison.Ordinal))
-                ?? _catalog.FirstOrDefault(e => string.Equals(e.Id, RequestedId, StringComparison.Ordinal));
+            var catalog = _catalog;
+            var query = _query;
+            var selectedType = _selectedType;
+            var selectedSource = _selectedSource;
+            var spellLevel = ShowSpellFilters ? _selectedSpellLevel : "All";
+            var spellSchool = ShowSpellFilters ? _selectedSpellSchool : "All";
+            var spellClass = ShowSpellFilters ? _selectedSpellClass : "All";
+            var itemRarity = ShowItemFilters ? _selectedItemRarity : "All";
+            var itemAttunement = ShowItemFilters ? _selectedItemAttunement : "All";
+            var creatureType = ShowCompanionFilters ? _selectedCreatureType : "All";
+            var creatureSize = ShowCompanionFilters ? _selectedCreatureSize : "All";
+            var creatureChallenge = ShowCompanionFilters ? _selectedCreatureChallenge : "All";
+            ISet<string>? restrictedSources = _currentCharacterSourcesOnly
+                ? new HashSet<string>(_restrictedSources, StringComparer.OrdinalIgnoreCase)
+                : null;
+
+            _filteredEntries = await Task.Run(() => CompendiumData.Filter(
+                catalog, query, selectedType, selectedSource,
+                spellLevel, spellSchool, spellClass,
+                itemRarity, itemAttunement,
+                creatureType, creatureSize, creatureChallenge,
+                restrictedSources).ToList());
+
+            if (selectRequestedId && !string.IsNullOrWhiteSpace(RequestedId))
+            {
+                _selectedEntry = _filteredEntries.FirstOrDefault(e => string.Equals(e.Id, RequestedId, StringComparison.Ordinal))
+                    ?? _catalog.FirstOrDefault(e => string.Equals(e.Id, RequestedId, StringComparison.Ordinal));
+            }
+
+            if (_selectedEntry is not null && !_filteredEntries.Any(entry => string.Equals(entry.Id, _selectedEntry.Id, StringComparison.Ordinal)))
+                _selectedEntry = _filteredEntries.FirstOrDefault();
+
+            if (_selectedEntry is not null)
+                _selectedEntry = await CompendiumData.EnrichEntryAsync(_selectedEntry);
         }
-
-        if (_selectedEntry is not null && !_filteredEntries.Any(entry => string.Equals(entry.Id, _selectedEntry.Id, StringComparison.Ordinal)))
-            _selectedEntry = _filteredEntries.FirstOrDefault();
-
-        if (_selectedEntry is not null)
-            _selectedEntry = await CompendiumData.EnrichEntryAsync(_selectedEntry);
+        finally
+        {
+            _isSearching = false;
+        }
     }
 
     private async Task LoadRestrictedSourcesAsync()

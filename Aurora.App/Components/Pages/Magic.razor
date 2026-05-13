@@ -26,7 +26,7 @@
 @if (!Prefs.AutoSaveBuildChanges)
 {
     <div class="page-save-bar">
-        <MudText Typo="Typo.caption" Style="color: #a6adc8;">Auto-save off</MudText>
+        <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">Auto-save off</MudText>
         <MudButton StartIcon="@Icons.Material.Filled.Save"
                    Color="Color.Primary"
                    Variant="Variant.Filled"
@@ -231,7 +231,11 @@
     private async Task ManualSaveAsync()
     {
         var tab = Tabs.ActiveTab;
-        if (tab == null) return;
+        if (tab == null)
+        {
+            WarnUnavailable("There is no active character to save right now.");
+            return;
+        }
         _saving = true;
         StateHasChanged();
         var error = await BuildService.SaveTabAsync(tab);
@@ -260,6 +264,7 @@
             || entryIndex < 0
             || entryIndex >= _spellRuleGroups[groupIndex].Rules.Count)
         {
+            WarnUnavailable("That spell choice is no longer available. Try reloading the character tab.");
             return;
         }
 
@@ -270,7 +275,11 @@
     {
         var tab = Tabs.ActiveTab;
         var file = Characters.CurrentCharacterFile;
-        if (tab == null || file == null) return;
+        if (tab == null || file == null)
+        {
+            WarnUnavailable("That spell choice is not available right now. Try again once the character finishes loading.");
+            return;
+        }
 
         var options = await Task.Run(() => BuildService.GetOptions(entry.Rule));
 
@@ -323,16 +332,28 @@
 
     private async Task OnPreparedChangedAsync(MagicPreparedChangeModel change)
     {
-        if (_snap is null || Tabs.ActiveTab is not { } tab) return;
+        if (_snap is null || Tabs.ActiveTab is not { } tab)
+        {
+            WarnUnavailable("Prepared spell changes are unavailable because there is no active character.");
+            return;
+        }
 
         var section = _snap.SpellcastingSections
             .FirstOrDefault(candidate => string.Equals(candidate.UniqueIdentifier, change.SpellcastingSectionId, StringComparison.Ordinal));
-        if (section is null) return;
+        if (section is null)
+        {
+            WarnUnavailable("That spellcasting section is no longer available. Try reloading the character tab.");
+            return;
+        }
 
         SpellEntry? spell = section.SpellLevels
             .SelectMany(level => level.Spells)
             .FirstOrDefault(candidate => string.Equals(candidate.Id, change.SpellId, StringComparison.Ordinal));
-        if (spell is null) return;
+        if (spell is null)
+        {
+            WarnUnavailable("That spell is no longer available in the active spell list.");
+            return;
+        }
 
         // Update the snapshot (UI) and the handler (serialisation source) atomically under the lock.
         using (await CharacterContext.EnterAsync(tab))
@@ -390,7 +411,11 @@
     private Task PersistSlotToggleAsync(MagicSlotToggleModel change)
     {
         var tab = Tabs.ActiveTab;
-        if (_snap is null || tab is null) return Task.CompletedTask;
+        if (_snap is null || tab is null)
+        {
+            WarnUnavailable("Spell slot changes are unavailable because there is no active character.");
+            return Task.CompletedTask;
+        }
 
         var used = tab.Session.SpellSlotsUsed.GetValueOrDefault(change.Level, 0);
         int newUsed = used == change.SlotIndex ? change.SlotIndex - 1 : change.SlotIndex;
@@ -412,8 +437,12 @@
         else
         {
             _saveError = "Spell slot changes could not be saved yet. The current slot state is still in memory.";
+            Snackbar.Add(_saveError, Severity.Warning, cfg => cfg.VisibleStateDuration = 3000);
         }
 
         return InvokeAsync(StateHasChanged);
     }
+
+    private void WarnUnavailable(string message) =>
+        Snackbar.Add(message, Severity.Warning, cfg => cfg.VisibleStateDuration = 2500);
 }

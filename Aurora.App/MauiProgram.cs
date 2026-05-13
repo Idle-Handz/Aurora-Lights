@@ -35,12 +35,14 @@ public static class MauiProgram
         builder.Services.AddMudServices();
 
         builder.Services.AddSingleton<MauiApplicationContext>(appContext);
+        builder.Services.AddSingleton<AppIdentityService>();
         builder.Services.AddSingleton<CharacterService>();
         builder.Services.AddSingleton<CharacterTabService>();
         builder.Services.AddSingleton<UserPreferencesService>();
         builder.Services.AddSingleton<CompendiumService>();
         builder.Services.AddSingleton<ContentService>();
         builder.Services.AddSingleton<ContentDatabaseService>();
+        builder.Services.AddSingleton<ContentDatabaseParityService>();
         builder.Services.AddSingleton<PdfImportService>();
         var debugLog = new DebugLogService();
         DebugLogService.Instance = debugLog;

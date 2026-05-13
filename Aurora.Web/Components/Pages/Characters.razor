@@ -14,7 +14,7 @@
             <CharacterCreationFields Model="_creationModel" />
 
             <div class="action-row">
-                <button class="action-link primary" @onclick="CreateCharacterAsync" disabled="@_busy || string.IsNullOrWhiteSpace(_creationModel.Name)">Create New Character</button>
+                <button class="action-link primary" @onclick="CreateCharacterAsync" disabled="@(_busy || string.IsNullOrWhiteSpace(_creationModel.Name))">Create New Character</button>
             </div>
         </div>
     </CreationContent>

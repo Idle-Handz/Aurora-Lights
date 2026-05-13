@@ -15,6 +15,59 @@ html, body {
     display: none;
 }
 
+.app-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.app-brand-icon {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    border-radius: 8px;
+    object-fit: cover;
+    object-position: center top;
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.25));
+}
+
+.app-brand-text {
+    min-width: 0;
+}
+
+.app-brand-title {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    color: var(--mud-palette-text-primary, #cdd6f4);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.about-dialog {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.about-dialog-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.about-dialog-mark {
+    width: 88px;
+    height: 88px;
+    flex-shrink: 0;
+    border-radius: 16px;
+    object-fit: cover;
+    object-position: center top;
+    filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.24));
+}
+
 /* Character card */
 .char-card {
     background: var(--mud-palette-surface, #313244);
@@ -248,17 +301,67 @@ html, body {
     border-bottom: 1px solid rgba(255,255,255,0.05);
 }
 
-.compendium-results-panel,
+.compendium-filter-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.compendium-filter-row-secondary {
+    margin-top: 10px;
+}
+
+.compendium-filter-search {
+    flex: 2;
+    min-width: 200px;
+}
+
+.compendium-filter-select {
+    flex: 1;
+    min-width: 130px;
+    max-width: 200px;
+}
+
+.compendium-filter-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.compendium-filter-hints {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.compendium-body {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.compendium-body .compendium-results-panel {
+    flex: 2;
+    min-width: 0;
+}
+
+.compendium-body .compendium-detail-panel {
+    flex: 3;
+    min-width: 0;
+}
+
+.compendium-results-panel {
+    max-height: calc(100vh - 390px);
+    min-height: 300px;
+    overflow-y: auto;
+}
+
 .compendium-detail-panel {
-    min-height: 64vh;
-}
-
-.compendium-helper-text {
-    margin-top: -4px;
-}
-
-.compendium-advanced-filters .mud-expand-panel {
-    background: transparent;
+    min-height: 300px;
 }
 
 .compendium-empty-state {
@@ -602,9 +705,7 @@ html, body {
     font-size: 13px;
     color: var(--mud-palette-text-primary, #cdd6f4);
 }
-.build-level-controls {
-    margin-top: 4px;
-}
+
 .build-section {
     background: var(--mud-palette-surface, #313244);
     border-radius: 6px;
@@ -719,6 +820,7 @@ html, body {
 .build-rule-row {
     display: flex;
     align-items: center;
+    cursor: pointer;
     gap: 10px;
     padding: 6px 8px;
     border-radius: 4px;
@@ -745,7 +847,7 @@ html, body {
     font-weight: 500;
     color: var(--mud-palette-text-primary, #cdd6f4);
 }
-.build-rule-empty { color: #585b70; font-style: italic; }
+.build-rule-empty { color: var(--mud-palette-text-disabled); font-style: italic; }
 .build-rule-btn {
     flex-shrink: 0;
     font-size: 11px;
@@ -759,8 +861,8 @@ html, body {
     transition: background 0.15s, border-color 0.15s;
 }
 .build-rule-btn:hover {
-    background: #1e3a5a;
-    border-color: #89b4fa;
+    background: color-mix(in srgb, var(--mud-palette-primary) 15%, transparent);
+    border-color: var(--mud-palette-primary);
 }
 
 /* ── Selection picker dialog ── */
@@ -896,53 +998,7 @@ html, body {
     align-items: start;
 }
 
-/* ── Gear slots ── */
-.gear-slots {
-    background: var(--mud-palette-background, #1e1e2e);
-    border: 1px solid var(--mud-palette-lines-default, #313244);
-    border-radius: 8px;
-    overflow: hidden;
-}
-.gear-row {
-    display: grid;
-    grid-template-columns: 100px 1fr auto;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 14px;
-    border-bottom: 1px solid var(--mud-palette-lines-default, #313244);
-}
-.gear-row:last-child { border-bottom: none; }
-.gear-slot-label {
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: #89b4fa;
-}
-.gear-slot-item  { font-size: 13px; color: var(--mud-palette-text-primary, #cdd6f4); }
-.gear-slot-empty { font-size: 13px; color: #45475a; font-style: italic; }
-.gear-slot-actions { display: flex; gap: 4px; align-items: center; }
-
 /* ── Gear slot picker dialog ── */
-.gear-inv-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    max-height: 100px;
-    overflow-y: auto;
-}
-.gear-inv-item {
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 12px;
-    color: var(--mud-palette-text-primary, #cdd6f4);
-    background: var(--mud-palette-surface, #313244);
-    border: 1px solid var(--mud-palette-lines-inputs, #45475a);
-    cursor: pointer;
-    transition: background 0.1s, border-color 0.1s;
-}
-.gear-inv-item:hover    { background: #45475a; }
-.gear-inv-selected      { background: #1e3a5f; border-color: #89b4fa; color: #89b4fa; }
 .gear-divider {
     text-align: center;
     font-size: 11px;
@@ -1995,7 +2051,7 @@ html, body {
 .ability-row-header  { background: var(--mud-palette-surface, #313244); border-bottom: 1px solid var(--mud-palette-lines-inputs, #45475a); }
 .ability-row-base    { background: var(--mud-palette-background, #1e1e2e); border-bottom: 1px solid var(--mud-palette-lines-default, #313244); padding: 8px 0; }
 .ability-row-asi     { background: var(--mud-palette-background-grey, #181825); border-bottom: 1px solid var(--mud-palette-lines-default, #313244); min-height: 36px; }
-.ability-row-total   { background: var(--mud-palette-background, #1e1e2e); border-bottom: 1px solid var(--mud-palette-lines-default, #313244); }
+.ability-row-total   { background: var(--mud-palette-background, #1e1e2e); border-bottom: 1px solid var(--mud-palette-lines-default, #313244); padding: 8px 0; }
 .ability-row-mod     { background: var(--mud-palette-background-grey, #181825); }
 
 /* Header row cells */
@@ -2167,6 +2223,7 @@ html, body {
 /* HP + Status side-by-side row */
 .session-pair-row {
     display: flex;
+    flex-wrap: wrap;
     gap: 12px;
     margin-bottom: 12px;
     align-items: stretch;

@@ -1,0 +1,83 @@
+name: Build Android APK (unsigned CI)
+on:
+  push:
+    paths:
+      - 'Aurora.App/**'
+      - 'Aurora.Logic/**'
+      - 'Aurora.Components/**'
+      - 'Aurora.Importer/**'
+      - 'lib/**'
+      - '.github/workflows/build-android.yml'
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    env:
+      PROJECT: Aurora.App/Aurora.App.csproj
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '10.0.101'
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'microsoft'
+          java-version: '17'
+
+      - name: Install MAUI Android workload
+        run: dotnet workload install maui-android --version 10.0.101.1
+
+      - name: Show SDK toolchain
+        run: dotnet --info
+
+      - name: Generate CI signing keystore
+        # Produces a throwaway self-signed key so the APK can be sideloaded.
+        # Replace with a stored secret keystore for Play Store distribution.
+        run: |
+          keytool -genkey -v \
+            -keystore "${{ github.workspace }}/aurora-ci.keystore" \
+            -alias aurora \
+            -keyalg RSA -keysize 2048 -validity 3650 \
+            -dname "CN=Aurora CI, OU=Dev, O=AuroraLights, L=Unknown, ST=Unknown, C=US" \
+            -storepass aurora-ci \
+            -keypass aurora-ci \
+            -noprompt
+
+      - name: Restore
+        run: dotnet restore "$PROJECT"
+
+      - name: Publish (android-arm64)
+        run: |
+          dotnet publish "$PROJECT" \
+            -f net10.0-android \
+            -r android-arm64 \
+            -c Release \
+            -p:AndroidSigningKeyStore="${{ github.workspace }}/aurora-ci.keystore" \
+            -p:AndroidSigningKeyAlias=aurora \
+            -p:AndroidSigningKeyPass=aurora-ci \
+            -p:AndroidSigningStorePass=aurora-ci
+
+      - name: Locate APK
+        id: find_apk
+        run: |
+          APK=$(find . -name "*-Signed.apk" -not -path "*/obj/*" | head -1)
+          if [ -z "$APK" ]; then
+            echo "Signed APK not found; falling back to any .apk"
+            APK=$(find . -name "*.apk" -not -path "*/obj/*" | head -1)
+          fi
+          echo "apk_path=$APK" >> "$GITHUB_OUTPUT"
+          echo "Found: $APK"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk-arm64
+          path: ${{ steps.find_apk.outputs.apk_path }}
+          if-no-files-found: error
+          retention-days: 30

@@ -1,6 +1,7 @@
 @page "/manage"
 @implements IDisposable
 @inject CharacterTabService Tabs
+@inject ISnackbar Snackbar
 @inject UserPreferencesService Prefs
 @using Builder.Presentation
 @using Builder.Presentation.Models.Sources
@@ -31,12 +32,87 @@
                                   OnSaveDefaults="SaveAsDefault" />
     </MudTabPanel>
 
+    <MudTabPanel Text="Options">
+        <div class="pref-section">
+            <div class="section-label">Optional Rules</div>
+
+            <div class="pref-row">
+                <div class="pref-row-text">
+                    <div class="pref-row-title">Allow feats</div>
+                    <div class="pref-row-desc">
+                        When enabled, this character can forgo an Ability Score Improvement to take a feat instead.
+                    </div>
+                </div>
+                <MudSwitch Value="BuildService.IsUsingFeats"
+                           ValueChanged="@((bool v) => SetOptionAsync(v, "feats"))"
+                           Disabled="@_optionSaving"
+                           Color="Color.Primary" />
+            </div>
+
+            <div class="pref-row" style="margin-top: 16px;">
+                <div class="pref-row-text">
+                    <div class="pref-row-title">Allow multiclassing</div>
+                    <div class="pref-row-desc">
+                        When enabled, this character can gain levels in more than one class.
+                    </div>
+                </div>
+                <MudSwitch Value="BuildService.IsUsingMulticlassing"
+                           ValueChanged="@((bool v) => SetOptionAsync(v, "multiclassing"))"
+                           Disabled="@_optionSaving"
+                           Color="Color.Primary" />
+            </div>
+
+            <div class="pref-row" style="margin-top: 16px;">
+                <div class="pref-row-text">
+                    <div class="pref-row-title">Customized ability score increases</div>
+                    <div class="pref-row-desc">
+                        Move racial ability score increases to any ability scores of your choice,
+                        keeping the same split (+2 to one ability, +1 to a different one).
+                    </div>
+                </div>
+                <MudSwitch Value="BuildService.IsUsingCustomOrigin"
+                           ValueChanged="@((bool v) => SetOptionAsync(v, "origin"))"
+                           Disabled="@_optionSaving"
+                           Color="Color.Primary" />
+            </div>
+
+            <div class="pref-row" style="margin-top: 16px;">
+                <div class="pref-row-text">
+                    <div class="pref-row-title">Customized language</div>
+                    <div class="pref-row-desc">
+                        Replace the fixed language granted by your race with any other standard language
+                        of your choice.
+                    </div>
+                </div>
+                <MudSwitch Value="BuildService.IsUsingCustomLanguage"
+                           ValueChanged="@((bool v) => SetOptionAsync(v, "language"))"
+                           Disabled="@_optionSaving"
+                           Color="Color.Primary" />
+            </div>
+
+            <div class="pref-row" style="margin-top: 16px;">
+                <div class="pref-row-text">
+                    <div class="pref-row-title">Customized proficiencies</div>
+                    <div class="pref-row-desc">
+                        Replace any fixed skill proficiency granted by your race with any other skill
+                        proficiency of your choice.
+                    </div>
+                </div>
+                <MudSwitch Value="BuildService.IsUsingCustomProficiency"
+                           ValueChanged="@((bool v) => SetOptionAsync(v, "proficiency"))"
+                           Disabled="@_optionSaving"
+                           Color="Color.Primary" />
+            </div>
+        </div>
+    </MudTabPanel>
+
 </MudTabs>
 
 @code {
     private CharacterSnapshot? _snap;
     private CharacterTab? _tab;
     private EditableCharacterInfoModel? _infoModel;
+    private bool _optionSaving;
     private IReadOnlyList<SourceRestrictionGroupModel> SourceGroups =>
         CharacterManager.Current.SourcesManager.SourceGroups.Select(ToGroupModel).ToList();
 
@@ -72,6 +148,26 @@
         Tabs.TabsChanged -= OnTabsChanged;
     }
 
+    private async Task SetOptionAsync(bool enabled, string which)
+    {
+        if (_tab is not { } tab) return;
+        _optionSaving = true;
+        StateHasChanged();
+        var error = which switch
+        {
+            "feats"        => await BuildService.SetFeatsOptionAsync(tab, enabled),
+            "multiclassing"=> await BuildService.SetMulticlassingOptionAsync(tab, enabled),
+            "origin"       => await BuildService.SetCustomOriginOptionAsync(tab, enabled),
+            "language"     => await BuildService.SetCustomLanguageOptionAsync(tab, enabled),
+            "proficiency"  => await BuildService.SetCustomProficiencyOptionAsync(tab, enabled),
+            _              => "Unknown option."
+        };
+        _optionSaving = false;
+        if (error != null)
+            Snackbar.Add($"Failed to update option: {error}", Severity.Error);
+        StateHasChanged();
+    }
+
     private Task MarkDirty()
     {
         if (_tab is { } tab && _snap is not null && _infoModel is not null)
@@ -85,21 +181,33 @@
 
     private async Task ToggleGroupInternal(SourcesGroup group)
     {
-        if (!group.AllowUnchecking) return;
+        if (!group.AllowUnchecking)
+        {
+            Snackbar.Add("That source group is required and can't be disabled.", Severity.Info, cfg => cfg.VisibleStateDuration = 2500);
+            return;
+        }
         group.SetIsChecked(group.IsChecked == true ? false : (bool?)true, updateChildren: true);
         await ApplyAndPersistRestrictions();
     }
 
     private async Task ToggleSourceInternal(SourceItem item)
     {
-        if (!item.AllowUnchecking) return;
+        if (!item.AllowUnchecking)
+        {
+            Snackbar.Add("That source is required and can't be disabled.", Severity.Info, cfg => cfg.VisibleStateDuration = 2500);
+            return;
+        }
         item.SetIsChecked(item.IsChecked != true, updateChildren: true, updateParent: true);
         await ApplyAndPersistRestrictions();
     }
 
     private async Task ApplyAndPersistRestrictions()
     {
-        if (_tab is not { } tab) return;
+        if (_tab is not { } tab)
+        {
+            Snackbar.Add("Source restrictions cannot be changed because there is no active character.", Severity.Warning, cfg => cfg.VisibleStateDuration = 2500);
+            return;
+        }
         using var scope = await CharacterContext.EnterAsync(tab);
 
         CharacterManager.Current.SourcesManager.ApplyRestrictions(reprocess: true);
@@ -118,6 +226,10 @@
         {
             await ToggleGroupInternal(group);
         }
+        else
+        {
+            Snackbar.Add("That source group could not be found.", Severity.Warning, cfg => cfg.VisibleStateDuration = 2500);
+        }
     }
 
     private async Task ToggleSourceAsync(string sourceId)
@@ -129,11 +241,19 @@
         {
             await ToggleSourceInternal(item);
         }
+        else
+        {
+            Snackbar.Add("That source could not be found.", Severity.Warning, cfg => cfg.VisibleStateDuration = 2500);
+        }
     }
 
     private async Task LoadDefaultAsync()
     {
-        if (_tab is not { } tab) return;
+        if (_tab is not { } tab)
+        {
+            Snackbar.Add("Default sources cannot be loaded because there is no active character.", Severity.Warning, cfg => cfg.VisibleStateDuration = 2500);
+            return;
+        }
         using var scope = await CharacterContext.EnterAsync(tab);
 
         CharacterManager.Current.SourcesManager.LoadDefaults();
@@ -146,6 +266,7 @@
     private void SaveAsDefault()
     {
         CharacterManager.Current.SourcesManager.StoreDefaults();
+        Snackbar.Add("Saved current source selections as the default set.", Severity.Success, cfg => cfg.VisibleStateDuration = 2200);
     }
 
     private static EditableCharacterInfoModel ToInfoModel(CharacterSnapshot snap) =>

@@ -5,7 +5,7 @@
 
 @if (_snap is null)
 {
-    <MudText Color="Color.Secondary">No character loaded.</MudText>
+    <MudText Color="Color.Secondary">No character loaded. <MudLink Href="/">Go to Characters</MudLink></MudText>
     return;
 }
 
@@ -18,7 +18,7 @@
         }
         else
         {
-            <MudIcon Icon="@Icons.Material.Filled.Person" Style="font-size: 72px; color: #585b70;" />
+            <MudIcon Icon="@Icons.Material.Filled.Person" Style="font-size: 72px; color: var(--mud-palette-text-disabled);" />
         }
         <div class="portrait-change-overlay" @onclick="OpenPortraitPickerAsync" title="Change portrait">
             <MudIcon Icon="@Icons.Material.Filled.Edit" Style="font-size: 16px;" />
@@ -384,7 +384,7 @@
                                     <td class="adv-features">
                                         @if (row.Features.Count == 0)
                                         {
-                                            <span style="color: #585b70;">—</span>
+                                            <span style="color: var(--mud-palette-text-disabled);">—</span>
                                         }
                                         else
                                         {
@@ -407,7 +407,7 @@
             <div class="section-label" style="margin-bottom: 4px;">@comp.Name</div>
             @if (!string.IsNullOrEmpty(comp.TypeLine))
             {
-                <div style="font-size: 13px; color: #a6adc8; margin-bottom: 12px; font-style: italic;">@comp.TypeLine</div>
+                <div style="font-size: 13px; color: var(--mud-palette-text-secondary); margin-bottom: 12px; font-style: italic;">@comp.TypeLine</div>
             }
 
             @* Combat stats strip *@

@@ -113,17 +113,17 @@
 
     private void RefreshGearNames()
     {
-        try
+        if (_snap is null)
         {
-            var inv = Tabs.ActiveTab?.Character?.Inventory;
-            _armorName    = inv?.EquippedArmor?.DisplayName    ?? inv?.EquippedArmor?.Name;
-            _mainHandName = inv?.EquippedPrimary?.DisplayName  ?? inv?.EquippedPrimary?.Name;
-            _offHandName  = inv?.EquippedSecondary?.DisplayName ?? inv?.EquippedSecondary?.Name;
+            _armorName = _mainHandName = _offHandName = null;
+            return;
         }
-        catch (Exception ex)
-        {
-            DebugLog.LogException(ex, "Equipment.RefreshGearNames");
-        }
+        _armorName    = _snap.InventoryItems
+            .FirstOrDefault(i => i.IsEquipped && i.EquippedLocation == "Armor")?.Name;
+        _mainHandName = _snap.InventoryItems
+            .FirstOrDefault(i => i.IsEquipped && i.EquippedLocation is "Primary Hand" or "Two-Handed" or "Two-Handed (Versatile)")?.Name;
+        _offHandName  = _snap.InventoryItems
+            .FirstOrDefault(i => i.IsEquipped && i.EquippedLocation == "Secondary Hand")?.Name;
     }
 
     private bool _disposed;
@@ -173,7 +173,11 @@
 
     private async Task OpenGearSlotDialog(GearSlot slot)
     {
-        if (Tabs.ActiveTab is not { Character: { } character, File: { } file, Snapshot: { } snap }) return;
+        if (Tabs.ActiveTab is not { Character: { } character, File: { } file, Snapshot: { } snap })
+        {
+            WarnUnavailable("Equipment cannot be changed because there is no active character.");
+            return;
+        }
 
         var invOptions = EquipmentService.GetInventoryItemsForSlot(character, slot);
 
@@ -188,7 +192,11 @@
         if (result is { Canceled: false, Data: GearPickerResult pick })
         {
             var tab = Tabs.ActiveTab;
-            if (tab is null) return;
+            if (tab is null)
+            {
+                WarnUnavailable("That gear change could not be applied because the character tab is no longer active.");
+                return;
+            }
             using var scope = await CharacterContext.EnterAsync(tab);
 
             bool ok = pick.IsNew
@@ -211,7 +219,11 @@
     private async Task UnequipGear(GearSlot slot)
     {
         var tab = Tabs.ActiveTab;
-        if (tab is not { Character: { } character, File: { } file, Snapshot: { } snap }) return;
+        if (tab is not { Character: { } character, File: { } file, Snapshot: { } snap })
+        {
+            WarnUnavailable("Equipment cannot be changed because there is no active character.");
+            return;
+        }
         using var scope = await CharacterContext.EnterAsync(tab);
 
         EquipmentService.UnequipSlot(character, slot);
@@ -230,7 +242,10 @@
         {
             var tab = Tabs.ActiveTab;
             if (tab is not { Character: { } character, File: { } file, Snapshot: { } snap })
+            {
+                WarnUnavailable("Items cannot be added because there is no active character.");
                 return;
+            }
             using var scope = await CharacterContext.EnterAsync(tab);
 
             var added = EquipmentService.AddItem(character, pick.ElementId, pick.Amount);
@@ -251,7 +266,10 @@
     {
         var tab = Tabs.ActiveTab;
         if (tab is not { Character: { } character, File: { } file, Snapshot: { } snap })
+        {
+            WarnUnavailable("Items cannot be removed because there is no active character.");
             return;
+        }
 
         var itemName = snap.InventoryItems
             .FirstOrDefault(i => i.Identifier == identifier)?.Name ?? "this item";
@@ -275,7 +293,10 @@
     {
         var tab = Tabs.ActiveTab;
         if (tab is not { Character: { } character, File: { } file, Snapshot: { } snap })
+        {
+            WarnUnavailable("Item quantities cannot be changed because there is no active character.");
             return;
+        }
         using var scope = await CharacterContext.EnterAsync(tab);
 
         EquipmentService.SetAmount(character, change.Identifier, change.Amount);
@@ -287,11 +308,19 @@
     private async Task ToggleEquippedAsync(string identifier)
     {
         var tab = Tabs.ActiveTab;
-        if (tab is not { Character: { } character, File: { } file }) return;
+        if (tab is not { Character: { } character, File: { } file })
+        {
+            WarnUnavailable("Equipment cannot be changed because there is no active character.");
+            return;
+        }
         using var scope = await CharacterContext.EnterAsync(tab);
 
         var item = FindLiveItem(identifier);
-        if (item is null) return;
+        if (item is null)
+        {
+            WarnUnavailable("That inventory item could not be found anymore.");
+            return;
+        }
 
         if (item.IsEquipped)
             item.Deactivate();
@@ -306,11 +335,19 @@
     private async Task ToggleAttunedAsync(string identifier)
     {
         var tab = Tabs.ActiveTab;
-        if (tab is not { Character: { } character, File: { } file }) return;
+        if (tab is not { Character: { } character, File: { } file })
+        {
+            WarnUnavailable("Attunement cannot be changed because there is no active character.");
+            return;
+        }
         using var scope = await CharacterContext.EnterAsync(tab);
 
         var item = FindLiveItem(identifier);
-        if (item is null) return;
+        if (item is null)
+        {
+            WarnUnavailable("That inventory item could not be found anymore.");
+            return;
+        }
 
         if (item.IsAttuned)
             item.DeactivateAttunement();
@@ -388,4 +425,7 @@
         MarkDirty();
         return Task.CompletedTask;
     }
+
+    private void WarnUnavailable(string message) =>
+        Snackbar.Add(message, Severity.Warning, cfg => cfg.VisibleStateDuration = 2500);
 }
