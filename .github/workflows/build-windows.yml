@@ -33,7 +33,14 @@ jobs:
       - name: Show SDK toolchain
         run: dotnet --info
 
-      - name: Restore
+      - name: Restore runtime pack (${{ matrix.runtime }})
+        shell: bash
+        run: |
+          dotnet restore "$PROJECT" \
+            -p:TargetFramework=net10.0-windows10.0.19041.0 \
+            -r ${{ matrix.runtime }}
+
+      - name: Restore project references
         shell: bash
         run: dotnet restore "$PROJECT"
 
