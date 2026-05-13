@@ -327,8 +327,8 @@ html, body {
     display: flex;
     align-items: center;
     gap: 4px;
+    flex-wrap: wrap;
     margin-left: auto;
-    flex-shrink: 0;
 }
 
 .compendium-filter-hints {
@@ -442,6 +442,32 @@ html, body {
     width: min(320px, 28vw);
     min-width: 180px;
     margin-right: 4px;
+}
+
+.app-main-content {
+    min-width: 0;
+}
+
+.app-content-container {
+    min-width: 0;
+}
+
+.app-status-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 28px;
+    background: var(--mud-palette-background-grey, #181825);
+    border-top: 1px solid var(--mud-palette-lines-default, #313244);
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    z-index: 1000;
+}
+
+.mobile-bottom-nav {
+    display: none;
 }
 .advancement-table td {
     padding: 5px 8px;
@@ -2582,4 +2608,328 @@ input.equipment-currency-input::-webkit-inner-spin-button { -webkit-appearance: 
     align-items: center;
     margin-top: 4px;
     margin-bottom: 24px;
+}
+
+/* ── Compact Android / phone layout ─────────────────────────────────────── */
+@media (max-width: 720px), (pointer: coarse) and (max-width: 900px) {
+    html,
+    body,
+    #app {
+        width: 100%;
+        max-width: 100%;
+        overflow: hidden;
+    }
+
+    .desktop-nav-drawer,
+    .mud-drawer.desktop-nav-drawer {
+        display: none !important;
+    }
+
+    .mud-main-content,
+    .app-main-content {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        padding-left: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    .mud-toolbar-appbar {
+        min-height: 56px;
+        padding-left: 8px;
+        padding-right: 8px;
+        gap: 4px;
+    }
+
+    .mud-appbar {
+        height: 56px;
+    }
+
+    .mud-appbar .mud-icon-button-edge-start {
+        display: none;
+    }
+
+    .app-brand {
+        gap: 8px;
+        max-width: min(48vw, 210px);
+    }
+
+    .app-brand-icon {
+        width: 26px;
+        height: 26px;
+        border-radius: 7px;
+    }
+
+    .app-brand-title {
+        font-size: 0.9rem;
+    }
+
+    .appbar-compendium-search {
+        display: none;
+    }
+
+    .app-content-container {
+        height: calc(100dvh - 56px - 34px - 72px) !important;
+        padding: 10px !important;
+        padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important;
+        overflow-x: hidden !important;
+    }
+
+    .char-tab-bar {
+        height: 34px;
+        padding-left: 0;
+    }
+
+    .char-tab {
+        min-width: 92px;
+        max-width: 150px;
+        padding: 0 7px 0 10px;
+        font-size: 11px;
+    }
+
+    .app-status-bar {
+        display: none;
+    }
+
+    .mobile-bottom-nav {
+        position: fixed;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 1300;
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: 1fr;
+        min-height: calc(58px + env(safe-area-inset-bottom, 0px));
+        padding: 5px 4px calc(5px + env(safe-area-inset-bottom, 0px));
+        border-top: 1px solid var(--mud-palette-lines-default, #313244);
+        background: var(--mud-palette-background-grey, #181825);
+    }
+
+    .mobile-bottom-link {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-width: 0;
+        gap: 2px;
+        border-radius: 8px;
+        color: var(--mud-palette-text-disabled, #6c7086);
+        font-size: 10px;
+        font-weight: 700;
+        text-decoration: none;
+    }
+
+    .mobile-bottom-link svg {
+        width: 21px;
+        height: 21px;
+    }
+
+    .mobile-bottom-link.active {
+        color: var(--mud-palette-primary, #89b4fa);
+        background: rgba(137, 180, 250, 0.12);
+    }
+
+    .about-dialog-header,
+    .detail-header {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .about-dialog-mark {
+        width: 72px;
+        height: 72px;
+    }
+
+    .detail-portrait {
+        width: 100%;
+        max-width: 180px;
+        height: 220px;
+    }
+
+    .combat-strip {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1px;
+        padding: 0;
+        overflow: hidden;
+    }
+
+    .combat-stat {
+        padding: 10px 4px;
+    }
+
+    .combat-sep {
+        display: none;
+    }
+
+    .ability-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .skill-list,
+    .appearance-grid,
+    .edit-grid,
+    .bg-narrative-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .build-guide-banner,
+    .build-level-strip,
+    .build-section,
+    .session-card,
+    .sheet-options,
+    .character-library-panel {
+        border-radius: 8px;
+    }
+
+    .build-level-strip {
+        align-items: stretch;
+        padding-top: 4px;
+        overflow-x: auto;
+    }
+
+    .build-tabs .mud-tabs-toolbar {
+        overflow-x: auto;
+    }
+
+    .build-tabs .mud-tab {
+        min-width: 68px;
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+
+    .build-rule-row {
+        grid-template-columns: 1fr;
+        align-items: stretch;
+        gap: 6px;
+        padding: 10px;
+    }
+
+    .build-rule-label {
+        min-width: 0;
+    }
+
+    .build-rule-btn,
+    .magic-action-button,
+    .equipment-action-button {
+        min-height: 38px;
+    }
+
+    .ability-method-tabs,
+    .sheet-actions,
+    .sheet-options-row,
+    .session-hp-row,
+    .session-status-row,
+    .session-resource-row {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .ability-method-btn,
+    .sheet-actions .mud-button-root,
+    .sheet-options-row .mud-button-root,
+    .session-inspiration-btn,
+    .session-resource-actions {
+        width: 100%;
+    }
+
+    .ability-card {
+        padding: 12px;
+    }
+
+    .ability-input-area,
+    .ability-final-row {
+        flex-wrap: wrap;
+    }
+
+    .ability-stats-table {
+        min-width: 520px;
+    }
+
+    .attack-table,
+    .inv-table,
+    .advancement-table,
+    .data-table {
+        min-width: 640px;
+    }
+
+    .attack-table,
+    .inv-table,
+    .advancement-table,
+    .data-table,
+    .ability-stats-table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .session-pair-row {
+        flex-direction: column;
+    }
+
+    .session-hp-sep {
+        width: 100%;
+        height: 1px;
+    }
+
+    .session-death-row {
+        gap: 12px;
+        justify-content: space-between;
+    }
+
+    .session-currency-strip {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 4px;
+    }
+
+    .session-coin-cell {
+        padding: 0;
+        border-right: 0;
+    }
+
+    .session-resource-name {
+        min-width: 0;
+    }
+
+    .console-log {
+        height: calc(100dvh - 150px);
+    }
+
+    .compendium-body {
+        flex-direction: column;
+    }
+
+    .compendium-body .compendium-results-panel,
+    .compendium-body .compendium-detail-panel {
+        flex: none;
+        width: 100%;
+    }
+
+    .compendium-results-panel {
+        max-height: 40vh;
+        min-height: 120px;
+    }
+
+    .compendium-filter-actions {
+        justify-content: flex-end;
+    }
+}
+
+@media (max-width: 430px) {
+    .app-brand {
+        max-width: 42vw;
+    }
+
+    .app-brand-title {
+        font-size: 0.82rem;
+    }
+
+    .ability-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .session-currency-strip {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
 }

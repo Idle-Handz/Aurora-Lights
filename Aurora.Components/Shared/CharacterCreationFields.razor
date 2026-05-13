@@ -7,6 +7,7 @@
                class="character-creation-input"
                placeholder="@NamePlaceholder"
                @bind="Model.Name"
+               @bind:event="oninput"
                @onkeydown="OnKeyDown" />
     </div>
 
@@ -16,6 +17,7 @@
                class="character-creation-input"
                placeholder="@PlayerNamePlaceholder"
                @bind="Model.PlayerName"
+               @bind:event="oninput"
                @onkeydown="OnKeyDown" />
     </div>
 </div>

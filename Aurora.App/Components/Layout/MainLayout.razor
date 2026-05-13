@@ -62,6 +62,7 @@
     </MudAppBar>
 
     <MudDrawer @bind-Open="_drawerOpen"
+               Class="desktop-nav-drawer"
                ClipMode="DrawerClipMode.Always"
                Elevation="2"
                Variant="DrawerVariant.Mini"
@@ -69,7 +70,7 @@
         <NavMenu />
     </MudDrawer>
 
-    <MudMainContent>
+    <MudMainContent Class="app-main-content">
         @* Character tab bar — only visible when one or more characters are open *@
         @if (Tabs.Tabs.Count > 0)
         {
@@ -91,13 +92,43 @@
                 }
             </div>
         }
-        <MudContainer MaxWidth="MaxWidth.False" Class="pa-4" Style="@ContentStyle">
+        <MudContainer MaxWidth="MaxWidth.False" Class="app-content-container pa-4" Style="@ContentStyle">
             <AppErrorBoundary @ref="_errorBoundary">@Body</AppErrorBoundary>
         </MudContainer>
     </MudMainContent>
 </MudLayout>
 
-<div style="position: fixed; bottom: 0; left: 0; right: 0; height: 28px; background: var(--mud-palette-background-grey, #181825); border-top: 1px solid var(--mud-palette-lines-default, #313244); display: flex; align-items: center; padding: 0 12px; z-index: 1000;">
+<nav class="mobile-bottom-nav" aria-label="Primary navigation">
+    <NavLink href="/" Match="NavLinkMatch.All" class="mobile-bottom-link">
+        <MudIcon Icon="@Icons.Material.Filled.People" />
+        <span>Chars</span>
+    </NavLink>
+    <NavLink href="/compendium" class="mobile-bottom-link">
+        <MudIcon Icon="@Icons.Material.Filled.MenuBook" />
+        <span>Comp</span>
+    </NavLink>
+    @if (Tabs.ActiveTab != null)
+    {
+        <NavLink href="/build" class="mobile-bottom-link">
+            <MudIcon Icon="@Icons.Material.Filled.Build" />
+            <span>Build</span>
+        </NavLink>
+        <NavLink href="/equipment" class="mobile-bottom-link">
+            <MudIcon Icon="@Icons.Material.Filled.Shield" />
+            <span>Gear</span>
+        </NavLink>
+        <NavLink href="/magic" class="mobile-bottom-link">
+            <MudIcon Icon="@Icons.Material.Filled.AutoAwesome" />
+            <span>Magic</span>
+        </NavLink>
+    }
+    <NavLink href="/settings" class="mobile-bottom-link">
+        <MudIcon Icon="@Icons.Material.Filled.Settings" />
+        <span>Settings</span>
+    </NavLink>
+</nav>
+
+<div class="app-status-bar">
     <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-disabled, #6c7086);">@Brand.AppName</MudText>
 </div>
 
@@ -108,8 +139,8 @@
     private string _compendiumQuickQuery = string.Empty;
 
     private string ContentStyle => Tabs.Tabs.Count > 0
-        ? "height: calc(100vh - 64px - 34px - 28px); overflow-y: auto;"
-        : "height: calc(100vh - 64px - 28px); overflow-y: auto;";
+        ? "height: calc(100dvh - 64px - 34px - 28px); overflow-y: auto; overflow-x: hidden;"
+        : "height: calc(100dvh - 64px - 28px); overflow-y: auto; overflow-x: hidden;";
 
     protected override void OnInitialized()
     {
