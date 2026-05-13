@@ -52,6 +52,7 @@ jobs:
             -r ${{ matrix.runtime }} \
             -c Release \
             --no-restore \
+            -p:PublishReadyToRun=false \
             -o publish/${{ matrix.runtime }}
 
       - name: List publish output
