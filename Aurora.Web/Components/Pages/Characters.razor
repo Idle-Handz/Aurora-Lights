@@ -6,7 +6,7 @@
 <PageTitle>Characters</PageTitle>
 
 <CharacterLibraryShell Title="Characters"
-                       IntroText="Imported `.dnd5e` files now participate in the current web session. Use this page to inspect them and choose which character the browser studio should open next."
+                       IntroText="Imported `.dnd5e` files now participate in the current web session. Use this page to inspect them and choose which character the browser workspace should open next."
                        StatusMessage="@_message"
                        StatusIsError="@_failed">
     <CreationContent>
@@ -37,7 +37,7 @@
             <Actions>
                 @if (_selectedCharacter is not null)
                 {
-                    <button class="action-link primary" @onclick="() => OpenCharacterAsync(_selectedCharacter)" disabled="@_busy">Use in Studio</button>
+                    <button class="action-link primary" @onclick="() => OpenCharacterAsync(_selectedCharacter)" disabled="@_busy">Use in Workspace</button>
                 }
             </Actions>
         </CharacterDetailPanel>
@@ -143,7 +143,7 @@
 
             _failed = false;
             _message = $"{character.DisplayName} is now the active character for this browser session.";
-            Nav.NavigateTo("/studio");
+            Nav.NavigateTo("/workspace");
         }
         finally
         {
@@ -164,7 +164,7 @@
             _selectedCharacter = _characters.FirstOrDefault(character =>
                 string.Equals(character.RelativePath, runtimeState.Summary.RelativePath, StringComparison.OrdinalIgnoreCase));
             _message = runtimeState.StatusMessage;
-            Nav.NavigateTo("/studio");
+            Nav.NavigateTo("/build");
         }
         catch (Exception ex)
         {

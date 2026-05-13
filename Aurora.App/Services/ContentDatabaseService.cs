@@ -45,10 +45,6 @@ public sealed class ContentDatabaseService
 
     // ── Public API ───────────────────────────────────────────────────────────
 
-    /// <summary>
-    /// Fast staleness check — compares MD5 hashes in the DB against disk.
-    /// Safe to call on any thread; reads the DB read-only.
-    /// </summary>
     // ── Package management ───────────────────────────────────────────────────
 
     /// <summary>

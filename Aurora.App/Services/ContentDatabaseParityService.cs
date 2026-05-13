@@ -92,7 +92,14 @@ public sealed class ContentDatabaseParityService
                     []);
             }
 
-            return CompareSnapshots(xmlSnapshot.Elements, dbCollection, xmlSnapshot.SkippedElements, dbResult.SkippedElementCount);
+            // Filter the XML snapshot to only elements from enabled sources so the comparison
+            // is symmetric with the DB, which uses resolved_elements_cache (enabled only).
+            HashSet<string> enabledSources = await DbElementLoader.LoadEnabledSourceNamesAsync();
+            IEnumerable<ElementBase> filteredXml = enabledSources.Count > 0
+                ? xmlSnapshot.Elements.Where(e => string.IsNullOrEmpty(e.Source) || enabledSources.Contains(e.Source))
+                : xmlSnapshot.Elements;
+
+            return CompareSnapshots(filteredXml, dbCollection, xmlSnapshot.SkippedElements, dbResult.SkippedElementCount);
         }
         catch (Exception ex)
         {

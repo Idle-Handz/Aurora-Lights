@@ -219,6 +219,11 @@ public sealed class CharacterService :
                 // Clear prepared spell state from any previous character load.
                 CharacterLoadCompatibilityService.PrepareForCharacterLoad();
 
+                // Warm up the CharacterManager singleton on the current (non-thread-pool) thread.
+                // Its static initializer accesses ApplicationContext.Current, which is not safe to
+                // run on a Task.Run thread while element-loading background state is still active.
+                _ = CharacterManager.Current;
+
                 var result    = await Task.Run(async () => await file.Load());
                 var character = CharacterManager.Current?.Character;
                 if (character != null)

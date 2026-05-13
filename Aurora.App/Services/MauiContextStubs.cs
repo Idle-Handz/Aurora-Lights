@@ -50,15 +50,15 @@ internal sealed class MauiSelectionRuleExpanderHandler : ISelectionRuleExpanderH
 
     public bool HasExpander(string uniqueIdentifier, int number) => true;
 
-    /// <summary>
-    /// Directly registers the element (identified by <paramref name="id"/>) that was
-    /// selected for the given selection rule.  The element's Aquisition is configured so
-    /// that CharacterManager routes it to the correct ProgressionManager.
-    /// </summary>
     /// <summary>Clears the registry entry for a slot without registering anything new.</summary>
     public void ClearRegisteredElement(SelectRule selectionRule, int number = 1)
         => _registered.Remove($"{selectionRule.UniqueIdentifier}:{number}");
 
+    /// <summary>
+    /// Directly registers the element (identified by <paramref name="id"/>) that was
+    /// selected for the given selection rule.  The element's Acquisition is configured so
+    /// that CharacterManager routes it to the correct ProgressionManager.
+    /// </summary>
     public void SetRegisteredElement(SelectRule selectionRule, string id, int number = 1)
     {
         if (selectionRule == null || string.IsNullOrEmpty(id))
@@ -182,9 +182,7 @@ internal sealed class MauiSpellcastingSectionHandler : ISpellcastingSectionHandl
     }
 }
 
-/// <summary>
-/// No-op IMessageDialogService — logs to debug output instead of showing WPF dialogs.
-/// </summary>
+// No-op IMessageDialogService — logs to debug output instead of showing WPF dialogs.
 #if false
 internal sealed partial class MauiMessageDialogServiceStub : IMessageDialogService
 {

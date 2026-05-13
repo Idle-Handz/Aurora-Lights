@@ -96,7 +96,8 @@
                             <div class="magic-known-list">
                                 @foreach (var ent in grp.Entries)
                                 {
-                                    <div class="magic-known-row">
+                                    <div class="magic-known-row"
+                                         @ondblclick="() => { if (OnChangeKnownSpell.HasDelegate && !Busy) OnChangeKnownSpell.InvokeAsync(ent.Id); }">
                                         <div class="magic-known-label">@ent.Label</div>
                                         <div class="magic-known-value @(string.IsNullOrWhiteSpace(ent.CurrentName) ? "empty" : string.Empty)">
                                             @(ent.CurrentName ?? "-")
@@ -106,7 +107,8 @@
                                             <button type="button"
                                                     class="magic-action-button"
                                                     disabled="@Busy"
-                                                    @onclick="() => OnChangeKnownSpell.InvokeAsync(ent.Id)">
+                                                    @onclick="() => OnChangeKnownSpell.InvokeAsync(ent.Id)"
+                                                    @ondblclick:stopPropagation="true">
                                                 Change
                                             </button>
                                         }

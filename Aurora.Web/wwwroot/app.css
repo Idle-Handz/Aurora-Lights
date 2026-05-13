@@ -594,6 +594,107 @@ button.action-link:disabled {
     color: var(--aurora-primary-strong);
 }
 
+.build-web-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    border: 1px solid var(--aurora-border);
+    border-radius: 8px;
+    background: var(--aurora-panel-soft);
+}
+
+.build-web-name {
+    font-size: 1.25rem;
+    font-weight: 800;
+}
+
+.build-web-subtitle {
+    margin-top: 0.2rem;
+    color: var(--aurora-muted);
+}
+
+.build-web-count {
+    display: grid;
+    min-width: 112px;
+    justify-items: end;
+    color: var(--aurora-muted);
+}
+
+.build-web-count strong {
+    color: var(--aurora-primary-strong);
+    font-size: 1.8rem;
+    line-height: 1;
+}
+
+.build-web-groups {
+    display: grid;
+    gap: 1rem;
+}
+
+.build-web-group {
+    display: grid;
+    gap: 0.75rem;
+    padding: 1rem;
+    border: 1px solid var(--aurora-border);
+    border-radius: 8px;
+    background: var(--aurora-panel);
+}
+
+.build-web-group-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.build-web-group-header h2 {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.build-web-group-header span {
+    color: var(--aurora-muted);
+    font-size: 0.88rem;
+}
+
+.build-web-rule-list {
+    display: grid;
+    gap: 0.55rem;
+}
+
+.build-web-rule {
+    display: grid;
+    grid-template-columns: minmax(180px, 0.8fr) minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.75rem;
+    border: 1px solid var(--aurora-border);
+    border-radius: 8px;
+    background: var(--aurora-panel-soft);
+}
+
+.build-web-rule.unresolved {
+    border-color: rgba(249, 226, 175, 0.4);
+}
+
+.build-web-rule-label {
+    font-weight: 800;
+}
+
+.build-web-rule-meta {
+    color: var(--aurora-muted);
+    font-size: 0.85rem;
+}
+
+.build-web-rule-choice {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    color: var(--aurora-ink);
+}
+
 .picker-panel {
     margin-top: 1rem;
     padding: 1rem;
@@ -737,6 +838,20 @@ button.action-link:disabled {
     .picker-header,
     .picker-result-card {
         flex-direction: column;
+    }
+
+    .build-web-summary,
+    .build-web-group-header {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .build-web-count {
+        justify-items: start;
+    }
+
+    .build-web-rule {
+        grid-template-columns: 1fr;
     }
 }
 

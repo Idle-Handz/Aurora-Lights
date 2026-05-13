@@ -29,7 +29,8 @@
                         {
                             var isSelected = r.Id == _selectedId;
                             <div class="picker-item @(isSelected ? "picker-item-selected" : "")"
-                                 @onclick="() => SelectResult(r)">
+                                 @onclick="() => SelectResult(r)"
+                                 @ondblclick="() => ConfirmItem(r)">
                                 <div class="picker-item-name">@r.Name</div>
                                 <div style="font-size: 10px; color: var(--mud-palette-text-disabled); margin-top: 1px;">@r.Type</div>
                             </div>
@@ -112,9 +113,6 @@
     }
 
     private void Cancel()  => MudDialog.Cancel();
-    private void Confirm()
-    {
-        if (_selectedId != null)
-            MudDialog.Close(new ItemPickerResult(_selectedId, _amount));
-    }
+    private void Confirm() { if (_selectedId != null) MudDialog.Close(new ItemPickerResult(_selectedId, _amount)); }
+    private void ConfirmItem(ItemSearchResult r) { SelectResult(r); Confirm(); }
 }

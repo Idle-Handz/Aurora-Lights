@@ -164,6 +164,43 @@ internal static class DbElementLoader
         DbPath is { } path && File.Exists(path) && new FileInfo(path).Length > 0;
 
     /// <summary>
+    /// Returns the set of source book names that appear in the resolved elements cache,
+    /// i.e. only names from enabled content packages. Returns an empty set if the DB is
+    /// unavailable or the query fails.
+    /// </summary>
+    public static async Task<HashSet<string>> LoadEnabledSourceNamesAsync()
+    {
+        string? dbPath = DbPath;
+        if (dbPath is null || !File.Exists(dbPath))
+            return [];
+
+        return await Task.Run(() =>
+        {
+            try
+            {
+                using var conn = new SqliteConnection($"Data Source={dbPath};Mode=ReadOnly;");
+                conn.Open();
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = @"
+                    SELECT DISTINCT sb.name
+                    FROM source_books sb
+                    JOIN elements e ON e.source_book_id = sb.source_book_id
+                    JOIN resolved_elements_cache rec ON rec.winning_element_id = e.element_id
+                    WHERE sb.name IS NOT NULL AND sb.name <> '';";
+                using var r = cmd.ExecuteReader();
+                var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                while (r.Read())
+                    names.Add(r.GetString(0));
+                return names;
+            }
+            catch
+            {
+                return [];
+            }
+        });
+    }
+
+    /// <summary>
     /// Attempts to populate <paramref name="target"/> from the SQLite database.
     /// Returns a detailed result object; callers can automatically fall back to XML when
     /// <see cref="DbLoadResult.Success"/> is <c>false</c>.

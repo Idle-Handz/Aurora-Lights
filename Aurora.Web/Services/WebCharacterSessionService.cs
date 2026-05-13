@@ -146,6 +146,33 @@ public sealed class WebCharacterSessionService
         return state;
     }
 
+    public async Task<WebCharacterBuildState?> GetCurrentBuildStateAsync()
+    {
+        if (_currentRuntimeState is null || string.IsNullOrWhiteSpace(_currentCharacterPath))
+        {
+            return null;
+        }
+
+        PhaseZeroSessionWorkspace workspace = await _workspaceService.GetWorkspaceAsync();
+        return await _engine.GetCurrentBuildStateAsync(workspace, _currentCharacterPath, _currentRuntimeState.StatusMessage);
+    }
+
+    public async Task<IReadOnlyList<WebBuildSelectionOption>> SearchCurrentBuildSelectionOptionsAsync(string entryKey, string query)
+    {
+        EnsureActiveCharacter();
+        return await _engine.SearchBuildSelectionOptionsAsync(entryKey, query);
+    }
+
+    public async Task<WebCharacterBuildState> ChangeCurrentBuildSelectionAsync(string entryKey, string optionId)
+    {
+        EnsureActiveCharacter();
+        PhaseZeroSessionWorkspace workspace = await _workspaceService.GetWorkspaceAsync();
+        WebCharacterBuildState state = await _engine.ChangeBuildSelectionAsync(workspace, _currentCharacterPath!, entryKey, optionId);
+        SyncRuntimeSummary(state.Summary, state.StatusMessage);
+        _currentMagicState = null;
+        return state;
+    }
+
     public async Task<WebCharacterSourceState?> GetCurrentSourceStateAsync()
     {
         if (_currentRuntimeState is null || string.IsNullOrWhiteSpace(_currentCharacterPath))

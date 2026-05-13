@@ -75,18 +75,27 @@ internal static class AuroraSqliteImporter
         var seenPaths     = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var fileHashesByPath = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
+        // Build a source-name → kind map from Source element setter flags.
+        // These are the authoritative declarations of package kind in the Aurora XML.
+        var sourceKindMap = BuildSourceKindMap(catalog);
+
         // Build content_packages from the top-level directory of each source file path.
         // ON CONFLICT DO NOTHING preserves any user-configured kind/rank from prior runs.
         var contentPackageIds = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
         foreach (var file in catalog.Files)
         {
             primarySourceByFile.TryGetValue(file.RelativePath, out string? primarySource);
-            string pkgKey = GetPackageKey(file, primarySource);
+            string pkgKey = GetPackageKey(file, primarySource, sourceKindMap);
             if (!contentPackageIds.ContainsKey(pkgKey))
                 contentPackageIds[pkgKey] = EnsureContentPackage(
                     connection, transaction, pkgKey,
-                    GetPackageDisplayName(file, primarySource), DeterminePackageKind(file.RelativePath));
+                    GetPackageDisplayName(file, primarySource),
+                    DetermineKindForFile(file, primarySource, sourceKindMap));
         }
+
+        // Correct stale/legacy package_kind values.  Two passes: Source-element setters
+        // (authoritative) then key-prefix heuristics (fallback for legacy entries).
+        CorrectPackageKinds(connection, transaction, sourceKindMap);
 
         progress?.Report(new AuroraImportProgress(
             AuroraImportPhase.Scanning, 0, catalog.Files.Count, 0, 0, null));
@@ -101,7 +110,7 @@ internal static class AuroraSqliteImporter
             scanned++;
 
             primarySourceByFile.TryGetValue(file.RelativePath, out string? primarySource);
-            long? pkgId = contentPackageIds.TryGetValue(GetPackageKey(file, primarySource), out var pid)
+            long? pkgId = contentPackageIds.TryGetValue(GetPackageKey(file, primarySource, sourceKindMap), out var pid)
                 ? pid : null;
 
             if (existingFiles.TryGetValue(file.RelativePath, out var existing))
@@ -497,9 +506,10 @@ ON CONFLICT(package_key) DO NOTHING;";
         return (long)select.ExecuteScalar()!;
     }
 
-    private static string GetPackageKey(AuroraFileInfo file, string? primarySource)
+    private static string GetPackageKey(AuroraFileInfo file, string? primarySource,
+        IReadOnlyDictionary<string, string>? sourceKindMap = null)
     {
-        string packageKind = DeterminePackageKind(file.RelativePath);
+        string packageKind = DetermineKindForFile(file, primarySource, sourceKindMap);
         if (!string.IsNullOrWhiteSpace(primarySource))
             return $"{packageKind}:{BuildPackageSlug(primarySource)}";
 
@@ -509,6 +519,21 @@ ON CONFLICT(package_key) DO NOTHING;";
         int sep = file.RelativePath.IndexOfAny(['/', '\\']);
         string topLevel = sep > 0 ? file.RelativePath[..sep] : file.RelativePath;
         return $"{packageKind}:{BuildPackageSlug(topLevel)}";
+    }
+
+    /// <summary>
+    /// Determines the content package kind for a file, using the Source element's
+    /// explicit setter flags as the authoritative source when the file's primary
+    /// source name is known, falling back to directory-path heuristics otherwise.
+    /// </summary>
+    private static string DetermineKindForFile(AuroraFileInfo file, string? primarySource,
+        IReadOnlyDictionary<string, string>? sourceKindMap)
+    {
+        if (!string.IsNullOrWhiteSpace(primarySource)
+            && sourceKindMap?.TryGetValue(primarySource, out string? xmlKind) == true
+            && xmlKind != null)
+            return xmlKind;
+        return DeterminePackageKind(file.RelativePath);
     }
 
     private static string DeterminePackageKind(string relativePath)
@@ -523,6 +548,35 @@ ON CONFLICT(package_key) DO NOTHING;";
             "user"                 => "homebrew",
             _                      => "third-party"
         };
+    }
+
+    /// <summary>
+    /// Builds a map from Source element name → package kind by reading the boolean
+    /// kind-setter flags (<c>core</c>, <c>official</c>, <c>third-party</c>, <c>homebrew</c>)
+    /// declared on every element with <c>type="Source"</c> in the catalog.
+    /// </summary>
+    private static Dictionary<string, string> BuildSourceKindMap(AuroraImportCatalog catalog)
+    {
+        var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var el in catalog.Elements
+            .Where(e => string.Equals(e.type, "Source", StringComparison.OrdinalIgnoreCase)
+                     && !string.IsNullOrWhiteSpace(e.name)
+                     && e.setters != null))
+        {
+            string? kind = GetKindFromSourceSetters(el.setters!);
+            if (kind != null)
+                map[el.name!] = kind;
+        }
+        return map;
+    }
+
+    private static string? GetKindFromSourceSetters(AuroraSetters setters)
+    {
+        if (setters.GetBoolean("core") == true)         return "core";
+        if (setters.GetBoolean("official") == true)     return "official";
+        if (setters.GetBoolean("third-party") == true)  return "third-party";
+        if (setters.GetBoolean("homebrew") == true)     return "homebrew";
+        return null;
     }
 
     private static string BuildPackageSlug(string name)
@@ -608,6 +662,128 @@ ON CONFLICT(package_key) DO NOTHING;";
 
     private static bool IsVirtualSource(string sourceName) =>
         string.Equals(sourceName?.Trim(), "Internal", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Corrects <c>package_kind</c> and <c>precedence_rank</c> for stale package rows.
+    /// Two passes:
+    /// <list type="number">
+    ///   <item>Source-element pass: queries <c>setter_entries</c> for every Source element
+    ///   already in the DB, derives the authoritative kind from the XML setter flags
+    ///   (<c>core</c>, <c>official</c>, <c>third-party</c>, <c>homebrew</c>), and updates any
+    ///   package whose key matches the source name — covering both the current colon-format
+    ///   and legacy hyphen-format keys.  The catalog map is merged in for Source elements
+    ///   not yet written (new/changed files in the current batch).</item>
+    ///   <item>Key-prefix pass: fallback for entries with no Source element in the DB.</item>
+    /// </list>
+    /// Only updates rows where the stored kind is already wrong.
+    /// </summary>
+    private static void CorrectPackageKinds(SqliteConnection conn, SqliteTransaction txn,
+        IReadOnlyDictionary<string, string> catalogSourceKindMap)
+    {
+        // Pass 1 — Source element setter flags (authoritative).
+        // Build the name→kind map by reading setter_entries for every Source-type element
+        // in the DB; this covers historical imports, not just the current batch.
+        var sourceKindMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        using var kindQuery = conn.CreateCommand();
+        kindQuery.Transaction = txn;
+        kindQuery.CommandText = @"
+            SELECT e.name,
+                MIN(CASE se.setter_name
+                    WHEN 'core'        THEN 1
+                    WHEN 'official'    THEN 2
+                    WHEN 'third-party' THEN 3
+                    WHEN 'homebrew'    THEN 4
+                    ELSE 999
+                END) AS kind_priority
+            FROM elements e
+            JOIN element_types et ON et.element_type_id = e.element_type_id
+                                  AND et.type_name = 'Source'
+            JOIN setter_scopes ss ON ss.owner_element_id = e.element_id
+                                  AND ss.owner_kind = 'element'
+            JOIN setter_entries se ON se.setter_scope_id = ss.setter_scope_id
+            WHERE se.setter_name IN ('core', 'official', 'third-party', 'homebrew')
+              AND LOWER(TRIM(se.setter_value)) = 'true'
+            GROUP BY e.name
+            HAVING kind_priority < 999;";
+
+        using (var r = kindQuery.ExecuteReader())
+        {
+            while (r.Read())
+            {
+                string name = r.GetString(0);
+                string kind = r.GetInt32(1) switch
+                {
+                    1 => "core",
+                    2 => "official",
+                    3 => "third-party",
+                    _ => "homebrew"
+                };
+                sourceKindMap[name] = kind;
+            }
+        }
+
+        // Merge catalog entries so Source elements in the current import batch
+        // (whose elements may have been deleted and not yet re-inserted) are also covered.
+        foreach (var (name, kind) in catalogSourceKindMap)
+            sourceKindMap.TryAdd(name, kind);
+
+        // Apply source-element corrections: try every key format that could represent
+        // this source (current colon-format + legacy directory-prefixed hyphen-format).
+        using var updateCmd = conn.CreateCommand();
+        updateCmd.Transaction = txn;
+        updateCmd.CommandText = @"
+            UPDATE content_packages
+            SET package_kind = $kind, precedence_rank = $rank
+            WHERE package_key = $key AND package_kind <> $kind;";
+        updateCmd.Parameters.AddWithValue("$key",  "");
+        updateCmd.Parameters.AddWithValue("$kind", "");
+        updateCmd.Parameters.AddWithValue("$rank", 0);
+
+        foreach (var (sourceName, kind) in sourceKindMap)
+        {
+            string slug = BuildPackageSlug(sourceName);
+            int rank = DefaultPrecedenceRank(kind);
+            foreach (string candidateKey in new[]
+            {
+                $"{kind}:{slug}",
+                $"core-{slug}", $"supplements-{slug}", $"unearthed-arcana-{slug}",
+                $"third-party-{slug}", $"homebrew-{slug}", $"user-{slug}"
+            })
+            {
+                updateCmd.Parameters["$key"].Value  = candidateKey;
+                updateCmd.Parameters["$kind"].Value = kind;
+                updateCmd.Parameters["$rank"].Value = rank;
+                updateCmd.ExecuteNonQuery();
+            }
+        }
+
+        // Pass 2 — key-prefix heuristics (fallback for entries with no Source element).
+        var rules = new (string kind, int rank, string[] prefixes)[]
+        {
+            ("core",        100, ["core:", "core-"]),
+            ("official",    200, ["supplements:", "supplements-", "unearthed-arcana:", "unearthed-arcana-"]),
+            ("third-party", 300, ["third-party:", "third-party-"]),
+            ("homebrew",    400, ["homebrew:", "homebrew-", "user:", "user-"]),
+        };
+
+        foreach (var (kind, rank, prefixes) in rules)
+        {
+            string likeClause = string.Join(" OR ", prefixes.Select((_, i) => $"package_key LIKE $p{i}"));
+            using var cmd = conn.CreateCommand();
+            cmd.Transaction = txn;
+            cmd.CommandText = $@"
+                UPDATE content_packages
+                SET package_kind = $kind, precedence_rank = $rank
+                WHERE ({likeClause})
+                  AND package_kind <> $kind;";
+            cmd.Parameters.AddWithValue("$kind", kind);
+            cmd.Parameters.AddWithValue("$rank", rank);
+            for (int i = 0; i < prefixes.Length; i++)
+                cmd.Parameters.AddWithValue($"$p{i}", prefixes[i] + "%");
+            cmd.ExecuteNonQuery();
+        }
+    }
 
     private static int DefaultPrecedenceRank(string packageKind) =>
         packageKind switch

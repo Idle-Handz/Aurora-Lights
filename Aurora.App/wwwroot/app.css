@@ -84,7 +84,7 @@ html, body {
 .char-card-portrait {
     height: 140px;
     overflow: hidden;
-    background: #45475a;
+    background: var(--mud-palette-lines-inputs, #45475a);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -355,7 +355,7 @@ html, body {
 }
 
 .compendium-results-panel {
-    max-height: calc(100vh - 390px);
+    max-height: calc(100dvh - 390px);
     min-height: 300px;
     overflow-y: auto;
 }
@@ -450,6 +450,8 @@ html, body {
 
 .app-content-container {
     min-width: 0;
+    display: flex;
+    flex-direction: column;
 }
 
 .app-status-bar {
@@ -584,13 +586,13 @@ html, body {
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    border: 1.5px solid #45475a;
+    border: 1.5px solid var(--mud-palette-lines-inputs, #45475a);
     flex-shrink: 0;
     display: inline-block;
 }
 .prof-dot-filled {
-    background: #89b4fa;
-    border-color: #89b4fa;
+    background: var(--mud-palette-primary, #89b4fa);
+    border-color: var(--mud-palette-primary, #89b4fa);
 }
 .prof-dot-expertise {
     background: #a6e3a1;
@@ -905,9 +907,9 @@ html, body {
     min-width: 0;
     min-height: 0;
 }
-/* Collapse MudBlazor's internal helper-text reservation so the list sits snug under the search box */
-.picker-left .mud-form-control {
-    margin-bottom: 0 !important;
+/* Prevent MudTextField's mud-input-control (flex:1 1 auto) from consuming picker-left's height */
+.picker-left .mud-input-control {
+    flex: none;
 }
 .picker-left .mud-input-control-helper-container {
     display: none !important;
@@ -915,7 +917,7 @@ html, body {
 .picker-left .picker-list,
 .picker-left .picker-gear-inv,
 .picker-left > .mud-typography {
-    margin-top: 6px;
+    margin-top: 3em;
 }
 .picker-list {
     flex: 1;
@@ -934,8 +936,8 @@ html, body {
 }
 .picker-item:hover  { background: var(--mud-palette-surface, #313244); }
 .picker-item-selected {
-    background: #1e3a5a;
-    border-color: #89b4fa;
+    background: color-mix(in srgb, var(--mud-palette-primary, #89b4fa) 18%, var(--mud-palette-background, #1e1e2e));
+    border-color: var(--mud-palette-primary, #89b4fa);
 }
 .picker-item-name {
     font-size: 13px;
@@ -983,6 +985,26 @@ html, body {
     border-radius: 3px;
     padding: 3px 7px;
     display: inline-block;
+}
+
+@media (max-width: 600px) {
+    .picker-layout {
+        flex-direction: column;
+        height: auto;
+    }
+    .picker-left {
+        flex: none;
+    }
+    .picker-list {
+        max-height: 200px;
+    }
+    .picker-detail {
+        border-left: none;
+        border-top: 1px solid var(--mud-palette-lines-default, #313244);
+        padding-left: 0;
+        padding-top: 12px;
+        max-height: 240px;
+    }
 }
 
 /* ── Preferences page ── */
@@ -2354,20 +2376,28 @@ html, body {
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    border: 2px solid #585b70;
+    border: 2px solid var(--mud-palette-lines-inputs, #585b70);
     background: transparent;
     cursor: pointer;
     padding: 0;
     transition: background 0.12s, border-color 0.12s;
 }
-.session-pip:hover { border-color: #89b4fa; }
-.pip-empty       { background: transparent; border-color: #585b70; }
+.session-pip:hover { border-color: var(--mud-palette-primary, #89b4fa); }
+.pip-empty       { background: transparent; border-color: var(--mud-palette-lines-inputs, #585b70); }
 .pip-success     { background: #a6e3a1; border-color: #a6e3a1; }
 .pip-failure     { background: #f38ba8; border-color: #f38ba8; }
 .pip-exhaustion  { background: #fab387; border-color: #fab387; }
-.pip-slot-free   { background: transparent; border-color: #89b4fa; }
-.pip-slot-used   { background: #45475a; border-color: #45475a; }
-.pip-resource-used { background: #cba6f7; border-color: #cba6f7; }
+.pip-slot-free   { background: transparent; border-color: var(--mud-palette-primary, #89b4fa); }
+.pip-slot-used   { background: var(--mud-palette-lines-inputs, #45475a); border-color: var(--mud-palette-lines-inputs, #45475a); }
+.pip-resource-used { background: var(--mud-palette-secondary, #cba6f7); border-color: var(--mud-palette-secondary, #cba6f7); }
+
+/* Expand tap area on touch screens */
+@media (pointer: coarse) {
+    .session-pip {
+        min-width: 32px;
+        min-height: 32px;
+    }
+}
 
 /* Status */
 .session-status-row {
@@ -2388,8 +2418,8 @@ html, body {
     align-items: center;
     gap: 5px;
     padding: 6px 12px;
-    background: #45475a;
-    border: 1px solid #585b70;
+    background: var(--mud-palette-surface, #45475a);
+    border: 1px solid var(--mud-palette-lines-inputs, #585b70);
     border-radius: 20px;
     color: var(--mud-palette-text-secondary, #a6adc8);
     cursor: pointer;
@@ -2397,7 +2427,7 @@ html, body {
     font-weight: 600;
     transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
-.session-inspiration-btn:hover { border-color: #89b4fa; color: var(--mud-palette-text-primary, #cdd6f4); }
+.session-inspiration-btn:hover { border-color: var(--mud-palette-primary, #89b4fa); color: var(--mud-palette-text-primary, #cdd6f4); }
 .session-inspiration-btn.inspiration-on {
     background: #f9e2af22;
     border-color: #f9e2af;
@@ -2849,18 +2879,27 @@ input.equipment-currency-input::-webkit-inner-spin-button { -webkit-appearance: 
 
     .attack-table,
     .inv-table,
-    .advancement-table,
     .data-table {
         min-width: 640px;
     }
 
     .attack-table,
     .inv-table,
-    .advancement-table,
     .data-table,
     .ability-stats-table-wrapper {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
+    }
+
+    /* Advancement table: 3 columns (Level/HP/Features) fit fine at mobile width */
+    .advancement-table {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .adv-features {
+        white-space: normal;
+        word-break: break-word;
     }
 
     .session-pair-row {

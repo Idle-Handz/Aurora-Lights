@@ -16,7 +16,8 @@
                         {
                             var sel = _mode == SelectMode.Inventory && opt.Identifier == _selectedInventory;
                             <div class="picker-item @(sel ? "picker-item-selected" : "")"
-                                 @onclick="() => SelectInventory(opt)">
+                                 @onclick="() => SelectInventory(opt)"
+                                 @ondblclick="() => ConfirmInventory(opt)">
                                 <div class="picker-item-name">@opt.Name</div>
                             </div>
                         }
@@ -54,7 +55,8 @@
                         {
                             var sel = _mode == SelectMode.New && r.Id == _selectedNew;
                             <div class="picker-item @(sel ? "picker-item-selected" : "")"
-                                 @onclick="() => SelectNew(r)">
+                                 @onclick="() => SelectNew(r)"
+                                 @ondblclick="() => ConfirmNew(r)">
                                 <div class="picker-item-name">@r.Name</div>
                                 <div style="font-size: 10px; color: var(--mud-palette-text-disabled); margin-top: 1px;">@r.Type</div>
                             </div>
@@ -167,4 +169,6 @@
         else if (_mode == SelectMode.New && _selectedNew != null)
             MudDialog.Close(new GearPickerResult(null, _selectedNew, IsNew: true));
     }
+    private void ConfirmInventory(InventoryItemOption opt) { SelectInventory(opt); Confirm(); }
+    private void ConfirmNew(ItemSearchResult r)            { SelectNew(r);         Confirm(); }
 }

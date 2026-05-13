@@ -3,12 +3,15 @@ namespace Aurora.App;
 /// <summary>
 /// Native MAUI window that displays a PDF preview using WebView2's built-in
 /// PDF renderer and offers a Save button to persist the file to Documents.
-/// The <paramref name="tempPdfPath"/> file is deleted when the window closes.
 /// </summary>
 internal sealed class PdfPreviewPage : ContentPage
 {
     private readonly string _tempPdfPath;
 
+    /// <summary>
+    /// Creates the preview page for <paramref name="characterName"/>.
+    /// <paramref name="tempPdfPath"/> is deleted when the window closes.
+    /// </summary>
     public PdfPreviewPage(string tempPdfPath, string characterName, Func<Task<string?>> saveToDocuments)
     {
         _tempPdfPath    = tempPdfPath;
