@@ -254,6 +254,10 @@
                         {
                             <div style="color: var(--mud-palette-warning); font-size: 13px;">Database is out of date. Sync to update it.</div>
                         }
+                        else if (_stalenessChecked)
+                        {
+                            <div style="color: var(--mud-palette-success); font-size: 13px;">Database is up to date.</div>
+                        }
                         else
                         {
                             <div style="font-size: 13px; color: var(--mud-palette-text-disabled);">Not checked yet.</div>
@@ -697,6 +701,7 @@
     private Severity _contentStatusSeverity = Severity.Success;
     private bool _contentWorking;
     private bool _parityRunning;
+    private bool _stalenessChecked;
     private bool _needsContentReload;
     private ContentDatabaseHealthReport? _dbHealth;
     private ContentDatabaseParityReport? _dbParity;
@@ -751,11 +756,13 @@
     private async Task CheckStaleAsync()
     {
         await Task.Run(() => ContentDb.CheckIsStale());
+        _stalenessChecked = true;
         await InvokeAsync(StateHasChanged);
     }
 
     private async Task SyncNowAsync()
     {
+        _stalenessChecked = false;
         _cts?.Cancel();
         _cts = new CancellationTokenSource();
         await ContentDb.SyncAsync(_cts.Token);

@@ -395,11 +395,11 @@ else if (_workflowSuggestion != null)
                                 @if (_abilityMethod == AbilityGenMethod.Manual)
                                 {
                                     <input class="ability-manual-input" type="number" min="1" max="30"
-                                           value="@row.Item.FinalScore"
-                                           @onchange="async e => await OnManualTotalChanged(row.Item, int.TryParse(e.Value?.ToString(), out var v) ? v : row.Item.FinalScore)" />
+                                           value="@row.Item.BaseScore"
+                                           @onchange="async e => await OnManualBaseChanged(row.Item, int.TryParse(e.Value?.ToString(), out var v) ? v : row.Item.BaseScore)" />
                                     @if (row.Item.AdditionalScore != 0)
                                     {
-                                        <div class="ability-sublabel">base: @row.Item.BaseScore</div>
+                                        <div class="ability-sublabel">→ @row.Item.FinalScore total</div>
                                     }
                                 }
                                 else if (_abilityMethod == AbilityGenMethod.PointBuy)
@@ -1078,10 +1078,9 @@ else if (_workflowSuggestion != null)
 
     // ── Ability scores: manual ────────────────────────────────────────────────────
 
-    private async Task OnManualTotalChanged(AbilityItem item, int desiredTotal)
+    private async Task OnManualBaseChanged(AbilityItem item, int desiredBase)
     {
-        int newBase = Math.Clamp(desiredTotal - item.AdditionalScore, 1, 30);
-        item.BaseScore = newBase;
+        item.BaseScore = Math.Clamp(desiredBase, 1, 30);
         await ApplyAbilityChangesAsync();
     }
 

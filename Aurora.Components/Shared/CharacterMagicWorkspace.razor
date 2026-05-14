@@ -153,18 +153,20 @@
                             <option value="@school">@school</option>
                         }
                     </select>
-                    <label class="magic-filter-check">
-                        <input type="checkbox" @bind="_preparedOnly" />
-                        <span>Prepared only</span>
-                    </label>
-                    <label class="magic-filter-check">
-                        <input type="checkbox" @bind="_ritualOnly" />
-                        <span>Rituals</span>
-                    </label>
-                    <label class="magic-filter-check">
-                        <input type="checkbox" @bind="_concentrationOnly" />
-                        <span>Concentration</span>
-                    </label>
+                    <div class="magic-filter-checks">
+                        <label class="magic-filter-check">
+                            <input type="checkbox" @bind="_preparedOnly" />
+                            <span>Prepared only</span>
+                        </label>
+                        <label class="magic-filter-check">
+                            <input type="checkbox" @bind="_ritualOnly" />
+                            <span>Rituals</span>
+                        </label>
+                        <label class="magic-filter-check">
+                            <input type="checkbox" @bind="_concentrationOnly" />
+                            <span>Concentration</span>
+                        </label>
+                    </div>
                 </div>
             </section>
 

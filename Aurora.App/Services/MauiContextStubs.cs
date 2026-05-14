@@ -121,6 +121,18 @@ internal sealed class MauiSelectionRuleExpanderHandler : ISelectionRuleExpanderH
 
         CharacterManager.Current.RegisterElement(element);
 
+        if (selectionRule.Attributes.Type.Equals("Background Feature", StringComparison.OrdinalIgnoreCase) &&
+            selectionRule.Attributes.Optional)
+        {
+            var optionalGrant = DataManager.Current.ElementsCollection
+                .GetElement("ID_INTERNAL_GRANT_OPTIONAL_BACKGROUND_FEATURE");
+            if (optionalGrant != null &&
+                !CharacterManager.Current.GetElements().Any(e => e.Id.Equals(optionalGrant.Id, StringComparison.Ordinal)))
+            {
+                CharacterManager.Current.RegisterElement(optionalGrant);
+            }
+        }
+
         _registered[key] = element;
     }
 

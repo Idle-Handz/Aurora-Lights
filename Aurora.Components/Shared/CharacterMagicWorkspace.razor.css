@@ -114,6 +114,14 @@
     flex: 0 0 auto;
 }
 
+.magic-filter-checks {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+}
+
 .magic-filter-check {
     display: inline-flex;
     align-items: center;
@@ -124,6 +132,13 @@
 
 .magic-filter-check input {
     accent-color: var(--mud-palette-primary, #89b4fa);
+}
+
+@media (max-width: 768px) {
+    .magic-filter-check input {
+        width: 1.5rem;
+        height: 1.5rem;
+    }
 }
 
 .magic-view-tabs {
@@ -314,6 +329,13 @@
     width: 1rem;
     height: 1rem;
     min-height: 0;
+}
+
+@media (max-width: 768px) {
+    .magic-spell-prep-check {
+        width: 1.75rem;
+        height: 1.75rem;
+    }
 }
 
 .magic-spell-prep-check:disabled {

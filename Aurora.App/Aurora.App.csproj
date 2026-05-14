@@ -32,6 +32,8 @@
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">15.0</SupportedOSPlatformVersion>
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">24.0</SupportedOSPlatformVersion>
+    <RuntimeIdentifiers Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">android-arm64;android-x64</RuntimeIdentifiers>
+    <EmbedAssembliesIntoApk Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">true</EmbedAssembliesIntoApk>
     <!-- iTextSharp references System.Drawing v2.0.0.0 (old .NET Framework) which the Mono AOT
          compiler can't resolve on Android, causing a crash at Release build time. Disable AOT
          for the Android target so iTextSharp can be included without crashing the toolchain.
@@ -70,10 +72,22 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Aurora.Components\Aurora.Components.csproj" />
-    <ProjectReference Include="..\Aurora.Logic\Aurora.Logic.csproj" />
-    <ProjectReference Include="..\Aurora.Importer\Aurora.Importer.csproj" />
-    <ProjectReference Include="..\Aurora.PdfImport\Aurora.PdfImport.csproj" />
+    <ProjectReference Include="..\Aurora.Components\Aurora.Components.csproj"
+                      SkipGetTargetFrameworkProperties="true"
+                      GlobalPropertiesToRemove="RuntimeIdentifier;RuntimeIdentifiers"
+                      SetTargetFramework="TargetFramework=net10.0" />
+    <ProjectReference Include="..\Aurora.Logic\Aurora.Logic.csproj"
+                      SkipGetTargetFrameworkProperties="true"
+                      GlobalPropertiesToRemove="RuntimeIdentifier;RuntimeIdentifiers"
+                      SetTargetFramework="TargetFramework=net10.0" />
+    <ProjectReference Include="..\Aurora.Importer\Aurora.Importer.csproj"
+                      SkipGetTargetFrameworkProperties="true"
+                      GlobalPropertiesToRemove="RuntimeIdentifier;RuntimeIdentifiers"
+                      SetTargetFramework="TargetFramework=net10.0" />
+    <ProjectReference Include="..\Aurora.PdfImport\Aurora.PdfImport.csproj"
+                      SkipGetTargetFrameworkProperties="true"
+                      GlobalPropertiesToRemove="RuntimeIdentifier;RuntimeIdentifiers"
+                      SetTargetFramework="TargetFramework=net10.0" />
   </ItemGroup>
 
   <ItemGroup>

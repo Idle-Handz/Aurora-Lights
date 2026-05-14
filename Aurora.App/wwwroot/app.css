@@ -987,13 +987,19 @@ html, body {
     display: inline-block;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 768px) {
     .picker-layout {
         flex-direction: column;
         height: auto;
     }
     .picker-left {
         flex: none;
+    }
+    /* Reduce the desktop 3em gap to something tight in the stacked layout */
+    .picker-left .picker-list,
+    .picker-left .picker-gear-inv,
+    .picker-left > .mud-typography {
+        margin-top: 0.5em;
     }
     .picker-list {
         max-height: 200px;
@@ -2698,8 +2704,17 @@ input.equipment-currency-input::-webkit-inner-spin-button { -webkit-appearance: 
         display: none;
     }
 
+    /* Extend AppBar behind the Android status bar; background fills the gap. */
+    .mud-appbar {
+        padding-top: env(safe-area-inset-top, 0px);
+    }
+    /* Shift main content below the (now taller) AppBar. */
+    .mud-main-content {
+        padding-top: calc(56px + env(safe-area-inset-top, 0px)) !important;
+    }
+
     .app-content-container {
-        height: calc(100dvh - 56px - 34px - 72px) !important;
+        height: calc(100dvh - 56px - env(safe-area-inset-top, 0px) - 34px - 58px - env(safe-area-inset-bottom, 0px)) !important;
         padding: 10px !important;
         padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important;
         overflow-x: hidden !important;

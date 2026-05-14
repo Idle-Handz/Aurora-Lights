@@ -283,7 +283,13 @@
             _statusMessage = "Rendering PDF and running OCR…";
             StateHasChanged();
 
-            var outcome = await PdfImport.ImportAsync(file.FullPath);
+            // Stream-copy to a temp file — FullPath is a content:// URI on Android.
+            string tmpPdf = Path.Combine(Path.GetTempPath(), Path.GetFileName(file.FileName));
+            using (var src  = await file.OpenReadAsync())
+            using (var dest = File.Create(tmpPdf))
+                await src.CopyToAsync(dest);
+
+            var outcome = await PdfImport.ImportAsync(tmpPdf);
             HandleOutcome(outcome, "Content database is not available. Sync in Content DB settings first.");
         }
         catch (Exception ex)
@@ -320,7 +326,13 @@
             _statusMessage = "Parsing JSON export…";
             StateHasChanged();
 
-            var outcome = await PdfImport.ImportFromJsonAsync(file.FullPath);
+            // Stream-copy to a temp file — FullPath is a content:// URI on Android.
+            string tmpJson = Path.Combine(Path.GetTempPath(), Path.GetFileName(file.FileName));
+            using (var src  = await file.OpenReadAsync())
+            using (var dest = File.Create(tmpJson))
+                await src.CopyToAsync(dest);
+
+            var outcome = await PdfImport.ImportFromJsonAsync(tmpJson);
             HandleOutcome(outcome, "Content database is not available. Sync in Content DB settings first.");
         }
         catch (Exception ex)
