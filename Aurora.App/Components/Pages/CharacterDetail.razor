@@ -5,7 +5,7 @@
 
 @if (_snap is null)
 {
-    <MudText Color="Color.Secondary">No character loaded.</MudText>
+    <MudText Color="Color.Secondary">No character loaded. <MudLink Href="/">Go to Characters</MudLink></MudText>
     return;
 }
 
@@ -18,7 +18,7 @@
         }
         else
         {
-            <MudIcon Icon="@Icons.Material.Filled.Person" Style="font-size: 72px; color: #585b70;" />
+            <MudIcon Icon="@Icons.Material.Filled.Person" Style="font-size: 72px; color: var(--mud-palette-text-disabled);" />
         }
         <div class="portrait-change-overlay" @onclick="OpenPortraitPickerAsync" title="Change portrait">
             <MudIcon Icon="@Icons.Material.Filled.Edit" Style="font-size: 16px;" />
@@ -384,7 +384,7 @@
                                     <td class="adv-features">
                                         @if (row.Features.Count == 0)
                                         {
-                                            <span style="color: #585b70;">—</span>
+                                            <span style="color: var(--mud-palette-text-disabled);">—</span>
                                         }
                                         else
                                         {
@@ -407,7 +407,7 @@
             <div class="section-label" style="margin-bottom: 4px;">@comp.Name</div>
             @if (!string.IsNullOrEmpty(comp.TypeLine))
             {
-                <div style="font-size: 13px; color: #a6adc8; margin-bottom: 12px; font-style: italic;">@comp.TypeLine</div>
+                <div style="font-size: 13px; color: var(--mud-palette-text-secondary); margin-bottom: 12px; font-style: italic;">@comp.TypeLine</div>
             }
 
             @* Combat stats strip *@
@@ -731,6 +731,8 @@
             {
                 [DevicePlatform.WinUI]       = [".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp"],
                 [DevicePlatform.MacCatalyst] = ["public.image"],
+                [DevicePlatform.Android]     = ["image/*"],
+                [DevicePlatform.iOS]         = ["public.image"],
             }),
         };
 
@@ -744,8 +746,12 @@
         {
             string portraitsDir = Builder.Presentation.Services.Data.DataManager.Current.UserDocumentsPortraitsDirectory;
             Directory.CreateDirectory(portraitsDir);
-            string destPath = Path.Combine(portraitsDir, Path.GetFileName(pick.FullPath));
-            File.Copy(pick.FullPath, destPath, overwrite: true);
+            string fileName = Path.GetFileName(pick.FileName);
+            string destPath = Path.Combine(portraitsDir, fileName);
+            // Use stream copy — FullPath is a content:// URI on Android and is not a real file path.
+            using (var src  = await pick.OpenReadAsync())
+            using (var dest = File.Create(destPath))
+                await src.CopyToAsync(dest);
 
             using var scope = await CharacterContext.EnterAsync(tab);
             var cm = Builder.Presentation.CharacterManager.Current;
@@ -759,7 +765,9 @@
             }
             else
             {
-                _portraitSrc = ResolvePortrait(tab.File);
+                tab.File.DisplayPortraitFilePath = destPath;
+                tab.File.DisplayPortraitBase64 = string.Empty;
+                _portraitSrc = ResolvePortraitFromBytes(destPath);
                 Snackbar.Add("Portrait updated.", Severity.Success, cfg => cfg.VisibleStateDuration = 2000);
                 StateHasChanged();
             }
@@ -787,6 +795,21 @@
             }
             catch { }
         }
+
+        return null;
+    }
+
+    private static string? ResolvePortraitFromBytes(string path)
+    {
+        try
+        {
+            if (File.Exists(path))
+            {
+                var bytes = File.ReadAllBytes(path);
+                return $"data:image/png;base64,{Convert.ToBase64String(bytes)}";
+            }
+        }
+        catch { }
 
         return null;
     }

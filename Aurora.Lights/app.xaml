@@ -421,7 +421,7 @@
                 <Setter Property="Control.Background" Value="{DynamicResource AccentColorBrush}"/>
                 <Setter Property="FrameworkElement.MinWidth" Value="450"/>
                 <Setter Property="FrameworkElement.MinHeight" Value="650"/>
-                <Setter Property="Window.Title" Value="CHARACTER BUILDER"/>
+                <Setter Property="Window.Title" Value="AURORA LIGHTS"/>
                 <Setter Property="controls:MetroWindow.TitleAlignment" Value="Left"/>
                 <Setter Property="controls:MetroWindow.ShowSystemMenuOnRightClick" Value="false"/>
                 <Setter Property="controls:MetroWindow.WindowTransitionsEnabled" Value="false"/>
@@ -449,7 +449,7 @@
                 <Setter Property="Control.Background" Value="{DynamicResource AccentColorBrush}"/>
                 <Setter Property="FrameworkElement.MinWidth" Value="450"/>
                 <Setter Property="FrameworkElement.MinHeight" Value="650"/>
-                <Setter Property="Window.Title" Value="CHARACTER BUILDER"/>
+                <Setter Property="Window.Title" Value="AURORA LIGHTS"/>
                 <Setter Property="controls:MetroWindow.ShowSystemMenuOnRightClick" Value="false"/>
                 <Setter Property="controls:MetroWindow.IconTemplate" Value="{x:Null}"/>
                 <Setter Property="controls:MetroWindow.TitleTemplate">

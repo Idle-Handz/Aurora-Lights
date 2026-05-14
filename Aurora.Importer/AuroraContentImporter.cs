@@ -25,6 +25,12 @@ public static class AuroraContentImporter
     public static bool IsStale(string contentDirectory, string sqlitePath) =>
         AuroraSqliteImporter.IsStale(contentDirectory, sqlitePath);
 
+    public static ContentDatabaseMetadata? GetMetadata(string sqlitePath) =>
+        AuroraSqliteImporter.GetMetadata(sqlitePath);
+
+    public static ContentDatabaseHealthReport? GetHealthReport(string sqlitePath) =>
+        AuroraSqliteImporter.GetHealthReport(sqlitePath);
+
     /// <summary>
     /// Scans <paramref name="contentDirectory"/> for Aurora XML files, then
     /// incrementally updates the SQLite database at <paramref name="sqlitePath"/>.

@@ -49,18 +49,21 @@ public sealed class CompendiumService
 
     private readonly object _catalogLock = new();
     private readonly ContentDatabaseService _contentDb;
+    private readonly CharacterService _characterService;
     private IReadOnlyList<CompendiumEntryModel>? _catalogCache;
     private readonly ConcurrentDictionary<string, CompendiumEntryModel> _detailCache = new(StringComparer.Ordinal);
 
-    public CompendiumService(ContentDatabaseService contentDb)
+    public CompendiumService(ContentDatabaseService contentDb, CharacterService characterService)
     {
         _contentDb = contentDb;
+        _characterService = characterService;
     }
 
     public async Task<IReadOnlyList<CompendiumEntryModel>> BuildCatalogAsync()
     {
-        if (_catalogCache is not null)
-            return _catalogCache;
+        // Ensure all Aurora content elements are loaded before building the catalog.
+        // PreloadAsync is idempotent — fast no-op after the first call.
+        await _characterService.PreloadAsync();
 
         lock (_catalogLock)
         {
@@ -311,19 +314,30 @@ public sealed class CompendiumService
 
     private IReadOnlyList<CompendiumEntryModel> BuildCatalogCore()
     {
+        // DB is the primary source — structured, fast, richer metadata.
+        var merged = new Dictionary<string, CompendiumEntryModel>(StringComparer.Ordinal);
         if (_contentDb.DatabasePath is { } dbPath && File.Exists(dbPath))
         {
             try
             {
-                return BuildCatalogFromDatabase(dbPath);
+                foreach (var entry in BuildCatalogFromDatabase(dbPath))
+                    merged[entry.Id] = entry;
             }
             catch (Exception ex)
             {
-                DebugLogService.Instance.Warn("CompendiumService: SQLite catalog query failed; falling back to loaded elements.", ex.Message);
+                DebugLogService.Instance.Warn("CompendiumService: SQLite catalog query failed; falling back to loaded elements only.", ex.Message);
             }
         }
 
-        return BuildCatalogFromLoadedElements();
+        // Loaded elements fill in anything the DB doesn't cover yet (e.g. spells not yet imported).
+        foreach (var entry in BuildCatalogFromLoadedElements())
+            merged.TryAdd(entry.Id, entry);
+
+        return merged.Values
+            .OrderBy(entry => TypeOrder(entry.Type))
+            .ThenBy(entry => entry.Name)
+            .ThenBy(entry => entry.Source)
+            .ToList();
     }
 
     private CompendiumEntryModel EnrichEntryCore(CompendiumEntryModel entry)
@@ -410,7 +424,7 @@ LEFT JOIN (
     ON item_meta.element_id = e.element_id
 LEFT JOIN companions AS comp
     ON comp.element_id = e.element_id
-WHERE e.compendium_display = 1
+WHERE (e.compendium_display = 1 OR et.type_name = 'Spell')
   AND et.type_name NOT IN ('Source', 'Support', 'Internal', 'Core', 'Ability Score Improvement', 'Level', 'Multiclass', 'Skill', 'Ignore')
 ORDER BY e.name COLLATE NOCASE;
 """;

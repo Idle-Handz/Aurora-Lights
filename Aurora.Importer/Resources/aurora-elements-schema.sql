@@ -25,6 +25,18 @@ CREATE TABLE IF NOT EXISTS import_state
     imported_utc TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS database_metadata
+(
+    singleton_id INTEGER NOT NULL PRIMARY KEY CHECK (singleton_id = 1),
+    schema_version INTEGER NOT NULL,
+    data_version INTEGER NOT NULL,
+    importer_version TEXT NOT NULL,
+    built_utc TEXT NOT NULL,
+    source_file_count INTEGER NOT NULL DEFAULT 0,
+    element_count INTEGER NOT NULL DEFAULT 0,
+    content_root_hash TEXT
+);
+
 CREATE TABLE IF NOT EXISTS source_books
 (
     source_book_id INTEGER PRIMARY KEY,

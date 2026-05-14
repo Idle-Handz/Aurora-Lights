@@ -315,9 +315,17 @@
 
     private async Task PreviewPdfAsync()
     {
-        if (_snap is null) return;
+        if (_snap is null)
+        {
+            WarnUnavailable("There is no active character to preview.");
+            return;
+        }
         var tab = Tabs.ActiveTab;
-        if (tab is null) return;
+        if (tab is null)
+        {
+            WarnUnavailable("There is no active character tab to preview.");
+            return;
+        }
         _generating = true;
         _error      = null;
         StateHasChanged();
@@ -377,9 +385,17 @@
 
     private async Task GeneratePdfAsync()
     {
-        if (_snap is null) return;
+        if (_snap is null)
+        {
+            WarnUnavailable("There is no active character to export.");
+            return;
+        }
         var tab = Tabs.ActiveTab;
-        if (tab is null) return;
+        if (tab is null)
+        {
+            WarnUnavailable("There is no active character tab to export.");
+            return;
+        }
 
         string safeName = string.Concat((_snap.Name ?? "Character")
             .Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
@@ -415,6 +431,9 @@
             StateHasChanged();
         }
     }
+
+    private void WarnUnavailable(string message) =>
+        Snackbar.Add(message, Severity.Warning, cfg => cfg.VisibleStateDuration = 2500);
 
     private async Task<(string Path, CharacterSnapshot? Snap)> GenerateWithContextAsync(CharacterTab tab, bool isPreview)
     {

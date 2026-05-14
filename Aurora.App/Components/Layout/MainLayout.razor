@@ -5,6 +5,7 @@
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
 @inject UserPreferencesService Prefs
+@inject AppIdentityService Brand
 @inject IJSRuntime JS
 
 <MudThemeProvider Theme="_theme" IsDarkMode="@(!Prefs.LightMode)" />
@@ -18,12 +19,18 @@
                        Color="Color.Inherit"
                        Edge="Edge.Start"
                        OnClick="ToggleDrawer" />
-        <MudText Typo="Typo.h6" Class="ml-2">Aurora: Reflections</MudText>
+        <div class="app-brand ml-2">
+            <img src="brand/aurora-appicon.png" alt="@Brand.AppName" class="app-brand-icon" />
+            <div class="app-brand-text">
+                <div class="app-brand-title">@Brand.AppName</div>
+            </div>
+        </div>
         <MudSpacer />
         <MudTextField T="string"
                       Value="_compendiumQuickQuery"
                       ValueChanged="OnCompendiumQueryChanged"
                       Placeholder="Compendium search"
+                      Immediate="true"
                       Margin="Margin.Dense"
                       Variant="Variant.Outlined"
                       Class="appbar-compendium-search"
@@ -41,13 +48,21 @@
                            title="Save (Ctrl+S)"
                            OnClick="@(() => SaveActive())" />
         }
-        <MudIconButton Icon="@Icons.Material.Filled.Help"
-                       Color="Color.Inherit"
-                       title="Keyboard shortcuts"
-                       OnClick="ShowShortcutsDialog" />
+        <MudMenu Icon="@Icons.Material.Filled.HelpOutline"
+                 Color="Color.Inherit"
+                 AriaLabel="Help and about"
+                 Dense="true">
+            <MudMenuItem Icon="@Icons.Material.Filled.Keyboard" OnClick="ShowShortcutsDialog">
+                Keyboard shortcuts
+            </MudMenuItem>
+            <MudMenuItem Icon="@Icons.Material.Filled.Info" OnClick="ShowAboutDialog">
+                About @Brand.AppName
+            </MudMenuItem>
+        </MudMenu>
     </MudAppBar>
 
     <MudDrawer @bind-Open="_drawerOpen"
+               Class="desktop-nav-drawer"
                ClipMode="DrawerClipMode.Always"
                Elevation="2"
                Variant="DrawerVariant.Mini"
@@ -55,7 +70,7 @@
         <NavMenu />
     </MudDrawer>
 
-    <MudMainContent>
+    <MudMainContent Class="app-main-content">
         @* Character tab bar — only visible when one or more characters are open *@
         @if (Tabs.Tabs.Count > 0)
         {
@@ -77,14 +92,44 @@
                 }
             </div>
         }
-        <MudContainer MaxWidth="MaxWidth.False" Class="pa-4" Style="@ContentStyle">
+        <MudContainer MaxWidth="MaxWidth.False" Class="app-content-container pa-4" Style="@ContentStyle">
             <AppErrorBoundary @ref="_errorBoundary">@Body</AppErrorBoundary>
         </MudContainer>
     </MudMainContent>
 </MudLayout>
 
-<div style="position: fixed; bottom: 0; left: 0; right: 0; height: 28px; background: var(--mud-palette-background-grey, #181825); border-top: 1px solid var(--mud-palette-lines-default, #313244); display: flex; align-items: center; padding: 0 12px; z-index: 1000;">
-    <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-disabled, #6c7086);">Aurora: Reflections</MudText>
+<nav class="mobile-bottom-nav" aria-label="Primary navigation">
+    <NavLink href="/" Match="NavLinkMatch.All" class="mobile-bottom-link">
+        <MudIcon Icon="@Icons.Material.Filled.People" />
+        <span>Chars</span>
+    </NavLink>
+    <NavLink href="/compendium" class="mobile-bottom-link">
+        <MudIcon Icon="@Icons.Material.Filled.MenuBook" />
+        <span>Comp</span>
+    </NavLink>
+    @if (Tabs.ActiveTab != null)
+    {
+        <NavLink href="/build" class="mobile-bottom-link">
+            <MudIcon Icon="@Icons.Material.Filled.Build" />
+            <span>Build</span>
+        </NavLink>
+        <NavLink href="/equipment" class="mobile-bottom-link">
+            <MudIcon Icon="@Icons.Material.Filled.Shield" />
+            <span>Gear</span>
+        </NavLink>
+        <NavLink href="/magic" class="mobile-bottom-link">
+            <MudIcon Icon="@Icons.Material.Filled.AutoAwesome" />
+            <span>Magic</span>
+        </NavLink>
+    }
+    <NavLink href="/settings" class="mobile-bottom-link">
+        <MudIcon Icon="@Icons.Material.Filled.Settings" />
+        <span>Settings</span>
+    </NavLink>
+</nav>
+
+<div class="app-status-bar">
+    <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-disabled, #6c7086);">@Brand.AppName</MudText>
 </div>
 
 @code {
@@ -94,8 +139,8 @@
     private string _compendiumQuickQuery = string.Empty;
 
     private string ContentStyle => Tabs.Tabs.Count > 0
-        ? "height: calc(100vh - 64px - 34px - 28px); overflow-y: auto;"
-        : "height: calc(100vh - 64px - 28px); overflow-y: auto;";
+        ? "height: calc(100dvh - 64px - 34px - 28px); overflow-y: auto; overflow-x: hidden;"
+        : "height: calc(100dvh - 64px - 28px); overflow-y: auto; overflow-x: hidden;";
 
     protected override void OnInitialized()
     {
@@ -128,16 +173,28 @@
             <table style="border-collapse:collapse; width:100%; font-size:13px;">
               <tbody>
                 <tr>
-                  <td style="padding:6px 16px 6px 0; color:#89b4fa; font-family:monospace; white-space:nowrap;">Ctrl + S</td>
+                  <td style="padding:6px 16px 6px 0; color:var(--mud-palette-primary); font-family:monospace; white-space:nowrap;">Ctrl + S</td>
                   <td style="padding:6px 0;">Save the active character</td>
                 </tr>
               </tbody>
             </table>
-            <p style="font-size:12px; color:#6c7086; margin-top:12px;">
+            <p style="font-size:12px; color:var(--mud-palette-text-disabled); margin-top:12px;">
               More shortcuts can be added in future updates.
             </p>
             """,
             yesText: "Close");
+    }
+
+    private async Task ShowAboutDialog()
+    {
+        await DialogService.ShowAsync<Aurora.App.Components.Pages.AboutDialog>(
+            $"About {Brand.AppName}",
+            new DialogOptions
+            {
+                MaxWidth = MaxWidth.Small,
+                FullWidth = true,
+                CloseButton = true
+            });
     }
 
     private void OnThemeChanged()

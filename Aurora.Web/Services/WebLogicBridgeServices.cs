@@ -49,6 +49,14 @@ internal sealed class WebSelectionRuleExpanderHandler : ISelectionRuleExpanderHa
         _registered[key] = element;
     }
 
+    public void SetRegisteredListItem(SelectRule selectionRule, SelectionRuleListItem item, int number = 1)
+    {
+        if (selectionRule == null)
+            return;
+
+        _registered[$"{selectionRule.UniqueIdentifier}:{number}"] = item;
+    }
+
     public object GetRegisteredElement(SelectRule selectionRule, int number = 1)
     {
         _registered.TryGetValue($"{selectionRule.UniqueIdentifier}:{number}", out object? element);

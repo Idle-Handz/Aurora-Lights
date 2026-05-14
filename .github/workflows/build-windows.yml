@@ -23,12 +23,12 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.101'
+          dotnet-version: '10.0.x'
 
       - name: Install MAUI workloads
-        run: dotnet workload install maui --version 10.0.101.1
+        run: dotnet workload install maui
 
       - name: Show SDK toolchain
         run: dotnet --info
@@ -44,6 +44,8 @@ jobs:
             -f net10.0-windows10.0.19041.0 \
             -r ${{ matrix.runtime }} \
             -c Release \
+            --no-restore \
+            -p:PublishReadyToRun=false \
             -o publish/${{ matrix.runtime }}
 
       - name: List publish output

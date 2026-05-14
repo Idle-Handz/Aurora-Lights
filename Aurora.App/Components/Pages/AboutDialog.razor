@@ -1,0 +1,54 @@
+@inject Aurora.App.Services.AppIdentityService Brand
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">About @Brand.AppName</MudText>
+    </TitleContent>
+    <DialogContent>
+        <div class="about-dialog">
+            <div class="about-dialog-header">
+                <img src="brand/aurora-appicon.png" alt="@Brand.AppName" class="about-dialog-mark" />
+                <div>
+                    <MudText Typo="Typo.h5">@Brand.AppName</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">@Brand.Tagline</MudText>
+                </div>
+            </div>
+
+            <MudDivider Class="my-3" />
+
+            <MudStack Spacing="1">
+                <MudText Typo="Typo.body2"><b>Publisher:</b> @Brand.PublisherName</MudText>
+                <MudText Typo="Typo.body2"><b>Version:</b> @Brand.VersionLabel</MudText>
+                <MudText Typo="Typo.body2">
+                    <b>Support:</b> For issues, questions, or feedback, use the project repository or issue tracker.
+                </MudText>
+            </MudStack>
+
+            <MudStack Row="true" Spacing="1" Class="mt-4" Wrap="Wrap.Wrap">
+                <MudButton Variant="Variant.Outlined"
+                           StartIcon="@Icons.Material.Filled.OpenInNew"
+                           OnClick="OpenRepositoryAsync">
+                    Repository
+                </MudButton>
+                <MudButton Variant="Variant.Outlined"
+                           StartIcon="@Icons.Material.Filled.BugReport"
+                           OnClick="OpenIssuesAsync">
+                    Report an Issue
+                </MudButton>
+            </MudStack>
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Text" OnClick="Close">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private MudDialogInstance MudDialog { get; set; } = default!;
+
+    private void Close() => MudDialog.Close();
+
+    private Task OpenRepositoryAsync() => Launcher.Default.OpenAsync(Brand.RepositoryUrl);
+
+    private Task OpenIssuesAsync() => Launcher.Default.OpenAsync(Brand.IssuesUrl);
+}

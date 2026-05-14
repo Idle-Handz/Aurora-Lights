@@ -1,28 +1,54 @@
 @inherits LayoutComponentBase
 
-<div class="shell">
-    <aside class="shell-sidebar">
-        <div class="shell-brand">
-            <div class="shell-kicker">Aurora.Web</div>
-            <div class="shell-title">Phase 0</div>
-            <div class="shell-subtitle">Session-scoped SRD plus private upload overlay</div>
+<MudThemeProvider Theme="_theme" IsDarkMode="true" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="1" Color="Color.Dark">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu"
+                       Color="Color.Inherit"
+                       Edge="Edge.Start"
+                       Disabled="true" />
+        <div class="app-brand ml-2">
+            <div class="app-brand-mark">A</div>
+            <div class="app-brand-text">
+                <div class="app-brand-title">Aurora: Reflections</div>
+                <div class="app-brand-subtitle">Web session</div>
+            </div>
         </div>
+        <MudSpacer />
+        <form class="appbar-search-form" action="/compendium" method="get">
+            <MudIcon Icon="@Icons.Material.Filled.Search" Class="appbar-search-icon" />
+            <input class="appbar-search-input"
+                   name="q"
+                   type="search"
+                   placeholder="Compendium search"
+                   autocomplete="off" />
+            <button class="appbar-search-submit" type="submit" title="Search compendium">
+                <MudIcon Icon="@Icons.Material.Filled.Search" />
+            </button>
+        </form>
+    </MudAppBar>
 
-        <nav class="shell-nav">
-            <NavLink href="/" Match="NavLinkMatch.All">Overview</NavLink>
-            <NavLink href="/import">Import</NavLink>
-            <NavLink href="/compendium">Compendium</NavLink>
-            <NavLink href="/characters">Characters</NavLink>
-            <NavLink href="/manage">Manage</NavLink>
-            <NavLink href="/equipment">Equipment</NavLink>
-            <NavLink href="/magic">Magic</NavLink>
-            <NavLink href="/studio">Studio</NavLink>
-        </nav>
-    </aside>
+    <MudDrawer Open="true"
+               ClipMode="DrawerClipMode.Always"
+               Elevation="2"
+               Variant="DrawerVariant.Mini"
+               OpenMiniOnHover="true">
+        <NavMenu />
+    </MudDrawer>
 
-    <main class="shell-main">
-        @Body
-    </main>
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.False" Class="pa-4 web-main-content">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+<div class="web-status-bar">
+    <MudText Typo="Typo.caption">Aurora.Web stores uploads and character edits in the current browser session.</MudText>
 </div>
 
 <div id="blazor-error-ui" data-nosnippet>
@@ -30,3 +56,26 @@
     <a href="." class="reload">Reload</a>
     <span class="dismiss">x</span>
 </div>
+
+@code {
+    private readonly MudTheme _theme = new()
+    {
+        PaletteDark = new PaletteDark
+        {
+            Primary = "#89b4fa",
+            Secondary = "#cba6f7",
+            Background = "#1e1e2e",
+            BackgroundGray = "#181825",
+            Surface = "#313244",
+            DrawerBackground = "#181825",
+            AppbarBackground = "#181825",
+            ActionDefault = "#cdd6f4",
+            TextPrimary = "#cdd6f4",
+            TextSecondary = "#a6adc8",
+            TextDisabled = "#6c7086",
+            Divider = "#313244",
+            LinesDefault = "#313244",
+            LinesInputs = "#45475a",
+        }
+    };
+}

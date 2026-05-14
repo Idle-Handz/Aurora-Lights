@@ -5,6 +5,7 @@ using Builder.Presentation.Models;
 using Builder.Presentation.Services;
 using Builder.Presentation.Services.Data;
 using Builder.Presentation.Utilities;
+using System.Text.RegularExpressions;
 
 namespace Aurora.App.Services;
 
@@ -141,6 +142,16 @@ public static class BuildService
     {
         try
         {
+            // List-type rules (Bond, Ideal, Flaw, Personality Trait, etc.) have their options
+            // as inline <item> children of the <select> tag, not in the element collection.
+            if (rule.Attributes.IsList)
+            {
+                var listItems = rule.Attributes.ListItems ?? [];
+                return listItems
+                    .Select(li => new ElementOption(li.ID.ToString(), li.Text, li.Text, "", ""))
+                    .ToList();
+            }
+
             // Use the same approach as SelectionRuleCollectionService / SelectionRuleComboBoxViewModel:
             // • InitializeWithSelectionRule so level-based expressions can resolve
             // • Pass SupportsElementIdRange() as the containsElementIDs flag (correct vs ElementsOrganizerRefactored's heuristic)
@@ -193,9 +204,50 @@ public static class BuildService
                         e.HasRequirements ? FormatRequirements(e.Requirements) : ""))
                     .ToList();
 
+            // Case-insensitive fallback: only used when the main expression returned nothing AND
+            // this is not a Spell rule (Spell rules use SpellFallbackOptions above). Catches
+            // content that uses internal ID aliases like ID_INTERNAL_SUPPORT_LANGUAGE_EXOTIC
+            // whose plain-word token ("Exotic") fails the evaluator's case-sensitive Contains.
+            // Running it as a union (even when the main evaluator found results) risks adding
+            // wrong elements that pass substring-matching but fail proper rule validation on reload.
+            if (list.Count == 0 && rule.Attributes.ContainsSupports()
+                && !string.Equals(rule.Attributes.Type, "Spell", StringComparison.OrdinalIgnoreCase))
+            {
+                list = FilterBySupportsCaseInsensitive(rule.Attributes.Supports, baseCollection)
+                    .Where(e => !string.IsNullOrWhiteSpace(e.Name))
+                    .OrderBy(e => e.Name)
+                    .Select(e => new ElementOption(
+                        e.Id, e.Name!, GetFeatureDescription(e),
+                        e.Source ?? "",
+                        e.HasRequirements ? FormatRequirements(e.Requirements) : ""))
+                    .ToList();
+            }
+
             return DeduplicateOptions(list);
         }
         catch { return []; }
+    }
+
+    /// <summary>
+    /// Filters elements whose Supports field contains any of the label terms parsed from
+    /// <paramref name="supportsExpression"/>, using case-insensitive matching. This catches
+    /// elements that use internal ID aliases like ID_INTERNAL_SUPPORT_LANGUAGE_EXOTIC which
+    /// contain "exotic" but not the mixed-case literal "Exotic" that the expression uses.
+    /// </summary>
+    private static IEnumerable<ElementBase> FilterBySupportsCaseInsensitive(
+        string supportsExpression, IEnumerable<ElementBase> elements)
+    {
+        var terms = Regex.Matches(supportsExpression, @"[A-Za-z][A-Za-z0-9_]*")
+            .Cast<Match>()
+            .Select(m => m.Value)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (terms.Count == 0) return Enumerable.Empty<ElementBase>();
+
+        return elements.Where(e =>
+            e.Supports != null &&
+            e.Supports.Any(s => terms.Any(t => s.IndexOf(t, StringComparison.OrdinalIgnoreCase) >= 0)));
     }
 
     /// <summary>
@@ -383,7 +435,6 @@ public static class BuildService
 
             // 3. Validate every other SelectionRule: check if its registered element is
             //    still a valid option. If not, unregister it to avoid an inconsistent state.
-            var organizer = new ElementsOrganizerRefactored(DataManager.Current.ElementsCollection);
             var currentIds = cm.GetElements().Select(e => e.Id).ToHashSet();
 
             foreach (var r in cm.SelectionRules.ToList())
@@ -397,20 +448,11 @@ public static class BuildService
                         as Builder.Data.ElementBase;
                     if (registered == null) continue;
 
-                    // Check if it still appears in the valid option list for this rule.
                     bool stillValid;
                     try
                     {
-                        var supported = organizer.GetSupportedElements(r);
-                        stillValid = supported.Any(e => e.Id == registered.Id);
-
-                        // Also re-check element-level requirements.
-                        if (stillValid && registered.HasRequirements)
-                        {
-                            var interp = new ExpressionInterpreter();
-                            stillValid = interp.EvaluateElementRequirementsExpression(
-                                registered.Requirements, currentIds);
-                        }
+                        stillValid = GetValidSelectionIds(r, registered.Id, currentIds)
+                            .Contains(registered.Id);
                     }
                     catch { stillValid = true; } // be conservative on errors
 
@@ -434,6 +476,20 @@ public static class BuildService
             // 4. Reprocess after any invalidations.
             if (invalidated.Count > 0)
                 cm.ReprocessCharacter();
+
+            // 4.5. For background list selections (Bond, Ideal, Flaw, Personality Trait),
+            //      CharacterManager.SetCharacterDetails has now populated
+            //      FillableBackgroundCharacteristics from SelectionRuleListItems.
+            //      Copy those into the snapshot so FlushSnapshotToCharacter (step 5) writes
+            //      them back to the character's editable text fields.
+            if (rule.Attributes.IsList && tab.Snapshot != null)
+            {
+                var bgChar = cm.Character.FillableBackgroundCharacteristics;
+                if (!string.IsNullOrEmpty(bgChar.Traits.Content)) tab.Snapshot.Notes1 = bgChar.Traits.Content;
+                if (!string.IsNullOrEmpty(bgChar.Ideals.Content)) tab.Snapshot.Notes2 = bgChar.Ideals.Content;
+                if (!string.IsNullOrEmpty(bgChar.Bonds.Content))  tab.Snapshot.Allies = bgChar.Bonds.Content;
+                if (!string.IsNullOrEmpty(bgChar.Flaws.Content))  tab.Snapshot.Organisation = bgChar.Flaws.Content;
+            }
 
             // 5. Flush snapshot text edits back into the Character object so they
             //    survive a full Save() which regenerates the XML from CharacterManager state.
@@ -802,6 +858,72 @@ public static class BuildService
     public static bool IsUsingAverageHp =>
         CharacterManager.Current.ContainsAverageHitPointsOption();
 
+    private static string FeatsOptionId         => Builder.Data.Strings.InternalOptions.AllowFeats;
+    private static string MulticlassOptionId    => Builder.Data.Strings.InternalOptions.AllowMulticlassing;
+    private const  string CustomOriginOptionId      = "ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI";
+    private const  string CustomLanguageOptionId    = "ID_WOTC_TCOE_OPTION_CUSTOMIZED_LANGUAGE";
+    private const  string CustomProficiencyOptionId = "ID_WOTC_TCOE_OPTION_CUSTOMIZED_PROFICIENCY";
+
+    public static bool IsUsingFeats =>
+        CharacterManager.Current.ContainsOption(FeatsOptionId);
+
+    public static bool IsUsingMulticlassing =>
+        CharacterManager.Current.ContainsOption(MulticlassOptionId);
+
+    public static bool IsUsingCustomOrigin =>
+        CharacterManager.Current.ContainsOption(CustomOriginOptionId);
+
+    public static bool IsUsingCustomLanguage =>
+        CharacterManager.Current.ContainsOption(CustomLanguageOptionId);
+
+    public static bool IsUsingCustomProficiency =>
+        CharacterManager.Current.ContainsOption(CustomProficiencyOptionId);
+
+    public static async Task<string?> SetFeatsOptionAsync(CharacterTab tab, bool enabled)
+        => await SetOptionAsync(tab, FeatsOptionId, enabled, "BuildService.SetFeatsOptionAsync");
+
+    public static async Task<string?> SetMulticlassingOptionAsync(CharacterTab tab, bool enabled)
+        => await SetOptionAsync(tab, MulticlassOptionId, enabled, "BuildService.SetMulticlassingOptionAsync");
+
+    public static async Task<string?> SetCustomOriginOptionAsync(CharacterTab tab, bool enabled)
+        => await SetOptionAsync(tab, CustomOriginOptionId, enabled, "BuildService.SetCustomOriginOptionAsync");
+
+    public static async Task<string?> SetCustomLanguageOptionAsync(CharacterTab tab, bool enabled)
+        => await SetOptionAsync(tab, CustomLanguageOptionId, enabled, "BuildService.SetCustomLanguageOptionAsync");
+
+    public static async Task<string?> SetCustomProficiencyOptionAsync(CharacterTab tab, bool enabled)
+        => await SetOptionAsync(tab, CustomProficiencyOptionId, enabled, "BuildService.SetCustomProficiencyOptionAsync");
+
+    private static async Task<string?> SetOptionAsync(CharacterTab tab, string optionId, bool enabled, string callerName)
+    {
+        using var scope = await CharacterContext.EnterAsync(tab);
+        return await Task.Run(() =>
+        {
+            try
+            {
+                var cm = CharacterManager.Current;
+                bool has = cm.ContainsOption(optionId);
+                if (enabled && !has)
+                {
+                    var element = DataManager.Current.ElementsCollection
+                        .FirstOrDefault(e => e.Id == optionId);
+                    if (element != null) cm.RegisterElement(element);
+                }
+                else if (!enabled && has)
+                {
+                    var element = cm.GetElements()
+                        .FirstOrDefault(e => e.Id == optionId);
+                    if (element != null) cm.UnregisterElement(element);
+                }
+                cm.ReprocessCharacter();
+                ResnapTab(tab);
+                SaveCharacterFile(tab);
+                return (string?)null;
+            }
+            catch (Exception ex) { return DebugLogService.Catch(ex, callerName); }
+        });
+    }
+
     /// <summary>
     /// Registers or unregisters the AllowAverageHitPoints option element, then reprocesses
     /// and saves. Returns null on success, or an error string.
@@ -966,7 +1088,7 @@ public static class BuildService
     /// </summary>
     private static readonly HashSet<string> AsiTypes = new(StringComparer.OrdinalIgnoreCase)
     {
-        "Ability Score Improvement", "Feat",
+        "Ability Score Improvement",
     };
 
     private static readonly HashSet<string> LanguageTypes = new(StringComparer.OrdinalIgnoreCase)
@@ -978,6 +1100,11 @@ public static class BuildService
     {
         "Proficiency", "Skill", "Tool Proficiency", "Armor Proficiency", "Weapon Proficiency",
         "Expertise",
+    };
+
+    private static readonly HashSet<string> FeatTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Feat", "Feat Feature",
     };
 
     private static readonly HashSet<string> RaceTypes = new(StringComparer.OrdinalIgnoreCase)
@@ -1132,6 +1259,7 @@ public static class BuildService
         var bgEntries          = new List<SelectionRuleEntry>();
         var languageEntries    = new List<SelectionRuleEntry>();
         var proficiencyEntries = new List<SelectionRuleEntry>();
+        var featEntries        = new Dictionary<string, List<SelectionRuleEntry>>(StringComparer.OrdinalIgnoreCase);
         var overflowEntries    = new Dictionary<string, List<SelectionRuleEntry>>(StringComparer.OrdinalIgnoreCase);
         var classGroupEntries  = new Dictionary<ClassProgressionManager, List<SelectionRuleEntry>>();
 
@@ -1155,28 +1283,46 @@ public static class BuildService
                     rule, n, label, currentName, rule.Attributes.RequiredLevel,
                     BuildEntryKey(ruleType, ruleName, n));
 
-                if (classMgr != null)
+                switch (ClassifyBuildRule(rule, classMgr))
                 {
-                    if (!classGroupEntries.ContainsKey(classMgr))
-                        classGroupEntries[classMgr] = [];
-                    classGroupEntries[classMgr].Add(entry);
-                }
-                else if (RaceTypes.Contains(ruleType))
-                    raceEntries.Add(entry);
-                else if (ClassTypes.Contains(ruleType))
-                    classMainEntries.Add(entry);
-                else if (BackgroundTypes.Contains(ruleType))
-                    bgEntries.Add(entry);
-                else if (LanguageTypes.Contains(ruleType))
-                    languageEntries.Add(entry);
-                else if (ProficiencyTypes.Contains(ruleType))
-                    proficiencyEntries.Add(entry);
-                else if (!AsiTypes.Contains(ruleType))
-                {
-                    string typeName = ruleType;
-                    if (!overflowEntries.ContainsKey(typeName))
-                        overflowEntries[typeName] = [];
-                    overflowEntries[typeName].Add(entry);
+                    case BuildRuleBucket.Class:
+                        if (classMgr != null)
+                        {
+                            if (!classGroupEntries.ContainsKey(classMgr))
+                                classGroupEntries[classMgr] = [];
+                            classGroupEntries[classMgr].Add(entry);
+                        }
+                        else
+                        {
+                            classMainEntries.Add(entry);
+                        }
+                        break;
+                    case BuildRuleBucket.Race:
+                        raceEntries.Add(entry);
+                        break;
+                    case BuildRuleBucket.Background:
+                        bgEntries.Add(entry);
+                        break;
+                    case BuildRuleBucket.Language:
+                        languageEntries.Add(entry);
+                        break;
+                    case BuildRuleBucket.Proficiency:
+                        proficiencyEntries.Add(entry);
+                        break;
+                    case BuildRuleBucket.Feat:
+                        string featGroup = GetFeatGroupLabel(rule);
+                        if (!featEntries.ContainsKey(featGroup))
+                            featEntries[featGroup] = [];
+                        featEntries[featGroup].Add(entry);
+                        break;
+                    case BuildRuleBucket.AbilityScores:
+                        break;
+                    default:
+                        string typeName = ruleType;
+                        if (!overflowEntries.ContainsKey(typeName))
+                            overflowEntries[typeName] = [];
+                        overflowEntries[typeName].Add(entry);
+                        break;
                 }
                 // AsiTypes are excluded from all tabs — exposed via GetAsiEntries()
             }
@@ -1235,6 +1381,15 @@ public static class BuildService
             : new List<SelectionRuleGroup>();
         tabs.Add(new BuildTabGroup("Proficiencies", profGroups, CountUnresolved(profGroups)));
 
+        // Feats tab — always present
+        var featGroups = featEntries.Count > 0
+            ? featEntries
+                .OrderBy(kv => kv.Key)
+                .Select(kv => new SelectionRuleGroup(kv.Key, Sort(kv.Value)))
+                .ToList()
+            : new List<SelectionRuleGroup>();
+        tabs.Add(new BuildTabGroup("Feats", featGroups, CountUnresolved(featGroups)));
+
         // Overflow tabs — one per unrecognised type, alphabetical
         foreach (var (typeName, entries) in overflowEntries.OrderBy(kv => kv.Key))
             tabs.Add(new BuildTabGroup(typeName, [new SelectionRuleGroup("", Sort(entries))], entries.Count(e => e.CurrentName == null)));
@@ -1255,12 +1410,12 @@ public static class BuildService
 
         foreach (var rule in cm.SelectionRules)
         {
-            string ruleType = rule.Attributes.Type ?? "Other";
-            if (!AsiTypes.Contains(ruleType)) continue;
-
             var pm       = cm.GetProgressManager(rule);
             var classMgr = classMgrs.FirstOrDefault(m => ReferenceEquals(m, pm));
             if (classMgr != null) continue; // class-PM rules stay in Class tab
+
+            string ruleType = rule.Attributes.Type ?? "Other";
+            if (ClassifyBuildRule(rule, classMgr) != BuildRuleBucket.AbilityScores) continue;
 
             for (int n = 1; n <= rule.Attributes.Number; n++)
             {
@@ -1322,6 +1477,146 @@ public static class BuildService
     private static string BuildEntryKey(string ruleType, string ruleName, int number) =>
         $"{ruleType}|{ruleName}|{number}";
 
+    private static BuildRuleBucket ClassifyBuildRule(SelectRule rule, ClassProgressionManager? classMgr)
+    {
+        if (classMgr != null)
+            return BuildRuleBucket.Class;
+
+        string ruleType = rule.Attributes.Type ?? "Other";
+        string ruleName = rule.Attributes.Name ?? ruleType;
+        var ownerElement = ResolveOwnerElement(rule);
+        string ownerType = ownerElement?.Type ?? rule.ElementHeader?.Type ?? string.Empty;
+        string ownerName = ownerElement?.Name ?? rule.ElementHeader?.Name ?? string.Empty;
+
+        if (IsAbilityScoresRule(ruleType, ruleName, ownerType, ownerName))
+            return BuildRuleBucket.AbilityScores;
+
+        if (IsRaceOwnedRule(ruleType, ownerType, ownerName))
+            return BuildRuleBucket.Race;
+
+        if (ClassTypes.Contains(ruleType) || ClassTypes.Contains(ownerType))
+            return BuildRuleBucket.Class;
+
+        if (BackgroundTypes.Contains(ruleType) || BackgroundTypes.Contains(ownerType))
+            return BuildRuleBucket.Background;
+
+        if (FeatTypes.Contains(ruleType))
+            return BuildRuleBucket.Feat;
+
+        if (LanguageTypes.Contains(ruleType))
+            return BuildRuleBucket.Language;
+
+        if (ProficiencyTypes.Contains(ruleType))
+            return BuildRuleBucket.Proficiency;
+
+        return BuildRuleBucket.Overflow;
+    }
+
+    private static bool IsAbilityScoresRule(string ruleType, string ruleName, string ownerType, string ownerName)
+    {
+        if (AsiTypes.Contains(ruleType))
+            return true;
+
+        return (ruleName.Contains("Ability Score", StringComparison.OrdinalIgnoreCase) ||
+                ownerName.Contains("Ability Score", StringComparison.OrdinalIgnoreCase)) &&
+               (ruleType.Equals("Racial Trait", StringComparison.OrdinalIgnoreCase) ||
+                RaceTypes.Contains(ownerType));
+    }
+
+    private static bool IsRaceOwnedRule(string ruleType, string ownerType, string ownerName)
+    {
+        if (RaceTypes.Contains(ruleType))
+            return true;
+
+        return RaceTypes.Contains(ownerType);
+    }
+
+    private static ElementBase? ResolveOwnerElement(SelectRule rule)
+    {
+        var ownerId = rule.ElementHeader?.Id;
+        if (string.IsNullOrWhiteSpace(ownerId))
+            return null;
+
+        return DataManager.Current.ElementsCollection
+            .FirstOrDefault(element => element.Id.Equals(ownerId, StringComparison.Ordinal));
+    }
+
+    private static string GetFeatGroupLabel(SelectRule rule)
+    {
+        var ownerElement = ResolveOwnerElement(rule);
+        string ownerType = ownerElement?.Type ?? rule.ElementHeader?.Type ?? string.Empty;
+
+        if (RaceTypes.Contains(ownerType))
+            return "Racial";
+
+        if (BackgroundTypes.Contains(ownerType))
+            return "Background";
+
+        if (ClassTypes.Contains(ownerType))
+            return "Class";
+
+        return string.Empty;
+    }
+
+    private static HashSet<string> GetValidSelectionIds(
+        SelectRule rule,
+        string? registeredId,
+        IReadOnlyCollection<string> currentIds)
+    {
+        var interpreter = new ExpressionInterpreter();
+        interpreter.InitializeWithSelectionRule(rule);
+
+        var baseCollection = new ElementBaseCollection(
+            DataManager.Current.ElementsCollection.Where(element => element.Type.Equals(rule.Attributes.Type)));
+
+        ElementBaseCollection supported;
+        if (rule.Attributes.ContainsSupports())
+        {
+            supported = new ElementBaseCollection(
+                interpreter.EvaluateSupportsExpression<ElementBase>(
+                    rule.Attributes.Supports,
+                    baseCollection,
+                    rule.Attributes.SupportsElementIdRange()));
+        }
+        else
+        {
+            supported = new ElementBaseCollection(baseCollection);
+        }
+
+        var sourcesManager = CharacterManager.Current.SourcesManager;
+        var restrictedSourceNames = sourcesManager.GetUndefinedRestrictedSourceNames().ToHashSet(StringComparer.Ordinal);
+        var restrictedElementIds = sourcesManager.GetRestrictedElementIds().ToHashSet(StringComparer.Ordinal);
+
+        foreach (var restricted in supported
+                     .Where(element => restrictedElementIds.Contains(element.Id) || restrictedSourceNames.Contains(element.Source))
+                     .ToList())
+        {
+            supported.RemoveElement(restricted.Id);
+        }
+
+        foreach (var existing in CharacterManager.Current.GetElements().Where(e => e.Type.Equals(rule.Attributes.Type)))
+        {
+            if (supported.Any(e => e.Id.Equals(existing.Id, StringComparison.Ordinal)) &&
+                !existing.AllowDuplicate &&
+                !existing.Id.Equals(registeredId, StringComparison.Ordinal))
+            {
+                supported.RemoveElement(existing.Id);
+            }
+        }
+
+        var validIds = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var candidate in supported)
+        {
+            if (!candidate.HasRequirements ||
+                interpreter.EvaluateElementRequirementsExpression(candidate.Requirements, currentIds))
+            {
+                validIds.Add(candidate.Id);
+            }
+        }
+
+        return validIds;
+    }
+
     private static bool NeedsInitialAbilityScores()
     {
         try
@@ -1351,13 +1646,27 @@ public static class BuildService
         try
         {
             var current = SelectionRuleExpanderContext.Current?.GetRegisteredElement(rule, n);
-            return current is null ? null : (string?)((dynamic)current).Name;
+            if (current is null) return null;
+            if (current is SelectionRuleListItem listItem) return listItem.Text;
+            return (string?)((dynamic)current).Name;
         }
         catch { return null; }
     }
 }
 
 // ── Build tab group ───────────────────────────────────────────────────────────
+
+internal enum BuildRuleBucket
+{
+    Race,
+    Class,
+    Background,
+    Language,
+    Proficiency,
+    Feat,
+    AbilityScores,
+    Overflow,
+}
 
 public sealed record BuildTabGroup(string Label, IReadOnlyList<SelectionRuleGroup> RuleGroups, int UnresolvedCount = 0);
 

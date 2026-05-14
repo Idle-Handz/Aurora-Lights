@@ -1,4 +1,4 @@
-<MudDialog Style="max-height: 90vh; width: 700px;">
+<MudDialog Style="max-height: 90vh; width: min(700px, 95vw);">
     <TitleContent>
         <MudText Typo="Typo.h6" Style="font-size: 15px; font-weight: 600;">@SlotLabel</MudText>
     </TitleContent>
@@ -10,13 +10,14 @@
                 @* From inventory *@
                 @if (InventoryOptions.Count > 0)
                 {
-                    <div style="font-size: 11px; color: #6c7086; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">From Inventory</div>
+                    <div style="font-size: 11px; color: var(--mud-palette-text-disabled); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">From Inventory</div>
                     <div class="picker-list" style="max-height: 120px; margin-bottom: 10px;">
                         @foreach (var opt in InventoryOptions)
                         {
                             var sel = _mode == SelectMode.Inventory && opt.Identifier == _selectedInventory;
                             <div class="picker-item @(sel ? "picker-item-selected" : "")"
-                                 @onclick="() => SelectInventory(opt)">
+                                 @onclick="() => SelectInventory(opt)"
+                                 @ondblclick="() => ConfirmInventory(opt)">
                                 <div class="picker-item-name">@opt.Name</div>
                             </div>
                         }
@@ -54,9 +55,10 @@
                         {
                             var sel = _mode == SelectMode.New && r.Id == _selectedNew;
                             <div class="picker-item @(sel ? "picker-item-selected" : "")"
-                                 @onclick="() => SelectNew(r)">
+                                 @onclick="() => SelectNew(r)"
+                                 @ondblclick="() => ConfirmNew(r)">
                                 <div class="picker-item-name">@r.Name</div>
-                                <div style="font-size: 10px; color: #6c7086; margin-top: 1px;">@r.Type</div>
+                                <div style="font-size: 10px; color: var(--mud-palette-text-disabled); margin-top: 1px;">@r.Type</div>
                             </div>
                         }
                     </div>
@@ -68,10 +70,10 @@
                 @if (_detailName != null)
                 {
                     <div class="picker-detail-name">@_detailName</div>
-                    <div style="font-size: 11px; color: #89b4fa; margin-bottom: 4px;">@_detailType</div>
+                    <div style="font-size: 11px; color: var(--mud-palette-primary); margin-bottom: 4px;">@_detailType</div>
                     @if (!string.IsNullOrWhiteSpace(_detailSource))
                     {
-                        <div style="font-size: 10px; color: #6c7086; margin-bottom: 8px;">@_detailSource</div>
+                        <div style="font-size: 10px; color: var(--mud-palette-text-disabled); margin-bottom: 8px;">@_detailSource</div>
                     }
 
                     @if (!string.IsNullOrWhiteSpace(_detailDesc))
@@ -167,4 +169,6 @@
         else if (_mode == SelectMode.New && _selectedNew != null)
             MudDialog.Close(new GearPickerResult(null, _selectedNew, IsNew: true));
     }
+    private void ConfirmInventory(InventoryItemOption opt) { SelectInventory(opt); Confirm(); }
+    private void ConfirmNew(ItemSearchResult r)            { SelectNew(r);         Confirm(); }
 }

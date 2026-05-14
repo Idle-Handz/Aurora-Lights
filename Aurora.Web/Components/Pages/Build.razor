@@ -1,0 +1,284 @@
+@page "/build"
+@rendermode InteractiveServer
+@inject WebCharacterSessionService CharacterSession
+
+<PageTitle>Build</PageTitle>
+
+<CharacterLibraryShell Title="Build Character"
+                       IntroText="Choose race, class, background, language, proficiency, and feature options for the active browser-session character."
+                       StatusMessage="@_statusMessage"
+                       StatusIsError="@_failed">
+    <BrowserContent>
+        @if (_loading)
+        {
+            <p class="empty-state">Loading active character build...</p>
+        }
+        else if (_state is null)
+        {
+            <p class="empty-state">No character is currently active. Create or open one from the <a href="/characters">Characters</a> page first.</p>
+        }
+        else
+        {
+            <section class="build-web-summary">
+                <div>
+                    <div class="build-web-name">@_state.Summary.DisplayName</div>
+                    <div class="build-web-subtitle">@_state.Summary.DisplayBuild</div>
+                </div>
+                <div class="build-web-count">
+                    <strong>@_state.OpenSelectionCount</strong>
+                    <span>open choices</span>
+                </div>
+            </section>
+
+            @if (_state.Groups.Count == 0)
+            {
+                <p class="empty-state">This character has no build selections waiting at the current level.</p>
+            }
+            else
+            {
+                <div class="build-web-groups">
+                    @foreach (WebBuildSelectionGroup group in _state.Groups)
+                    {
+                        <section class="build-web-group">
+                            <header class="build-web-group-header">
+                                <h2>@group.Label</h2>
+                                <span>@group.Entries.Count(entry => entry.CurrentName is null) open</span>
+                            </header>
+
+                            <div class="build-web-rule-list">
+                                @foreach (WebBuildSelectionEntry entry in group.Entries)
+                                {
+                                    <article class="build-web-rule @(entry.CurrentName is null ? "unresolved" : "")">
+                                        <div>
+                                            <div class="build-web-rule-label">@entry.Label</div>
+                                            <div class="build-web-rule-meta">@entry.Type @FormatLevel(entry.RequiredLevel)</div>
+                                        </div>
+                                        <div class="build-web-rule-choice">
+                                            @(entry.CurrentName ?? "Choose...")
+                                        </div>
+                                        <button type="button"
+                                                class="action-link"
+                                                disabled="@_busy"
+                                                @onclick="() => OpenSelectionPickerAsync(entry)">
+                                            Change
+                                        </button>
+                                    </article>
+                                }
+                            </div>
+                        </section>
+                    }
+                </div>
+            }
+
+            @if (_pickerEntry is not null)
+            {
+                <section class="picker-panel">
+                    <div class="picker-header">
+                        <div>
+                            <div class="picker-title">@_pickerEntry.Label</div>
+                            <div class="picker-subtitle">
+                                @if (string.IsNullOrWhiteSpace(_pickerEntry.CurrentName))
+                                {
+                                    <span>Choose an option for this build selection.</span>
+                                }
+                                else
+                                {
+                                    <span>Currently selected: @_pickerEntry.CurrentName</span>
+                                }
+                            </div>
+                        </div>
+                        <button type="button" class="action-link" disabled="@_busy" @onclick="CloseSelectionPicker">Done</button>
+                    </div>
+
+                    <div class="picker-toolbar">
+                        <label class="filter-field picker-field">
+                            <span>Search</span>
+                            <input class="text-filter"
+                                   placeholder="Search name, source, or requirement"
+                                   @bind="_pickerQuery" />
+                        </label>
+                        <div class="picker-toolbar-actions">
+                            <button type="button" class="action-link primary" disabled="@_busy" @onclick="SearchSelectionOptionsAsync">Search</button>
+                        </div>
+                    </div>
+
+                    @if (_pickerOptions.Count == 0)
+                    {
+                        <p class="picker-empty">No matching options found.</p>
+                    }
+                    else
+                    {
+                        <div class="picker-list">
+                            @foreach (WebBuildSelectionOption option in _pickerOptions)
+                            {
+                                <div class="picker-result-card">
+                                    <div class="picker-result-body">
+                                        <div class="picker-result-title">@option.Name</div>
+                                        <div class="picker-result-meta">@FormatOptionMeta(option)</div>
+                                        @if (!string.IsNullOrWhiteSpace(option.Requirements))
+                                        {
+                                            <div class="picker-result-requirements">Requires: @option.Requirements</div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(option.Description))
+                                        {
+                                            <div class="picker-result-description">@option.Description</div>
+                                        }
+                                    </div>
+                                    <button type="button"
+                                            class="action-link primary"
+                                            disabled="@_busy"
+                                            @onclick="() => ApplySelectionAsync(option.Id)">
+                                        Choose
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                    }
+                </section>
+            }
+        }
+    </BrowserContent>
+
+    <DetailContent>
+        <CharacterDetailPanel Title="Current Character"
+                              EmptyMessage="No active character is available."
+                              Fields="@DetailFields">
+            <Actions>
+                @if (_state is not null)
+                {
+                    <a class="action-link" href="/manage">Manage</a>
+                    <a class="action-link" href="/equipment">Equipment</a>
+                    <a class="action-link" href="/magic">Magic</a>
+                    <a class="action-link" href="/workspace">Workspace</a>
+                }
+            </Actions>
+        </CharacterDetailPanel>
+    </DetailContent>
+</CharacterLibraryShell>
+
+@code {
+    private WebCharacterBuildState? _state;
+    private WebBuildSelectionEntry? _pickerEntry;
+    private IReadOnlyList<WebBuildSelectionOption> _pickerOptions = [];
+    private string _pickerQuery = string.Empty;
+    private bool _loading = true;
+    private bool _busy;
+    private bool _failed;
+    private string? _statusMessage;
+
+    private IReadOnlyList<CharacterDetailField> DetailFields =>
+        _state is null
+            ? []
+            : [
+                new("Name", _state.Summary.DisplayName),
+                new("Build", _state.Summary.DisplayBuild),
+                new("Player", ValueOrDash(_state.Summary.PlayerName)),
+                new("File", _state.Summary.FileName)
+            ];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _failed = false;
+        try
+        {
+            _state = await CharacterSession.GetCurrentBuildStateAsync();
+            _statusMessage = _state?.StatusMessage;
+        }
+        catch (Exception ex)
+        {
+            _failed = true;
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task OpenSelectionPickerAsync(WebBuildSelectionEntry entry)
+    {
+        _pickerEntry = entry;
+        _pickerQuery = string.Empty;
+        await SearchSelectionOptionsAsync();
+    }
+
+    private void CloseSelectionPicker()
+    {
+        _pickerEntry = null;
+        _pickerQuery = string.Empty;
+        _pickerOptions = [];
+    }
+
+    private async Task SearchSelectionOptionsAsync()
+    {
+        if (_pickerEntry is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        _failed = false;
+        try
+        {
+            _pickerOptions = await CharacterSession.SearchCurrentBuildSelectionOptionsAsync(_pickerEntry.Key, _pickerQuery);
+        }
+        catch (Exception ex)
+        {
+            _failed = true;
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task ApplySelectionAsync(string optionId)
+    {
+        if (_pickerEntry is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        _failed = false;
+        try
+        {
+            _state = await CharacterSession.ChangeCurrentBuildSelectionAsync(_pickerEntry.Key, optionId);
+            _statusMessage = _state.StatusMessage;
+            CloseSelectionPicker();
+        }
+        catch (Exception ex)
+        {
+            _failed = true;
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private static string FormatLevel(int requiredLevel) =>
+        requiredLevel > 0 ? $"- level {requiredLevel}" : string.Empty;
+
+    private static string FormatOptionMeta(WebBuildSelectionOption option)
+    {
+        List<string> parts = [];
+        if (!string.IsNullOrWhiteSpace(option.Source))
+        {
+            parts.Add(option.Source);
+        }
+
+        return parts.Count == 0 ? string.Empty : string.Join(" - ", parts);
+    }
+
+    private static string ValueOrDash(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? "-" : value;
+}

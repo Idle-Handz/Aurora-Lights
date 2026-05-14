@@ -27,7 +27,8 @@
                    xmlns:content="clr-namespace:Builder.Presentation.Views.Sliders.Content"
                    LocationChanged="ShellWindow_OnLocationChanged" SizeChanged="ShellWindow_OnSizeChanged"
                    Loaded="ShellWindow_OnLoaded" Closing="ShellWindow_OnClosing" x:Name="MainWindow" Width="1280"
-                   Height="700" MinWidth="1090" MinHeight="580" ShowInTaskbar="true" Title="Aurora"
+                   Height="700" MinWidth="1090" MinHeight="580" ShowInTaskbar="true" Title="Aurora Lights"
+                   Icon="/resources/icon_bars_blue.ico"
                    ResizeMode="CanResize" Style="{StaticResource CharacterBuilderWindowStyle}" TitleAlignment="Center"
                    RightWindowCommandsOverlayBehavior="Never" WindowButtonCommandsOverlayBehavior="Never"
                    LeftWindowCommandsOverlayBehavior="Never">

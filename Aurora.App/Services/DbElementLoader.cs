@@ -1,6 +1,7 @@
 using Builder.Data;
 using Builder.Data.Elements;
 using Builder.Presentation.Services.Data;
+using Aurora.Importer;
 using Microsoft.Data.Sqlite;
 using System.Xml;
 
@@ -26,6 +27,11 @@ public sealed record DbLoadResult(
     int ElementCount,
     int SkippedElementCount,
     int? SchemaVersion,
+    int? DataVersion,
+    string? ImporterVersion,
+    string? BuiltUtc,
+    int? SourceFileCount,
+    string? ContentRootHash,
     string? FailureReason,
     IReadOnlyList<string> MissingTables,
     IReadOnlyList<string> MissingColumns)
@@ -41,10 +47,9 @@ public sealed record DbLoadResult(
                 string skipped = SkippedElementCount > 0
                     ? $", skipped {SkippedElementCount}"
                     : string.Empty;
-                string schema = SchemaVersion.HasValue
-                    ? $"schema v{SchemaVersion.Value}"
-                    : "schema version unknown";
-                return $"Loaded {ElementCount} elements from SQLite ({schema}{skipped}).";
+                string schema = SchemaVersion.HasValue ? $"schema v{SchemaVersion.Value}" : "schema version unknown";
+                string data = DataVersion.HasValue ? $", data v{DataVersion.Value}" : string.Empty;
+                return $"Loaded {ElementCount} elements from SQLite ({schema}{data}{skipped}).";
             }
 
             if (MissingTables.Count > 0)
@@ -58,7 +63,7 @@ public sealed record DbLoadResult(
     }
 
     public static DbLoadResult NotAvailable(string? databasePath, string reason) =>
-        new(false, databasePath, 0, 0, null, reason, [], []);
+        new(false, databasePath, 0, 0, null, null, null, null, null, null, reason, [], []);
 
     public static DbLoadResult InvalidSchema(
         string databasePath,
@@ -66,6 +71,11 @@ public sealed record DbLoadResult(
         IReadOnlyList<string> missingTables,
         IReadOnlyList<string> missingColumns) =>
         new(false, databasePath, 0, 0, schemaVersion,
+            null,
+            null,
+            null,
+            null,
+            null,
             missingTables.Count > 0
                 ? $"Database schema is missing required tables: {string.Join(", ", missingTables)}."
                 : $"Database schema is missing required columns: {string.Join(", ", missingColumns)}.",
@@ -73,14 +83,19 @@ public sealed record DbLoadResult(
             missingColumns);
 
     public static DbLoadResult Failed(string databasePath, int? schemaVersion, string reason) =>
-        new(false, databasePath, 0, 0, schemaVersion, reason, [], []);
+        new(false, databasePath, 0, 0, schemaVersion, null, null, null, null, null, reason, [], []);
 
     public static DbLoadResult Loaded(
         string databasePath,
         int? schemaVersion,
+        int? dataVersion,
+        string? importerVersion,
+        string? builtUtc,
+        int? sourceFileCount,
+        string? contentRootHash,
         int elementCount,
         int skippedElementCount) =>
-        new(true, databasePath, elementCount, skippedElementCount, schemaVersion, null, [], []);
+        new(true, databasePath, elementCount, skippedElementCount, schemaVersion, dataVersion, importerVersion, builtUtc, sourceFileCount, contentRootHash, null, [], []);
 }
 
 internal static class DbElementLoader
@@ -102,6 +117,7 @@ internal static class DbElementLoader
         "spells",
         "classes",
         "class_multiclass",
+        "database_metadata",
         "setter_scopes",
         "setter_entries",
         "setter_entry_attributes"
@@ -123,6 +139,7 @@ internal static class DbElementLoader
             ["spells"] = ["element_id", "spell_level", "school_name", "casting_time_text", "range_text", "duration_text", "has_verbal", "has_somatic", "has_material", "material_text", "is_concentration", "is_ritual"],
             ["classes"] = ["element_id", "hit_die", "short_text"],
             ["class_multiclass"] = ["class_element_id", "multiclass_aurora_id", "prerequisite_text", "requirements_text", "proficiencies_text"],
+            ["database_metadata"] = ["singleton_id", "schema_version", "data_version", "importer_version", "built_utc", "source_file_count", "element_count", "content_root_hash"],
             ["setter_scopes"] = ["setter_scope_id", "owner_element_id", "owner_kind"],
             ["setter_entries"] = ["setter_entry_id", "setter_scope_id", "ordinal", "setter_name", "setter_value"],
             ["setter_entry_attributes"] = ["setter_entry_id", "ordinal", "attribute_name", "attribute_value"]
@@ -147,11 +164,58 @@ internal static class DbElementLoader
         DbPath is { } path && File.Exists(path) && new FileInfo(path).Length > 0;
 
     /// <summary>
+    /// Returns the set of source book names that appear in the resolved elements cache,
+    /// i.e. only names from enabled content packages. Returns an empty set if the DB is
+    /// unavailable or the query fails.
+    /// </summary>
+    public static async Task<HashSet<string>> LoadEnabledSourceNamesAsync()
+    {
+        string? dbPath = DbPath;
+        if (dbPath is null || !File.Exists(dbPath))
+            return [];
+
+        return await Task.Run(() =>
+        {
+            try
+            {
+                using var conn = new SqliteConnection($"Data Source={dbPath};Mode=ReadOnly;");
+                conn.Open();
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = @"
+                    SELECT DISTINCT sb.name
+                    FROM source_books sb
+                    JOIN elements e ON e.source_book_id = sb.source_book_id
+                    JOIN resolved_elements_cache rec ON rec.winning_element_id = e.element_id
+                    WHERE sb.name IS NOT NULL AND sb.name <> '';";
+                using var r = cmd.ExecuteReader();
+                var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                while (r.Read())
+                    names.Add(r.GetString(0));
+                return names;
+            }
+            catch
+            {
+                return [];
+            }
+        });
+    }
+
+    /// <summary>
     /// Attempts to populate <paramref name="target"/> from the SQLite database.
     /// Returns a detailed result object; callers can automatically fall back to XML when
     /// <see cref="DbLoadResult.Success"/> is <c>false</c>.
     /// </summary>
     public static async Task<DbLoadResult> TryLoadAsync(ElementBaseCollection target)
+    {
+        return await TryLoadInternalAsync(target, runPostProcessing: true);
+    }
+
+    public static async Task<DbLoadResult> TryLoadSnapshotAsync(ElementBaseCollection target)
+    {
+        return await TryLoadInternalAsync(target, runPostProcessing: false);
+    }
+
+    private static async Task<DbLoadResult> TryLoadInternalAsync(ElementBaseCollection target, bool runPostProcessing)
     {
         string? dbPath = DbPath;
         if (dbPath is null)
@@ -167,14 +231,14 @@ internal static class DbElementLoader
         {
             DebugLogService.Instance.Info("DbElementLoader: loading elements from DB.", dbPath);
             DbLoadResult result = await Task.Run(() => LoadFromDb(dbPath, target));
-            if (result.Success)
+            if (result.Success && runPostProcessing)
             {
                 await Task.Run(() => DataManager.Current.RunPostProcessing());
                 DebugLogService.Instance.Info(
                     "DbElementLoader: load complete.",
                     result.Summary);
             }
-            else
+            else if (!result.Success)
             {
                 DebugLogService.Instance.Warn("DbElementLoader: falling back to XML.", result.Summary);
             }
@@ -211,6 +275,14 @@ internal static class DbElementLoader
     private record MulticlassRow(long ClassElementId, string? MulticlassId,
         string? Prerequisite, string? Requirements, string? Proficiencies);
     private record SetterRow(string Name, string? Value, IReadOnlyList<(string Key, string? Val)> Attributes);
+    private sealed record MetadataRow(
+        int SchemaVersion,
+        int DataVersion,
+        string ImporterVersion,
+        string BuiltUtc,
+        int SourceFileCount,
+        int ElementCount,
+        string? ContentRootHash);
 
     // ── Main loader ──────────────────────────────────────────────────────────
 
@@ -232,14 +304,37 @@ internal static class DbElementLoader
         if (missingColumns.Count > 0)
             return DbLoadResult.InvalidSchema(dbPath, schemaVersion, [], missingColumns);
 
+        MetadataRow? metadata = QueryMetadata(conn);
+        if (metadata is null)
+            return DbLoadResult.Failed(
+                dbPath,
+                schemaVersion,
+                "Database metadata is missing. Sync the content database again before using SQLite loading.");
+
+        if (metadata.SchemaVersion != AuroraDatabaseVersions.SchemaVersion)
+        {
+            return DbLoadResult.Failed(
+                dbPath,
+                metadata.SchemaVersion,
+                $"Database metadata schema v{metadata.SchemaVersion} is incompatible with expected schema v{AuroraDatabaseVersions.SchemaVersion}. Re-sync the content database.");
+        }
+
+        if (metadata.DataVersion != AuroraDatabaseVersions.DataVersion)
+        {
+            return DbLoadResult.Failed(
+                dbPath,
+                metadata.SchemaVersion,
+                $"Database data version v{metadata.DataVersion} is incompatible with expected data version v{AuroraDatabaseVersions.DataVersion}. Re-sync the content database.");
+        }
+
         // Quick sanity check.
         using (var chk = conn.CreateCommand())
         {
-            chk.CommandText = "SELECT COUNT(*) FROM elements;";
+            chk.CommandText = "SELECT COUNT(*) FROM resolved_elements_cache;";
             if ((long)(chk.ExecuteScalar() ?? 0L) == 0)
             {
-                DebugLogService.Instance.Warn("DbElementLoader: elements table is empty.");
-                return DbLoadResult.Failed(dbPath, schemaVersion, "Elements table is empty.");
+                DebugLogService.Instance.Warn("DbElementLoader: resolved elements cache is empty.");
+                return DbLoadResult.Failed(dbPath, metadata.SchemaVersion, "Resolved elements cache is empty.");
             }
         }
 
@@ -312,13 +407,22 @@ internal static class DbElementLoader
         target.Clear();
         target.AddRange(parsed);
         if (target.Count == 0)
-            return DbLoadResult.Failed(dbPath, schemaVersion, "No elements could be reconstructed from the database.");
+            return DbLoadResult.Failed(dbPath, metadata.SchemaVersion, "No elements could be reconstructed from the database.");
 
         // Populate runtime caches for use by services after load.
         ArchetypeParentMap = BuildArchetypeParentMap(elements, archetypeParentIds);
         SpellAccessMap     = spellAccessMap;
 
-        return DbLoadResult.Loaded(dbPath, schemaVersion, target.Count, skippedElements);
+        return DbLoadResult.Loaded(
+            dbPath,
+            metadata.SchemaVersion,
+            metadata.DataVersion,
+            metadata.ImporterVersion,
+            metadata.BuiltUtc,
+            metadata.SourceFileCount,
+            metadata.ContentRootHash,
+            target.Count,
+            skippedElements);
     }
 
     // ── XML node construction ────────────────────────────────────────────────
@@ -680,10 +784,11 @@ internal static class DbElementLoader
         using var cmd = conn.CreateCommand();
         cmd.CommandText = @"
             SELECT e.element_id, e.aurora_id, e.name, et.type_name, COALESCE(sb.name, '')
-            FROM elements e
+            FROM resolved_elements_cache rec
+            JOIN elements e ON e.element_id = rec.winning_element_id
             JOIN element_types et ON et.element_type_id = e.element_type_id
             LEFT JOIN source_books sb ON sb.source_book_id = e.source_book_id
-            ORDER BY e.loader_priority, e.element_id;";
+            ORDER BY rec.resolution_rank, e.loader_priority, e.element_id;";
         using var r = cmd.ExecuteReader();
         while (r.Read())
             rows.Add(new ElementRow(r.GetInt64(0), r.GetString(1), r.GetString(2),
@@ -1039,6 +1144,32 @@ internal static class DbElementLoader
             : raw is int intValue
                 ? intValue
                 : null;
+    }
+
+    private static MetadataRow? QueryMetadata(SqliteConnection conn)
+    {
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            SELECT schema_version,
+                   data_version,
+                   importer_version,
+                   built_utc,
+                   source_file_count,
+                   element_count,
+                   content_root_hash
+            FROM database_metadata
+            WHERE singleton_id = 1;";
+        using var reader = cmd.ExecuteReader();
+        if (!reader.Read()) return null;
+
+        return new MetadataRow(
+            SchemaVersion: reader.GetInt32(0),
+            DataVersion: reader.GetInt32(1),
+            ImporterVersion: reader.GetString(2),
+            BuiltUtc: reader.GetString(3),
+            SourceFileCount: reader.GetInt32(4),
+            ElementCount: reader.GetInt32(5),
+            ContentRootHash: reader.IsDBNull(6) ? null : reader.GetString(6));
     }
 
     private static HashSet<string> QueryExistingTables(SqliteConnection conn)

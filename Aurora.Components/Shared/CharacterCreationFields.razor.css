@@ -11,21 +11,21 @@
 .character-creation-field label {
     font-size: 0.92rem;
     font-weight: 600;
-    color: #a6adc8;
+    color: var(--mud-palette-text-secondary, #a6adc8);
 }
 
 .character-creation-input {
     width: 100%;
-    border: 1px solid #45475a;
+    border: 1px solid var(--mud-palette-lines-inputs, #45475a);
     border-radius: 0.85rem;
     padding: 0.8rem 0.95rem;
-    background: #1e1e2e;
-    color: #cdd6f4;
+    background: var(--mud-palette-background, #1e1e2e);
+    color: var(--mud-palette-text-primary, #cdd6f4);
     font: inherit;
 }
 
 .character-creation-input:focus {
     outline: none;
-    border-color: #89b4fa;
+    border-color: var(--mud-palette-primary, #89b4fa);
     box-shadow: 0 0 0 3px rgba(137, 180, 250, 0.15);
 }

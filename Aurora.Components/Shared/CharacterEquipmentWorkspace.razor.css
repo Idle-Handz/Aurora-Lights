@@ -15,7 +15,7 @@
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: #a6adc8;
+    color: var(--mud-palette-text-secondary, #a6adc8);
 }
 
 .equipment-attack-table,
@@ -41,7 +41,7 @@
 .equipment-inventory-header-row {
     font-size: 0.75rem;
     font-weight: 700;
-    color: #6c7086;
+    color: var(--mud-palette-text-disabled, #6c7086);
     text-transform: uppercase;
     letter-spacing: 0.06em;
 }
@@ -50,9 +50,9 @@
 .equipment-inventory-row:not(.equipment-inventory-header-row),
 .equipment-gear-row {
     padding: 0.8rem 0.9rem;
-    border: 1px solid #45475a;
+    border: 1px solid var(--mud-palette-lines-inputs, #45475a);
     border-radius: 0.85rem;
-    background: #313244;
+    background: var(--mud-palette-surface, #313244);
 }
 
 .equipment-gear-row {
@@ -65,7 +65,7 @@
 .equipment-gear-label {
     font-size: 0.8rem;
     font-weight: 700;
-    color: #a6adc8;
+    color: var(--mud-palette-text-secondary, #a6adc8);
     text-transform: uppercase;
     letter-spacing: 0.06em;
 }
@@ -79,7 +79,7 @@
 .equipment-gear-empty,
 .equipment-empty,
 .equipment-static-qty {
-    color: #6c7086;
+    color: var(--mud-palette-text-disabled, #6c7086);
 }
 
 .equipment-gear-actions,
@@ -109,15 +109,15 @@
 
 .equipment-attuned-summary {
     font-size: 0.76rem;
-    color: #6c7086;
+    color: var(--mud-palette-text-disabled, #6c7086);
 }
 
 .equipment-action-button,
 .equipment-remove-button,
 .equipment-tag {
-    border: 1px solid #45475a;
-    background: #313244;
-    color: #cdd6f4;
+    border: 1px solid var(--mud-palette-lines-inputs, #45475a);
+    background: var(--mud-palette-surface, #313244);
+    color: var(--mud-palette-text-primary, #cdd6f4);
     border-radius: 999px;
     cursor: pointer;
     transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
@@ -131,19 +131,19 @@
 
 .equipment-action-button:hover,
 .equipment-tag:hover {
-    background: #45475a;
-    border-color: #585b70;
+    background: var(--mud-palette-lines-inputs, #45475a);
+    border-color: var(--mud-palette-lines-inputs, #585b70);
 }
 
 .equipment-action-button.primary,
 .equipment-tag.active {
-    background: #89b4fa;
-    border-color: #89b4fa;
+    background: var(--mud-palette-primary, #89b4fa);
+    border-color: var(--mud-palette-primary, #89b4fa);
     color: #1e1e2e;
 }
 
 .equipment-action-button.secondary {
-    color: #a6adc8;
+    color: var(--mud-palette-text-secondary, #a6adc8);
 }
 
 .equipment-action-button:disabled,
@@ -168,10 +168,10 @@
 .equipment-qty-input,
 .equipment-notes-area {
     width: 100%;
-    border: 1px solid #45475a;
+    border: 1px solid var(--mud-palette-lines-inputs, #45475a);
     border-radius: 0.75rem;
-    background: #1e1e2e;
-    color: #cdd6f4;
+    background: var(--mud-palette-background, #1e1e2e);
+    color: var(--mud-palette-text-primary, #cdd6f4);
     font: inherit;
 }
 
@@ -179,7 +179,7 @@
 .equipment-qty-input:focus,
 .equipment-notes-area:focus {
     outline: none;
-    border-color: #89b4fa;
+    border-color: var(--mud-palette-primary, #89b4fa);
 }
 
 .equipment-currency-input,
@@ -202,8 +202,8 @@
 }
 
 .equipment-currency-input:disabled {
-    background: #313244;
-    color: #6c7086;
+    background: var(--mud-palette-surface, #313244);
+    color: var(--mud-palette-text-disabled, #6c7086);
     opacity: 1;
 }
 
@@ -216,7 +216,7 @@
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: #6c7086;
+    color: var(--mud-palette-text-disabled, #6c7086);
 }
 
 .equipment-inventory-row {
@@ -232,8 +232,8 @@
 }
 
 .equipment-tag.attunement.active {
-    background: #cba6f7;
-    border-color: #cba6f7;
+    background: var(--mud-palette-secondary, #cba6f7);
+    border-color: var(--mud-palette-secondary, #cba6f7);
     color: #1e1e2e;
 }
 
@@ -257,10 +257,68 @@
 }
 
 @media (max-width: 900px) {
-    .equipment-attack-row,
-    .equipment-inventory-row,
+    /* Gear slot rows collapse to single column as before */
     .equipment-gear-row {
         grid-template-columns: 1fr;
+    }
+
+    /* Hide column header rows — labels injected via ::before below */
+    .equipment-attack-header,
+    .equipment-inventory-header-row {
+        display: none;
+    }
+
+    /* Attack rows: flex column with inline label prefix per cell */
+    .equipment-attack-row:not(.equipment-attack-header) {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+    }
+
+    .equipment-attack-row:not(.equipment-attack-header) > span::before,
+    .equipment-inventory-row:not(.equipment-inventory-header-row) > span:nth-child(3)::before,
+    .equipment-inventory-row:not(.equipment-inventory-header-row) > span:nth-child(4)::before,
+    .equipment-inventory-row:not(.equipment-inventory-header-row) > span:nth-child(5)::before {
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--mud-palette-text-disabled, #6c7086);
+    }
+
+    .equipment-attack-row:not(.equipment-attack-header) > span:nth-child(1)::before { content: "Name: "; }
+    .equipment-attack-row:not(.equipment-attack-header) > span:nth-child(2)::before { content: "Attack: "; }
+    .equipment-attack-row:not(.equipment-attack-header) > span:nth-child(3)::before { content: "Damage: "; }
+    .equipment-attack-row:not(.equipment-attack-header) > span:nth-child(4)::before { content: "Range: "; }
+
+    /* Inventory rows: flex column card; remove button pinned top-right */
+    .equipment-inventory-row:not(.equipment-inventory-header-row) {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        position: relative;
+        padding-right: 3rem;
+    }
+
+    .equipment-inventory-row:not(.equipment-inventory-header-row) > span:nth-child(1) {
+        font-weight: 600;
+    }
+
+    .equipment-inventory-row:not(.equipment-inventory-header-row) > span:nth-child(3),
+    .equipment-inventory-row:not(.equipment-inventory-header-row) > span:nth-child(4),
+    .equipment-inventory-row:not(.equipment-inventory-header-row) > span:nth-child(5) {
+        font-size: 0.85rem;
+        color: var(--mud-palette-text-secondary, #a6adc8);
+    }
+
+    .equipment-inventory-row:not(.equipment-inventory-header-row) > span:nth-child(3)::before { content: "Qty: "; }
+    .equipment-inventory-row:not(.equipment-inventory-header-row) > span:nth-child(4)::before { content: "Wt: "; }
+    .equipment-inventory-row:not(.equipment-inventory-header-row) > span:nth-child(5)::before { content: "Val: "; }
+
+    .equipment-inventory-row:not(.equipment-inventory-header-row) > span:nth-child(6) {
+        position: absolute;
+        top: 0.55rem;
+        right: 0.6rem;
     }
 
     .equipment-inventory-header {

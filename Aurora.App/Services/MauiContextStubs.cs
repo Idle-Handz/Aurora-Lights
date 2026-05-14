@@ -50,19 +50,53 @@ internal sealed class MauiSelectionRuleExpanderHandler : ISelectionRuleExpanderH
 
     public bool HasExpander(string uniqueIdentifier, int number) => true;
 
-    /// <summary>
-    /// Directly registers the element (identified by <paramref name="id"/>) that was
-    /// selected for the given selection rule.  The element's Aquisition is configured so
-    /// that CharacterManager routes it to the correct ProgressionManager.
-    /// </summary>
     /// <summary>Clears the registry entry for a slot without registering anything new.</summary>
     public void ClearRegisteredElement(SelectRule selectionRule, int number = 1)
         => _registered.Remove($"{selectionRule.UniqueIdentifier}:{number}");
 
+    /// <summary>
+    /// Directly registers the element (identified by <paramref name="id"/>) that was
+    /// selected for the given selection rule.  The element's Acquisition is configured so
+    /// that CharacterManager routes it to the correct ProgressionManager.
+    /// </summary>
     public void SetRegisteredElement(SelectRule selectionRule, string id, int number = 1)
     {
         if (selectionRule == null || string.IsNullOrEmpty(id))
             return;
+
+        var key = $"{selectionRule.UniqueIdentifier}:{number}";
+
+        // List-type rules (Bond, Ideal, Flaw, Personality Trait, etc.) use inline <item>
+        // elements rather than element IDs. Register the list item directly and add it to
+        // the parent element's SelectionRuleListItems so CharacterManager.SetCharacterDetails
+        // can pick it up and populate FillableBackgroundCharacteristics.
+        if (selectionRule.Attributes.IsList)
+        {
+            var listItem = selectionRule.Attributes.ListItems?
+                .FirstOrDefault(li => li.ID.ToString() == id);
+            if (listItem == null)
+            {
+                Logger.Warning($"[MauiExpander] list item {id} not found in rule '{selectionRule.Attributes.Name}'");
+                return;
+            }
+
+            _registered[key] = listItem;
+
+            // Add to parent element's dictionary so SetCharacterDetails picks it up.
+            string itemKey = $"{selectionRule.Attributes.Name}:{number}";
+            try
+            {
+                var parentEl = CharacterManager.Current.GetElements()
+                    .FirstOrDefault(e => e.Id == selectionRule.ElementHeader.Id);
+                if (parentEl != null)
+                {
+                    parentEl.SelectionRuleListItems.Remove(itemKey);
+                    parentEl.SelectionRuleListItems.Add(itemKey, listItem);
+                }
+            }
+            catch { }
+            return;
+        }
 
         var element = DataManager.Current.ElementsCollection.GetElement(id);
         if (element == null)
@@ -73,7 +107,6 @@ internal sealed class MauiSelectionRuleExpanderHandler : ISelectionRuleExpanderH
 
         // If this slot already has a selection (e.g. user is changing a feat mid-session),
         // unregister the previous element first so it doesn't persist alongside the new one.
-        var key = $"{selectionRule.UniqueIdentifier}:{number}";
         if (_registered.TryGetValue(key, out var previous) && previous is Builder.Data.ElementBase prev)
         {
             try { CharacterManager.Current.UnregisterElement(prev); }
@@ -87,6 +120,18 @@ internal sealed class MauiSelectionRuleExpanderHandler : ISelectionRuleExpanderH
         element.Aquisition.SelectRule  = selectionRule;
 
         CharacterManager.Current.RegisterElement(element);
+
+        if (selectionRule.Attributes.Type.Equals("Background Feature", StringComparison.OrdinalIgnoreCase) &&
+            selectionRule.Attributes.Optional)
+        {
+            var optionalGrant = DataManager.Current.ElementsCollection
+                .GetElement("ID_INTERNAL_GRANT_OPTIONAL_BACKGROUND_FEATURE");
+            if (optionalGrant != null &&
+                !CharacterManager.Current.GetElements().Any(e => e.Id.Equals(optionalGrant.Id, StringComparison.Ordinal)))
+            {
+                CharacterManager.Current.RegisterElement(optionalGrant);
+            }
+        }
 
         _registered[key] = element;
     }
@@ -149,9 +194,7 @@ internal sealed class MauiSpellcastingSectionHandler : ISpellcastingSectionHandl
     }
 }
 
-/// <summary>
-/// No-op IMessageDialogService — logs to debug output instead of showing WPF dialogs.
-/// </summary>
+// No-op IMessageDialogService — logs to debug output instead of showing WPF dialogs.
 #if false
 internal sealed partial class MauiMessageDialogServiceStub : IMessageDialogService
 {
@@ -279,6 +322,9 @@ internal sealed class MauiCharacterSheetGenerator : ICharacterSheetGenerator
 {
     public FileInfo GenerateNewSheet(string outputPath, bool isPreview)
     {
+#if ANDROID
+        throw new PlatformNotSupportedException("PDF export is not available on Android.");
+#else
         var cm          = CharacterManager.Current;
         var character   = cm.Character;
         var elements    = cm.GetElements();
@@ -352,6 +398,7 @@ internal sealed class MauiCharacterSheetGenerator : ICharacterSheetGenerator
         }
 
         return sheet.Save(outputPath);
+#endif
     }
 
     // ── Main sheet content ───────────────────────────────────────────────────

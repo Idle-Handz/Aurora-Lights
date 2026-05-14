@@ -47,6 +47,17 @@ public sealed class WebCharacterEngineService
         string Source,
         string Requirements);
 
+    private sealed record BuildRuleSelection(
+        string Key,
+        string GroupId,
+        string GroupLabel,
+        SelectRule Rule,
+        int Number,
+        string Label,
+        string Type,
+        string? CurrentName,
+        int RequiredLevel);
+
     public WebCharacterEngineService(ILogger<WebCharacterEngineService> logger)
     {
         _logger = logger;
@@ -325,6 +336,95 @@ public sealed class WebCharacterEngineService
         try
         {
             return BuildMagicSpellDetail(id);
+        }
+        finally
+        {
+            _operationLock.Release();
+        }
+    }
+
+    public async Task<WebCharacterBuildState> GetCurrentBuildStateAsync(
+        PhaseZeroSessionWorkspace workspace,
+        string relativePath,
+        string statusMessage)
+    {
+        await _operationLock.WaitAsync();
+        try
+        {
+            Character character = RequireCurrentCharacter();
+            string absolutePath = ResolveWorkspaceFile(workspace, relativePath);
+            CharacterFile file = new(absolutePath);
+            ImportedCharacterSummary summary = BuildSummary(relativePath, new FileInfo(absolutePath), character, file);
+            IReadOnlyList<WebBuildSelectionGroup> groups = BuildWebSelectionGroups();
+            return new WebCharacterBuildState(
+                summary,
+                groups,
+                groups.Sum(group => group.Entries.Count(entry => entry.CurrentName is null)),
+                statusMessage);
+        }
+        finally
+        {
+            _operationLock.Release();
+        }
+    }
+
+    public async Task<IReadOnlyList<WebBuildSelectionOption>> SearchBuildSelectionOptionsAsync(string entryKey, string query)
+    {
+        await _operationLock.WaitAsync();
+        try
+        {
+            BuildRuleSelection selection = FindBuildRuleSelection(entryKey);
+            IEnumerable<SelectionOption> options = GetSelectionOptions(selection.Rule);
+
+            if (!string.IsNullOrWhiteSpace(query))
+            {
+                options = options.Where(option =>
+                    option.Name.Contains(query, StringComparison.OrdinalIgnoreCase)
+                    || option.Source.Contains(query, StringComparison.OrdinalIgnoreCase)
+                    || option.Requirements.Contains(query, StringComparison.OrdinalIgnoreCase));
+            }
+
+            return options
+                .Take(200)
+                .Select(option => new WebBuildSelectionOption(
+                    option.Id,
+                    option.Name,
+                    option.Description,
+                    option.Source,
+                    option.Requirements))
+                .ToList();
+        }
+        finally
+        {
+            _operationLock.Release();
+        }
+    }
+
+    public async Task<WebCharacterBuildState> ChangeBuildSelectionAsync(
+        PhaseZeroSessionWorkspace workspace,
+        string relativePath,
+        string entryKey,
+        string optionId)
+    {
+        await _operationLock.WaitAsync();
+        try
+        {
+            Character character = RequireCurrentCharacter();
+            BuildRuleSelection selection = FindBuildRuleSelection(entryKey);
+            ApplySelection(selection, optionId);
+            CharacterManager.Current.ReprocessCharacter();
+
+            string absolutePath = ResolveWorkspaceFile(workspace, relativePath);
+            CharacterFile file = new(absolutePath);
+            file.Save();
+
+            ImportedCharacterSummary summary = BuildSummary(relativePath, new FileInfo(absolutePath), character, file);
+            IReadOnlyList<WebBuildSelectionGroup> groups = BuildWebSelectionGroups();
+            return new WebCharacterBuildState(
+                summary,
+                groups,
+                groups.Sum(group => group.Entries.Count(entry => entry.CurrentName is null)),
+                "Build selection updated in the current browser session.");
         }
         finally
         {
@@ -906,6 +1006,181 @@ public sealed class WebCharacterEngineService
         };
     }
 
+    private static IReadOnlyList<WebBuildSelectionGroup> BuildWebSelectionGroups() =>
+        BuildRuleSelections()
+            .GroupBy(selection => (selection.GroupId, selection.GroupLabel))
+            .Select(group => new WebBuildSelectionGroup(
+                group.Key.GroupId,
+                group.Key.GroupLabel,
+                group.Select(selection => new WebBuildSelectionEntry(
+                        selection.Key,
+                        selection.Label,
+                        selection.Type,
+                        selection.CurrentName,
+                        selection.RequiredLevel))
+                    .ToList()))
+            .ToList();
+
+    private static IReadOnlyList<BuildRuleSelection> BuildRuleSelections()
+    {
+        CharacterManager manager = CharacterManager.Current;
+        var classManagers = manager.ClassProgressionManagers;
+        List<(string GroupId, string GroupLabel, SelectRule Rule, int Number, string Label, string Type, string? CurrentName, int RequiredLevel)> raw = [];
+
+        foreach (SelectRule rule in manager.SelectionRules)
+        {
+            string type = rule.Attributes.Type ?? "Other";
+            if (string.Equals(type, "Spell", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            (string groupId, string groupLabel) = ClassifyBuildSelectionGroup(manager, classManagers, rule, type);
+            for (int number = 1; number <= rule.Attributes.Number; number++)
+            {
+                string ruleName = rule.Attributes.Name ?? type;
+                string label = rule.Attributes.Number > 1 ? $"{ruleName} ({number})" : ruleName;
+                raw.Add((groupId, groupLabel, rule, number, label, type, ResolveSelectionName(rule, number), rule.Attributes.RequiredLevel));
+            }
+        }
+
+        string[] order = ["race", "class", "background", "languages", "proficiencies"];
+        return raw
+            .OrderBy(entry =>
+            {
+                int index = Array.IndexOf(order, entry.GroupId);
+                return index < 0 ? order.Length : index;
+            })
+            .ThenBy(entry => entry.GroupLabel)
+            .ThenBy(entry => entry.RequiredLevel)
+            .ThenBy(entry => entry.Label)
+            .Select((entry, index) => new BuildRuleSelection(
+                index.ToString(),
+                entry.GroupId,
+                entry.GroupLabel,
+                entry.Rule,
+                entry.Number,
+                entry.Label,
+                entry.Type,
+                entry.CurrentName,
+                entry.RequiredLevel))
+            .ToList();
+    }
+
+    private static (string GroupId, string GroupLabel) ClassifyBuildSelectionGroup(
+        CharacterManager manager,
+        IEnumerable<ClassProgressionManager> classManagers,
+        SelectRule rule,
+        string type)
+    {
+        var progressManager = manager.GetProgressManager(rule);
+        var classManager = classManagers.FirstOrDefault(candidate => ReferenceEquals(candidate, progressManager));
+        if (classManager is not null)
+        {
+            string label = classManager.ClassElement?.Name ?? "Class";
+            return ($"class:{label}", label);
+        }
+
+        if (BuildRaceTypes.Contains(type))
+        {
+            return ("race", "Race");
+        }
+
+        if (BuildClassTypes.Contains(type))
+        {
+            return ("class", "Class");
+        }
+
+        if (BuildBackgroundTypes.Contains(type))
+        {
+            return ("background", "Background");
+        }
+
+        if (BuildLanguageTypes.Contains(type))
+        {
+            return ("languages", "Languages");
+        }
+
+        if (BuildProficiencyTypes.Contains(type))
+        {
+            return ("proficiencies", "Proficiencies");
+        }
+
+        return ($"other:{type}", type);
+    }
+
+    private static BuildRuleSelection FindBuildRuleSelection(string entryKey) =>
+        BuildRuleSelections()
+            .FirstOrDefault(entry => string.Equals(entry.Key, entryKey, StringComparison.Ordinal))
+        ?? throw new InvalidOperationException("The requested build selection could not be found.");
+
+    private void ApplySelection(BuildRuleSelection selection, string optionId)
+    {
+        if (selection.Rule.Attributes.IsList)
+        {
+            SelectionRuleListItem? item = selection.Rule.Attributes.ListItems?
+                .FirstOrDefault(candidate => string.Equals(candidate.ID.ToString(), optionId, StringComparison.Ordinal));
+            if (item is null)
+            {
+                throw new InvalidOperationException("The requested list option could not be found.");
+            }
+
+            _selectionHandler.SetRegisteredListItem(selection.Rule, item, selection.Number);
+            return;
+        }
+
+        SelectionRuleExpanderContext.Current?.SetRegisteredElement(selection.Rule, optionId, selection.Number);
+    }
+
+    private static string? ResolveSelectionName(SelectRule rule, int number)
+    {
+        try
+        {
+            object? current = SelectionRuleExpanderContext.Current?.GetRegisteredElement(rule, number);
+            if (current is null)
+            {
+                return null;
+            }
+
+            if (current is SelectionRuleListItem listItem)
+            {
+                return listItem.Text;
+            }
+
+            return (string?)((dynamic)current).Name;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static readonly HashSet<string> BuildRaceTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Race", "Sub Race", "Racial Trait", "Dragonmark", "Variant", "Race Variant", "Heritage", "Lineage"
+    };
+
+    private static readonly HashSet<string> BuildClassTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Class", "Archetype"
+    };
+
+    private static readonly HashSet<string> BuildBackgroundTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Background", "Background Feature", "Background Variant", "Background Characteristics",
+        "Deity", "Alignment", "Bond", "Flaw", "Ideal", "Personality Trait"
+    };
+
+    private static readonly HashSet<string> BuildLanguageTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Language"
+    };
+
+    private static readonly HashSet<string> BuildProficiencyTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Proficiency", "Skill", "Tool Proficiency", "Armor Proficiency", "Weapon Proficiency", "Expertise"
+    };
+
     private static IReadOnlyList<MagicKnownSpellGroupModel> BuildMagicRuleGroups() =>
         BuildMagicRuleSelectionGroups()
             .Select(group => new MagicKnownSpellGroupModel(
@@ -994,6 +1269,18 @@ public sealed class WebCharacterEngineService
     {
         try
         {
+            if (rule.Attributes.IsList)
+            {
+                return (rule.Attributes.ListItems ?? [])
+                    .Select(item => new SelectionOption(
+                        item.ID.ToString(),
+                        item.Text,
+                        item.Text,
+                        string.Empty,
+                        string.Empty))
+                    .ToList();
+            }
+
             var interpreter = new ExpressionInterpreter();
             interpreter.InitializeWithSelectionRule(rule);
 

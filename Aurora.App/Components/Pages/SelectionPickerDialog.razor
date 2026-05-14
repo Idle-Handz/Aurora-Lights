@@ -1,4 +1,4 @@
-<MudDialog Style="max-height: 90vh;">
+<MudDialog Style="max-height: 90vh; width: min(700px, 95vw);">
     <TitleContent>
         <MudText Typo="Typo.h6" Style="font-size: 15px; font-weight: 600;">@Entry.Label</MudText>
     </TitleContent>
@@ -29,7 +29,8 @@
                         {
                             var isSelected = opt.Id == _selectedId;
                             <div class="picker-item @(isSelected ? "picker-item-selected" : "")"
-                                 @onclick="() => SelectItem(opt)">
+                                 @onclick="() => SelectItem(opt)"
+                                 @ondblclick="() => ConfirmItem(opt)">
                                 <div class="picker-item-name">@opt.Name</div>
                             </div>
                         }
@@ -88,7 +89,7 @@
         get => _searchValue;
         set { _searchValue = value; RebuildFilter(); }
     }
-    private string         _searchValue = "";
+    private string _searchValue = "";
     private string?        _selectedId;
     private ElementOption? _selectedOpt;
     private List<ElementOption> _filtered = [];
@@ -121,6 +122,7 @@
         _selectedOpt = opt;
     }
 
-    private void Cancel()  => MudDialog.Cancel();
-    private void Confirm() { if (_selectedId != null) MudDialog.Close(_selectedId); }
+    private void Cancel()      => MudDialog.Cancel();
+    private void Confirm()     { if (_selectedId != null) MudDialog.Close(_selectedId); }
+    private void ConfirmItem(ElementOption opt) { SelectItem(opt); Confirm(); }
 }

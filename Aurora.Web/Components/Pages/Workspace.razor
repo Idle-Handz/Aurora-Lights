@@ -1,18 +1,17 @@
-@page "/studio"
+@page "/workspace"
 @rendermode InteractiveServer
 @inject PhaseZeroSessionWorkspaceService SessionWorkspace
 @inject WebCharacterSessionService CharacterSession
 @inject IJSRuntime JS
 
-<PageTitle>Studio</PageTitle>
+<PageTitle>Workspace</PageTitle>
 
 <div class="content-card">
-    <h1>Studio</h1>
+    <h1>Workspace</h1>
     <p class="page-intro">
-        This page is the Phase 0 placeholder for the future browser builder
-        experience. It now understands the current session overlay and active
-        character selection so Phase 0 can create, open, and export character
-        files without server-side persistence.
+        This page is the browser session hub for imported content, the active
+        character, and export actions. Changes remain session-scoped until you
+        download the updated character file.
     </p>
 
     @if (!string.IsNullOrWhiteSpace(_statusMessage))
@@ -51,6 +50,7 @@
             </div>
 
             <div class="action-row">
+                <a class="action-link primary" href="/build">Build Character</a>
                 <a class="action-link" href="/manage">Manage Character</a>
                 <a class="action-link" href="/equipment">Equipment</a>
                 <a class="action-link" href="/magic">Magic</a>

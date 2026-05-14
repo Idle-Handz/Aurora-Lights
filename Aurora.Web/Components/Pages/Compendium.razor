@@ -120,6 +120,9 @@
 }
 
 @code {
+    [SupplyParameterFromQuery(Name = "q")]
+    public string? Query { get; set; }
+
     private MergedContentCatalog? _catalog;
     private bool _loading = true;
     private string? _error;
@@ -132,6 +135,14 @@
                 .Where(MatchesFilters)
                 .ToList()
         ?? [];
+
+    protected override void OnParametersSet()
+    {
+        if (Query is not null && !string.Equals(_searchText, Query, StringComparison.Ordinal))
+        {
+            _searchText = Query;
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {

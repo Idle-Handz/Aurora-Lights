@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="MudBlazor" Version="7.*" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Aurora.Components\Aurora.Components.csproj" />
     <ProjectReference Include="..\Aurora.Logic\Aurora.Logic.csproj" />
   </ItemGroup>

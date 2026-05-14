@@ -139,7 +139,7 @@
     <value>https://raw.githubusercontent.com/aurorabuilder/elements/master/supplements.index</value>
   </data>
   <data name="ApplicationName" xml:space="preserve">
-    <value>Aurora</value>
+    <value>Aurora Lights</value>
   </data>
   <data name="ApplicationSubTitle" xml:space="preserve">
     <value>for dungeons and dragons 5th edition</value>
@@ -166,7 +166,7 @@
     <value>https://raw.githubusercontent.com/aurorabuilder/elements/master/core.index</value>
   </data>
   <data name="ApplicationTitle" xml:space="preserve">
-    <value>Aurora</value>
+    <value>Aurora Lights</value>
   </data>
   <data name="WebsiteUrl" xml:space="preserve">
     <value>https://www.aurorabuilder.com</value>

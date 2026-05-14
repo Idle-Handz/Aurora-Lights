@@ -174,7 +174,12 @@ public sealed class PdfImportService
         while (cm.Character.Level < Math.Max(1, result.Level))
         {
             cm.LevelUpMain();
-            cm.ReprocessCharacter();
+            try { cm.ReprocessCharacter(); }
+            catch (Exception ex)
+            {
+                result.ImportDiagnostics.Add(
+                    $"Warning: processing threw during level-up to {cm.Character.Level} — {ex.GetType().Name}: {ex.Message}");
+            }
             ApplyPendingSelections(pending, cm.Character.Level);
         }
 

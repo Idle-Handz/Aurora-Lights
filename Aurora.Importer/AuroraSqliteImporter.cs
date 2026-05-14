@@ -44,7 +44,7 @@ internal static class AuroraSqliteImporter
         EnsureSchema(connection);
         // When the importer logic changes in a way that affects stored data (e.g. adding a new
         // column to element_supports), bump this constant so existing DBs get a full rebuild.
-        const int ExpectedDataVersion = 8;
+        const int ExpectedDataVersion = AuroraDatabaseVersions.DataVersion;
         int dbVersion = GetUserVersion(connection);
         if (dbVersion != ExpectedDataVersion)
         {
@@ -73,6 +73,11 @@ internal static class AuroraSqliteImporter
         var sourceFileIds = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
         var changedPaths  = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var seenPaths     = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var fileHashesByPath = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        // Build a source-name → kind map from Source element setter flags.
+        // These are the authoritative declarations of package kind in the Aurora XML.
+        var sourceKindMap = BuildSourceKindMap(catalog);
 
         // Build content_packages from the top-level directory of each source file path.
         // ON CONFLICT DO NOTHING preserves any user-configured kind/rank from prior runs.
@@ -80,12 +85,17 @@ internal static class AuroraSqliteImporter
         foreach (var file in catalog.Files)
         {
             primarySourceByFile.TryGetValue(file.RelativePath, out string? primarySource);
-            string pkgKey = GetPackageKey(file, primarySource);
+            string pkgKey = GetPackageKey(file, primarySource, sourceKindMap);
             if (!contentPackageIds.ContainsKey(pkgKey))
                 contentPackageIds[pkgKey] = EnsureContentPackage(
                     connection, transaction, pkgKey,
-                    GetPackageDisplayName(file, primarySource), DeterminePackageKind(file.RelativePath));
+                    GetPackageDisplayName(file, primarySource),
+                    DetermineKindForFile(file, primarySource, sourceKindMap));
         }
+
+        // Correct stale/legacy package_kind values.  Two passes: Source-element setters
+        // (authoritative) then key-prefix heuristics (fallback for legacy entries).
+        CorrectPackageKinds(connection, transaction, sourceKindMap);
 
         progress?.Report(new AuroraImportProgress(
             AuroraImportPhase.Scanning, 0, catalog.Files.Count, 0, 0, null));
@@ -96,10 +106,11 @@ internal static class AuroraSqliteImporter
             cancellationToken.ThrowIfCancellationRequested();
             seenPaths.Add(file.RelativePath);
             string hash = ComputeFileHash(file.FullPath);
+            fileHashesByPath[file.RelativePath] = hash;
             scanned++;
 
             primarySourceByFile.TryGetValue(file.RelativePath, out string? primarySource);
-            long? pkgId = contentPackageIds.TryGetValue(GetPackageKey(file, primarySource), out var pid)
+            long? pkgId = contentPackageIds.TryGetValue(GetPackageKey(file, primarySource, sourceKindMap), out var pid)
                 ? pid : null;
 
             if (existingFiles.TryGetValue(file.RelativePath, out var existing))
@@ -209,6 +220,13 @@ internal static class AuroraSqliteImporter
             ResolveDeferredRelationships(connection, transaction);
         }
 
+        UpsertDatabaseMetadata(
+            connection,
+            transaction,
+            sourceFileCount: catalog.Files.Count,
+            elementCount: QueryElementCount(connection, transaction),
+            contentRootHash: ComputeContentRootHash(fileHashesByPath));
+
         transaction.Commit();
 
         progress?.Report(new AuroraImportProgress(
@@ -275,6 +293,102 @@ internal static class AuroraSqliteImporter
         }
     }
 
+    public static ContentDatabaseMetadata? GetMetadata(string sqlitePath)
+    {
+        if (!File.Exists(sqlitePath)) return null;
+
+        using var conn = new SqliteConnection(
+            new SqliteConnectionStringBuilder { DataSource = sqlitePath, Mode = SqliteOpenMode.ReadOnly }.ToString());
+        conn.Open();
+
+        using (var tableCheck = conn.CreateCommand())
+        {
+            tableCheck.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='database_metadata';";
+            if ((long)(tableCheck.ExecuteScalar() ?? 0L) == 0) return null;
+        }
+
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+SELECT schema_version,
+       data_version,
+       importer_version,
+       built_utc,
+       source_file_count,
+       element_count,
+       content_root_hash
+FROM database_metadata
+WHERE singleton_id = 1;";
+        using var reader = cmd.ExecuteReader();
+        if (!reader.Read()) return null;
+
+        return new ContentDatabaseMetadata(
+            SchemaVersion: reader.GetInt32(0),
+            DataVersion: reader.GetInt32(1),
+            ImporterVersion: reader.GetString(2),
+            BuiltUtc: reader.GetString(3),
+            SourceFileCount: reader.GetInt32(4),
+            ElementCount: reader.GetInt32(5),
+            ContentRootHash: reader.IsDBNull(6) ? null : reader.GetString(6));
+    }
+
+    public static ContentDatabaseHealthReport? GetHealthReport(string sqlitePath)
+    {
+        if (!File.Exists(sqlitePath)) return null;
+
+        using var conn = new SqliteConnection(
+            new SqliteConnectionStringBuilder { DataSource = sqlitePath, Mode = SqliteOpenMode.ReadOnly }.ToString());
+        conn.Open();
+
+        int actionableUnresolvedLinks = ExecuteCount(
+            conn,
+            "SELECT COUNT(*) FROM v_unresolved_loader_link_diagnostics WHERE diagnostic_status = 'actionable';");
+        int classifiedUnresolvedLinks = ExecuteCount(
+            conn,
+            "SELECT COUNT(*) FROM v_unresolved_loader_link_diagnostics WHERE diagnostic_status <> 'actionable';");
+        int sourceIntegrityIssues = ExecuteCount(conn, "SELECT COUNT(*) FROM v_source_integrity_issues;");
+        int missingResolvedSpellRows = ExecuteCount(conn, @"
+SELECT COUNT(*)
+FROM v_resolved_elements AS re
+JOIN elements AS e
+    ON e.element_id = re.winning_element_id
+JOIN element_types AS et
+    ON et.element_type_id = e.element_type_id
+LEFT JOIN spells AS s
+    ON s.element_id = e.element_id
+WHERE et.type_name = 'Spell'
+  AND s.element_id IS NULL;");
+        int missingResolvedItemRows = ExecuteCount(conn, @"
+SELECT COUNT(*)
+FROM v_resolved_elements AS re
+JOIN elements AS e
+    ON e.element_id = re.winning_element_id
+JOIN element_types AS et
+    ON et.element_type_id = e.element_type_id
+LEFT JOIN items AS i
+    ON i.element_id = e.element_id
+WHERE et.type_name = 'Item'
+  AND i.element_id IS NULL;");
+        int missingResolvedCompanionRows = ExecuteCount(conn, @"
+SELECT COUNT(*)
+FROM v_resolved_elements AS re
+JOIN elements AS e
+    ON e.element_id = re.winning_element_id
+JOIN element_types AS et
+    ON et.element_type_id = e.element_type_id
+LEFT JOIN companions AS c
+    ON c.element_id = e.element_id
+WHERE et.type_name = 'Companion'
+  AND c.element_id IS NULL;");
+
+        return new ContentDatabaseHealthReport(
+            actionableUnresolvedLinks,
+            classifiedUnresolvedLinks,
+            sourceIntegrityIssues,
+            missingResolvedSpellRows,
+            missingResolvedItemRows,
+            missingResolvedCompanionRows);
+    }
+
     // ── Schema / DB setup ────────────────────────────────────────────────────
 
     private static void EnsureSchema(SqliteConnection connection)
@@ -326,6 +440,7 @@ internal static class AuroraSqliteImporter
         AddColumnIfMissing(connection, "select_items",  "option_kind",
             "TEXT NOT NULL DEFAULT 'name-reference-candidate'");
         AddColumnIfMissing(connection, "stats",         "raw_xml",              "TEXT");
+        AddColumnIfMissing(connection, "database_metadata", "content_root_hash", "TEXT");
     }
 
     private static void AddColumnIfMissing(SqliteConnection connection,
@@ -391,9 +506,10 @@ ON CONFLICT(package_key) DO NOTHING;";
         return (long)select.ExecuteScalar()!;
     }
 
-    private static string GetPackageKey(AuroraFileInfo file, string? primarySource)
+    private static string GetPackageKey(AuroraFileInfo file, string? primarySource,
+        IReadOnlyDictionary<string, string>? sourceKindMap = null)
     {
-        string packageKind = DeterminePackageKind(file.RelativePath);
+        string packageKind = DetermineKindForFile(file, primarySource, sourceKindMap);
         if (!string.IsNullOrWhiteSpace(primarySource))
             return $"{packageKind}:{BuildPackageSlug(primarySource)}";
 
@@ -403,6 +519,21 @@ ON CONFLICT(package_key) DO NOTHING;";
         int sep = file.RelativePath.IndexOfAny(['/', '\\']);
         string topLevel = sep > 0 ? file.RelativePath[..sep] : file.RelativePath;
         return $"{packageKind}:{BuildPackageSlug(topLevel)}";
+    }
+
+    /// <summary>
+    /// Determines the content package kind for a file, using the Source element's
+    /// explicit setter flags as the authoritative source when the file's primary
+    /// source name is known, falling back to directory-path heuristics otherwise.
+    /// </summary>
+    private static string DetermineKindForFile(AuroraFileInfo file, string? primarySource,
+        IReadOnlyDictionary<string, string>? sourceKindMap)
+    {
+        if (!string.IsNullOrWhiteSpace(primarySource)
+            && sourceKindMap?.TryGetValue(primarySource, out string? xmlKind) == true
+            && xmlKind != null)
+            return xmlKind;
+        return DeterminePackageKind(file.RelativePath);
     }
 
     private static string DeterminePackageKind(string relativePath)
@@ -417,6 +548,35 @@ ON CONFLICT(package_key) DO NOTHING;";
             "user"                 => "homebrew",
             _                      => "third-party"
         };
+    }
+
+    /// <summary>
+    /// Builds a map from Source element name → package kind by reading the boolean
+    /// kind-setter flags (<c>core</c>, <c>official</c>, <c>third-party</c>, <c>homebrew</c>)
+    /// declared on every element with <c>type="Source"</c> in the catalog.
+    /// </summary>
+    private static Dictionary<string, string> BuildSourceKindMap(AuroraImportCatalog catalog)
+    {
+        var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var el in catalog.Elements
+            .Where(e => string.Equals(e.type, "Source", StringComparison.OrdinalIgnoreCase)
+                     && !string.IsNullOrWhiteSpace(e.name)
+                     && e.setters != null))
+        {
+            string? kind = GetKindFromSourceSetters(el.setters!);
+            if (kind != null)
+                map[el.name!] = kind;
+        }
+        return map;
+    }
+
+    private static string? GetKindFromSourceSetters(AuroraSetters setters)
+    {
+        if (setters.GetBoolean("core") == true)         return "core";
+        if (setters.GetBoolean("official") == true)     return "official";
+        if (setters.GetBoolean("third-party") == true)  return "third-party";
+        if (setters.GetBoolean("homebrew") == true)     return "homebrew";
+        return null;
     }
 
     private static string BuildPackageSlug(string name)
@@ -502,6 +662,128 @@ ON CONFLICT(package_key) DO NOTHING;";
 
     private static bool IsVirtualSource(string sourceName) =>
         string.Equals(sourceName?.Trim(), "Internal", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Corrects <c>package_kind</c> and <c>precedence_rank</c> for stale package rows.
+    /// Two passes:
+    /// <list type="number">
+    ///   <item>Source-element pass: queries <c>setter_entries</c> for every Source element
+    ///   already in the DB, derives the authoritative kind from the XML setter flags
+    ///   (<c>core</c>, <c>official</c>, <c>third-party</c>, <c>homebrew</c>), and updates any
+    ///   package whose key matches the source name — covering both the current colon-format
+    ///   and legacy hyphen-format keys.  The catalog map is merged in for Source elements
+    ///   not yet written (new/changed files in the current batch).</item>
+    ///   <item>Key-prefix pass: fallback for entries with no Source element in the DB.</item>
+    /// </list>
+    /// Only updates rows where the stored kind is already wrong.
+    /// </summary>
+    private static void CorrectPackageKinds(SqliteConnection conn, SqliteTransaction txn,
+        IReadOnlyDictionary<string, string> catalogSourceKindMap)
+    {
+        // Pass 1 — Source element setter flags (authoritative).
+        // Build the name→kind map by reading setter_entries for every Source-type element
+        // in the DB; this covers historical imports, not just the current batch.
+        var sourceKindMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        using var kindQuery = conn.CreateCommand();
+        kindQuery.Transaction = txn;
+        kindQuery.CommandText = @"
+            SELECT e.name,
+                MIN(CASE se.setter_name
+                    WHEN 'core'        THEN 1
+                    WHEN 'official'    THEN 2
+                    WHEN 'third-party' THEN 3
+                    WHEN 'homebrew'    THEN 4
+                    ELSE 999
+                END) AS kind_priority
+            FROM elements e
+            JOIN element_types et ON et.element_type_id = e.element_type_id
+                                  AND et.type_name = 'Source'
+            JOIN setter_scopes ss ON ss.owner_element_id = e.element_id
+                                  AND ss.owner_kind = 'element'
+            JOIN setter_entries se ON se.setter_scope_id = ss.setter_scope_id
+            WHERE se.setter_name IN ('core', 'official', 'third-party', 'homebrew')
+              AND LOWER(TRIM(se.setter_value)) = 'true'
+            GROUP BY e.name
+            HAVING kind_priority < 999;";
+
+        using (var r = kindQuery.ExecuteReader())
+        {
+            while (r.Read())
+            {
+                string name = r.GetString(0);
+                string kind = r.GetInt32(1) switch
+                {
+                    1 => "core",
+                    2 => "official",
+                    3 => "third-party",
+                    _ => "homebrew"
+                };
+                sourceKindMap[name] = kind;
+            }
+        }
+
+        // Merge catalog entries so Source elements in the current import batch
+        // (whose elements may have been deleted and not yet re-inserted) are also covered.
+        foreach (var (name, kind) in catalogSourceKindMap)
+            sourceKindMap.TryAdd(name, kind);
+
+        // Apply source-element corrections: try every key format that could represent
+        // this source (current colon-format + legacy directory-prefixed hyphen-format).
+        using var updateCmd = conn.CreateCommand();
+        updateCmd.Transaction = txn;
+        updateCmd.CommandText = @"
+            UPDATE content_packages
+            SET package_kind = $kind, precedence_rank = $rank
+            WHERE package_key = $key AND package_kind <> $kind;";
+        updateCmd.Parameters.AddWithValue("$key",  "");
+        updateCmd.Parameters.AddWithValue("$kind", "");
+        updateCmd.Parameters.AddWithValue("$rank", 0);
+
+        foreach (var (sourceName, kind) in sourceKindMap)
+        {
+            string slug = BuildPackageSlug(sourceName);
+            int rank = DefaultPrecedenceRank(kind);
+            foreach (string candidateKey in new[]
+            {
+                $"{kind}:{slug}",
+                $"core-{slug}", $"supplements-{slug}", $"unearthed-arcana-{slug}",
+                $"third-party-{slug}", $"homebrew-{slug}", $"user-{slug}"
+            })
+            {
+                updateCmd.Parameters["$key"].Value  = candidateKey;
+                updateCmd.Parameters["$kind"].Value = kind;
+                updateCmd.Parameters["$rank"].Value = rank;
+                updateCmd.ExecuteNonQuery();
+            }
+        }
+
+        // Pass 2 — key-prefix heuristics (fallback for entries with no Source element).
+        var rules = new (string kind, int rank, string[] prefixes)[]
+        {
+            ("core",        100, ["core:", "core-"]),
+            ("official",    200, ["supplements:", "supplements-", "unearthed-arcana:", "unearthed-arcana-"]),
+            ("third-party", 300, ["third-party:", "third-party-"]),
+            ("homebrew",    400, ["homebrew:", "homebrew-", "user:", "user-"]),
+        };
+
+        foreach (var (kind, rank, prefixes) in rules)
+        {
+            string likeClause = string.Join(" OR ", prefixes.Select((_, i) => $"package_key LIKE $p{i}"));
+            using var cmd = conn.CreateCommand();
+            cmd.Transaction = txn;
+            cmd.CommandText = $@"
+                UPDATE content_packages
+                SET package_kind = $kind, precedence_rank = $rank
+                WHERE ({likeClause})
+                  AND package_kind <> $kind;";
+            cmd.Parameters.AddWithValue("$kind", kind);
+            cmd.Parameters.AddWithValue("$rank", rank);
+            for (int i = 0; i < prefixes.Length; i++)
+                cmd.Parameters.AddWithValue($"$p{i}", prefixes[i] + "%");
+            cmd.ExecuteNonQuery();
+        }
+    }
 
     private static int DefaultPrecedenceRank(string packageKind) =>
         packageKind switch
@@ -1528,6 +1810,55 @@ WHERE package_kind = 'third-party'
   );");
     }
 
+    private static void UpsertDatabaseMetadata(
+        SqliteConnection connection,
+        SqliteTransaction transaction,
+        int sourceFileCount,
+        int elementCount,
+        string contentRootHash)
+    {
+        using var cmd = connection.CreateCommand();
+        cmd.Transaction = transaction;
+        cmd.CommandText = @"
+INSERT INTO database_metadata
+(
+    singleton_id,
+    schema_version,
+    data_version,
+    importer_version,
+    built_utc,
+    source_file_count,
+    element_count,
+    content_root_hash
+)
+VALUES
+(
+    1,
+    $schema_version,
+    $data_version,
+    $importer_version,
+    CURRENT_TIMESTAMP,
+    $source_file_count,
+    $element_count,
+    $content_root_hash
+)
+ON CONFLICT(singleton_id) DO UPDATE SET
+    schema_version = excluded.schema_version,
+    data_version = excluded.data_version,
+    importer_version = excluded.importer_version,
+    built_utc = excluded.built_utc,
+    source_file_count = excluded.source_file_count,
+    element_count = excluded.element_count,
+    content_root_hash = excluded.content_root_hash;";
+        cmd.Parameters.AddWithValue("$schema_version", AuroraDatabaseVersions.SchemaVersion);
+        cmd.Parameters.AddWithValue("$data_version", AuroraDatabaseVersions.DataVersion);
+        cmd.Parameters.AddWithValue("$importer_version", GetImporterVersion());
+        cmd.Parameters.AddWithValue("$source_file_count", sourceFileCount);
+        cmd.Parameters.AddWithValue("$element_count", elementCount);
+        cmd.Parameters.AddWithValue("$content_root_hash", contentRootHash);
+        cmd.ExecuteNonQuery();
+    }
+
     // ── Scope helpers ────────────────────────────────────────────────────────
 
     private static long InsertRuleScope(SqliteConnection connection, SqliteTransaction transaction, string ownerKind, long ownerElementId)
@@ -1615,6 +1946,36 @@ WHERE package_kind = 'third-party'
             _ => double.TryParse(crText.Trim(), out var d) ? (object)d : DBNull.Value
         };
     }
+
+    private static int ExecuteCount(SqliteConnection connection, string sql)
+    {
+        using var cmd = connection.CreateCommand();
+        cmd.CommandText = sql;
+        return Convert.ToInt32(cmd.ExecuteScalar() ?? 0);
+    }
+
+    private static int QueryElementCount(SqliteConnection connection, SqliteTransaction transaction)
+    {
+        using var cmd = connection.CreateCommand();
+        cmd.Transaction = transaction;
+        cmd.CommandText = "SELECT COUNT(*) FROM elements;";
+        return Convert.ToInt32((long)(cmd.ExecuteScalar() ?? 0L));
+    }
+
+    private static string ComputeContentRootHash(IReadOnlyDictionary<string, string> fileHashesByPath)
+    {
+        using var md5 = MD5.Create();
+        string payload = string.Join(
+            "\n",
+            fileHashesByPath
+                .OrderBy(kvp => kvp.Key, StringComparer.OrdinalIgnoreCase)
+                .Select(kvp => $"{kvp.Key}|{kvp.Value}"));
+        byte[] hash = md5.ComputeHash(System.Text.Encoding.UTF8.GetBytes(payload));
+        return Convert.ToHexString(hash);
+    }
+
+    private static string GetImporterVersion() =>
+        Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown";
 
     private static int? GetMinimumLevel(AuroraElement element)
     {

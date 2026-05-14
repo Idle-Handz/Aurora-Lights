@@ -33,6 +33,11 @@ public sealed class CharacterService :
     public string ElementLoadSummary { get; private set; } = "Elements have not been initialized yet.";
     public string? ElementLoadDatabasePath { get; private set; }
     public int? ElementLoadSchemaVersion { get; private set; }
+    public int? ElementLoadDataVersion { get; private set; }
+    public string? ElementLoadImporterVersion { get; private set; }
+    public string? ElementLoadBuiltUtc { get; private set; }
+    public int? ElementLoadSourceFileCount { get; private set; }
+    public string? ElementLoadContentRootHash { get; private set; }
     public string? ElementLoadFailureReason { get; private set; }
     public int ElementLoadSkippedElements { get; private set; }
 
@@ -98,6 +103,11 @@ public sealed class CharacterService :
 
             ElementLoadDatabasePath = dbResult.DatabasePath;
             ElementLoadSchemaVersion = dbResult.SchemaVersion;
+            ElementLoadDataVersion = dbResult.DataVersion;
+            ElementLoadImporterVersion = dbResult.ImporterVersion;
+            ElementLoadBuiltUtc = dbResult.BuiltUtc;
+            ElementLoadSourceFileCount = dbResult.SourceFileCount;
+            ElementLoadContentRootHash = dbResult.ContentRootHash;
             ElementLoadFailureReason = dbResult.FailureReason;
             ElementLoadSkippedElements = dbResult.SkippedElementCount;
 
@@ -145,6 +155,11 @@ public sealed class CharacterService :
             ElementLoadSummary = "Elements have not been initialized yet.";
             ElementLoadDatabasePath = null;
             ElementLoadSchemaVersion = null;
+            ElementLoadDataVersion = null;
+            ElementLoadImporterVersion = null;
+            ElementLoadBuiltUtc = null;
+            ElementLoadSourceFileCount = null;
+            ElementLoadContentRootHash = null;
             ElementLoadFailureReason = null;
             ElementLoadSkippedElements = 0;
         }
@@ -203,6 +218,11 @@ public sealed class CharacterService :
             {
                 // Clear prepared spell state from any previous character load.
                 CharacterLoadCompatibilityService.PrepareForCharacterLoad();
+
+                // Warm up the CharacterManager singleton on the current (non-thread-pool) thread.
+                // Its static initializer accesses ApplicationContext.Current, which is not safe to
+                // run on a Task.Run thread while element-loading background state is still active.
+                _ = CharacterManager.Current;
 
                 var result    = await Task.Run(async () => await file.Load());
                 var character = CharacterManager.Current?.Character;
@@ -266,7 +286,9 @@ public sealed class CharacterService :
     /// if Average is selected. Callers should immediately open a tab and navigate to /build.
     /// </summary>
     public async Task<(CharacterFile? File, string? Error)> CreateNewCharacterAsync(
-        string name, string playerName, HpMethod hpMethod)
+        string name, string playerName, HpMethod hpMethod,
+        bool feats = true, bool multiclassing = true,
+        bool customOrigin = true, bool customLanguage = true, bool customProficiency = true)
     {
         // Capture the active tab's state and hold the context lock while we stomp
         // the singleton with New() + Save.
@@ -286,6 +308,13 @@ public sealed class CharacterService :
                 if (element != null)
                     CharacterManager.Current.RegisterElement(element);
             }
+
+            // New() auto-registers options whose default="true"; unregister any the user has turned off.
+            ApplyOption(Builder.Data.Strings.InternalOptions.AllowFeats,         feats);
+            ApplyOption(Builder.Data.Strings.InternalOptions.AllowMulticlassing, multiclassing);
+            ApplyOption("ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI",         customOrigin);
+            ApplyOption("ID_WOTC_TCOE_OPTION_CUSTOMIZED_LANGUAGE",    customLanguage);
+            ApplyOption("ID_WOTC_TCOE_OPTION_CUSTOMIZED_PROFICIENCY", customProficiency);
 
             string safeName = string.Concat(character.Name
                 .Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
@@ -309,6 +338,22 @@ public sealed class CharacterService :
         {
             DebugLogService.Instance.LogException(ex, "CharacterService.CreateNewCharacterAsync");
             return (null, $"{ex.GetType().Name}: {ex.Message}");
+        }
+    }
+
+    private static void ApplyOption(string optionId, bool enabled)
+    {
+        var cm = CharacterManager.Current;
+        bool has = cm.ContainsOption(optionId);
+        if (enabled && !has)
+        {
+            var el = DataManager.Current.ElementsCollection.FirstOrDefault(e => e.Id == optionId);
+            if (el != null) cm.RegisterElement(el);
+        }
+        else if (!enabled && has)
+        {
+            var el = cm.GetElements().FirstOrDefault(e => e.Id == optionId);
+            if (el != null) cm.UnregisterElement(el);
         }
     }
 
