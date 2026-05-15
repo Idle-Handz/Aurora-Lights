@@ -1,13 +1,13 @@
 name: Build macOS MAUI (unsigned)
 on:
   # push:
-   # paths:
-   #   - 'Aurora.App/**'
-   #   - 'Aurora.Logic/**'
-   #   - 'Aurora.Components/**'
-   #   - 'Aurora.Importer/**'
-   #   - 'lib/**'
-   #   - '.github/workflows/build-macos.yml'
+  #   paths:
+  #     - 'Aurora.App/**'
+  #     - 'Aurora.Logic/**'
+  #     - 'Aurora.Components/**'
+  #     - 'Aurora.Importer/**'
+  #     - 'lib/**'
+  #     - '.github/workflows/build-macos.yml'
   workflow_dispatch:
 
 jobs:
