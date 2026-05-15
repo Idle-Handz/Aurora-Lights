@@ -1,6 +1,6 @@
 name: Build macOS MAUI (unsigned)
 on:
-  push:
+  # ── push:
     paths:
       - 'Aurora.App/**'
       - 'Aurora.Logic/**'
