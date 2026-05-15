@@ -1,3 +1,4 @@
+using Aurora.Components.Models;
 using Builder.Data;
 using Builder.Data.Rules;
 using Builder.Presentation;
@@ -440,6 +441,30 @@ public static class BuildService
             foreach (var r in cm.SelectionRules.ToList())
             {
                 if (r.Attributes.Type == "Spell") continue; // spell management is on Magic page
+
+                // If the rule's owner element is no longer registered, all its selections are
+                // stale — clear them without checking individual option validity.
+                var ownerId = r.ElementHeader?.Id;
+                if (!string.IsNullOrWhiteSpace(ownerId) && !currentIds.Contains(ownerId))
+                {
+                    for (int n = 1; n <= r.Attributes.Number; n++)
+                    {
+                        var stale = SelectionRuleExpanderContext.Current?.GetRegisteredElement(r, n)
+                            as Builder.Data.ElementBase;
+                        if (stale == null) continue;
+                        try
+                        {
+                            cm.UnregisterElement(stale);
+                            SelectionRuleExpanderContext.Current?.ClearRegisteredElement(r, n);
+                        }
+                        catch { }
+                        string staleLabel = r.Attributes.Number > 1
+                            ? $"{r.Attributes.Name ?? r.Attributes.Type} ({n})"
+                            : (r.Attributes.Name ?? r.Attributes.Type);
+                        invalidated.Add(staleLabel);
+                    }
+                    continue;
+                }
 
                 int count = r.Attributes.Number;
                 for (int n = 1; n <= count; n++)
@@ -1084,55 +1109,6 @@ public static class BuildService
     // ── Tab-based build structure ─────────────────────────────────────────────────
 
     /// <summary>
-    /// Selection rule types that belong in the Race tab.
-    /// </summary>
-    private static readonly HashSet<string> AsiTypes = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "Ability Score Improvement",
-    };
-
-    private static readonly HashSet<string> LanguageTypes = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "Language",
-    };
-
-    private static readonly HashSet<string> ProficiencyTypes = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "Proficiency", "Skill", "Tool Proficiency", "Armor Proficiency", "Weapon Proficiency",
-        "Expertise",
-    };
-
-    private static readonly HashSet<string> FeatTypes = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "Feat", "Feat Feature",
-    };
-
-    private static readonly HashSet<string> RaceTypes = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "Race", "Sub Race", "Racial Trait", "Dragonmark", "Variant",
-        "Race Variant", "Heritage", "Lineage",
-    };
-
-    /// <summary>
-    /// Selection rule types from the main progression manager that belong in the Class tab
-    /// (before a ClassProgressionManager exists, e.g. the initial Class selection rule).
-    /// </summary>
-    private static readonly HashSet<string> ClassTypes = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "Class", "Archetype",
-    };
-
-    /// <summary>
-    /// Selection rule types that belong in the Background tab.
-    /// </summary>
-    private static readonly HashSet<string> BackgroundTypes = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "Background", "Background Feature", "Background Variant", "Background Characteristics",
-        "Deity", "Alignment",
-        "Bond", "Flaw", "Ideal", "Personality Trait",
-    };
-
-    /// <summary>
     /// Classifies all active SelectionRules into tab groups for the Build page.
     /// Always returns Race, Class, and Background tabs (may be empty of rules if none
     /// apply yet). Additional overflow tabs are added for any other rule types.
@@ -1259,6 +1235,7 @@ public static class BuildService
         var bgEntries          = new List<SelectionRuleEntry>();
         var languageEntries    = new List<SelectionRuleEntry>();
         var proficiencyEntries = new List<SelectionRuleEntry>();
+        var companionEntries   = new List<SelectionRuleEntry>();
         var featEntries        = new Dictionary<string, List<SelectionRuleEntry>>(StringComparer.OrdinalIgnoreCase);
         var overflowEntries    = new Dictionary<string, List<SelectionRuleEntry>>(StringComparer.OrdinalIgnoreCase);
         var classGroupEntries  = new Dictionary<ClassProgressionManager, List<SelectionRuleEntry>>();
@@ -1314,6 +1291,9 @@ public static class BuildService
                         if (!featEntries.ContainsKey(featGroup))
                             featEntries[featGroup] = [];
                         featEntries[featGroup].Add(entry);
+                        break;
+                    case BuildRuleBucket.Companion:
+                        companionEntries.Add(entry);
                         break;
                     case BuildRuleBucket.AbilityScores:
                         break;
@@ -1389,6 +1369,13 @@ public static class BuildService
                 .ToList()
             : new List<SelectionRuleGroup>();
         tabs.Add(new BuildTabGroup("Feats", featGroups, CountUnresolved(featGroups)));
+
+        // Companions tab — only shown when companion rules are present
+        if (companionEntries.Count > 0)
+        {
+            var companionGroups = new List<SelectionRuleGroup> { new("", Sort(companionEntries)) };
+            tabs.Add(new BuildTabGroup("Companions", companionGroups, CountUnresolved(companionGroups)));
+        }
 
         // Overflow tabs — one per unrecognised type, alphabetical
         foreach (var (typeName, entries) in overflowEntries.OrderBy(kv => kv.Key))
@@ -1479,56 +1466,13 @@ public static class BuildService
 
     private static BuildRuleBucket ClassifyBuildRule(SelectRule rule, ClassProgressionManager? classMgr)
     {
-        if (classMgr != null)
-            return BuildRuleBucket.Class;
-
-        string ruleType = rule.Attributes.Type ?? "Other";
-        string ruleName = rule.Attributes.Name ?? ruleType;
         var ownerElement = ResolveOwnerElement(rule);
-        string ownerType = ownerElement?.Type ?? rule.ElementHeader?.Type ?? string.Empty;
-        string ownerName = ownerElement?.Name ?? rule.ElementHeader?.Name ?? string.Empty;
-
-        if (IsAbilityScoresRule(ruleType, ruleName, ownerType, ownerName))
-            return BuildRuleBucket.AbilityScores;
-
-        if (IsRaceOwnedRule(ruleType, ownerType, ownerName))
-            return BuildRuleBucket.Race;
-
-        if (ClassTypes.Contains(ruleType) || ClassTypes.Contains(ownerType))
-            return BuildRuleBucket.Class;
-
-        if (BackgroundTypes.Contains(ruleType) || BackgroundTypes.Contains(ownerType))
-            return BuildRuleBucket.Background;
-
-        if (FeatTypes.Contains(ruleType))
-            return BuildRuleBucket.Feat;
-
-        if (LanguageTypes.Contains(ruleType))
-            return BuildRuleBucket.Language;
-
-        if (ProficiencyTypes.Contains(ruleType))
-            return BuildRuleBucket.Proficiency;
-
-        return BuildRuleBucket.Overflow;
-    }
-
-    private static bool IsAbilityScoresRule(string ruleType, string ruleName, string ownerType, string ownerName)
-    {
-        if (AsiTypes.Contains(ruleType))
-            return true;
-
-        return (ruleName.Contains("Ability Score", StringComparison.OrdinalIgnoreCase) ||
-                ownerName.Contains("Ability Score", StringComparison.OrdinalIgnoreCase)) &&
-               (ruleType.Equals("Racial Trait", StringComparison.OrdinalIgnoreCase) ||
-                RaceTypes.Contains(ownerType));
-    }
-
-    private static bool IsRaceOwnedRule(string ruleType, string ownerType, string ownerName)
-    {
-        if (RaceTypes.Contains(ruleType))
-            return true;
-
-        return RaceTypes.Contains(ownerType);
+        return BuildRuleClassifier.Classify(
+            ruleType:       rule.Attributes.Type ?? "Other",
+            ruleName:       rule.Attributes.Name ?? rule.Attributes.Type ?? "Other",
+            ownerType:      ownerElement?.Type ?? rule.ElementHeader?.Type ?? string.Empty,
+            ownerName:      ownerElement?.Name ?? rule.ElementHeader?.Name ?? string.Empty,
+            hasClassManager: classMgr != null);
     }
 
     private static ElementBase? ResolveOwnerElement(SelectRule rule)
@@ -1545,17 +1489,7 @@ public static class BuildService
     {
         var ownerElement = ResolveOwnerElement(rule);
         string ownerType = ownerElement?.Type ?? rule.ElementHeader?.Type ?? string.Empty;
-
-        if (RaceTypes.Contains(ownerType))
-            return "Racial";
-
-        if (BackgroundTypes.Contains(ownerType))
-            return "Background";
-
-        if (ClassTypes.Contains(ownerType))
-            return "Class";
-
-        return string.Empty;
+        return BuildRuleClassifier.GetFeatGroupLabel(ownerType);
     }
 
     private static HashSet<string> GetValidSelectionIds(
@@ -1655,18 +1589,6 @@ public static class BuildService
 }
 
 // ── Build tab group ───────────────────────────────────────────────────────────
-
-internal enum BuildRuleBucket
-{
-    Race,
-    Class,
-    Background,
-    Language,
-    Proficiency,
-    Feat,
-    AbilityScores,
-    Overflow,
-}
 
 public sealed record BuildTabGroup(string Label, IReadOnlyList<SelectionRuleGroup> RuleGroups, int UnresolvedCount = 0);
 

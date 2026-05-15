@@ -22,8 +22,30 @@ public static class FileSaveService
         return PickSaveLocationWindowsAsync(suggestedFileName, fileTypes, initialDirectory);
 #elif MACCATALYST
         return PickSaveLocationMacAsync(suggestedFileName, fileTypes, initialDirectory);
+#elif ANDROID
+        return PickSaveLocationAndroidAsync(suggestedFileName);
 #else
         return Task.FromResult<string?>(null);
+#endif
+    }
+
+    /// <summary>
+    /// On Android, triggers the OS share sheet so the user can save/share the file
+    /// (e.g. send to Files, Drive, email, etc.). No-op on other platforms.
+    /// Must be called on the main thread.
+    /// </summary>
+    public static Task ShareFileAsync(string filePath, string displayName)
+    {
+#if ANDROID
+        return Share.Default.RequestAsync(new ShareFileRequest
+        {
+            Title = displayName,
+            File  = new ShareFile(filePath),
+        });
+#else
+        _ = filePath;
+        _ = displayName;
+        return Task.CompletedTask;
 #endif
     }
 
@@ -56,6 +78,16 @@ public static class FileSaveService
 
         var file = await picker.PickSaveFileAsync();
         return file?.Path;
+    }
+#endif
+
+#if ANDROID
+    private static Task<string?> PickSaveLocationAndroidAsync(string suggestedFileName)
+    {
+        // Android has no file-save picker. Write to a cache path and follow up with
+        // ShareFileAsync so the user can send it to Files, Drive, or any other app.
+        string path = Path.Combine(FileSystem.Current.CacheDirectory, suggestedFileName);
+        return Task.FromResult<string?>(path);
     }
 #endif
 

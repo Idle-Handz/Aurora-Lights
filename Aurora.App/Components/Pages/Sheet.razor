@@ -52,13 +52,16 @@
 }
 
 <div class="sheet-actions">
-    <MudButton StartIcon="@Icons.Material.Filled.Visibility"
-               Color="Color.Default"
-               Variant="Variant.Outlined"
-               Disabled="_generating"
-               OnClick="PreviewPdfAsync">
-        Preview
-    </MudButton>
+    @if (!OperatingSystem.IsAndroid())
+    {
+        <MudButton StartIcon="@Icons.Material.Filled.Visibility"
+                   Color="Color.Default"
+                   Variant="Variant.Outlined"
+                   Disabled="_generating"
+                   OnClick="PreviewPdfAsync">
+            Preview
+        </MudButton>
+    }
     <MudButton StartIcon="@Icons.Material.Filled.PictureAsPdf"
                Color="Color.Primary"
                Variant="Variant.Filled"
@@ -355,6 +358,7 @@
                         {
                             CharacterSheetGeneratorContext.Current!.GenerateNewSheet(chosenPath, isPreview: false);
                         });
+                        await FileSaveService.ShareFileAsync(chosenPath, $"{safeName}.pdf");
                         await InvokeAsync(() =>
                         {
                             _lastSavedPath = chosenPath;
@@ -419,6 +423,7 @@
                 CharacterSheetGeneratorContext.Current!.GenerateNewSheet(chosenPath, isPreview: false);
             });
             _lastSavedPath = chosenPath;
+            await FileSaveService.ShareFileAsync(chosenPath, $"{safeName}.pdf");
         }
         catch (Exception ex)
         {

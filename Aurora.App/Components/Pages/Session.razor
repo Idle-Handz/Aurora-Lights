@@ -574,6 +574,7 @@
         }
 
         _saveError = "Some session changes could not be saved yet. Your current values are still in memory, but please try saving again after resolving any file access issues.";
+        Snackbar.Add(_saveError, Severity.Error);
         _ = InvokeAsync(StateHasChanged);
         return false;
     }
