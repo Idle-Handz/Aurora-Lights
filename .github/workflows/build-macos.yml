@@ -68,7 +68,7 @@ jobs:
 
   # ── arm64 build (Apple Silicon) + universal merge ────────────────────────────
   build-arm64-and-merge:
-    runs-on: macos-26
+    runs-on: macos-26-intel
     needs: build-x64
     env:
       PROJECT: Aurora.App/Aurora.App.csproj

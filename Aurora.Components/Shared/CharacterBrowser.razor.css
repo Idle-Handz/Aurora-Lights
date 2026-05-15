@@ -83,6 +83,47 @@
     gap: 0.85rem;
 }
 
+.character-browser-card-wrapper {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.character-browser-delete-btn {
+    position: absolute;
+    top: 0.45rem;
+    right: 0.45rem;
+    width: 1.6rem;
+    height: 1.6rem;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: rgba(185, 28, 28, 0.82);
+    color: #fff;
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 140ms ease, background 120ms ease;
+    display: grid;
+    place-items: center;
+    z-index: 1;
+}
+
+.character-browser-card-wrapper:hover .character-browser-delete-btn {
+    opacity: 1;
+}
+
+.character-browser-delete-btn:hover {
+    background: rgba(185, 28, 28, 1);
+}
+
+@media (hover: none) {
+    .character-browser-delete-btn {
+        opacity: 0.7;
+    }
+}
+
 .character-browser-card {
     display: flex;
     gap: 0.9rem;

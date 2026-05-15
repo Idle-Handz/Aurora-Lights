@@ -231,6 +231,53 @@ public sealed class SingletonGuardTests
         completed.Should().BeTrue("the lock must be released by Dispose so a subsequent enter can proceed");
     }
 
+    // ── Non-reentrancy (portrait-picker deadlock) ─────────────────────────────
+    //
+    // Root cause: OpenPortraitPickerAsync held a CharacterContext scope and then
+    // called SaveTabAsync, which tries to acquire the same SingletonGuard lock.
+    // Since the guard is non-reentrant the inner WaitAsync never completes,
+    // silently hanging the save and leaving _portraitSrc unchanged.
+    // Fix: release the outer scope before calling any code that re-enters the guard.
+
+    [Fact]
+    public async Task EnterAsync_WhileScopeHeld_DoesNotComplete()
+    {
+        var guard = new SingletonGuard<object>();
+        var item  = new object();
+        guard.Claim(item);
+
+        var outer      = await guard.EnterAsync(item, (_, _) => Task.CompletedTask);
+        var innerEnter = guard.EnterAsync(item, (_, _) => Task.CompletedTask);
+        var winner     = await Task.WhenAny(innerEnter, Task.Delay(200));
+
+        // Clean up: release outer so the pending inner can finish without leaking.
+        outer.Dispose();
+        (await innerEnter).Dispose();
+
+        winner.Should().NotBeSameAs(innerEnter,
+            because: "SingletonGuard is non-reentrant — a second EnterAsync while a scope " +
+                     "is held must not complete (this was the portrait-picker deadlock)");
+    }
+
+    [Fact]
+    public async Task EnterAsync_SequentialEnterAfterRelease_Completes()
+    {
+        // The fix pattern: dispose the outer scope before calling code that re-enters
+        // (e.g. the inner scope representing SaveTabAsync in CharacterContext).
+        var guard = new SingletonGuard<object>();
+        var item  = new object();
+        guard.Claim(item);
+
+        { using var outer = await guard.EnterAsync(item, (_, _) => Task.CompletedTask); }
+
+        var innerEnter = guard.EnterAsync(item, (_, _) => Task.CompletedTask);
+        var winner     = await Task.WhenAny(innerEnter, Task.Delay(200));
+        (await innerEnter).Dispose();
+
+        winner.Should().BeSameAs(innerEnter,
+            because: "once the outer scope is released the guard is free and the next enter completes");
+    }
+
     // ── CaptureAndInvalidateAsync ─────────────────────────────────────────────
 
     [Fact]

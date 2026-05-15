@@ -41,7 +41,8 @@ else
                               CreateButtonText="New Character"
                               DisableCreateButton="@_preloading"
                               OnCreate="OnNewCharacter"
-                              OnSelected="OnBrowserSelected">
+                              OnSelected="OnBrowserSelected"
+                              OnDelete="OnDeleteCharacter">
                 <AdditionalHeaderContent>
                     <button class="character-browser-create"
                             type="button"
@@ -94,7 +95,7 @@ else
         }
         catch (Exception ex)
         {
-            DebugLogService.Instance.LogException(ex, "Start.OnInitializedAsync");
+            DebugLogService.Instance.LogException(ex, "Characters.OnInitializedAsync");
             _error = ex.Message;
         }
         finally
@@ -245,7 +246,7 @@ else
         }
         catch (Exception ex)
         {
-            DebugLogService.Instance.LogException(ex, "Start.OnCharacterSelected");
+            DebugLogService.Instance.LogException(ex, "Characters.OnCharacterSelected");
             Tabs.CloseTab(loadingTab);
             Snackbar.Add($"{characterFile.DisplayName}: {ex.GetType().Name} - {ex.Message}", Severity.Error);
         }
@@ -301,7 +302,7 @@ else
         }
         catch (Exception ex)
         {
-            DebugLogService.Instance.LogException(ex, "Start.OnNewCharacter");
+            DebugLogService.Instance.LogException(ex, "Characters.OnNewCharacter");
             _error = $"{ex.GetType().Name}: {ex.Message}";
             StateHasChanged();
         }
@@ -316,6 +317,41 @@ else
         {
             _ = OnCharacterSelected(character);
         }
+    }
+
+    private async Task OnDeleteCharacter(CharacterBrowserEntry entry)
+    {
+        Builder.Presentation.Models.CharacterFile? file = _characters.FirstOrDefault(candidate =>
+            string.Equals(candidate.FilePath, entry.Id, StringComparison.Ordinal));
+        if (file == null) return;
+
+        bool? confirmed = await DialogService.ShowMessageBox(
+            "Delete Character?",
+            $"Are you sure you want to permanently delete \"{file.DisplayName}\"? This cannot be undone.",
+            yesText: "Delete", cancelText: "Cancel");
+        if (confirmed != true) return;
+
+        // Close the tab if this character is currently open.
+        CharacterTab? tab = Tabs.FindTab(file);
+        if (tab != null)
+        {
+            await CharacterContext.ReleaseAsync(tab);
+            Tabs.CloseTab(tab);
+        }
+
+        try
+        {
+            Characters.DeleteCharacterFile(file);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Could not delete {file.DisplayName}: {ex.Message}", Severity.Error);
+            return;
+        }
+
+        _characters = Characters.LoadCharacterFiles().ToList();
+        RebuildBrowserEntries();
+        StateHasChanged();
     }
 
     private static IReadOnlyList<ClassProgressionSnapshot> SnapshotProgressionManagers() =>

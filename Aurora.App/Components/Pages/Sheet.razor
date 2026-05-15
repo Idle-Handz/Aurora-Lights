@@ -244,46 +244,6 @@
     }
 </div>
 
-@* Character summary card *@
-<div class="sheet-summary" style="margin-top: 24px;">
-    <div class="combat-strip">
-        <div class="combat-stat">
-            <div class="combat-stat-value">@_snap.ArmorClass</div>
-            <div class="combat-stat-label">AC</div>
-        </div>
-        <div class="combat-sep"></div>
-        <div class="combat-stat">
-            <div class="combat-stat-value">@_snap.MaxHp</div>
-            <div class="combat-stat-label">HP</div>
-        </div>
-        <div class="combat-sep"></div>
-        <div class="combat-stat">
-            <div class="combat-stat-value">@_snap.Initiative</div>
-            <div class="combat-stat-label">Initiative</div>
-        </div>
-        <div class="combat-sep"></div>
-        <div class="combat-stat">
-            <div class="combat-stat-value">@_snap.Speed ft.</div>
-            <div class="combat-stat-label">Speed</div>
-        </div>
-        <div class="combat-sep"></div>
-        <div class="combat-stat">
-            <div class="combat-stat-value">+@_snap.Proficiency</div>
-            <div class="combat-stat-label">Proficiency</div>
-        </div>
-    </div>
-
-    <div class="ability-grid" style="margin-top: 16px;">
-        @foreach (var ability in _snap.Abilities)
-        {
-            <div class="ability-box">
-                <div class="ability-abbr">@ability.Abbreviation.ToUpper()</div>
-                <div class="ability-score">@ability.FinalScore</div>
-                <div class="ability-mod">@ability.ModifierString</div>
-            </div>
-        }
-    </div>
-</div>
 
 @code {
     private CharacterSnapshot? _snap;

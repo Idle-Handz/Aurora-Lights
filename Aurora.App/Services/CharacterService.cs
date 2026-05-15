@@ -281,6 +281,35 @@ public sealed class CharacterService :
     public string CharactersDirectory => DataManager.Current.UserDocumentsRootDirectory;
 
     /// <summary>
+    /// Deletes a character file from disk. The caller is responsible for closing any open tab
+    /// and releasing <see cref="CharacterContext"/> before calling this.
+    /// </summary>
+    public void DeleteCharacterFile(CharacterFile file)
+    {
+        try
+        {
+            if (File.Exists(file.FilePath))
+                File.Delete(file.FilePath);
+
+            // Purge stale file-location registry entries (mirrors ShellWindowViewModel.DeleteCharacter).
+            DataManager.Current.RemoveNonExistingCharacterFileLocations();
+
+            // Clear preload state so IsPreloaded doesn't return a false positive if a new
+            // character is later created at the same path.
+            if (string.Equals(CurrentCharacterFile?.FilePath, file.FilePath, StringComparison.Ordinal))
+            {
+                CurrentCharacter     = null;
+                CurrentCharacterFile = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            DebugLogService.Instance.LogException(ex, "CharacterService.DeleteCharacterFile");
+            throw;
+        }
+    }
+
+    /// <summary>
     /// Creates a new Level-1 character, saves it to disk, and returns the CharacterFile.
     /// Applies the DefaultHpMethod preference — registering the average HP option element
     /// if Average is selected. Callers should immediately open a tab and navigate to /build.
