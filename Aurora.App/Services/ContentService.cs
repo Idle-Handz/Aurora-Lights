@@ -92,7 +92,9 @@ public sealed class ContentService
         try
         {
             url = url.Trim();
-            if (!url.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+            if (url.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+                url = "https://" + url[7..];
+            else if (!url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
                 url = "https://" + url;
 
             if (!url.EndsWith(".index", StringComparison.OrdinalIgnoreCase))
@@ -123,6 +125,11 @@ public sealed class ContentService
     {
         try
         {
+            // Patch any http:// URLs inside installed index files before the DLL reads them.
+            // Android blocks cleartext HTTP; index files saved by the WPF app or authored
+            // with http:// URLs would otherwise fail silently on Android 9+.
+            UpgradeIndexFileProtocols(BuiltInCustomDirectory);
+
             var version = typeof(ContentService).Assembly.GetName().Version ?? new Version(1, 0, 0);
             var svc = new IndicesUpdateService(version);
             bool updated = await svc.UpdateIndexFiles(BuiltInCustomDirectory);
@@ -182,6 +189,25 @@ public sealed class ContentService
         catch (Exception ex)
         {
             return DebugLogService.Catch(ex, "ContentService.ReloadContentAsync");
+        }
+    }
+
+    /// <summary>
+    /// Rewrites http:// to https:// in all url= attributes of every .index file under
+    /// <paramref name="directory"/>. Best-effort; individual failures are silently skipped.
+    /// </summary>
+    private static void UpgradeIndexFileProtocols(string directory)
+    {
+        if (!Directory.Exists(directory)) return;
+        foreach (string path in Directory.EnumerateFiles(directory, "*.index", SearchOption.AllDirectories))
+        {
+            try
+            {
+                string text = File.ReadAllText(path);
+                if (!text.Contains("http://", StringComparison.Ordinal)) continue;
+                File.WriteAllText(path, text.Replace("http://", "https://", StringComparison.Ordinal));
+            }
+            catch { }
         }
     }
 
