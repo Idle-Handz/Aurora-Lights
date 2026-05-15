@@ -173,10 +173,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: 'latest-stable'
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.2xx'
+          dotnet-version: '10.0.x'
 
       - name: Install MAUI workloads
         run: dotnet workload install maui
@@ -220,10 +225,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: 'latest-stable'
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.2xx'
+          dotnet-version: '10.0.x'
 
       - name: Install MAUI workloads
         run: dotnet workload install maui
