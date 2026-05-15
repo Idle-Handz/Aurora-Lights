@@ -1,0 +1,307 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g. v0.1.0-alpha)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  # ── Windows x64 ──────────────────────────────────────────────────────────────
+  build-windows-x64:
+    runs-on: windows-latest
+    env:
+      PROJECT: Aurora.App/Aurora.App.csproj
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install MAUI workloads
+        run: dotnet workload install maui
+
+      - name: Restore
+        shell: bash
+        run: dotnet restore "$PROJECT"
+
+      - name: Publish (win-x64)
+        shell: bash
+        run: |
+          dotnet publish "$PROJECT" \
+            -f net10.0-windows10.0.19041.0 \
+            -r win-x64 \
+            -c Release \
+            --no-restore \
+            -p:PublishReadyToRun=false \
+            -o publish/win-x64
+
+      - name: Zip (win-x64)
+        shell: bash
+        run: cd publish/win-x64 && zip -r ../../aurora-windows-x64.zip .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-x64
+          path: aurora-windows-x64.zip
+          if-no-files-found: error
+
+  # ── Windows arm64 ────────────────────────────────────────────────────────────
+  build-windows-arm64:
+    runs-on: windows-latest
+    env:
+      PROJECT: Aurora.App/Aurora.App.csproj
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install MAUI workloads
+        run: dotnet workload install maui
+
+      - name: Restore
+        shell: bash
+        run: dotnet restore "$PROJECT"
+
+      - name: Publish (win-arm64)
+        shell: bash
+        run: |
+          dotnet publish "$PROJECT" \
+            -f net10.0-windows10.0.19041.0 \
+            -r win-arm64 \
+            -c Release \
+            --no-restore \
+            -p:PublishReadyToRun=false \
+            -o publish/win-arm64
+
+      - name: Zip (win-arm64)
+        shell: bash
+        run: cd publish/win-arm64 && zip -r ../../aurora-windows-arm64.zip .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-arm64
+          path: aurora-windows-arm64.zip
+          if-no-files-found: error
+
+  # ── Android arm64 ────────────────────────────────────────────────────────────
+  build-android:
+    runs-on: ubuntu-latest
+    env:
+      PROJECT: Aurora.App/Aurora.App.csproj
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'microsoft'
+          java-version: '17'
+
+      - name: Install MAUI Android workload
+        run: dotnet workload install maui-android
+
+      - name: Prepare signing keystore
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "Using stored keystore from secret"
+            echo "$KEYSTORE_B64" | base64 -d > "${{ github.workspace }}/aurora-ci.keystore"
+          else
+            echo "ANDROID_KEYSTORE_BASE64 not set — generating throwaway keystore"
+            keytool -genkey -v \
+              -keystore "${{ github.workspace }}/aurora-ci.keystore" \
+              -alias aurora \
+              -keyalg RSA -keysize 2048 -validity 3650 \
+              -dname "CN=Aurora CI, OU=Dev, O=AuroraLights, L=Unknown, ST=Unknown, C=US" \
+              -storepass aurora-ci \
+              -keypass aurora-ci \
+              -noprompt
+          fi
+
+      - name: Restore
+        run: dotnet restore "$PROJECT"
+
+      - name: Publish (android-arm64)
+        run: |
+          dotnet publish "$PROJECT" \
+            -f net10.0-android \
+            -r android-arm64 \
+            -c Release \
+            --no-restore \
+            -p:AndroidSigningKeyStore="${{ github.workspace }}/aurora-ci.keystore" \
+            -p:AndroidSigningKeyAlias=aurora \
+            -p:AndroidSigningKeyPass=aurora-ci \
+            -p:AndroidSigningStorePass=aurora-ci
+
+      - name: Locate APK
+        run: |
+          APK=$(find . -name "*-Signed.apk" -not -path "*/obj/*" | head -1)
+          if [ -z "$APK" ]; then
+            APK=$(find . -name "*.apk" -not -path "*/obj/*" | head -1)
+          fi
+          cp "$APK" aurora-android-arm64.apk
+          echo "Found: $APK"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-arm64
+          path: aurora-android-arm64.apk
+          if-no-files-found: error
+
+  # ── macOS x64 (Intel) ────────────────────────────────────────────────────────
+  build-macos-x64:
+    runs-on: macos-26-intel
+    env:
+      PROJECT: Aurora.App/Aurora.App.csproj
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install MAUI workloads
+        run: dotnet workload install maui
+
+      - name: Restore
+        run: dotnet restore "$PROJECT"
+
+      - name: Publish (maccatalyst-x64)
+        run: |
+          dotnet publish "$PROJECT" \
+            -f net10.0-maccatalyst \
+            -r maccatalyst-x64 \
+            -c Release \
+            -p:CreatePackage=false \
+            -p:MtouchLink=None
+
+      - name: Stage x64 app bundle
+        run: |
+          set -euo pipefail
+          APP=$(find . -name "*.app" -not -path "*/obj/*" -not -path "*/.git/*" -print -quit || true)
+          if [ -z "$APP" ]; then
+            echo "ERROR: No .app bundle found"
+            find . -maxdepth 6 -not -path "*/obj/*" -not -path "*/.git/*" | head -60
+            exit 1
+          fi
+          mkdir -p stage
+          ditto -c -k --sequesterRsrc --keepParent "$APP" "stage/aurora-maccatalyst-x64.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-x64
+          path: stage/aurora-maccatalyst-x64.zip
+          if-no-files-found: error
+
+  # ── macOS arm64 + universal merge ────────────────────────────────────────────
+  build-macos-universal:
+    runs-on: macos-26-intel
+    needs: build-macos-x64
+    env:
+      PROJECT: Aurora.App/Aurora.App.csproj
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install MAUI workloads
+        run: dotnet workload install maui
+
+      - name: Restore
+        run: dotnet restore "$PROJECT"
+
+      - name: Publish (maccatalyst-arm64)
+        run: |
+          dotnet publish "$PROJECT" \
+            -f net10.0-maccatalyst \
+            -r maccatalyst-arm64 \
+            -c Release \
+            -p:CreatePackage=false \
+            -p:MtouchLink=None
+
+      - name: Stage arm64 app bundle
+        run: |
+          set -euo pipefail
+          APP=$(find . -name "*.app" -not -path "*/obj/*" -not -path "*/.git/*" -print -quit || true)
+          if [ -z "$APP" ]; then exit 1; fi
+          echo "ARM_APP=$APP" >> $GITHUB_ENV
+          mkdir -p stage
+          ditto -c -k --sequesterRsrc --keepParent "$APP" "stage/aurora-maccatalyst-arm64.zip"
+
+      - name: Download x64 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-x64
+          path: x64
+
+      - name: Create universal binary
+        run: |
+          set -euo pipefail
+          ditto -x -k "x64/aurora-maccatalyst-x64.zip" x64_app/
+          X64_APP=$(find x64_app -name "*.app" -print -quit || true)
+          if [ -z "$ARM_APP" ] || [ -z "$X64_APP" ]; then
+            echo "App bundles not found — ARM=$ARM_APP  X64=$X64_APP"
+            exit 1
+          fi
+          APP_NAME=$(basename "$ARM_APP")
+          mkdir -p universal
+          ditto "$ARM_APP" "universal/$APP_NAME"
+          ARM_EXE=$(find "$ARM_APP/Contents/MacOS" -type f -maxdepth 1 -print -quit || true)
+          X64_EXE=$(find "$X64_APP/Contents/MacOS" -type f -maxdepth 1 -print -quit || true)
+          EXE_NAME=$(basename "$ARM_EXE")
+          lipo -create "$X64_EXE" "$ARM_EXE" -output "universal/$APP_NAME/Contents/MacOS/$EXE_NAME"
+          chmod +x "universal/$APP_NAME/Contents/MacOS/$EXE_NAME"
+          ditto -c -k --sequesterRsrc --keepParent "universal/$APP_NAME" "aurora-macos-universal.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-universal
+          path: aurora-macos-universal.zip
+          if-no-files-found: error
+
+  # ── Create GitHub Release (draft) ────────────────────────────────────────────
+  release:
+    needs: [build-windows-x64, build-windows-arm64, build-android, build-macos-universal]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          gh release create "$VERSION" \
+            --repo "$REPO" \
+            --title "Aurora Lights $VERSION" \
+            --draft \
+            --generate-notes \
+            "artifacts/windows-x64/aurora-windows-x64.zip" \
+            "artifacts/windows-arm64/aurora-windows-arm64.zip" \
+            "artifacts/android-arm64/aurora-android-arm64.apk" \
+            "artifacts/macos-universal/aurora-macos-universal.zip"
