@@ -51,42 +51,54 @@
                 <div class="character-browser-grid">
                     @foreach (CharacterBrowserEntry character in _favorites)
                     {
-                        <button class="@GetCardClass(character)"
-                                type="button"
-                                @onclick="() => OnSelected.InvokeAsync(character)">
-                            <div class="character-browser-portrait">
-                                @if (!string.IsNullOrWhiteSpace(character.PortraitDataUrl))
-                                {
-                                    <img src="@character.PortraitDataUrl" alt="@character.DisplayName" />
-                                }
-                                else
-                                {
-                                    <span>@GetInitials(character.DisplayName)</span>
-                                }
-                            </div>
-
-                            <div class="character-browser-card-body">
-                                <div class="character-browser-name-row">
-                                    <span class="character-browser-name">@character.DisplayName</span>
-                                    @if (character.IsFavorite)
+                        <div class="character-browser-card-wrapper">
+                            <button class="@GetCardClass(character)"
+                                    type="button"
+                                    @onclick="() => OnSelected.InvokeAsync(character)">
+                                <div class="character-browser-portrait">
+                                    @if (!string.IsNullOrWhiteSpace(character.PortraitDataUrl))
                                     {
-                                        <span class="character-browser-star" aria-hidden="true">★</span>
+                                        <img src="@character.PortraitDataUrl" alt="@character.DisplayName" />
+                                    }
+                                    else
+                                    {
+                                        <span>@GetInitials(character.DisplayName)</span>
                                     }
                                 </div>
 
-                                <div class="character-browser-primary">@character.PrimaryText</div>
+                                <div class="character-browser-card-body">
+                                    <div class="character-browser-name-row">
+                                        <span class="character-browser-name">@character.DisplayName</span>
+                                        @if (character.IsFavorite)
+                                        {
+                                            <span class="character-browser-star" aria-hidden="true">★</span>
+                                        }
+                                    </div>
 
-                                @if (!string.IsNullOrWhiteSpace(character.SecondaryText))
-                                {
-                                    <div class="character-browser-secondary">@character.SecondaryText</div>
-                                }
+                                    <div class="character-browser-primary">@character.PrimaryText</div>
 
-                                @if (!string.IsNullOrWhiteSpace(character.CaptionText))
-                                {
-                                    <div class="character-browser-tertiary">@character.CaptionText</div>
-                                }
-                            </div>
-                        </button>
+                                    @if (!string.IsNullOrWhiteSpace(character.SecondaryText))
+                                    {
+                                        <div class="character-browser-secondary">@character.SecondaryText</div>
+                                    }
+
+                                    @if (!string.IsNullOrWhiteSpace(character.CaptionText))
+                                    {
+                                        <div class="character-browser-tertiary">@character.CaptionText</div>
+                                    }
+                                </div>
+                            </button>
+                            @if (OnDelete.HasDelegate)
+                            {
+                                <button class="character-browser-delete-btn"
+                                        type="button"
+                                        title="Delete character"
+                                        @onclick="() => OnDelete.InvokeAsync(character)"
+                                        @onclick:stopPropagation="true">
+                                    ×
+                                </button>
+                            }
+                        </div>
                     }
                 </div>
             </section>
@@ -99,42 +111,54 @@
                 <div class="character-browser-grid">
                     @foreach (CharacterBrowserEntry character in group)
                     {
-                        <button class="@GetCardClass(character)"
-                                type="button"
-                                @onclick="() => OnSelected.InvokeAsync(character)">
-                            <div class="character-browser-portrait">
-                                @if (!string.IsNullOrWhiteSpace(character.PortraitDataUrl))
-                                {
-                                    <img src="@character.PortraitDataUrl" alt="@character.DisplayName" />
-                                }
-                                else
-                                {
-                                    <span>@GetInitials(character.DisplayName)</span>
-                                }
-                            </div>
-
-                            <div class="character-browser-card-body">
-                                <div class="character-browser-name-row">
-                                    <span class="character-browser-name">@character.DisplayName</span>
-                                    @if (character.IsFavorite)
+                        <div class="character-browser-card-wrapper">
+                            <button class="@GetCardClass(character)"
+                                    type="button"
+                                    @onclick="() => OnSelected.InvokeAsync(character)">
+                                <div class="character-browser-portrait">
+                                    @if (!string.IsNullOrWhiteSpace(character.PortraitDataUrl))
                                     {
-                                        <span class="character-browser-star" aria-hidden="true">★</span>
+                                        <img src="@character.PortraitDataUrl" alt="@character.DisplayName" />
+                                    }
+                                    else
+                                    {
+                                        <span>@GetInitials(character.DisplayName)</span>
                                     }
                                 </div>
 
-                                <div class="character-browser-primary">@character.PrimaryText</div>
+                                <div class="character-browser-card-body">
+                                    <div class="character-browser-name-row">
+                                        <span class="character-browser-name">@character.DisplayName</span>
+                                        @if (character.IsFavorite)
+                                        {
+                                            <span class="character-browser-star" aria-hidden="true">★</span>
+                                        }
+                                    </div>
 
-                                @if (!string.IsNullOrWhiteSpace(character.SecondaryText))
-                                {
-                                    <div class="character-browser-secondary">@character.SecondaryText</div>
-                                }
+                                    <div class="character-browser-primary">@character.PrimaryText</div>
 
-                                @if (!string.IsNullOrWhiteSpace(character.CaptionText))
-                                {
-                                    <div class="character-browser-tertiary">@character.CaptionText</div>
-                                }
-                            </div>
-                        </button>
+                                    @if (!string.IsNullOrWhiteSpace(character.SecondaryText))
+                                    {
+                                        <div class="character-browser-secondary">@character.SecondaryText</div>
+                                    }
+
+                                    @if (!string.IsNullOrWhiteSpace(character.CaptionText))
+                                    {
+                                        <div class="character-browser-tertiary">@character.CaptionText</div>
+                                    }
+                                </div>
+                            </button>
+                            @if (OnDelete.HasDelegate)
+                            {
+                                <button class="character-browser-delete-btn"
+                                        type="button"
+                                        title="Delete character"
+                                        @onclick="() => OnDelete.InvokeAsync(character)"
+                                        @onclick:stopPropagation="true">
+                                    ×
+                                </button>
+                            }
+                        </div>
                     }
                 </div>
             </section>
@@ -175,6 +199,9 @@
 
     [Parameter]
     public EventCallback<CharacterBrowserEntry> OnSelected { get; set; }
+
+    [Parameter]
+    public EventCallback<CharacterBrowserEntry> OnDelete { get; set; }
 
     [Parameter]
     public EventCallback OnCreate { get; set; }

@@ -442,25 +442,15 @@
             </div>
 
             @* Ability scores *@
-            <div class="ability-stats-table-wrapper">
-                <table class="ability-stats-table">
-                    <thead>
-                        <tr>
-                            @foreach (var ab in comp.Abilities)
-                            {
-                                <th>@ab.Abbreviation</th>
-                            }
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            @foreach (var ab in comp.Abilities)
-                            {
-                                <td>@ab.FinalScore (@ab.ModifierString)</td>
-                            }
-                        </tr>
-                    </tbody>
-                </table>
+            <div class="ability-grid" style="margin-bottom: 16px;">
+                @foreach (var ab in comp.Abilities)
+                {
+                    <div class="ability-box">
+                        <div class="ability-abbr">@ab.Abbreviation</div>
+                        <div class="ability-score">@ab.FinalScore</div>
+                        <div class="ability-mod">@ab.ModifierString</div>
+                    </div>
+                }
             </div>
 
             @* Traits *@
@@ -753,10 +743,14 @@
             using (var dest = File.Create(destPath))
                 await src.CopyToAsync(dest);
 
-            using var scope = await CharacterContext.EnterAsync(tab);
-            var cm = Builder.Presentation.CharacterManager.Current;
-            cm.Character.PortraitFilename = destPath;
-            cm.Status.IsUserPortrait = true;
+            // Enter and immediately release so SaveTabAsync can acquire the same lock.
+            // (SingletonGuard is non-reentrant — holding the scope across SaveTabAsync deadlocks.)
+            {
+                using var scope = await CharacterContext.EnterAsync(tab);
+                var cm = Builder.Presentation.CharacterManager.Current;
+                cm.Character.PortraitFilename = destPath;
+                cm.Status.IsUserPortrait = true;
+            }
 
             var saveError = await BuildService.SaveTabAsync(tab);
             if (saveError != null)

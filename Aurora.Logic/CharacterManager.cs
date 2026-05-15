@@ -1111,7 +1111,8 @@ public sealed class CharacterManager
   }
 
   [Obsolete("not yet implemented")]
-  public string GenerateCharacterName() => throw new NotImplementedException();
+  // TODO: implement random name generation (name lists by race)
+  public string GenerateCharacterName() => string.Empty;
 
   public ProgressionManager GetProgressManager(SelectRule selectionRule)
   {

@@ -179,7 +179,7 @@
                     </MudText>
                     <div style="display: flex; gap: 8px; align-items: center;">
                         <MudTextField Value="_outputFileName"
-                                      ValueChanged="@((string v) => { _outputFileName = v; _overwritePending = false; })"
+                                      ValueChanged="@((string v) => { _outputFileName = v; })"
                                       Placeholder="Character name"
                                       Variant="Variant.Outlined"
                                       Margin="Margin.Dense"
@@ -190,7 +190,7 @@
 
                 @if (_error != null)
                 {
-                    <MudAlert Severity="@(_overwritePending ? Severity.Warning : Severity.Error)" Dense="true" Class="mt-3">@_error</MudAlert>
+                    <MudAlert Severity="Severity.Error" Dense="true" Class="mt-3">@_error</MudAlert>
                 }
             }
 
@@ -209,11 +209,11 @@
         </MudButton>
         @if (_state == State.Review)
         {
-            <MudButton Color="@(_overwritePending ? Color.Warning : Color.Primary)"
+            <MudButton Color="Color.Primary"
                        Variant="Variant.Filled"
                        Disabled="@string.IsNullOrWhiteSpace(_outputFileName)"
                        OnClick="SaveAsync">
-                @(_overwritePending ? "Overwrite" : "Import")
+                Import
             </MudButton>
         }
     </DialogActions>
@@ -223,6 +223,7 @@
 @inject PdfImportService PdfImport
 @inject CharacterService Characters
 @inject ContentDatabaseService ContentDb
+@inject IDialogService DialogService
 
 @code {
     [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
@@ -231,7 +232,6 @@
     private State  _state         = State.Idle;
     private string _statusMessage = "Parsing…";
     private string? _error;
-    private bool   _overwritePending;
     private string _outputFileName = "";
     private string _ddbUrl         = "";
 
@@ -397,14 +397,15 @@
             string dir      = Characters.CharactersDirectory;
             string filePath = Path.Combine(dir, safeName + ".dnd5e");
 
-            if (File.Exists(filePath) && !_overwritePending)
+            if (File.Exists(filePath))
             {
-                _overwritePending = true;
-                _error = $"\"{safeName}.dnd5e\" already exists. Click Import again to overwrite it.";
-                StateHasChanged();
-                return;
+                bool? confirmed = await DialogService.ShowMessageBox(
+                    "Overwrite existing file?",
+                    $"\"{safeName}.dnd5e\" already exists. Do you want to replace it?",
+                    yesText: "Overwrite",
+                    cancelText: "Cancel");
+                if (confirmed != true) return;
             }
-            _overwritePending = false;
 
             _state         = State.Working;
             _statusMessage = "Saving character file…";

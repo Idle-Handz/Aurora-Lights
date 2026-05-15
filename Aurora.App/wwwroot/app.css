@@ -876,6 +876,19 @@ html, body {
     color: var(--mud-palette-text-primary, #cdd6f4);
 }
 .build-rule-empty { color: var(--mud-palette-text-disabled); font-style: italic; }
+.build-rule-optional-badge {
+    display: inline-block;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--mud-palette-text-disabled, #6c7086);
+    border: 1px solid var(--mud-palette-lines-inputs, #45475a);
+    border-radius: 999px;
+    padding: 1px 5px;
+    margin-left: 5px;
+    vertical-align: middle;
+}
 .build-rule-btn {
     flex-shrink: 0;
     font-size: 11px;

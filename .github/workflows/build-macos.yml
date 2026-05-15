@@ -1,13 +1,13 @@
 name: Build macOS MAUI (unsigned)
 on:
-  push:
-    paths:
-      - 'Aurora.App/**'
-      - 'Aurora.Logic/**'
-      - 'Aurora.Components/**'
-      - 'Aurora.Importer/**'
-      - 'lib/**'
-      - '.github/workflows/build-macos.yml'
+  # push:
+  #   paths:
+  #     - 'Aurora.App/**'
+  #     - 'Aurora.Logic/**'
+  #     - 'Aurora.Components/**'
+  #     - 'Aurora.Importer/**'
+  #     - 'lib/**'
+  #     - '.github/workflows/build-macos.yml'
   workflow_dispatch:
 
 jobs:
@@ -22,10 +22,10 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '10.0.101'
+          dotnet-version: '10.0.x'
 
       - name: Install MAUI workloads
-        run: dotnet workload install maui --version 10.0.101.1
+        run: dotnet workload install maui
 
       - name: Show SDK toolchain
         run: |
@@ -68,7 +68,7 @@ jobs:
 
   # ── arm64 build (Apple Silicon) + universal merge ────────────────────────────
   build-arm64-and-merge:
-    runs-on: macos-26
+    runs-on: macos-26-intel
     needs: build-x64
     env:
       PROJECT: Aurora.App/Aurora.App.csproj
@@ -78,10 +78,10 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '10.0.101'
+          dotnet-version: '10.0.x'
 
       - name: Install MAUI workloads
-        run: dotnet workload install maui --version 10.0.101.1
+        run: dotnet workload install maui
 
       - name: Show SDK toolchain
         run: |

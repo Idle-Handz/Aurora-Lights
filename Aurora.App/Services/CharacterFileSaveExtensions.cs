@@ -45,8 +45,9 @@ public static class CharacterFileSaveExtensions
             doc.Save(writer);
             return true;
         }
-        catch
+        catch (Exception ex)
         {
+            DebugLogService.Instance.LogException(ex, "SaveCurrency");
             return false;
         }
     }
@@ -442,8 +443,9 @@ public static class CharacterFileSaveExtensions
             doc.Save(writer);
             return true;
         }
-        catch
+        catch (Exception ex)
         {
+            DebugLogService.Instance.LogException(ex, "SaveSession");
             return false;
         }
     }
@@ -504,7 +506,11 @@ public static class CharacterFileSaveExtensions
             doc.Save(writer);
             return true;
         }
-        catch { return false; }
+        catch (Exception ex)
+        {
+            DebugLogService.Instance.LogException(ex, "SaveSourceRestrictions");
+            return false;
+        }
     }
 
     private static int ParseInt(string? s, int fallback) =>

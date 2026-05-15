@@ -198,10 +198,17 @@ else if (_workflowSuggestion != null)
                         <div class="build-rule-list">
                             @foreach (var entry in group.Rules)
                             {
+                                bool _isOptional = entry.Rule?.Attributes?.Optional == true;
                                 <div class="@GetRuleRowClass(entry)" @ondblclick="() => OpenPickerAsync(entry)">
-                                    <div class="build-rule-label">@entry.Label</div>
+                                    <div class="build-rule-label">
+                                        @entry.Label
+                                        @if (_isOptional)
+                                        {
+                                            <span class="build-rule-optional-badge">optional</span>
+                                        }
+                                    </div>
                                     <div class="build-rule-value @(entry.CurrentName == null ? "build-rule-empty" : "")">
-                                        @(entry.CurrentName ?? "Choose...")
+                                        @(entry.CurrentName ?? (_isOptional ? "—" : "Choose..."))
                                     </div>
                                     <button class="build-rule-btn" @onclick="() => OpenPickerAsync(entry)"
                                             @ondblclick:stopPropagation="true">Change</button>
@@ -473,10 +480,17 @@ else if (_workflowSuggestion != null)
                     <div class="build-rule-list">
                         @foreach (var entry in _asiEntries)
                         {
+                            bool _isOptional = entry.Rule?.Attributes?.Optional == true;
                             <div class="@GetRuleRowClass(entry)" @ondblclick="() => OpenPickerAsync(entry)">
-                                <div class="build-rule-label">@entry.Label</div>
+                                <div class="build-rule-label">
+                                    @entry.Label
+                                    @if (_isOptional)
+                                    {
+                                        <span class="build-rule-optional-badge">optional</span>
+                                    }
+                                </div>
                                 <div class="build-rule-value @(entry.CurrentName == null ? "build-rule-empty" : "")">
-                                        @(entry.CurrentName ?? "Choose...")
+                                    @(entry.CurrentName ?? (_isOptional ? "—" : "Choose..."))
                                 </div>
                                 <button class="build-rule-btn" @onclick="() => OpenPickerAsync(entry)"
                                         @ondblclick:stopPropagation="true">Change</button>
@@ -734,11 +748,12 @@ else if (_workflowSuggestion != null)
 
     private string GetRuleRowClass(SelectionRuleEntry entry)
     {
-        bool unresolved = entry.CurrentName == null;
+        bool unresolved  = entry.CurrentName == null;
+        bool optional    = entry.Rule?.Attributes?.Optional == true;
         bool highlighted = unresolved && entry.EntryKey == _highlightedEntryKey;
-        return highlighted ? "build-rule-row build-rule-row-highlighted" :
-            unresolved ? "build-rule-row build-rule-row-unresolved" :
-            "build-rule-row";
+        return highlighted        ? "build-rule-row build-rule-row-highlighted" :
+               unresolved && !optional ? "build-rule-row build-rule-row-unresolved" :
+               "build-rule-row";
     }
 
     private (string StepLabel, string TargetLabel, string? TabLabel, string? Route)? ComputeWorkflowSuggestion()
