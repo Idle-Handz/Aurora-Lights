@@ -44,8 +44,8 @@ jobs:
             -o publish/win-x64
 
       - name: Zip (win-x64)
-        shell: bash
-        run: cd publish/win-x64 && zip -r ../../aurora-windows-x64.zip .
+        shell: pwsh
+        run: Compress-Archive -Path publish\win-x64\* -DestinationPath aurora-windows-x64.zip
 
       - uses: actions/upload-artifact@v4
         with:
@@ -85,8 +85,8 @@ jobs:
             -o publish/win-arm64
 
       - name: Zip (win-arm64)
-        shell: bash
-        run: cd publish/win-arm64 && zip -r ../../aurora-windows-arm64.zip .
+        shell: pwsh
+        run: Compress-Archive -Path publish\win-arm64\* -DestinationPath aurora-windows-arm64.zip
 
       - uses: actions/upload-artifact@v4
         with:
@@ -176,7 +176,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: '10.0.2xx'
 
       - name: Install MAUI workloads
         run: dotnet workload install maui
@@ -223,7 +223,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: '10.0.2xx'
 
       - name: Install MAUI workloads
         run: dotnet workload install maui
