@@ -1,6 +1,6 @@
 @page "/"
 @implements IDisposable
-@inject CharacterService Characters
+@inject CharacterService CharSvc
 @inject CharacterTabService Tabs
 @inject NavigationManager Nav
 @inject IDialogService DialogService
@@ -71,11 +71,11 @@ else
 
     private string DirectoryCaption =>
         _characters.Count == 0
-            ? Characters.CharactersDirectory
-            : $"{_characters.Count} character{(_characters.Count == 1 ? string.Empty : "s")} - {Characters.CharactersDirectory}";
+            ? CharSvc.CharactersDirectory
+            : $"{_characters.Count} character{(_characters.Count == 1 ? string.Empty : "s")} - {CharSvc.CharactersDirectory}";
 
     private string EmptyMessage =>
-        $"No characters found in {Characters.CharactersDirectory}. Create a character using the Aurora Builder desktop app, then return here.";
+        $"No characters found in {CharSvc.CharactersDirectory}. Create a character using the Aurora Builder desktop app, then return here.";
 
     private string? BusyMessage => _preloading ? "Loading content data..." : null;
 
@@ -90,12 +90,12 @@ else
     {
         try
         {
-            _characters = Characters.LoadCharacterFiles().ToList();
+            _characters = CharSvc.LoadCharacterFiles().ToList();
             RebuildBrowserEntries();
         }
         catch (Exception ex)
         {
-            DebugLogService.Instance.LogException(ex, "Characters.OnInitializedAsync");
+            DebugLogService.Instance.LogException(ex, "CharactersPage.OnInitializedAsync");
             _error = ex.Message;
         }
         finally
@@ -151,7 +151,7 @@ else
 
         try
         {
-            await Characters.PreloadAsync();
+            await CharSvc.PreloadAsync();
 
             if (!_disposed)
             {
@@ -164,9 +164,9 @@ else
                     // the background file.Load() rebuilds CharacterManager.Current in-place
                     // and resets SpellcastingSectionContext (prepared spells), producing
                     // corrupted snapshots (wrong level, missing spells) on second open.
-                    if (mruFile != null && Tabs.FindTab(mruFile) == null && !Characters.IsPreloaded(mruFile))
+                    if (mruFile != null && Tabs.FindTab(mruFile) == null && !CharSvc.IsPreloaded(mruFile))
                     {
-                        Characters.BeginPreload(mruFile);
+                        CharSvc.BeginPreload(mruFile);
                     }
                 }
             }
@@ -188,10 +188,10 @@ else
             return;
         }
 
-        if (Characters.IsPreloaded(characterFile) && !Characters.IsCharacterLoading)
+        if (CharSvc.IsPreloaded(characterFile) && !CharSvc.IsCharacterLoading)
         {
-            CharacterTab tab = Tabs.OpenTab(characterFile, Characters.CurrentCharacter!);
-            tab.Snapshot = CharacterSnapshot.From(Characters.CurrentCharacter!);
+            CharacterTab tab = Tabs.OpenTab(characterFile, CharSvc.CurrentCharacter!);
+            tab.Snapshot = CharacterSnapshot.From(CharSvc.CurrentCharacter!);
             tab.ProgressionSnapshots = SnapshotProgressionManagers();
             tab.Session = characterFile.LoadSession();
             CharacterContext.ClaimAfterLoad(tab);
@@ -206,12 +206,12 @@ else
 
         try
         {
-            (bool success, string message) = await Characters.LoadCharacterAsync(characterFile);
+            (bool success, string message) = await CharSvc.LoadCharacterAsync(characterFile);
 
-            if (success && Characters.CurrentCharacter != null)
+            if (success && CharSvc.CurrentCharacter != null)
             {
-                loadingTab.Character = Characters.CurrentCharacter;
-                loadingTab.Snapshot = CharacterSnapshot.From(Characters.CurrentCharacter);
+                loadingTab.Character = CharSvc.CurrentCharacter;
+                loadingTab.Snapshot = CharacterSnapshot.From(CharSvc.CurrentCharacter);
                 loadingTab.ProgressionSnapshots = SnapshotProgressionManagers();
                 loadingTab.Session = characterFile.LoadSession();
                 loadingTab.IsLoading = false;
@@ -221,10 +221,10 @@ else
                 return;
             }
 
-            if (Characters.CurrentCharacter != null)
+            if (CharSvc.CurrentCharacter != null)
             {
-                loadingTab.Character = Characters.CurrentCharacter;
-                loadingTab.Snapshot = CharacterSnapshot.From(Characters.CurrentCharacter);
+                loadingTab.Character = CharSvc.CurrentCharacter;
+                loadingTab.Snapshot = CharacterSnapshot.From(CharSvc.CurrentCharacter);
                 loadingTab.ProgressionSnapshots = SnapshotProgressionManagers();
                 loadingTab.Session = characterFile.LoadSession();
                 loadingTab.IsLoading = false;
@@ -246,7 +246,7 @@ else
         }
         catch (Exception ex)
         {
-            DebugLogService.Instance.LogException(ex, "Characters.OnCharacterSelected");
+            DebugLogService.Instance.LogException(ex, "CharactersPage.OnCharacterSelected");
             Tabs.CloseTab(loadingTab);
             Snackbar.Add($"{characterFile.DisplayName}: {ex.GetType().Name} - {ex.Message}", Severity.Error);
         }
@@ -259,7 +259,7 @@ else
         var dialog = await DialogService.ShowAsync<PdfImportDialog>("Import Character",
             new DialogOptions { MaxWidth = MaxWidth.Medium, CloseButton = true });
         await dialog.Result;
-        _characters = Characters.LoadCharacterFiles().ToList();
+        _characters = CharSvc.LoadCharacterFiles().ToList();
         RebuildBrowserEntries();
         StateHasChanged();
     }
@@ -279,30 +279,30 @@ else
         try
         {
             (Builder.Presentation.Models.CharacterFile? file, string? error) =
-                await Characters.CreateNewCharacterAsync(info.Name, info.PlayerName, Prefs.DefaultHpMethod,
+                await CharSvc.CreateNewCharacterAsync(info.Name, info.PlayerName, Prefs.DefaultHpMethod,
                     Prefs.DefaultFeats, Prefs.DefaultMulticlassing,
                     Prefs.DefaultCustomOrigin, Prefs.DefaultCustomLanguage, Prefs.DefaultCustomProficiency);
 
-            if (file == null || Characters.CurrentCharacter == null)
+            if (file == null || CharSvc.CurrentCharacter == null)
             {
                 _error = error ?? "Failed to create character.";
                 StateHasChanged();
                 return;
             }
 
-            CharacterTab tab = Tabs.OpenTab(file, Characters.CurrentCharacter);
-            tab.Snapshot = CharacterSnapshot.From(Characters.CurrentCharacter);
+            CharacterTab tab = Tabs.OpenTab(file, CharSvc.CurrentCharacter);
+            tab.Snapshot = CharacterSnapshot.From(CharSvc.CurrentCharacter);
             tab.ProgressionSnapshots = SnapshotProgressionManagers();
             tab.IsNew = true;
             CharacterContext.ClaimAfterLoad(tab);
 
-            _characters = Characters.LoadCharacterFiles().ToList();
+            _characters = CharSvc.LoadCharacterFiles().ToList();
             RebuildBrowserEntries();
             Nav.NavigateTo("/build");
         }
         catch (Exception ex)
         {
-            DebugLogService.Instance.LogException(ex, "Characters.OnNewCharacter");
+            DebugLogService.Instance.LogException(ex, "CharactersPage.OnNewCharacter");
             _error = $"{ex.GetType().Name}: {ex.Message}";
             StateHasChanged();
         }
@@ -341,7 +341,7 @@ else
 
         try
         {
-            Characters.DeleteCharacterFile(file);
+            CharSvc.DeleteCharacterFile(file);
         }
         catch (Exception ex)
         {
@@ -349,7 +349,7 @@ else
             return;
         }
 
-        _characters = Characters.LoadCharacterFiles().ToList();
+        _characters = CharSvc.LoadCharacterFiles().ToList();
         RebuildBrowserEntries();
         StateHasChanged();
     }
