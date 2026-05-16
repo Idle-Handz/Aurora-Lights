@@ -242,6 +242,19 @@
     color: var(--mud-palette-text-disabled, #6c7086);
 }
 
+.magic-spell-level-badge {
+    display: inline-block;
+    margin-left: 6px;
+    font-size: 0.7em;
+    font-weight: 600;
+    color: #89b4fa;
+    background: rgba(137, 180, 250, 0.12);
+    border-radius: 4px;
+    padding: 1px 5px;
+    vertical-align: middle;
+    letter-spacing: 0.02em;
+}
+
 .magic-action-button {
     border: 1px solid var(--mud-palette-lines-inputs, #45475a);
     background: var(--mud-palette-surface, #313244);

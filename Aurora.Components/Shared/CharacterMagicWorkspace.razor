@@ -101,6 +101,10 @@
                                         <div class="magic-known-label">@ent.Label</div>
                                         <div class="magic-known-value @(string.IsNullOrWhiteSpace(ent.CurrentName) ? "empty" : string.Empty)">
                                             @(ent.CurrentName ?? "-")
+                                            @if (ent.SpellLevel > 0 && !string.IsNullOrWhiteSpace(ent.CurrentName))
+                                            {
+                                                <span class="magic-spell-level-badge">Lv@(ent.SpellLevel)</span>
+                                            }
                                         </div>
                                         @if (OnChangeKnownSpell.HasDelegate)
                                         {

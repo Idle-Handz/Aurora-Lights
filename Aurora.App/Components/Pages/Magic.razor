@@ -86,7 +86,8 @@
                     group.Rules.Select((entry, entryIndex) => new MagicKnownSpellEntryModel(
                         $"{groupIndex}:{entryIndex}",
                         entry.Label,
-                        entry.CurrentName)).ToList()))
+                        entry.CurrentName,
+                        entry.SpellLevel)).ToList()))
                 .ToList(),
             Sections = _snap.SpellcastingSections
                 .Select(section => new MagicSpellcastingSectionModel

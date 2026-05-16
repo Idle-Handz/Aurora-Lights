@@ -96,7 +96,7 @@ public sealed record MagicKnownSpellGroupModel(string Label, string? SectionId, 
     }
 }
 
-public sealed record MagicKnownSpellEntryModel(string Id, string Label, string? CurrentName);
+public sealed record MagicKnownSpellEntryModel(string Id, string Label, string? CurrentName, int SpellLevel = 0);
 
 public sealed class MagicSpellListEntryModel
 {

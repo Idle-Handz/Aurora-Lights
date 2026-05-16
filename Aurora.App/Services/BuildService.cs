@@ -113,6 +113,15 @@ public static class BuildService
             for (int n = 1; n <= rule.Attributes.Number; n++)
             {
                 string? currentName = ResolveCurrentSelectionName(rule, n);
+                int spellLevel = 0;
+                try
+                {
+                    var regEl = SelectionRuleExpanderContext.Current?.GetRegisteredElement(rule, n)
+                        as Builder.Data.ElementBase;
+                    if (regEl != null) spellLevel = (int)((dynamic)regEl).Level;
+                }
+                catch { }
+
                 string ruleType = rule.Attributes.Type ?? "Spell";
                 string ruleName = rule.Attributes.Name ?? ruleType;
                 string label = rule.Attributes.Number > 1
@@ -123,7 +132,7 @@ public static class BuildService
                     byClass[groupName] = [];
                 byClass[groupName].Add(new SelectionRuleEntry(
                     rule, n, label, currentName, rule.Attributes.RequiredLevel,
-                    BuildEntryKey(ruleType, ruleName, n)));
+                    BuildEntryKey(ruleType, ruleName, n), spellLevel));
             }
         }
 
@@ -195,21 +204,25 @@ public static class BuildService
 
             // If the expression evaluated but returned nothing (can happen with macro expressions),
             // also try the spell fallback for Spell-type rules.
+            bool isSpellRule = rule.Attributes.Type?.Equals("Spell", StringComparison.OrdinalIgnoreCase) == true;
             var list = elements
                 .Where(e => !string.IsNullOrWhiteSpace(e.Name))
-                .OrderBy(e => e.Name)
+                .OrderBy(e => isSpellRule ? GetElementSpellLevel(e) : 0)
+                .ThenBy(e => e.Name)
                 .Select(e => new ElementOption(
-                    e.Id, e.Name!, GetFeatureDescription(e),
+                    e.Id, e.Name!,
+                    isSpellRule ? GetSpellPickerDescription(e) : GetFeatureDescription(e),
                     e.Source ?? "",
                     e.HasRequirements ? FormatRequirements(e.Requirements) : ""))
                 .ToList();
 
-            if (list.Count == 0 && rule.Attributes.Type == "Spell")
+            if (list.Count == 0 && isSpellRule)
                 list = SpellFallbackOptions(rule, baseCollection)
                     .Where(e => !string.IsNullOrWhiteSpace(e.Name))
-                    .OrderBy(e => e.Name)
+                    .OrderBy(e => GetElementSpellLevel(e))
+                    .ThenBy(e => e.Name)
                     .Select(e => new ElementOption(
-                        e.Id, e.Name!, GetFeatureDescription(e),
+                        e.Id, e.Name!, GetSpellPickerDescription(e),
                         e.Source ?? "",
                         e.HasRequirements ? FormatRequirements(e.Requirements) : ""))
                     .ToList();
@@ -444,6 +457,16 @@ public static class BuildService
 
         string scName = className;
 
+        // When the rule uses $(spellcasting:slots), restrict to spells the character
+        // can actually cast at their current level (prevents a Sorcerer 1 from seeing
+        // 9th-level spells in the picker).
+        int maxSpellLevel = 9;
+        if (!isCantrip && rule.Attributes.ContainsSupports() &&
+            rule.Attributes.Supports.Contains("$(spellcasting:slots)", StringComparison.OrdinalIgnoreCase))
+        {
+            maxSpellLevel = ResolveMaxCastableSpellLevel(scName);
+        }
+
         // Fast path: use the pre-resolved spell access map from the DB loader.
         // Only use this path when it actually finds matches; if the map has the key but the
         // element IDs don't match the loaded content (e.g. API-imported IDs vs XML-loaded IDs),
@@ -455,7 +478,7 @@ public static class BuildService
                 if (!spellIds.Contains(e.Id)) return false;
                 int lvl = 0;
                 try { lvl = (int)((dynamic)e).Level; } catch { }
-                return isCantrip ? lvl == 0 : lvl > 0;
+                return isCantrip ? lvl == 0 : (lvl > 0 && lvl <= maxSpellLevel);
             }).ToList();
             if (fromMap.Count > 0) return fromMap;
         }
@@ -469,8 +492,43 @@ public static class BuildService
                 return false;
             int lvl = 0;
             try { lvl = (int)((dynamic)e).Level; } catch { }
-            return isCantrip ? lvl == 0 : lvl > 0;
+            return isCantrip ? lvl == 0 : (lvl > 0 && lvl <= maxSpellLevel);
         });
+    }
+
+    /// <summary>
+    /// Returns the maximum spell level the character can currently cast for the given
+    /// spellcasting class, based on available spell slots. Returns 9 on any failure so
+    /// the filter degrades gracefully rather than blocking all spell options.
+    /// </summary>
+    private static int ResolveMaxCastableSpellLevel(string spellcastingClassName)
+    {
+        try
+        {
+            var cm = CharacterManager.Current;
+            // Multiclass spell slots are pooled — use the combined table.
+            if (cm.Status.HasMulticlassSpellSlots)
+            {
+                dynamic mss = cm.Character.MulticlassSpellSlots;
+                int[] slots = { 0, (int)mss.Slot1, (int)mss.Slot2, (int)mss.Slot3,
+                                   (int)mss.Slot4, (int)mss.Slot5, (int)mss.Slot6,
+                                   (int)mss.Slot7, (int)mss.Slot8, (int)mss.Slot9 };
+                for (int i = 9; i >= 1; i--)
+                    if (slots[i] > 0) return i;
+            }
+            var stats = cm.StatisticsCalculator.StatisticValues;
+            var info = cm.GetSpellcastingInformations()
+                .FirstOrDefault(i => i.Name.Equals(spellcastingClassName, StringComparison.OrdinalIgnoreCase));
+            if (info == null) return 9;
+            int maxLevel = 0;
+            for (int lvl = 1; lvl <= 9; lvl++)
+            {
+                try { if (stats.GetValue(info.GetSlotStatisticName(lvl)) > 0) maxLevel = lvl; }
+                catch { }
+            }
+            return maxLevel > 0 ? maxLevel : 9;
+        }
+        catch { return 9; }
     }
 
     // ── Apply selection + validate + save ────────────────────────────────────
@@ -800,6 +858,56 @@ public static class BuildService
         }
         catch { }
         return "";
+    }
+
+    private static string GetSpellPickerDescription(ElementBase e)
+    {
+        try
+        {
+            dynamic d = e;
+            int level = 0;
+            string school = "", castingTime = "", range = "", components = "", duration = "";
+            bool ritual = false, concentration = false, body_ok = false;
+            string body = "";
+
+            try { level = (int)d.Level; } catch { }
+            try { school = (string)(d.MagicSchool ?? ""); } catch { }
+            try { castingTime = (string)(d.CastingTime ?? ""); } catch { }
+            try { range = (string)(d.Range ?? ""); } catch { }
+            try { duration = (string)(d.Duration ?? ""); } catch { }
+            try { components = (string)(d.GetComponentsString()); } catch { }
+            try { ritual = (bool)d.IsRitual; } catch { }
+            try { concentration = (bool)d.IsConcentration; } catch { }
+            try
+            {
+                string raw = (string)(d.Description ?? "");
+                if (!string.IsNullOrWhiteSpace(raw))
+                { body = ElementDescriptionGenerator.GeneratePlainDescription(raw).Trim(); body_ok = true; }
+            }
+            catch { }
+
+            var sb = new System.Text.StringBuilder();
+            string levelText = level == 0
+                ? (string.IsNullOrEmpty(school) ? "Cantrip" : $"{school} Cantrip")
+                : (string.IsNullOrEmpty(school) ? $"Level {level}" : $"Level {level} {school}");
+            if (concentration) levelText += " · Concentration";
+            if (ritual)        levelText += " · Ritual";
+            sb.AppendLine(levelText);
+
+            if (!string.IsNullOrEmpty(castingTime)) sb.AppendLine($"Casting Time: {castingTime}");
+            if (!string.IsNullOrEmpty(range))       sb.AppendLine($"Range: {range}");
+            if (!string.IsNullOrEmpty(components))  sb.AppendLine($"Components: {components}");
+            if (!string.IsNullOrEmpty(duration))    sb.AppendLine($"Duration: {duration}");
+            if (body_ok && !string.IsNullOrEmpty(body)) { sb.AppendLine(); sb.Append(body); }
+
+            return sb.ToString().Trim();
+        }
+        catch { return GetFeatureDescription(e); }
+    }
+
+    private static int GetElementSpellLevel(ElementBase e)
+    {
+        try { return (int)((dynamic)e).Level; } catch { return 0; }
     }
 
     // ── Advancement timeline ─────────────────────────────────────────────────────
@@ -1703,7 +1811,8 @@ public sealed record SelectionRuleEntry(
     string     Label,
     string?    CurrentName,
     int        RequiredLevel,
-    string     EntryKey = "");
+    string     EntryKey = "",
+    int        SpellLevel = 0);
 
 public enum BuildGuidanceActionKind
 {
