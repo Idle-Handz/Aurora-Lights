@@ -934,7 +934,8 @@ html, body {
 }
 .picker-has-filters .picker-list,
 .picker-has-filters .picker-gear-inv,
-.picker-has-filters > .mud-typography {
+.picker-has-filters > .mud-typography,
+.picker-has-filters > .mud-text {
     margin-top: 0.6em;
 }
 .picker-filter-toggle {
@@ -1535,6 +1536,57 @@ html, body {
     color: #585b70;
     font-style: italic;
     padding-top: 12px;
+}
+
+@media (max-width: 900px) {
+    .overview-two-col {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .magic-layout {
+        flex-direction: column;
+        height: auto;
+        min-height: 0;
+    }
+
+    .magic-list {
+        flex: none;
+        max-height: 42vh;
+        min-height: 180px;
+        padding-right: 0;
+        padding-bottom: 12px;
+        border-right: none;
+        border-bottom: 1px solid var(--mud-palette-lines-default, #313244);
+    }
+
+    .magic-detail {
+        padding-left: 0;
+        padding-top: 12px;
+        min-height: 180px;
+    }
+
+    .spell-overview-layout {
+        flex-direction: column;
+        height: auto;
+        min-height: 0;
+    }
+
+    .spell-overview-list {
+        flex: none;
+        max-height: 38vh;
+        min-height: 160px;
+        padding-right: 0;
+        padding-bottom: 12px;
+        border-right: none;
+        border-bottom: 1px solid var(--mud-palette-lines-default, #313244);
+    }
+
+    .spell-overview-detail {
+        padding-left: 0;
+        padding-top: 12px;
+        min-height: 180px;
+    }
 }
 
 /* ── Manage page ── */

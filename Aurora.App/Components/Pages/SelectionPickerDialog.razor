@@ -152,12 +152,8 @@
         _ritualFilter ||
         _concentrationFilter;
 
-    private IReadOnlyList<string> AvailableSchools =>
-        Options.Where(o => !string.IsNullOrWhiteSpace(o.School))
-            .Select(o => o.School)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(s => s)
-            .ToList();
+    private IReadOnlyList<string> _availableSchools = [];
+    private IReadOnlyList<string> AvailableSchools => _availableSchools;
 
     private void RebuildFilter()
     {
@@ -196,6 +192,12 @@
 
     protected override void OnParametersSet()
     {
+        _availableSchools = Options
+            .Where(o => !string.IsNullOrWhiteSpace(o.School))
+            .Select(o => o.School)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(s => s)
+            .ToList();
         RebuildFilter();
         if (Entry.CurrentName != null)
         {

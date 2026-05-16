@@ -126,6 +126,13 @@
             <MudIcon Icon="@Icons.Material.Filled.Settings" />
             <span>Settings</span>
         </NavLink>
+        @if (Prefs.DevMode)
+        {
+            <NavLink href="/console" class="mobile-more-link" @onclick="CloseMobileMore">
+                <MudIcon Icon="@Icons.Material.Filled.Terminal" />
+                <span>Console</span>
+            </NavLink>
+        }
     </nav>
 }
 

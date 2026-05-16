@@ -842,6 +842,7 @@
     private async Task CheckStaleAsync()
     {
         await Task.Run(() => ContentDb.CheckIsStale());
+        if (_disposed) return;
         _stalenessChecked = true;
         await InvokeAsync(StateHasChanged);
     }
@@ -852,6 +853,7 @@
         _cts?.Cancel();
         _cts = new CancellationTokenSource();
         await ContentDb.SyncAsync(_cts.Token);
+        if (_disposed) return;
         RefreshDatabaseDiagnostics();
     }
 
@@ -859,6 +861,7 @@
     {
         Tabs.CloseAllTabs();
         await Characters.ReloadElementsAsync();
+        if (_disposed) return;
         RefreshDatabaseDiagnostics();
     }
 
@@ -972,6 +975,7 @@
         try
         {
             var (success, msg) = await Content.FetchIndexAsync(_indexUrl);
+            if (_disposed) return;
             _contentStatus = msg;
             _contentStatusSeverity = success ? Severity.Success : Severity.Error;
             if (success)
@@ -1015,6 +1019,7 @@
         try
         {
             string? error = await Content.ReloadContentAsync();
+            if (_disposed) return;
             if (error != null)
             {
                 _contentStatus = $"Reload failed: {error}";

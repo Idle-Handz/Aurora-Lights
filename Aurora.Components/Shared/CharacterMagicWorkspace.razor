@@ -145,14 +145,14 @@
                     </select>
                     <select class="magic-filter-select" @bind="_sourceFilter">
                         <option value="">All sources</option>
-                        @foreach (string source in AvailableSources)
+                        @foreach (string source in _availableSources)
                         {
                             <option value="@source">@source</option>
                         }
                     </select>
                     <select class="magic-filter-select" @bind="_schoolFilter">
                         <option value="">All schools</option>
-                        @foreach (string school in AvailableSchools)
+                        @foreach (string school in _availableSchools)
                         {
                             <option value="@school">@school</option>
                         }
@@ -407,29 +407,36 @@
             .Where(group => string.IsNullOrWhiteSpace(group.SectionId) || string.Equals(group.SectionId, ActiveSection.Id, StringComparison.Ordinal))
             .ToList();
 
-    private IReadOnlyList<string> AvailableSources =>
-        ActiveSection.Cantrips
-            .Concat(ActiveSection.SpellLevels.SelectMany(level => level.Spells))
-            .Select(spell => spell.Source)
-            .Where(source => !string.IsNullOrWhiteSpace(source))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(source => source)
-            .ToList();
+    private IReadOnlyList<string> _availableSources = [];
+    private IReadOnlyList<string> _availableSchools = [];
 
-    private IReadOnlyList<string> AvailableSchools =>
-        ActiveSection.Cantrips
-            .Concat(ActiveSection.SpellLevels.SelectMany(level => level.Spells))
-            .Select(spell => spell.School)
-            .Where(school => !string.IsNullOrWhiteSpace(school))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(school => school)
+    private void RefreshFilterLists()
+    {
+        var section = ActiveSection;
+        var allSpells = section.Cantrips
+            .Concat(section.SpellLevels.SelectMany(l => l.Spells))
             .ToList();
+        _availableSources = allSpells
+            .Select(s => s.Source)
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(s => s)
+            .ToList();
+        _availableSchools = allSpells
+            .Select(s => s.School)
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(s => s)
+            .ToList();
+    }
 
     protected override void OnParametersSet()
     {
         if (Model.Sections.Count == 0)
         {
             _selectedSectionId = null;
+            _availableSources = [];
+            _availableSchools = [];
             return;
         }
 
@@ -439,13 +446,18 @@
             _selectedSectionId = Model.Sections[0].Id;
             _magicTab = Model.KnownSpellGroups.Count > 0 ? "known" : "prepared";
         }
+
+        RefreshFilterLists();
     }
 
     private void SelectSection(string id)
     {
         _selectedSectionId = id;
+        _sourceFilter = string.Empty;
+        _schoolFilter = string.Empty;
         _collapsedGroups.Clear();
         _collapsedLevels.Clear();
+        RefreshFilterLists();
     }
 
     private void ToggleGroupCollapse(string key)
