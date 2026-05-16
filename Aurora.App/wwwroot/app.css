@@ -937,12 +937,44 @@ html, body {
 .picker-has-filters > .mud-typography {
     margin-top: 0.6em;
 }
+.picker-filter-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    border: none;
+    background: transparent;
+    color: var(--mud-palette-text-disabled, #6c7086);
+    padding: 0.3rem 0.1rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    cursor: pointer;
+    margin-top: 0.4em;
+    transition: color 0.12s;
+}
+.picker-filter-toggle:hover {
+    color: var(--mud-palette-text-secondary, #a6adc8);
+}
+.picker-filter-toggle-active {
+    color: var(--mud-palette-primary, #89b4fa) !important;
+}
+.picker-filter-chevron {
+    font-size: 0.9rem;
+    display: inline-block;
+    transition: transform 0.15s;
+    transform: rotate(-90deg);
+}
+.picker-filter-chevron.open {
+    transform: rotate(0deg);
+}
 .picker-filters {
     display: flex;
     flex-wrap: wrap;
     gap: 0.4rem;
     align-items: center;
-    margin-top: 0.5em;
+    margin-top: 0.3em;
 }
 .picker-filter-select {
     flex: 1 1 auto;

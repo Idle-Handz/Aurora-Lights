@@ -18,37 +18,46 @@
 
                 @if (IsSpellRule)
                 {
-                    <div class="picker-filters">
-                        <select class="picker-filter-select"
-                                value="@_levelFilter"
-                                @onchange="e => { _levelFilter = e.Value?.ToString() ?? string.Empty; RebuildFilter(); }">
-                            <option value="">All levels</option>
-                            <option value="0">Cantrip</option>
-                            @for (int i = 1; i <= 9; i++)
-                            {
-                                <option value="@i">@SpellLevelLabel(i)</option>
-                            }
-                        </select>
-                        <select class="picker-filter-select"
-                                value="@_schoolFilter"
-                                @onchange="e => { _schoolFilter = e.Value?.ToString() ?? string.Empty; RebuildFilter(); }">
-                            <option value="">All schools</option>
-                            @foreach (string school in AvailableSchools)
-                            {
-                                <option value="@school">@school</option>
-                            }
-                        </select>
-                        <div class="picker-filter-checks">
-                            <label class="picker-filter-check">
-                                <input type="checkbox" @bind="_ritualFilter" @bind:after="RebuildFilter" />
-                                <span>Ritual</span>
-                            </label>
-                            <label class="picker-filter-check">
-                                <input type="checkbox" @bind="_concentrationFilter" @bind:after="RebuildFilter" />
-                                <span>Conc.</span>
-                            </label>
+                    <button type="button"
+                            class="picker-filter-toggle @(HasActiveFilters ? "picker-filter-toggle-active" : string.Empty)"
+                            @onclick="() => _filtersExpanded = !_filtersExpanded">
+                        <span>Filters@(HasActiveFilters ? " ●" : string.Empty)</span>
+                        <span class="picker-filter-chevron @(_filtersExpanded ? "open" : string.Empty)">▾</span>
+                    </button>
+                    @if (_filtersExpanded)
+                    {
+                        <div class="picker-filters">
+                            <select class="picker-filter-select"
+                                    value="@_levelFilter"
+                                    @onchange="e => { _levelFilter = e.Value?.ToString() ?? string.Empty; RebuildFilter(); }">
+                                <option value="">All levels</option>
+                                <option value="0">Cantrip</option>
+                                @for (int i = 1; i <= 9; i++)
+                                {
+                                    <option value="@i">@SpellLevelLabel(i)</option>
+                                }
+                            </select>
+                            <select class="picker-filter-select"
+                                    value="@_schoolFilter"
+                                    @onchange="e => { _schoolFilter = e.Value?.ToString() ?? string.Empty; RebuildFilter(); }">
+                                <option value="">All schools</option>
+                                @foreach (string school in AvailableSchools)
+                                {
+                                    <option value="@school">@school</option>
+                                }
+                            </select>
+                            <div class="picker-filter-checks">
+                                <label class="picker-filter-check">
+                                    <input type="checkbox" @bind="_ritualFilter" @bind:after="RebuildFilter" />
+                                    <span>Ritual</span>
+                                </label>
+                                <label class="picker-filter-check">
+                                    <input type="checkbox" @bind="_concentrationFilter" @bind:after="RebuildFilter" />
+                                    <span>Conc.</span>
+                                </label>
+                            </div>
                         </div>
-                    </div>
+                    }
                 }
 
                 @if (_filtered.Count == 0)
@@ -129,12 +138,19 @@
     private string _schoolFilter = "";
     private bool _ritualFilter;
     private bool _concentrationFilter;
+    private bool _filtersExpanded;
     private string?        _selectedId;
     private ElementOption? _selectedOpt;
     private List<ElementOption> _filtered = [];
 
     private bool IsSpellRule =>
         Entry?.Rule?.Attributes?.Type?.Equals("Spell", StringComparison.OrdinalIgnoreCase) == true;
+
+    private bool HasActiveFilters =>
+        !string.IsNullOrWhiteSpace(_levelFilter) ||
+        !string.IsNullOrWhiteSpace(_schoolFilter) ||
+        _ritualFilter ||
+        _concentrationFilter;
 
     private IReadOnlyList<string> AvailableSchools =>
         Options.Where(o => !string.IsNullOrWhiteSpace(o.School))

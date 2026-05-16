@@ -526,14 +526,24 @@
                             </MudButton>
                         </div>
 
-                        <MudButton Variant="Variant.Outlined"
-                                   Color="Color.Default"
-                                   StartIcon="@Icons.Material.Filled.Sync"
-                                   Size="Size.Small"
-                                   Disabled="_contentWorking"
-                                   OnClick="CheckForUpdatesAsync">
-                            Check for Updates
-                        </MudButton>
+                        <div style="display: inline-flex; align-items: center; gap: 8px;">
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Default"
+                                       StartIcon="@(_checkingUpdates ? null : Icons.Material.Filled.Sync)"
+                                       Size="Size.Small"
+                                       Disabled="_contentWorking"
+                                       OnClick="CheckForUpdatesAsync"
+                                       Style="min-width: 160px;">
+                                @(_checkingUpdates ? "Checking for updates…" : "Check for Updates")
+                            </MudButton>
+                            @if (_checkingUpdates)
+                            {
+                                <MudProgressCircular Indeterminate="true"
+                                                     Size="Size.Small"
+                                                     Color="Color.Default"
+                                                     Style="width: 18px; height: 18px;" />
+                            }
+                        </div>
                     </div>
 
                     @if (_needsContentReload)
@@ -772,6 +782,7 @@
     private string? _contentStatus;
     private Severity _contentStatusSeverity = Severity.Success;
     private bool _contentWorking;
+    private bool _checkingUpdates;
     private bool _parityRunning;
     private bool _stalenessChecked;
     private bool _needsContentReload;
@@ -977,6 +988,7 @@
     private async Task CheckForUpdatesAsync()
     {
         _contentWorking = true;
+        _checkingUpdates = true;
         _contentStatus = null;
         StateHasChanged();
         try
@@ -989,6 +1001,7 @@
         finally
         {
             _contentWorking = false;
+            _checkingUpdates = false;
         }
     }
 
