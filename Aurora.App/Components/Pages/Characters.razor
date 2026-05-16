@@ -51,6 +51,13 @@ else
                             disabled="@_preloading">
                         Import Character
                     </button>
+                    <button class="character-browser-create"
+                            type="button"
+                            style="background: transparent; border-color: var(--mud-palette-primary); color: var(--mud-palette-primary);"
+                            @onclick="OnImportFile"
+                            disabled="@(_preloading || _importingFile)">
+                        Open File
+                    </button>
                 </AdditionalHeaderContent>
             </CharacterBrowser>
         </BrowserContent>
@@ -64,6 +71,7 @@ else
     private CancellationTokenSource? _portraitCts;
     private bool _loading = true;
     private bool _preloading;
+    private bool _importingFile;
     private string? _error;
     private bool _warning;
 
@@ -262,6 +270,49 @@ else
         _characters = CharSvc.LoadCharacterFiles().ToList();
         RebuildBrowserEntries();
         StateHasChanged();
+    }
+
+    private async Task OnImportFile()
+    {
+        _importingFile = true;
+        StateHasChanged();
+
+        Builder.Presentation.Models.CharacterFile? imported = null;
+        try
+        {
+            var (file, error) = await CharSvc.ImportCharacterFromFileAsync();
+
+            if (file == null && error == null)
+            {
+                // User cancelled the picker — nothing to do.
+                return;
+            }
+
+            if (error != null)
+            {
+                Snackbar.Add(error, Severity.Error);
+                return;
+            }
+
+            imported = file;
+            _characters = CharSvc.LoadCharacterFiles().ToList();
+            RebuildBrowserEntries();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            DebugLogService.Instance.LogException(ex, "CharactersPage.OnImportFile");
+            Snackbar.Add($"Import failed: {ex.Message}", Severity.Error);
+            return;
+        }
+        finally
+        {
+            _importingFile = false;
+            StateHasChanged();
+        }
+
+        if (imported != null)
+            await OnCharacterSelected(imported);
     }
 
     private async Task OnNewCharacter()

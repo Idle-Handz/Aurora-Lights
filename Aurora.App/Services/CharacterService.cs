@@ -370,6 +370,69 @@ public sealed class CharacterService :
         }
     }
 
+    /// <summary>
+    /// Opens a platform file picker so the user can select a .dnd5e character file from
+    /// anywhere on the device, then copies it into the Aurora characters directory.
+    /// Returns the resulting CharacterFile on success, (null, null) if the user cancelled,
+    /// or (null, errorMessage) on failure.
+    /// </summary>
+    public async Task<(CharacterFile? File, string? Error)> ImportCharacterFromFileAsync()
+    {
+        var options = new PickOptions
+        {
+            PickerTitle = "Select an Aurora character file (.dnd5e)",
+            FileTypes   = new FilePickerFileType(new Dictionary<DevicePlatform, IEnumerable<string>>
+            {
+                { DevicePlatform.WinUI,        new[] { ".dnd5e" } },
+                { DevicePlatform.Android,      new[] { "*/*"    } }, // no registered MIME type
+                { DevicePlatform.MacCatalyst,  new[] { "dnd5e" } },
+                { DevicePlatform.macOS,        new[] { "dnd5e" } },
+            }),
+        };
+
+        FileResult? picked;
+        try
+        {
+            picked = await FilePicker.Default.PickAsync(options);
+        }
+        catch (Exception ex)
+        {
+            return (null, $"File picker error: {ex.Message}");
+        }
+
+        if (picked == null) return (null, null); // cancelled
+
+        if (!picked.FileName.EndsWith(".dnd5e", StringComparison.OrdinalIgnoreCase))
+            return (null, $"'{picked.FileName}' is not a .dnd5e character file.");
+
+        EnsureDirectoriesInitialized();
+
+        try
+        {
+            string destDir  = DataManager.Current.UserDocumentsRootDirectory;
+            string destPath = Path.Combine(destDir, picked.FileName);
+
+            if (File.Exists(destPath))
+            {
+                var ts   = DateTime.Now.ToString("yyyyMMdd-HHmmss");
+                var stem = Path.GetFileNameWithoutExtension(picked.FileName);
+                destPath = Path.Combine(destDir, $"{stem}_{ts}.dnd5e");
+            }
+
+            // OpenReadAsync works with both plain file paths and Android content:// URIs.
+            using var src  = await picked.OpenReadAsync();
+            using var dest = File.Create(destPath);
+            await src.CopyToAsync(dest);
+
+            return (new CharacterFile(destPath), null);
+        }
+        catch (Exception ex)
+        {
+            DebugLogService.Instance.LogException(ex, "CharacterService.ImportCharacterFromFileAsync");
+            return (null, $"Failed to import file: {ex.Message}");
+        }
+    }
+
     private static void ApplyOption(string optionId, bool enabled)
     {
         var cm = CharacterManager.Current;
