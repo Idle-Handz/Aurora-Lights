@@ -560,6 +560,13 @@ public static class BuildService
 
                     if (!stillValid)
                     {
+                        // If this slot is optional and the entire supported set is empty
+                        // (e.g. dataset has no "Optional Background Feature" elements),
+                        // validation is meaningless — preserve the existing selection rather
+                        // than silently removing a choice the user made intentionally.
+                        if (r.Attributes.Optional && validIds.Count == 0)
+                            continue;
+
                         DebugLogService.Instance.Log(LogLevel.Warning,
                             $"[Validate] slot-invalid: rule='{r.Attributes.Name ?? r.Attributes.Type}' " +
                             $"type='{r.Attributes.Type}' supports='{r.Attributes.Supports}' " +
@@ -962,8 +969,10 @@ public static class BuildService
     /// <summary>
     /// True when the character is currently using average HP (the option element is registered).
     /// </summary>
-    public static bool IsUsingAverageHp =>
-        CharacterManager.Current.ContainsAverageHitPointsOption();
+    public static bool IsUsingAverageHp
+    {
+        get { try { return CharacterManager.Current.ContainsAverageHitPointsOption(); } catch (InvalidOperationException) { return false; } }
+    }
 
     private static string FeatsOptionId         => Builder.Data.Strings.InternalOptions.AllowFeats;
     private static string MulticlassOptionId    => Builder.Data.Strings.InternalOptions.AllowMulticlassing;
@@ -971,20 +980,30 @@ public static class BuildService
     private const  string CustomLanguageOptionId    = "ID_WOTC_TCOE_OPTION_CUSTOMIZED_LANGUAGE";
     private const  string CustomProficiencyOptionId = "ID_WOTC_TCOE_OPTION_CUSTOMIZED_PROFICIENCY";
 
-    public static bool IsUsingFeats =>
-        CharacterManager.Current.ContainsOption(FeatsOptionId);
+    public static bool IsUsingFeats
+    {
+        get { try { return CharacterManager.Current.ContainsOption(FeatsOptionId); } catch (InvalidOperationException) { return false; } }
+    }
 
-    public static bool IsUsingMulticlassing =>
-        CharacterManager.Current.ContainsOption(MulticlassOptionId);
+    public static bool IsUsingMulticlassing
+    {
+        get { try { return CharacterManager.Current.ContainsOption(MulticlassOptionId); } catch (InvalidOperationException) { return false; } }
+    }
 
-    public static bool IsUsingCustomOrigin =>
-        CharacterManager.Current.ContainsOption(CustomOriginOptionId);
+    public static bool IsUsingCustomOrigin
+    {
+        get { try { return CharacterManager.Current.ContainsOption(CustomOriginOptionId); } catch (InvalidOperationException) { return false; } }
+    }
 
-    public static bool IsUsingCustomLanguage =>
-        CharacterManager.Current.ContainsOption(CustomLanguageOptionId);
+    public static bool IsUsingCustomLanguage
+    {
+        get { try { return CharacterManager.Current.ContainsOption(CustomLanguageOptionId); } catch (InvalidOperationException) { return false; } }
+    }
 
-    public static bool IsUsingCustomProficiency =>
-        CharacterManager.Current.ContainsOption(CustomProficiencyOptionId);
+    public static bool IsUsingCustomProficiency
+    {
+        get { try { return CharacterManager.Current.ContainsOption(CustomProficiencyOptionId); } catch (InvalidOperationException) { return false; } }
+    }
 
     public static async Task<string?> SetFeatsOptionAsync(CharacterTab tab, bool enabled)
         => await SetOptionAsync(tab, FeatsOptionId, enabled, "BuildService.SetFeatsOptionAsync");
