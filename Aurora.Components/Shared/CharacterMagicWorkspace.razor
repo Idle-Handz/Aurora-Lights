@@ -437,6 +437,7 @@
             || !Model.Sections.Any(section => section.Id == _selectedSectionId))
         {
             _selectedSectionId = Model.Sections[0].Id;
+            _magicTab = Model.KnownSpellGroups.Count > 0 ? "known" : "prepared";
         }
     }
 

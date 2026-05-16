@@ -5,7 +5,7 @@
     <DialogContent>
         <div class="picker-layout">
             @* ── Left: search + list ── *@
-            <div class="picker-left">
+            <div class="picker-left @(IsSpellRule ? "picker-has-filters" : "")">
                 <MudTextField @bind-Value="_search"
                               Placeholder="Search…"
                               Adornment="Adornment.Start"
@@ -15,6 +15,41 @@
                               Variant="Variant.Outlined"
                               Margin="Margin.Dense"
                               Class="mb-n2" />
+
+                @if (IsSpellRule)
+                {
+                    <div class="picker-filters">
+                        <select class="picker-filter-select"
+                                value="@_levelFilter"
+                                @onchange="e => { _levelFilter = e.Value?.ToString() ?? string.Empty; RebuildFilter(); }">
+                            <option value="">All levels</option>
+                            <option value="0">Cantrip</option>
+                            @for (int i = 1; i <= 9; i++)
+                            {
+                                <option value="@i">@SpellLevelLabel(i)</option>
+                            }
+                        </select>
+                        <select class="picker-filter-select"
+                                value="@_schoolFilter"
+                                @onchange="e => { _schoolFilter = e.Value?.ToString() ?? string.Empty; RebuildFilter(); }">
+                            <option value="">All schools</option>
+                            @foreach (string school in AvailableSchools)
+                            {
+                                <option value="@school">@school</option>
+                            }
+                        </select>
+                        <div class="picker-filter-checks">
+                            <label class="picker-filter-check">
+                                <input type="checkbox" @bind="_ritualFilter" @bind:after="RebuildFilter" />
+                                <span>Ritual</span>
+                            </label>
+                            <label class="picker-filter-check">
+                                <input type="checkbox" @bind="_concentrationFilter" @bind:after="RebuildFilter" />
+                                <span>Conc.</span>
+                            </label>
+                        </div>
+                    </div>
+                }
 
                 @if (_filtered.Count == 0)
                 {
@@ -90,19 +125,58 @@
         set { _searchValue = value; RebuildFilter(); }
     }
     private string _searchValue = "";
+    private string _levelFilter = "";
+    private string _schoolFilter = "";
+    private bool _ritualFilter;
+    private bool _concentrationFilter;
     private string?        _selectedId;
     private ElementOption? _selectedOpt;
     private List<ElementOption> _filtered = [];
 
+    private bool IsSpellRule =>
+        Entry?.Rule?.Attributes?.Type?.Equals("Spell", StringComparison.OrdinalIgnoreCase) == true;
+
+    private IReadOnlyList<string> AvailableSchools =>
+        Options.Where(o => !string.IsNullOrWhiteSpace(o.School))
+            .Select(o => o.School)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(s => s)
+            .ToList();
+
     private void RebuildFilter()
     {
-        _filtered = string.IsNullOrWhiteSpace(_searchValue)
-            ? Options.ToList()
-            : Options.Where(o =>
-                o.Name.Contains(_searchValue, StringComparison.OrdinalIgnoreCase) ||
-                o.Description.Contains(_searchValue, StringComparison.OrdinalIgnoreCase))
-              .ToList();
+        _filtered = Options.Where(o =>
+        {
+            if (!string.IsNullOrWhiteSpace(_searchValue) &&
+                !o.Name.Contains(_searchValue, StringComparison.OrdinalIgnoreCase) &&
+                !o.Description.Contains(_searchValue, StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            if (IsSpellRule)
+            {
+                if (!string.IsNullOrWhiteSpace(_levelFilter) &&
+                    int.TryParse(_levelFilter, out int lvl) && o.SpellLevel != lvl)
+                    return false;
+                if (!string.IsNullOrWhiteSpace(_schoolFilter) &&
+                    !string.Equals(o.School, _schoolFilter, StringComparison.OrdinalIgnoreCase))
+                    return false;
+                if (_ritualFilter && !o.IsRitual)
+                    return false;
+                if (_concentrationFilter && !o.IsConcentration)
+                    return false;
+            }
+
+            return true;
+        }).ToList();
     }
+
+    private static string SpellLevelLabel(int level) => level switch
+    {
+        1 => "1st level",
+        2 => "2nd level",
+        3 => "3rd level",
+        _ => $"{level}th level",
+    };
 
     protected override void OnParametersSet()
     {

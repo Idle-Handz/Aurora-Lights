@@ -932,6 +932,45 @@ html, body {
 .picker-left > .mud-typography {
     margin-top: 3em;
 }
+.picker-has-filters .picker-list,
+.picker-has-filters .picker-gear-inv,
+.picker-has-filters > .mud-typography {
+    margin-top: 0.6em;
+}
+.picker-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    align-items: center;
+    margin-top: 0.5em;
+}
+.picker-filter-select {
+    flex: 1 1 auto;
+    min-height: 1.9rem;
+    border: 1px solid var(--mud-palette-lines-inputs, #45475a);
+    border-radius: 0.5rem;
+    background: var(--mud-palette-surface, #313244);
+    color: var(--mud-palette-text-primary, #cdd6f4);
+    padding: 0.2rem 0.5rem;
+    font-size: 0.8rem;
+    min-width: 0;
+}
+.picker-filter-checks {
+    width: 100%;
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+.picker-filter-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--mud-palette-text-secondary, #a6adc8);
+    font-size: 0.82rem;
+}
+.picker-filter-check input {
+    accent-color: var(--mud-palette-primary, #89b4fa);
+}
 .picker-list {
     flex: 1;
     overflow-y: auto;

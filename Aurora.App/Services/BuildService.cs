@@ -213,7 +213,11 @@ public static class BuildService
                     e.Id, e.Name!,
                     isSpellRule ? GetSpellPickerDescription(e) : GetFeatureDescription(e),
                     e.Source ?? "",
-                    e.HasRequirements ? FormatRequirements(e.Requirements) : ""))
+                    e.HasRequirements ? FormatRequirements(e.Requirements) : "",
+                    SpellLevel: isSpellRule ? GetElementSpellLevel(e) : 0,
+                    School: isSpellRule ? GetElementSchool(e) : "",
+                    IsRitual: isSpellRule && GetElementIsRitual(e),
+                    IsConcentration: isSpellRule && GetElementIsConcentration(e)))
                 .ToList();
 
             if (list.Count == 0 && isSpellRule)
@@ -224,7 +228,11 @@ public static class BuildService
                     .Select(e => new ElementOption(
                         e.Id, e.Name!, GetSpellPickerDescription(e),
                         e.Source ?? "",
-                        e.HasRequirements ? FormatRequirements(e.Requirements) : ""))
+                        e.HasRequirements ? FormatRequirements(e.Requirements) : "",
+                        SpellLevel: GetElementSpellLevel(e),
+                        School: GetElementSchool(e),
+                        IsRitual: GetElementIsRitual(e),
+                        IsConcentration: GetElementIsConcentration(e)))
                     .ToList();
 
             // Case-insensitive fallback: only used when the main expression returned nothing AND
@@ -908,6 +916,21 @@ public static class BuildService
     private static int GetElementSpellLevel(ElementBase e)
     {
         try { return (int)((dynamic)e).Level; } catch { return 0; }
+    }
+
+    private static string GetElementSchool(ElementBase e)
+    {
+        try { return (string)(((dynamic)e).MagicSchool ?? ""); } catch { return ""; }
+    }
+
+    private static bool GetElementIsRitual(ElementBase e)
+    {
+        try { return (bool)((dynamic)e).IsRitual; } catch { return false; }
+    }
+
+    private static bool GetElementIsConcentration(ElementBase e)
+    {
+        try { return (bool)((dynamic)e).IsConcentration; } catch { return false; }
     }
 
     // ── Advancement timeline ─────────────────────────────────────────────────────
@@ -1827,7 +1850,16 @@ public sealed record BuildGuidanceTarget(
     string? EntryKey,
     string TargetLabel);
 
-public sealed record ElementOption(string Id, string Name, string Description, string Source = "", string Requirements = "");
+public sealed record ElementOption(
+    string Id,
+    string Name,
+    string Description,
+    string Source = "",
+    string Requirements = "",
+    int SpellLevel = 0,
+    string School = "",
+    bool IsRitual = false,
+    bool IsConcentration = false);
 
 public sealed record SpellDetail(
     string Id,
