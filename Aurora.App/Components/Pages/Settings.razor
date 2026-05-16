@@ -1,6 +1,7 @@
 @page "/settings"
 @implements IDisposable
 @using Aurora.Importer
+@using Builder.Presentation
 @inject ContentDatabaseService ContentDb
 @inject ContentService Content
 @inject CharacterService Characters
@@ -135,6 +136,77 @@
                            ValueChanged="@((bool v) => Prefs.DefaultCustomProficiency = v)"
                            Color="Color.Primary" />
             </div>
+        </div>
+
+        <div class="pref-section" style="margin-top: 24px;">
+            <div class="section-label">Character Storage</div>
+
+            <div style="margin-bottom: 12px;">
+                <div class="pref-row-desc">
+                    Character files (.dnd5e) are saved to and loaded from this directory.
+                    @if (OperatingSystem.IsAndroid())
+                    {
+                        <span> On Android, switching to <b>External Storage</b> makes files accessible from any file manager app without needing ADB or root.</span>
+                    }
+                </div>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <div class="pref-row-title" style="margin-bottom: 4px;">Current location</div>
+                <div style="font-family: monospace; font-size: 12px; color: var(--mud-palette-text-secondary); word-break: break-all;">
+                    @Characters.CharactersDirectory
+                </div>
+            </div>
+
+            @if (Tabs.Tabs.Count > 0)
+            {
+                <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-3">
+                    Close all character tabs before changing the storage location.
+                </MudAlert>
+            }
+
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                @if (OperatingSystem.IsAndroid())
+                {
+                    string? extPath = CharacterService.GetAndroidExternalStoragePath();
+                    bool alreadyExternal = extPath != null &&
+                        Characters.CharactersDirectory.StartsWith(extPath, StringComparison.Ordinal);
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               Size="Size.Small"
+                               Disabled="@(Tabs.Tabs.Count > 0 || alreadyExternal || _dirBusy)"
+                               OnClick="UseExternalStorageAsync">
+                        Use External Storage
+                    </MudButton>
+                }
+                else
+                {
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Primary"
+                               Size="Size.Small"
+                               Disabled="@(Tabs.Tabs.Count > 0 || _dirBusy)"
+                               StartIcon="@Icons.Material.Filled.FolderOpen"
+                               OnClick="BrowseCharactersDirAsync">
+                        Browse…
+                    </MudButton>
+                }
+
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Default"
+                           Size="Size.Small"
+                           Disabled="@(Tabs.Tabs.Count > 0 || _dirBusy || string.IsNullOrEmpty(ApplicationContext.Current.Settings.DocumentsRootDirectory))"
+                           OnClick="ResetCharactersDirAsync">
+                    Reset to Default
+                </MudButton>
+            </div>
+
+            @if (_dirError != null)
+            {
+                <MudAlert Severity="Severity.Error" Class="mt-3" Dense="true"
+                          ShowCloseIcon="true" CloseIconClicked="() => _dirError = null">
+                    @_dirError
+                </MudAlert>
+            }
         </div>
 
     </MudTabPanel>
@@ -705,6 +777,8 @@
     private bool _needsContentReload;
     private ContentDatabaseHealthReport? _dbHealth;
     private ContentDatabaseParityReport? _dbParity;
+    private bool _dirBusy;
+    private string? _dirError;
 
     protected override void OnInitialized()
     {
@@ -942,6 +1016,56 @@
         {
             _contentWorking = false;
         }
+    }
+
+    // ── Character storage directory ──────────────────────────────────────────
+
+    private async Task BrowseCharactersDirAsync()
+    {
+        _dirBusy  = true;
+        _dirError = null;
+        StateHasChanged();
+        try
+        {
+            string? chosen = await CharacterService.PickCharactersDirectoryAsync();
+            if (chosen == null) return;
+            _dirError = Characters.ApplyCustomCharactersDirectory(chosen);
+            if (_dirError == null)
+                Snackbar.Add($"Characters folder set to: {chosen}", Severity.Success,
+                    cfg => cfg.VisibleStateDuration = 4000);
+        }
+        finally
+        {
+            _dirBusy = false;
+            StateHasChanged();
+        }
+    }
+
+    private Task UseExternalStorageAsync()
+    {
+        _dirError = null;
+        string? path = CharacterService.GetAndroidExternalStoragePath();
+        if (path == null)
+        {
+            _dirError = "External storage path is not available on this device.";
+            return Task.CompletedTask;
+        }
+        _dirError = Characters.ApplyCustomCharactersDirectory(path);
+        if (_dirError == null)
+            Snackbar.Add("Switched to external storage. Files are now accessible from the Files app.",
+                Severity.Success, cfg => cfg.VisibleStateDuration = 5000);
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private Task ResetCharactersDirAsync()
+    {
+        _dirError = Characters.ApplyCustomCharactersDirectory(null);
+        if (_dirError == null)
+            Snackbar.Add("Characters folder reset to default.", Severity.Success,
+                cfg => cfg.VisibleStateDuration = 3000);
+        StateHasChanged();
+        return Task.CompletedTask;
     }
 
     public void Dispose()

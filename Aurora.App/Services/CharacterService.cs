@@ -433,6 +433,68 @@ public sealed class CharacterService :
         }
     }
 
+    /// <summary>
+    /// Returns the app-specific external storage path on Android
+    /// (/storage/emulated/0/Android/data/{package}/files), which is accessible from
+    /// any file manager without root. Returns null on other platforms.
+    /// </summary>
+    public static string? GetAndroidExternalStoragePath()
+    {
+#if ANDROID
+        return Android.App.Application.Context.GetExternalFilesDir(null)?.AbsolutePath;
+#else
+        return null;
+#endif
+    }
+
+    /// <summary>
+    /// Opens a native folder-picker dialog and returns the chosen path, or null if
+    /// the user cancelled. Only presents a picker on Windows; returns null elsewhere
+    /// (use platform-specific shortcuts like <see cref="GetAndroidExternalStoragePath"/>).
+    /// </summary>
+    public static async Task<string?> PickCharactersDirectoryAsync()
+    {
+#if WINDOWS
+        var picker = new Windows.Storage.Pickers.FolderPicker();
+        picker.FileTypeFilter.Add("*");
+        var window = Microsoft.Maui.Controls.Application.Current?.Windows
+            .FirstOrDefault()?.Handler?.PlatformView as Microsoft.UI.Xaml.Window;
+        if (window != null)
+        {
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
+            WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
+        }
+        var folder = await picker.PickSingleFolderAsync();
+        return folder?.Path;
+#else
+        return await Task.FromResult<string?>(null);
+#endif
+    }
+
+    /// <summary>
+    /// Applies a new character storage directory. Pass null or empty to reset to the
+    /// default (Documents/5e Character Builder). Creates the directory if it does not
+    /// exist. Returns an error string on failure, or null on success.
+    /// Callers must close all character tabs before calling this.
+    /// </summary>
+    public string? ApplyCustomCharactersDirectory(string? path)
+    {
+        path = string.IsNullOrWhiteSpace(path)
+            ? null
+            : path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+        if (path != null && !Directory.Exists(path))
+        {
+            try { Directory.CreateDirectory(path); }
+            catch (Exception ex) { return $"Could not create directory: {ex.Message}"; }
+        }
+
+        ApplicationContext.Current.Settings.DocumentsRootDirectory = path ?? "";
+        ApplicationContext.Current.Settings.Save();
+        DataManager.Current.InitializeDirectories();
+        return null;
+    }
+
     private static void ApplyOption(string optionId, bool enabled)
     {
         var cm = CharacterManager.Current;
