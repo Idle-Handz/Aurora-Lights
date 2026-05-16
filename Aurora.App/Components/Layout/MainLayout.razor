@@ -98,14 +98,41 @@
     </MudMainContent>
 </MudLayout>
 
+@if (_mobileMoreOpen && Tabs.ActiveTab != null)
+{
+    <div class="mobile-more-backdrop" @onclick="CloseMobileMore"></div>
+    <nav class="mobile-more-panel" aria-label="More navigation">
+        <NavLink href="/character" class="mobile-more-link" @onclick="CloseMobileMore">
+            <MudIcon Icon="@Icons.Material.Filled.Person" />
+            <span>Overview</span>
+        </NavLink>
+        <NavLink href="/session" class="mobile-more-link" @onclick="CloseMobileMore">
+            <MudIcon Icon="@Icons.Material.Filled.Favorite" />
+            <span>Session</span>
+        </NavLink>
+        <NavLink href="/sheet" class="mobile-more-link" @onclick="CloseMobileMore">
+            <MudIcon Icon="@Icons.Material.Filled.Article" />
+            <span>Sheet</span>
+        </NavLink>
+        <NavLink href="/manage" class="mobile-more-link" @onclick="CloseMobileMore">
+            <MudIcon Icon="@Icons.Material.Filled.ManageAccounts" />
+            <span>Manage</span>
+        </NavLink>
+        <NavLink href="/compendium" class="mobile-more-link" @onclick="CloseMobileMore">
+            <MudIcon Icon="@Icons.Material.Filled.MenuBook" />
+            <span>Compendium</span>
+        </NavLink>
+        <NavLink href="/settings" class="mobile-more-link" @onclick="CloseMobileMore">
+            <MudIcon Icon="@Icons.Material.Filled.Settings" />
+            <span>Settings</span>
+        </NavLink>
+    </nav>
+}
+
 <nav class="mobile-bottom-nav" aria-label="Primary navigation">
     <NavLink href="/" Match="NavLinkMatch.All" class="mobile-bottom-link">
         <MudIcon Icon="@Icons.Material.Filled.People" />
         <span>Chars</span>
-    </NavLink>
-    <NavLink href="/compendium" class="mobile-bottom-link">
-        <MudIcon Icon="@Icons.Material.Filled.MenuBook" />
-        <span>Comp</span>
     </NavLink>
     @if (Tabs.ActiveTab != null)
     {
@@ -121,11 +148,24 @@
             <MudIcon Icon="@Icons.Material.Filled.AutoAwesome" />
             <span>Magic</span>
         </NavLink>
+        <button type="button"
+                class="mobile-bottom-link mobile-bottom-btn @(_mobileMoreOpen ? "active" : string.Empty)"
+                @onclick="() => _mobileMoreOpen = !_mobileMoreOpen">
+            <MudIcon Icon="@Icons.Material.Filled.MoreHoriz" />
+            <span>More</span>
+        </button>
     }
-    <NavLink href="/settings" class="mobile-bottom-link">
-        <MudIcon Icon="@Icons.Material.Filled.Settings" />
-        <span>Settings</span>
-    </NavLink>
+    else
+    {
+        <NavLink href="/compendium" class="mobile-bottom-link">
+            <MudIcon Icon="@Icons.Material.Filled.MenuBook" />
+            <span>Comp</span>
+        </NavLink>
+        <NavLink href="/settings" class="mobile-bottom-link">
+            <MudIcon Icon="@Icons.Material.Filled.Settings" />
+            <span>Settings</span>
+        </NavLink>
+    }
 </nav>
 
 <div class="app-status-bar">
@@ -134,6 +174,7 @@
 
 @code {
     private bool _drawerOpen = true;
+    private bool _mobileMoreOpen;
     private AppErrorBoundary? _errorBoundary;
     private DotNetObjectReference<MainLayout>? _selfRef;
     private string _compendiumQuickQuery = string.Empty;
@@ -147,6 +188,7 @@
         Tabs.TabsChanged              += OnTabsChanged;
         CharacterContext.CaptureError += OnCaptureError;
         Prefs.ThemeChanged            += OnThemeChanged;
+        Nav.LocationChanged           += OnLocationChanged;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -227,6 +269,7 @@
         Tabs.TabsChanged              -= OnTabsChanged;
         CharacterContext.CaptureError -= OnCaptureError;
         Prefs.ThemeChanged            -= OnThemeChanged;
+        Nav.LocationChanged           -= OnLocationChanged;
         try { _ = JS.InvokeVoidAsync("AuroraShortcuts.unregister"); } catch { }
         _selfRef?.Dispose();
     }
@@ -328,6 +371,19 @@
     };
 
     private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
+
+    private void CloseMobileMore() => _mobileMoreOpen = false;
+
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        if (_disposed) return;
+        _ = InvokeAsync(() =>
+        {
+            if (_disposed) return;
+            _mobileMoreOpen = false;
+            StateHasChanged();
+        });
+    }
 
     private Task OnCompendiumQueryChanged(string value)
     {

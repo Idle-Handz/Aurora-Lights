@@ -2890,6 +2890,57 @@ input.equipment-currency-input::-webkit-inner-spin-button { -webkit-appearance: 
         background: rgba(137, 180, 250, 0.12);
     }
 
+    .mobile-bottom-btn {
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        padding: 0;
+    }
+
+    .mobile-more-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 1299;
+    }
+
+    .mobile-more-panel {
+        position: fixed;
+        right: 0;
+        left: 0;
+        bottom: calc(58px + env(safe-area-inset-bottom, 0px));
+        z-index: 1300;
+        background: var(--mud-palette-background-grey, #181825);
+        border-top: 1px solid var(--mud-palette-lines-default, #313244);
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        padding: 8px 4px 10px;
+        gap: 2px;
+    }
+
+    .mobile-more-link {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 4px;
+        gap: 2px;
+        border-radius: 8px;
+        color: var(--mud-palette-text-disabled, #6c7086);
+        font-size: 10px;
+        font-weight: 700;
+        text-decoration: none;
+    }
+
+    .mobile-more-link svg {
+        width: 21px;
+        height: 21px;
+    }
+
+    .mobile-more-link.active {
+        color: var(--mud-palette-primary, #89b4fa);
+        background: rgba(137, 180, 250, 0.12);
+    }
+
     .about-dialog-header,
     .detail-header {
         align-items: stretch;

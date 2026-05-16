@@ -774,6 +774,7 @@
 </MudTabs>
 
 @code {
+    private bool _disposed;
     private CancellationTokenSource? _cts;
 
     private string _indexUrl = "";
@@ -994,6 +995,7 @@
         try
         {
             var (updated, msg) = await Content.CheckForUpdatesAsync();
+            if (_disposed) return;
             _contentStatus = msg;
             _contentStatusSeverity = Severity.Info;
             if (updated) _needsContentReload = true;
@@ -1083,6 +1085,7 @@
 
     public void Dispose()
     {
+        _disposed = true;
         ContentDb.StateChanged -= OnStateChanged;
         Content.Changed -= OnContentChanged;
         _cts?.Cancel();
