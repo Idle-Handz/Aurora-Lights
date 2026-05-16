@@ -400,6 +400,7 @@ public sealed class CharacterManager
     if (ApplicationContext.Current.Settings.ApplyDefaultSourceRestrictionsOnNewCharacter)
       this.SourcesManager.LoadDefaults();
     this.Character.ResetEntryFields();
+    this.Status.HasCompanion = false;
     if (initializeFirstLevel)
     {
       this.LevelUp();

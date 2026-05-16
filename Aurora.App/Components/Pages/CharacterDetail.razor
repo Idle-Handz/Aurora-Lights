@@ -2,6 +2,7 @@
 @implements IDisposable
 @inject CharacterTabService Tabs
 @inject ISnackbar Snackbar
+@using Builder.Presentation.Models
 
 @if (_snap is null)
 {
@@ -104,6 +105,47 @@
 </div>
 
 @* ── Abilities + Skills ── *@
+<div class="detail-advancement-strip">
+    <div class="detail-advancement-meta">
+        <div class="section-label" style="margin-bottom: 6px;">Advancement</div>
+        <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-disabled);">
+            Level @_snap.Level
+            @if (!BuildService.CanLevelUp)   { <span> · Max level</span>   }
+            @if (!BuildService.CanLevelDown) { <span> · Level 1 min</span> }
+        </MudText>
+    </div>
+    <div class="detail-advancement-actions">
+        <MudButton StartIcon="@Icons.Material.Filled.Add"
+                   Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   Size="Size.Small"
+                   Disabled="@(!BuildService.CanLevelUp || _advancementBusy)"
+                   OnClick="LevelUpAsync">
+            Level Up
+        </MudButton>
+
+        <MudButton StartIcon="@Icons.Material.Filled.Remove"
+                   Variant="Variant.Outlined"
+                   Color="Color.Default"
+                   Size="Size.Small"
+                   Disabled="@(!BuildService.CanLevelDown || _advancementBusy)"
+                   OnClick="LevelDownAsync">
+            Level Down
+        </MudButton>
+
+        <div class="build-hp-toggle" title="How HP is assigned on each level-up">
+            <span class="build-hp-label">HP:</span>
+            <button class="build-hp-btn @(BuildService.IsUsingAverageHp ? "active" : "")"
+                    disabled="@_advancementBusy"
+                    @onclick="() => SetHpMethodAsync(HpMethod.Average)">Avg</button>
+            <button class="build-hp-btn @(!BuildService.IsUsingAverageHp ? "active" : "")"
+                    disabled="@_advancementBusy"
+                    @onclick="() => SetHpMethodAsync(HpMethod.Rolled)">Roll</button>
+        </div>
+
+    </div>
+</div>
+
 <div class="overview-two-col mb-section">
 
     @* Left: ability scores with inline save bonuses *@
@@ -645,6 +687,7 @@
     private SpellDetail? _spellDetail;
     private string? _activeSpellSectionId;
     private IReadOnlyList<(string Id, string Name)> _activeSpellCantrips = [];
+    private bool _advancementBusy;
 
     private SpellcastingSectionEntry? ActiveSpellSection =>
         _snap?.SpellcastingSections.FirstOrDefault(section => section.UniqueIdentifier == _activeSpellSectionId)
@@ -770,6 +813,93 @@
         {
             Snackbar.Add($"Could not change portrait: {ex.Message}", Severity.Error);
         }
+    }
+
+    private async Task LevelUpAsync()
+    {
+        var tab = Tabs.ActiveTab;
+        if (tab == null)
+        {
+            Snackbar.Add("There is no active character to level up.", Severity.Warning);
+            return;
+        }
+
+        _advancementBusy = true;
+        StateHasChanged();
+        var (error, hpGained, isAverage) = await BuildService.LevelUpMainAsync(tab);
+        _advancementBusy = false;
+        if (error == null)
+        {
+            tab.IsNew = false;
+            Tabs.MarkClean(tab);
+            string hpNote = hpGained > 0
+                ? $" · +{hpGained} HP ({(isAverage ? "avg" : "rolled")})"
+                : "";
+            Snackbar.Add($"Level {_snap?.Level + 1 ?? 0}{hpNote}", Severity.Success,
+                cfg => cfg.VisibleStateDuration = 5000);
+        }
+        else
+        {
+            Snackbar.Add(error, Severity.Error);
+        }
+
+        LoadFromActiveTab();
+        StateHasChanged();
+    }
+
+    private async Task LevelDownAsync()
+    {
+        var tab = Tabs.ActiveTab;
+        if (tab == null)
+        {
+            Snackbar.Add("There is no active character to level down.", Severity.Warning);
+            return;
+        }
+
+        _advancementBusy = true;
+        StateHasChanged();
+        var error = await BuildService.LevelDownAsync(tab);
+        _advancementBusy = false;
+        if (error == null)
+        {
+            Tabs.MarkClean(tab);
+            Snackbar.Add("Level removed.", Severity.Info, cfg => cfg.VisibleStateDuration = 2000);
+        }
+        else
+        {
+            Snackbar.Add(error, Severity.Error);
+        }
+
+        LoadFromActiveTab();
+        StateHasChanged();
+    }
+
+    private async Task SetHpMethodAsync(HpMethod method)
+    {
+        var tab = Tabs.ActiveTab;
+        if (tab == null)
+        {
+            Snackbar.Add("There is no active character to update.", Severity.Warning);
+            return;
+        }
+
+        _advancementBusy = true;
+        StateHasChanged();
+        var error = await BuildService.SetHpMethodAsync(tab, method);
+        _advancementBusy = false;
+        if (error == null)
+        {
+            Tabs.MarkClean(tab);
+            Snackbar.Add($"HP method set to {(method == HpMethod.Average ? "average" : "rolled")}.",
+                Severity.Info, cfg => cfg.VisibleStateDuration = 3000);
+        }
+        else
+        {
+            Snackbar.Add(error, Severity.Error);
+        }
+
+        LoadFromActiveTab();
+        StateHasChanged();
     }
 
     private static string? ResolvePortrait(Builder.Presentation.Models.CharacterFile file)

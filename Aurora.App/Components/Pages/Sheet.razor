@@ -3,6 +3,7 @@
 @inject CharacterTabService Tabs
 @inject ISnackbar Snackbar
 @inject UserPreferencesService Prefs
+@inject CharacterService Characters
 @using Builder.Presentation
 @using Builder.Presentation.Services.Data
 
@@ -35,6 +36,14 @@
               CloseIconClicked="() => _error = null">
         <div><b>Failed to generate PDF</b></div>
         <div style="font-size:0.8em; word-break:break-all; white-space:pre-wrap;">@_error</div>
+    </MudAlert>
+}
+@if (_exportError != null)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-3" ShowCloseIcon="true"
+              CloseIconClicked="() => _exportError = null">
+        <div><b>Failed to export character file</b></div>
+        <div style="font-size:0.8em; word-break:break-all; white-space:pre-wrap;">@_exportError</div>
     </MudAlert>
 }
 
@@ -73,6 +82,16 @@
     <MudText Typo="Typo.caption" Color="Color.Secondary" Style="margin-left: 12px; align-self: center;">
         Saves to @GetExportLocationLabel()
     </MudText>
+
+    <MudButton StartIcon="@Icons.Material.Filled.Share"
+               Color="Color.Secondary"
+               Variant="Variant.Outlined"
+               Disabled="@(_exporting || _generating)"
+               OnClick="ExportDnd5eAsync"
+               Style="margin-left: auto;"
+               title="Export the .dnd5e character file so it can be opened in Aurora Builder on another device">
+        Export Character File
+    </MudButton>
 </div>
 
 <div class="sheet-options" style="margin-top: 20px;">
@@ -250,6 +269,8 @@
     private bool   _generating;
     private string? _error;
     private string? _lastSavedPath;
+    private bool   _exporting;
+    private string? _exportError;
 
     protected override void OnInitialized()
     {
@@ -393,6 +414,49 @@
         finally
         {
             _generating = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ExportDnd5eAsync()
+    {
+        var file = Characters.CurrentCharacterFile;
+        if (file == null || !File.Exists(file.FilePath))
+        {
+            WarnUnavailable("No character file is available to export.");
+            return;
+        }
+
+        string safeName = string.Concat((_snap?.Name ?? Path.GetFileNameWithoutExtension(file.FilePath))
+            .Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
+        string suggestedName = $"{safeName}.dnd5e";
+
+        string? destPath = await FileSaveService.PickSaveLocationAsync(
+            suggestedName,
+            new[] { new FileSaveService.FileTypeChoice("Aurora character file", ".dnd5e") },
+            GetPreferredExportDirectory());
+
+        if (destPath is null) return; // user cancelled
+
+        _exporting   = true;
+        _exportError = null;
+        StateHasChanged();
+
+        try
+        {
+            await Task.Run(() => File.Copy(file.FilePath, destPath, overwrite: true));
+            await FileSaveService.ShareFileAsync(destPath, suggestedName);
+            Snackbar.Add($"Character file exported.", Severity.Success,
+                cfg => cfg.VisibleStateDuration = 3000);
+        }
+        catch (Exception ex)
+        {
+            _exportError = ex.Message;
+            DebugLogService.Instance.LogException(ex, "ExportDnd5eAsync");
+        }
+        finally
+        {
+            _exporting = false;
             StateHasChanged();
         }
     }

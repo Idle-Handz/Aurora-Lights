@@ -114,7 +114,7 @@ else if (_workflowSuggestion != null)
 
 @* ── Level controls (outside tabs) ── *@
 <div class="build-level-strip">
-    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+    <div class="build-level-actions">
         <MudButton StartIcon="@Icons.Material.Filled.Add"
                    Variant="Variant.Filled"
                    Color="Color.Primary"
@@ -160,6 +160,7 @@ else if (_workflowSuggestion != null)
             @if (!BuildService.CanLevelUp)   { <span> · Max level</span>   }
             @if (!BuildService.CanLevelDown) { <span> · Level 1 min</span> }
         </MudText>
+
     </div>
 </div>
 
@@ -198,7 +199,7 @@ else if (_workflowSuggestion != null)
                         <div class="build-rule-list">
                             @foreach (var entry in group.Rules)
                             {
-                                bool _isOptional = entry.Rule?.Attributes?.Optional == true;
+                                bool _isOptional = IsOptionalEntry(entry);
                                 <div class="@GetRuleRowClass(entry)" @ondblclick="() => OpenPickerAsync(entry)">
                                     <div class="build-rule-label">
                                         @entry.Label
@@ -208,7 +209,7 @@ else if (_workflowSuggestion != null)
                                         }
                                     </div>
                                     <div class="build-rule-value @(entry.CurrentName == null ? "build-rule-empty" : "")">
-                                        @(entry.CurrentName ?? (_isOptional ? "—" : "Choose..."))
+                                        @(entry.CurrentName ?? (_isOptional ? "Optional..." : "Choose..."))
                                     </div>
                                     <button class="build-rule-btn" @onclick="() => OpenPickerAsync(entry)"
                                             @ondblclick:stopPropagation="true">Change</button>
@@ -268,16 +269,9 @@ else if (_workflowSuggestion != null)
             {
                 <div class="build-section">
                     <div class="section-label">Story &amp; Personality</div>
-                    <div class="bg-narrative-grid">
-                        <NarrativeField Label="Personality Trait" Value="@_snap.Notes1"
-                                        ValueChanged="v => OnNarrativeChanged(v, f => _snap!.Notes1 = f)" />
-                        <NarrativeField Label="Ideal" Value="@_snap.Notes2"
-                                        ValueChanged="v => OnNarrativeChanged(v, f => _snap!.Notes2 = f)" />
-                        <NarrativeField Label="Bond" Value="@_snap.Allies"
-                                        ValueChanged="v => OnNarrativeChanged(v, f => _snap!.Allies = f)" />
-                        <NarrativeField Label="Flaw" Value="@_snap.Organisation"
-                                        ValueChanged="v => OnNarrativeChanged(v, f => _snap!.Organisation = f)" />
-                    </div>
+                    <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary); margin-bottom: 10px; display: block;">
+                        Personality trait, ideal, bond, and flaw are selected above when your background offers them.
+                    </MudText>
                     <NarrativeField Label="Backstory" Value="@_snap.Backstory" Lines="4"
                                     ValueChanged="v => OnNarrativeChanged(v, f => _snap!.Backstory = f)" />
                     <NarrativeField Label="Deity / Faith" Value="@_snap.Deity"
@@ -746,10 +740,21 @@ else if (_workflowSuggestion != null)
     private string GetBuildTabLabel(BuildTabGroup tab) =>
         tab.UnresolvedCount > 0 ? $"{tab.Label} ({tab.UnresolvedCount})" : tab.Label;
 
+    private static readonly HashSet<string> OptionalFlavorLabels = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Personality Trait",
+        "Ideal",
+        "Bond",
+        "Flaw",
+    };
+
+    private static bool IsOptionalEntry(SelectionRuleEntry entry) =>
+        entry.Rule?.Attributes?.Optional == true || OptionalFlavorLabels.Contains(entry.Label);
+
     private string GetRuleRowClass(SelectionRuleEntry entry)
     {
         bool unresolved  = entry.CurrentName == null;
-        bool optional    = entry.Rule?.Attributes?.Optional == true;
+        bool optional    = IsOptionalEntry(entry);
         bool highlighted = unresolved && entry.EntryKey == _highlightedEntryKey;
         return highlighted        ? "build-rule-row build-rule-row-highlighted" :
                unresolved && !optional ? "build-rule-row build-rule-row-unresolved" :

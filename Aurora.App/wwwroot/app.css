@@ -1563,9 +1563,16 @@ html, body {
 .build-level-strip {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     padding: 8px 0 4px;
     border-bottom: 1px solid var(--mud-palette-lines-default, #313244);
     margin-bottom: 4px;
+}
+.build-level-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 .build-tabs .mud-tab {
     color: var(--mud-palette-text-secondary, #a6adc8);
@@ -1617,6 +1624,30 @@ html, body {
 .build-hp-btn.active {
     background: #89b4fa22;
     color: #89b4fa;
+}
+
+.detail-advancement-strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin: -4px 0 20px;
+    padding: 12px 14px;
+    background: var(--mud-palette-surface, #313244);
+    border: 1px solid var(--mud-palette-lines-default, #45475a);
+    border-radius: 10px;
+}
+
+.detail-advancement-meta {
+    min-width: 0;
+}
+
+.detail-advancement-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 .build-hp-btn:disabled {
     opacity: 0.4;
@@ -2842,9 +2873,33 @@ input.equipment-currency-input::-webkit-inner-spin-button { -webkit-appearance: 
     }
 
     .build-level-strip {
+        position: sticky;
+        top: 0;
+        z-index: 4;
         align-items: stretch;
-        padding-top: 4px;
-        overflow-x: auto;
+        padding: 8px 10px;
+        overflow-x: visible;
+        background: color-mix(in srgb, var(--mud-palette-background-grey, #181825) 92%, transparent);
+        backdrop-filter: blur(10px);
+        border: 1px solid var(--mud-palette-lines-default, #313244);
+        border-radius: 8px;
+        margin-bottom: 8px;
+    }
+
+    .build-level-actions,
+    .detail-advancement-actions {
+        align-items: stretch;
+        width: 100%;
+    }
+
+    .build-level-actions > *,
+    .detail-advancement-actions > * {
+        flex: 1 1 140px;
+    }
+
+    .detail-advancement-strip {
+        align-items: stretch;
+        padding: 10px 12px;
     }
 
     .build-tabs .mud-tabs-toolbar {

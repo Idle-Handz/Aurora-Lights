@@ -7,6 +7,7 @@ using Builder.Presentation.Services;
 using Builder.Presentation.Services.Data;
 using Builder.Presentation.Utilities;
 using System.Text.RegularExpressions;
+using System.Xml;
 
 namespace Aurora.App.Services;
 
@@ -143,14 +144,22 @@ public static class BuildService
     {
         try
         {
-            // List-type rules (Bond, Ideal, Flaw, Personality Trait, etc.) have their options
-            // as inline <item> children of the <select> tag, not in the element collection.
-            if (rule.Attributes.IsList)
+            // List-type rules (Bond, Ideal, Flaw, Personality Trait) store their options as
+            // inline <item> children in the XML, not as elements in the element collection.
+            bool isList = rule.Attributes.Type?.Equals("List") == true;
+            if (isList)
             {
-                var listItems = rule.Attributes.ListItems ?? [];
-                return listItems
-                    .Select(li => new ElementOption(li.ID.ToString(), li.Text, li.Text, "", ""))
-                    .ToList();
+                var listItems = rule.Attributes.ListItems;
+                DebugLogService.Instance.Log(LogLevel.Info,
+                    $"[GetOptions] isList=true name={rule.Attributes.Name} " +
+                    $"listItems={(listItems == null ? "null" : listItems.Count.ToString())} " +
+                    $"elemId={rule.ElementHeader?.Id}");
+                if (listItems?.Count > 0)
+                    return listItems
+                        .Select(li => new ElementOption(li.ID.ToString(), li.Text, li.Text, "", ""))
+                        .ToList();
+                // ListItems not populated — read directly from the owner element's XML node.
+                return GetListOptionsFromElementNode(rule);
             }
 
             // Use the same approach as SelectionRuleCollectionService / SelectionRuleComboBoxViewModel:
@@ -227,6 +236,66 @@ public static class BuildService
             return DeduplicateOptions(list);
         }
         catch { return []; }
+    }
+
+    // Fallback for list-type rules when Attributes.ListItems is empty: walks the owner element's
+    // XmlNode to find the matching <select type="List" name="…"> and reads its <item> children.
+    private static IReadOnlyList<ElementOption> GetListOptionsFromElementNode(SelectRule rule)
+    {
+        if (rule.ElementHeader == null)
+        {
+            DebugLogService.Instance.Log(LogLevel.Warning,
+                $"[GetListOptionsFromElementNode] ElementHeader is null for rule '{rule.Attributes.Name}'");
+            return [];
+        }
+
+        var element = DataManager.Current.ElementsCollection
+            .FirstOrDefault(e => e.Id == rule.ElementHeader.Id);
+        if (element == null)
+        {
+            DebugLogService.Instance.Log(LogLevel.Warning,
+                $"[GetListOptionsFromElementNode] element not found for id '{rule.ElementHeader.Id}' (rule '{rule.Attributes.Name}')");
+            return [];
+        }
+
+        if (element.ElementNode == null)
+        {
+            DebugLogService.Instance.Log(LogLevel.Warning,
+                $"[GetListOptionsFromElementNode] ElementNode is null for '{element.Id}' (rule '{rule.Attributes.Name}')");
+            return [];
+        }
+
+        XmlNode? rulesSection = element.ElementNode["rules"];
+        if (rulesSection == null)
+        {
+            DebugLogService.Instance.Log(LogLevel.Warning,
+                $"[GetListOptionsFromElementNode] no <rules> section in element '{element.Id}' (rule '{rule.Attributes.Name}')");
+            return [];
+        }
+
+        string? ruleName = rule.Attributes.Name;
+        foreach (XmlNode child in rulesSection.ChildNodes)
+        {
+            if (child.Name != "select") continue;
+            if (child.Attributes?["type"]?.Value != "List") continue;
+            if (ruleName != null && child.Attributes?["name"]?.Value != ruleName) continue;
+
+            var items = new List<ElementOption>();
+            foreach (XmlNode item in child.ChildNodes)
+            {
+                if (item.Name != "item") continue;
+                string id = item.Attributes?["id"]?.Value ?? "";
+                string text = item.InnerText.Trim();
+                if (!string.IsNullOrEmpty(text))
+                    items.Add(new ElementOption(id, text, text, "", ""));
+            }
+            DebugLogService.Instance.Log(LogLevel.Info,
+                $"[GetListOptionsFromElementNode] found {items.Count} items for '{ruleName}' in element '{element.Id}'");
+            return items;
+        }
+        DebugLogService.Instance.Log(LogLevel.Warning,
+            $"[GetListOptionsFromElementNode] no matching <select type='List' name='{ruleName}'> found in '{element.Id}'");
+        return [];
     }
 
     /// <summary>
@@ -392,9 +461,12 @@ public static class BuildService
         }
 
         // Text-based scan: filter by class name in supports attribute.
+        // Use Any+Contains (substring, case-insensitive) because supports values may be
+        // comma-joined strings like "Ranger, Paladin" rather than individual entries.
         return spellBase.Where(e =>
         {
-            if (e.Supports == null || !e.Supports.Contains(scName)) return false;
+            if (e.Supports == null || !e.Supports.Any(s => s.Contains(scName, StringComparison.OrdinalIgnoreCase)))
+                return false;
             int lvl = 0;
             try { lvl = (int)((dynamic)e).Level; } catch { }
             return isCantrip ? lvl == 0 : lvl > 0;
@@ -452,6 +524,10 @@ public static class BuildService
                         var stale = SelectionRuleExpanderContext.Current?.GetRegisteredElement(r, n)
                             as Builder.Data.ElementBase;
                         if (stale == null) continue;
+                        DebugLogService.Instance.Log(LogLevel.Warning,
+                            $"[Validate] owner-missing: rule='{r.Attributes.Name ?? r.Attributes.Type}' " +
+                            $"ownerId='{ownerId}' ownerType='{r.ElementHeader?.Type}' " +
+                            $"stale='{stale.Id}' currentIds.Count={currentIds.Count}");
                         try
                         {
                             cm.UnregisterElement(stale);
@@ -474,15 +550,21 @@ public static class BuildService
                     if (registered == null) continue;
 
                     bool stillValid;
+                    HashSet<string> validIds = [];
                     try
                     {
-                        stillValid = GetValidSelectionIds(r, registered.Id, currentIds)
-                            .Contains(registered.Id);
+                        validIds = GetValidSelectionIds(r, registered.Id, currentIds);
+                        stillValid = validIds.Contains(registered.Id);
                     }
                     catch { stillValid = true; } // be conservative on errors
 
                     if (!stillValid)
                     {
+                        DebugLogService.Instance.Log(LogLevel.Warning,
+                            $"[Validate] slot-invalid: rule='{r.Attributes.Name ?? r.Attributes.Type}' " +
+                            $"type='{r.Attributes.Type}' supports='{r.Attributes.Supports}' " +
+                            $"registered='{registered.Id}' validIds.Count={validIds.Count} " +
+                            $"ownerId='{ownerId}'");
                         try
                         {
                             cm.UnregisterElement(registered);

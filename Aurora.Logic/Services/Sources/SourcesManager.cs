@@ -122,9 +122,15 @@ public class SourcesManager : ISourceRestrictionsProvider
     SourcesGroup sourcesGroup4 = new SourcesGroup("Third Party");
     SourcesGroup sourcesGroup5 = new SourcesGroup("Homebrew");
     SourcesGroup undefinedGroup = new SourcesGroup("Undefined Sources");
+    // "internal" and "core" are Aurora system sources, not user-facing content packages.
+    // GetUndefinedSourceNames already excludes them from the Undefined group; mirror that
+    // here so they don't surface in Third Party or Homebrew groups either.
+    string[] systemSources = { "internal", "core" };
     Queue<SourceItem> source1 = new Queue<SourceItem>();
     foreach (SourceItem sourceItem in (Collection<SourceItem>) this.SourceItems)
     {
+      if (systemSources.Contains(sourceItem.Source.Name, StringComparer.OrdinalIgnoreCase))
+        continue;
       if (sourceItem.Source.IsOfficialContent)
       {
         if (sourceItem.Source.IsAdventureLeagueContent)

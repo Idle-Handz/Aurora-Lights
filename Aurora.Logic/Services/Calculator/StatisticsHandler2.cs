@@ -100,9 +100,12 @@ public class StatisticsHandler2
     if (characterManager.Status.HasCompanion)
     {
       Companion companion = characterManager.Character.Companion;
-      StatisticValuesGroup group = new StatisticValuesGroup("companion:proficiency");
-      group.AddValue(companion.Element.Name, companion.Element.Proficiency);
-      seed.AddGroup(group);
+      if (companion?.Element != null)
+      {
+        StatisticValuesGroup group = new StatisticValuesGroup("companion:proficiency");
+        group.AddValue(companion.Element.Name, companion.Element.Proficiency);
+        seed.AddGroup(group);
+      }
     }
     foreach (SpellcastingInformation spellcastingInformation in characterManager.GetSpellcastingInformations())
     {
