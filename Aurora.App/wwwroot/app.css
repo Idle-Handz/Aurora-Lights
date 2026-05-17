@@ -68,6 +68,27 @@ html, body {
     filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.24));
 }
 
+.new-character-dialog-content {
+    width: min(340px, calc(100vw - 48px));
+    min-width: 0;
+    padding-top: 4px;
+}
+
+.pdf-import-dialog-content {
+    width: min(640px, calc(100vw - 48px));
+    min-width: 0;
+    max-width: 100%;
+}
+
+.resource-dialog-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: min(280px, calc(100vw - 48px));
+    min-width: 0;
+    padding-top: 4px;
+}
+
 /* Character card */
 .char-card {
     background: var(--mud-palette-surface, #313244);
@@ -794,6 +815,9 @@ html, body {
     align-items: center;
     gap: 4px;
     user-select: none;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 .build-feature-expandable > summary::before {
     content: "▶";
@@ -810,6 +834,8 @@ html, body {
     margin-left: 12px;
     line-height: 1.5;
     white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 .build-feature-name {
     font-size: 13px;
@@ -868,12 +894,17 @@ html, body {
     color: var(--mud-palette-text-secondary, #a6adc8);
     min-width: 160px;
     flex-shrink: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 .build-rule-value {
     flex: 1;
+    min-width: 0;
     font-size: 13px;
     font-weight: 500;
     color: var(--mud-palette-text-primary, #cdd6f4);
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 .build-rule-empty { color: var(--mud-palette-text-disabled); font-style: italic; }
 .build-rule-optional-badge {
@@ -1123,6 +1154,39 @@ html, body {
     font-size: 12px;
     color: var(--mud-palette-text-secondary, #a6adc8);
     line-height: 1.6;
+}
+
+.settings-action-row {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    min-width: 0;
+}
+
+.settings-action-button {
+    margin-top: 4px;
+    flex-shrink: 0;
+}
+
+.settings-inline-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.settings-diagnostics {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.settings-diagnostics .pref-row-desc {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.settings-diagnostics .mud-alert {
+    overflow-wrap: anywhere;
 }
 
 /* ── Spacing utility ── */
@@ -2240,6 +2304,17 @@ html, body {
 .ability-stats-table-wrapper {
     overflow-x: auto;
     margin-top: 12px;
+    padding-bottom: 4px;
+    scrollbar-color: var(--mud-palette-lines-inputs, #45475a) transparent;
+}
+.ability-stats-table-wrapper::after,
+.table-scroll-hint::after {
+    content: "Scroll horizontally";
+    display: none;
+    margin-top: 4px;
+    font-size: 10px;
+    color: var(--mud-palette-text-disabled, #6c7086);
+    text-align: right;
 }
 .ability-stats-table {
     width: 100%;
@@ -3097,6 +3172,10 @@ input.equipment-currency-input::-webkit-inner-spin-button { -webkit-appearance: 
         min-width: 0;
     }
 
+    .build-rule-value {
+        width: 100%;
+    }
+
     .build-rule-btn,
     .magic-action-button,
     .equipment-action-button {
@@ -3117,8 +3196,14 @@ input.equipment-currency-input::-webkit-inner-spin-button { -webkit-appearance: 
     .sheet-actions .mud-button-root,
     .sheet-options-row .mud-button-root,
     .session-inspiration-btn,
-    .session-resource-actions {
+    .session-resource-actions,
+    .settings-action-button {
         width: 100%;
+    }
+
+    .settings-action-row {
+        flex-direction: column;
+        align-items: stretch;
     }
 
     .ability-card {
@@ -3146,6 +3231,18 @@ input.equipment-currency-input::-webkit-inner-spin-button { -webkit-appearance: 
     .ability-stats-table-wrapper {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
+        scrollbar-color: var(--mud-palette-lines-inputs, #45475a) transparent;
+    }
+
+    .attack-table,
+    .inv-table,
+    .data-table {
+        box-shadow: inset -16px 0 14px -16px rgba(205, 214, 244, 0.45);
+    }
+
+    .ability-stats-table-wrapper::after,
+    .table-scroll-hint::after {
+        display: block;
     }
 
     /* Advancement table: 3 columns (Level/HP/Features) fit fine at mobile width */

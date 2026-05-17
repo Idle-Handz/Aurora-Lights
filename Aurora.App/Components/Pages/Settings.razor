@@ -481,7 +481,7 @@
                             </div>
                         }
 
-                        <div style="display: flex; gap: 8px; align-items: flex-start; margin-top: 4px;">
+                        <div class="settings-action-row" style="margin-top: 4px;">
                             <MudTextField @bind-Value="_newDirPath"
                                           Label="Folder path"
                                           Placeholder="C:\path\to\homebrew\content"
@@ -495,7 +495,7 @@
                                        Size="Size.Small"
                                        Disabled="@string.IsNullOrWhiteSpace(_newDirPath)"
                                        OnClick="AddDirectory"
-                                       Style="margin-top: 4px; white-space: nowrap;">
+                                       Class="settings-action-button">
                                 Add
                             </MudButton>
                         </div>
@@ -508,7 +508,7 @@
                             to download the content. Requires a network connection.
                         </div>
 
-                        <div style="display: flex; gap: 8px; align-items: flex-start; margin-bottom: 10px;">
+                        <div class="settings-action-row" style="margin-bottom: 10px;">
                             <MudTextField @bind-Value="_indexUrl"
                                           Label="Index URL"
                                           Placeholder="https://raw.githubusercontent.com/.../core.index"
@@ -521,12 +521,12 @@
                                        Size="Size.Small"
                                        Disabled="@(_contentWorking || string.IsNullOrWhiteSpace(_indexUrl))"
                                        OnClick="FetchIndexAsync"
-                                       Style="margin-top: 4px; white-space: nowrap;">
+                                       Class="settings-action-button">
                                 Fetch Index
                             </MudButton>
                         </div>
 
-                        <div style="display: inline-flex; align-items: center; gap: 8px;">
+                        <div class="settings-inline-actions">
                             <MudButton Variant="Variant.Outlined"
                                        Color="Color.Default"
                                        StartIcon="@(_checkingUpdates ? null : Icons.Material.Filled.Sync)"
@@ -660,7 +660,7 @@
 
         @if (Prefs.DevMode)
         {
-            <div class="pref-section" style="margin-top: 24px;">
+            <div class="pref-section settings-diagnostics" style="margin-top: 24px;">
                 <div class="section-label">Database Diagnostics</div>
 
                 @{

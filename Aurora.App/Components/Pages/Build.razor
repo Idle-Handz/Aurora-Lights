@@ -740,17 +740,8 @@ else if (_workflowSuggestion != null)
     private string GetBuildTabLabel(BuildTabGroup tab) =>
         tab.UnresolvedCount > 0 ? $"{tab.Label} ({tab.UnresolvedCount})" : tab.Label;
 
-    private static readonly HashSet<string> OptionalFlavorLabels = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "Personality Trait",
-        "Ideal",
-        "Bond",
-        "Flaw",
-        "Variant Feature",
-    };
-
     private static bool IsOptionalEntry(SelectionRuleEntry entry) =>
-        entry.Rule?.Attributes?.Optional == true || OptionalFlavorLabels.Contains(entry.Label);
+        entry.Rule?.Attributes?.Optional == true || BuildRuleClassifier.IsOptionalFlavorSelection(entry.Label);
 
     private string GetRuleRowClass(SelectionRuleEntry entry)
     {

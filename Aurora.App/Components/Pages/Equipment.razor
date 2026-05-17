@@ -38,7 +38,8 @@
                              OnToggleAttuned="ToggleAttunedAsync"
                              OnChangeAmount="ChangeAmountAsync"
                              OnCoinChanged="ChangeCoinAsync"
-                             OnNoteChanged="ChangeNoteAsync" />
+                             OnNoteChanged="ChangeNoteAsync"
+                             OnEditItem="EditItemAsync" />
 
 @code {
     private CharacterSnapshot? _snap;
@@ -424,6 +425,47 @@
 
         MarkDirty();
         return Task.CompletedTask;
+    }
+
+    private async Task EditItemAsync(string identifier)
+    {
+        var liveItem = FindLiveItem(identifier);
+        if (liveItem is null)
+        {
+            WarnUnavailable("That item could not be found.");
+            return;
+        }
+
+        var originalName = _snap?.InventoryItems.FirstOrDefault(i => i.Identifier == identifier)?.Name
+            ?? liveItem.Name ?? identifier;
+
+        var parameters = new DialogParameters
+        {
+            [nameof(ItemEditDialog.OriginalName)]      = originalName,
+            [nameof(ItemEditDialog.AlternativeName)]   = liveItem.AlternativeName,
+            [nameof(ItemEditDialog.Notes)]             = liveItem.Notes,
+        };
+        var dialog = await DialogService.ShowAsync<ItemEditDialog>("Customize Item", parameters);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: EquipmentItemEditResult edit })
+        {
+            var tab = Tabs.ActiveTab;
+            if (tab is not { Character: { } character, File: { } file })
+            {
+                WarnUnavailable("Changes could not be saved because the character tab is no longer active.");
+                return;
+            }
+            using var scope = await CharacterContext.EnterAsync(tab);
+
+            liveItem.AlternativeName = edit.AlternativeName;
+            liveItem.Notes           = edit.Notes;
+
+            RefreshEquipment();
+            file.SaveInventoryItems(character);
+            MarkDirty();
+            StateHasChanged();
+        }
     }
 
     private void WarnUnavailable(string message) =>

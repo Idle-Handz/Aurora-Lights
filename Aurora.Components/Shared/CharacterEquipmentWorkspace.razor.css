@@ -112,8 +112,15 @@
     color: var(--mud-palette-text-disabled, #6c7086);
 }
 
+.equipment-item-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
 .equipment-action-button,
 .equipment-remove-button,
+.equipment-edit-button,
 .equipment-tag {
     border: 1px solid var(--mud-palette-lines-inputs, #45475a);
     background: var(--mud-palette-surface, #313244);
@@ -148,6 +155,7 @@
 
 .equipment-action-button:disabled,
 .equipment-remove-button:disabled,
+.equipment-edit-button:disabled,
 .equipment-tag:disabled {
     cursor: default;
     opacity: 0.45;
@@ -220,7 +228,7 @@
 }
 
 .equipment-inventory-row {
-    grid-template-columns: minmax(0, 2.2fr) minmax(70px, 0.9fr) minmax(60px, 0.7fr) minmax(70px, 0.8fr) minmax(70px, 0.8fr) 40px;
+    grid-template-columns: minmax(0, 2.2fr) minmax(70px, 0.9fr) minmax(60px, 0.7fr) minmax(70px, 0.8fr) minmax(70px, 0.8fr) auto;
 }
 
 .equipment-tag {
@@ -237,7 +245,8 @@
     color: #1e1e2e;
 }
 
-.equipment-remove-button {
+.equipment-remove-button,
+.equipment-edit-button {
     width: 2rem;
     height: 2rem;
     font-size: 1rem;
@@ -247,6 +256,12 @@
     color: #f38ba8;
     border-color: #f38ba8;
     background: rgba(243, 139, 168, 0.1);
+}
+
+.equipment-edit-button:hover {
+    color: var(--mud-palette-primary, #89b4fa);
+    border-color: var(--mud-palette-primary, #89b4fa);
+    background: rgba(137, 180, 250, 0.1);
 }
 
 .equipment-notes-area {

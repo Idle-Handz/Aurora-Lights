@@ -1,0 +1,47 @@
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Customize Item</MudText>
+    </TitleContent>
+    <DialogContent>
+        <div style="display:flex; flex-direction:column; gap:1rem; padding-top:0.25rem;">
+            <MudTextField @bind-Value="_altName"
+                          Label="Custom name"
+                          Placeholder="@OriginalName"
+                          HelperText="Leave blank to show the original item name."
+                          Variant="Variant.Outlined"
+                          Immediate="true" />
+            <MudTextField @bind-Value="_notes"
+                          Label="Notes"
+                          HelperText="Optional personal notes shown alongside this item."
+                          Variant="Variant.Outlined"
+                          Lines="4"
+                          Immediate="true" />
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Variant="Variant.Text">Cancel</MudButton>
+        <MudButton OnClick="Confirm" Variant="Variant.Filled" Color="Color.Primary">Save</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public string OriginalName { get; set; } = string.Empty;
+    [Parameter] public string AlternativeName { get; set; } = string.Empty;
+    [Parameter] public string Notes { get; set; } = string.Empty;
+
+    private string _altName = string.Empty;
+    private string _notes = string.Empty;
+
+    protected override void OnParametersSet()
+    {
+        _altName = AlternativeName;
+        _notes = Notes;
+    }
+
+    private void Confirm() =>
+        MudDialog.Close(DialogResult.Ok(new EquipmentItemEditResult(_altName.Trim(), _notes.Trim())));
+
+    private void Cancel() => MudDialog.Cancel();
+}

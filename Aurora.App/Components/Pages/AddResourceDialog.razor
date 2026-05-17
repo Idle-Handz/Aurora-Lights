@@ -5,13 +5,17 @@
         <MudText Typo="Typo.h6">@(IsEdit ? "Edit Resource" : "Add Resource")</MudText>
     </TitleContent>
     <DialogContent>
-        <div style="display: flex; flex-direction: column; gap: 12px; padding-top: 4px; min-width: 280px;">
+        <div class="resource-dialog-content">
             <MudTextField @bind-Value="_name"
                           Label="Name"
                           Placeholder="e.g. Bardic Inspiration"
                           Variant="Variant.Outlined"
                           Immediate="true"
                           HelperText=" " />
+            @if (!string.IsNullOrWhiteSpace(_nameError))
+            {
+                <MudAlert Severity="Severity.Warning" Dense="true">@_nameError</MudAlert>
+            }
             <MudNumericField @bind-Value="_max"
                              Label="Max"
                              Min="1" Max="99"
@@ -47,6 +51,7 @@
     private string  _name    = "";
     private int     _max     = 1;
     private ResetOn _resetOn = ResetOn.LongRest;
+    private string? _nameError;
 
     protected override void OnParametersSet()
     {
@@ -62,7 +67,12 @@
 
     private void Submit()
     {
-        if (string.IsNullOrWhiteSpace(_name)) return;
+        if (string.IsNullOrWhiteSpace(_name))
+        {
+            _nameError = "Enter a resource name.";
+            return;
+        }
+        _nameError = null;
 
         var result = Existing != null
             ? new CustomResource { Id = Existing.Id, Name = _name.Trim(), Max = _max, Used = Existing.Used, ResetOn = _resetOn }

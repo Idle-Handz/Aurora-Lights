@@ -78,6 +78,27 @@ public static class ContentFixture
     }
 
     /// <summary>
+    /// Returns a .dnd5e character file that has at least one saved equipment item.
+    /// </summary>
+    public static string? FindCharacterFileWithEquipment()
+    {
+        var dir = DataManager.Current.UserDocumentsRootDirectory;
+        if (!Directory.Exists(dir)) return null;
+        foreach (var file in Directory.EnumerateFiles(dir, "*.dnd5e", SearchOption.TopDirectoryOnly))
+        {
+            try
+            {
+                var content = File.ReadAllText(file);
+                if (content.Contains("<equipment", StringComparison.OrdinalIgnoreCase) &&
+                    content.Contains("<item ", StringComparison.OrdinalIgnoreCase))
+                    return file;
+            }
+            catch { /* skip unreadable files */ }
+        }
+        return null;
+    }
+
+    /// <summary>
     /// Returns a .dnd5e character file that is known to have a prepared spellcasting class,
     /// by scanning files in the characters directory until one with a &lt;spellcasting&gt;
     /// section containing <c>prepared="true"</c> is found. Returns null if none found.

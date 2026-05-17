@@ -69,6 +69,15 @@ public sealed class BuildRuleClassifierTests
         => Classify("Feat", ownerType: "Variant").Should().Be(BuildRuleBucket.Feat);
 
     [Fact]
+    public void VariantHumanFeat_RoutesToFeatAndUsesRacialGroup()
+    {
+        Classify("Feat", ownerType: "Variant", ownerName: "Human Variant")
+            .Should().Be(BuildRuleBucket.Feat);
+
+        BuildRuleClassifier.GetFeatGroupLabel("Variant").Should().Be("Racial");
+    }
+
+    [Fact]
     public void FeatFeature_FromRace_RoutesToFeat()
         => Classify("Feat Feature", ownerType: "Race").Should().Be(BuildRuleBucket.Feat);
 
@@ -146,6 +155,15 @@ public sealed class BuildRuleClassifierTests
         => Classify("Racial Trait", ownerType: "Race", ruleName: "Ability Score Increase")
                .Should().Be(BuildRuleBucket.AbilityScores);
 
+    [Fact]
+    public void VariantHumanAbilityScoreIncrease_RoutesToAbilityScores()
+        => Classify(
+                "Racial Trait",
+                ownerType: "Variant",
+                ruleName: "Ability Score Increase (Human Variant)",
+                ownerName: "Human Variant")
+            .Should().Be(BuildRuleBucket.AbilityScores);
+
     // ── Companion rules ───────────────────────────────────────────────────────────
 
     [Theory]
@@ -180,4 +198,23 @@ public sealed class BuildRuleClassifierTests
     [InlineData("Unknown", "")]
     public void GetFeatGroupLabel_ReturnsExpected(string ownerType, string expected)
         => BuildRuleClassifier.GetFeatGroupLabel(ownerType).Should().Be(expected);
+
+    [Theory]
+    [InlineData("Personality Trait")]
+    [InlineData("Ideal")]
+    [InlineData("Bond")]
+    [InlineData("Flaw")]
+    [InlineData("Variant Feature")]
+    public void FlavorSelectionLabels_AreOptional(string label)
+        => BuildRuleClassifier.IsOptionalFlavorSelection(label).Should().BeTrue();
+
+    [Theory]
+    [InlineData("Race")]
+    [InlineData("Class")]
+    [InlineData("Background")]
+    [InlineData("Skill")]
+    [InlineData("Feat")]
+    [InlineData("Ability Score Increase")]
+    public void FunctionalSelections_AreNotOptionalFlavor(string label)
+        => BuildRuleClassifier.IsOptionalFlavorSelection(label).Should().BeFalse();
 }

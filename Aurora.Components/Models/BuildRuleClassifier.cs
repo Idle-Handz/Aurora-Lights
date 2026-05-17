@@ -64,6 +64,15 @@ public static class BuildRuleClassifier
         "Companion", "Companion Feature",
     };
 
+    public static readonly HashSet<string> OptionalFlavorLabels = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Personality Trait",
+        "Ideal",
+        "Bond",
+        "Flaw",
+        "Variant Feature",
+    };
+
     /// <summary>
     /// Classifies a selection rule into a Build tab bucket.
     /// </summary>
@@ -122,6 +131,9 @@ public static class BuildRuleClassifier
         if (ClassTypes.Contains(ownerType))      return "Class";
         return string.Empty;
     }
+
+    public static bool IsOptionalFlavorSelection(string label) =>
+        OptionalFlavorLabels.Contains(label);
 
     private static bool IsAbilityScoresRule(string ruleType, string ruleName, string ownerType, string ownerName)
     {

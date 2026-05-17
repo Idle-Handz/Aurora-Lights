@@ -3,7 +3,7 @@
         <MudText Typo="Typo.h6" Style="font-size: 15px; font-weight: 600;">Import Character</MudText>
     </TitleContent>
     <DialogContent>
-        <div style="min-width: 480px; max-width: 640px;">
+        <div class="pdf-import-dialog-content">
 
             @if (_state == State.Idle)
             {
@@ -68,6 +68,12 @@
                                            StartIcon="@Icons.Material.Filled.OpenInBrowser"
                                            OnClick="@(() => OpenApiUrlAsync(apiUrl))">
                                     Open
+                                </MudButton>
+                                <MudButton Size="Size.Small"
+                                           Variant="Variant.Text"
+                                           StartIcon="@Icons.Material.Filled.ContentCopy"
+                                           OnClick="@(() => CopyApiUrlAsync(apiUrl))">
+                                    @(_apiUrlCopied ? "Copied" : "Copy")
                                 </MudButton>
                             </div>
                             <MudText Style="font-size: 11px; color: var(--mud-palette-text-disabled);">
@@ -224,6 +230,7 @@
 @inject CharacterService Characters
 @inject ContentDatabaseService ContentDb
 @inject IDialogService DialogService
+@inject IJSRuntime JS
 
 @code {
     [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
@@ -234,6 +241,7 @@
     private string? _error;
     private string _outputFileName = "";
     private string _ddbUrl         = "";
+    private bool _apiUrlCopied;
 
     private ParsedCharacterSheet? _sheet;
     private ImportResult? _result;
@@ -255,6 +263,24 @@
     {
         try { await Launcher.OpenAsync(new Uri(url)); }
         catch { }
+    }
+
+    private async Task CopyApiUrlAsync(string url)
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", url);
+            _apiUrlCopied = true;
+            StateHasChanged();
+            await Task.Delay(1600);
+            _apiUrlCopied = false;
+        }
+        catch
+        {
+            _error = "Could not copy the API URL. Select the text and copy it manually.";
+        }
+
+        StateHasChanged();
     }
 
     // ── PDF import ────────────────────────────────────────────────────────────

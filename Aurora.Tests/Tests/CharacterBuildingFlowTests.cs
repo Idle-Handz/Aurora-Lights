@@ -84,6 +84,54 @@ public sealed class CharacterBuildingFlowTests : IAsyncLifetime
         character.Level.Should().BeGreaterThan(0, "every character must have at least level 1");
     }
 
+    [Fact]
+    public async Task EquipmentItem_CustomNameAndNotes_SurviveSerializeReloadCycle()
+    {
+        if (!ContentFixture.SkipIfUnavailable(_output)) return;
+
+        var path = ContentFixture.FindCharacterFileWithEquipment();
+        if (path is null) { _output.WriteLine("[SKIP] No .dnd5e character files with equipment found."); return; }
+
+        var file = new CharacterFile(path);
+        CharacterLoadCompatibilityService.PrepareForCharacterLoad();
+        await file.Load();
+
+        var character = CharacterManager.Current.Character;
+        character.Should().NotBeNull();
+
+        var item = character!.Inventory.Items.FirstOrDefault();
+        if (item is null) { _output.WriteLine("[SKIP] Character has no inventory items after load."); return; }
+
+        var identifier = item.Identifier;
+        var alias = $"Test Alias {Guid.NewGuid():N}";
+        var notes = $"Test notes {Guid.NewGuid():N}";
+
+        item.AlternativeName = alias;
+        item.Notes = notes;
+
+        var bytes = file.SerializeCharacter(character);
+        bytes.Should().NotBeNullOrEmpty();
+
+        var tempPath = Path.Combine(Path.GetTempPath(), $"aurora_test_{Guid.NewGuid():N}.dnd5e");
+        try
+        {
+            await File.WriteAllBytesAsync(tempPath, bytes);
+            CharacterLoadCompatibilityService.PrepareForCharacterLoad();
+            await new CharacterFile(tempPath).Load();
+        }
+        finally
+        {
+            if (File.Exists(tempPath)) File.Delete(tempPath);
+        }
+
+        var reloadedItem = CharacterManager.Current.Character?.Inventory.Items
+            .FirstOrDefault(i => i.Identifier.Equals(identifier, StringComparison.OrdinalIgnoreCase));
+
+        reloadedItem.Should().NotBeNull("equipment item edits should be saved with the item identifier");
+        reloadedItem!.AlternativeName.Should().Be(alias);
+        reloadedItem.Notes.Should().Be(notes);
+    }
+
     // ── Prepared spell round-trip ─────────────────────────────────────────────
 
     [Fact]

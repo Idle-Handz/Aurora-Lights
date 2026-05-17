@@ -39,3 +39,5 @@ public sealed record EquipmentCoinChangeModel(string CoinId, long Value);
 public sealed record EquipmentAmountChangeModel(string Identifier, int Amount);
 
 public sealed record EquipmentNoteChangeModel(string NoteId, string Value);
+
+public sealed record EquipmentItemEditResult(string AlternativeName, string Notes);

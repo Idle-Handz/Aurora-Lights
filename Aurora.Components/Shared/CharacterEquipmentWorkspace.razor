@@ -183,15 +183,27 @@
                         <span>@item.DisplayWeight</span>
                         <span>@item.DisplayPrice</span>
                         <span>
-                            @if (OnRemoveItem.HasDelegate)
-                            {
-                                <button type="button"
-                                        class="equipment-remove-button"
-                                        disabled="@Busy"
-                                        @onclick="() => OnRemoveItem.InvokeAsync(item.Identifier)">
-                                    ×
-                                </button>
-                            }
+                            <div class="equipment-item-actions">
+                                @if (OnEditItem.HasDelegate)
+                                {
+                                    <button type="button"
+                                            class="equipment-edit-button"
+                                            disabled="@Busy"
+                                            title="Rename or add notes"
+                                            @onclick="() => OnEditItem.InvokeAsync(item.Identifier)">
+                                        ✏
+                                    </button>
+                                }
+                                @if (OnRemoveItem.HasDelegate)
+                                {
+                                    <button type="button"
+                                            class="equipment-remove-button"
+                                            disabled="@Busy"
+                                            @onclick="() => OnRemoveItem.InvokeAsync(item.Identifier)">
+                                        ×
+                                    </button>
+                                }
+                            </div>
                         </span>
                     </div>
                 }
@@ -260,6 +272,9 @@
 
     [Parameter]
     public EventCallback<EquipmentNoteChangeModel> OnNoteChanged { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnEditItem { get; set; }
 
     private Task ChangeAmountAsync(string identifier, ChangeEventArgs args)
     {
