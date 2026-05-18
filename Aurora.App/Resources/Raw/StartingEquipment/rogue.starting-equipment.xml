@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<aurora-starting-equipment>
+    <entry element-id="ID_WOTC_PHB_CLASS_ROGUE">
+        <starting-equipment>
+            <gold-alternative roll="4d4" multiplier="10" />
+
+            <!-- (a) a rapier or (b) a shortsword -->
+            <choice>
+                <option label="a">
+                    <item id="ID_WOTC_PHB_WEAPON_RAPIER" />
+                </option>
+                <option label="b">
+                    <item id="ID_WOTC_PHB_WEAPON_SHORTSWORD" />
+                </option>
+            </choice>
+
+            <!-- (a) a shortbow and quiver of 20 arrows or (b) a shortsword -->
+            <choice>
+                <option label="a">
+                    <item id="ID_WOTC_PHB_WEAPON_SHORTBOW" />
+                    <item id="ID_WOTC_PHB_ITEM_QUIVER" />
+                    <item id="ID_WOTC_PHB_ITEM_ARROW" count="20" />
+                </option>
+                <option label="b">
+                    <item id="ID_WOTC_PHB_WEAPON_SHORTSWORD" />
+                </option>
+            </choice>
+
+            <!-- (a) a burglar's pack, (b) a dungeoneer's pack, or (c) an explorer's pack -->
+            <choice>
+                <option label="a">
+                    <item id="ID_WOTC_ITEM_BURGLARS_PACK" />
+                </option>
+                <option label="b">
+                    <item id="ID_WOTC_ITEM_DUNGEONEERS_PACK" />
+                </option>
+                <option label="c">
+                    <item id="ID_WOTC_ITEM_EXPLORERS_PACK" />
+                </option>
+            </choice>
+
+            <!-- Fixed: leather armor, two daggers, and thieves' tools -->
+            <item id="ID_WOTC_ARMOR_LIGHT_LEATHER" />
+            <item id="ID_WOTC_PHB_WEAPON_DAGGER" count="2" />
+            <item id="ID_WOTC_PHB_ITEM_TOOL_THIEVES_TOOLS" />
+        </starting-equipment>
+    </entry>
+</aurora-starting-equipment>

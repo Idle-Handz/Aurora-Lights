@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<aurora-starting-equipment>
+    <entry element-id="ID_BACKGROUND_OUTLANDER">
+        <starting-equipment>
+            <item id="ID_WOTC_PHB_WEAPON_QUARTERSTAFF" />
+            <item id="ID_WOTC_PHB_ITEM_HUNTINGTRAP" />
+            <item id="ID_WOTC_PHB_ITEM_CLOTHES_TRAVELERS" />
+            <item id="ID_WOTC_PHB_ITEM_POUCH" />
+            <gold amount="10" />
+        </starting-equipment>
+    </entry>
+</aurora-starting-equipment>

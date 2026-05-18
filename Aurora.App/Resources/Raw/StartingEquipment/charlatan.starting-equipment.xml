@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<aurora-starting-equipment>
+    <entry element-id="ID_BACKGROUND_CHARLATAN">
+        <starting-equipment>
+            <item id="ID_WOTC_PHB_ITEM_CLOTHES_FINE" />
+            <item id="ID_WOTC_PHB_ITEM_TOOL_DISGUISE_KIT" />
+            <!-- Con tools: use a dice set as the stand-in -->
+            <item id="ID_WOTC_PHB_ITEM_TOOL_DICE_SET" name="Con Tools (e.g. weighted dice)" />
+            <item id="ID_WOTC_PHB_ITEM_POUCH" />
+            <gold amount="15" />
+        </starting-equipment>
+    </entry>
+</aurora-starting-equipment>

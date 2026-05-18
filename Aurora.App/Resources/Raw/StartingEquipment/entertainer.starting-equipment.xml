@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<aurora-starting-equipment>
+    <entry element-id="ID_BACKGROUND_ENTERTAINER">
+        <starting-equipment>
+            <!-- Musical instrument of your choice -->
+            <choice>
+                <option label="lute">
+                    <item id="ID_WOTC_SRD_INSTRUMENT_LUTE" />
+                </option>
+                <option label="other">
+                    <item category="Musical Instrument" />
+                </option>
+            </choice>
+
+            <item id="ID_WOTC_PHB_ITEM_CLOTHES_COSTUME" />
+            <item id="ID_WOTC_PHB_ITEM_POUCH" />
+            <gold amount="15" />
+        </starting-equipment>
+    </entry>
+</aurora-starting-equipment>

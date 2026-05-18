@@ -740,8 +740,7 @@ else if (_workflowSuggestion != null)
     private string GetBuildTabLabel(BuildTabGroup tab) =>
         tab.UnresolvedCount > 0 ? $"{tab.Label} ({tab.UnresolvedCount})" : tab.Label;
 
-    private static bool IsOptionalEntry(SelectionRuleEntry entry) =>
-        entry.Rule?.Attributes?.Optional == true || BuildRuleClassifier.IsOptionalFlavorSelection(entry.Label);
+    private static bool IsOptionalEntry(SelectionRuleEntry entry) => entry.IsOptional;
 
     private string GetRuleRowClass(SelectionRuleEntry entry)
     {
@@ -770,14 +769,10 @@ else if (_workflowSuggestion != null)
     {
         if (_snap == null) return false;
 
-        var fields = new[]
-        {
-            _snap.Backstory, _snap.Notes1, _snap.Notes2, _snap.Alignment, _snap.Deity,
-            _snap.Organisation, _snap.Allies
-        };
-
-        int filled = fields.Count(v => !string.IsNullOrWhiteSpace(v));
-        return filled < 3;
+        // Notes2/Allies/Organisation are populated from optional Bond/Ideal/Flaw selections;
+        // exclude them so unselected optional flavor choices don't keep nagging the player.
+        var fields = new[] { _snap.Backstory, _snap.Notes1, _snap.Alignment, _snap.Deity };
+        return fields.Count(v => !string.IsNullOrWhiteSpace(v)) < 2;
     }
 
     private bool NeedsCharacterAppearanceDetails()

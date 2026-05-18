@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<aurora-starting-equipment>
+    <entry element-id="ID_WOTC_PHB_CLASS_BARBARIAN">
+        <starting-equipment>
+            <gold-alternative roll="2d4" multiplier="10" />
+
+            <!-- (a) a greataxe or (b) any martial melee weapon -->
+            <choice>
+                <option label="a">
+                    <item id="ID_WOTC_PHB_WEAPON_GREATAXE" />
+                </option>
+                <option label="b">
+                    <item category="Martial Weapon" />
+                </option>
+            </choice>
+
+            <!-- (a) two handaxes or (b) any simple weapon -->
+            <choice>
+                <option label="a">
+                    <item id="ID_WOTC_PHB_WEAPON_HANDAXE" count="2" />
+                </option>
+                <option label="b">
+                    <item category="Simple Weapon" />
+                </option>
+            </choice>
+
+            <!-- Fixed: an explorer's pack and four javelins -->
+            <item id="ID_WOTC_ITEM_EXPLORERS_PACK" />
+            <item id="ID_WOTC_PHB_WEAPON_JAVELIN" count="4" />
+        </starting-equipment>
+    </entry>
+</aurora-starting-equipment>

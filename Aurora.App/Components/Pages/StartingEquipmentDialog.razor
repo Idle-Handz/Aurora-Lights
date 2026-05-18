@@ -1,0 +1,428 @@
+@using Aurora.Components.Models
+@using Builder.Presentation.Services.Data
+@inject IDialogService DialogService
+
+<MudDialog Style="max-height: 90vh; width: min(700px, 95vw);">
+    <TitleContent>
+        <MudText Typo="Typo.h6" Style="font-size: 15px; font-weight: 600;">Starting Equipment</MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (!ClassBlock.HasContent && !BackgroundBlock.HasContent)
+        {
+            <MudText Color="Color.Secondary" Style="font-size: 13px; padding: 8px 0;">
+                No structured starting equipment is defined for this character's class or background yet.
+            </MudText>
+        }
+
+        @* ── Class section ── *@
+        @if (ClassBlock.HasContent)
+        {
+            <div class="se-section-label">Class Equipment</div>
+
+            @if (ClassBlock.GoldAlternative != null)
+            {
+                <div class="se-gold-row">
+                    <MudCheckBox @bind-Value="_takeClassGold"
+                                 Color="Color.Warning"
+                                 Size="Size.Small" />
+                    <span class="se-gold-label" @onclick="() => _takeClassGold = !_takeClassGold">
+                        Take <strong>@GoldAltLabel(ClassBlock.GoldAlternative)</strong> instead of all equipment
+                    </span>
+                </div>
+                @if (_takeClassGold && ClassBlock.GoldAlternative.IsRolled)
+                {
+                    <div class="se-rolled-gold-note">
+                        Roll @ClassBlock.GoldAlternative.Roll at the table
+                        @if (ClassBlock.GoldAlternative.Multiplier > 1)
+                        {
+                            <span> × @ClassBlock.GoldAlternative.Multiplier</span>
+                        }
+                        and add the result to your coin purse manually.
+                    </div>
+                }
+            }
+
+            @if (!_takeClassGold)
+            {
+                @for (int ci = 0; ci < ClassBlock.Choices.Count; ci++)
+                {
+                    var choice   = ClassBlock.Choices[ci];
+                    int idx      = ci;
+
+                    <div class="se-choice-row">
+                        @foreach (var (opt, oi) in choice.Options.Select((o, i) => (o, i)))
+                        {
+                            int optIdx   = oi;
+                            bool isSelected = _optionIndex[idx] == optIdx;
+
+                            <div class="se-option @(isSelected ? "se-option--selected" : "")"
+                                 @onclick="() => SelectOption(idx, optIdx)">
+                                <div class="se-option-header">
+                                    <div class="se-radio @(isSelected ? "se-radio--on" : "")"></div>
+                                    <span class="se-option-label">
+                                        @(string.IsNullOrEmpty(opt.Label) ? $"Option {oi + 1}" : opt.Label.ToUpperInvariant())
+                                    </span>
+                                </div>
+                                @foreach (var (item, ii) in opt.Items.Select((x, i) => (x, i)))
+                                {
+                                    string itemKey    = $"c{idx}_o{optIdx}_i{ii}";
+                                    bool   hasPick    = _categoryPicks.ContainsKey(itemKey);
+                                    string captKey    = itemKey;
+                                    string captCat    = item.Category ?? "";
+
+                                    <div class="se-item-row">
+                                        @if (item.IsCategory)
+                                        {
+                                            string display = hasPick
+                                                ? ResolveItemName(item, _categoryPicks[itemKey])
+                                                : $"Choose: {item.Category}";
+                                            @if (isSelected)
+                                            {
+                                                <span class="se-item-name se-item--pick @(!hasPick ? "se-item--unresolved" : "")"
+                                                      @onclick:stopPropagation="true"
+                                                      @onclick="@(async () => await PickCategoryAsync(captKey, captCat))">
+                                                    @display
+                                                </span>
+                                                <div @onclick:stopPropagation="true">
+                                                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                                                   Size="Size.Small"
+                                                                   title="Choose item"
+                                                                   OnClick="@(async () => await PickCategoryAsync(captKey, captCat))" />
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <span class="se-item-name @(!hasPick ? "se-item--unresolved" : "")">@display</span>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="se-item-name">@ResolveItemName(item, null)</span>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+
+                @* Fixed items always included with the class (e.g. explorer's pack, 10 darts) *@
+                @foreach (var (item, ii) in ClassBlock.FixedItems.Select((x, i) => (x, i)))
+                {
+                    string fixKey    = $"cf{ii}";
+                    bool   hasPick   = _categoryPicks.ContainsKey(fixKey);
+                    string captKey   = fixKey;
+                    string captCat   = item.Category ?? "";
+
+                    <div class="se-item-row">
+                        @if (item.IsCategory)
+                        {
+                            string display = hasPick
+                                ? ResolveItemName(item, _categoryPicks[fixKey])
+                                : $"Choose: {item.Category}";
+                            <span class="se-item-name se-item--pick @(!hasPick ? "se-item--unresolved" : "")"
+                                  @onclick="@(async () => await PickCategoryAsync(captKey, captCat))">
+                                @display
+                            </span>
+                            <div @onclick:stopPropagation="true">
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                               Size="Size.Small"
+                                               title="Choose item"
+                                               OnClick="@(async () => await PickCategoryAsync(captKey, captCat))" />
+                            </div>
+                        }
+                        else
+                        {
+                            <span class="se-item-name">@ResolveItemName(item, null)</span>
+                        }
+                    </div>
+                }
+            }
+        }
+
+        @* ── Background section ── *@
+        @if (BackgroundBlock.HasContent)
+        {
+            <div class="se-section-label" style="@(ClassBlock.HasContent ? "margin-top: 16px;" : "")">
+                Background Equipment
+            </div>
+
+            @* Background choice rows (e.g. holy symbol type) *@
+            @for (int bci = 0; bci < BackgroundBlock.Choices.Count; bci++)
+            {
+                var bchoice = BackgroundBlock.Choices[bci];
+                int bidx    = bci;
+
+                <div class="se-choice-row">
+                    @foreach (var (bopt, boi) in bchoice.Options.Select((o, i) => (o, i)))
+                    {
+                        int  boptIdx    = boi;
+                        bool bisSelected = _bgOptionIndex[bidx] == boptIdx;
+
+                        <div class="se-option @(bisSelected ? "se-option--selected" : "")"
+                             @onclick="() => SelectBgOption(bidx, boptIdx)">
+                            <div class="se-option-header">
+                                <div class="se-radio @(bisSelected ? "se-radio--on" : "")"></div>
+                                <span class="se-option-label">
+                                    @(string.IsNullOrEmpty(bopt.Label) ? $"Option {boi + 1}" : bopt.Label.ToUpperInvariant())
+                                </span>
+                            </div>
+                            @foreach (var (bitem, bii) in bopt.Items.Select((x, i) => (x, i)))
+                            {
+                                string bitemKey = $"bc{bidx}_o{boptIdx}_i{bii}";
+                                bool   bhasPick = _categoryPicks.ContainsKey(bitemKey);
+                                string bcaptKey = bitemKey;
+                                string bcaptCat = bitem.Category ?? "";
+
+                                <div class="se-item-row">
+                                    @if (bitem.IsCategory)
+                                    {
+                                        string bdisplay = bhasPick
+                                            ? ResolveItemName(bitem, _categoryPicks[bitemKey])
+                                            : $"Choose: {bitem.Category}";
+                                        @if (bisSelected)
+                                        {
+                                            <span class="se-item-name se-item--pick @(!bhasPick ? "se-item--unresolved" : "")"
+                                                  @onclick:stopPropagation="true"
+                                                  @onclick="@(async () => await PickCategoryAsync(bcaptKey, bcaptCat))">
+                                                @bdisplay
+                                            </span>
+                                            <div @onclick:stopPropagation="true">
+                                                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                                               Size="Size.Small"
+                                                               title="Choose item"
+                                                               OnClick="@(async () => await PickCategoryAsync(bcaptKey, bcaptCat))" />
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <span class="se-item-name @(!bhasPick ? "se-item--unresolved" : "")">@bdisplay</span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="se-item-name">@ResolveItemName(bitem, null)</span>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+
+            @foreach (var (item, ii) in BackgroundBlock.FixedItems.Select((x, i) => (x, i)))
+            {
+                string bgKey     = $"bg_i{ii}";
+                bool   hasBgPick = _categoryPicks.ContainsKey(bgKey);
+                string captBgKey = bgKey;
+                string captBgCat = item.Category ?? "";
+
+                <div class="se-item-row">
+                    @if (item.IsCategory)
+                    {
+                        string display = hasBgPick
+                            ? ResolveItemName(item, _categoryPicks[bgKey])
+                            : $"Choose: {item.Category}";
+                        <span class="se-item-name se-item--pick @(!hasBgPick ? "se-item--unresolved" : "")"
+                              @onclick="@(async () => await PickCategoryAsync(captBgKey, captBgCat))">
+                            @display
+                        </span>
+                        <div @onclick:stopPropagation="true">
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                           Size="Size.Small"
+                                           title="Choose item"
+                                           OnClick="@(async () => await PickCategoryAsync(captBgKey, captBgCat))" />
+                        </div>
+                    }
+                    else
+                    {
+                        <span class="se-item-name">@ResolveItemName(item, null)</span>
+                    }
+                </div>
+            }
+
+            @if (BackgroundBlock.FixedGold > 0)
+            {
+                <div class="se-item-row">
+                    <span class="se-item-name se-gold-amount">@BackgroundBlock.FixedGold gp</span>
+                </div>
+            }
+        }
+    </DialogContent>
+    <DialogActions>
+        @if (HasUnresolved)
+        {
+            <MudText Color="Color.Warning" Style="font-size: 12px; margin-right: auto; padding-left: 8px;">
+                Click the highlighted items to make your choices.
+            </MudText>
+        }
+        <MudButton OnClick="Cancel" Variant="Variant.Text">Cancel</MudButton>
+        <MudTooltip Text="@(HasUnresolved ? "Finish selecting highlighted items first." : "")" Placement="Placement.Top">
+            <MudButton Color="Color.Primary"
+                       Variant="Variant.Filled"
+                       Disabled="@HasUnresolved"
+                       OnClick="Confirm">
+                Apply to Inventory
+            </MudButton>
+        </MudTooltip>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter] public StartingEquipmentBlock ClassBlock      { get; set; } = StartingEquipmentBlock.Empty;
+    [Parameter] public StartingEquipmentBlock BackgroundBlock { get; set; } = StartingEquipmentBlock.Empty;
+
+    private bool _takeClassGold;
+    private int[] _optionIndex   = [];
+    private int[] _bgOptionIndex = [];
+    private readonly Dictionary<string, string> _categoryPicks = new();
+
+    protected override void OnParametersSet()
+    {
+        _optionIndex   = new int[ClassBlock.Choices.Count];
+        _bgOptionIndex = new int[BackgroundBlock.Choices.Count];
+    }
+
+    private void SelectOption(int ci, int oi)     => _optionIndex[ci]   = oi;
+    private void SelectBgOption(int bci, int boi) => _bgOptionIndex[bci] = boi;
+
+    private static string GoldAltLabel(GoldAlternative alt) =>
+        alt.IsRolled
+            ? (alt.Multiplier > 1 ? $"{alt.Roll} × {alt.Multiplier} gp" : $"{alt.Roll} gp")
+            : $"{alt.Amount ?? 0} gp";
+
+    private bool HasUnresolved
+    {
+        get
+        {
+            if (!_takeClassGold)
+            {
+                for (int ci = 0; ci < ClassBlock.Choices.Count; ci++)
+                {
+                    int oi = _optionIndex[ci];
+                    var opts = ClassBlock.Choices[ci].Options;
+                    if (oi >= opts.Count) continue;
+                    foreach (var (item, ii) in opts[oi].Items.Select((x, i) => (x, i)))
+                        if (item.IsCategory && !_categoryPicks.ContainsKey($"c{ci}_o{oi}_i{ii}"))
+                            return true;
+                }
+                foreach (var (item, ii) in ClassBlock.FixedItems.Select((x, i) => (x, i)))
+                    if (item.IsCategory && !_categoryPicks.ContainsKey($"cf{ii}"))
+                        return true;
+            }
+            for (int bci = 0; bci < BackgroundBlock.Choices.Count; bci++)
+            {
+                int boi   = _bgOptionIndex[bci];
+                var bopts = BackgroundBlock.Choices[bci].Options;
+                if (boi >= bopts.Count) continue;
+                foreach (var (bitem, bii) in bopts[boi].Items.Select((x, i) => (x, i)))
+                    if (bitem.IsCategory && !_categoryPicks.ContainsKey($"bc{bci}_o{boi}_i{bii}"))
+                        return true;
+            }
+            foreach (var (item, ii) in BackgroundBlock.FixedItems.Select((x, i) => (x, i)))
+                if (item.IsCategory && !_categoryPicks.ContainsKey($"bg_i{ii}"))
+                    return true;
+            return false;
+        }
+    }
+
+    private string LookupName(string id) =>
+        DataManager.Current.ElementsCollection.FirstOrDefault(e => e.Id == id)?.Name ?? id;
+
+    private string ResolveItemName(EquipmentItem item, string? overrideId)
+    {
+        // item.Name is an explicit display override (e.g. a generic element renamed to "Incense").
+        string name = item.Name
+            ?? (overrideId != null ? LookupName(overrideId)
+              : item.Id   != null  ? LookupName(item.Id)
+              : (item.Category ?? "?"));
+        return item.Count > 1 ? $"{name} × {item.Count}" : name;
+    }
+
+    private async Task PickCategoryAsync(string key, string category)
+    {
+        var parameters = new DialogParameters
+        {
+            [nameof(ItemPickerDialog.Category)] = string.IsNullOrWhiteSpace(category) ? null : category,
+        };
+        var dialog = await DialogService.ShowAsync<ItemPickerDialog>("", parameters);
+        var result = await dialog.Result;
+        if (result is { Canceled: false, Data: ItemPickerResult pick })
+        {
+            _categoryPicks[key] = pick.ElementId;
+            StateHasChanged();
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private void Confirm()
+    {
+        var items = new List<(string ElementId, int Count, string? Name)>();
+        int  gold           = 0;
+        bool tookRolledGold = false;
+
+        if (_takeClassGold && ClassBlock.GoldAlternative != null)
+        {
+            if (ClassBlock.GoldAlternative.IsRolled)
+                tookRolledGold = true;
+            else
+                gold += ClassBlock.GoldAlternative.Amount ?? 0;
+        }
+        else
+        {
+            for (int ci = 0; ci < ClassBlock.Choices.Count; ci++)
+            {
+                int oi   = _optionIndex[ci];
+                var opts = ClassBlock.Choices[ci].Options;
+                if (oi >= opts.Count) continue;
+                foreach (var (item, ii) in opts[oi].Items.Select((x, i) => (x, i)))
+                {
+                    string? id = item.IsCategory
+                        ? _categoryPicks.GetValueOrDefault($"c{ci}_o{oi}_i{ii}")
+                        : item.Id;
+                    if (!string.IsNullOrEmpty(id))
+                        items.Add((id, item.Count, item.Name));
+                }
+            }
+            foreach (var (item, ii) in ClassBlock.FixedItems.Select((x, i) => (x, i)))
+            {
+                string? id = item.IsCategory
+                    ? _categoryPicks.GetValueOrDefault($"cf{ii}")
+                    : item.Id;
+                if (!string.IsNullOrEmpty(id))
+                    items.Add((id, item.Count, item.Name));
+            }
+        }
+
+        for (int bci = 0; bci < BackgroundBlock.Choices.Count; bci++)
+        {
+            int boi   = _bgOptionIndex[bci];
+            var bopts = BackgroundBlock.Choices[bci].Options;
+            if (boi >= bopts.Count) continue;
+            foreach (var (bitem, bii) in bopts[boi].Items.Select((x, i) => (x, i)))
+            {
+                string? id = bitem.IsCategory
+                    ? _categoryPicks.GetValueOrDefault($"bc{bci}_o{boi}_i{bii}")
+                    : bitem.Id;
+                if (!string.IsNullOrEmpty(id))
+                    items.Add((id, bitem.Count, bitem.Name));
+            }
+        }
+
+        foreach (var (item, ii) in BackgroundBlock.FixedItems.Select((x, i) => (x, i)))
+        {
+            string? id = item.IsCategory
+                ? _categoryPicks.GetValueOrDefault($"bg_i{ii}")
+                : item.Id;
+            if (!string.IsNullOrEmpty(id))
+                items.Add((id, item.Count, item.Name));
+        }
+
+        gold += BackgroundBlock.FixedGold;
+
+        MudDialog.Close(new StartingEquipmentResult(items, gold, tookRolledGold));
+    }
+}

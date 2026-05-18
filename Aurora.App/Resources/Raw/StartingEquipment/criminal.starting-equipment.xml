@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<aurora-starting-equipment>
+    <entry element-id="ID_BACKGROUND_CRIMINAL">
+        <starting-equipment>
+            <item id="ID_WOTC_PHB_ITEM_CROWBAR" />
+            <item id="ID_WOTC_PHB_ITEM_CLOTHES_COMMON" />
+            <item id="ID_WOTC_PHB_ITEM_POUCH" />
+            <gold amount="15" />
+        </starting-equipment>
+    </entry>
+</aurora-starting-equipment>

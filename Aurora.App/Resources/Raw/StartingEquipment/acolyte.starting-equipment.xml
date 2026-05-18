@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<aurora-starting-equipment>
+    <entry element-id="ID_BACKGROUND_ACOLYTE">
+        <starting-equipment>
+            <!-- Holy symbol: player chooses the form (amulet, emblem, or reliquary) -->
+            <choice>
+                <option label="amulet">
+                    <item id="ID_WOTC_PHB_ITEM_AMULET" />
+                </option>
+                <option label="emblem">
+                    <item id="ID_WOTC_PHB_ITEM_EMBLEM" />
+                </option>
+                <option label="reliquary">
+                    <item id="ID_WOTC_PHB_ITEM_RELIQUARY" />
+                </option>
+            </choice>
+
+            <!-- Prayer book (prayer wheel has no element ID in the PHB content) -->
+            <item id="ID_WOTC_PHB_ITEM_BOOK" />
+
+            <!-- 5 sticks of incense: no dedicated element; vial used as stand-in, renamed -->
+            <item id="ID_WOTC_PHB_ITEM_VIAL" name="Incense" count="5" />
+
+            <!-- Vestments: no dedicated element; Robes is the closest available item -->
+            <item id="ID_WOTC_PHB_ITEM_ROBES" />
+
+            <item id="ID_WOTC_PHB_ITEM_CLOTHES_COMMON" />
+            <item id="ID_WOTC_PHB_ITEM_POUCH" />
+
+            <gold amount="15" />
+        </starting-equipment>
+    </entry>
+</aurora-starting-equipment>

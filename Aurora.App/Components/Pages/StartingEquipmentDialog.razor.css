@@ -1,0 +1,127 @@
+.se-section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--mud-palette-text-secondary);
+    margin-bottom: 8px;
+}
+
+.se-gold-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 10px;
+}
+
+.se-gold-label {
+    font-size: 13px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.se-rolled-gold-note {
+    font-size: 12px;
+    color: var(--mud-palette-warning-text);
+    background: color-mix(in srgb, var(--mud-palette-warning) 12%, transparent);
+    border-radius: 4px;
+    padding: 6px 10px;
+    margin-bottom: 10px;
+}
+
+/* ── Choice layout ── */
+
+.se-choice-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.se-option {
+    flex: 1 1 130px; /* wraps on narrow screens; fills row when space allows */
+    border: 1px solid var(--mud-palette-lines-default);
+    border-radius: 6px;
+    padding: 8px 10px;
+    cursor: pointer;
+    transition: border-color 150ms, background 150ms;
+    min-width: 0;
+}
+
+.se-option:hover {
+    border-color: var(--mud-palette-primary);
+    background: color-mix(in srgb, var(--mud-palette-primary) 6%, transparent);
+}
+
+.se-option--selected {
+    border-color: var(--mud-palette-primary);
+    background: color-mix(in srgb, var(--mud-palette-primary) 10%, transparent);
+}
+
+.se-option-header {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 6px;
+}
+
+/* Lightweight custom radio indicator */
+.se-radio {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid var(--mud-palette-text-secondary);
+    flex-shrink: 0;
+    transition: border-color 150ms;
+}
+
+.se-radio--on {
+    border-color: var(--mud-palette-primary);
+    background: radial-gradient(circle, var(--mud-palette-primary) 40%, transparent 40%);
+}
+
+.se-option-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--mud-palette-text-secondary);
+}
+
+.se-option--selected .se-option-label {
+    color: var(--mud-palette-primary-text);
+}
+
+/* ── Item rows ── */
+
+.se-item-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 0;
+    min-height: 28px;
+}
+
+.se-item-name {
+    flex: 1;
+    font-size: 13px;
+    color: var(--mud-palette-text-primary);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.se-item--unresolved {
+    color: var(--mud-palette-warning-text);
+    font-style: italic;
+}
+
+.se-item--pick {
+    cursor: pointer;
+    text-decoration: underline dotted;
+}
+
+.se-gold-amount {
+    color: var(--mud-palette-warning-text);
+    font-weight: 500;
+}

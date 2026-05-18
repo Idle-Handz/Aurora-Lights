@@ -1,6 +1,8 @@
 <MudDialog Style="max-height: 90vh; width: min(700px, 95vw);">
     <TitleContent>
-        <MudText Typo="Typo.h6" Style="font-size: 15px; font-weight: 600;">Add Item to Inventory</MudText>
+        <MudText Typo="Typo.h6" Style="font-size: 15px; font-weight: 600;">
+            @(string.IsNullOrWhiteSpace(Category) ? "Add Item to Inventory" : $"Choose: {Category}")
+        </MudText>
     </TitleContent>
     <DialogContent>
         <div class="picker-layout">
@@ -19,7 +21,7 @@
                 @if (_results.Count == 0)
                 {
                     <MudText Color="Color.Secondary" Style="padding: 12px 0; font-size: 13px;">
-                        @(_search.Length < 2 ? "Type at least 2 characters to search." : "No items found.")
+                        @(NeedsMinQuery ? "Type at least 2 characters to search." : "No items found.")
                     </MudText>
                 }
                 else
@@ -89,20 +91,38 @@
 @code {
     [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
 
+    /// <summary>
+    /// Optional category filter (e.g. "Martial Weapon"). When set, search is scoped to that
+    /// category rather than all item types, and the dialog title reflects the category.
+    /// </summary>
+    [Parameter] public string? Category { get; set; }
+
     private string _search = "";
     private string? _selectedId;
     private ItemSearchResult? _selected;
     private int _amount = 1;
     private List<ItemSearchResult> _results = [];
 
+    // When filtering by category, show all matching items without a minimum query length.
+    private bool NeedsMinQuery => string.IsNullOrWhiteSpace(Category) && _search.Length < 2;
+
+    protected override void OnInitialized()
+    {
+        if (!string.IsNullOrWhiteSpace(Category))
+            RunSearch();
+    }
+
     private void RunSearch()
     {
-        if (_search.Length < 2)
+        if (string.IsNullOrWhiteSpace(Category))
         {
-            _results = [];
-            return;
+            if (_search.Length < 2) { _results = []; return; }
+            _results = EquipmentService.SearchItems(_search).ToList();
         }
-        _results = EquipmentService.SearchItems(_search).ToList();
+        else
+        {
+            _results = EquipmentService.SearchItemsByCategory(Category, _search).ToList();
+        }
     }
 
     private void SelectResult(ItemSearchResult r)

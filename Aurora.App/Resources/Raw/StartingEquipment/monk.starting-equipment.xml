@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<aurora-starting-equipment>
+    <entry element-id="ID_WOTC_PHB_CLASS_MONK">
+        <starting-equipment>
+            <gold-alternative roll="5d4" multiplier="10" />
+
+            <!-- (a) a shortsword or (b) any simple weapon -->
+            <choice>
+                <option label="a">
+                    <item id="ID_WOTC_PHB_WEAPON_SHORTSWORD" />
+                </option>
+                <option label="b">
+                    <item category="Simple Weapon" />
+                </option>
+            </choice>
+
+            <!-- (a) a dungeoneer's pack or (b) an explorer's pack -->
+            <choice>
+                <option label="a">
+                    <item id="ID_WOTC_ITEM_DUNGEONEERS_PACK" />
+                </option>
+                <option label="b">
+                    <item id="ID_WOTC_ITEM_EXPLORERS_PACK" />
+                </option>
+            </choice>
+
+            <!-- Fixed: 10 darts -->
+            <item id="ID_WOTC_PHB_WEAPON_DART" count="10" />
+        </starting-equipment>
+    </entry>
+</aurora-starting-equipment>

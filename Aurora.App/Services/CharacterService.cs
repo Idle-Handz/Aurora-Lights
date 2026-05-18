@@ -154,6 +154,7 @@ public sealed class CharacterService :
             ElementLoadSource = "Not loaded";
             ElementLoadSummary = "Elements have not been initialized yet.";
             ElementLoadDatabasePath = null;
+            StartingEquipmentDataLoader.Invalidate();
             ElementLoadSchemaVersion = null;
             ElementLoadDataVersion = null;
             ElementLoadImporterVersion = null;

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<aurora-starting-equipment>
+    <entry element-id="ID_WOTC_PHB_CLASS_FIGHTER">
+        <starting-equipment>
+            <gold-alternative roll="5d4" multiplier="10" />
+
+            <!-- (a) chain mail or (b) leather armor, longbow, and 20 arrows -->
+            <choice>
+                <option label="a">
+                    <item id="ID_WOTC_ARMOR_HEAVY_CHAIN_MAIL" />
+                </option>
+                <option label="b">
+                    <item id="ID_WOTC_ARMOR_LIGHT_LEATHER" />
+                    <item id="ID_WOTC_PHB_WEAPON_LONGBOW" />
+                    <item id="ID_WOTC_PHB_ITEM_ARROW" count="20" />
+                </option>
+            </choice>
+
+            <!-- (a) a martial weapon and a shield or (b) two martial weapons -->
+            <choice>
+                <option label="a">
+                    <item category="Martial Weapon" />
+                    <item id="ID_WOTC_GEAR_SHIELD" />
+                </option>
+                <option label="b">
+                    <item category="Martial Weapon" />
+                    <item category="Martial Weapon" />
+                </option>
+            </choice>
+
+            <!-- (a) a light crossbow and 20 bolts or (b) two handaxes -->
+            <choice>
+                <option label="a">
+                    <item id="ID_WOTC_PHB_WEAPON_CROSSBOW_LIGHT" />
+                    <item id="ID_WOTC_PHB_ITEM_CROSSBOWBOLT" count="20" />
+                </option>
+                <option label="b">
+                    <item id="ID_WOTC_PHB_WEAPON_HANDAXE" count="2" />
+                </option>
+            </choice>
+
+            <!-- (a) a dungeoneer's pack or (b) an explorer's pack -->
+            <choice>
+                <option label="a">
+                    <item id="ID_WOTC_ITEM_DUNGEONEERS_PACK" />
+                </option>
+                <option label="b">
+                    <item id="ID_WOTC_ITEM_EXPLORERS_PACK" />
+                </option>
+            </choice>
+        </starting-equipment>
+    </entry>
+</aurora-starting-equipment>

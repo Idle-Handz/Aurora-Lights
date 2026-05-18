@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<aurora-starting-equipment>
+    <entry element-id="ID_WOTC_PHB_CLASS_BARD">
+        <starting-equipment>
+            <gold-alternative roll="5d4" multiplier="10" />
+
+            <!-- (a) a rapier, (b) a longsword, or (c) any simple weapon -->
+            <choice>
+                <option label="a">
+                    <item id="ID_WOTC_PHB_WEAPON_RAPIER" />
+                </option>
+                <option label="b">
+                    <item id="ID_WOTC_PHB_WEAPON_LONGSWORD" />
+                </option>
+                <option label="c">
+                    <item category="Simple Weapon" />
+                </option>
+            </choice>
+
+            <!-- (a) a diplomat's pack or (b) an entertainer's pack -->
+            <choice>
+                <option label="a">
+                    <item id="ID_WOTC_ITEM_DIPLOMATS_PACK" />
+                </option>
+                <option label="b">
+                    <item id="ID_WOTC_ITEM_ENTERTAINERS_PACK" />
+                </option>
+            </choice>
+
+            <!-- (a) a lute or (b) any other musical instrument -->
+            <choice>
+                <option label="a">
+                    <item id="ID_WOTC_SRD_INSTRUMENT_LUTE" />
+                </option>
+                <option label="b">
+                    <item category="Musical Instrument" />
+                </option>
+            </choice>
+
+            <!-- Fixed: leather armor and a dagger -->
+            <item id="ID_WOTC_ARMOR_LIGHT_LEATHER" />
+            <item id="ID_WOTC_PHB_WEAPON_DAGGER" />
+        </starting-equipment>
+    </entry>
+</aurora-starting-equipment>

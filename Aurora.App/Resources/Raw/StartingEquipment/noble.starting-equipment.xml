@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<aurora-starting-equipment>
+    <entry element-id="ID_BACKGROUND_NOBLE">
+        <starting-equipment>
+            <item id="ID_WOTC_PHB_ITEM_CLOTHES_FINE" />
+            <item id="ID_WOTC_PHB_ITEM_SIGNETRING" />
+            <!-- Scroll of pedigree: use scroll case as stand-in -->
+            <item id="ID_WOTC_PHB_ITEM_CASE_MAPORSCROLL" name="Scroll of Pedigree" />
+            <item id="ID_WOTC_PHB_ITEM_POUCH" />
+            <gold amount="25" />
+        </starting-equipment>
+    </entry>
+</aurora-starting-equipment>

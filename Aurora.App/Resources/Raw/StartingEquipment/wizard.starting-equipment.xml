@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<aurora-starting-equipment>
+    <entry element-id="ID_WOTC_PHB_CLASS_WIZARD">
+        <starting-equipment>
+            <gold-alternative roll="4d4" multiplier="10" />
+
+            <!-- (a) a quarterstaff or (b) a dagger -->
+            <choice>
+                <option label="a">
+                    <item id="ID_WOTC_PHB_WEAPON_QUARTERSTAFF" />
+                </option>
+                <option label="b">
+                    <item id="ID_WOTC_PHB_WEAPON_DAGGER" />
+                </option>
+            </choice>
+
+            <!-- (a) a component pouch or (b) an arcane focus -->
+            <choice>
+                <option label="a">
+                    <item id="ID_WOTC_PHB_ITEM_COMPONENTPOUCH" />
+                </option>
+                <option label="b">
+                    <item category="Arcane Focus" />
+                </option>
+            </choice>
+
+            <!-- (a) a scholar's pack or (b) an explorer's pack -->
+            <choice>
+                <option label="a">
+                    <item id="ID_WOTC_ITEM_SCHOLARS_PACK" />
+                </option>
+                <option label="b">
+                    <item id="ID_WOTC_ITEM_EXPLORERS_PACK" />
+                </option>
+            </choice>
+
+            <!-- Fixed: a spellbook -->
+            <item id="ID_WOTC_PHB_ITEM_SPELLBOOK" />
+        </starting-equipment>
+    </entry>
+</aurora-starting-equipment>

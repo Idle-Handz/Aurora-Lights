@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<aurora-starting-equipment>
+    <entry element-id="ID_WOTC_PHB_CLASS_WARLOCK">
+        <starting-equipment>
+            <gold-alternative roll="4d4" multiplier="10" />
+
+            <!-- (a) a light crossbow and 20 bolts or (b) any simple weapon -->
+            <choice>
+                <option label="a">
+                    <item id="ID_WOTC_PHB_WEAPON_CROSSBOW_LIGHT" />
+                    <item id="ID_WOTC_PHB_ITEM_CROSSBOWBOLT" count="20" />
+                </option>
+                <option label="b">
+                    <item category="Simple Weapon" />
+                </option>
+            </choice>
+
+            <!-- (a) a component pouch or (b) an arcane focus -->
+            <choice>
+                <option label="a">
+                    <item id="ID_WOTC_PHB_ITEM_COMPONENTPOUCH" />
+                </option>
+                <option label="b">
+                    <item category="Arcane Focus" />
+                </option>
+            </choice>
+
+            <!-- (a) a scholar's pack or (b) a dungeoneer's pack -->
+            <choice>
+                <option label="a">
+                    <item id="ID_WOTC_ITEM_SCHOLARS_PACK" />
+                </option>
+                <option label="b">
+                    <item id="ID_WOTC_ITEM_DUNGEONEERS_PACK" />
+                </option>
+            </choice>
+
+            <!-- Fixed: leather armor, any simple weapon, and two daggers -->
+            <item id="ID_WOTC_ARMOR_LIGHT_LEATHER" />
+            <item category="Simple Weapon" />
+            <item id="ID_WOTC_PHB_WEAPON_DAGGER" count="2" />
+        </starting-equipment>
+    </entry>
+</aurora-starting-equipment>

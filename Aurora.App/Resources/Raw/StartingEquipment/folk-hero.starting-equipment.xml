@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<aurora-starting-equipment>
+    <entry element-id="ID_BACKGROUND_FOLK_HERO">
+        <starting-equipment>
+            <!-- Artisan's tools of your choice -->
+            <item category="Artisan's Tools" />
+
+            <item id="ID_WOTC_PHB_ITEM_SHOVEL" />
+            <item id="ID_WOTC_PHB_ITEM_POT_IRON" />
+            <item id="ID_WOTC_PHB_ITEM_CLOTHES_COMMON" />
+            <item id="ID_WOTC_PHB_ITEM_POUCH" />
+            <gold amount="10" />
+        </starting-equipment>
+    </entry>
+</aurora-starting-equipment>

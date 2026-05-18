@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<aurora-starting-equipment>
+    <entry element-id="ID_WOTC_PHB_CLASS_PALADIN">
+        <starting-equipment>
+            <gold-alternative roll="5d4" multiplier="10" />
+
+            <!-- (a) a martial weapon and a shield or (b) two martial weapons -->
+            <choice>
+                <option label="a">
+                    <item category="Martial Weapon" />
+                    <item id="ID_WOTC_GEAR_SHIELD" />
+                </option>
+                <option label="b">
+                    <item category="Martial Weapon" />
+                    <item category="Martial Weapon" />
+                </option>
+            </choice>
+
+            <!-- (a) five javelins or (b) any simple melee weapon -->
+            <choice>
+                <option label="a">
+                    <item id="ID_WOTC_PHB_WEAPON_JAVELIN" count="5" />
+                </option>
+                <option label="b">
+                    <item category="Simple Weapon" />
+                </option>
+            </choice>
+
+            <!-- (a) a priest's pack or (b) an explorer's pack -->
+            <choice>
+                <option label="a">
+                    <item id="ID_WOTC_ITEM_PRIESTS_PACK" />
+                </option>
+                <option label="b">
+                    <item id="ID_WOTC_ITEM_EXPLORERS_PACK" />
+                </option>
+            </choice>
+
+            <!-- Fixed: chain mail and a holy symbol -->
+            <item id="ID_WOTC_ARMOR_HEAVY_CHAIN_MAIL" />
+            <item id="ID_WOTC_PHB_ITEM_AMULET" />
+        </starting-equipment>
+    </entry>
+</aurora-starting-equipment>

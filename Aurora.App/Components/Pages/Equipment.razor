@@ -29,6 +29,15 @@
     return;
 }
 
+<div class="se-page-header">
+    <MudButton Variant="Variant.Outlined"
+               StartIcon="@Icons.Material.Filled.Inventory2"
+               Size="Size.Small"
+               OnClick="OpenStartingEquipmentAsync">
+        Starting Equipment
+    </MudButton>
+</div>
+
 <CharacterEquipmentWorkspace Model="@EquipmentModel"
                              OnAddItem="OpenAddItemDialog"
                              OnOpenGearSlot="OpenGearSlotDialogAsync"
@@ -425,6 +434,59 @@
 
         MarkDirty();
         return Task.CompletedTask;
+    }
+
+    private async Task OpenStartingEquipmentAsync()
+    {
+        var agg = await StartingEquipmentService.GetAllAsync();
+
+        var parameters = new DialogParameters
+        {
+            [nameof(StartingEquipmentDialog.ClassBlock)]      = agg.ClassBlock,
+            [nameof(StartingEquipmentDialog.BackgroundBlock)] = agg.BackgroundBlock,
+        };
+        var dialog = await DialogService.ShowAsync<StartingEquipmentDialog>("Starting Equipment", parameters);
+        var result = await dialog.Result;
+
+        if (result is not { Canceled: false, Data: StartingEquipmentResult se })
+            return;
+
+        var tab = Tabs.ActiveTab;
+        if (tab is not { Character: { } character, File: { } file })
+        {
+            WarnUnavailable("Starting equipment could not be applied because there is no active character.");
+            return;
+        }
+
+        using var scope = await CharacterContext.EnterAsync(tab);
+
+        foreach (var (id, count, name) in se.Items)
+        {
+            bool added = EquipmentService.AddItem(character, id, count);
+            if (added && !string.IsNullOrEmpty(name))
+            {
+                var liveItem = character.Inventory.Items.LastOrDefault();
+                if (liveItem != null)
+                    liveItem.AlternativeName = name;
+            }
+        }
+
+        RefreshEquipment();
+
+        if (se.Gold > 0 && _snap != null)
+            _snap.CoinGold += se.Gold;
+
+        if (se.TookRolledGold)
+        {
+            Snackbar.Add(
+                "Roll your gold dice and add the result to your coin purse manually.",
+                Severity.Info,
+                cfg => cfg.VisibleStateDuration = 5000);
+        }
+
+        file.SaveInventoryItems(character);
+        MarkDirty();
+        StateHasChanged();
     }
 
     private async Task EditItemAsync(string identifier)

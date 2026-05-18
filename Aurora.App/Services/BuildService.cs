@@ -626,11 +626,12 @@ public static class BuildService
 
                     if (!stillValid)
                     {
-                        // If this slot is optional and the entire supported set is empty
-                        // (e.g. dataset has no "Optional Background Feature" elements),
-                        // validation is meaningless — preserve the existing selection rather
-                        // than silently removing a choice the user made intentionally.
-                        if (r.Attributes.Optional && validIds.Count == 0)
+                        // If the entire supported set is empty, our evaluation can't enumerate
+                        // valid candidates (e.g. no elements with that supports tag in the loaded
+                        // dataset, or an unrecognised supports expression like "Custom Race Language").
+                        // Validation is meaningless in this case — preserve the user's selection
+                        // rather than silently clearing a choice that was valid when it was made.
+                        if (validIds.Count == 0)
                             continue;
 
                         DebugLogService.Instance.Log(LogLevel.Warning,
@@ -1372,7 +1373,7 @@ public static class BuildService
             {
                 foreach (var rule in group.Rules)
                 {
-                    if (rule.CurrentName == null)
+                    if (rule.CurrentName == null && !rule.IsOptional)
                     {
                         next = new BuildGuidanceTarget(
                             BuildGuidanceActionKind.Selection,
@@ -1405,7 +1406,7 @@ public static class BuildService
             {
                 foreach (var rule in group.Rules)
                 {
-                    if (rule.CurrentName == null)
+                    if (rule.CurrentName == null && !rule.IsOptional)
                     {
                         next = new BuildGuidanceTarget(
                             BuildGuidanceActionKind.Selection,
@@ -1691,7 +1692,7 @@ public static class BuildService
     }
 
     private static int CountUnresolved(IEnumerable<SelectionRuleGroup> groups) =>
-        groups.SelectMany(group => group.Rules).Count(rule => rule.CurrentName == null);
+        groups.SelectMany(g => g.Rules).Count(r => r.CurrentName == null && !r.IsOptional);
 
     private static string BuildEntryKey(string ruleType, string ruleName, int number) =>
         $"{ruleType}|{ruleName}|{number}";
@@ -1835,7 +1836,12 @@ public sealed record SelectionRuleEntry(
     string?    CurrentName,
     int        RequiredLevel,
     string     EntryKey = "",
-    int        SpellLevel = 0);
+    int        SpellLevel = 0)
+{
+    public bool IsOptional =>
+        Rule?.Attributes?.Optional == true ||
+        BuildRuleClassifier.IsOptionalFlavorSelection(Label);
+}
 
 public enum BuildGuidanceActionKind
 {

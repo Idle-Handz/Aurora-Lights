@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<aurora-starting-equipment>
+    <entry element-id="ID_WOTC_PHB_CLASS_CLERIC">
+        <starting-equipment>
+            <gold-alternative roll="5d4" multiplier="10" />
+
+            <!-- (a) a mace or (b) a warhammer -->
+            <choice>
+                <option label="a">
+                    <item id="ID_WOTC_PHB_WEAPON_MACE" />
+                </option>
+                <option label="b">
+                    <item id="ID_WOTC_PHB_WEAPON_WARHAMMER" />
+                </option>
+            </choice>
+
+            <!-- (a) scale mail, (b) leather armor, or (c) chain mail -->
+            <choice>
+                <option label="a">
+                    <item id="ID_WOTC_ARMOR_MEDIUM_SCALE_MAIL" />
+                </option>
+                <option label="b">
+                    <item id="ID_WOTC_ARMOR_LIGHT_LEATHER" />
+                </option>
+                <option label="c">
+                    <item id="ID_WOTC_ARMOR_HEAVY_CHAIN_MAIL" />
+                </option>
+            </choice>
+
+            <!-- (a) a light crossbow and 20 bolts or (b) any simple weapon -->
+            <choice>
+                <option label="a">
+                    <item id="ID_WOTC_PHB_WEAPON_CROSSBOW_LIGHT" />
+                    <item id="ID_WOTC_PHB_ITEM_CROSSBOWBOLT" count="20" />
+                </option>
+                <option label="b">
+                    <item category="Simple Weapon" />
+                </option>
+            </choice>
+
+            <!-- (a) a priest's pack or (b) an explorer's pack -->
+            <choice>
+                <option label="a">
+                    <item id="ID_WOTC_ITEM_PRIESTS_PACK" />
+                </option>
+                <option label="b">
+                    <item id="ID_WOTC_ITEM_EXPLORERS_PACK" />
+                </option>
+            </choice>
+
+            <!-- Fixed: a shield and a holy symbol -->
+            <item id="ID_WOTC_GEAR_SHIELD" />
+            <item id="ID_WOTC_PHB_ITEM_AMULET" />
+        </starting-equipment>
+    </entry>
+</aurora-starting-equipment>

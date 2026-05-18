@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<aurora-starting-equipment>
+    <entry element-id="ID_WOTC_PHB_CLASS_RANGER">
+        <starting-equipment>
+            <gold-alternative roll="5d4" multiplier="10" />
+
+            <!-- (a) scale mail or (b) leather armor -->
+            <choice>
+                <option label="a">
+                    <item id="ID_WOTC_ARMOR_MEDIUM_SCALE_MAIL" />
+                </option>
+                <option label="b">
+                    <item id="ID_WOTC_ARMOR_LIGHT_LEATHER" />
+                </option>
+            </choice>
+
+            <!-- (a) two shortswords or (b) two simple melee weapons -->
+            <choice>
+                <option label="a">
+                    <item id="ID_WOTC_PHB_WEAPON_SHORTSWORD" count="2" />
+                </option>
+                <option label="b">
+                    <item category="Simple Weapon" />
+                    <item category="Simple Weapon" />
+                </option>
+            </choice>
+
+            <!-- (a) a dungeoneer's pack or (b) an explorer's pack -->
+            <choice>
+                <option label="a">
+                    <item id="ID_WOTC_ITEM_DUNGEONEERS_PACK" />
+                </option>
+                <option label="b">
+                    <item id="ID_WOTC_ITEM_EXPLORERS_PACK" />
+                </option>
+            </choice>
+
+            <!-- Fixed: a longbow and a quiver of 20 arrows -->
+            <item id="ID_WOTC_PHB_WEAPON_LONGBOW" />
+            <item id="ID_WOTC_PHB_ITEM_QUIVER" />
+            <item id="ID_WOTC_PHB_ITEM_ARROW" count="20" />
+        </starting-equipment>
+    </entry>
+</aurora-starting-equipment>

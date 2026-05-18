@@ -133,7 +133,8 @@ public static class BuildRuleClassifier
     }
 
     public static bool IsOptionalFlavorSelection(string label) =>
-        OptionalFlavorLabels.Contains(label);
+        OptionalFlavorLabels.Contains(label) ||
+        OptionalFlavorLabels.Any(f => label.StartsWith(f + " (", StringComparison.OrdinalIgnoreCase));
 
     private static bool IsAbilityScoresRule(string ruleType, string ruleName, string ownerType, string ownerName)
     {

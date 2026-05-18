@@ -45,6 +45,104 @@ public static class EquipmentService
     }
 
     /// <summary>
+    /// Searches items filtered to a category string from a starting-equipment XML file
+    /// (e.g. "Martial Weapon", "Simple Weapon", "Arcane Focus").
+    /// Falls back to a supports-substring match for unrecognised categories.
+    /// </summary>
+    public static IReadOnlyList<ItemSearchResult> SearchItemsByCategory(string category, string query)
+    {
+        // Supports is a string collection; Contains checks for exact membership.
+        // Weapon categories use human-readable entries ("Martial", "Simple", "Melee", "Ranged")
+        // as well as the ID-based internal entries ("ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_MELEE", etc.).
+        // Checking both forms handles content from different sources.
+        IEnumerable<Builder.Data.ElementBase> source = category.Trim().ToLowerInvariant() switch
+        {
+            "martial weapon" => DataManager.Current.ElementsCollection.Where(e =>
+                e.Type == "Weapon" &&
+                (e.Supports.Contains("ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_MELEE",  StringComparer.OrdinalIgnoreCase) ||
+                 e.Supports.Contains("ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_RANGED", StringComparer.OrdinalIgnoreCase) ||
+                 e.Supports.Contains("Martial", StringComparer.OrdinalIgnoreCase))),
+
+            "simple weapon" => DataManager.Current.ElementsCollection.Where(e =>
+                e.Type == "Weapon" &&
+                (e.Supports.Contains("ID_INTERNAL_WEAPON_CATEGORY_SIMPLE_MELEE",   StringComparer.OrdinalIgnoreCase) ||
+                 e.Supports.Contains("ID_INTERNAL_WEAPON_CATEGORY_SIMPLE_RANGED",  StringComparer.OrdinalIgnoreCase) ||
+                 e.Supports.Contains("Simple", StringComparer.OrdinalIgnoreCase))),
+
+            "melee weapon" => DataManager.Current.ElementsCollection.Where(e =>
+                e.Type == "Weapon" && e.Supports.Contains("Melee", StringComparer.OrdinalIgnoreCase)),
+
+            "ranged weapon" => DataManager.Current.ElementsCollection.Where(e =>
+                e.Type == "Weapon" && e.Supports.Contains("Ranged", StringComparer.OrdinalIgnoreCase)),
+
+            // Arcane focus items have no <supports> — matched by known element IDs.
+            "arcane focus" => DataManager.Current.ElementsCollection.Where(e =>
+                new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    "ID_WOTC_PHB_ITEM_CRYSTAL", "ID_WOTC_PHB_ITEM_ORB", "ID_WOTC_PHB_ITEM_ROD",
+                    "ID_WOTC_PHB_ITEM_STAFF", "ID_WOTC_PHB_ITEM_WAND",
+                }.Contains(e.Id)),
+
+            // Druidic focus items have no <supports> — matched by known element IDs.
+            "druidic focus" => DataManager.Current.ElementsCollection.Where(e =>
+                new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    "ID_WOTC_PHB_ITEM_SPRIGOFMISTLETOE", "ID_WOTC_PHB_ITEM_TOTEM",
+                    "ID_WOTC_PHB_ITEM_WOODENSTAFF",      "ID_WOTC_PHB_ITEM_YEWWAND",
+                }.Contains(e.Id)),
+
+            // Musical instruments have no <supports> — matched by known element IDs.
+            "musical instrument" => DataManager.Current.ElementsCollection.Where(e =>
+                new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    "ID_WOTC_SRD_INSTRUMENT_BAGPIPES", "ID_WOTC_SRD_INSTRUMENT_DRUM",
+                    "ID_WOTC_SRD_INSTRUMENT_DULCIMER", "ID_WOTC_SRD_INSTRUMENT_FLUTE",
+                    "ID_WOTC_SRD_INSTRUMENT_HORN",     "ID_WOTC_SRD_INSTRUMENT_LUTE",
+                    "ID_WOTC_SRD_INSTRUMENT_LYRE",     "ID_WOTC_SRD_INSTRUMENT_PANFLUTE",
+                    "ID_WOTC_SRD_INSTRUMENT_SHAWM",    "ID_WOTC_SRD_INSTRUMENT_VIOL",
+                }.Contains(e.Id)),
+
+            // Artisan's tools have no <supports> — matched by known element IDs.
+            "artisan's tools" => DataManager.Current.ElementsCollection.Where(e =>
+                new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    "ID_WOTC_PHB_ITEM_TOOL_ALCHEMISTS_SUPPLIES",
+                    "ID_WOTC_PHB_ITEM_TOOL_BREWERS_SUPPLIES",
+                    "ID_WOTC_PHB_ITEM_TOOL_CALLIGRAPHERS_SUPPLIES",
+                    "ID_WOTC_PHB_ITEM_TOOL_CARPENTERS_TOOLS",
+                    "ID_WOTC_PHB_ITEM_TOOL_CARTOGRAPHERS_TOOLS",
+                    "ID_WOTC_PHB_ITEM_TOOL_COBBLERS_TOOLS",
+                    "ID_WOTC_PHB_ITEM_TOOL_COOKS_UTENSILS",
+                    "ID_WOTC_PHB_ITEM_TOOL_GLASSBLOWERS_TOOLS",
+                    "ID_WOTC_PHB_ITEM_TOOL_JEWELERS_TOOLS",
+                    "ID_WOTC_PHB_ITEM_TOOL_LEATHERWORKERS_TOOLS",
+                    "ID_WOTC_PHB_ITEM_TOOL_MASONS_TOOLS",
+                    "ID_WOTC_PHB_ITEM_TOOL_PAINTERS_SUPPLIES",
+                    "ID_WOTC_PHB_ITEM_TOOL_POTTERS_TOOLS",
+                    "ID_WOTC_PHB_ITEM_TOOL_SMITHS_TOOLS",
+                    "ID_WOTC_PHB_ITEM_TOOL_TINKERS_TOOLS",
+                    "ID_WOTC_PHB_ITEM_TOOL_WEAVERS_TOOLS",
+                    "ID_WOTC_PHB_ITEM_TOOL_WOODCARVERS_TOOLS",
+                }.Contains(e.Id)),
+
+            _ => DataManager.Current.ElementsCollection.Where(e =>
+                ItemTypes.Contains(e.Type) &&
+                e.Supports.Contains(category, StringComparer.OrdinalIgnoreCase)),
+        };
+
+        source = source.Where(e => !e.Name.StartsWith("Additional ", StringComparison.OrdinalIgnoreCase));
+
+        if (!string.IsNullOrWhiteSpace(query))
+            source = source.Where(e => e.Name.Contains(query, StringComparison.OrdinalIgnoreCase));
+
+        return source
+            .OrderBy(e => e.Name)
+            .Take(200)
+            .Select(e => new ItemSearchResult(e.Id, e.Name, e.Type, GetDescription(e), e.Source ?? ""))
+            .ToList();
+    }
+
+    /// <summary>
     /// Searches elements compatible with the given gear slot.
     /// </summary>
     public static IReadOnlyList<ItemSearchResult> SearchItemsForSlot(GearSlot slot, string query)
