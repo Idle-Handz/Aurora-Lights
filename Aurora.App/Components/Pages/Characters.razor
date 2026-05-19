@@ -83,7 +83,7 @@ else
             : $"{_characters.Count} character{(_characters.Count == 1 ? string.Empty : "s")} - {CharSvc.CharactersDirectory}";
 
     private string EmptyMessage =>
-        $"No characters found in {CharSvc.CharactersDirectory}. Create a character using the Aurora Builder desktop app, then return here.";
+        $"No characters found in {CharSvc.CharactersDirectory}. Tap \"New Character\" to get started, or import an existing .dnd5e file.";
 
     private string? BusyMessage => _preloading ? "Loading content data..." : null;
 
