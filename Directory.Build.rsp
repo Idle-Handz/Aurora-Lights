@@ -1,0 +1,2 @@
+-p:RestoreBuildInParallel=false
+-p:BuildInParallel=false

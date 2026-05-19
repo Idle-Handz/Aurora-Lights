@@ -5,6 +5,7 @@
 @inject ISnackbar Snackbar
 @inject DebugLogService DebugLog
 @using Aurora.App.Services
+@using Builder.Presentation.Models.Equipment
 @using Builder.Presentation.ViewModels.Shell.Items
 
 @if (_initError is not null)
@@ -29,14 +30,17 @@
     return;
 }
 
-<div class="se-page-header">
-    <MudButton Variant="Variant.Outlined"
-               StartIcon="@Icons.Material.Filled.Inventory2"
-               Size="Size.Small"
-               OnClick="OpenStartingEquipmentAsync">
-        Starting Equipment
-    </MudButton>
-</div>
+@if (CanAssignStartingEquipment)
+{
+    <div class="se-page-header">
+        <MudButton Variant="Variant.Outlined"
+                   StartIcon="@Icons.Material.Filled.Inventory2"
+                   Size="Size.Small"
+                   OnClick="OpenStartingEquipmentAsync">
+            Starting Equipment
+        </MudButton>
+    </div>
+}
 
 <CharacterEquipmentWorkspace Model="@EquipmentModel"
                              OnAddItem="OpenAddItemDialog"
@@ -60,6 +64,7 @@
 
     private EquipmentOverviewModel _equipmentModel = new();
     private EquipmentOverviewModel EquipmentModel => _equipmentModel;
+    private bool CanAssignStartingEquipment => _snap?.InventoryItems.Any() == false;
 
     private void BuildEquipmentModel()
     {
@@ -424,6 +429,16 @@
                 break;
         }
 
+        if (Tabs.ActiveTab?.Character?.Inventory?.Coins is { } coins)
+        {
+            coins.Set(
+                _snap.CoinCopper,
+                _snap.CoinSilver,
+                _snap.CoinElectrum,
+                _snap.CoinGold,
+                _snap.CoinPlatinum);
+        }
+
         MarkDirty();
         return Task.CompletedTask;
     }
@@ -476,10 +491,17 @@
 
         using var scope = await CharacterContext.EnterAsync(tab);
 
+        var unresolvedItems = new List<string>();
         foreach (var (id, count, name) in se.Items)
         {
             bool added = EquipmentService.AddItem(character, id, count);
-            if (added && !string.IsNullOrEmpty(name))
+            if (!added)
+            {
+                unresolvedItems.Add(DescribeStartingEquipmentItem(id, count, name));
+                continue;
+            }
+
+            if (!string.IsNullOrEmpty(name))
             {
                 var liveItem = character.Inventory.Items.LastOrDefault();
                 if (liveItem != null)
@@ -487,10 +509,10 @@
             }
         }
 
-        RefreshEquipment();
+        if (se.Gold > 0)
+            character.Inventory.Coins.Deposit(Coinage.CurrencyCoin.Gold, se.Gold);
 
-        if (se.Gold > 0 && _snap != null)
-            _snap.CoinGold += se.Gold;
+        RefreshEquipment();
 
         if (se.TookRolledGold)
         {
@@ -500,9 +522,43 @@
                 cfg => cfg.VisibleStateDuration = 5000);
         }
 
-        file.SaveInventoryItems(character);
+        if (unresolvedItems.Count > 0)
+            WarnUnresolvedStartingEquipment(unresolvedItems);
+
+        var inventorySaved = file.SaveInventoryItems(character);
+        var currencySaved = _snap is null || file.SaveCurrency(_snap);
+        if (!inventorySaved || !currencySaved)
+        {
+            Snackbar.Add("Starting equipment was applied in memory, but some changes could not be written to the character file yet.", Severity.Error);
+        }
+
         MarkDirty();
         StateHasChanged();
+    }
+
+    private void WarnUnresolvedStartingEquipment(IReadOnlyList<string> unresolvedItems)
+    {
+        var sample = string.Join(", ", unresolvedItems.Take(5));
+        if (unresolvedItems.Count > 5)
+            sample += $", and {unresolvedItems.Count - 5} more";
+
+        DebugLog.Warn(
+            "Starting equipment item IDs could not be resolved.",
+            string.Join(Environment.NewLine, unresolvedItems));
+
+        Snackbar.Add(
+            $"Could not add {unresolvedItems.Count} starting equipment item(s): {sample}. Check that the matching content sources are enabled.",
+            Severity.Error,
+            cfg => cfg.VisibleStateDuration = 8000);
+    }
+
+    private static string DescribeStartingEquipmentItem(string id, int count, string? name)
+    {
+        var label = !string.IsNullOrWhiteSpace(name)
+            ? $"{name} ({id})"
+            : id;
+
+        return count > 1 ? $"{count}x {label}" : label;
     }
 
     private async Task EditItemAsync(string identifier)

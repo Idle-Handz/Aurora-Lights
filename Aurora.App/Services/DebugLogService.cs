@@ -22,7 +22,7 @@ public sealed class DebugLogService
     private readonly object _fileLock = new();
     private string? _persistentLogPath;
 
-    public IReadOnlyList<LogEntry> Entries => _entries;
+    public IReadOnlyList<LogEntry> Entries => GetSnapshot();
     public string? PersistentLogPath => _persistentLogPath;
 
     /// <summary>Fires on the UI thread after an entry is added or the log is cleared.</summary>

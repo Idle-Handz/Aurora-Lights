@@ -75,7 +75,7 @@
         _nameError = null;
 
         var result = Existing != null
-            ? new CustomResource { Id = Existing.Id, Name = _name.Trim(), Max = _max, Used = Existing.Used, ResetOn = _resetOn }
+            ? new CustomResource { Id = Existing.Id, Name = _name.Trim(), Max = _max, Used = Math.Clamp(Existing.Used, 0, _max), ResetOn = _resetOn }
             : new CustomResource { Name = _name.Trim(), Max = _max, ResetOn = _resetOn };
 
         MudDialog.Close(DialogResult.Ok(result));

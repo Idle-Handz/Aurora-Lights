@@ -473,7 +473,8 @@
 
     private void AdjustResource(CustomResource r, int delta)
     {
-        r.Used = Math.Clamp(r.Used - delta, 0, r.Max); // delta +1 = use one more
+        // delta is the change in Remaining: +1 = recover one, -1 = expend one.
+        r.Used = Math.Clamp(r.Used - delta, 0, r.Max);
         AutoSave();
     }
 

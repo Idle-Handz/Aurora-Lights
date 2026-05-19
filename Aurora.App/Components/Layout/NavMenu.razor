@@ -19,7 +19,7 @@
         Console
         @if (DebugLog.Entries.Any(e => e.Level == LogLevel.Error))
         {
-            <span style="margin-left: 6px; color: var(--mud-palette-error); font-size: 10px; font-weight: 700;">●</span>
+            <span class="nav-error-indicator">●</span>
         }
     </MudNavLink>
 
@@ -30,7 +30,7 @@
         <MudDivider Class="my-2" />
         @if (_loading)
         {
-            <div style="display: flex; align-items: center; gap: 8px; padding: 6px 16px;">
+            <div class="nav-loading-row">
                 <MudProgressCircular Size="Size.Small" Indeterminate="true" Color="Color.Primary"
                                      Style="width: 14px; height: 14px;" />
                 <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">Loading character…</MudText>

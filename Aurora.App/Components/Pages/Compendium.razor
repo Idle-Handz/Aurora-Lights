@@ -393,7 +393,7 @@
         ? "Tip: choose a type like Spell, Item, or Companion first, then search within that category."
         : $"Searching within {_selectedType}. Refine further with text or additional filters.";
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         Tabs.TabsChanged += OnTabsChanged;
     }
@@ -593,10 +593,10 @@
         }
     }
 
-    private async void OnTabsChanged()
+    private void OnTabsChanged()
     {
         if (_disposed) return;
-        await InvokeAsync(async () =>
+        _ = InvokeAsync(async () =>
         {
             if (_disposed) return;
 

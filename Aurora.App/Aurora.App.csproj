@@ -32,7 +32,11 @@
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">15.0</SupportedOSPlatformVersion>
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">24.0</SupportedOSPlatformVersion>
-    <RuntimeIdentifiers Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">android-arm64;android-x64</RuntimeIdentifiers>
+    <!-- Local Android debug builds default to the Pixel emulator RID so `dotnet build`
+         works without -r. GitHub Actions keeps the multi-RID restore set because the
+         workflow restores first, then publishes android-arm64 without restoring again. -->
+    <RuntimeIdentifiers Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android' AND '$(GITHUB_ACTIONS)' == 'true' AND '$(RuntimeIdentifier)' == ''">android-arm64;android-x64</RuntimeIdentifiers>
+    <RuntimeIdentifier Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android' AND '$(GITHUB_ACTIONS)' != 'true' AND '$(RuntimeIdentifier)' == '' AND '$(RuntimeIdentifiers)' == ''">android-x64</RuntimeIdentifier>
     <EmbedAssembliesIntoApk Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">true</EmbedAssembliesIntoApk>
     <!-- iTextSharp references System.Drawing v2.0.0.0 (old .NET Framework) which the Mono AOT
          compiler can't resolve on Android, causing a crash at Release build time. Disable AOT

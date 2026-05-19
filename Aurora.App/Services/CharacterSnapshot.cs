@@ -969,6 +969,12 @@ public sealed class CharacterSnapshot
     {
         c.Inventory.CalculateAttunedItemCount();
 
+        CoinCopper   = c.Inventory.Coins.Copper;
+        CoinSilver   = c.Inventory.Coins.Silver;
+        CoinElectrum = c.Inventory.Coins.Electrum;
+        CoinGold     = c.Inventory.Coins.Gold;
+        CoinPlatinum = c.Inventory.Coins.Platinum;
+
         InventoryItems = c.Inventory.Items
             .Where(i => i.IncludeInEquipmentPageInventory)
             .Select(i => new EquipmentItemEntry(

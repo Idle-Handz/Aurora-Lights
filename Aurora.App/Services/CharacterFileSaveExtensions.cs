@@ -2,6 +2,8 @@ using System.Text;
 using System.Xml;
 using Builder.Presentation;
 using Builder.Presentation.Models;
+using Builder.Presentation.Models.Equipment;
+using Builder.Presentation.ViewModels.Shell.Items;
 
 namespace Aurora.App.Services;
 
@@ -228,73 +230,121 @@ public static class CharacterFileSaveExtensions
         if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
             return false;
 
-        var doc = new XmlDocument();
-        doc.Load(path);
-
-        var buildNode = doc.DocumentElement?["build"];
-        if (buildNode == null) return false;
-
-        // Remove old equipment node if present
-        var oldEquip = buildNode["equipment"];
-        if (oldEquip != null)
-            buildNode.RemoveChild(oldEquip);
-
-        // Build replacement node
-        var equipNode = doc.CreateElement("equipment");
-
-        foreach (var inv in character.Inventory.Items)
+        try
         {
-            var itemNode = doc.CreateElement("item");
-            itemNode.SetAttribute("identifier", inv.Identifier);
-            itemNode.SetAttribute("name",       inv.Name ?? "");
-            itemNode.SetAttribute("id",         inv.Item?.Id ?? "");
+            var doc = new XmlDocument();
+            doc.Load(path);
 
-            if (inv.Amount > 1)
-                itemNode.SetAttribute("amount", inv.Amount.ToString());
-            if (!inv.IncludeInEquipmentPageInventory)
-                itemNode.SetAttribute("hidden", "true");
-            if (inv.IncludeInEquipmentPageDescriptionSidebar)
-                itemNode.SetAttribute("sidebar", "true");
+            var buildNode = doc.DocumentElement?["build"];
+            if (buildNode == null) return false;
 
-            if (inv.IsEquipped)
+            // Remove old equipment node if present.
+            var oldEquip = buildNode["equipment"];
+            if (oldEquip != null)
+                buildNode.RemoveChild(oldEquip);
+
+            buildNode.AppendChild(CreateEquipmentNode(doc, character));
+
+            using var writer = new XmlTextWriter(path, Encoding.UTF8)
             {
-                var equippedNode = doc.CreateElement("equipped");
-                equippedNode.InnerText = "true";
-                if (!string.IsNullOrWhiteSpace(inv.EquippedLocation))
-                    equippedNode.SetAttribute("location", inv.EquippedLocation);
-                itemNode.AppendChild(equippedNode);
-            }
-            if (inv.IsAttuned)
+                Formatting  = Formatting.Indented,
+                IndentChar  = '\t',
+                Indentation = 1,
+            };
+            doc.Save(writer);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            DebugLogService.Instance.LogException(ex, "SaveInventoryItems");
+            return false;
+        }
+    }
+
+    private static XmlElement CreateEquipmentNode(XmlDocument doc, Builder.Presentation.Models.Character character)
+    {
+        var equipmentNode = doc.CreateElement("equipment");
+
+        AppendStorageNode(doc, equipmentNode, character.Inventory.StoredItems1);
+        AppendStorageNode(doc, equipmentNode, character.Inventory.StoredItems2);
+
+        foreach (var item in character.Inventory.Items)
+            equipmentNode.AppendChild(CreateEquipmentItemNode(doc, item));
+
+        return equipmentNode;
+    }
+
+    private static void AppendStorageNode(XmlDocument doc, XmlElement equipmentNode, InventoryStorage? storage)
+    {
+        if (storage?.IsInUse() != true)
+            return;
+
+        var storageNode = doc.CreateElement("storage");
+        storageNode.SetAttribute("name", storage.Name ?? "");
+        equipmentNode.AppendChild(storageNode);
+    }
+
+    private static XmlElement CreateEquipmentItemNode(XmlDocument doc, RefactoredEquipmentItem item)
+    {
+        var itemNode = doc.CreateElement("item");
+        itemNode.SetAttribute("identifier", item.Identifier ?? "");
+        itemNode.SetAttribute("name", item.Name ?? "");
+        itemNode.SetAttribute("id", item.Item?.Id ?? "");
+
+        if (item.Amount > 1)
+            itemNode.SetAttribute("amount", item.Amount.ToString());
+        if (item.HasAquisitionParent && item.AquisitionParent != null)
+            itemNode.SetAttribute("aquired", item.AquisitionParent.Name ?? "");
+        if (!item.IncludeInEquipmentPageInventory)
+            itemNode.SetAttribute("hidden", "true");
+        if (item.IncludeInEquipmentPageDescriptionSidebar)
+            itemNode.SetAttribute("sidebar", "true");
+
+        if (item.IsEquipped)
+        {
+            var equippedNode = doc.CreateElement("equipped");
+            equippedNode.InnerText = BoolText(item.IsEquipped);
+            if (!string.IsNullOrWhiteSpace(item.EquippedLocation) &&
+                item.EquippedLocation.Contains("Versatile", StringComparison.OrdinalIgnoreCase))
             {
-                var attunNode = doc.CreateElement("attunement");
-                attunNode.InnerText = "true";
-                itemNode.AppendChild(attunNode);
+                equippedNode.SetAttribute("versatile", "true");
             }
-
-            // Details (custom name + notes)
-            var detailsNode = doc.CreateElement("details");
-            detailsNode.SetAttribute("card", inv.ShowCard ? "true" : "false");
-            var nameNode  = doc.CreateElement("name");
-            nameNode.InnerText  = inv.AlternativeName ?? "";
-            var notesNode = doc.CreateElement("notes");
-            notesNode.InnerText = inv.Notes ?? "";
-            detailsNode.AppendChild(nameNode);
-            detailsNode.AppendChild(notesNode);
-            itemNode.AppendChild(detailsNode);
-
-            equipNode.AppendChild(itemNode);
+            if (!string.IsNullOrWhiteSpace(item.EquippedLocation))
+                equippedNode.SetAttribute("location", item.EquippedLocation);
+            itemNode.AppendChild(equippedNode);
         }
 
-        buildNode.AppendChild(equipNode);
-
-        using var writer = new XmlTextWriter(path, Encoding.UTF8)
+        if (item.IsAttuned)
         {
-            Formatting  = Formatting.Indented,
-            IndentChar  = '\t',
-            Indentation = 1,
-        };
-        doc.Save(writer);
-        return true;
+            var attunementNode = doc.CreateElement("attunement");
+            attunementNode.InnerText = BoolText(item.IsAttuned);
+            itemNode.AppendChild(attunementNode);
+        }
+
+        if (item.IsAdorned && item.AdornerItem != null)
+        {
+            var itemsNode = doc.CreateElement("items");
+            var adornerNode = doc.CreateElement("adorner");
+            adornerNode.SetAttribute("name", item.AdornerItem.Name ?? "");
+            adornerNode.SetAttribute("id", item.AdornerItem.Id ?? "");
+            itemsNode.AppendChild(adornerNode);
+            itemNode.AppendChild(itemsNode);
+        }
+
+        var detailsNode = doc.CreateElement("details");
+        detailsNode.SetAttribute("card", item.ShowCard ? "true" : "false");
+        AppendText(doc, detailsNode, "name", item.AlternativeName ?? "");
+        AppendText(doc, detailsNode, "notes", item.Notes ?? "");
+        itemNode.AppendChild(detailsNode);
+
+        if (item.IsStored && item.Storage != null)
+        {
+            var storageNode = doc.CreateElement("storage");
+            AppendText(doc, storageNode, "location", item.Storage.Name ?? "");
+            itemNode.AppendChild(storageNode);
+        }
+
+        return itemNode;
     }
 
     // ── Session persistence ──────────────────────────────────────────────────
@@ -515,6 +565,9 @@ public static class CharacterFileSaveExtensions
 
     private static int ParseInt(string? s, int fallback) =>
         int.TryParse(s, out var v) ? v : fallback;
+
+    private static string BoolText(bool value) =>
+        value.ToString().ToLowerInvariant();
 
     private static void AppendText(XmlDocument doc, XmlNode parent, string name, string value)
     {
