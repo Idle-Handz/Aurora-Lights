@@ -140,7 +140,8 @@ jobs:
             -p:AndroidSigningKeyStore="${{ github.workspace }}/aurora-ci.keystore" \
             -p:AndroidSigningKeyAlias=aurora \
             -p:AndroidSigningKeyPass=aurora-ci \
-            -p:AndroidSigningStorePass=aurora-ci
+            -p:AndroidSigningStorePass=aurora-ci \
+            -p:ApplicationVersion=${{ github.run_number }}
 
       - name: Locate APK
         run: |
