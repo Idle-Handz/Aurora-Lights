@@ -77,10 +77,12 @@ jobs:
       - name: Verify APK signing
         run: |
           APK="${{ steps.find_apk.outputs.apk_path }}"
+          BUILD_TOOLS=$(ls -d "$ANDROID_SDK_ROOT/build-tools"/*/ 2>/dev/null | sort -V | tail -1)
+          echo "Using build-tools: $BUILD_TOOLS"
           echo "=== APK package info ==="
-          aapt2 dump badging "$APK" | grep -E "package|versionCode|versionName|sdkVersion"
+          "$BUILD_TOOLS/aapt2" dump badging "$APK" | grep -E "package|versionCode|versionName|sdkVersion"
           echo "=== APK signing certificate ==="
-          apksigner verify --print-certs "$APK"
+          "$BUILD_TOOLS/apksigner" verify --print-certs "$APK"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
