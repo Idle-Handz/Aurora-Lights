@@ -74,6 +74,14 @@ jobs:
           echo "apk_path=$APK" >> "$GITHUB_OUTPUT"
           echo "Found: $APK"
 
+      - name: Verify APK signing
+        run: |
+          APK="${{ steps.find_apk.outputs.apk_path }}"
+          echo "=== APK package info ==="
+          aapt2 dump badging "$APK" | grep -E "package|versionCode|versionName|sdkVersion"
+          echo "=== APK signing certificate ==="
+          apksigner verify --print-certs "$APK"
+
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
