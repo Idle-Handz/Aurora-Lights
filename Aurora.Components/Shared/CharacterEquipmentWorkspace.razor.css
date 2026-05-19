@@ -62,6 +62,15 @@
     gap: 0.75rem;
 }
 
+.equipment-gear-row--clickable {
+    cursor: pointer;
+}
+
+.equipment-gear-row--clickable:hover {
+    border-color: var(--mud-palette-primary);
+    background: color-mix(in srgb, var(--mud-palette-primary) 6%, var(--mud-palette-surface, #313244));
+}
+
 .equipment-gear-label {
     font-size: 0.8rem;
     font-weight: 700;

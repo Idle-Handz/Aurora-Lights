@@ -28,7 +28,10 @@
         <div class="equipment-gear-slots">
             @foreach (EquipmentGearSlotModel slot in Model.GearSlots)
             {
-                <div class="equipment-gear-row">
+                <div class="equipment-gear-row @(OnOpenGearSlot.HasDelegate ? "equipment-gear-row--clickable" : string.Empty)"
+                     @ondblclick="() => OnOpenGearSlot.InvokeAsync(slot.Id)"
+                     title="@(OnOpenGearSlot.HasDelegate ? "Double-click to change" : null)"
+                     >
                     <div class="equipment-gear-label">@slot.Label</div>
                     <div class="@(slot.EquippedName is null ? "equipment-gear-empty" : "equipment-gear-item")">
                         @(slot.EquippedName ?? "- None -")

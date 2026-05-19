@@ -310,6 +310,19 @@ public static class EquipmentService
 
     // ── Slot compatibility ────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Returns the natural gear slot for an inventory item, or null if the item
+    /// is equippable but doesn't belong to a named slot (rings, cloaks, etc.).
+    /// Priority: Armor → MainHand → OffHand.
+    /// </summary>
+    public static GearSlot? GetNaturalSlot(RefactoredEquipmentItem item)
+    {
+        if (IsItemCompatibleWithSlot(item, GearSlot.Armor))    return GearSlot.Armor;
+        if (IsItemCompatibleWithSlot(item, GearSlot.MainHand)) return GearSlot.MainHand;
+        if (IsItemCompatibleWithSlot(item, GearSlot.OffHand))  return GearSlot.OffHand;
+        return null;
+    }
+
     private static bool IsItemCompatibleWithSlot(RefactoredEquipmentItem item, GearSlot slot) => slot switch
     {
         GearSlot.Armor    => item.IsArmorTarget(),

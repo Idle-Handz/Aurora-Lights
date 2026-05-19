@@ -333,9 +333,25 @@
         }
 
         if (item.IsEquipped)
-            item.Deactivate();
+        {
+            var loc = item.EquippedLocation ?? "";
+            if (loc == "Armor")
+                EquipmentService.UnequipSlot(character, GearSlot.Armor);
+            else if (loc is "Primary Hand" or "Two-Handed" or "Two-Handed (Versatile)")
+                EquipmentService.UnequipSlot(character, GearSlot.MainHand);
+            else if (loc == "Secondary Hand")
+                EquipmentService.UnequipSlot(character, GearSlot.OffHand);
+            else
+                item.Deactivate();
+        }
         else
-            item.Activate(equip: true, attune: item.IsAttuned);
+        {
+            var naturalSlot = EquipmentService.GetNaturalSlot(item);
+            if (naturalSlot.HasValue)
+                EquipmentService.EquipToSlot(character, naturalSlot.Value, identifier);
+            else
+                item.Activate(equip: true, attune: item.IsAttuned);
+        }
 
         RefreshEquipment();
         file.SaveInventoryItems(character);
