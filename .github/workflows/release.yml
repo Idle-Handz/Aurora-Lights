@@ -137,6 +137,7 @@ jobs:
             -r android-arm64 \
             -c Release \
             --no-restore \
+            -p:AndroidKeyStore=true \
             -p:AndroidSigningKeyStore="${{ github.workspace }}/aurora-ci.keystore" \
             -p:AndroidSigningKeyAlias=aurora \
             -p:AndroidSigningKeyPass=aurora-ci \
