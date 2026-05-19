@@ -16,6 +16,24 @@ public static class MauiProgram
         // Wire up all Aurora.Logic static context seams before anything else.
         var appContext = new MauiApplicationContext();
         ApplicationContext.SetCurrent(appContext);
+
+#if ANDROID
+        // Default to external app-specific storage on Android so user data survives uninstalls.
+        // /storage/emulated/0/Android/data/{package}/files — preserved across updates,
+        // accessible via any file manager without root. Only applied on a fresh install
+        // (empty setting); a configured path is always respected.
+        if (string.IsNullOrWhiteSpace(appContext.Settings.DocumentsRootDirectory))
+        {
+            var externalBase = Android.App.Application.Context.GetExternalFilesDir(null)?.AbsolutePath;
+            if (externalBase != null)
+            {
+                var dir = Path.Combine(externalBase, "5e Character Builder");
+                Directory.CreateDirectory(dir); // must exist before DataManager checks it
+                appContext.Settings.DocumentsRootDirectory = dir;
+            }
+        }
+#endif
+
         SelectionRuleExpanderContext.Current = new MauiSelectionRuleExpanderHandler();
         SpellcastingSectionContext.Current    = new MauiSpellcastingSectionHandler();
         MessageDialogContext.Current          = new MauiMessageDialogService();

@@ -120,20 +120,12 @@ jobs:
         env:
           KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
-          if [ -n "$KEYSTORE_B64" ]; then
-            echo "Using stored keystore from secret"
-            echo "$KEYSTORE_B64" | base64 -d > "${{ github.workspace }}/aurora-ci.keystore"
-          else
-            echo "ANDROID_KEYSTORE_BASE64 not set — generating throwaway keystore"
-            keytool -genkey -v \
-              -keystore "${{ github.workspace }}/aurora-ci.keystore" \
-              -alias aurora \
-              -keyalg RSA -keysize 2048 -validity 3650 \
-              -dname "CN=Aurora CI, OU=Dev, O=AuroraLights, L=Unknown, ST=Unknown, C=US" \
-              -storepass aurora-ci \
-              -keypass aurora-ci \
-              -noprompt
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "ERROR: ANDROID_KEYSTORE_BASE64 secret is not set."
+            exit 1
           fi
+          echo "$KEYSTORE_B64" | base64 -d > "${{ github.workspace }}/aurora-ci.keystore"
+          echo "Keystore decoded successfully."
 
       - name: Restore
         run: dotnet restore "$PROJECT"
