@@ -14,10 +14,12 @@ using System.Runtime.CompilerServices;
 #nullable disable
 namespace Builder.Presentation;
 
+#pragma warning disable CS8981
 [GeneratedCode("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
 [DebuggerNonUserCode]
 [CompilerGenerated]
 public class strings
+#pragma warning restore CS8981
 {
   private static ResourceManager resourceMan;
   private static CultureInfo resourceCulture;

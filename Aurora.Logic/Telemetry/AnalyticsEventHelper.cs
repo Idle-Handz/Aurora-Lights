@@ -318,7 +318,7 @@ public static class AnalyticsEventHelper
         }
       });
     }
-    catch (Exception ex)
+    catch (Exception)
     {
     }
   }

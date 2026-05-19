@@ -26,7 +26,6 @@ public sealed class ListItemSelectionRuleExpanderViewModel :
   ViewModelBase,
   ISubscriber<CharacterManagerSelectionRuleDeleted>
 {
-  private ElementBase _parentElement;
   private SelectRule _selectionRule;
   private readonly int _number;
   private string _header;

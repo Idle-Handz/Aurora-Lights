@@ -1242,7 +1242,7 @@ public class CharacterFile : ObservableObject
                         {
                             Logger.Warning($"error trying to get registered element for rule: {selectRule}");
                             Logger.Exception(ex, nameof(CreateRuleNodes));
-                            throw ex;
+                            throw;
                         }
                     }
                 }

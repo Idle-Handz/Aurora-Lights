@@ -19,8 +19,6 @@ public class Companion :
   ISubscriber<CharacterManagerElementRegistered>,
   ISubscriber<CharacterManagerElementUnregistered>
 {
-  private string _portrait;
-
   public Companion(CompanionElement element = null)
   {
     this.Abilities.DisablePointsCalculation = true;

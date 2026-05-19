@@ -316,6 +316,14 @@
                                                Color="Color.Primary"
                                                Class="mt-2" />
                         }
+                        else if (_checkingStale)
+                        {
+                            <div style="color: var(--mud-palette-text-secondary); font-size: 13px;">Checking for changes…</div>
+                        }
+                        else if (_reloadingElements)
+                        {
+                            <div style="color: var(--mud-palette-text-secondary); font-size: 13px;">Reloading elements…</div>
+                        }
                         else if (ContentDb.LastResult != null)
                         {
                             <div style="color: @(ContentDb.LastResult.Success ? "var(--mud-palette-success)" : "var(--mud-palette-error)"); font-size: 13px;">
@@ -340,9 +348,9 @@
                         <MudButton Variant="Variant.Outlined"
                                    Color="Color.Default"
                                    Size="Size.Small"
-                                   Disabled="@(ContentDb.SyncState == ContentDatabaseSyncState.Syncing)"
+                                   Disabled="@(ContentDb.SyncState == ContentDatabaseSyncState.Syncing || _checkingStale)"
                                    OnClick="CheckStaleAsync">
-                            Check for Changes
+                            @(_checkingStale ? "Checking…" : "Check for Changes")
                         </MudButton>
                         <MudButton Variant="Variant.Filled"
                                    Color="Color.Primary"
@@ -356,8 +364,9 @@
                             <MudButton Variant="Variant.Outlined"
                                        Color="Color.Secondary"
                                        Size="Size.Small"
+                                       Disabled="@_reloadingElements"
                                        OnClick="ReloadElementsAsync">
-                                Reload Elements
+                                @(_reloadingElements ? "Reloading…" : "Reload Elements")
                             </MudButton>
                         }
                     </div>
@@ -786,6 +795,8 @@
     private bool _checkingUpdates;
     private bool _parityRunning;
     private bool _stalenessChecked;
+    private bool _checkingStale;
+    private bool _reloadingElements;
     private bool _needsContentReload;
     private ContentDatabaseHealthReport? _dbHealth;
     private ContentDatabaseParityReport? _dbParity;
@@ -841,10 +852,19 @@
 
     private async Task CheckStaleAsync()
     {
-        await Task.Run(() => ContentDb.CheckIsStale());
-        if (_disposed) return;
-        _stalenessChecked = true;
-        await InvokeAsync(StateHasChanged);
+        _checkingStale = true;
+        StateHasChanged();
+        try
+        {
+            await Task.Run(() => ContentDb.CheckIsStale());
+            if (_disposed) return;
+            _stalenessChecked = true;
+        }
+        finally
+        {
+            _checkingStale = false;
+            await InvokeAsync(StateHasChanged);
+        }
     }
 
     private async Task SyncNowAsync()
@@ -859,10 +879,20 @@
 
     private async Task ReloadElementsAsync()
     {
-        Tabs.CloseAllTabs();
-        await Characters.ReloadElementsAsync();
-        if (_disposed) return;
-        RefreshDatabaseDiagnostics();
+        _reloadingElements = true;
+        StateHasChanged();
+        try
+        {
+            Tabs.CloseAllTabs();
+            await Characters.ReloadElementsAsync();
+            if (_disposed) return;
+            RefreshDatabaseDiagnostics();
+        }
+        finally
+        {
+            _reloadingElements = false;
+            await InvokeAsync(StateHasChanged);
+        }
     }
 
     private void RemoveDirectory(string path)

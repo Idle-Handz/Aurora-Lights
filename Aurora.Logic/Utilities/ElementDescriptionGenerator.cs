@@ -52,8 +52,6 @@ public class ElementDescriptionGenerator
     foreach (IElement element in toList)
     {
       element.GetType();
-      if (element is Paragraph)
-        ;
       List list = element as List;
       foreach (Chunk chunk in (IEnumerable<Chunk>) element.Chunks)
         chunk.Font = regular;

@@ -43,7 +43,7 @@ public class FileLogger : ILogger
         str = string.Format(message, args);
       File.AppendAllText(Path.Combine(this._directory, this._infoFilename), FileLogger.GeneratePrefix(Log.Info) + str + Environment.NewLine);
     }
-    catch (System.Exception ex)
+    catch (System.Exception)
     {
     }
   }
@@ -57,7 +57,7 @@ public class FileLogger : ILogger
         str = string.Format(message, args);
       File.AppendAllText(Path.Combine(this._directory, this._errorsFilename), FileLogger.GeneratePrefix(Log.Warning) + str + Environment.NewLine);
     }
-    catch (System.Exception ex)
+    catch (System.Exception)
     {
     }
   }
@@ -84,7 +84,7 @@ public class FileLogger : ILogger
         path2 = "debug.log";
       File.AppendAllText(Path.Combine(this._directory, path2), FileLogger.GeneratePrefix(log) + data + Environment.NewLine);
     }
-    catch (System.Exception ex)
+    catch (System.Exception)
     {
     }
   }

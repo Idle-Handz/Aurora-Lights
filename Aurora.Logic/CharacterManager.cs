@@ -46,7 +46,9 @@ public sealed class CharacterManager
   private readonly IEventAggregator _eventAggregator;
   private readonly ProgressionManager _progressionManager;
   private static Random _rnd = new Random();
+#pragma warning disable CS8632
   private ElementBaseCollection? _elementsCache;
+#pragma warning restore CS8632
   private bool _elementsCacheDirty = true;
   private bool _suppressSetCharacterDetails = false;
 

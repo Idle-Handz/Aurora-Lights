@@ -251,15 +251,21 @@ public class AbilitiesCollection : ObservableObject
 
   public AbilityItem Charisma { get; }
 
+#pragma warning disable CS8632
   private RelayCommand? _increaseAbilityCommand;
+#pragma warning restore CS8632
   public RelayCommand IncreaseAbilityCommand =>
       _increaseAbilityCommand ??= new RelayCommand(this.IncreaseAbility, this.CanIncreaseAbility);
 
+#pragma warning disable CS8632
   private RelayCommand? _decreaseAbilityCommand;
+#pragma warning restore CS8632
   public RelayCommand DecreaseAbilityCommand =>
       _decreaseAbilityCommand ??= new RelayCommand(this.DecreaseAbility, this.CanDecreaseAbility);
 
+#pragma warning disable CS8632
   private RelayCommand? _resetScoresCommand;
+#pragma warning restore CS8632
   public RelayCommand ResetScoresCommand =>
       _resetScoresCommand ??= new RelayCommand(_ => this.ResetScores());
 

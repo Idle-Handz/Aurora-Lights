@@ -40,7 +40,7 @@ public class SyndicationService
         return;
       this.Feed = new Feed();
     }
-    catch (Exception ex)
+    catch (Exception)
     {
       if (System.IO.File.Exists(this.GetFilepath()))
         System.IO.File.Delete(this.GetFilepath());
@@ -140,8 +140,10 @@ public class SyndicationService
   {
     string extension = Path.GetExtension(post.Image);
     string fileName = Path.Combine(this.StorageDirectory, post.Identifier + extension);
+#pragma warning disable SYSLIB0014
     using (WebClient webClient = new WebClient())
       webClient.DownloadFileAsync(new Uri(post.Image), fileName);
+#pragma warning restore SYSLIB0014
   }
 
   public string GetFilepath() => Path.Combine(this.StorageDirectory, "posts.dat");

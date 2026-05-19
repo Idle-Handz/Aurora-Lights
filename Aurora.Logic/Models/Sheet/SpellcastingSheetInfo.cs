@@ -61,7 +61,7 @@ public class SpellcastingSheetInfo
       {
         return this[lineNumber - 1];
       }
-      catch (ArgumentOutOfRangeException ex)
+      catch (ArgumentOutOfRangeException)
       {
         return new SpellcastingSheetInfo.SpellsContainer.SpellPlaceholder(string.Empty);
       }
