@@ -3162,7 +3162,8 @@ input.equipment-currency-input::-webkit-inner-spin-button { -webkit-appearance: 
     }
 
     .build-rule-row {
-        grid-template-columns: 1fr;
+        display: flex;
+        flex-direction: column;
         align-items: stretch;
         gap: 6px;
         padding: 10px;

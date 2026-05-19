@@ -65,6 +65,16 @@
     overflow-wrap: anywhere;
 }
 
+.character-browser-empty-sub {
+    margin: 0.5rem 0 0;
+    padding: 0.6rem 1rem;
+    border-radius: 0.9rem;
+    background: var(--mud-palette-background-gray, rgba(15, 23, 42, 0.05));
+    color: var(--mud-palette-text-primary, #1e293b);
+    overflow-wrap: anywhere;
+    font-weight: 500;
+}
+
 .character-browser-section {
     display: grid;
     gap: 0.8rem;
@@ -237,6 +247,7 @@
     }
 
     .character-browser-empty,
+    .character-browser-empty-sub,
     .character-browser-status {
         font-size: 1rem;
         line-height: 1.4;

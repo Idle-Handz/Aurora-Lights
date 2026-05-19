@@ -41,6 +41,10 @@
     @if (Characters.Count == 0)
     {
         <p class="character-browser-empty">@EmptyMessage</p>
+        @if (!string.IsNullOrWhiteSpace(EmptySubMessage))
+        {
+            <p class="character-browser-empty-sub">@EmptySubMessage</p>
+        }
     }
     else
     {
@@ -181,6 +185,9 @@
 
     [Parameter]
     public string EmptyMessage { get; set; } = "No characters are available yet.";
+
+    [Parameter]
+    public string? EmptySubMessage { get; set; }
 
     [Parameter]
     public string? BusyMessage { get; set; }

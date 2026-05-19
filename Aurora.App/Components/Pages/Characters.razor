@@ -36,6 +36,7 @@ else
                               Title="Characters"
                               DirectoryCaption="@DirectoryCaption"
                               EmptyMessage="@EmptyMessage"
+                              EmptySubMessage="@EmptySubMessage"
                               BusyMessage="@BusyMessage"
                               ShowCreateButton="true"
                               CreateButtonText="New Character"
@@ -83,7 +84,10 @@ else
             : $"{_characters.Count} character{(_characters.Count == 1 ? string.Empty : "s")} - {CharSvc.CharactersDirectory}";
 
     private string EmptyMessage =>
-        $"No characters found in {CharSvc.CharactersDirectory}. Tap \"New Character\" to get started, or import an existing .dnd5e file.";
+        $"No characters found in {CharSvc.CharactersDirectory}.";
+
+    private string EmptySubMessage =>
+        "Tap \"New Character\" to get started, or import an existing .dnd5e file.";
 
     private string? BusyMessage => _preloading ? "Loading content data..." : null;
 
