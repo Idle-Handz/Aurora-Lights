@@ -417,7 +417,6 @@
     {
         if (!firstRender) return;
 
-        await InvokeAsync(StateHasChanged);
         _catalog = (await CompendiumData.BuildCatalogAsync()).ToList();
         _types = CompendiumData.GetTypes(_catalog);
         _sources = CompendiumData.GetSources(_catalog);

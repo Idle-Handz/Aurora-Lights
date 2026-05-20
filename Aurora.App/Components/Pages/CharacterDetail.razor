@@ -155,7 +155,7 @@
             @foreach (var ability in _snap.Abilities)
             {
                 <div class="ability-box">
-                    <div class="ability-abbr">@ability.Abbreviation.ToUpper()</div>
+                    <div class="ability-abbr">@ability.Abbreviation.ToUpperInvariant()</div>
                     <div class="ability-score">@ability.FinalScore</div>
                     <div class="ability-mod">@ability.ModifierString</div>
                     <div class="ability-save-label">SAVE</div>
@@ -178,7 +178,7 @@
                     <span class="prof-dot @(skill.IsProficient ? (skill.IsExpertise ? "prof-dot-expertise" : "prof-dot-filled") : "")"></span>
                     <span class="skill-bonus">@FormatBonus(skill.FinalBonus)</span>
                     <span class="skill-name">@skill.Name</span>
-                    <span class="skill-ability">(@skill.AbilityAbbreviation.ToUpper())</span>
+                    <span class="skill-ability">(@skill.AbilityAbbreviation.ToUpperInvariant())</span>
                 </div>
             }
         </div>

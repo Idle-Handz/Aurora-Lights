@@ -24,9 +24,9 @@ else
     }
     <div class="console-log" @ref="_logDiv">
         <Virtualize Items="@_displayed" Context="entry" OverscanCount="10" ItemSize="44">
-            <div class="console-entry console-entry-@entry.Level.ToString().ToLower()">
+            <div class="console-entry console-entry-@entry.Level.ToString().ToLowerInvariant()">
                 <span class="console-ts">@entry.Timestamp.ToString("HH:mm:ss.fff")</span>
-                <span class="console-level @LevelClass(entry.Level)">@entry.Level.ToString().ToUpper()[..3]</span>
+                <span class="console-level @LevelClass(entry.Level)">@LevelTag(entry.Level)</span>
                 <span class="console-msg">@entry.Message</span>
                 @if (!string.IsNullOrEmpty(entry.Details))
                 {
@@ -87,4 +87,11 @@ else
         LogLevel.Warning => "console-level-warn",
         _                => "console-level-info",
     };
+
+    // Short uppercase tag (INF/WAR/ERR). Culture-invariant, and never throws regardless of name length.
+    private static string LevelTag(LogLevel level)
+    {
+        string s = level.ToString().ToUpperInvariant();
+        return s.Length <= 3 ? s : s[..3];
+    }
 }
