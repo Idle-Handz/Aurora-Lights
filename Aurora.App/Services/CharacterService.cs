@@ -71,10 +71,38 @@ public sealed class CharacterService :
         if (_directoriesInitialized) return;
         DataManager.Current.InitializeDirectories();
         _directoriesInitialized = true;
+        SweepStaleTempFiles();
     }
 
     // Keep original name so callers (LoadCharacterFiles) still compile.
     public void EnsureInitialized() => EnsureDirectoriesInitialized();
+
+    /// <summary>
+    /// Deletes leftover atomic-save temp files ("&lt;name&gt;.dnd5e.&lt;guid&gt;.tmp") that a
+    /// previous session may have orphaned if it was killed mid-write. Best-effort; never throws.
+    /// Sweeps only the top level of the characters directory, where character files live.
+    /// </summary>
+    private static void SweepStaleTempFiles()
+    {
+        try
+        {
+            string dir = DataManager.Current.UserDocumentsRootDirectory;
+            if (string.IsNullOrWhiteSpace(dir) || !Directory.Exists(dir))
+                return;
+
+            foreach (string tmp in Directory.EnumerateFiles(dir, "*.tmp", SearchOption.TopDirectoryOnly))
+            {
+                if (!Path.GetFileName(tmp).Contains(".dnd5e.", StringComparison.OrdinalIgnoreCase))
+                    continue;
+                try { File.Delete(tmp); }
+                catch { /* locked or already gone — skip */ }
+            }
+        }
+        catch
+        {
+            // Never let cleanup crash startup.
+        }
+    }
 
     private string? _initDiagnostic;
 

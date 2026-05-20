@@ -38,13 +38,7 @@ public static class CharacterFileSaveExtensions
             SetText(currency, "gold",     snap.CoinGold.ToString());
             SetText(currency, "platinum", snap.CoinPlatinum.ToString());
 
-            using var writer = new XmlTextWriter(path, Encoding.UTF8)
-            {
-                Formatting = Formatting.Indented,
-                IndentChar = '\t',
-                Indentation = 1,
-            };
-            doc.Save(writer);
+            SaveAtomic(path, doc);
             return true;
         }
         catch (Exception ex)
@@ -210,13 +204,7 @@ public static class CharacterFileSaveExtensions
         }
 
         // ── write ────────────────────────────────────────────────────────────
-        using var writer = new XmlTextWriter(path, Encoding.UTF8)
-        {
-            Formatting  = Formatting.Indented,
-            IndentChar  = '\t',
-            Indentation = 1,
-        };
-        doc.Save(writer);
+        SaveAtomic(path, doc);
         return true;
     }
 
@@ -245,13 +233,7 @@ public static class CharacterFileSaveExtensions
 
             buildNode.AppendChild(CreateEquipmentNode(doc, character));
 
-            using var writer = new XmlTextWriter(path, Encoding.UTF8)
-            {
-                Formatting  = Formatting.Indented,
-                IndentChar  = '\t',
-                Indentation = 1,
-            };
-            doc.Save(writer);
+            SaveAtomic(path, doc);
             return true;
         }
         catch (Exception ex)
@@ -354,8 +336,17 @@ public static class CharacterFileSaveExtensions
     /// <see cref="SessionState"/>. Returns a fresh (default) SessionState when no
     /// session node is present (first open, or file saved by WPF Aurora Builder).
     /// </summary>
-    public static SessionState LoadSession(this CharacterFile file)
+    public static SessionState LoadSession(this CharacterFile file) =>
+        file.LoadSession(out _);
+
+    /// <summary>
+    /// As <see cref="LoadSession(CharacterFile)"/>, but sets <paramref name="sessionCorrupted"/>
+    /// to true when a &lt;session&gt; node was present but could not be read (as opposed to simply
+    /// absent), so the caller can warn the player that tracked HP/conditions/slots were reset.
+    /// </summary>
+    public static SessionState LoadSession(this CharacterFile file, out bool sessionCorrupted)
     {
+        sessionCorrupted = false;
         var path = file.FilePath;
         if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
             return new SessionState();
@@ -410,8 +401,13 @@ public static class CharacterFileSaveExtensions
 
             return state;
         }
-        catch
+        catch (Exception ex)
         {
+            // A corrupt or unreadable <session> node degrades to a fresh state rather than
+            // blocking the character. Log it so the cause is visible in the Console (Dev Mode),
+            // and flag it so the caller can tell the player their HP/conditions/slots were reset.
+            DebugLogService.Instance.LogException(ex, "LoadSession");
+            sessionCorrupted = true;
             return new SessionState();
         }
     }
@@ -484,13 +480,7 @@ public static class CharacterFileSaveExtensions
 
             root.AppendChild(node);
 
-            using var writer = new XmlTextWriter(path, Encoding.UTF8)
-            {
-                Formatting  = Formatting.Indented,
-                IndentChar  = '\t',
-                Indentation = 1,
-            };
-            doc.Save(writer);
+            SaveAtomic(path, doc);
             return true;
         }
         catch (Exception ex)
@@ -547,19 +537,42 @@ public static class CharacterFileSaveExtensions
             sourcesNode.AppendChild(restrictedNode);
             root.AppendChild(sourcesNode);
 
-            using var writer = new XmlTextWriter(path, Encoding.UTF8)
-            {
-                Formatting  = Formatting.Indented,
-                IndentChar  = '\t',
-                Indentation = 1,
-            };
-            doc.Save(writer);
+            SaveAtomic(path, doc);
             return true;
         }
         catch (Exception ex)
         {
             DebugLogService.Instance.LogException(ex, "SaveSourceRestrictions");
             return false;
+        }
+    }
+
+    /// <summary>
+    /// Writes <paramref name="doc"/> to <paramref name="path"/> atomically: serializes to a
+    /// uniquely-named sibling temp file first, then renames it over the destination. If the
+    /// process is killed or the disk fills mid-write, the original file is preserved and only
+    /// the temp file is left behind (cleaned up on the failure path).
+    /// </summary>
+    private static void SaveAtomic(string path, XmlDocument doc)
+    {
+        string tmp = $"{path}.{Guid.NewGuid():N}.tmp";
+        try
+        {
+            using (var writer = new XmlTextWriter(tmp, Encoding.UTF8)
+            {
+                Formatting  = Formatting.Indented,
+                IndentChar  = '\t',
+                Indentation = 1,
+            })
+            {
+                doc.Save(writer);
+            }
+            File.Move(tmp, path, overwrite: true);
+        }
+        catch
+        {
+            try { if (File.Exists(tmp)) File.Delete(tmp); } catch { }
+            throw;
         }
     }
 

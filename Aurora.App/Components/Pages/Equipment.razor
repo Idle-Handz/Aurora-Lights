@@ -318,6 +318,9 @@
         RefreshEquipment();
         file.SaveInventoryItems(character);
         MarkDirty();
+        // No explicit StateHasChanged here: this — and the sibling Toggle*/ChangeCoin/ChangeNote
+        // handlers — runs via the child workspace's EventCallback, which re-renders this
+        // component automatically once the handler completes.
     }
 
     private async Task ToggleEquippedAsync(string identifier)

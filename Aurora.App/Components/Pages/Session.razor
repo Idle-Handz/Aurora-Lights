@@ -524,7 +524,8 @@
 
     private void DoLongRest()
     {
-        _s.LongRest(_snap?.MaxHp ?? _s.CurrentHp);
+        if (_snap is null) return;
+        _s.LongRest(_snap.MaxHp);
         AutoSave();
         Snackbar.Add("Long rest taken — HP, slots, and resources restored.", Severity.Success);
     }

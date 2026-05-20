@@ -5,6 +5,9 @@ using Builder.Presentation.Services.Data;
 
 namespace Aurora.App.Services;
 
+/// <summary>Result of a content-update check, so callers can distinguish a failure from "nothing to do".</summary>
+public enum ContentUpdateOutcome { Updated, UpToDate, Failed }
+
 /// <summary>
 /// Manages custom homebrew content paths and .index file operations.
 /// Settings are persisted to AppSettingsStore (shared with DataManager).
@@ -121,7 +124,7 @@ public sealed class ContentService
     /// Runs <see cref="IndicesUpdateService"/> against all installed .index files,
     /// downloading or refreshing the referenced XML content files.
     /// </summary>
-    public async Task<(bool Updated, string Message)> CheckForUpdatesAsync()
+    public async Task<(ContentUpdateOutcome Outcome, string Message)> CheckForUpdatesAsync()
     {
         try
         {
@@ -135,13 +138,13 @@ public sealed class ContentService
             bool updated = await svc.UpdateIndexFiles(BuiltInCustomDirectory);
             Changed?.Invoke();
             return updated
-                ? (true,  "Content files updated. Reload content to apply changes.")
-                : (false, "All content is up to date.");
+                ? (ContentUpdateOutcome.Updated,  "Content files updated. Reload content to apply changes.")
+                : (ContentUpdateOutcome.UpToDate, "All content is up to date.");
         }
         catch (Exception ex)
         {
             DebugLogService.Catch(ex, "ContentService.CheckForUpdatesAsync");
-            return (false, ex.Message);
+            return (ContentUpdateOutcome.Failed, ex.Message);
         }
     }
 

@@ -7,6 +7,13 @@ namespace Aurora.App.Services;
 /// Manages the set of open character tabs. Each tab holds a cached Character
 /// so switching tabs doesn't require reloading from disk.
 /// </summary>
+/// <remarks>
+/// Not thread-safe by design: all mutations and reads must happen on the UI/sync-context
+/// thread. Every caller today is a Blazor event handler or marshals through InvokeAsync, so
+/// the invariant holds. If a future caller ever mutates tab state from a background thread
+/// (e.g. a Task.Run autosave or a timer), add synchronization around the tab list and
+/// ActiveTab before doing so.
+/// </remarks>
 public sealed class CharacterTabService
 {
     private readonly List<CharacterTab> _tabs = [];
@@ -60,6 +67,10 @@ public sealed class CharacterTabService
     /// </summary>
     public void MarkDirty(CharacterTab tab)
     {
+        // Only notify on the clean→dirty transition. The dirty indicator is idempotent, so
+        // re-firing TabsChanged on every keystroke (e.g. typing in a notes field) just causes
+        // a needless re-render fan-out across the layout, nav, and subscribed pages.
+        if (tab.IsDirty) return;
         tab.IsDirty = true;
         TabsChanged?.Invoke();
     }

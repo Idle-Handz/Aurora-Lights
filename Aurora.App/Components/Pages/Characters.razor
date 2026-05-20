@@ -205,7 +205,7 @@ else
             CharacterTab tab = Tabs.OpenTab(characterFile, CharSvc.CurrentCharacter!);
             tab.Snapshot = CharacterSnapshot.From(CharSvc.CurrentCharacter!);
             tab.ProgressionSnapshots = SnapshotProgressionManagers();
-            tab.Session = characterFile.LoadSession();
+            tab.Session = LoadSessionWithWarning(characterFile);
             CharacterContext.ClaimAfterLoad(tab);
             Nav.NavigateTo("/character");
             return;
@@ -225,7 +225,7 @@ else
                 loadingTab.Character = CharSvc.CurrentCharacter;
                 loadingTab.Snapshot = CharacterSnapshot.From(CharSvc.CurrentCharacter);
                 loadingTab.ProgressionSnapshots = SnapshotProgressionManagers();
-                loadingTab.Session = characterFile.LoadSession();
+                loadingTab.Session = LoadSessionWithWarning(characterFile);
                 loadingTab.IsLoading = false;
                 CharacterContext.ClaimAfterLoad(loadingTab);
                 Tabs.NotifyChanged();
@@ -238,7 +238,7 @@ else
                 loadingTab.Character = CharSvc.CurrentCharacter;
                 loadingTab.Snapshot = CharacterSnapshot.From(CharSvc.CurrentCharacter);
                 loadingTab.ProgressionSnapshots = SnapshotProgressionManagers();
-                loadingTab.Session = characterFile.LoadSession();
+                loadingTab.Session = LoadSessionWithWarning(characterFile);
                 loadingTab.IsLoading = false;
                 CharacterContext.ClaimAfterLoad(loadingTab);
                 Tabs.NotifyChanged();
@@ -407,6 +407,19 @@ else
         _characters = CharSvc.LoadCharacterFiles().ToList();
         RebuildBrowserEntries();
         StateHasChanged();
+    }
+
+    private SessionState LoadSessionWithWarning(Builder.Presentation.Models.CharacterFile file)
+    {
+        SessionState session = file.LoadSession(out bool corrupted);
+        if (corrupted)
+        {
+            Snackbar.Add(
+                $"{file.DisplayName}: saved session data (current HP, conditions, spell slots) couldn't be read and was reset to defaults.",
+                Severity.Warning,
+                cfg => cfg.VisibleStateDuration = 6000);
+        }
+        return session;
     }
 
     private static IReadOnlyList<ClassProgressionSnapshot> SnapshotProgressionManagers() =>

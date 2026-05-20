@@ -7,7 +7,6 @@
 @inject CharacterService Characters
 @inject ContentDatabaseParityService Parity
 @inject CharacterTabService Tabs
-@inject NavigationManager Nav
 @inject ISnackbar Snackbar
 @inject UserPreferencesService Prefs
 @inject DebugLogService DebugLog
@@ -1028,11 +1027,16 @@
         StateHasChanged();
         try
         {
-            var (updated, msg) = await Content.CheckForUpdatesAsync();
+            var (outcome, msg) = await Content.CheckForUpdatesAsync();
             if (_disposed) return;
             _contentStatus = msg;
-            _contentStatusSeverity = Severity.Info;
-            if (updated) _needsContentReload = true;
+            _contentStatusSeverity = outcome switch
+            {
+                ContentUpdateOutcome.Updated  => Severity.Success,
+                ContentUpdateOutcome.UpToDate => Severity.Info,
+                _                             => Severity.Error,
+            };
+            if (outcome == ContentUpdateOutcome.Updated) _needsContentReload = true;
         }
         finally
         {
@@ -1058,8 +1062,8 @@
             else
             {
                 _needsContentReload = false;
+                RefreshDatabaseDiagnostics();
                 Snackbar.Add("Content reloaded.", Severity.Success);
-                Nav.NavigateTo("/");
             }
         }
         finally

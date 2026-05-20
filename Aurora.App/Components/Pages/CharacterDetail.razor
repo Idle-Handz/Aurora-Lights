@@ -779,7 +779,13 @@
         {
             string portraitsDir = Builder.Presentation.Services.Data.DataManager.Current.UserDocumentsPortraitsDirectory;
             Directory.CreateDirectory(portraitsDir);
-            string fileName = Path.GetFileName(pick.FileName);
+            // Unique filename so two characters can't pick files with the same name (e.g.
+            // "portrait.png", "Screenshot.png") and silently overwrite each other's portrait.
+            string ext = Path.GetExtension(pick.FileName);
+            if (string.IsNullOrWhiteSpace(ext)) ext = ".img";
+            string stem = string.Concat((tab.File.DisplayName ?? "portrait")
+                .Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
+            string fileName = $"{stem}_{Guid.NewGuid():N}{ext}";
             string destPath = Path.Combine(portraitsDir, fileName);
             // Use stream copy — FullPath is a content:// URI on Android and is not a real file path.
             using (var src  = await pick.OpenReadAsync())
@@ -904,6 +910,8 @@
 
     private static string? ResolvePortrait(Builder.Presentation.Models.CharacterFile file)
     {
+        // The "image/png" MIME is cosmetic: these data URLs are only consumed by an <img> in the
+        // WebView, which sniffs the actual bytes, so JPEG/GIF/WebP portraits render fine regardless.
         if (!string.IsNullOrEmpty(file.DisplayPortraitBase64))
             return $"data:image/png;base64,{file.DisplayPortraitBase64}";
 
