@@ -512,8 +512,7 @@
             }
         }
 
-        if (se.Gold > 0)
-            character.Inventory.Coins.Deposit(Coinage.CurrencyCoin.Gold, se.Gold);
+        DepositStartingCoins(character, se);
 
         RefreshEquipment();
 
@@ -562,6 +561,20 @@
             : id;
 
         return count > 1 ? $"{count}x {label}" : label;
+    }
+
+    private static void DepositStartingCoins(Builder.Presentation.Models.Character character, StartingEquipmentResult se)
+    {
+        if (se.Copper > 0)
+            character.Inventory.Coins.Deposit(Coinage.CurrencyCoin.Copper, se.Copper);
+        if (se.Silver > 0)
+            character.Inventory.Coins.Deposit(Coinage.CurrencyCoin.Silver, se.Silver);
+        if (se.Electrum > 0)
+            character.Inventory.Coins.Deposit(Coinage.CurrencyCoin.Electrum, se.Electrum);
+        if (se.Gold > 0)
+            character.Inventory.Coins.Deposit(Coinage.CurrencyCoin.Gold, se.Gold);
+        if (se.Platinum > 0)
+            character.Inventory.Coins.Deposit(Coinage.CurrencyCoin.Platinum, se.Platinum);
     }
 
     private async Task EditItemAsync(string identifier)

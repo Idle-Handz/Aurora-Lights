@@ -26,6 +26,7 @@ public sealed class StartingEquipmentSelectionResolverTests
             takeClassGold: false);
 
         result.Gold.Should().Be(16);
+        result.Copper.Should().Be(0);
         result.TookRolledGold.Should().BeFalse();
         result.Items.Should().ContainSingle();
         result.Items[0].ElementId.Should().Be("ID_TEST_TOOL");
@@ -82,5 +83,71 @@ public sealed class StartingEquipmentSelectionResolverTests
         result.Gold.Should().Be(10);
         result.TookRolledGold.Should().BeTrue();
         result.Items.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Resolve_WhenTakingBackgroundGoldAlternative_ExcludesBackgroundKit()
+    {
+        var backgroundBlock = new StartingEquipmentBlock
+        {
+            GoldAlternative = new GoldAlternative { Amount = 50 },
+            FixedItems =
+            [
+                new EquipmentItem { Id = "ID_BACKGROUND_TOOL", Count = 1 },
+            ],
+            FixedCoins = new CoinGrant(Copper: 16),
+        };
+
+        var result = StartingEquipmentSelectionResolver.Resolve(
+            StartingEquipmentBlock.Empty,
+            backgroundBlock,
+            [],
+            [],
+            new Dictionary<string, string>(),
+            takeClassGold: false,
+            takeBackgroundGold: true);
+
+        result.Gold.Should().Be(50);
+        result.Copper.Should().Be(0);
+        result.Items.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Resolve_WhenChoiceHasCoins_IncludesSelectedOptionCoinsOnly()
+    {
+        var classBlock = new StartingEquipmentBlock
+        {
+            Choices =
+            [
+                new EquipmentChoice
+                {
+                    Options =
+                    [
+                        new EquipmentOption
+                        {
+                            Items = [new EquipmentItem { Id = "ID_OPTION_A" }],
+                            Coins = new CoinGrant(Gold: 4),
+                        },
+                        new EquipmentOption
+                        {
+                            Items = [new EquipmentItem { Id = "ID_OPTION_B" }],
+                            Coins = new CoinGrant(Gold: 11),
+                        },
+                    ],
+                },
+            ],
+        };
+
+        var result = StartingEquipmentSelectionResolver.Resolve(
+            classBlock,
+            StartingEquipmentBlock.Empty,
+            [1],
+            [],
+            new Dictionary<string, string>(),
+            takeClassGold: false);
+
+        result.Gold.Should().Be(11);
+        result.Items.Should().ContainSingle();
+        result.Items[0].ElementId.Should().Be("ID_OPTION_B");
     }
 }

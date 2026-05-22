@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="utf-8"?>
+<aurora-starting-equipment>
+    <!-- Player's Handbook (2024) backgrounds. Option B is always the 50 GP alternative. -->
+    <entry element-id="ID_WOTC_PHB24_BACKGROUND_ACOLYTE">
+        <starting-equipment>
+            <gold-alternative amount="50" />
+            <item id="ID_WOTC_PHB24_ITEM_TOOL_CALLIGRAPHERS_SUPPLIES" />
+            <item id="ID_WOTC_PHB24_ITEM_BOOK" name="Book (prayers)" />
+            <item category="Holy Symbol" />
+            <item id="ID_WOTC_PHB24_ITEM_PARCHMENT" count="10" />
+            <item id="ID_WOTC_PHB24_ITEM_ROBE" />
+            <coins gp="8" />
+        </starting-equipment>
+    </entry>
+
+    <entry element-id="ID_WOTC_PHB24_BACKGROUND_ARTISAN">
+        <starting-equipment>
+            <gold-alternative amount="50" />
+            <item category="Artisan's Tools" />
+            <item id="ID_WOTC_PHB24_ITEM_POUCH" count="2" />
+            <item id="ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS" />
+            <coins gp="32" />
+        </starting-equipment>
+    </entry>
+
+    <entry element-id="ID_WOTC_PHB24_BACKGROUND_CHARLATAN">
+        <starting-equipment>
+            <gold-alternative amount="50" />
+            <item id="ID_WOTC_PHB24_ITEM_TOOL_FORGERY_KIT" />
+            <item id="ID_WOTC_PHB24_ITEM_COSTUME" />
+            <item id="ID_WOTC_PHB24_ITEM_CLOTHES_FINE" />
+            <coins gp="15" />
+        </starting-equipment>
+    </entry>
+
+    <entry element-id="ID_WOTC_PHB24_BACKGROUND_CRIMINAL">
+        <starting-equipment>
+            <gold-alternative amount="50" />
+            <item id="ID_WOTC_PHB24_WEAPON_DAGGER" count="2" />
+            <item id="ID_WOTC_PHB24_ITEM_TOOL_THIEVES_TOOLS" />
+            <item id="ID_WOTC_PHB24_ITEM_CROWBAR" />
+            <item id="ID_WOTC_PHB24_ITEM_POUCH" count="2" />
+            <item id="ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS" />
+            <coins cp="16" />
+        </starting-equipment>
+    </entry>
+
+    <entry element-id="ID_WOTC_PHB24_BACKGROUND_ENTERTAINER">
+        <starting-equipment>
+            <gold-alternative amount="50" />
+            <item category="Musical Instrument" />
+            <item id="ID_WOTC_PHB24_ITEM_COSTUME" count="2" />
+            <item id="ID_WOTC_PHB24_ITEM_MIRROR" />
+            <item id="ID_WOTC_PHB24_ITEM_PERFUME" />
+            <item id="ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS" />
+            <coins gp="11" />
+        </starting-equipment>
+    </entry>
+
+    <entry element-id="ID_WOTC_PHB24_BACKGROUND_FARMER">
+        <starting-equipment>
+            <gold-alternative amount="50" />
+            <item id="ID_WOTC_PHB24_WEAPON_SICKLE" />
+            <item id="ID_WOTC_PHB24_ITEM_TOOL_CARPENTERS_TOOLS" />
+            <item id="ID_WOTC_PHB24_ITEM_HEALERS_KIT" />
+            <item id="ID_WOTC_PHB24_ITEM_POT_IRON" />
+            <item id="ID_WOTC_PHB24_ITEM_SHOVEL" />
+            <item id="ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS" />
+            <coins gp="30" />
+        </starting-equipment>
+    </entry>
+
+    <entry element-id="ID_WOTC_PHB24_BACKGROUND_GUARD">
+        <starting-equipment>
+            <gold-alternative amount="50" />
+            <item id="ID_WOTC_PHB24_WEAPON_SPEAR" />
+            <item id="ID_WOTC_PHB24_WEAPON_LIGHT_CROSSBOW" />
+            <item id="ID_WOTC_PHB24_ITEM_BOLT" count="20" />
+            <item category="Gaming Set" />
+            <item id="ID_WOTC_PHB24_ITEM_LANTERN_HOODED" />
+            <item id="ID_WOTC_PHB24_ITEM_MANACLES" />
+            <item id="ID_WOTC_PHB24_ITEM_QUIVER" />
+            <item id="ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS" />
+            <coins gp="12" />
+        </starting-equipment>
+    </entry>
+
+    <entry element-id="ID_WOTC_PHB24_BACKGROUND_GUIDE">
+        <starting-equipment>
+            <gold-alternative amount="50" />
+            <item id="ID_WOTC_PHB24_WEAPON_SHORTBOW" />
+            <item id="ID_WOTC_PHB24_ITEM_ARROW" count="20" />
+            <item id="ID_WOTC_PHB24_ITEM_TOOL_CARTOGRAPHERS_TOOLS" />
+            <item id="ID_WOTC_PHB24_ITEM_BEDROLL" />
+            <item id="ID_WOTC_PHB24_ITEM_QUIVER" />
+            <item id="ID_WOTC_PHB24_ITEM_TENT" />
+            <item id="ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS" />
+            <coins gp="3" />
+        </starting-equipment>
+    </entry>
+
+    <entry element-id="ID_WOTC_PHB24_BACKGROUND_HERMIT">
+        <starting-equipment>
+            <gold-alternative amount="50" />
+            <item id="ID_WOTC_PHB24_WEAPON_QUARTERSTAFF" />
+            <item id="ID_WOTC_PHB24_ITEM_TOOL_HERBALISM_KIT" />
+            <item id="ID_WOTC_PHB24_ITEM_BEDROLL" />
+            <item id="ID_WOTC_PHB24_ITEM_BOOK" name="Book (philosophy)" />
+            <item id="ID_WOTC_PHB24_ITEM_LAMP" />
+            <item id="ID_WOTC_PHB24_ITEM_OIL" count="3" />
+            <item id="ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS" />
+            <coins cp="16" />
+        </starting-equipment>
+    </entry>
+
+    <entry element-id="ID_WOTC_PHB24_BACKGROUND_MERCHANT">
+        <starting-equipment>
+            <gold-alternative amount="50" />
+            <item id="ID_WOTC_PHB24_ITEM_TOOL_NAVIGATORS_TOOLS" />
+            <item id="ID_WOTC_PHB24_ITEM_POUCH" count="2" />
+            <item id="ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS" />
+            <coins gp="22" />
+        </starting-equipment>
+    </entry>
+
+    <entry element-id="ID_WOTC_PHB24_BACKGROUND_NOBLE">
+        <starting-equipment>
+            <gold-alternative amount="50" />
+            <item category="Gaming Set" />
+            <item id="ID_WOTC_PHB24_ITEM_CLOTHES_FINE" />
+            <item id="ID_WOTC_PHB24_ITEM_PERFUME" />
+            <coins gp="29" />
+        </starting-equipment>
+    </entry>
+
+    <entry element-id="ID_WOTC_PHB24_BACKGROUND_SAGE">
+        <starting-equipment>
+            <gold-alternative amount="50" />
+            <item id="ID_WOTC_PHB24_WEAPON_QUARTERSTAFF" />
+            <item id="ID_WOTC_PHB24_ITEM_TOOL_CALLIGRAPHERS_SUPPLIES" />
+            <item id="ID_WOTC_PHB24_ITEM_BOOK" name="Book (history)" />
+            <item id="ID_WOTC_PHB24_ITEM_PARCHMENT" count="8" />
+            <item id="ID_WOTC_PHB24_ITEM_ROBE" />
+            <coins gp="8" />
+        </starting-equipment>
+    </entry>
+
+    <entry element-id="ID_WOTC_PHB24_BACKGROUND_SAILOR">
+        <starting-equipment>
+            <gold-alternative amount="50" />
+            <item id="ID_WOTC_PHB24_WEAPON_DAGGER" />
+            <item id="ID_WOTC_PHB24_ITEM_TOOL_NAVIGATORS_TOOLS" />
+            <item id="ID_WOTC_PHB24_ITEM_ROPE" />
+            <item id="ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS" />
+            <coins gp="20" />
+        </starting-equipment>
+    </entry>
+
+    <entry element-id="ID_WOTC_PHB24_BACKGROUND_SCRIBE">
+        <starting-equipment>
+            <gold-alternative amount="50" />
+            <item id="ID_WOTC_PHB24_ITEM_TOOL_CALLIGRAPHERS_SUPPLIES" />
+            <item id="ID_WOTC_PHB24_ITEM_CLOTHES_FINE" />
+            <item id="ID_WOTC_PHB24_ITEM_LAMP" />
+            <item id="ID_WOTC_PHB24_ITEM_OIL" count="3" />
+            <item id="ID_WOTC_PHB24_ITEM_PARCHMENT" count="12" />
+            <coins gp="23" />
+        </starting-equipment>
+    </entry>
+
+    <entry element-id="ID_WOTC_PHB24_BACKGROUND_SOLDIER">
+        <starting-equipment>
+            <gold-alternative amount="50" />
+            <item id="ID_WOTC_PHB24_WEAPON_SPEAR" />
+            <item id="ID_WOTC_PHB24_WEAPON_SHORTBOW" />
+            <item id="ID_WOTC_PHB24_ITEM_ARROW" count="20" />
+            <item category="Gaming Set" />
+            <item id="ID_WOTC_PHB24_ITEM_HEALERS_KIT" />
+            <item id="ID_WOTC_PHB24_ITEM_QUIVER" />
+            <item id="ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS" />
+            <coins gp="14" />
+        </starting-equipment>
+    </entry>
+
+    <entry element-id="ID_WOTC_PHB24_BACKGROUND_WAYFARER">
+        <starting-equipment>
+            <gold-alternative amount="50" />
+            <item id="ID_WOTC_PHB24_WEAPON_DAGGER" count="2" />
+            <item id="ID_WOTC_PHB24_ITEM_TOOL_THIEVES_TOOLS" />
+            <item category="Gaming Set" />
+            <item id="ID_WOTC_PHB24_ITEM_BEDROLL" />
+            <item id="ID_WOTC_PHB24_ITEM_POUCH" count="2" />
+            <item id="ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS" />
+            <coins gp="16" />
+        </starting-equipment>
+    </entry>
+</aurora-starting-equipment>

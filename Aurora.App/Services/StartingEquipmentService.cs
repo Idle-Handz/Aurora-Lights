@@ -84,5 +84,12 @@ public sealed record StartingEquipmentAggregate(
 /// <summary>The resolved choices from the starting equipment dialog — items to add and gold to grant.</summary>
 public sealed record StartingEquipmentResult(
     IReadOnlyList<(string ElementId, int Count, string? Name)> Items,
-    int Gold,
-    bool TookRolledGold = false);
+    CoinGrant Coins,
+    bool TookRolledGold = false)
+{
+    public int Copper => Coins.Copper;
+    public int Silver => Coins.Silver;
+    public int Electrum => Coins.Electrum;
+    public int Gold => Coins.Gold;
+    public int Platinum => Coins.Platinum;
+}

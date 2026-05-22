@@ -598,6 +598,8 @@ public static class BuildService
 
             // 1. Register the new selection (handler also unregisters the previous one).
             SelectionRuleExpanderContext.Current?.SetRegisteredElement(rule, elementId, number);
+            ClearConflictingOriginAbilityScoreSelections(rule, invalidated);
+            ClearExistingOriginAbilityScoreCollisions(invalidated);
 
             // 2. Re-run progression processing so grant rules and requirement checks fire.
             cm.ReprocessCharacter();
@@ -1657,6 +1659,7 @@ public static class BuildService
         var cm      = CharacterManager.Current;
         var classMgrs = cm.ClassProgressionManagers;
         var result  = new List<SelectionRuleEntry>();
+        OriginAbilityScoreSource activeOriginAsiSource = GetActiveOriginAbilityScoreSource();
 
         foreach (var rule in cm.SelectionRules)
         {
@@ -1666,10 +1669,19 @@ public static class BuildService
 
             string ruleType = rule.Attributes.Type ?? "Other";
             if (ClassifyBuildRule(rule, classMgr) != BuildRuleBucket.AbilityScores) continue;
+            OriginAbilityScoreSource originAsiSource = GetOriginAbilityScoreSource(rule);
 
             for (int n = 1; n <= rule.Attributes.Number; n++)
             {
                 string? currentName = ResolveCurrentSelectionName(rule, n);
+                if (activeOriginAsiSource != OriginAbilityScoreSource.None &&
+                    originAsiSource != OriginAbilityScoreSource.None &&
+                    originAsiSource != activeOriginAsiSource &&
+                    currentName == null)
+                {
+                    continue;
+                }
+
                 string ruleName = rule.Attributes.Name ?? ruleType;
                 string label    = rule.Attributes.Number > 1 ? $"{ruleName} ({n})" : ruleName;
                 result.Add(new SelectionRuleEntry(
@@ -1679,6 +1691,120 @@ public static class BuildService
         }
 
         return result.OrderBy(e => e.RequiredLevel).ThenBy(e => e.Label).ToList();
+    }
+
+    private static OriginAbilityScoreSource GetOriginAbilityScoreSource(SelectRule rule)
+    {
+        var cm = CharacterManager.Current;
+        var pm = cm.GetProgressManager(rule);
+        bool hasClassManager = cm.ClassProgressionManagers.Any(m => ReferenceEquals(m, pm));
+        var ownerElement = ResolveOwnerElement(rule);
+
+        return BuildRuleClassifier.ClassifyOriginAbilityScoreSource(
+            ruleType: rule.Attributes.Type ?? "Other",
+            ruleName: rule.Attributes.Name ?? rule.Attributes.Type ?? "Other",
+            ownerType: ownerElement?.Type ?? rule.ElementHeader?.Type ?? string.Empty,
+            ownerName: ownerElement?.Name ?? rule.ElementHeader?.Name ?? string.Empty,
+            hasClassManager: hasClassManager);
+    }
+
+    private static OriginAbilityScoreSource GetActiveOriginAbilityScoreSource()
+    {
+        bool hasRace = HasRegisteredOriginAbilityScoreSelection(OriginAbilityScoreSource.Race);
+        bool hasBackground = HasRegisteredOriginAbilityScoreSelection(OriginAbilityScoreSource.Background);
+
+        // If a character somehow already has both, prefer the 2024-style background source
+        // until the validator can clear the older racial selections.
+        if (hasBackground)
+            return OriginAbilityScoreSource.Background;
+        return hasRace ? OriginAbilityScoreSource.Race : OriginAbilityScoreSource.None;
+    }
+
+    private static bool HasRegisteredOriginAbilityScoreSelection(OriginAbilityScoreSource source)
+    {
+        if (source == OriginAbilityScoreSource.None)
+            return false;
+
+        foreach (var rule in CharacterManager.Current.SelectionRules)
+        {
+            if (GetOriginAbilityScoreSource(rule) != source)
+                continue;
+
+            for (int n = 1; n <= rule.Attributes.Number; n++)
+            {
+                if (SelectionRuleExpanderContext.Current?.GetRegisteredElement(rule, n) is ElementBase)
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static void ClearConflictingOriginAbilityScoreSelections(
+        SelectRule selectedRule,
+        List<string> invalidated)
+    {
+        OriginAbilityScoreSource selectedSource = GetOriginAbilityScoreSource(selectedRule);
+        if (selectedSource == OriginAbilityScoreSource.None)
+            return;
+
+        OriginAbilityScoreSource conflictingSource = selectedSource == OriginAbilityScoreSource.Race
+            ? OriginAbilityScoreSource.Background
+            : OriginAbilityScoreSource.Race;
+
+        ClearOriginAbilityScoreSelections(conflictingSource, selectedRule, invalidated);
+    }
+
+    private static void ClearExistingOriginAbilityScoreCollisions(List<string> invalidated)
+    {
+        if (!HasRegisteredOriginAbilityScoreSelection(OriginAbilityScoreSource.Race) ||
+            !HasRegisteredOriginAbilityScoreSelection(OriginAbilityScoreSource.Background))
+        {
+            return;
+        }
+
+        // Existing mixed-rule characters are normalized toward 2024 background ASIs.
+        ClearOriginAbilityScoreSelections(OriginAbilityScoreSource.Race, exceptRule: null, invalidated);
+    }
+
+    private static void ClearOriginAbilityScoreSelections(
+        OriginAbilityScoreSource source,
+        SelectRule? exceptRule,
+        List<string> invalidated)
+    {
+        if (source == OriginAbilityScoreSource.None)
+            return;
+
+        var cm = CharacterManager.Current;
+        foreach (var rule in cm.SelectionRules.ToList())
+        {
+            if (exceptRule != null && ReferenceEquals(rule, exceptRule))
+                continue;
+            if (GetOriginAbilityScoreSource(rule) != source)
+                continue;
+
+            for (int n = 1; n <= rule.Attributes.Number; n++)
+            {
+                var registered = SelectionRuleExpanderContext.Current?.GetRegisteredElement(rule, n) as ElementBase;
+                if (registered == null)
+                    continue;
+
+                try
+                {
+                    cm.UnregisterElement(registered);
+                    SelectionRuleExpanderContext.Current?.ClearRegisteredElement(rule, n);
+                }
+                catch { }
+
+                invalidated.Add(BuildSelectionLabel(rule, n));
+            }
+        }
+    }
+
+    private static string BuildSelectionLabel(SelectRule rule, int number)
+    {
+        string ruleName = rule.Attributes.Name ?? rule.Attributes.Type ?? "Selection";
+        return rule.Attributes.Number > 1 ? $"{ruleName} ({number})" : ruleName;
     }
 
     /// <summary>

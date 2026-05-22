@@ -101,6 +101,12 @@
                                         }
                                     </div>
                                 }
+                                @if (opt.Coins.HasAny)
+                                {
+                                    <div class="se-item-row">
+                                        <span class="se-item-name se-gold-amount">@CoinLabel(opt.Coins)</span>
+                                    </div>
+                                }
                             </div>
                         }
                     </div>
@@ -138,11 +144,11 @@
                     </div>
                 }
 
-                @* 2024-style leftover gold bundled with the fixed kit (e.g. EFA Artificer's "+16 GP"). *@
-                @if (ClassBlock.FixedGold > 0)
+                @* 2024-style leftover coins bundled with the fixed kit. *@
+                @if (HasFixedCoins(ClassBlock))
                 {
                     <div class="se-item-row">
-                        <span class="se-item-name se-gold-amount">@ClassBlock.FixedGold gp</span>
+                        <span class="se-item-name se-gold-amount">@FixedCoinLabel(ClassBlock)</span>
                     </div>
                 }
             }
@@ -155,6 +161,20 @@
                 Background Equipment
             </div>
 
+            @if (BackgroundBlock.GoldAlternative != null)
+            {
+                <div class="se-gold-row">
+                    <MudCheckBox @bind-Value="_takeBackgroundGold"
+                                 Color="Color.Warning"
+                                 Size="Size.Small" />
+                    <span class="se-gold-label" @onclick="() => _takeBackgroundGold = !_takeBackgroundGold">
+                        Take <strong>@GoldAltLabel(BackgroundBlock.GoldAlternative)</strong> instead of all background equipment
+                    </span>
+                </div>
+            }
+
+            @if (!_takeBackgroundGold)
+            {
             @* Background choice rows (e.g. holy symbol type) *@
             @for (int bci = 0; bci < BackgroundBlock.Choices.Count; bci++)
             {
@@ -213,6 +233,12 @@
                                     }
                                 </div>
                             }
+                            @if (bopt.Coins.HasAny)
+                            {
+                                <div class="se-item-row">
+                                    <span class="se-item-name se-gold-amount">@CoinLabel(bopt.Coins)</span>
+                                </div>
+                            }
                         </div>
                     }
                 </div>
@@ -249,11 +275,12 @@
                 </div>
             }
 
-            @if (BackgroundBlock.FixedGold > 0)
+            @if (HasFixedCoins(BackgroundBlock))
             {
                 <div class="se-item-row">
-                    <span class="se-item-name se-gold-amount">@BackgroundBlock.FixedGold gp</span>
+                    <span class="se-item-name se-gold-amount">@FixedCoinLabel(BackgroundBlock)</span>
                 </div>
+            }
             }
         }
     </DialogContent>
@@ -283,6 +310,7 @@
     [Parameter] public StartingEquipmentBlock BackgroundBlock { get; set; } = StartingEquipmentBlock.Empty;
 
     private bool _takeClassGold;
+    private bool _takeBackgroundGold;
     private int[] _optionIndex   = [];
     private int[] _bgOptionIndex = [];
     private readonly Dictionary<string, string> _categoryPicks = new();
@@ -322,6 +350,7 @@
             }
             for (int bci = 0; bci < BackgroundBlock.Choices.Count; bci++)
             {
+                if (_takeBackgroundGold) break;
                 int boi   = _bgOptionIndex[bci];
                 var bopts = BackgroundBlock.Choices[bci].Options;
                 if (boi >= bopts.Count) continue;
@@ -329,9 +358,12 @@
                     if (bitem.IsCategory && !_categoryPicks.ContainsKey($"bc{bci}_o{boi}_i{bii}"))
                         return true;
             }
-            foreach (var (item, ii) in BackgroundBlock.FixedItems.Select((x, i) => (x, i)))
-                if (item.IsCategory && !_categoryPicks.ContainsKey($"bg_i{ii}"))
-                    return true;
+            if (!_takeBackgroundGold)
+            {
+                foreach (var (item, ii) in BackgroundBlock.FixedItems.Select((x, i) => (x, i)))
+                    if (item.IsCategory && !_categoryPicks.ContainsKey($"bg_i{ii}"))
+                        return true;
+            }
             return false;
         }
     }
@@ -374,11 +406,32 @@
             _optionIndex,
             _bgOptionIndex,
             _categoryPicks,
-            _takeClassGold);
+            _takeClassGold,
+            _takeBackgroundGold);
 
         MudDialog.Close(new StartingEquipmentResult(
             result.Items,
-            result.Gold,
+            result.Coins,
             result.TookRolledGold));
+    }
+
+    private static bool HasFixedCoins(StartingEquipmentBlock block) =>
+        block.FixedCoins.HasAny || block.FixedGold > 0;
+
+    private static CoinGrant EffectiveFixedCoins(StartingEquipmentBlock block) =>
+        block.FixedCoins.HasAny ? block.FixedCoins : new CoinGrant(Gold: block.FixedGold);
+
+    private static string FixedCoinLabel(StartingEquipmentBlock block) =>
+        CoinLabel(EffectiveFixedCoins(block));
+
+    private static string CoinLabel(CoinGrant coins)
+    {
+        var parts = new List<string>(5);
+        if (coins.Copper > 0) parts.Add($"{coins.Copper} cp");
+        if (coins.Silver > 0) parts.Add($"{coins.Silver} sp");
+        if (coins.Electrum > 0) parts.Add($"{coins.Electrum} ep");
+        if (coins.Gold > 0) parts.Add($"{coins.Gold} gp");
+        if (coins.Platinum > 0) parts.Add($"{coins.Platinum} pp");
+        return parts.Count == 0 ? "0 gp" : string.Join(", ", parts);
     }
 }

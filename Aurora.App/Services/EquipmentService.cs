@@ -81,7 +81,9 @@ public static class EquipmentService
                 {
                     "ID_WOTC_PHB_ITEM_CRYSTAL", "ID_WOTC_PHB_ITEM_ORB", "ID_WOTC_PHB_ITEM_ROD",
                     "ID_WOTC_PHB_ITEM_STAFF", "ID_WOTC_PHB_ITEM_WAND",
-                }.Contains(e.Id)),
+                    "ID_WOTC_PHB24_ITEM_ARCANE_FOCUS_CRYSTAL", "ID_WOTC_PHB24_ITEM_ARCANE_FOCUS_ORB",
+                    "ID_WOTC_PHB24_ITEM_ARCANE_FOCUS_ROD", "ID_WOTC_PHB24_ITEM_ARCANE_FOCUS_WAND",
+                }.Contains(e.Id) || HasSetterValue(e, "container", "Arcane Focus")),
 
             // Druidic focus items have no <supports> — matched by known element IDs.
             "druidic focus" => DataManager.Current.ElementsCollection.Where(e =>
@@ -89,7 +91,20 @@ public static class EquipmentService
                 {
                     "ID_WOTC_PHB_ITEM_SPRIGOFMISTLETOE", "ID_WOTC_PHB_ITEM_TOTEM",
                     "ID_WOTC_PHB_ITEM_WOODENSTAFF",      "ID_WOTC_PHB_ITEM_YEWWAND",
-                }.Contains(e.Id)),
+                    "ID_WOTC_PHB24_ITEM_DRUIDIC_FOCUS_SPRIG_OF_MISTLETOE",
+                    "ID_WOTC_PHB24_ITEM_DRUIDIC_FOCUS_YEW_WAND",
+                }.Contains(e.Id) || HasSetterValue(e, "container", "Druidic Focus")),
+
+            "holy symbol" => DataManager.Current.ElementsCollection.Where(e =>
+                new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    "ID_WOTC_PHB_ITEM_AMULET", "ID_WOTC_PHB_ITEM_EMBLEM", "ID_WOTC_PHB_ITEM_RELIQUARY",
+                    "ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_AMULET", "ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_EMBLEM",
+                    "ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_RELIQUARY",
+                }.Contains(e.Id) || HasSetterValue(e, "container", "Holy Symbol")),
+
+            "spellcasting focus" => DataManager.Current.ElementsCollection.Where(e =>
+                HasSetterValue(e, "category", "Spellcasting Focus")),
 
             // Musical instruments have no <supports> — matched by known element IDs.
             "musical instrument" => DataManager.Current.ElementsCollection.Where(e =>
@@ -100,7 +115,12 @@ public static class EquipmentService
                     "ID_WOTC_SRD_INSTRUMENT_HORN",     "ID_WOTC_SRD_INSTRUMENT_LUTE",
                     "ID_WOTC_SRD_INSTRUMENT_LYRE",     "ID_WOTC_SRD_INSTRUMENT_PANFLUTE",
                     "ID_WOTC_SRD_INSTRUMENT_SHAWM",    "ID_WOTC_SRD_INSTRUMENT_VIOL",
-                }.Contains(e.Id)),
+                    "ID_WOTC_PHB24_INSTRUMENT_BAGPIPES", "ID_WOTC_PHB24_INSTRUMENT_DRUM",
+                    "ID_WOTC_PHB24_INSTRUMENT_DULCIMER", "ID_WOTC_PHB24_INSTRUMENT_FLUTE",
+                    "ID_WOTC_PHB24_INSTRUMENT_HORN",     "ID_WOTC_PHB24_INSTRUMENT_LUTE",
+                    "ID_WOTC_PHB24_INSTRUMENT_LYRE",     "ID_WOTC_PHB24_INSTRUMENT_PANFLUTE",
+                    "ID_WOTC_PHB24_INSTRUMENT_SHAWM",    "ID_WOTC_PHB24_INSTRUMENT_VIOL",
+                }.Contains(e.Id) || HasSetterValue(e, "category", "Musical Instruments")),
 
             // Artisan's tools have no <supports> — matched by known element IDs.
             "artisan's tools" => DataManager.Current.ElementsCollection.Where(e =>
@@ -123,6 +143,31 @@ public static class EquipmentService
                     "ID_WOTC_PHB_ITEM_TOOL_TINKERS_TOOLS",
                     "ID_WOTC_PHB_ITEM_TOOL_WEAVERS_TOOLS",
                     "ID_WOTC_PHB_ITEM_TOOL_WOODCARVERS_TOOLS",
+                    "ID_WOTC_PHB24_ITEM_TOOL_ALCHEMISTS_SUPPLIES",
+                    "ID_WOTC_PHB24_ITEM_TOOL_BREWERS_SUPPLIES",
+                    "ID_WOTC_PHB24_ITEM_TOOL_CALLIGRAPHERS_SUPPLIES",
+                    "ID_WOTC_PHB24_ITEM_TOOL_CARPENTERS_TOOLS",
+                    "ID_WOTC_PHB24_ITEM_TOOL_COBBLERS_TOOLS",
+                    "ID_WOTC_PHB24_ITEM_TOOL_COOKS_UTENSILS",
+                    "ID_WOTC_PHB24_ITEM_TOOL_GLASSBLOWERS_TOOLS",
+                    "ID_WOTC_PHB24_ITEM_TOOL_JEWELERS_TOOLS",
+                    "ID_WOTC_PHB24_ITEM_TOOL_LEATHERWORKERS_TOOLS",
+                    "ID_WOTC_PHB24_ITEM_TOOL_MASONS_TOOLS",
+                    "ID_WOTC_PHB24_ITEM_TOOL_PAINTERS_SUPPLIES",
+                    "ID_WOTC_PHB24_ITEM_TOOL_POTTERS_TOOLS",
+                    "ID_WOTC_PHB24_ITEM_TOOL_SMITHS_TOOLS",
+                    "ID_WOTC_PHB24_ITEM_TOOL_TINKERS_TOOLS",
+                    "ID_WOTC_PHB24_ITEM_TOOL_WEAVERS_TOOLS",
+                    "ID_WOTC_PHB24_ITEM_TOOL_WOODCARVERS_TOOLS",
+                }.Contains(e.Id)),
+
+            "gaming set" => DataManager.Current.ElementsCollection.Where(e =>
+                new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    "ID_WOTC_PHB24_ITEM_TOOL_DICE_SET",
+                    "ID_WOTC_PHB24_ITEM_TOOL_DRAGONCHESS_SET",
+                    "ID_WOTC_PHB24_ITEM_TOOL_PLAYING_CARDS_SET",
+                    "ID_WOTC_PHB24_ITEM_TOOL_THREE_DRAGON_ANTE_SET",
                 }.Contains(e.Id)),
 
             _ => DataManager.Current.ElementsCollection.Where(e =>
@@ -140,6 +185,15 @@ public static class EquipmentService
             .Take(200)
             .Select(e => new ItemSearchResult(e.Id, e.Name, e.Type, GetDescription(e), e.Source ?? ""))
             .ToList();
+    }
+
+    private static bool HasSetterValue(Builder.Data.ElementBase element, string setterName, string expectedValue)
+    {
+        if (!element.ElementSetters.ContainsSetter(setterName))
+            return false;
+
+        var value = element.ElementSetters.GetSetter(setterName)?.Value;
+        return string.Equals(value, expectedValue, StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>

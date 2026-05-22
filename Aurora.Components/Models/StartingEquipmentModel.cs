@@ -20,8 +20,11 @@ public sealed class StartingEquipmentBlock
     /// <summary>Fixed gold granted unconditionally in GP (e.g. a background's "15 gp").</summary>
     public int FixedGold { get; init; }
 
+    /// <summary>Fixed coins granted unconditionally.</summary>
+    public CoinGrant FixedCoins { get; init; } = CoinGrant.Empty;
+
     public bool HasContent =>
-        GoldAlternative != null || Choices.Count > 0 || FixedItems.Count > 0 || FixedGold > 0;
+        GoldAlternative != null || Choices.Count > 0 || FixedItems.Count > 0 || FixedGold > 0 || FixedCoins.HasAny;
 }
 
 /// <summary>
@@ -57,6 +60,9 @@ public sealed class EquipmentOption
 
     /// <summary>Items granted when this option is chosen.</summary>
     public IReadOnlyList<EquipmentItem> Items { get; init; } = [];
+
+    /// <summary>Coins granted when this option is chosen.</summary>
+    public CoinGrant Coins { get; init; } = CoinGrant.Empty;
 }
 
 /// <summary>
@@ -86,4 +92,27 @@ public sealed class EquipmentItem
 
     /// <summary>True when the player must choose a specific item from a category.</summary>
     public bool IsCategory => !string.IsNullOrEmpty(Category);
+}
+
+/// <summary>Coin grant broken out by denomination.</summary>
+public sealed record CoinGrant(
+    int Copper = 0,
+    int Silver = 0,
+    int Electrum = 0,
+    int Gold = 0,
+    int Platinum = 0)
+{
+    public static readonly CoinGrant Empty = new();
+
+    public bool HasAny => Copper > 0 || Silver > 0 || Electrum > 0 || Gold > 0 || Platinum > 0;
+
+    public CoinGrant Add(CoinGrant other) =>
+        new(
+            Copper + other.Copper,
+            Silver + other.Silver,
+            Electrum + other.Electrum,
+            Gold + other.Gold,
+            Platinum + other.Platinum);
+
+    public CoinGrant AddGold(int amount) => this with { Gold = Gold + amount };
 }

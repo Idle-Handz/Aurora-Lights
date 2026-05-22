@@ -19,6 +19,19 @@ public sealed class BuildRuleClassifierTests
         bool hasClassManager = false)
         => BuildRuleClassifier.Classify(ruleType, ruleName.Length > 0 ? ruleName : ruleType, ownerType, ownerName, hasClassManager);
 
+    private static OriginAbilityScoreSource ClassifyOriginAsi(
+        string ruleType,
+        string ownerType = "",
+        string ruleName = "",
+        string ownerName = "",
+        bool hasClassManager = false)
+        => BuildRuleClassifier.ClassifyOriginAbilityScoreSource(
+            ruleType,
+            ruleName.Length > 0 ? ruleName : ruleType,
+            ownerType,
+            ownerName,
+            hasClassManager);
+
     // ── Language rules ────────────────────────────────────────────────────────────
 
     [Fact]
@@ -163,6 +176,47 @@ public sealed class BuildRuleClassifierTests
                 ruleName: "Ability Score Increase (Human Variant)",
                 ownerName: "Human Variant")
             .Should().Be(BuildRuleBucket.AbilityScores);
+
+    [Fact]
+    public void RacialAbilityScoreIncrease_IsRaceOriginAsi()
+        => ClassifyOriginAsi(
+                "Racial Trait",
+                ownerType: "Race",
+                ruleName: "Ability Score Increase")
+            .Should().Be(OriginAbilityScoreSource.Race);
+
+    [Fact]
+    public void BackgroundAbilityScoreImprovement_IsBackgroundOriginAsi()
+        => ClassifyOriginAsi(
+                "Ability Score Improvement",
+                ownerType: "Background",
+                ruleName: "Ability Score Increase")
+            .Should().Be(OriginAbilityScoreSource.Background);
+
+    [Fact]
+    public void BackgroundOwnedAbilityScoreRule_RoutesToAbilityScores()
+        => Classify(
+                "Background Feature",
+                ownerType: "Background",
+                ruleName: "Ability Score Increase")
+            .Should().Be(BuildRuleBucket.AbilityScores);
+
+    [Fact]
+    public void ClassAbilityScoreImprovement_IsNotOriginAsi()
+        => ClassifyOriginAsi(
+                "Ability Score Improvement",
+                ownerType: "Class Feature",
+                ruleName: "Ability Score Improvement",
+                hasClassManager: true)
+            .Should().Be(OriginAbilityScoreSource.None);
+
+    [Fact]
+    public void BackgroundFeat_IsNotOriginAsi()
+        => ClassifyOriginAsi(
+                "Feat",
+                ownerType: "Background",
+                ruleName: "Origin Feat")
+            .Should().Be(OriginAbilityScoreSource.None);
 
     // ── Companion rules ───────────────────────────────────────────────────────────
 

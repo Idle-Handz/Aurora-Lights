@@ -13,6 +13,13 @@ public enum BuildRuleBucket
     Overflow,
 }
 
+public enum OriginAbilityScoreSource
+{
+    None,
+    Race,
+    Background,
+}
+
 /// <summary>
 /// Pure classification logic for routing SelectionRules to Build page tabs.
 /// Takes pre-resolved strings so it has no dependency on DataManager or MAUI —
@@ -132,6 +139,28 @@ public static class BuildRuleClassifier
         return string.Empty;
     }
 
+    public static OriginAbilityScoreSource ClassifyOriginAbilityScoreSource(
+        string ruleType,
+        string ruleName,
+        string ownerType,
+        string ownerName,
+        bool hasClassManager)
+    {
+        if (hasClassManager)
+            return OriginAbilityScoreSource.None;
+
+        if (!IsAbilityScoresRule(ruleType, ruleName, ownerType, ownerName))
+            return OriginAbilityScoreSource.None;
+
+        if (BackgroundTypes.Contains(ruleType) || BackgroundTypes.Contains(ownerType))
+            return OriginAbilityScoreSource.Background;
+
+        if (RaceTypes.Contains(ruleType) || RaceTypes.Contains(ownerType))
+            return OriginAbilityScoreSource.Race;
+
+        return OriginAbilityScoreSource.None;
+    }
+
     public static bool IsOptionalFlavorSelection(string label) =>
         OptionalFlavorLabels.Contains(label) ||
         OptionalFlavorLabels.Any(f => label.StartsWith(f + " (", StringComparison.OrdinalIgnoreCase));
@@ -144,6 +173,7 @@ public static class BuildRuleClassifier
         return (ruleName.Contains("Ability Score", StringComparison.OrdinalIgnoreCase) ||
                 ownerName.Contains("Ability Score", StringComparison.OrdinalIgnoreCase)) &&
                (ruleType.Equals("Racial Trait", StringComparison.OrdinalIgnoreCase) ||
-                RaceTypes.Contains(ownerType));
+                RaceTypes.Contains(ownerType) ||
+                BackgroundTypes.Contains(ownerType));
     }
 }

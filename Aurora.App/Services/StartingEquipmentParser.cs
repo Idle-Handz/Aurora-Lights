@@ -20,6 +20,7 @@ public static class StartingEquipmentParser
         var choices    = new List<EquipmentChoice>();
         var fixedItems = new List<EquipmentItem>();
         int fixedGold  = 0;
+        var fixedCoins = CoinGrant.Empty;
 
         foreach (XmlNode child in node.ChildNodes)
         {
@@ -42,7 +43,13 @@ public static class StartingEquipmentParser
                     break;
 
                 case "gold":
-                    fixedGold += ParseInt(child.Attributes?["amount"]?.Value, 0);
+                    int gold = ParseInt(child.Attributes?["amount"]?.Value, 0);
+                    fixedGold += gold;
+                    fixedCoins = fixedCoins.AddGold(gold);
+                    break;
+
+                case "coins":
+                    fixedCoins = fixedCoins.Add(ParseCoins(child));
                     break;
             }
         }
@@ -53,6 +60,7 @@ public static class StartingEquipmentParser
             Choices         = choices,
             FixedItems      = fixedItems,
             FixedGold       = fixedGold,
+            FixedCoins      = fixedCoins,
         };
     }
 
@@ -88,16 +96,29 @@ public static class StartingEquipmentParser
 
             string label = child.Attributes?["label"]?.Value ?? string.Empty;
             var items    = new List<EquipmentItem>();
+            var coins    = CoinGrant.Empty;
 
-            foreach (XmlNode itemNode in child.ChildNodes)
+            foreach (XmlNode optionChild in child.ChildNodes)
             {
-                if (itemNode.Name != "item") continue;
-                var item = ParseItem(itemNode);
-                if (item != null)
-                    items.Add(item);
+                switch (optionChild.Name)
+                {
+                    case "item":
+                        var item = ParseItem(optionChild);
+                        if (item != null)
+                            items.Add(item);
+                        break;
+
+                    case "gold":
+                        coins = coins.AddGold(ParseInt(optionChild.Attributes?["amount"]?.Value, 0));
+                        break;
+
+                    case "coins":
+                        coins = coins.Add(ParseCoins(optionChild));
+                        break;
+                }
             }
 
-            options.Add(new EquipmentOption { Label = label, Items = items });
+            options.Add(new EquipmentOption { Label = label, Items = items, Coins = coins });
         }
 
         if (options.Count == 0) return null;
@@ -119,4 +140,12 @@ public static class StartingEquipmentParser
 
     private static int ParseInt(string? value, int fallback) =>
         int.TryParse(value, out int result) ? result : fallback;
+
+    private static CoinGrant ParseCoins(XmlNode node) =>
+        new(
+            ParseInt(node.Attributes?["cp"]?.Value, 0),
+            ParseInt(node.Attributes?["sp"]?.Value, 0),
+            ParseInt(node.Attributes?["ep"]?.Value, 0),
+            ParseInt(node.Attributes?["gp"]?.Value, 0),
+            ParseInt(node.Attributes?["pp"]?.Value, 0));
 }

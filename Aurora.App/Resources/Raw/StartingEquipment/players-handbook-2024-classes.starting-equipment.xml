@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<aurora-starting-equipment>
+    <!-- Player's Handbook (2024) class kits. Option B is the fixed-gold alternative. -->
+    <entry element-id="ID_WOTC_PHB24_CLASS_BARBARIAN">
+        <starting-equipment>
+            <gold-alternative amount="75" />
+            <item id="ID_WOTC_PHB24_WEAPON_GREATAXE" />
+            <item id="ID_WOTC_PHB24_WEAPON_HANDAXE" count="4" />
+            <item id="ID_WOTC_PHB24_ITEM_EXPLORERS_PACK" />
+            <coins gp="15" />
+        </starting-equipment>
+    </entry>
+
+    <entry element-id="ID_WOTC_PHB24_CLASS_BARD">
+        <starting-equipment>
+            <gold-alternative amount="90" />
+            <item id="ID_WOTC_PHB24_ARMOR_LIGHT_LEATHER" />
+            <item id="ID_WOTC_PHB24_WEAPON_DAGGER" count="2" />
+            <item category="Musical Instrument" />
+            <item id="ID_WOTC_PHB24_ITEM_ENTERTAINERS_PACK" />
+            <coins gp="19" />
+        </starting-equipment>
+    </entry>
+
+    <entry element-id="ID_WOTC_PHB24_CLASS_CLERIC">
+        <starting-equipment>
+            <gold-alternative amount="110" />
+            <item id="ID_WOTC_PHB24_ARMOR_MEDIUM_CHAIN_SHIRT" />
+            <item id="ID_WOTC_PHB24_ARMOR_SHIELD" />
+            <item id="ID_WOTC_PHB24_WEAPON_MACE" />
+            <item category="Holy Symbol" />
+            <item id="ID_WOTC_PHB24_ITEM_PRIESTS_PACK" />
+            <coins gp="7" />
+        </starting-equipment>
+    </entry>
+
+    <entry element-id="ID_WOTC_PHB24_CLASS_DRUID">
+        <starting-equipment>
+            <gold-alternative amount="50" />
+            <item id="ID_WOTC_PHB24_ARMOR_LIGHT_LEATHER" />
+            <item id="ID_WOTC_PHB24_ARMOR_SHIELD" />
+            <item id="ID_WOTC_PHB24_WEAPON_SICKLE" />
+            <item id="ID_WOTC_PHB24_WEAPON_QUARTERSTAFF" />
+            <item id="ID_WOTC_PHB24_ITEM_EXPLORERS_PACK" />
+            <item id="ID_WOTC_PHB24_ITEM_TOOL_HERBALISM_KIT" />
+            <coins gp="9" />
+        </starting-equipment>
+    </entry>
+
+    <entry element-id="ID_WOTC_PHB24_CLASS_FIGHTER">
+        <starting-equipment>
+            <gold-alternative amount="155" />
+            <choice>
+                <option label="a">
+                    <item id="ID_WOTC_PHB24_ARMOR_HEAVY_CHAIN_MAIL" />
+                    <item id="ID_WOTC_PHB24_WEAPON_GREATSWORD" />
+                    <item id="ID_WOTC_PHB24_WEAPON_FLAIL" />
+                    <item id="ID_WOTC_PHB24_WEAPON_JAVELIN" count="8" />
+                    <item id="ID_WOTC_PHB24_ITEM_DUNGEONEERS_PACK" />
+                    <coins gp="4" />
+                </option>
+                <option label="b">
+                    <item id="ID_WOTC_PHB24_ARMOR_LIGHT_STUDDED_LEATHER" />
+                    <item id="ID_WOTC_PHB24_WEAPON_SCIMITAR" />
+                    <item id="ID_WOTC_PHB24_WEAPON_SHORTSWORD" />
+                    <item id="ID_WOTC_PHB24_WEAPON_LONGBOW" />
+                    <item id="ID_WOTC_PHB24_ITEM_ARROW" count="20" />
+                    <item id="ID_WOTC_PHB24_ITEM_QUIVER" />
+                    <item id="ID_WOTC_PHB24_ITEM_DUNGEONEERS_PACK" />
+                    <coins gp="11" />
+                </option>
+            </choice>
+        </starting-equipment>
+    </entry>
+
+    <entry element-id="ID_WOTC_PHB24_CLASS_MONK">
+        <starting-equipment>
+            <gold-alternative amount="50" />
+            <item id="ID_WOTC_PHB24_WEAPON_SPEAR" />
+            <item id="ID_WOTC_PHB24_WEAPON_DAGGER" count="5" />
+            <choice>
+                <option label="artisan's tools">
+                    <item category="Artisan's Tools" />
+                </option>
+                <option label="musical instrument">
+                    <item category="Musical Instrument" />
+                </option>
+            </choice>
+            <item id="ID_WOTC_PHB24_ITEM_EXPLORERS_PACK" />
+            <coins gp="11" />
+        </starting-equipment>
+    </entry>
+
+    <entry element-id="ID_WOTC_PHB24_CLASS_PALADIN">
+        <starting-equipment>
+            <gold-alternative amount="150" />
+            <item id="ID_WOTC_PHB24_ARMOR_HEAVY_CHAIN_MAIL" />
+            <item id="ID_WOTC_PHB24_ARMOR_SHIELD" />
+            <item id="ID_WOTC_PHB24_WEAPON_LONGSWORD" />
+            <item id="ID_WOTC_PHB24_WEAPON_JAVELIN" count="6" />
+            <item category="Holy Symbol" />
+            <item id="ID_WOTC_PHB24_ITEM_PRIESTS_PACK" />
+            <coins gp="9" />
+        </starting-equipment>
+    </entry>
+
+    <entry element-id="ID_WOTC_PHB24_CLASS_RANGER">
+        <starting-equipment>
+            <gold-alternative amount="150" />
+            <item id="ID_WOTC_PHB24_ARMOR_LIGHT_STUDDED_LEATHER" />
+            <item id="ID_WOTC_PHB24_WEAPON_SCIMITAR" />
+            <item id="ID_WOTC_PHB24_WEAPON_SHORTSWORD" />
+            <item id="ID_WOTC_PHB24_WEAPON_LONGBOW" />
+            <item id="ID_WOTC_PHB24_ITEM_ARROW" count="20" />
+            <item id="ID_WOTC_PHB24_ITEM_QUIVER" />
+            <item id="ID_WOTC_PHB24_ITEM_DRUIDIC_FOCUS_SPRIG_OF_MISTLETOE" />
+            <item id="ID_WOTC_PHB24_ITEM_EXPLORERS_PACK" />
+            <coins gp="7" />
+        </starting-equipment>
+    </entry>
+
+    <entry element-id="ID_WOTC_PHB24_CLASS_ROGUE">
+        <starting-equipment>
+            <gold-alternative amount="100" />
+            <item id="ID_WOTC_PHB24_ARMOR_LIGHT_LEATHER" />
+            <item id="ID_WOTC_PHB24_WEAPON_DAGGER" count="2" />
+            <item id="ID_WOTC_PHB24_WEAPON_SHORTSWORD" />
+            <item id="ID_WOTC_PHB24_WEAPON_SHORTBOW" />
+            <item id="ID_WOTC_PHB24_ITEM_ARROW" count="20" />
+            <item id="ID_WOTC_PHB24_ITEM_QUIVER" />
+            <item id="ID_WOTC_PHB24_ITEM_TOOL_THIEVES_TOOLS" />
+            <item id="ID_WOTC_PHB24_ITEM_BURGLARS_PACK" />
+            <coins gp="8" />
+        </starting-equipment>
+    </entry>
+
+    <entry element-id="ID_WOTC_PHB24_CLASS_SORCERER">
+        <starting-equipment>
+            <gold-alternative amount="50" />
+            <item id="ID_WOTC_PHB24_WEAPON_SPEAR" />
+            <item id="ID_WOTC_PHB24_WEAPON_DAGGER" count="2" />
+            <item id="ID_WOTC_PHB24_ITEM_ARCANE_FOCUS_CRYSTAL" />
+            <item id="ID_WOTC_PHB24_ITEM_DUNGEONEERS_PACK" />
+            <coins gp="28" />
+        </starting-equipment>
+    </entry>
+
+    <entry element-id="ID_WOTC_PHB24_CLASS_WARLOCK">
+        <starting-equipment>
+            <gold-alternative amount="100" />
+            <item id="ID_WOTC_PHB24_ARMOR_LIGHT_LEATHER" />
+            <item id="ID_WOTC_PHB24_WEAPON_SICKLE" />
+            <item id="ID_WOTC_PHB24_WEAPON_DAGGER" count="2" />
+            <item id="ID_WOTC_PHB24_ITEM_ARCANE_FOCUS_ORB" />
+            <item id="ID_WOTC_PHB24_ITEM_BOOK" name="Book (occult lore)" />
+            <item id="ID_WOTC_PHB24_ITEM_SCHOLARS_PACK" />
+            <coins gp="15" />
+        </starting-equipment>
+    </entry>
+
+    <entry element-id="ID_WOTC_PHB24_CLASS_WIZARD">
+        <starting-equipment>
+            <gold-alternative amount="55" />
+            <item id="ID_WOTC_PHB24_WEAPON_DAGGER" count="2" />
+            <item id="ID_WOTC_PHB24_WEAPON_QUARTERSTAFF" />
+            <item id="ID_WOTC_PHB24_ITEM_ROBE" />
+            <item id="ID_WOTC_PHB24_ITEM_BOOK" name="Spellbook" />
+            <item id="ID_WOTC_PHB24_ITEM_SCHOLARS_PACK" />
+            <coins gp="5" />
+        </starting-equipment>
+    </entry>
+</aurora-starting-equipment>
