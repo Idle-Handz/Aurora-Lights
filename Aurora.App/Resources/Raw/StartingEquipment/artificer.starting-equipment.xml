@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<aurora-starting-equipment>
+    <!--
+        Artificer starting equipment — one <entry> per Artificer class element, so a character
+        resolves regardless of which pack's version they were built with.
+
+        2014 rules (D&D 5e) — identical printed equipment, so these share one block:
+          - ID_WOTC_TCOE_CLASS_ARTIFICER (Tasha's Cauldron of Everything): authoritative for 5e.
+          - ID_WOTC_ERLW_CLASS_ARTIFICER (Eberron: Rising from the Last War): the 2014 Eberron Artificer.
+          - ID_WOTC_UA_CLASS_ARTIFICER / ID_WOTC_UA20190228_CLASS_ARTIFICER: Unearthed Arcana playtest
+            (the Feb-2019 UA matches the published kit exactly; the earlier UA reuses it as an approximation).
+        Gold for these: Artificer isn't in the PHB "Starting Wealth by Class" table, so 5d4 x 10 gp
+        mirrors the other half-casters (Paladin/Ranger) — the value commonly used for Artificer.
+
+        5.5 rules (D&D 2024):
+          - ID_EFA_CLASS_ARTIFICER (Eberron: Forge of the Artificer): authoritative for 5.5. Uses the 2024
+            equipment format — a fixed kit plus leftover gold, OR a flat gold pile instead. Currently WIP
+            custom content (the-book-of-xellarant); resolves in-app only once that content is synced into
+            the element database. Item IDs use the 2024 (PHB24) variants.
+    -->
+    <entry element-id="ID_WOTC_TCOE_CLASS_ARTIFICER">
+        <starting-equipment>
+            <gold-alternative roll="5d4" multiplier="10" />
+
+            <!-- (a) any two simple weapons or (b) a light crossbow and 20 bolts -->
+            <choice>
+                <option label="a">
+                    <item category="Simple Weapon" />
+                    <item category="Simple Weapon" />
+                </option>
+                <option label="b">
+                    <item id="ID_WOTC_PHB_WEAPON_CROSSBOW_LIGHT" />
+                    <item id="ID_WOTC_PHB_ITEM_CROSSBOWBOLT" count="20" />
+                </option>
+            </choice>
+
+            <!-- (a) studded leather armor or (b) scale mail -->
+            <choice>
+                <option label="a">
+                    <item id="ID_WOTC_ARMOR_LIGHT_STUDDED_LEATHER" />
+                </option>
+                <option label="b">
+                    <item id="ID_WOTC_ARMOR_MEDIUM_SCALE_MAIL" />
+                </option>
+            </choice>
+
+            <!-- Fixed: thieves' tools and a dungeoneer's pack -->
+            <item id="ID_WOTC_PHB_ITEM_TOOL_THIEVES_TOOLS" />
+            <item id="ID_WOTC_ITEM_DUNGEONEERS_PACK" />
+        </starting-equipment>
+    </entry>
+
+    <entry element-id="ID_WOTC_ERLW_CLASS_ARTIFICER">
+        <starting-equipment>
+            <gold-alternative roll="5d4" multiplier="10" />
+
+            <!-- (a) any two simple weapons or (b) a light crossbow and 20 bolts -->
+            <choice>
+                <option label="a">
+                    <item category="Simple Weapon" />
+                    <item category="Simple Weapon" />
+                </option>
+                <option label="b">
+                    <item id="ID_WOTC_PHB_WEAPON_CROSSBOW_LIGHT" />
+                    <item id="ID_WOTC_PHB_ITEM_CROSSBOWBOLT" count="20" />
+                </option>
+            </choice>
+
+            <!-- (a) studded leather armor or (b) scale mail -->
+            <choice>
+                <option label="a">
+                    <item id="ID_WOTC_ARMOR_LIGHT_STUDDED_LEATHER" />
+                </option>
+                <option label="b">
+                    <item id="ID_WOTC_ARMOR_MEDIUM_SCALE_MAIL" />
+                </option>
+            </choice>
+
+            <!-- Fixed: thieves' tools and a dungeoneer's pack -->
+            <item id="ID_WOTC_PHB_ITEM_TOOL_THIEVES_TOOLS" />
+            <item id="ID_WOTC_ITEM_DUNGEONEERS_PACK" />
+        </starting-equipment>
+    </entry>
+
+    <entry element-id="ID_WOTC_UA_CLASS_ARTIFICER">
+        <starting-equipment>
+            <gold-alternative roll="5d4" multiplier="10" />
+
+            <!-- (a) any two simple weapons or (b) a light crossbow and 20 bolts -->
+            <choice>
+                <option label="a">
+                    <item category="Simple Weapon" />
+                    <item category="Simple Weapon" />
+                </option>
+                <option label="b">
+                    <item id="ID_WOTC_PHB_WEAPON_CROSSBOW_LIGHT" />
+                    <item id="ID_WOTC_PHB_ITEM_CROSSBOWBOLT" count="20" />
+                </option>
+            </choice>
+
+            <!-- (a) studded leather armor or (b) scale mail -->
+            <choice>
+                <option label="a">
+                    <item id="ID_WOTC_ARMOR_LIGHT_STUDDED_LEATHER" />
+                </option>
+                <option label="b">
+                    <item id="ID_WOTC_ARMOR_MEDIUM_SCALE_MAIL" />
+                </option>
+            </choice>
+
+            <!-- Fixed: thieves' tools and a dungeoneer's pack -->
+            <item id="ID_WOTC_PHB_ITEM_TOOL_THIEVES_TOOLS" />
+            <item id="ID_WOTC_ITEM_DUNGEONEERS_PACK" />
+        </starting-equipment>
+    </entry>
+
+    <entry element-id="ID_WOTC_UA20190228_CLASS_ARTIFICER">
+        <starting-equipment>
+            <gold-alternative roll="5d4" multiplier="10" />
+
+            <!-- (a) any two simple weapons or (b) a light crossbow and 20 bolts -->
+            <choice>
+                <option label="a">
+                    <item category="Simple Weapon" />
+                    <item category="Simple Weapon" />
+                </option>
+                <option label="b">
+                    <item id="ID_WOTC_PHB_WEAPON_CROSSBOW_LIGHT" />
+                    <item id="ID_WOTC_PHB_ITEM_CROSSBOWBOLT" count="20" />
+                </option>
+            </choice>
+
+            <!-- (a) studded leather armor or (b) scale mail -->
+            <choice>
+                <option label="a">
+                    <item id="ID_WOTC_ARMOR_LIGHT_STUDDED_LEATHER" />
+                </option>
+                <option label="b">
+                    <item id="ID_WOTC_ARMOR_MEDIUM_SCALE_MAIL" />
+                </option>
+            </choice>
+
+            <!-- Fixed: thieves' tools and a dungeoneer's pack -->
+            <item id="ID_WOTC_PHB_ITEM_TOOL_THIEVES_TOOLS" />
+            <item id="ID_WOTC_ITEM_DUNGEONEERS_PACK" />
+        </starting-equipment>
+    </entry>
+
+    <!-- 2024 (5.5) — Eberron: Forge of the Artificer. Choose A or B:
+         (A) the fixed kit below plus 16 GP, or (B) take 150 GP instead of all equipment. -->
+    <entry element-id="ID_EFA_CLASS_ARTIFICER">
+        <starting-equipment>
+            <gold-alternative amount="150" />
+
+            <item id="ID_WOTC_PHB24_ARMOR_LIGHT_STUDDED_LEATHER" />
+            <item id="ID_WOTC_PHB24_WEAPON_DAGGER" />
+            <item id="ID_WOTC_PHB24_ITEM_TOOL_THIEVES_TOOLS" />
+            <item id="ID_WOTC_PHB24_ITEM_TOOL_TINKERS_TOOLS" />
+            <item id="ID_WOTC_PHB24_ITEM_DUNGEONEERS_PACK" />
+            <gold amount="16" />
+        </starting-equipment>
+    </entry>
+</aurora-starting-equipment>
