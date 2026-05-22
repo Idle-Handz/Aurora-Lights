@@ -1,0 +1,42 @@
+{
+  "name": "2014 Human Fighter Acolyte",
+  "seedElementIds": [
+    "ID_RACE_HUMAN",
+    "ID_WOTC_PHB_CLASS_FIGHTER",
+    "ID_BACKGROUND_ACOLYTE"
+  ],
+  "baseAbilityScores": {
+    "Strength": 15,
+    "Dexterity": 10,
+    "Constitution": 14,
+    "Intelligence": 10,
+    "Wisdom": 12,
+    "Charisma": 8
+  },
+  "expectedRegisteredElementIds": [
+    "ID_RACE_HUMAN",
+    "ID_WOTC_PHB_CLASS_FIGHTER",
+    "ID_BACKGROUND_ACOLYTE"
+  ],
+  "expectedSelectionRules": [
+    {
+      "type": "Class Feature",
+      "nameContains": "Fighting Style",
+      "bucket": "Class",
+      "minOptions": 1
+    },
+    {
+      "type": "Language",
+      "nameContains": "Language (Acolyte)",
+      "bucket": "Languages",
+      "minOptions": 1
+    },
+    {
+      "type": "List",
+      "nameContains": "Personality Trait",
+      "bucket": "Background",
+      "optionalFlavor": true,
+      "minOptions": 1
+    }
+  ]
+}

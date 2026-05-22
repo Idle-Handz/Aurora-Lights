@@ -34,6 +34,7 @@
   <!-- Embed minimal test character XML as a resource -->
   <ItemGroup>
     <EmbeddedResource Include="Fixtures\*.dnd5e" />
+    <Content Include="Fixtures\ParityScenarios\*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

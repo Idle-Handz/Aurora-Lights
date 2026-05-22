@@ -1,0 +1,229 @@
+using Aurora.Components.Models;
+using Builder.Data;
+using Builder.Data.Elements;
+using Builder.Data.Rules;
+using Builder.Presentation;
+using Builder.Presentation.Models;
+using Builder.Presentation.Services;
+using Builder.Presentation.Services.Data;
+
+namespace Aurora.Tests.Helpers;
+
+public sealed record CharacterParitySnapshot(
+    int Level,
+    IReadOnlyDictionary<string, AbilityScoreSnapshot> AbilityScores,
+    IReadOnlyList<ElementSnapshot> RegisteredElements,
+    IReadOnlyList<SelectionRuleSnapshot> SelectionRules,
+    IReadOnlyList<SpellcastingSnapshot> Spellcasting);
+
+public sealed record AbilityScoreSnapshot(int Base, int Additional, int Final);
+
+public sealed record ElementSnapshot(string Id, string Name, string Type, string Source);
+
+public sealed record SelectionRuleSnapshot(
+    string Type,
+    string Name,
+    string OwnerId,
+    string OwnerName,
+    string OwnerType,
+    string Bucket,
+    bool Optional,
+    bool OptionalFlavor,
+    int Number,
+    int RequiredLevel,
+    int OptionCount,
+    IReadOnlyList<string> OptionIds);
+
+public sealed record SpellcastingSnapshot(
+    string Name,
+    string SourceId,
+    string Ability,
+    bool Prepare);
+
+public static class CharacterParitySnapshotter
+{
+    public static CharacterParitySnapshot Capture()
+    {
+        var cm = CharacterManager.Current;
+        var character = cm.Character
+            ?? throw new InvalidOperationException("No current character is loaded.");
+
+        var elements = cm.GetElements().ToList();
+        var registeredElements = elements
+            .Select(e => new ElementSnapshot(e.Id, e.Name ?? "", e.Type ?? "", e.Source ?? ""))
+            .OrderBy(e => e.Type, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(e => e.Name, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(e => e.Id, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var selectionRules = cm.SelectionRules
+            .Select(CaptureRule)
+            .OrderBy(r => r.Bucket, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(r => r.Type, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(r => r.Name, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(r => r.OwnerId, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var spellcasting = cm.GetSpellcastingInformations()
+            .Where(info => !info.IsExtension)
+            .Select(info => new SpellcastingSnapshot(
+                info.Name,
+                info.ElementHeader?.Id ?? "",
+                info.AbilityName,
+                info.Prepare))
+            .OrderBy(info => info.Name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        return new CharacterParitySnapshot(
+            character.Level,
+            CaptureAbilities(character),
+            registeredElements,
+            selectionRules,
+            spellcasting);
+    }
+
+    private static IReadOnlyDictionary<string, AbilityScoreSnapshot> CaptureAbilities(Character character)
+        => new Dictionary<string, AbilityScoreSnapshot>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Strength"] = CaptureAbility(character.Abilities.Strength),
+            ["Dexterity"] = CaptureAbility(character.Abilities.Dexterity),
+            ["Constitution"] = CaptureAbility(character.Abilities.Constitution),
+            ["Intelligence"] = CaptureAbility(character.Abilities.Intelligence),
+            ["Wisdom"] = CaptureAbility(character.Abilities.Wisdom),
+            ["Charisma"] = CaptureAbility(character.Abilities.Charisma),
+        };
+
+    private static AbilityScoreSnapshot CaptureAbility(AbilityItem ability)
+        => new(ability.BaseScore, ability.AdditionalScore, ability.FinalScore);
+
+    private static SelectionRuleSnapshot CaptureRule(SelectRule rule)
+    {
+        var owner = ResolveOwner(rule);
+        bool hasClassManager = CharacterManager.Current.ClassProgressionManagers
+            .Any(manager => ReferenceEquals(manager, CharacterManager.Current.GetProgressManager(rule)));
+
+        var bucket = BuildRuleClassifier.Classify(
+            rule.Attributes.Type ?? "",
+            rule.Attributes.Name ?? rule.Attributes.Type ?? "",
+            owner?.Type ?? rule.ElementHeader?.Type ?? "",
+            owner?.Name ?? rule.ElementHeader?.Name ?? "",
+            hasClassManager);
+
+        var optionIds = ResolveOptionIds(rule).ToList();
+        string ruleName = rule.Attributes.Name ?? rule.Attributes.Type ?? "";
+
+        return new SelectionRuleSnapshot(
+            rule.Attributes.Type ?? "",
+            ruleName,
+            owner?.Id ?? rule.ElementHeader?.Id ?? "",
+            owner?.Name ?? rule.ElementHeader?.Name ?? "",
+            owner?.Type ?? rule.ElementHeader?.Type ?? "",
+            bucket.ToString(),
+            rule.Attributes.Optional,
+            BuildRuleClassifier.IsOptionalFlavorSelection(ruleName),
+            rule.Attributes.Number,
+            rule.Attributes.RequiredLevel,
+            optionIds.Count,
+            optionIds);
+    }
+
+    private static ElementBase? ResolveOwner(SelectRule rule)
+    {
+        var ownerId = rule.ElementHeader?.Id;
+        if (string.IsNullOrWhiteSpace(ownerId))
+            return null;
+
+        return CharacterManager.Current.GetElements()
+                   .FirstOrDefault(e => e.Id.Equals(ownerId, StringComparison.OrdinalIgnoreCase))
+               ?? DataManager.Current.ElementsCollection
+                   .FirstOrDefault(e => e.Id.Equals(ownerId, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static IEnumerable<string> ResolveOptionIds(SelectRule rule)
+    {
+        if (rule.Attributes.IsList)
+        {
+            return rule.Attributes.ListItems?
+                       .Select(item => item.ID.ToString())
+                       .Where(id => !string.IsNullOrWhiteSpace(id))
+                       .OrderBy(id => id, StringComparer.OrdinalIgnoreCase)
+                   ?? Enumerable.Empty<string>();
+        }
+
+        if (string.IsNullOrWhiteSpace(rule.Attributes.Type))
+            return [];
+
+        var baseCollection = DataManager.Current.ElementsCollection
+            .Where(e => e.Type.Equals(rule.Attributes.Type, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        IEnumerable<ElementBase> options;
+        var interpreter = new ExpressionInterpreter();
+        interpreter.InitializeWithSelectionRule(rule);
+
+        if (!rule.Attributes.ContainsSupports())
+        {
+            options = baseCollection;
+        }
+        else
+        {
+            try
+            {
+                options = interpreter.EvaluateSupportsExpression<ElementBase>(
+                    rule.Attributes.Supports,
+                    baseCollection,
+                    rule.Attributes.SupportsElementIdRange());
+            }
+            catch
+            {
+                options = ResolveSpellFallbackOptions(rule, baseCollection);
+            }
+        }
+
+        if (rule.Attributes.Type.Equals("Spell", StringComparison.OrdinalIgnoreCase)
+            && !options.Any()
+            && (rule.Attributes.Supports?.Contains("$(", StringComparison.Ordinal) ?? false))
+        {
+            options = ResolveSpellFallbackOptions(rule, baseCollection);
+        }
+
+        var registeredIds = CharacterManager.Current.GetElements()
+            .Select(e => e.Id)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        return options
+            .Where(e => !e.HasRequirements || interpreter.EvaluateElementRequirementsExpression(e.Requirements, registeredIds))
+            .OrderBy(e => rule.Attributes.Type.Equals("Spell", StringComparison.OrdinalIgnoreCase) ? GetSpellLevel(e) : 0)
+            .ThenBy(e => e.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(e => e.Id)
+            .Distinct(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static IEnumerable<ElementBase> ResolveSpellFallbackOptions(
+        SelectRule rule,
+        IReadOnlyCollection<ElementBase> baseCollection)
+    {
+        string? spellcastingName = rule.Attributes.SpellcastingName;
+        if (string.IsNullOrWhiteSpace(spellcastingName))
+            spellcastingName = CharacterManager.Current.GetSpellcastingInformations()
+                .FirstOrDefault(info => !info.IsExtension)?.Name;
+
+        if (string.IsNullOrWhiteSpace(spellcastingName))
+            return [];
+
+        bool cantripOnly = rule.Attributes.Supports?
+            .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .Any(token => token.Equals("0", StringComparison.OrdinalIgnoreCase)) == true;
+
+        return baseCollection
+            .Where(e => e.Supports.Any(s => ContainsSupportToken(s, spellcastingName)))
+            .Where(e => !cantripOnly || GetSpellLevel(e) == 0);
+    }
+
+    private static bool ContainsSupportToken(string supports, string token)
+        => supports.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .Any(value => value.Equals(token, StringComparison.OrdinalIgnoreCase));
+
+    private static int GetSpellLevel(ElementBase element)
+        => element is Spell spell ? spell.Level : 0;
+}

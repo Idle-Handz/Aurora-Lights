@@ -1,0 +1,40 @@
+{
+  "name": "2014 Variant Human Fighter Acolyte",
+  "seedElementIds": [
+    "ID_RACE_HUMAN",
+    "ID_RACE_VARIANT_HUMAN_VARIANT",
+    "ID_WOTC_PHB_CLASS_FIGHTER",
+    "ID_BACKGROUND_ACOLYTE"
+  ],
+  "baseAbilityScores": {
+    "Strength": 15,
+    "Dexterity": 10,
+    "Constitution": 14,
+    "Intelligence": 10,
+    "Wisdom": 12,
+    "Charisma": 8
+  },
+  "expectedRegisteredElementIds": [
+    "ID_RACE_HUMAN",
+    "ID_RACE_VARIANT_HUMAN_VARIANT",
+    "ID_WOTC_PHB_CLASS_FIGHTER",
+    "ID_BACKGROUND_ACOLYTE"
+  ],
+  "expectedSelectionRules": [
+    {
+      "type": "Feat",
+      "bucket": "Feat",
+      "minOptions": 1
+    },
+    {
+      "type": "Racial Trait",
+      "nameContains": "Ability Score Increase",
+      "bucket": "AbilityScores",
+      "minOptions": 1,
+      "expectedOptionIds": [
+        "ID_RACE_VARIANT_HUMAN_VARIANT_STRENGTH",
+        "ID_RACE_VARIANT_HUMAN_VARIANT_DEXTERITY"
+      ]
+    }
+  ]
+}
