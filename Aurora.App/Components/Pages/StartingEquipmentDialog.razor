@@ -137,6 +137,14 @@
                         }
                     </div>
                 }
+
+                @* 2024-style leftover gold bundled with the fixed kit (e.g. EFA Artificer's "+16 GP"). *@
+                @if (ClassBlock.FixedGold > 0)
+                {
+                    <div class="se-item-row">
+                        <span class="se-item-name se-gold-amount">@ClassBlock.FixedGold gp</span>
+                    </div>
+                }
             }
         }
 
@@ -360,69 +368,17 @@
 
     private void Confirm()
     {
-        var items = new List<(string ElementId, int Count, string? Name)>();
-        int  gold           = 0;
-        bool tookRolledGold = false;
+        var result = StartingEquipmentSelectionResolver.Resolve(
+            ClassBlock,
+            BackgroundBlock,
+            _optionIndex,
+            _bgOptionIndex,
+            _categoryPicks,
+            _takeClassGold);
 
-        if (_takeClassGold && ClassBlock.GoldAlternative != null)
-        {
-            if (ClassBlock.GoldAlternative.IsRolled)
-                tookRolledGold = true;
-            else
-                gold += ClassBlock.GoldAlternative.Amount ?? 0;
-        }
-        else
-        {
-            for (int ci = 0; ci < ClassBlock.Choices.Count; ci++)
-            {
-                int oi   = _optionIndex[ci];
-                var opts = ClassBlock.Choices[ci].Options;
-                if (oi >= opts.Count) continue;
-                foreach (var (item, ii) in opts[oi].Items.Select((x, i) => (x, i)))
-                {
-                    string? id = item.IsCategory
-                        ? _categoryPicks.GetValueOrDefault($"c{ci}_o{oi}_i{ii}")
-                        : item.Id;
-                    if (!string.IsNullOrEmpty(id))
-                        items.Add((id, item.Count, item.Name));
-                }
-            }
-            foreach (var (item, ii) in ClassBlock.FixedItems.Select((x, i) => (x, i)))
-            {
-                string? id = item.IsCategory
-                    ? _categoryPicks.GetValueOrDefault($"cf{ii}")
-                    : item.Id;
-                if (!string.IsNullOrEmpty(id))
-                    items.Add((id, item.Count, item.Name));
-            }
-        }
-
-        for (int bci = 0; bci < BackgroundBlock.Choices.Count; bci++)
-        {
-            int boi   = _bgOptionIndex[bci];
-            var bopts = BackgroundBlock.Choices[bci].Options;
-            if (boi >= bopts.Count) continue;
-            foreach (var (bitem, bii) in bopts[boi].Items.Select((x, i) => (x, i)))
-            {
-                string? id = bitem.IsCategory
-                    ? _categoryPicks.GetValueOrDefault($"bc{bci}_o{boi}_i{bii}")
-                    : bitem.Id;
-                if (!string.IsNullOrEmpty(id))
-                    items.Add((id, bitem.Count, bitem.Name));
-            }
-        }
-
-        foreach (var (item, ii) in BackgroundBlock.FixedItems.Select((x, i) => (x, i)))
-        {
-            string? id = item.IsCategory
-                ? _categoryPicks.GetValueOrDefault($"bg_i{ii}")
-                : item.Id;
-            if (!string.IsNullOrEmpty(id))
-                items.Add((id, item.Count, item.Name));
-        }
-
-        gold += BackgroundBlock.FixedGold;
-
-        MudDialog.Close(new StartingEquipmentResult(items, gold, tookRolledGold));
+        MudDialog.Close(new StartingEquipmentResult(
+            result.Items,
+            result.Gold,
+            result.TookRolledGold));
     }
 }

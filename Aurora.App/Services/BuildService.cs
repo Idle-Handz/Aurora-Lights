@@ -168,7 +168,10 @@ public static class BuildService
                         .Select(li => new ElementOption(li.ID.ToString(), li.Text, li.Text, "", ""))
                         .ToList();
                 // ListItems not populated — read directly from the owner element's XML node.
-                return GetListOptionsFromElementNode(rule);
+                var fromElementNode = GetListOptionsFromElementNode(rule);
+                return fromElementNode.Count > 0
+                    ? fromElementNode
+                    : XmlContentFallbackService.GetListFallbackOptions(rule);
             }
 
             // Use the same approach as SelectionRuleCollectionService / SelectionRuleComboBoxViewModel:
@@ -254,7 +257,29 @@ public static class BuildService
                     .ToList();
             }
 
-            return DeduplicateOptions(list);
+            var deduplicated = DeduplicateOptions(list);
+            if (deduplicated.Count == 0)
+            {
+                var xmlFallback = XmlContentFallbackService.GetElementFallbacks(rule)
+                    .Where(e => !string.IsNullOrWhiteSpace(e.Name))
+                    .OrderBy(e => isSpellRule ? GetElementSpellLevel(e) : 0)
+                    .ThenBy(e => e.Name)
+                    .Select(e => new ElementOption(
+                        e.Id, e.Name!,
+                        isSpellRule ? GetSpellPickerDescription(e) : GetFeatureDescription(e),
+                        e.Source ?? "",
+                        e.HasRequirements ? FormatRequirements(e.Requirements) : "",
+                        SpellLevel: isSpellRule ? GetElementSpellLevel(e) : 0,
+                        School: isSpellRule ? GetElementSchool(e) : "",
+                        IsRitual: isSpellRule && GetElementIsRitual(e),
+                        IsConcentration: isSpellRule && GetElementIsConcentration(e)))
+                    .ToList();
+
+                if (xmlFallback.Count > 0)
+                    return DeduplicateOptions(xmlFallback);
+            }
+
+            return deduplicated;
         }
         catch { return []; }
     }
@@ -475,33 +500,38 @@ public static class BuildService
             maxSpellLevel = ResolveMaxCastableSpellLevel(scName);
         }
 
-        // Fast path: use the pre-resolved spell access map from the DB loader.
-        // Only use this path when it actually finds matches; if the map has the key but the
-        // element IDs don't match the loaded content (e.g. API-imported IDs vs XML-loaded IDs),
-        // fall through to the text-based scan instead of returning empty.
+        var spells = spellBase as IReadOnlyList<ElementBase> ?? spellBase.ToList();
+        var matches = new List<ElementBase>();
+
+        // Fast path: use the pre-resolved spell access map from the DB loader. Then union in
+        // the live supports scan so custom/user spells and append-added supports can override
+        // or augment the SQLite projection without being hidden by a non-empty DB map result.
         if (DbElementLoader.SpellAccessMap.TryGetValue(scName, out var spellIds))
         {
-            var fromMap = spellBase.Where(e =>
+            matches.AddRange(spells.Where(e =>
             {
                 if (!spellIds.Contains(e.Id)) return false;
                 int lvl = 0;
                 try { lvl = (int)((dynamic)e).Level; } catch { }
                 return isCantrip ? lvl == 0 : (lvl > 0 && lvl <= maxSpellLevel);
-            }).ToList();
-            if (fromMap.Count > 0) return fromMap;
+            }));
         }
 
         // Text-based scan: filter by class name in supports attribute.
         // Use Any+Contains (substring, case-insensitive) because supports values may be
         // comma-joined strings like "Ranger, Paladin" rather than individual entries.
-        return spellBase.Where(e =>
+        matches.AddRange(spells.Where(e =>
         {
             if (e.Supports == null || !e.Supports.Any(s => s.Contains(scName, StringComparison.OrdinalIgnoreCase)))
                 return false;
             int lvl = 0;
             try { lvl = (int)((dynamic)e).Level; } catch { }
             return isCantrip ? lvl == 0 : (lvl > 0 && lvl <= maxSpellLevel);
-        });
+        }));
+
+        return matches
+            .GroupBy(e => e.Id, StringComparer.OrdinalIgnoreCase)
+            .Select(g => g.First());
     }
 
     /// <summary>

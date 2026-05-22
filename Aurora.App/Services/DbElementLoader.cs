@@ -14,8 +14,9 @@ namespace Aurora.App.Services;
 /// Strategy: bulk-load all element tables from the DB, reconstruct minimal XmlNodes per
 /// element (id/name/type/source attributes + supports + requirements + description + sheet
 /// + type-specific setters + spellcasting + multiclass + rules), then feed each node through
-/// the existing <see cref="ElementParser"/> pipeline exactly as DataManager does. Finally call
-/// <see cref="DataManager.RunPostProcessing"/> to synthesize multiclass/ASI/scroll elements.
+/// the existing <see cref="ElementParser"/> pipeline exactly as DataManager does. Then overlay
+/// local custom/user XML before calling <see cref="DataManager.RunPostProcessing"/> so local
+/// scratch/homebrew content works without rebuilding the SQLite database.
 ///
 /// Known DB schema gaps:
 ///   - No general element_setters table; types not covered by a typed subtype table will have
@@ -233,6 +234,7 @@ internal static class DbElementLoader
             DbLoadResult result = await Task.Run(() => LoadFromDb(dbPath, target));
             if (result.Success && runPostProcessing)
             {
+                await Task.Run(() => RawUserXmlOverlayService.ApplyTo(target));
                 await Task.Run(() => DataManager.Current.RunPostProcessing());
                 DebugLogService.Instance.Info(
                     "DbElementLoader: load complete.",

@@ -183,6 +183,7 @@ public sealed class CharacterService :
             ElementLoadSummary = "Elements have not been initialized yet.";
             ElementLoadDatabasePath = null;
             StartingEquipmentDataLoader.Invalidate();
+            XmlContentFallbackService.Invalidate();
             ElementLoadSchemaVersion = null;
             ElementLoadDataVersion = null;
             ElementLoadImporterVersion = null;

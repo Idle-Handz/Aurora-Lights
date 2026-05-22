@@ -51,7 +51,7 @@ internal sealed class MauiMessageDialogService : IMessageDialogService
             return false;
         }
 
-        return MainThread.InvokeOnMainThreadAsync(() => page.DisplayAlert(title, message, "Yes", "No"))
+        return MainThread.InvokeOnMainThreadAsync(async () => await page.DisplayAlertAsync(title, message, "Yes", "No"))
             .GetAwaiter()
             .GetResult();
 #endif

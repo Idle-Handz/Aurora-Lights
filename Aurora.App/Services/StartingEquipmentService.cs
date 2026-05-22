@@ -31,7 +31,10 @@ public static class StartingEquipmentService
         // Fallback: inline <starting-equipment> node on the element (future authoritative content).
         var canonical = DataManager.Current.ElementsCollection
             .FirstOrDefault(e => e.Id == classElement.Id);
-        return StartingEquipmentParser.Parse(canonical?.ElementNode);
+        var inline = StartingEquipmentParser.Parse(canonical?.ElementNode);
+        return inline.HasContent
+            ? inline
+            : XmlContentFallbackService.GetStartingEquipmentBlock(classElement.Id);
     }
 
     /// <summary>
@@ -53,7 +56,10 @@ public static class StartingEquipmentService
 
         var canonical = DataManager.Current.ElementsCollection
             .FirstOrDefault(e => e.Id == bgRegistered.Id);
-        return StartingEquipmentParser.Parse(canonical?.ElementNode);
+        var inline = StartingEquipmentParser.Parse(canonical?.ElementNode);
+        return inline.HasContent
+            ? inline
+            : XmlContentFallbackService.GetStartingEquipmentBlock(bgRegistered.Id);
     }
 
     /// <summary>
