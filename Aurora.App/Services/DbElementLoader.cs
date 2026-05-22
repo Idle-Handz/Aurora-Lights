@@ -134,7 +134,7 @@ internal static class DbElementLoader
             ["element_texts"] = ["element_id", "text_kind", "ordinal", "level", "display", "alt_text", "action_text", "usage_text", "body"],
             ["grants"] = ["rule_scope_id", "grant_type", "target_aurora_id", "name_text", "grant_level", "spellcasting_name", "is_prepared", "requirements_text", "ordinal"],
             ["rule_scopes"] = ["rule_scope_id", "owner_element_id", "owner_kind"],
-            ["selects"] = ["rule_scope_id", "select_type", "name_text", "supports_text", "select_level", "number_to_choose", "default_choice_text", "is_optional", "requirements_text", "ordinal"],
+            ["selects"] = ["rule_scope_id", "select_type", "name_text", "supports_text", "select_level", "number_to_choose", "default_choice_text", "is_optional", "spellcasting_profile_id", "raw_xml", "requirements_text", "ordinal"],
             ["stats"] = ["rule_scope_id", "stat_name", "value_expression_text", "bonus_expression_text", "equipped_expression_text", "stat_level", "inline_display", "alt_text", "requirements_text", "ordinal"],
             ["spellcasting_profiles"] = ["owner_element_id", "profile_name", "ability_name", "is_extended", "prepare_spells", "allow_replace", "list_text"],
             ["spells"] = ["element_id", "spell_level", "school_name", "casting_time_text", "range_text", "duration_text", "has_verbal", "has_somatic", "has_material", "material_text", "is_concentration", "is_ritual"],
@@ -265,7 +265,8 @@ internal static class DbElementLoader
     private record GrantRow(long ElementId, string OwnerKind, string GrantType,
         string? TargetId, string? Name, int? Level, string? SpellcastingName, bool? IsPrepared, string? Requirements);
     private record SelectRow(long ElementId, string OwnerKind, string SelectType, string Name,
-        string? Supports, int? Level, int Number, string? Default, bool Optional, string? Requirements);
+        string? Supports, int? Level, int Number, string? Default, bool Optional,
+        string? SpellcastingName, string? RawXml, string? Requirements);
     private record StatRow(long ElementId, string OwnerKind, string StatName, string? Value,
         string? Bonus, string? Equipped, int? Level, bool Inline, string? Alt, string? Requirements);
     private record SpellcastingRow(long ElementId, string ProfileName, string? Ability,
@@ -734,7 +735,8 @@ internal static class DbElementLoader
         {
             foreach (var s in selects.Where(r => r.OwnerKind == ownerKind))
             {
-                XmlElement sel = doc.CreateElement("select");
+                XmlElement sel = CreateRuleElementFromRawXml(doc, s.RawXml, "select")
+                    ?? doc.CreateElement("select");
                 sel.SetAttribute("type", s.SelectType);
                 sel.SetAttribute("name", s.Name);
                 if (!string.IsNullOrEmpty(s.Supports))
@@ -747,6 +749,8 @@ internal static class DbElementLoader
                     sel.SetAttribute("default", s.Default);
                 if (s.Optional)
                     sel.SetAttribute("optional", "true");
+                if (!string.IsNullOrEmpty(s.SpellcastingName))
+                    sel.SetAttribute("spellcasting", s.SpellcastingName);
                 if (!string.IsNullOrEmpty(s.Requirements))
                     sel.SetAttribute("requirements", s.Requirements);
                 rulesNode.AppendChild(sel);
@@ -775,6 +779,27 @@ internal static class DbElementLoader
                     stat.SetAttribute("requirements", st.Requirements);
                 rulesNode.AppendChild(stat);
             }
+        }
+    }
+
+    private static XmlElement? CreateRuleElementFromRawXml(XmlDocument doc, string? rawXml, string expectedName)
+    {
+        if (string.IsNullOrWhiteSpace(rawXml))
+            return null;
+
+        try
+        {
+            XmlDocument rawDocument = new();
+            rawDocument.LoadXml(rawXml);
+            if (rawDocument.DocumentElement == null ||
+                !rawDocument.DocumentElement.Name.Equals(expectedName, StringComparison.OrdinalIgnoreCase))
+                return null;
+
+            return (XmlElement)doc.ImportNode(rawDocument.DocumentElement, deep: true);
+        }
+        catch
+        {
+            return null;
         }
     }
 
@@ -891,9 +916,11 @@ internal static class DbElementLoader
         cmd.CommandText = @"
             SELECT rs.owner_element_id, rs.owner_kind,
                    s.select_type, s.name_text, s.supports_text, s.select_level,
-                   s.number_to_choose, s.default_choice_text, s.is_optional, s.requirements_text
+                   s.number_to_choose, s.default_choice_text, s.is_optional,
+                   sp.profile_name, s.raw_xml, s.requirements_text
             FROM selects s
             JOIN rule_scopes rs ON rs.rule_scope_id = s.rule_scope_id
+            LEFT JOIN spellcasting_profiles sp ON sp.spellcasting_profile_id = s.spellcasting_profile_id
             ORDER BY rs.owner_element_id, s.ordinal;";
         using var r = cmd.ExecuteReader();
         while (r.Read())
@@ -906,7 +933,9 @@ internal static class DbElementLoader
                 r.GetInt32(6),
                 r.IsDBNull(7) ? null : r.GetString(7),
                 r.GetInt32(8) == 1,
-                r.IsDBNull(9) ? null : r.GetString(9)));
+                r.IsDBNull(9) ? null : r.GetString(9),
+                r.IsDBNull(10) ? null : r.GetString(10),
+                r.IsDBNull(11) ? null : r.GetString(11)));
         }
         return map;
     }

@@ -457,6 +457,10 @@ public static class XmlContentFallbackService
         if (rule.Attributes.ContainsSpellcastingName())
             return rule.Attributes.SpellcastingName;
 
+        string? ownerSpellcastingName = ResolveOwnerSpellcastingName(rule);
+        if (!string.IsNullOrWhiteSpace(ownerSpellcastingName))
+            return ownerSpellcastingName;
+
         if (!rule.Attributes.ContainsSupports())
             return null;
 
@@ -464,6 +468,19 @@ public static class XmlContentFallbackService
         Match firstWord = Regex.Match(supports, @"[A-Za-z][A-Za-z0-9 ]+");
         string value = firstWord.Value.Trim(' ', ',');
         return string.IsNullOrWhiteSpace(value) || int.TryParse(value, out _) ? null : value;
+    }
+
+    private static string? ResolveOwnerSpellcastingName(SelectRule rule)
+    {
+        string? ownerId = rule.ElementHeader?.Id;
+        if (string.IsNullOrWhiteSpace(ownerId))
+            return null;
+
+        ElementBase? owner = DataManager.Current.ElementsCollection
+            .FirstOrDefault(e => e.Id.Equals(ownerId, StringComparison.OrdinalIgnoreCase));
+        return owner?.HasSpellcastingInformation == true
+            ? owner.SpellcastingInformation.Name
+            : null;
     }
 
     private static bool IsCantripRule(SelectRule rule)

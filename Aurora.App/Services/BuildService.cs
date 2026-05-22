@@ -472,19 +472,7 @@ public static class BuildService
 
         // Prefer the spellcasting class name from the rule attribute; fall back to parsing
         // the supports expression for the first plain word (strips macros like "$(...)").
-        string? className = null;
-        if (rule.Attributes.ContainsSpellcastingName())
-            className = rule.Attributes.SpellcastingName;
-
-        if (className == null && rule.Attributes.ContainsSupports())
-        {
-            // Extract first plain word — skips macro tokens like "$(spellcasting:list)".
-            var firstWord = System.Text.RegularExpressions.Regex
-                .Match(rule.Attributes.Supports, @"(?<!\$\()[A-Za-z][A-Za-z0-9 ]+")
-                .Value.Trim();
-            if (!string.IsNullOrEmpty(firstWord))
-                className = firstWord;
-        }
+        string? className = ResolveSpellFallbackClassName(rule);
 
         if (className == null) return [];
 
@@ -494,8 +482,7 @@ public static class BuildService
         // can actually cast at their current level (prevents a Sorcerer 1 from seeing
         // 9th-level spells in the picker).
         int maxSpellLevel = 9;
-        if (!isCantrip && rule.Attributes.ContainsSupports() &&
-            rule.Attributes.Supports.Contains("$(spellcasting:slots)", StringComparison.OrdinalIgnoreCase))
+        if (!isCantrip && (rule.Attributes.Supports?.Contains("$(spellcasting:slots)", StringComparison.OrdinalIgnoreCase) ?? false))
         {
             maxSpellLevel = ResolveMaxCastableSpellLevel(scName);
         }
@@ -532,6 +519,39 @@ public static class BuildService
         return matches
             .GroupBy(e => e.Id, StringComparer.OrdinalIgnoreCase)
             .Select(g => g.First());
+    }
+
+    private static string? ResolveSpellFallbackClassName(SelectRule rule)
+    {
+        if (rule.Attributes.ContainsSpellcastingName())
+            return rule.Attributes.SpellcastingName;
+
+        string? ownerSpellcastingName = ResolveOwnerSpellcastingName(rule);
+        if (!string.IsNullOrWhiteSpace(ownerSpellcastingName))
+            return ownerSpellcastingName;
+
+        if (!rule.Attributes.ContainsSupports())
+            return null;
+
+        string supports = Regex.Replace(rule.Attributes.Supports ?? "", @"\$\([^)]*\)", " ");
+        supports = Regex.Replace(supports, @"ID_[A-Za-z0-9_]+", " ");
+        string firstWord = Regex.Match(supports, @"[A-Za-z][A-Za-z0-9 ]*").Value.Trim();
+        return string.IsNullOrWhiteSpace(firstWord) || int.TryParse(firstWord, out _)
+            ? null
+            : firstWord;
+    }
+
+    private static string? ResolveOwnerSpellcastingName(SelectRule rule)
+    {
+        string? ownerId = rule.ElementHeader?.Id;
+        if (string.IsNullOrWhiteSpace(ownerId))
+            return null;
+
+        var owner = DataManager.Current.ElementsCollection
+            .FirstOrDefault(e => e.Id.Equals(ownerId, StringComparison.OrdinalIgnoreCase));
+        return owner?.HasSpellcastingInformation == true
+            ? owner.SpellcastingInformation.Name
+            : null;
     }
 
     /// <summary>
