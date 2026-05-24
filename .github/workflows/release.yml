@@ -28,9 +28,21 @@ jobs:
       - name: Install MAUI workloads
         run: dotnet workload install maui
 
-      - name: Restore
+      - name: Restore Windows runtime graph
         shell: bash
-        run: dotnet restore "$PROJECT"
+        run: |
+          dotnet restore "$PROJECT" \
+            -r win-x64 \
+            -p:TargetFramework=net10.0-windows10.0.19041.0 \
+            -p:SelfContained=true
+
+      - name: Restore shared project references
+        shell: bash
+        run: |
+          dotnet restore Aurora.Components/Aurora.Components.csproj
+          dotnet restore Aurora.Logic/Aurora.Logic.csproj
+          dotnet restore Aurora.Importer/Aurora.Importer.csproj
+          dotnet restore Aurora.PdfImport/Aurora.PdfImport.csproj
 
       - name: Publish (win-x64)
         shell: bash
@@ -39,8 +51,10 @@ jobs:
             -f net10.0-windows10.0.19041.0 \
             -r win-x64 \
             -c Release \
+            --self-contained true \
             --no-restore \
             -p:PublishReadyToRun=false \
+            -p:WindowsPackageType=None \
             -o publish/win-x64
 
       - name: Zip (win-x64)
@@ -69,9 +83,21 @@ jobs:
       - name: Install MAUI workloads
         run: dotnet workload install maui
 
-      - name: Restore
+      - name: Restore Windows runtime graph
         shell: bash
-        run: dotnet restore "$PROJECT"
+        run: |
+          dotnet restore "$PROJECT" \
+            -r win-arm64 \
+            -p:TargetFramework=net10.0-windows10.0.19041.0 \
+            -p:SelfContained=true
+
+      - name: Restore shared project references
+        shell: bash
+        run: |
+          dotnet restore Aurora.Components/Aurora.Components.csproj
+          dotnet restore Aurora.Logic/Aurora.Logic.csproj
+          dotnet restore Aurora.Importer/Aurora.Importer.csproj
+          dotnet restore Aurora.PdfImport/Aurora.PdfImport.csproj
 
       - name: Publish (win-arm64)
         shell: bash
@@ -80,8 +106,10 @@ jobs:
             -f net10.0-windows10.0.19041.0 \
             -r win-arm64 \
             -c Release \
+            --self-contained true \
             --no-restore \
             -p:PublishReadyToRun=false \
+            -p:WindowsPackageType=None \
             -o publish/win-arm64
 
       - name: Zip (win-arm64)
