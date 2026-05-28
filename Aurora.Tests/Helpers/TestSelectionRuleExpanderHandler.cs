@@ -45,6 +45,17 @@ public sealed class TestSelectionRuleExpanderHandler : ISelectionRuleExpanderHan
             return;
         }
 
+        var existingSelection = CharacterManager.Current.Elements
+            .FirstOrDefault(e =>
+                e.Id.Equals(id, StringComparison.OrdinalIgnoreCase) &&
+                e.Aquisition.WasSelected &&
+                ReferenceEquals(e.Aquisition.SelectRule, selectionRule));
+        if (existingSelection is not null)
+        {
+            _registered[Key(selectionRule, number)] = existingSelection;
+            return;
+        }
+
         element.Aquisition.WasSelected = true;
         element.Aquisition.SelectRule = selectionRule;
 

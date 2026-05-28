@@ -1,6 +1,7 @@
 @page "/character"
 @implements IDisposable
 @inject CharacterTabService Tabs
+@inject IDialogService DialogService
 @inject ISnackbar Snackbar
 @using Builder.Presentation.Models
 
@@ -132,6 +133,18 @@
                    OnClick="LevelDownAsync">
             Level Down
         </MudButton>
+
+        @if (BuildService.HasMainClass && BuildService.CanLevelUp)
+        {
+            <MudButton StartIcon="@Icons.Material.Filled.MergeType"
+                       Variant="Variant.Outlined"
+                       Color="Color.Secondary"
+                       Size="Size.Small"
+                       Disabled="@_advancementBusy"
+                       OnClick="OpenMulticlassDialog">
+                Add Multiclass
+            </MudButton>
+        }
 
         <div class="build-hp-toggle" title="How HP is assigned on each level-up">
             <span class="build-hp-label">HP:</span>
@@ -906,6 +919,69 @@
 
         LoadFromActiveTab();
         StateHasChanged();
+    }
+
+    private async Task OpenMulticlassDialog()
+    {
+        var tab = Tabs.ActiveTab;
+        if (tab == null)
+        {
+            Snackbar.Add("There is no active character to multiclass.", Severity.Warning);
+            return;
+        }
+
+        _advancementBusy = true;
+        StateHasChanged();
+        var options = await BuildService.GetAvailableMulticlassOptionsAsync(tab);
+        _advancementBusy = false;
+        StateHasChanged();
+        if (options.Count == 0)
+        {
+            Snackbar.Add("No multiclass options are currently available for this character.", Severity.Warning);
+            return;
+        }
+
+        var fakeEntry = new SelectionRuleEntry(
+            Rule: null!,
+            Number: 1,
+            Label: "Add Multiclass",
+            CurrentName: null,
+            RequiredLevel: 0);
+
+        var parameters = new DialogParameters
+        {
+            [nameof(SelectionPickerDialog.Entry)]   = fakeEntry,
+            [nameof(SelectionPickerDialog.Options)] = options,
+        };
+        var dialogOptions = new DialogOptions
+        {
+            MaxWidth         = MaxWidth.Large,
+            FullWidth        = true,
+            CloseOnEscapeKey = true,
+        };
+
+        var dialog = await DialogService.ShowAsync<SelectionPickerDialog>("Add Multiclass", parameters, dialogOptions);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: string selectedId })
+        {
+            _advancementBusy = true;
+            StateHasChanged();
+            var error = await BuildService.AddMulticlassLevelAsync(tab, selectedId);
+            _advancementBusy = false;
+            if (error == null)
+            {
+                Tabs.MarkClean(tab);
+                Snackbar.Add("Multiclass added.", Severity.Success, cfg => cfg.VisibleStateDuration = 2000);
+            }
+            else
+            {
+                Snackbar.Add(error, Severity.Error);
+            }
+
+            LoadFromActiveTab();
+            StateHasChanged();
+        }
     }
 
     private static string? ResolvePortrait(Builder.Presentation.Models.CharacterFile file)

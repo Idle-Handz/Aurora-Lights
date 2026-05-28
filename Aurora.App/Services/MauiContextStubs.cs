@@ -105,6 +105,17 @@ internal sealed class MauiSelectionRuleExpanderHandler : ISelectionRuleExpanderH
             return;
         }
 
+        var existingSelection = CharacterManager.Current.Elements
+            .FirstOrDefault(e =>
+                e.Id.Equals(id, StringComparison.OrdinalIgnoreCase) &&
+                e.Aquisition.WasSelected &&
+                ReferenceEquals(e.Aquisition.SelectRule, selectionRule));
+        if (existingSelection != null)
+        {
+            _registered[key] = existingSelection;
+            return;
+        }
+
         // If this slot already has a selection (e.g. user is changing a feat mid-session),
         // unregister the previous element first so it doesn't persist alongside the new one.
         if (_registered.TryGetValue(key, out var previous) && previous is Builder.Data.ElementBase prev)

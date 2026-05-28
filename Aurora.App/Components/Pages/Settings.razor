@@ -286,6 +286,8 @@
                     <div class="section-label">Database</div>
                     <div class="pref-row-desc" style="margin-bottom: 16px;">
                         Manage the installed content database and keep it in sync with your content directory.
+                        The database file is stored inside that content directory, so changing the
+                        character storage root also changes which database is used.
                     </div>
 
                     <div style="margin-bottom: 12px;">
@@ -1085,8 +1087,11 @@
             if (chosen == null) return;
             _dirError = Characters.ApplyCustomCharactersDirectory(chosen);
             if (_dirError == null)
+            {
+                HandleContentRootChanged();
                 Snackbar.Add($"Characters folder set to: {chosen}", Severity.Success,
                     cfg => cfg.VisibleStateDuration = 4000);
+            }
         }
         finally
         {
@@ -1106,8 +1111,11 @@
         }
         _dirError = Characters.ApplyCustomCharactersDirectory(path);
         if (_dirError == null)
+        {
+            HandleContentRootChanged();
             Snackbar.Add("Switched to external storage. Files are now accessible from the Files app.",
                 Severity.Success, cfg => cfg.VisibleStateDuration = 5000);
+        }
         StateHasChanged();
         return Task.CompletedTask;
     }
@@ -1116,10 +1124,22 @@
     {
         _dirError = Characters.ApplyCustomCharactersDirectory(null);
         if (_dirError == null)
+        {
+            HandleContentRootChanged();
             Snackbar.Add("Characters folder reset to default.", Severity.Success,
                 cfg => cfg.VisibleStateDuration = 3000);
+        }
         StateHasChanged();
         return Task.CompletedTask;
+    }
+
+    private void HandleContentRootChanged()
+    {
+        ContentDb.NotifyContentDirectoryChanged();
+        _stalenessChecked = false;
+        _dbParity = null;
+        _needsContentReload = true;
+        RefreshDatabaseDiagnostics();
     }
 
     public void Dispose()

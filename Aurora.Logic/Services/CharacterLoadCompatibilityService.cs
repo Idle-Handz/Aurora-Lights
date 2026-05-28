@@ -23,6 +23,22 @@ public static class CharacterLoadCompatibilityService
         {
             Logger.Exception(ex, nameof(PrepareForCharacterLoad));
         }
+
+        // DataManager element instances are process-wide singletons; registration stamps acquisition
+        // (WasSelected / WasGranted / SelectRule / GrantRule) directly onto them. Nothing else clears
+        // that between loads, so without this reset a previously-loaded character's acquisition bleeds
+        // onto shared elements the next character also touches (verified across both New() and a real
+        // Load()). Reset to a clean slate here — the load then re-stamps the elements the new character
+        // actually uses.
+        try
+        {
+            foreach (var element in Builder.Presentation.Services.Data.DataManager.Current.ElementsCollection)
+                element.Aquisition.Clear();
+        }
+        catch (Exception ex)
+        {
+            Logger.Exception(ex, nameof(PrepareForCharacterLoad));
+        }
     }
 
     /// <summary>

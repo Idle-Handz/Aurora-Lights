@@ -1,5 +1,6 @@
 using Aurora.Components.Models;
 using Builder.Data;
+using Builder.Data.Elements;
 using Builder.Data.Rules;
 using Builder.Presentation;
 using Builder.Presentation.Models;
@@ -114,11 +115,16 @@ public static class BuildService
             {
                 string? currentName = ResolveCurrentSelectionName(rule, n);
                 int spellLevel = 0;
+                string? spellId = null;
                 try
                 {
                     var regEl = SelectionRuleExpanderContext.Current?.GetRegisteredElement(rule, n)
                         as Builder.Data.ElementBase;
-                    if (regEl != null) spellLevel = (int)((dynamic)regEl).Level;
+                    if (regEl != null)
+                    {
+                        spellLevel = GetElementSpellLevel(regEl);
+                        spellId = regEl.Id;
+                    }
                 }
                 catch { }
 
@@ -132,7 +138,7 @@ public static class BuildService
                     byClass[groupName] = [];
                 byClass[groupName].Add(new SelectionRuleEntry(
                     rule, n, label, currentName, rule.Attributes.RequiredLevel,
-                    BuildEntryKey(ruleType, ruleName, n), spellLevel));
+                    BuildEntryKey(ruleType, ruleName, n), spellLevel, spellId));
             }
         }
 
@@ -498,8 +504,7 @@ public static class BuildService
             matches.AddRange(spells.Where(e =>
             {
                 if (!spellIds.Contains(e.Id)) return false;
-                int lvl = 0;
-                try { lvl = (int)((dynamic)e).Level; } catch { }
+                int lvl = GetElementSpellLevel(e);
                 return isCantrip ? lvl == 0 : (lvl > 0 && lvl <= maxSpellLevel);
             }));
         }
@@ -511,8 +516,7 @@ public static class BuildService
         {
             if (e.Supports == null || !e.Supports.Any(s => s.Contains(scName, StringComparison.OrdinalIgnoreCase)))
                 return false;
-            int lvl = 0;
-            try { lvl = (int)((dynamic)e).Level; } catch { }
+            int lvl = GetElementSpellLevel(e);
             return isCantrip ? lvl == 0 : (lvl > 0 && lvl <= maxSpellLevel);
         }));
 
@@ -815,6 +819,23 @@ public static class BuildService
         character.Inventory.Coins.Set(snap.CoinCopper, snap.CoinSilver, snap.CoinElectrum, snap.CoinGold, snap.CoinPlatinum);
     }
 
+    private static void EnsureMulticlassSelectionsRegistered()
+    {
+        var expander = SelectionRuleExpanderContext.Current;
+        if (expander == null)
+            return;
+
+        foreach (var manager in CharacterManager.Current.ClassProgressionManagers
+                     .Where(m => m.IsMulticlass && m.ClassElement != null && m.SelectRule != null))
+        {
+            var registered = expander.GetRegisteredElement(manager.SelectRule) as ElementBase;
+            if (registered?.Id.Equals(manager.ClassElement.Id, StringComparison.OrdinalIgnoreCase) == true)
+                continue;
+
+            expander.SetRegisteredElement(manager.SelectRule, manager.ClassElement.Id);
+        }
+    }
+
     private static void SaveCharacterFile(
         CharacterTab tab,
         Builder.Presentation.Models.CharacterFile? explicitFile = null)
@@ -826,7 +847,18 @@ public static class BuildService
         if (tab.Snapshot != null && tab.Character != null)
             FlushSnapshotToCharacter(tab.Snapshot, tab.Character);
 
+        EnsureMulticlassSelectionsRegistered();
+
+        // CharacterFile.Save() rebuilds the document from the model, dropping app-specific
+        // root nodes such as <custom-features>. Preserve that node across the rebuild so
+        // multiple custom additions (and adds interleaved with other build edits) keep their
+        // tracking rather than each save clobbering the previous list.
+        var customFeatures = targetFile.LoadCustomFeatures();
+
         targetFile.Save();
+
+        if (customFeatures.Count > 0)
+            targetFile.SaveCustomFeatures(customFeatures);
 
         if (tab.Snapshot != null && !targetFile.SaveTextEdits(tab.Snapshot))
             throw new InvalidOperationException("Character save completed, but snapshot-backed edits could not be patched into the file.");
@@ -923,29 +955,23 @@ public static class BuildService
 
     private static string GetSpellPickerDescription(ElementBase e)
     {
+        if (e is not Spell sp) return GetFeatureDescription(e);
         try
         {
-            dynamic d = e;
-            int level = 0;
-            string school = "", castingTime = "", range = "", components = "", duration = "";
-            bool ritual = false, concentration = false, body_ok = false;
-            string body = "";
+            int level          = sp.Level;
+            string school      = sp.MagicSchool ?? "";
+            string castingTime = sp.CastingTime ?? "";
+            string range       = sp.Range ?? "";
+            string duration    = sp.Duration ?? "";
+            string components  = sp.GetComponentsString() ?? "";
+            bool ritual        = sp.IsRitual;
+            bool concentration = sp.IsConcentration;
+            bool body_ok       = false;
+            string body        = "";
 
-            try { level = (int)d.Level; } catch { }
-            try { school = (string)(d.MagicSchool ?? ""); } catch { }
-            try { castingTime = (string)(d.CastingTime ?? ""); } catch { }
-            try { range = (string)(d.Range ?? ""); } catch { }
-            try { duration = (string)(d.Duration ?? ""); } catch { }
-            try { components = (string)(d.GetComponentsString()); } catch { }
-            try { ritual = (bool)d.IsRitual; } catch { }
-            try { concentration = (bool)d.IsConcentration; } catch { }
-            try
-            {
-                string raw = (string)(d.Description ?? "");
-                if (!string.IsNullOrWhiteSpace(raw))
-                { body = ElementDescriptionGenerator.GeneratePlainDescription(raw).Trim(); body_ok = true; }
-            }
-            catch { }
+            string raw = sp.Description ?? "";
+            if (!string.IsNullOrWhiteSpace(raw))
+            { body = ElementDescriptionGenerator.GeneratePlainDescription(raw).Trim(); body_ok = true; }
 
             var sb = new System.Text.StringBuilder();
             string levelText = level == 0
@@ -966,25 +992,16 @@ public static class BuildService
         catch { return GetFeatureDescription(e); }
     }
 
-    private static int GetElementSpellLevel(ElementBase e)
-    {
-        try { return (int)((dynamic)e).Level; } catch { return 0; }
-    }
+    // Spell-typed elements are always Builder.Data.Elements.Spell instances (verified by
+    // SpellTypeInvariantTests), so read their properties via a static cast rather than dynamic — a
+    // renamed/removed member becomes a compile error instead of a silently-swallowed wrong value.
+    private static int GetElementSpellLevel(ElementBase e) => e is Spell sp ? sp.Level : 0;
 
-    private static string GetElementSchool(ElementBase e)
-    {
-        try { return (string)(((dynamic)e).MagicSchool ?? ""); } catch { return ""; }
-    }
+    private static string GetElementSchool(ElementBase e) => e is Spell sp ? sp.MagicSchool ?? "" : "";
 
-    private static bool GetElementIsRitual(ElementBase e)
-    {
-        try { return (bool)((dynamic)e).IsRitual; } catch { return false; }
-    }
+    private static bool GetElementIsRitual(ElementBase e) => e is Spell sp && sp.IsRitual;
 
-    private static bool GetElementIsConcentration(ElementBase e)
-    {
-        try { return (bool)((dynamic)e).IsConcentration; } catch { return false; }
-    }
+    private static bool GetElementIsConcentration(ElementBase e) => e is Spell sp && sp.IsConcentration;
 
     // ── Advancement timeline ─────────────────────────────────────────────────────
 
@@ -1058,35 +1075,23 @@ public static class BuildService
             var e = DataManager.Current.ElementsCollection
                 .FirstOrDefault(x => x.Type == "Spell" &&
                                      x.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
-            if (e == null) return null;
+            if (e is not Spell sp) return null;
 
-            dynamic d = e;
-
-            int    level      = 0;
-            string subtitle   = "";   // e.g. "1st-level abjuration (ritual)"
-            string school     = "";
-            string castingTime = "";
-            string range      = "";
-            string components = "";
-            string duration   = "";
-            bool ritual       = false;
-            bool concentration = false;
-
-            try { level       = (int)(d.Level); }        catch { }
-            try { subtitle    = (string)(d.Underline ?? ""); } catch { }
-            try { school      = (string)(d.MagicSchool ?? ""); } catch { }
-            try { castingTime = (string)(d.CastingTime ?? ""); } catch { }
-            try { range       = (string)(d.Range ?? ""); }       catch { }
-            try { duration    = (string)(d.Duration ?? ""); }    catch { }
-            try { components  = (string)(d.GetComponentsString()); } catch { }
-            try { ritual      = (bool)(d.IsRitual); } catch { }
-            try { concentration = (bool)(d.IsConcentration); } catch { }
+            int    level       = sp.Level;
+            string subtitle    = sp.Underline ?? "";   // e.g. "1st-level abjuration (ritual)"
+            string school      = sp.MagicSchool ?? "";
+            string castingTime = sp.CastingTime ?? "";
+            string range       = sp.Range ?? "";
+            string duration    = sp.Duration ?? "";
+            string components  = sp.GetComponentsString() ?? "";
+            bool ritual        = sp.IsRitual;
+            bool concentration = sp.IsConcentration;
 
             // Body description — use the plain-text generator on the raw XML description.
             string body = "";
             try
             {
-                string raw = (string)(d.Description ?? "");
+                string raw = sp.Description ?? "";
                 if (!string.IsNullOrWhiteSpace(raw))
                     body = ElementDescriptionGenerator.GeneratePlainDescription(raw).Trim();
             }
@@ -1160,6 +1165,7 @@ public static class BuildService
 
     private static string FeatsOptionId         => Builder.Data.Strings.InternalOptions.AllowFeats;
     private static string MulticlassOptionId    => Builder.Data.Strings.InternalOptions.AllowMulticlassing;
+    private const  string MulticlassPrereqGrantId = "ID_INTERNAL_GRANTS_MULTICLASSING_PREREQUISITE";
     private const  string CustomOriginOptionId      = "ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI";
     private const  string CustomLanguageOptionId    = "ID_WOTC_TCOE_OPTION_CUSTOMIZED_LANGUAGE";
     private const  string CustomProficiencyOptionId = "ID_WOTC_TCOE_OPTION_CUSTOMIZED_PROFICIENCY";
@@ -1274,6 +1280,183 @@ public static class BuildService
     }
 
     /// <summary>
+    /// Adds a custom-feature proxy (an "Additional …" feat/spell/feature/etc. or a Supernatural
+    /// Gift) to the active character and activates it so its granted content applies, then
+    /// reprocesses, re-snaps, and saves. Returns null on success or an error message.
+    /// </summary>
+    public static async Task<string?> AddCustomFeatureAsync(CharacterTab tab, string elementId)
+    {
+        using var scope = await CharacterContext.EnterAsync(tab);
+        return await Task.Run(() =>
+        {
+            try
+            {
+                var proxy = DataManager.Current.ElementsCollection.GetElement(elementId);
+                if (proxy == null) return "That feature could not be found.";
+
+                // "Additional X" proxies wrap the real feat/spell/feature; resolve the underlying
+                // element so its grant applies. Non-proxy items (e.g. Supernatural Gifts) resolve to
+                // themselves. See EquipmentService.ResolveCustomFeatureTarget.
+                var target = EquipmentService.ResolveCustomFeatureTarget(proxy);
+                string targetId = target.Id ?? elementId;
+                bool repeatable = EquipmentService.IsRepeatableCustomFeature(target)
+                                  || EquipmentService.IsRepeatableCustomFeature(proxy);
+
+                var file = tab.File;
+                var list = file?.LoadCustomFeatures() ?? [];
+                if (!repeatable && list.Contains(targetId, StringComparer.OrdinalIgnoreCase))
+                    return (string?)null;
+
+                // Ability-score elements (e.g. ID_INTERNAL_ASI_DEXTERITY) are shared singletons that
+                // races / Tasha's origins / level-up ASIs also register. Each instance carries a single
+                // Aquisition record, so re-registering the same instance clobbers the other source's
+                // bookkeeping and the two increases cancel out. The engine's own answer to "register
+                // another copy of this element" is ElementBaseCollection.GetFresh, which mints a fresh
+                // instance with blank acquisition — the same mechanism the legacy app uses to let an
+                // ASI stack. Its blank acquisition also lets RemoveCustomFeatureAsync tell our copy
+                // apart from an owned original of the same id.
+                var toRegister = target;
+                if (repeatable || string.Equals(target.Type, "Ability Score Improvement", StringComparison.OrdinalIgnoreCase))
+                {
+                    toRegister = DataManager.Current.ElementsCollection.GetFresh(targetId) ?? target;
+                }
+
+                CharacterManager.Current.RegisterElement(toRegister);
+                CharacterManager.Current.ReprocessCharacter();
+                ResnapTab(tab);
+                SaveCharacterFile(tab);
+
+                // Track the added id (root-level <custom-features> node) so the Extras tab can
+                // list and remove it. Written after SaveCharacterFile so it lands in the saved file.
+                if (file != null)
+                {
+                    if (repeatable || !list.Contains(targetId, StringComparer.OrdinalIgnoreCase))
+                    {
+                        list.Add(targetId);
+                        file.SaveCustomFeatures(list);
+                    }
+                }
+                return (string?)null;
+            }
+            catch (Exception ex) { return DebugLogService.Catch(ex, "BuildService.AddCustomFeatureAsync"); }
+        });
+    }
+
+    /// <summary>
+    /// Returns the custom features added to the active character (id, display name, type),
+    /// resolved from the persisted &lt;custom-features&gt; id list.
+    /// </summary>
+    public static IReadOnlyList<(string Id, string Name, string Type)> GetCustomFeatures(CharacterTab tab)
+    {
+        var file = tab.File;
+        if (file == null) return [];
+        var result = new List<(string, string, string)>();
+        foreach (var id in file.LoadCustomFeatures())
+        {
+            var el = DataManager.Current.ElementsCollection.GetElement(id);
+            var target = el == null ? null : EquipmentService.ResolveCustomFeatureTarget(el);
+            result.Add((id, target?.Name ?? el?.Name ?? id, target?.Type ?? el?.Type ?? ""));
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// Re-registers the character's custom features (the persisted &lt;custom-features&gt; ids) into the
+    /// freshly-loaded CharacterManager so their granted content (spells, etc.) takes effect again.
+    /// CharacterFile.Save rebuilds only the standard build, so a directly-registered custom feature is
+    /// NOT round-tripped by a normal load — it must be re-applied here. Call once after each character
+    /// load. Idempotent: a feature already present as our (blank-acquisition) instance is skipped, so a
+    /// duplicate call is harmless. Mirrors <see cref="AddCustomFeatureAsync"/>'s registration.
+    /// </summary>
+    public static void ReapplyCustomFeatures(CharacterFile? file)
+    {
+        if (file == null) return;
+        var ids = file.LoadCustomFeatures();
+        if (ids.Count == 0) return;
+
+        var cm = CharacterManager.Current;
+        if (cm?.Character == null) return;
+
+        bool any = false;
+        foreach (var group in ids.GroupBy(id => id, StringComparer.OrdinalIgnoreCase))
+        {
+            string id = group.Key;
+            var proxy = DataManager.Current.ElementsCollection.GetElement(id);
+            if (proxy == null) continue;
+
+            var target = EquipmentService.ResolveCustomFeatureTarget(proxy);
+            string targetId = target.Id ?? id;
+            bool repeatable = EquipmentService.IsRepeatableCustomFeature(target)
+                              || EquipmentService.IsRepeatableCustomFeature(proxy);
+
+            // Skip if already re-applied: our copies carry blank acquisition, whereas a same-id
+            // instance owned by the race/class/level-up build carries GrantedBy/SelectedBy.
+            int existingBlankCount = cm.GetElements().Count(e => e.Id == targetId
+                && !e.Aquisition.WasGranted && !e.Aquisition.WasSelected);
+            int desiredCount = repeatable ? group.Count() : 1;
+            int toAddCount = Math.Max(0, desiredCount - existingBlankCount);
+            if (toAddCount == 0)
+                continue;
+
+            for (int i = 0; i < toAddCount; i++)
+            {
+                // Ability-score and repeatable elements should be fresh engine instances so they stack
+                // instead of reusing one singleton/acquisition record.
+                var toRegister = target;
+                if (repeatable || string.Equals(target.Type, "Ability Score Improvement", StringComparison.OrdinalIgnoreCase))
+                    toRegister = DataManager.Current.ElementsCollection.GetFresh(targetId) ?? target;
+
+                cm.RegisterElement(toRegister);
+                any = true;
+            }
+        }
+
+        if (any) cm.ReprocessCharacter();
+    }
+
+    /// <summary>
+    /// Removes a previously added custom feature: unregisters the element, reprocesses, saves,
+    /// and drops its id from the &lt;custom-features&gt; list. Returns null on success.
+    /// </summary>
+    public static async Task<string?> RemoveCustomFeatureAsync(CharacterTab tab, string elementId)
+    {
+        using var scope = await CharacterContext.EnterAsync(tab);
+        return await Task.Run(() =>
+        {
+            try
+            {
+                var cm = CharacterManager.Current;
+                var proxy = DataManager.Current.ElementsCollection.GetElement(elementId);
+                var target = proxy == null ? null : EquipmentService.ResolveCustomFeatureTarget(proxy);
+                string targetId = target?.Id ?? elementId;
+
+                // Prefer an instance with blank acquisition — that's the copy we registered for this
+                // custom feature (see MakeStackableCopy), not an identically-id'd instance owned by a
+                // race / level-up ASI. Falls back to any match for ordinary (uniquely-owned) features.
+                var matches = cm.GetElements().Where(e => e.Id == targetId).ToList();
+                var el = matches.FirstOrDefault(e => !e.Aquisition.WasGranted && !e.Aquisition.WasSelected)
+                         ?? matches.FirstOrDefault();
+                if (el != null) cm.UnregisterElement(el);
+                cm.ReprocessCharacter();
+                ResnapTab(tab);
+                SaveCharacterFile(tab);
+
+                var file = tab.File;
+                if (file != null)
+                {
+                    var list = file.LoadCustomFeatures();
+                    int index = list.FindIndex(x => string.Equals(x, elementId, StringComparison.OrdinalIgnoreCase));
+                    if (index >= 0)
+                        list.RemoveAt(index);
+                    file.SaveCustomFeatures(list);
+                }
+                return (string?)null;
+            }
+            catch (Exception ex) { return DebugLogService.Catch(ex, "BuildService.RemoveCustomFeatureAsync"); }
+        });
+    }
+
+    /// <summary>
     /// Adds a level to the main class (or the bare level if class not yet chosen).
     /// Saves the file and re-snaps the tab.
     /// Returns (error, hpGained, isAverage) — error is null on success.
@@ -1344,8 +1527,273 @@ public static class BuildService
                 e.Id,
                 e.Name ?? "",
                 GetFeatureDescription(e),
-                e.Source ?? ""))
+                e.Source ?? "",
+                // The multiclass ability-score prerequisite (e.g. "Strength 13 or Dexterity 13"),
+                // surfaced in the picker's detail pane as "Requires: …".
+                e.Prerequisite ?? ""))
             .ToList();
+    }
+
+    /// <summary>
+    /// Returns the character's current classes (main class + any multiclasses) for the "which class
+    /// do you want to level?" picker. Id is the class's element id — the main class's Class element
+    /// id, or a multiclass's Multiclass element id — which routes the level-up (see LevelUpAsync).
+    /// </summary>
+    public static async Task<IReadOnlyList<LevelUpClassOption>> GetLevelUpClassesAsync(CharacterTab tab)
+    {
+        using var scope = await CharacterContext.EnterAsync(tab);
+        return await Task.Run(() =>
+        {
+            try
+            {
+                var cm = CharacterManager.Current;
+                return (IReadOnlyList<LevelUpClassOption>)cm.ClassProgressionManagers
+                    .Where(m => m.ClassElement != null)
+                    .Select(m => new LevelUpClassOption(
+                        m.ClassElement!.Id ?? "",
+                        m.ClassElement.Name ?? "Class",
+                        m.ProgressionLevel,
+                        m.IsMainClass))
+                    // Main class first, then multiclasses alphabetically.
+                    .OrderByDescending(o => o.IsMain)
+                    .ThenBy(o => o.Name)
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                DebugLogService.Catch(ex, "BuildService.GetLevelUpClassesAsync");
+                return [];
+            }
+        });
+    }
+
+    /// <summary>
+    /// Returns the multiclass choices this character can currently take.
+    /// Includes existing multiclass progressions so the same dialog can add another level to them.
+    /// </summary>
+    public static async Task<IReadOnlyList<ElementOption>> GetAvailableMulticlassOptionsAsync(CharacterTab tab)
+    {
+        using var scope = await CharacterContext.EnterAsync(tab);
+        return await Task.Run(() =>
+        {
+            try
+            {
+                var cm = CharacterManager.Current;
+                if (!cm.Status.HasMainClass || !cm.Status.CanLevelUp || !IsMulticlassingEnabled(cm))
+                    return [];
+
+                if (!CanCurrentBuildMulticlass(cm))
+                    return [];
+
+                // Classes the character already has (main class + any multiclasses), by display name.
+                // Used to keep one source of a class at a time: a class already on the character can't
+                // be added again from a different source. Existing multiclasses are matched by id below
+                // so they stay available to level up.
+                var currentClassNames = cm.ClassProgressionManagers
+                    .Select(m => m.ClassElement?.Name)
+                    .Where(n => !string.IsNullOrWhiteSpace(n))
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                var elements = DataManager.Current.ElementsCollection
+                    .Where(e => e.Type == "Multiclass")
+                    .Where(e =>
+                        // Keep an existing multiclass (so it can be leveled), otherwise only offer a
+                        // class the character doesn't already have (any source) and meets the prereq for.
+                        FindMulticlassProgression(cm, e.Id) != null ||
+                        (!currentClassNames.Contains(e.Name ?? "") &&
+                         MeetsMulticlassElementRequirements(e, cm, out _)))
+                    .OrderBy(e => e.Name)
+                    .ToList();
+
+                return BuildMulticlassOptions(elements);
+            }
+            catch (Exception ex)
+            {
+                DebugLogService.Catch(ex, "BuildService.GetAvailableMulticlassOptionsAsync");
+                return [];
+            }
+        });
+    }
+
+    private static IReadOnlyList<ElementOption> BuildMulticlassOptions(List<ElementBase> elements)
+    {
+        var options = elements
+            .Select(e => new ElementOption(
+                e.Id,
+                e.Name ?? "",
+                GetFeatureDescription(e),
+                e.Source ?? "",
+                e.Prerequisite ?? ""))
+            .ToList();
+
+        return DeduplicateOptions(options);
+    }
+
+    public static async Task<string?> AddMulticlassLevelAsync(CharacterTab tab, string multiclassElementId)
+    {
+        using var scope = await CharacterContext.EnterAsync(tab);
+        return await Task.Run(() =>
+        {
+            var levelBefore = 0;
+            var startedNewMulticlass = false;
+            var mutationCompleted = false;
+
+            try
+            {
+                var cm = CharacterManager.Current;
+                levelBefore = cm.Character.Level;
+
+                var element = DataManager.Current.ElementsCollection
+                    .FirstOrDefault(e => e.Id == multiclassElementId && e.Type == "Multiclass");
+                if (element == null)
+                    return "Multiclass element not found.";
+
+                if (!cm.Status.HasMainClass)
+                    return "Choose a class before multiclassing.";
+
+                if (!cm.Status.CanLevelUp)
+                    return "This character cannot gain another level.";
+
+                if (!IsMulticlassingEnabled(cm))
+                    return "Multiclassing is not enabled for this character.";
+
+                if (!CanCurrentBuildMulticlass(cm))
+                    return "This character doesn't meet the ability-score prerequisite to multiclass "
+                         + "(you need the minimum ability scores for both your current class and the new one).";
+
+                var existingProgression = FindMulticlassProgression(cm, multiclassElementId);
+                if (existingProgression != null)
+                {
+                    var progressionBefore = existingProgression.ProgressionLevel;
+
+                    dynamic d = element;
+                    cm.LevelUpMulti(d);
+
+                    if (cm.Character.Level != levelBefore + 1 ||
+                        existingProgression.ProgressionLevel != progressionBefore + 1)
+                    {
+                        RollBackToLevel(cm, levelBefore);
+                        return $"Couldn't add a level of {element.Name}. No change was made.";
+                    }
+                }
+                else
+                {
+                    if (!MeetsMulticlassElementRequirements(element, cm, out var requirementError))
+                        return requirementError
+                            ?? $"This character doesn't meet the multiclass prerequisite for {element.Name}.";
+
+                    var existingRuleIds = GetMulticlassRules(cm)
+                        .Select(r => r.UniqueIdentifier ?? "")
+                        .ToHashSet(StringComparer.Ordinal);
+
+                    cm.NewMulticlass();
+                    startedNewMulticlass = true;
+
+                    if (cm.Character.Level != levelBefore + 1)
+                        return RollBackNewMulticlass(cm, levelBefore, "Couldn't gain a new multiclass level. No change was made.");
+
+                    var mcRule = FindNewMulticlassRule(cm, existingRuleIds, cm.Character.Level);
+                    if (mcRule == null)
+                        return RollBackNewMulticlass(cm, levelBefore, "Couldn't open a multiclass selection for this level. No change was made.");
+
+                    var expander = SelectionRuleExpanderContext.Current;
+                    if (expander == null)
+                        return RollBackNewMulticlass(cm, levelBefore, "Couldn't register the multiclass selection. No change was made.");
+
+                    expander.SetRegisteredElement(mcRule, element.Id);
+
+                    if (FindMulticlassProgression(cm, multiclassElementId) == null)
+                        return RollBackNewMulticlass(cm, levelBefore, $"Couldn't add {element.Name} as a multiclass. No change was made.");
+                }
+
+                mutationCompleted = true;
+                ResnapTab(tab);
+                SaveCharacterFile(tab);
+                return (string?)null;
+            }
+            catch (Exception ex)
+            {
+                if (startedNewMulticlass && !mutationCompleted)
+                    RollBackToLevel(CharacterManager.Current, levelBefore);
+
+                return DebugLogService.Catch(ex, "BuildService.AddMulticlassLevelAsync");
+            }
+        });
+    }
+
+    private static bool IsMulticlassingEnabled(CharacterManager cm)
+    {
+        try { return cm.ContainsOption(MulticlassOptionId); }
+        catch { return false; }
+    }
+
+    private static bool CanCurrentBuildMulticlass(CharacterManager cm) =>
+        cm.Status.CanMulticlass || cm.GetElements().Any(e => e.Id == MulticlassPrereqGrantId);
+
+    private static bool MeetsMulticlassElementRequirements(ElementBase element, CharacterManager cm, out string? error)
+    {
+        error = null;
+        if (!element.HasRequirements)
+            return true;
+
+        try
+        {
+            var interpreter = new ExpressionInterpreter();
+            var currentIds = cm.GetElements().Select(e => e.Id).ToList();
+            return interpreter.EvaluateElementRequirementsExpression(element.Requirements, currentIds);
+        }
+        catch (Exception ex)
+        {
+            error = DebugLogService.Catch(ex, "BuildService.MeetsMulticlassElementRequirements");
+            return false;
+        }
+    }
+
+    private static ClassProgressionManager? FindMulticlassProgression(CharacterManager cm, string multiclassElementId) =>
+        cm.ClassProgressionManagers
+            .FirstOrDefault(m => m.IsMulticlass && m.ClassElement?.Id == multiclassElementId);
+
+    private static IReadOnlyList<SelectRule> GetMulticlassRules(CharacterManager cm) =>
+        cm.SelectionRules
+            .Where(r => string.Equals(r.Attributes.Type, "Multiclass", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+    private static SelectRule? FindNewMulticlassRule(
+        CharacterManager cm,
+        HashSet<string> existingRuleIds,
+        int newCharacterLevel)
+    {
+        var rules = GetMulticlassRules(cm);
+        var newRules = rules
+            .Where(r => !existingRuleIds.Contains(r.UniqueIdentifier ?? ""))
+            .ToList();
+
+        return newRules.FirstOrDefault(r => r.Attributes.RequiredLevel == newCharacterLevel)
+            ?? newRules.OrderByDescending(r => r.Attributes.RequiredLevel).FirstOrDefault()
+            ?? rules.FirstOrDefault(r =>
+                r.Attributes.RequiredLevel == newCharacterLevel &&
+                (r.Attributes.Requirements ?? "").Contains(
+                    $"ID_INTERNAL_MULTICLASS_LEVEL_{newCharacterLevel}",
+                    StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static string RollBackNewMulticlass(CharacterManager cm, int levelBefore, string message)
+    {
+        RollBackToLevel(cm, levelBefore);
+        return message;
+    }
+
+    private static void RollBackToLevel(CharacterManager cm, int levelBefore)
+    {
+        try
+        {
+            while (cm.Character.Level > levelBefore && cm.Status.CanLevelDown)
+                cm.LevelDown();
+        }
+        catch (Exception ex)
+        {
+            DebugLogService.Instance.LogException(ex, "BuildService.RollBackToLevel");
+        }
     }
 
     /// <summary>
@@ -1353,7 +1801,7 @@ public static class BuildService
     /// <paramref name="multiclassElementId"/> is the element ID of the Multiclass element.
     /// Saves and re-snaps. Returns any error string.
     /// </summary>
-    public static async Task<string?> AddMulticlassLevelAsync(CharacterTab tab, string multiclassElementId)
+    private static async Task<string?> AddMulticlassLevelLegacyAsync(CharacterTab tab, string multiclassElementId)
     {
         using var scope = await CharacterContext.EnterAsync(tab);
         return await Task.Run(() =>
@@ -1377,10 +1825,38 @@ public static class BuildService
                 }
                 else
                 {
-                    // Start a new multiclass: first register the Multiclass element
-                    cm.RegisterElement(element);
-                    // NewMulticlass() adds the level and wires the progression manager
+                    // Starting a NEW multiclass is, in 5e and in the engine, spending a new level on a
+                    // different class. The order matters:
+                    //   1. NewMulticlass() levels the character up and adds ID_INTERNAL_MULTICLASS_LEVEL_N,
+                    //      which is what *activates* the matching <select type="Multiclass"> rule.
+                    //   2. The chosen class is then acquired THROUGH that rule — RegisterElement's
+                    //      Multiclass case reads element.Aquisition.SelectRule, so registering a raw
+                    //      element (no SelectRule) throws a NullReferenceException.
+                    // The ability-score prerequisite (ID_INTERNAL_GRANTS_MULTICLASSING_PREREQUISITE) is
+                    // granted by the current class only when met; gate on it first so we never level the
+                    // character up into a dead end. (Multiclassing itself is a default-on, locked option.)
+                    bool meetsPrereq = cm.GetElements()
+                        .Any(e => e.Id == "ID_INTERNAL_GRANTS_MULTICLASSING_PREREQUISITE");
+                    if (!meetsPrereq)
+                        return "This character doesn't meet the ability-score prerequisite to multiclass "
+                             + "(you need the minimum ability scores for both your current class and the new one).";
+
                     cm.NewMulticlass();
+
+                    var mcRule = cm.SelectionRules
+                        .Where(r => r.Attributes.Type == "Multiclass")
+                        .OrderByDescending(r => r.Attributes.RequiredLevel)
+                        .FirstOrDefault();
+                    if (mcRule == null)
+                    {
+                        // Shouldn't happen once the prerequisite is met, but don't strand a leveled-up
+                        // character with no class assigned — undo the level NewMulticlass just added.
+                        if (cm.Status.CanLevelDown) cm.LevelDown();
+                        return "Couldn't open a multiclass selection for this level. No change was made.";
+                    }
+
+                    element.Aquisition.SelectedBy(mcRule);
+                    cm.RegisterElement(element);
                 }
 
                 ResnapTab(tab);
@@ -1537,6 +2013,10 @@ public static class BuildService
                 string? currentName = ResolveCurrentSelectionName(rule, n);
                 string ruleType  = rule.Attributes.Type  ?? "Other";
                 string ruleName  = rule.Attributes.Name  ?? ruleType;
+                if (string.Equals(ruleType, "Multiclass", StringComparison.OrdinalIgnoreCase) &&
+                    currentName != null)
+                    continue;
+
                 string label = rule.Attributes.Number > 1
                     ? $"{ruleName} ({n})"
                     : ruleName;
@@ -1991,7 +2471,7 @@ public static class BuildService
             var current = SelectionRuleExpanderContext.Current?.GetRegisteredElement(rule, n);
             if (current is null) return null;
             if (current is SelectionRuleListItem listItem) return listItem.Text;
-            return (string?)((dynamic)current).Name;
+            return (current as ElementBase)?.Name;
         }
         catch { return null; }
     }
@@ -2012,7 +2492,8 @@ public sealed record SelectionRuleEntry(
     string?    CurrentName,
     int        RequiredLevel,
     string     EntryKey = "",
-    int        SpellLevel = 0)
+    int        SpellLevel = 0,
+    string?    SpellId = null)
 {
     public bool IsOptional =>
         Rule?.Attributes?.Optional == true ||
@@ -2042,6 +2523,10 @@ public sealed record ElementOption(
     string School = "",
     bool IsRitual = false,
     bool IsConcentration = false);
+
+/// <summary>A class the character can level up: its element id (Class or Multiclass), display name,
+/// current level in that class, and whether it's the main class.</summary>
+public sealed record LevelUpClassOption(string Id, string Name, int Level, bool IsMain);
 
 public sealed record SpellDetail(
     string Id,

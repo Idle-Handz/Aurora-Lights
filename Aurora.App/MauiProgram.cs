@@ -67,6 +67,12 @@ public static class MauiProgram
         debugLog.InitializePersistentLog(FileSystem.Current.AppDataDirectory);
         debugLog.Info("MauiProgram.CreateMauiApp", $"Persistent log path: {debugLog.PersistentLogPath ?? "(disabled)"}");
         builder.Services.AddSingleton(debugLog);
+
+        // Surface engine (Builder.Core.Logging) warnings/exceptions in the in-app Console. The engine
+        // emits a warning when it silently abandons an operation and logs swallowed exceptions there;
+        // without this bridge those never reach the Console (only Debug output).
+        Builder.Core.Logging.Logger.IsEnabled = true;
+        Builder.Core.Logging.Logger.RegisterLogger(new EngineLogBridge());
         CharacterContext.ExceptionLogged += (ex, ctx) => debugLog.LogException(ex, ctx);
 
         // Capture truly unhandled exceptions (background threads, etc.) into the log.

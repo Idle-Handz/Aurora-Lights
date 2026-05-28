@@ -377,22 +377,9 @@ public sealed class ContentDatabaseParityService
 
     private static List<FileInfo> GetOrderedCustomFiles()
     {
-        List<FileInfo> all = GetOrderedCustomFiles(DataManager.Current.UserDocumentsCustomElementsDirectory);
-
-        string legacy = ApplicationContext.Current.Settings.AdditionalCustomDirectory;
-        if (!string.IsNullOrWhiteSpace(legacy) && Directory.Exists(legacy))
-            all.AddRange(GetOrderedCustomFiles(legacy));
-
-        foreach (string dir in ApplicationContext.Current.Settings.AdditionalCustomDirectories)
-        {
-            if (string.IsNullOrWhiteSpace(dir) || !Directory.Exists(dir))
-                continue;
-            if (dir.Equals(DataManager.Current.UserDocumentsCustomElementsDirectory, StringComparison.OrdinalIgnoreCase))
-                continue;
-            if (dir.Equals(legacy, StringComparison.OrdinalIgnoreCase))
-                continue;
+        List<FileInfo> all = [];
+        foreach (string dir in ContentDirectoryResolver.GetContentDirectories())
             all.AddRange(GetOrderedCustomFiles(dir));
-        }
 
         return all;
     }

@@ -25,6 +25,11 @@ public static class AuroraContentImporter
     public static bool IsStale(string contentDirectory, string sqlitePath) =>
         AuroraSqliteImporter.IsStale(contentDirectory, sqlitePath);
 
+    public static bool IsStale(
+        IReadOnlyList<string> contentDirectories,
+        string sqlitePath) =>
+        AuroraSqliteImporter.IsStale(AuroraXmlCatalogReader.BuildCatalog(contentDirectories), sqlitePath);
+
     public static ContentDatabaseMetadata? GetMetadata(string sqlitePath) =>
         AuroraSqliteImporter.GetMetadata(sqlitePath);
 
@@ -43,6 +48,16 @@ public static class AuroraContentImporter
         CancellationToken cancellationToken = default)
     {
         var catalog = AuroraXmlCatalogReader.BuildCatalog(contentDirectory);
+        return AuroraSqliteImporter.Import(catalog, sqlitePath, progress, cancellationToken);
+    }
+
+    public static AuroraImportResult Import(
+        IReadOnlyList<string> contentDirectories,
+        string sqlitePath,
+        IProgress<AuroraImportProgress>? progress = null,
+        CancellationToken cancellationToken = default)
+    {
+        var catalog = AuroraXmlCatalogReader.BuildCatalog(contentDirectories);
         return AuroraSqliteImporter.Import(catalog, sqlitePath, progress, cancellationToken);
     }
 

@@ -11,6 +11,7 @@ internal sealed class MauiMessageDialogService : IMessageDialogService
     {
         string title = GetCaption(caption);
         Debug.WriteLine($"[Dialog] {title}: {message}");
+        DebugLogService.Instance.Info($"[dialog] {title}: {message}");
 
 #if WINDOWS
         ShowWindowsMessageBox(message, title, MessageBoxStyle.Ok, MessageBoxIcon.Info);
@@ -24,6 +25,7 @@ internal sealed class MauiMessageDialogService : IMessageDialogService
         string title = GetCaption(caption ?? ex.GetType().Name);
         string body = BuildExceptionMessage(ex, message);
         Debug.WriteLine($"[Dialog:Exception] {title}: {body}");
+        DebugLogService.Instance.LogException(ex, string.IsNullOrWhiteSpace(message) ? "dialog" : $"dialog: {message}");
 
 #if WINDOWS
         ShowWindowsMessageBox(body, title, MessageBoxStyle.Ok, MessageBoxIcon.Error);

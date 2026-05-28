@@ -265,6 +265,10 @@ public sealed class CharacterService :
                     // equipped state round-trips correctly between the two apps.
                     CharacterLoadCompatibilityService.RestoreEquippedSlots(character);
 
+                    // Re-apply user-added custom features (feats/spells/ASIs from the Extras flow):
+                    // they live outside the standard build and aren't round-tripped by file.Load.
+                    BuildService.ReapplyCustomFeatures(file);
+
                     CurrentCharacter     = character;
                     CurrentCharacterFile = file;
 
@@ -471,7 +475,8 @@ public sealed class CharacterService :
     public static string? GetAndroidExternalStoragePath()
     {
 #if ANDROID
-        return Android.App.Application.Context.GetExternalFilesDir(null)?.AbsolutePath;
+        string? externalBase = Android.App.Application.Context.GetExternalFilesDir(null)?.AbsolutePath;
+        return externalBase == null ? null : Path.Combine(externalBase, "5e Character Builder");
 #else
         return null;
 #endif

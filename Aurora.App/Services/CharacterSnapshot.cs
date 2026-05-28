@@ -1,3 +1,4 @@
+using Builder.Data;
 using Builder.Data.Elements;
 using Builder.Presentation;
 using Builder.Presentation.Models;
@@ -87,6 +88,13 @@ public sealed class CharacterSnapshot
     public IReadOnlyList<string>          Cantrips     { get; init; } = [];
     public IReadOnlyList<SpellLevelEntry> SpellLevels  { get; init; } = [];
     public IReadOnlyList<SpellcastingSectionEntry> SpellcastingSections { get; init; } = [];
+
+    /// <summary>
+    /// Always-prepared spells granted by a feat / item / species (not a spellcasting class) —
+    /// e.g. a dragonmark's cantrip+spell, or an item that grants a spell. Surfaced read-only so
+    /// non-casters (and casters) can see what they've been granted.
+    /// </summary>
+    public IReadOnlyList<GrantedSpellEntry> GrantedSpells { get; init; } = [];
     /// <summary>Maximum number of spells the character may have prepared (0 for known casters).</summary>
     public int MaxPrepared { get; init; }
     /// <summary>Count of spells currently prepared by choice (excludes always-prepared).</summary>
@@ -244,6 +252,7 @@ public sealed class CharacterSnapshot
             Cantrips               = primarySpellSection?.Cantrips.Select(s => s.Name).ToList() ?? [],
             SpellLevels            = primarySpellSection?.SpellLevels ?? [],
             SpellcastingSections   = spellSections,
+            GrantedSpells          = CollectGrantedSpells(cm),
 
             Languages           = CollectLanguages(),
             ArmorProficiencies  = CollectArmorProficiencies(),
@@ -503,6 +512,45 @@ public sealed class CharacterSnapshot
                 catch { }
                 return new FeatureEntry(e.Name!, desc);
             })
+            .ToList();
+    }
+
+    /// <summary>
+    /// Gathers spells granted by a feat / item / species (parent element is not a spellcasting
+    /// class), excluding any already shown under a class section. These are always-prepared
+    /// innate grants (e.g. dragonmark spells) shown read-only — including for non-casters.
+    /// </summary>
+    private static IReadOnlyList<GrantedSpellEntry> CollectGrantedSpells(CharacterManager cm)
+    {
+        var nonClassParentTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "Feat", "Feat Feature", "Item", "Magic Item", "Racial Trait", "Race",
+            "Sub Race", "Background", "Background Feature", "Companion", "Dragonmark",
+        };
+
+        var result = new List<GrantedSpellEntry>();
+        foreach (var e in cm.GetElements().Where(e => e.Type == "Spell"))
+        {
+            if (string.IsNullOrWhiteSpace(e.Name)) continue;
+
+            string parentName = "";
+            bool nonClassGrant = false;
+            // ElementBase.Aquisition.GetParentHeader() is statically typed — no dynamic needed.
+            var parent = e.Aquisition.GetParentHeader();
+            if (parent != null)
+            {
+                nonClassGrant = nonClassParentTypes.Contains(parent.Type ?? "");
+                parentName = parent.Name ?? "";
+            }
+
+            if (nonClassGrant)
+                result.Add(new GrantedSpellEntry(e.Name!, GetSpellLevel(e), parentName, e.Id ?? ""));
+        }
+
+        return result
+            .GroupBy(s => $"{s.Name}|{s.Source}", StringComparer.OrdinalIgnoreCase)
+            .Select(g => g.First())
+            .OrderBy(s => s.Level).ThenBy(s => s.Name)
             .ToList();
     }
 
@@ -825,10 +873,10 @@ public sealed class CharacterSnapshot
 
             var classSpells = filteredSpells
                 .Select(e => (
-                    Name:   (string?)(((dynamic)e).Name)   ?? "",
-                    Id:     (string?)(((dynamic)e).Id)     ?? "",
+                    Name:   (e as ElementBase)?.Name   ?? "",
+                    Id:     (e as ElementBase)?.Id     ?? "",
                     Level:  GetSpellLevel(e),
-                    Source: (string?)(((dynamic)e).Source) ?? ""))
+                    Source: (e as ElementBase)?.Source ?? ""))
                 .Where(s => s.Level > 0 && s.Level <= effectiveMax && !string.IsNullOrEmpty(s.Name))
                 .ToList();
 
@@ -942,11 +990,9 @@ public sealed class CharacterSnapshot
     }
 
     /// <summary>Gets the spell level via dynamic dispatch (avoids Builder.Data.Elements import).</summary>
-    private static int GetSpellLevel(object e)
-    {
-        try { return (int)((dynamic)e).Level; }
-        catch { return 0; }
-    }
+    // Spell-typed elements are always Builder.Data.Elements.Spell (verified by SpellTypeInvariantTests),
+    // so read Level via a static cast instead of dynamic — no silent binder failure → wrong level.
+    private static int GetSpellLevel(object e) => e is Spell sp ? sp.Level : 0;
 
     private static string GetDynamicString(object e, string propertyName)
     {
@@ -1018,6 +1064,9 @@ public sealed record AbilityEntry(
     string ModifierString,
     string SaveBonusString,
     bool   SaveIsProficient);
+
+/// <summary>A spell granted by a feat/item/species (read-only on the Magic page).</summary>
+public sealed record GrantedSpellEntry(string Name, int Level, string Source, string Id = "");
 
 public sealed record FeatureEntry(string Name, string Description);
 

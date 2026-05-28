@@ -15,7 +15,7 @@
     return;
 }
 
-@if (!_snap.HasSpellcasting)
+@if (!_snap.HasSpellcasting && _spellRuleGroups.Count == 0 && _snap.GrantedSpells.Count == 0)
 {
     <div style="margin-top: 24px;">
         <MudText Color="Color.Secondary">This character has no spellcasting.</MudText>
@@ -79,16 +79,7 @@
         _magicModel = new()
         {
             HasSpellcasting = _snap.HasSpellcasting,
-            KnownSpellGroups = _spellRuleGroups.Select((group, groupIndex) =>
-                new MagicKnownSpellGroupModel(
-                    group.Label,
-                    ResolveKnownSpellSectionId(group.Label),
-                    group.Rules.Select((entry, entryIndex) => new MagicKnownSpellEntryModel(
-                        $"{groupIndex}:{entryIndex}",
-                        entry.Label,
-                        entry.CurrentName,
-                        entry.SpellLevel)).ToList()))
-                .ToList(),
+            KnownSpellGroups = BuildKnownSpellGroups(),
             Sections = _snap.SpellcastingSections
                 .Select(section => new MagicSpellcastingSectionModel
                 {
@@ -114,6 +105,56 @@
                 })
                 .ToList()
         };
+    }
+
+    private List<MagicKnownSpellGroupModel> BuildKnownSpellGroups()
+    {
+        var groups = _spellRuleGroups.Select((group, groupIndex) =>
+            new MagicKnownSpellGroupModel(
+                group.Label,
+                ResolveKnownSpellSectionId(group.Label),
+                group.Rules.Select((entry, entryIndex) =>
+                {
+                    // Resolve the chosen spell's metadata by id so the Known-tab filters
+                    // (source/school/ritual/concentration) work on these picker rows.
+                    var d = string.IsNullOrWhiteSpace(entry.SpellId) ? null : GetSpellDetailCached(entry.SpellId!);
+                    return new MagicKnownSpellEntryModel(
+                        $"{groupIndex}:{entryIndex}",
+                        entry.Label,
+                        entry.CurrentName,
+                        entry.SpellLevel,
+                        IsReadOnly: false,
+                        SpellId: entry.SpellId,
+                        Source: d?.Source ?? string.Empty,
+                        School: d?.School ?? string.Empty,
+                        IsRitual: d?.Ritual ?? false,
+                        IsConcentration: d?.Concentration ?? false);
+                }).ToList()))
+            .ToList();
+
+        // Read-only spells granted by feats/items/species (e.g. dragonmark spells). Shown so
+        // non-casters can see what they have; not editable (no underlying selection rule).
+        if (_snap is { GrantedSpells.Count: > 0 })
+        {
+            var grantedEntries = _snap.GrantedSpells.Select((g, i) =>
+            {
+                var d = string.IsNullOrWhiteSpace(g.Id) ? null : GetSpellDetailCached(g.Id);
+                return new MagicKnownSpellEntryModel(
+                    Id: $"granted:{i}",
+                    Label: g.Level == 0 ? "Cantrip" : $"Level {g.Level}",
+                    CurrentName: string.IsNullOrWhiteSpace(g.Source) ? g.Name : $"{g.Name} — {g.Source}",
+                    SpellLevel: g.Level,
+                    IsReadOnly: true,
+                    SpellId: g.Id,
+                    Source: d?.Source ?? g.Source,
+                    School: d?.School ?? string.Empty,
+                    IsRitual: d?.Ritual ?? false,
+                    IsConcentration: d?.Concentration ?? false);
+            }).ToList();
+            groups.Add(new MagicKnownSpellGroupModel("Granted by Features", grantedEntries, ReadOnlyGroup: true));
+        }
+
+        return groups;
     }
 
     private MagicSpellDetailModel? _selectedSpellModel;

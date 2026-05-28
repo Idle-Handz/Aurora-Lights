@@ -60,8 +60,7 @@ public static class StartingEquipmentDataLoader
         var result = new Dictionary<string, StartingEquipmentBlock>(StringComparer.OrdinalIgnoreCase);
 
         LoadBundled(result);
-        LoadFromDirectory(result, DataManager.Current.UserDocumentsCustomElementsDirectory);
-        foreach (string dir in ApplicationContext.Current.Settings.AdditionalCustomDirectories)
+        foreach (string dir in ContentDirectoryResolver.GetContentDirectories())
             LoadFromDirectory(result, dir);
 
         DebugLogService.Instance.Log(LogLevel.Info,

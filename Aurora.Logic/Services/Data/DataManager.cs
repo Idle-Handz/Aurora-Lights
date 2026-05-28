@@ -1026,17 +1026,13 @@ public sealed class DataManager
   {
     List<FileInfo> all = this.GetCustomFiles(this.UserDocumentsCustomElementsDirectory);
 
-    // Legacy single-directory setting (kept for compatibility).
-    string legacy = ApplicationContext.Current.Settings.AdditionalCustomDirectory;
-    if (!string.IsNullOrWhiteSpace(legacy) && Directory.Exists(legacy))
-      all.AddRange(this.GetCustomFiles(legacy));
-
-    // Multi-directory list.
+    // Current content root plus explicitly configured additional content directories.
+    // The legacy single-directory setting is intentionally ignored so stale defaults do not
+    // continue influencing content after the active content root has moved.
     foreach (string dir in ApplicationContext.Current.Settings.AdditionalCustomDirectories)
     {
       if (string.IsNullOrWhiteSpace(dir) || !Directory.Exists(dir)) continue;
       if (dir.Equals(this.UserDocumentsCustomElementsDirectory, StringComparison.OrdinalIgnoreCase)) continue;
-      if (dir.Equals(legacy, StringComparison.OrdinalIgnoreCase)) continue;
       all.AddRange(this.GetCustomFiles(dir));
     }
 
