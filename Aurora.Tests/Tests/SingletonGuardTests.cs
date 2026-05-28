@@ -278,6 +278,37 @@ public sealed class SingletonGuardTests
             because: "once the outer scope is released the guard is free and the next enter completes");
     }
 
+    [Fact]
+    public async Task EnterAsync_ReentrantWhileHeld_ThrowsDescriptiveTimeout()
+    {
+        // The guard is non-reentrant, so a reentrant acquire used to hang forever. It now times out
+        // with a clear error. Use a short timeout for the test and restore it afterward so the static
+        // setting can't leak into the other (default-timeout) tests in this class.
+        var original = SingletonGuard<object>.AcquireTimeout;
+        SingletonGuard<object>.AcquireTimeout = TimeSpan.FromMilliseconds(150);
+        try
+        {
+            var guard = new SingletonGuard<object>();
+            var item  = new object();
+            guard.Claim(item);
+
+            using var outer = await guard.EnterAsync(item, (_, _) => Task.CompletedTask);
+
+            var reenter = async () =>
+            {
+                using (await guard.EnterAsync(item, (_, _) => Task.CompletedTask)) { }
+            };
+
+            (await reenter.Should().ThrowAsync<InvalidOperationException>(
+                    "a reentrant acquire can never succeed and must surface as an error, not a hang"))
+                .Which.Message.Should().Contain("re-entered");
+        }
+        finally
+        {
+            SingletonGuard<object>.AcquireTimeout = original;
+        }
+    }
+
     // ── CaptureAndInvalidateAsync ─────────────────────────────────────────────
 
     [Fact]

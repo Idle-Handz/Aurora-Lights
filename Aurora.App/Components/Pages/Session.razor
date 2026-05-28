@@ -27,6 +27,49 @@
                        Style="color: var(--mud-palette-text-disabled); margin-top: 2px;" />
     </MudTooltip>
 </div>
+
+<div class="detail-advancement-strip">
+    <div class="detail-advancement-meta">
+        <div class="section-label" style="margin-bottom: 6px;">Advancement</div>
+        <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-disabled);">
+            Level @_snap.Level
+            @if (!BuildService.CanLevelUp)   { <span> · Max level</span>   }
+            @if (!BuildService.CanLevelDown) { <span> · Level 1 min</span> }
+        </MudText>
+    </div>
+    <div class="detail-advancement-actions">
+        <MudButton StartIcon="@Icons.Material.Filled.Add"
+                   Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   Size="Size.Small"
+                   Disabled="@(!BuildService.CanLevelUp || _advancementBusy)"
+                   OnClick="LevelUpAsync">
+            Level Up
+        </MudButton>
+
+        <MudButton StartIcon="@Icons.Material.Filled.Remove"
+                   Variant="Variant.Outlined"
+                   Color="Color.Default"
+                   Size="Size.Small"
+                   Disabled="@(!BuildService.CanLevelDown || _advancementBusy)"
+                   OnClick="LevelDownAsync">
+            Level Down
+        </MudButton>
+
+        @if (BuildService.HasMainClass && BuildService.CanLevelUp)
+        {
+            <MudButton StartIcon="@Icons.Material.Filled.MergeType"
+                       Variant="Variant.Outlined"
+                       Color="Color.Secondary"
+                       Size="Size.Small"
+                       Disabled="@_advancementBusy"
+                       OnClick="OpenMulticlassDialog">
+                Add Multiclass
+            </MudButton>
+        }
+    </div>
+</div>
+
 @if (!string.IsNullOrWhiteSpace(_saveError))
 {
     <MudAlert Severity="Severity.Error" Dense="true" Variant="Variant.Outlined" Style="margin-bottom: 16px;">
@@ -317,6 +360,7 @@
     private List<SpellLevelEntry> _spellLevels = [];
     private string _spellcastingSummary = string.Empty;
     private string? _saveError;
+    private bool _advancementBusy;
 
     private static readonly string[] _allConditions =
     [
@@ -363,6 +407,131 @@
         _spellcastingSummary = _snap?.SpellcastingSections.Count > 1
             ? string.Join(", ", _snap.SpellcastingSections.Select(section => section.Name).Distinct(StringComparer.OrdinalIgnoreCase))
             : string.Empty;
+    }
+
+    // ── Advancement ──────────────────────────────────────────────────────────────
+
+    private async Task LevelUpAsync()
+    {
+        var tab = Tabs.ActiveTab;
+        if (tab == null)
+        {
+            Snackbar.Add("There is no active character to level up.", Severity.Warning);
+            return;
+        }
+
+        _advancementBusy = true;
+        StateHasChanged();
+        var (error, hpGained, isAverage) = await BuildService.LevelUpMainAsync(tab);
+        _advancementBusy = false;
+        if (error == null)
+        {
+            tab.IsNew = false;
+            Tabs.MarkClean(tab);
+            string hpNote = hpGained > 0
+                ? $" · +{hpGained} HP ({(isAverage ? "avg" : "rolled")})"
+                : "";
+            Snackbar.Add($"Level {_snap?.Level + 1 ?? 0}{hpNote}", Severity.Success,
+                cfg => cfg.VisibleStateDuration = 5000);
+        }
+        else
+        {
+            _saveError = error;
+        }
+
+        Refresh();
+        StateHasChanged();
+    }
+
+    private async Task LevelDownAsync()
+    {
+        var tab = Tabs.ActiveTab;
+        if (tab == null)
+        {
+            Snackbar.Add("There is no active character to level down.", Severity.Warning);
+            return;
+        }
+
+        _advancementBusy = true;
+        StateHasChanged();
+        var error = await BuildService.LevelDownAsync(tab);
+        _advancementBusy = false;
+        if (error == null)
+        {
+            Tabs.MarkClean(tab);
+            Snackbar.Add("Level removed.", Severity.Info, cfg => cfg.VisibleStateDuration = 2000);
+        }
+        else
+        {
+            _saveError = error;
+        }
+
+        Refresh();
+        StateHasChanged();
+    }
+
+    private async Task OpenMulticlassDialog()
+    {
+        var tab = Tabs.ActiveTab;
+        if (tab == null)
+        {
+            Snackbar.Add("There is no active character to multiclass.", Severity.Warning);
+            return;
+        }
+
+        _advancementBusy = true;
+        StateHasChanged();
+        var options = await BuildService.GetAvailableMulticlassOptionsAsync(tab);
+        _advancementBusy = false;
+        StateHasChanged();
+        if (options.Count == 0)
+        {
+            Snackbar.Add("No multiclass options are currently available for this character.", Severity.Warning);
+            return;
+        }
+
+        var fakeEntry = new SelectionRuleEntry(
+            Rule: null!,
+            Number: 1,
+            Label: "Add Multiclass",
+            CurrentName: null,
+            RequiredLevel: 0);
+
+        var parameters = new DialogParameters
+        {
+            [nameof(SelectionPickerDialog.Entry)]   = fakeEntry,
+            [nameof(SelectionPickerDialog.Options)] = options,
+        };
+        var dialogOptions = new DialogOptions
+        {
+            MaxWidth         = MaxWidth.Large,
+            FullWidth        = true,
+            CloseOnEscapeKey = true,
+        };
+
+        var dialog = await DialogService.ShowAsync<SelectionPickerDialog>("Add Multiclass", parameters, dialogOptions);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: string selectedId })
+        {
+            _advancementBusy = true;
+            _saveError = null;
+            StateHasChanged();
+            var error = await BuildService.AddMulticlassLevelAsync(tab, selectedId);
+            _advancementBusy = false;
+            if (error == null)
+            {
+                Tabs.MarkClean(tab);
+                Snackbar.Add("Multiclass added.", Severity.Success, cfg => cfg.VisibleStateDuration = 2000);
+            }
+            else
+            {
+                _saveError = error;
+            }
+
+            Refresh();
+            StateHasChanged();
+        }
     }
 
     // ── HP ────────────────────────────────────────────────────────────────────
@@ -609,4 +778,3 @@
         _                 => "Manual"
     };
 }
-

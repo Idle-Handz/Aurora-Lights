@@ -491,6 +491,77 @@ public static class CharacterFileSaveExtensions
     }
 
     /// <summary>
+    /// Persists the list of element ids added via the Build page's "Add Custom Feature" flow
+    /// to a root-level &lt;custom-features&gt; node. These elements are registered directly and live
+    /// OUTSIDE the standard &lt;build&gt;, so CharacterFile.Save does not round-trip them — this node is
+    /// the only record, and BuildService.ReapplyCustomFeatures re-registers them after each load.
+    /// </summary>
+    public static bool SaveCustomFeatures(this CharacterFile file, IEnumerable<string> ids)
+    {
+        var path = file.FilePath;
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+            return false;
+
+        try
+        {
+            var doc = new XmlDocument();
+            doc.Load(path);
+
+            var root = doc.DocumentElement;
+            if (root == null) return false;
+
+            var old = root["custom-features"];
+            if (old != null) root.RemoveChild(old);
+
+            var node = doc.CreateElement("custom-features");
+            foreach (var id in ids.Where(s => !string.IsNullOrWhiteSpace(s)))
+            {
+                var fn = doc.CreateElement("feature");
+                fn.SetAttribute("id", id);
+                node.AppendChild(fn);
+            }
+            root.AppendChild(node);
+
+            SaveAtomic(path, doc);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            DebugLogService.Instance.LogException(ex, "SaveCustomFeatures");
+            return false;
+        }
+    }
+
+    /// <summary>Reads the element ids stored in the &lt;custom-features&gt; node (empty if none).</summary>
+    public static List<string> LoadCustomFeatures(this CharacterFile file)
+    {
+        var result = new List<string>();
+        var path = file.FilePath;
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+            return result;
+
+        try
+        {
+            var doc = new XmlDocument();
+            doc.Load(path);
+            var node = doc.DocumentElement?["custom-features"];
+            if (node == null) return result;
+
+            foreach (XmlElement fn in node.GetElementsByTagName("feature"))
+            {
+                var id = fn.GetAttribute("id");
+                if (!string.IsNullOrWhiteSpace(id))
+                    result.Add(id);
+            }
+        }
+        catch (Exception ex)
+        {
+            DebugLogService.Instance.LogException(ex, "LoadCustomFeatures");
+        }
+        return result;
+    }
+
+    /// <summary>
     /// Replaces the &lt;sources&gt; XML node with the current restricted-sources state
     /// from <c>CharacterManager.Current.SourcesManager</c>.
     /// The node sits at root level (sibling of &lt;build&gt;) so the WPF builder reads it.

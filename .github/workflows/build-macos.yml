@@ -1,4 +1,5 @@
 name: Build macOS MAUI (unsigned)
+
 on:
   # push:
   #   paths:
@@ -11,8 +12,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  # ── x64 build (Intel) ────────────────────────────────────────────────────────
   build-x64:
+    name: Build macOS x64
     runs-on: macos-26-intel
     env:
       PROJECT: Aurora.App/Aurora.App.csproj
@@ -49,8 +50,6 @@ jobs:
             -p:CreatePackage=false \
             -p:MtouchLink=None
 
-      # MAUI ignores -o; find the .app and zip it with a colon-free name
-      # so the artifact uploader (which enforces NTFS-safe paths) accepts it.
       - name: Stage x64 app bundle
         run: |
           set -euo pipefail
@@ -71,10 +70,9 @@ jobs:
           path: stage/aurora-maccatalyst-x64.zip
           if-no-files-found: error
 
-  # ── arm64 build (Apple Silicon) + universal merge ────────────────────────────
-  build-arm64-and-merge:
+  build-arm64:
+    name: Build macOS arm64
     runs-on: macos-26-intel
-    needs: build-x64
     env:
       PROJECT: Aurora.App/Aurora.App.csproj
     steps:
@@ -120,7 +118,6 @@ jobs:
             exit 1
           fi
           echo "Found: $APP"
-          echo "ARM_APP=$APP" >> $GITHUB_ENV
           mkdir -p stage
           ditto -c -k --sequesterRsrc --keepParent "$APP" "stage/aurora-maccatalyst-arm64.zip"
 
@@ -130,50 +127,3 @@ jobs:
           name: mac-publish-maccatalyst-arm64
           path: stage/aurora-maccatalyst-arm64.zip
           if-no-files-found: error
-
-      - name: Download x64 artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: mac-publish-maccatalyst-x64
-          path: x64
-
-      - name: Create universal binary (.app)
-        run: |
-          set -euo pipefail
-
-          # Extract x64 zip (ditto preserves Mac metadata)
-          ditto -x -k "x64/aurora-maccatalyst-x64.zip" x64_app/
-          X64_APP=$(find x64_app -name "*.app" -print -quit || true)
-
-          if [ -z "$ARM_APP" ] || [ -z "$X64_APP" ]; then
-            echo "App bundles not found — ARM=$ARM_APP  X64=$X64_APP"
-            exit 1
-          fi
-          echo "ARM: $ARM_APP"
-          echo "X64: $X64_APP"
-
-          APP_NAME=$(basename "$ARM_APP")
-          mkdir -p universal
-          ditto "$ARM_APP" "universal/$APP_NAME"
-
-          ARM_EXE=$(find "$ARM_APP/Contents/MacOS" -type f -maxdepth 1 -print -quit || true)
-          X64_EXE=$(find "$X64_APP/Contents/MacOS" -type f -maxdepth 1 -print -quit || true)
-          if [ -z "$ARM_EXE" ] || [ -z "$X64_EXE" ]; then
-            echo "Could not locate executables inside .app bundles"
-            exit 1
-          fi
-          EXE_NAME=$(basename "$ARM_EXE")
-          UNIVERSAL_EXE="universal/$APP_NAME/Contents/MacOS/$EXE_NAME"
-
-          echo "Merging: $ARM_EXE + $X64_EXE → $UNIVERSAL_EXE"
-          lipo -create "$X64_EXE" "$ARM_EXE" -output "$UNIVERSAL_EXE"
-          chmod +x "$UNIVERSAL_EXE"
-
-          # Zip with a colon-free name for artifact upload
-          ditto -c -k --sequesterRsrc --keepParent "universal/$APP_NAME" "aurora-universal.zip"
-
-      - name: Upload universal artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: mac-publish-universal
-          path: aurora-universal.zip

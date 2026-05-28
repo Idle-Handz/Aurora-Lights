@@ -246,6 +246,11 @@ internal static class AuroraSqliteImporter
     /// </summary>
     public static bool IsStale(string contentDirectory, string sqlitePath)
     {
+        return IsStale(AuroraXmlCatalogReader.BuildCatalog(contentDirectory), sqlitePath);
+    }
+
+    public static bool IsStale(AuroraImportCatalog catalog, string sqlitePath)
+    {
         if (!File.Exists(sqlitePath)) return true;
 
         try
@@ -270,17 +275,16 @@ internal static class AuroraSqliteImporter
                     stored[r.GetString(0)] = r.IsDBNull(1) ? "" : r.GetString(1);
             }
 
-            if (!Directory.Exists(contentDirectory)) return stored.Count > 0;
-
-            var diskFiles = Directory.GetFiles(contentDirectory, "*.xml", SearchOption.AllDirectories);
             var seenPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            foreach (var file in diskFiles)
+            foreach (var file in catalog.Files)
             {
-                string rel = Path.GetRelativePath(contentDirectory, file);
-                seenPaths.Add(rel);
-                string hash = ComputeFileHash(file);
-                if (!stored.TryGetValue(rel, out string? storedHash) || storedHash != hash)
+                seenPaths.Add(file.RelativePath);
+                if (!File.Exists(file.FullPath))
+                    return true;
+
+                string hash = ComputeFileHash(file.FullPath);
+                if (!stored.TryGetValue(file.RelativePath, out string? storedHash) || storedHash != hash)
                     return true;
             }
 

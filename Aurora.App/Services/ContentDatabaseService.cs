@@ -9,6 +9,8 @@ public enum ContentDatabaseSyncState { Idle, Syncing, Done, Failed }
 
 public sealed class ContentDatabaseService
 {
+    public const string DatabaseFileName = "aurora-elements.sqlite";
+
     private readonly SemaphoreSlim _lock = new(1, 1);
 
     // ── State ────────────────────────────────────────────────────────────────
@@ -24,13 +26,22 @@ public sealed class ContentDatabaseService
 
     // ── Path helpers ─────────────────────────────────────────────────────────
 
-    public string? DatabasePath =>
-        DataManager.Current.LocalAppDataRootDirectory is { Length: > 0 } root
-            ? Path.Combine(root, "aurora-elements.sqlite")
-            : null;
+    public string? DatabasePath => GetDatabasePath();
 
-    public string ContentDirectory =>
-        DataManager.Current.UserDocumentsCustomElementsDirectory ?? string.Empty;
+    public string ContentDirectory => GetContentDirectory();
+
+    public IReadOnlyList<string> ContentDirectories => ContentDirectoryResolver.GetContentDirectories();
+
+    public static string GetContentDirectory() =>
+        ContentDirectoryResolver.GetPrimaryContentDirectory();
+
+    public static string? GetDatabasePath()
+    {
+        string contentDirectory = GetContentDirectory();
+        return string.IsNullOrWhiteSpace(contentDirectory)
+            ? null
+            : Path.Combine(contentDirectory, DatabaseFileName);
+    }
 
     /// <summary>
     /// Path to the bundled AuroraTranslator snapshot published via tools/publish-translator.ps1.
@@ -72,6 +83,16 @@ public sealed class ContentDatabaseService
         StateChanged?.Invoke();
     });
 
+    public void NotifyContentDirectoryChanged()
+    {
+        DbElementLoader.ResetCaches();
+        SyncState  = ContentDatabaseSyncState.Idle;
+        Progress   = null;
+        LastResult = null;
+        IsStale    = false;
+        StateChanged?.Invoke();
+    }
+
     // ── Staleness check ──────────────────────────────────────────────────────
 
     /// <summary>
@@ -80,12 +101,13 @@ public sealed class ContentDatabaseService
     /// </summary>
     public bool CheckIsStale()
     {
-        if (DatabasePath is not { } dbPath || string.IsNullOrWhiteSpace(ContentDirectory))
+        var contentDirectories = ContentDirectories;
+        if (DatabasePath is not { } dbPath || contentDirectories.Count == 0)
         {
             IsStale = false;
             return false;
         }
-        IsStale = AuroraContentImporter.IsStale(ContentDirectory, dbPath);
+        IsStale = AuroraContentImporter.IsStale(contentDirectories, dbPath);
         StateChanged?.Invoke();
         return IsStale;
     }
@@ -108,7 +130,8 @@ public sealed class ContentDatabaseService
                 return fail;
             }
 
-            if (string.IsNullOrWhiteSpace(ContentDirectory) || !Directory.Exists(ContentDirectory))
+            var contentDirectories = ContentDirectories;
+            if (contentDirectories.Count == 0)
             {
                 var fail = AuroraImportResult.Failed($"Content directory not found: {ContentDirectory}");
                 LastResult = fail;
@@ -123,9 +146,9 @@ public sealed class ContentDatabaseService
 
             AuroraImportResult result;
 
-            if (BundledTranslatorPath is { } exePath && File.Exists(exePath))
+            if (contentDirectories.Count == 1 && BundledTranslatorPath is { } exePath && File.Exists(exePath))
             {
-                result = await SyncWithBundledTranslatorAsync(exePath, ContentDirectory, dbPath, cancellationToken);
+                result = await SyncWithBundledTranslatorAsync(exePath, contentDirectories[0], dbPath, cancellationToken);
             }
             else
             {
@@ -135,7 +158,7 @@ public sealed class ContentDatabaseService
                     StateChanged?.Invoke();
                 });
                 result = await Task.Run(
-                    () => AuroraContentImporter.Import(ContentDirectory, dbPath, reportProgress, cancellationToken),
+                    () => AuroraContentImporter.Import(contentDirectories, dbPath, reportProgress, cancellationToken),
                     cancellationToken);
             }
 

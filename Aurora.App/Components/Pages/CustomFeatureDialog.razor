@@ -1,0 +1,141 @@
+<MudDialog Style="max-height: 90vh; width: min(720px, 95vw);">
+    <TitleContent>
+        <MudText Typo="Typo.h6" Style="font-size: 15px; font-weight: 600;">Add Custom Feature</MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (_categories.Count == 0)
+        {
+            <MudText Color="Color.Secondary" Style="padding: 12px 0; font-size: 13px;">
+                No custom feature options are available for the currently loaded sources.
+            </MudText>
+        }
+        else
+        {
+            <MudSelect T="string" Value="_category" ValueChanged="OnCategoryChanged"
+                       Label="Category" Dense="true" Variant="Variant.Outlined" Margin="Margin.Dense"
+                       Style="margin-bottom: 8px;">
+                @foreach (var c in _categories)
+                {
+                    <MudSelectItem T="string" Value="@c">@c</MudSelectItem>
+                }
+            </MudSelect>
+
+            <div class="picker-layout">
+                @* ── Left: search + list ── *@
+                <div class="picker-left">
+                    <MudTextField @bind-Value="_search"
+                                  @bind-Value:after="RunSearch"
+                                  Placeholder="Search…"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Search"
+                                  Clearable="true"
+                                  Immediate="true"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense" />
+
+                    @if (_results.Count == 0)
+                    {
+                        <MudText Color="Color.Secondary" Style="padding: 12px 0; font-size: 13px;">
+                            No matches in <b>@_category</b>.
+                        </MudText>
+                    }
+                    else
+                    {
+                        <div class="picker-list">
+                            @foreach (var r in _results)
+                            {
+                                var isSelected = r.Id == _selectedId;
+                                <div class="picker-item @(isSelected ? "picker-item-selected" : "")"
+                                     @onclick="() => SelectResult(r)"
+                                     @ondblclick="() => ConfirmItem(r)">
+                                    <div class="picker-item-name">@r.Name</div>
+                                    <div style="font-size: 10px; color: var(--mud-palette-text-disabled); margin-top: 1px;">@r.Source</div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+
+                @* ── Right: detail ── *@
+                <div class="picker-detail">
+                    @if (_selected != null)
+                    {
+                        <div class="picker-detail-name">@_selected.Name</div>
+                        <div style="font-size: 11px; color: var(--mud-palette-primary); margin-bottom: 4px;">@_category</div>
+                        @if (!string.IsNullOrWhiteSpace(_selected.Source))
+                        {
+                            <div style="font-size: 10px; color: var(--mud-palette-text-disabled); margin-bottom: 8px;">@_selected.Source</div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(_selected.Description))
+                        {
+                            <div class="picker-detail-desc">@_selected.Description</div>
+                        }
+                        else
+                        {
+                            <div class="picker-detail-empty">No description available.</div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="picker-detail-empty">Select an entry to see details.</div>
+                    }
+                </div>
+            </div>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Variant="Variant.Text">Cancel</MudButton>
+        <MudButton Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   OnClick="Confirm"
+                   Disabled="@(_selectedId == null)">
+            Add
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+
+    private List<string> _categories = [];
+    private string _category = "";
+    private string _search = "";
+    private string? _selectedId;
+    private ItemSearchResult? _selected;
+    private List<ItemSearchResult> _results = [];
+
+    protected override void OnInitialized()
+    {
+        _categories = EquipmentService.GetCustomFeatureCategories().ToList();
+        if (_categories.Count > 0)
+        {
+            _category = _categories[0];
+            RunSearch();
+        }
+    }
+
+    private void OnCategoryChanged(string category)
+    {
+        _category = category;
+        _search = "";
+        _selectedId = null;
+        _selected = null;
+        RunSearch();
+    }
+
+    private void RunSearch()
+    {
+        if (string.IsNullOrWhiteSpace(_category)) { _results = []; return; }
+        _results = EquipmentService.SearchCustomFeatures(_category, _search).ToList();
+    }
+
+    private void SelectResult(ItemSearchResult r)
+    {
+        _selectedId = r.Id;
+        _selected   = r;
+    }
+
+    private void Cancel()  => MudDialog.Cancel();
+    private void Confirm() { if (_selectedId != null) MudDialog.Close(_selectedId); }
+    private void ConfirmItem(ItemSearchResult r) { SelectResult(r); Confirm(); }
+}

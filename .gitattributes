@@ -1,40 +1,40 @@
-# Normalize all text files to LF in the repository.
-# Git converts to the platform line ending on checkout (CRLF on Windows, LF on macOS/Linux).
-* text=auto
+# Normalize all text files to LF in the repository and working tree.
+# This keeps Windows checkouts from rewriting source files to CRLF.
+* text=auto eol=lf
 
-# ── Files that must always be LF (shell interpreters, YAML CI runners) ──────
+# Files that must always be LF (shell interpreters, YAML CI runners).
 *.yml       text eol=lf
 *.yaml      text eol=lf
 *.sh        text eol=lf
 *.csx       text eol=lf
 
-# ── Source / markup ──────────────────────────────────────────────────────────
-*.cs        text
-*.razor     text
-*.xaml      text
-*.xml       text
-*.sql       text
-*.json      text
-*.css       text
-*.js        text
-*.html      text
-*.md        text
-*.txt       text
-*.ps1       text
-*.resx      text
-*.csproj    text
-*.sln       text
-*.manifest  text
-*.appxmanifest text
-*.plist     text
-*.gitignore text
-*.LICENSE   text
+# Source / markup.
+*.cs        text eol=lf
+*.razor     text eol=lf
+*.xaml      text eol=lf
+*.xml       text eol=lf
+*.sql       text eol=lf
+*.json      text eol=lf
+*.css       text eol=lf
+*.svg       text eol=lf
+*.js        text eol=lf
+*.html      text eol=lf
+*.md        text eol=lf
+*.txt       text eol=lf
+*.ps1       text eol=lf
+*.resx      text eol=lf
+*.csproj    text eol=lf
+*.sln       text eol=lf
+*.manifest  text eol=lf
+*.appxmanifest text eol=lf
+*.plist     text eol=lf
+*.gitignore text eol=lf
+*.LICENSE   text eol=lf
 
-# ── Binary — never diff or convert ───────────────────────────────────────────
+# Binary: never diff or convert.
 *.png       binary
 *.jpg       binary
 *.jpeg      binary
-*.svg       binary
 *.ico       binary
 *.otf       binary
 *.ttf       binary

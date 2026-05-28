@@ -13,6 +13,25 @@ public sealed class SingletonGuard<T> where T : class
 
     public T? Active => _active;
 
+    /// <summary>
+    /// Maximum time to wait for the guard before assuming a deadlock — almost always a *reentrant*
+    /// acquire: a guarded operation that called another guarded operation while already holding the
+    /// lock. The guard is a non-reentrant semaphore, so that would otherwise hang the UI forever; this
+    /// converts it into a diagnosable exception. Generous enough that a legitimately slow operation
+    /// (e.g. loading a large character) won't trip it. Settable so tests can use a short timeout.
+    /// </summary>
+    public static TimeSpan AcquireTimeout { get; set; } = TimeSpan.FromSeconds(30);
+
+    private async Task AcquireAsync()
+    {
+        if (!await _lock.WaitAsync(AcquireTimeout))
+            throw new InvalidOperationException(
+                $"SingletonGuard<{typeof(T).Name}> could not be acquired within " +
+                $"{AcquireTimeout.TotalSeconds:0}s. This usually means a guarded operation re-entered " +
+                "the guard (it called another guarded operation while already holding it). A call chain " +
+                "must hold the context only once — split the inner work out of the guarded scope.");
+    }
+
     /// <summary>Records item as active without acquiring the lock. Safe to call immediately
     /// after an external load on the thread that performed the load.</summary>
     public void Claim(T item) => _active = item;
@@ -20,7 +39,7 @@ public sealed class SingletonGuard<T> where T : class
     /// <summary>Clears active if it is the same object as <paramref name="item"/>.</summary>
     public async Task ReleaseAsync(T item)
     {
-        await _lock.WaitAsync();
+        await AcquireAsync();
         try { if (ReferenceEquals(_active, item)) _active = null; }
         finally { _lock.Release(); }
     }
@@ -28,7 +47,7 @@ public sealed class SingletonGuard<T> where T : class
     /// <summary>Clears active unconditionally.</summary>
     public async Task InvalidateAsync()
     {
-        await _lock.WaitAsync();
+        await AcquireAsync();
         try { _active = null; }
         finally { _lock.Release(); }
     }
@@ -39,7 +58,7 @@ public sealed class SingletonGuard<T> where T : class
     /// </summary>
     public async Task CaptureAndInvalidateAsync(Action<T?>? beforeClear = null)
     {
-        await _lock.WaitAsync();
+        await AcquireAsync();
         try
         {
             beforeClear?.Invoke(_active);
@@ -60,7 +79,7 @@ public sealed class SingletonGuard<T> where T : class
     /// </summary>
     public async Task<IDisposable> EnterAsync(T item, Func<T?, T, Task> onSwap)
     {
-        await _lock.WaitAsync();
+        await AcquireAsync();
         try
         {
             if (!ReferenceEquals(_active, item))
@@ -87,7 +106,7 @@ public sealed class SingletonGuard<T> where T : class
     /// </summary>
     public async Task<IDisposable> EnterForLoadAsync(Action<T?>? beforeClear = null)
     {
-        await _lock.WaitAsync();
+        await AcquireAsync();
         try
         {
             beforeClear?.Invoke(_active);

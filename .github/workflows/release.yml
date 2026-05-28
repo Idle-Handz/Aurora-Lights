@@ -12,7 +12,6 @@ permissions:
   contents: write
 
 jobs:
-  # ── Windows x64 ──────────────────────────────────────────────────────────────
   build-windows-x64:
     runs-on: windows-latest
     env:
@@ -67,7 +66,6 @@ jobs:
           path: aurora-windows-x64.zip
           if-no-files-found: error
 
-  # ── Windows arm64 ────────────────────────────────────────────────────────────
   build-windows-arm64:
     runs-on: windows-latest
     env:
@@ -122,7 +120,6 @@ jobs:
           path: aurora-windows-arm64.zip
           if-no-files-found: error
 
-  # ── Android arm64 ────────────────────────────────────────────────────────────
   build-android:
     runs-on: ubuntu-latest
     env:
@@ -187,7 +184,6 @@ jobs:
           path: aurora-android-arm64.apk
           if-no-files-found: error
 
-  # ── macOS x64 (Intel) ────────────────────────────────────────────────────────
   build-macos-x64:
     runs-on: macos-26-intel
     env:
@@ -238,10 +234,8 @@ jobs:
           path: stage/aurora-maccatalyst-x64.zip
           if-no-files-found: error
 
-  # ── macOS arm64 + universal merge ────────────────────────────────────────────
-  build-macos-universal:
+  build-macos-arm64:
     runs-on: macos-26-intel
-    needs: build-macos-x64
     env:
       PROJECT: Aurora.App/Aurora.App.csproj
     steps:
@@ -276,45 +270,27 @@ jobs:
         run: |
           set -euo pipefail
           APP=$(find . -name "*.app" -not -path "*/obj/*" -not -path "*/.git/*" -print -quit || true)
-          if [ -z "$APP" ]; then exit 1; fi
-          echo "ARM_APP=$APP" >> $GITHUB_ENV
+          if [ -z "$APP" ]; then
+            echo "ERROR: No .app bundle found"
+            find . -maxdepth 6 -not -path "*/obj/*" -not -path "*/.git/*" | head -60
+            exit 1
+          fi
           mkdir -p stage
           ditto -c -k --sequesterRsrc --keepParent "$APP" "stage/aurora-maccatalyst-arm64.zip"
 
-      - name: Download x64 artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: macos-x64
-          path: x64
-
-      - name: Create universal binary
-        run: |
-          set -euo pipefail
-          ditto -x -k "x64/aurora-maccatalyst-x64.zip" x64_app/
-          X64_APP=$(find x64_app -name "*.app" -print -quit || true)
-          if [ -z "$ARM_APP" ] || [ -z "$X64_APP" ]; then
-            echo "App bundles not found — ARM=$ARM_APP  X64=$X64_APP"
-            exit 1
-          fi
-          APP_NAME=$(basename "$ARM_APP")
-          mkdir -p universal
-          ditto "$ARM_APP" "universal/$APP_NAME"
-          ARM_EXE=$(find "$ARM_APP/Contents/MacOS" -type f -maxdepth 1 -print -quit || true)
-          X64_EXE=$(find "$X64_APP/Contents/MacOS" -type f -maxdepth 1 -print -quit || true)
-          EXE_NAME=$(basename "$ARM_EXE")
-          lipo -create "$X64_EXE" "$ARM_EXE" -output "universal/$APP_NAME/Contents/MacOS/$EXE_NAME"
-          chmod +x "universal/$APP_NAME/Contents/MacOS/$EXE_NAME"
-          ditto -c -k --sequesterRsrc --keepParent "universal/$APP_NAME" "aurora-macos-universal.zip"
-
       - uses: actions/upload-artifact@v4
         with:
-          name: macos-universal
-          path: aurora-macos-universal.zip
+          name: macos-arm64
+          path: stage/aurora-maccatalyst-arm64.zip
           if-no-files-found: error
 
-  # ── Create GitHub Release (draft) ────────────────────────────────────────────
   release:
-    needs: [build-windows-x64, build-windows-arm64, build-android, build-macos-universal]
+    needs:
+      - build-windows-x64
+      - build-windows-arm64
+      - build-android
+      - build-macos-x64
+      - build-macos-arm64
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
@@ -336,4 +312,5 @@ jobs:
             "artifacts/windows-x64/aurora-windows-x64.zip" \
             "artifacts/windows-arm64/aurora-windows-arm64.zip" \
             "artifacts/android-arm64/aurora-android-arm64.apk" \
-            "artifacts/macos-universal/aurora-macos-universal.zip"
+            "artifacts/macos-x64/aurora-maccatalyst-x64.zip" \
+            "artifacts/macos-arm64/aurora-maccatalyst-arm64.zip"

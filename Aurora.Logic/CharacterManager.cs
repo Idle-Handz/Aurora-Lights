@@ -585,6 +585,7 @@ public sealed class CharacterManager
             return;
           ElementBase elementBase = DataManager.Current.ElementsCollection.Where<ElementBase>((Func<ElementBase, bool>) (x => x.Type.Equals("Grants"))).Single<ElementBase>((Func<ElementBase, bool>) (x => x.Id == $"ID_INTERNAL_MULTICLASS_LEVEL_{level.Level}"));
           level.RuleElements.Add(elementBase);
+          _elementsCacheDirty = true;
           this.ReprocessCharacter();
           this.Status.CanLevelDown = true;
         }
@@ -605,9 +606,11 @@ public sealed class CharacterManager
 
   public void ReprocessCharacter(bool generateSheet = false)
   {
+    _elementsCacheDirty = true;
     this._progressionManager.ProcessExistingElements();
     foreach (ProgressionManager progressionManager in (Collection<ClassProgressionManager>) this.ClassProgressionManagers)
       progressionManager.ProcessExistingElements();
+    _elementsCacheDirty = true;
     this._eventAggregator.Send<ReprocessCharacterEvent>(new ReprocessCharacterEvent());
     this.SetCharacterDetails();
     if (!generateSheet || !this.Status.IsLoaded || !ApplicationContext.Current.Settings.GenerateSheetOnCharacterChangedRegistered)

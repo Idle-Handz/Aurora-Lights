@@ -495,6 +495,48 @@ else if (_workflowSuggestion != null)
             }
         }
     </MudTabPanel>
+
+    @* ── Extras tab — custom feats/spells/features added via "Add Custom Feature" ── *@
+    <MudTabPanel Text="Extras">
+        <div style="padding: 12px 4px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; gap:12px;">
+                <MudText Typo="Typo.subtitle2" Style="font-weight:600;">Custom additions</MudText>
+                <MudButton StartIcon="@Icons.Material.Filled.Extension"
+                           Variant="Variant.Outlined" Color="Color.Tertiary" Size="Size.Small"
+                           Disabled="@_saving" OnClick="OpenCustomFeatureDialog">
+                    Add Custom Feature
+                </MudButton>
+            </div>
+
+            @if (_customFeatures.Count == 0)
+            {
+                <MudText Color="Color.Secondary" Style="font-size:13px;">
+                    Nothing added yet. Use <b>Add Custom Feature</b> to add feats, spells, or other
+                    options that aren't granted by your class, race, or background. Spell choices from
+                    added feats appear on the <b>Magic</b> page.
+                </MudText>
+            }
+            else
+            {
+                <div class="build-rule-group">
+                    @foreach (var cf in _customFeatures)
+                    {
+                        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:6px 8px; border-bottom:1px solid var(--mud-palette-divider);">
+                            <div>
+                                <div style="font-size:13px; font-weight:500;">@cf.Name</div>
+                                <div style="font-size:10px; color: var(--mud-palette-text-disabled);">@cf.Type</div>
+                            </div>
+                            <MudButton StartIcon="@Icons.Material.Filled.Delete"
+                                       Variant="Variant.Text" Color="Color.Error" Size="Size.Small"
+                                       Disabled="@_saving" OnClick="() => RemoveCustomFeatureAsync(cf.Id)">
+                                Remove
+                            </MudButton>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </MudTabPanel>
 </MudTabs>
 
 @code {
@@ -595,6 +637,7 @@ else if (_workflowSuggestion != null)
     private AbilityGenMethod                 _abilityMethod    = AbilityGenMethod.Manual;
     private readonly Dictionary<string, int> _arrayAssignments = new();
     private IReadOnlyList<SelectionRuleEntry> _asiEntries      = [];
+    private IReadOnlyList<(string Id, string Name, string Type)> _customFeatures = [];
 
     private bool PreferClassFirst => Tabs.ActiveTab?.IsNew != true;
 
@@ -634,6 +677,7 @@ else if (_workflowSuggestion != null)
                 LoadAbilityRows();
                 _workflowSuggestion = ComputeWorkflowSuggestion();
             }
+            _customFeatures = BuildService.GetCustomFeatures(tab);
         }
         else
         {
@@ -641,6 +685,7 @@ else if (_workflowSuggestion != null)
             _asiEntries = [];
             _nextStep   = null;
             _highlightedEntryKey = null;
+            _customFeatures = [];
             LoadAbilityRows();
             _workflowSuggestion = null;
         }
@@ -921,20 +966,142 @@ else if (_workflowSuggestion != null)
             WarnUnavailable("There is no active character to level up.");
             return;
         }
+
+        // When the character has more than one class, ask which class to level.
+        var classes = await BuildService.GetLevelUpClassesAsync(tab);
+        LevelUpClassOption? chosen = classes.FirstOrDefault(c => c.IsMain) ?? classes.FirstOrDefault();
+
+        if (classes.Count > 1)
+        {
+            var options = classes
+                .Select(c => new ElementOption(
+                    c.Id,
+                    c.Name,
+                    $"Currently {c.Name} level {c.Level}.",
+                    c.IsMain ? "Main class" : "Multiclass"))
+                .ToList();
+
+            var entry = new SelectionRuleEntry(
+                Rule: null!, Number: 1, Label: "Choose a class to level", CurrentName: null, RequiredLevel: 0);
+            var parameters = new DialogParameters
+            {
+                [nameof(SelectionPickerDialog.Entry)]   = entry,
+                [nameof(SelectionPickerDialog.Options)] = (IReadOnlyList<ElementOption>)options,
+            };
+            var dialogOptions = new DialogOptions
+            {
+                MaxWidth = MaxWidth.Large, FullWidth = true, CloseOnEscapeKey = true,
+            };
+
+            var dialog = await DialogService.ShowAsync<SelectionPickerDialog>(
+                "Level Up — Choose a Class", parameters, dialogOptions);
+            var result = await dialog.Result;
+            if (result is not { Canceled: false, Data: string pickedId })
+                return; // cancelled
+
+            chosen = classes.FirstOrDefault(c => c.Id == pickedId);
+            if (chosen == null) return;
+        }
+
+        bool leveledMulticlass = chosen is { IsMain: false };
+        int hpBefore = _snap?.MaxHp ?? 0;
+
         _saving = true;
+        _saveError = null;
         StateHasChanged();
-        var (error, hpGained, isAverage) = await BuildService.LevelUpMainAsync(tab);
+
+        string? error;
+        int hpGained = 0;
+        bool isAverage = false;
+        if (chosen is null || chosen.IsMain)
+            (error, hpGained, isAverage) = await BuildService.LevelUpMainAsync(tab);
+        else
+            error = await BuildService.AddMulticlassLevelAsync(tab, chosen.Id);
+
         _saving = false;
         if (error == null)
         {
             tab.IsNew = false;
             Tabs.MarkClean(tab);
-            int newLevel = _snap?.Level + 1 ?? 0;
-            string hpNote = hpGained > 0
-                ? $" · +{hpGained} HP ({(isAverage ? "avg" : "rolled")})"
-                : "";
-            Snackbar.Add($"Level {newLevel}{hpNote}", Severity.Success,
-                cfg => cfg.VisibleStateDuration = 5000);
+            await LoadFromActiveTabAsync();
+
+            int newLevel = _snap?.Level ?? 0;
+            // HP gained: from the service for the main class (carries avg/rolled), or the snapshot
+            // diff for a multiclass.
+            int hp = leveledMulticlass ? (_snap?.MaxHp ?? 0) - hpBefore : hpGained;
+            string hpNote = hp <= 0
+                ? ""
+                : leveledMulticlass ? $" · +{hp} HP" : $" · +{hp} HP ({(isAverage ? "avg" : "rolled")})";
+
+            // For a multiclassing character, name the class that was leveled (main or multiclass);
+            // for a single-class character the class name is redundant.
+            string message = classes.Count > 1 && chosen != null
+                ? $"Leveled {chosen.Name} · character level {newLevel}{hpNote}"
+                : $"Level {newLevel}{hpNote}";
+
+            Snackbar.Add(message, Severity.Success, cfg => cfg.VisibleStateDuration = 5000);
+            StateHasChanged();
+            return;
+        }
+
+        _saveError = error;
+        await LoadFromActiveTabAsync();
+        StateHasChanged();
+    }
+
+    // ── Custom feature ────────────────────────────────────────────────────────────
+
+    private async Task OpenCustomFeatureDialog()
+    {
+        var tab = Tabs.ActiveTab;
+        if (tab == null)
+        {
+            WarnUnavailable("There is no active character to add a feature to.");
+            return;
+        }
+
+        var dialogOptions = new DialogOptions
+        {
+            MaxWidth         = MaxWidth.Medium,
+            FullWidth        = true,
+            CloseOnEscapeKey = true,
+        };
+        var dialog = await DialogService.ShowAsync<CustomFeatureDialog>("Add Custom Feature", dialogOptions);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: string elementId })
+        {
+            _saving = true;
+            StateHasChanged();
+            var error = await BuildService.AddCustomFeatureAsync(tab, elementId);
+            _saving = false;
+            if (error == null)
+            {
+                Tabs.MarkClean(tab);
+                Snackbar.Add("Custom feature added.", Severity.Success, cfg => cfg.VisibleStateDuration = 3000);
+            }
+            else
+            {
+                _saveError = error;
+            }
+            await LoadFromActiveTabAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task RemoveCustomFeatureAsync(string elementId)
+    {
+        var tab = Tabs.ActiveTab;
+        if (tab == null) { WarnUnavailable("There is no active character."); return; }
+
+        _saving = true;
+        StateHasChanged();
+        var error = await BuildService.RemoveCustomFeatureAsync(tab, elementId);
+        _saving = false;
+        if (error == null)
+        {
+            Tabs.MarkClean(tab);
+            Snackbar.Add("Custom feature removed.", Severity.Info, cfg => cfg.VisibleStateDuration = 2500);
         }
         else
         {
@@ -1012,12 +1179,12 @@ else if (_workflowSuggestion != null)
 
         _saving = true;
         StateHasChanged();
-        var options = await Task.Run(() => BuildService.GetMulticlassOptions());
+        var options = await BuildService.GetAvailableMulticlassOptionsAsync(tab);
         _saving = false;
         StateHasChanged();
         if (options.Count == 0)
         {
-            Snackbar.Add("No multiclass options available in loaded content.", Severity.Warning);
+            Snackbar.Add("No multiclass options are currently available for this character.", Severity.Warning);
             return;
         }
 

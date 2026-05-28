@@ -9,16 +9,52 @@ internal static class AuroraXmlCatalogReader
 {
     public static AuroraImportCatalog BuildCatalog(string contentDirectory)
     {
+        var catalog = new AuroraImportCatalog();
+        AppendCatalog(catalog, contentDirectory, relativePathPrefix: "");
+        return catalog;
+    }
+
+    public static AuroraImportCatalog BuildCatalog(IEnumerable<string> contentDirectories)
+    {
+        var catalog = new AuroraImportCatalog();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        int index = 0;
+
+        foreach (string directory in contentDirectories)
+        {
+            if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
+                continue;
+
+            string fullPath = Path.GetFullPath(directory);
+            if (!seen.Add(fullPath))
+                continue;
+
+            string prefix = index == 0
+                ? ""
+                : $"additional-{index}-{BuildRootSlug(fullPath)}";
+            AppendCatalog(catalog, fullPath, prefix);
+            index++;
+        }
+
+        return catalog;
+    }
+
+    private static void AppendCatalog(
+        AuroraImportCatalog catalog,
+        string contentDirectory,
+        string relativePathPrefix)
+    {
         string[] files = Directory
             .GetFiles(contentDirectory, "*.xml", SearchOption.AllDirectories)
             .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
             .ToArray();
 
-        var catalog = new AuroraImportCatalog();
-
         foreach (string file in files)
         {
-            string relativePath = Path.GetRelativePath(contentDirectory, file);
+            string relativePath = Path.GetRelativePath(contentDirectory, file).Replace('\\', '/');
+            if (!string.IsNullOrWhiteSpace(relativePathPrefix))
+                relativePath = $"{relativePathPrefix}/{relativePath}";
+
             XDocument xml = XDocument.Load(file);
             var info = xml.Root?.Element("info");
 
@@ -65,8 +101,21 @@ internal static class AuroraXmlCatalogReader
                 }
             }
         }
+    }
 
-        return catalog;
+    private static string BuildRootSlug(string path)
+    {
+        string name = Path.GetFileName(path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+        if (string.IsNullOrWhiteSpace(name))
+            name = "content";
+
+        var chars = name.ToLowerInvariant()
+            .Select(ch => char.IsLetterOrDigit(ch) ? ch : '-')
+            .ToArray();
+        string slug = new string(chars).Trim('-');
+        while (slug.Contains("--", StringComparison.Ordinal))
+            slug = slug.Replace("--", "-", StringComparison.Ordinal);
+        return string.IsNullOrWhiteSpace(slug) ? "content" : slug;
     }
 
     // ── Element fill ─────────────────────────────────────────────────────────

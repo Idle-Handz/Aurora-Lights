@@ -101,7 +101,6 @@ public sealed record DbLoadResult(
 
 internal static class DbElementLoader
 {
-    private const string DbFileName = "aurora-elements.sqlite";
     private static readonly string[] RequiredTables =
     [
         "elements",
@@ -156,13 +155,16 @@ internal static class DbElementLoader
     public static IReadOnlyDictionary<string, IReadOnlySet<string>> SpellAccessMap { get; private set; } =
         new Dictionary<string, IReadOnlySet<string>>(StringComparer.OrdinalIgnoreCase);
 
-    public static string? DbPath =>
-        DataManager.Current.LocalAppDataRootDirectory is { Length: > 0 } root
-            ? Path.Combine(root, DbFileName)
-            : null;
+    public static string? DbPath => ContentDatabaseService.GetDatabasePath();
 
     public static bool IsAvailable =>
         DbPath is { } path && File.Exists(path) && new FileInfo(path).Length > 0;
+
+    public static void ResetCaches()
+    {
+        ArchetypeParentMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        SpellAccessMap = new Dictionary<string, IReadOnlySet<string>>(StringComparer.OrdinalIgnoreCase);
+    }
 
     /// <summary>
     /// Returns the set of source book names that appear in the resolved elements cache,
@@ -218,9 +220,11 @@ internal static class DbElementLoader
 
     private static async Task<DbLoadResult> TryLoadInternalAsync(ElementBaseCollection target, bool runPostProcessing)
     {
+        ResetCaches();
+
         string? dbPath = DbPath;
         if (dbPath is null)
-            return DbLoadResult.NotAvailable(null, "Local app data directory is not initialized.");
+            return DbLoadResult.NotAvailable(null, "Content database path is not initialized.");
 
         if (!File.Exists(dbPath))
             return DbLoadResult.NotAvailable(dbPath, "Database file was not found.");

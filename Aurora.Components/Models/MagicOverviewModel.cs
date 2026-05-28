@@ -88,15 +88,25 @@ public sealed class MagicSpellcastingSectionModel
     public IReadOnlyList<MagicSpellLevelModel> SpellLevels { get; set; } = [];
 }
 
-public sealed record MagicKnownSpellGroupModel(string Label, string? SectionId, IReadOnlyList<MagicKnownSpellEntryModel> Entries)
+public sealed record MagicKnownSpellGroupModel(string Label, string? SectionId, IReadOnlyList<MagicKnownSpellEntryModel> Entries, bool ReadOnlyGroup = false)
 {
-    public MagicKnownSpellGroupModel(string Label, IReadOnlyList<MagicKnownSpellEntryModel> Entries)
-        : this(Label, null, Entries)
+    public MagicKnownSpellGroupModel(string Label, IReadOnlyList<MagicKnownSpellEntryModel> Entries, bool ReadOnlyGroup = false)
+        : this(Label, null, Entries, ReadOnlyGroup)
     {
     }
 }
 
-public sealed record MagicKnownSpellEntryModel(string Id, string Label, string? CurrentName, int SpellLevel = 0);
+public sealed record MagicKnownSpellEntryModel(
+    string Id,
+    string Label,
+    string? CurrentName,
+    int SpellLevel = 0,
+    bool IsReadOnly = false,
+    string? SpellId = null,
+    string Source = "",
+    string School = "",
+    bool IsRitual = false,
+    bool IsConcentration = false);
 
 public sealed class MagicSpellListEntryModel
 {

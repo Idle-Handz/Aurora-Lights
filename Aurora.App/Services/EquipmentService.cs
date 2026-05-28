@@ -1,3 +1,4 @@
+using Builder.Data.Rules;
 using Builder.Presentation;
 using Builder.Presentation.Models;
 using Builder.Presentation.Services.Data;
@@ -302,6 +303,114 @@ public static class EquipmentService
         var item = character.Inventory.Items.FirstOrDefault(i => i.Identifier == identifier);
         if (item != null)
             item.Amount = Math.Max(1, amount);
+    }
+
+    // ── Custom features (Additional-X proxies + Supernatural Gifts) ─────────────────
+
+    /// <summary>
+    /// Categories surfaced by the "Add Custom Feature" picker: Aurora's engine-generated
+    /// "Additional …" proxies (one hidden Item per addable feat / spell / language /
+    /// proficiency / feature, etc.) plus Supernatural Gifts. Ordinary equipment is excluded —
+    /// that belongs in the inventory picker.
+    /// </summary>
+    public static IReadOnlyList<string> GetCustomFeatureCategories()
+    {
+        var cats = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var e in DataManager.Current.ElementsCollection)
+        {
+            if (!ItemTypes.Contains(e.Type)) continue;
+            var cat = GetCustomFeatureCategory(e);
+            if (cat != null) cats.Add(cat);
+        }
+        return cats.ToList();
+    }
+
+    /// <summary>Returns the custom-feature category for an element, or null if it isn't one.</summary>
+    private static string? GetCustomFeatureCategory(Builder.Data.ElementBase e)
+    {
+        var name = e.Name ?? "";
+        if (name.StartsWith("Additional ", StringComparison.OrdinalIgnoreCase))
+        {
+            // "Additional Feat, Alert" -> category "Additional Feat".
+            int comma = name.IndexOf(',');
+            return (comma > 0 ? name[..comma] : name).Trim();
+        }
+        if (HasSetterValue(e, "category", "Supernatural Gifts"))
+            return "Supernatural Gifts";
+        return null;
+    }
+
+    /// <summary>
+    /// Searches custom-feature entries within a category from <see cref="GetCustomFeatureCategories"/>.
+    /// Result names are stripped of the "Additional &lt;Type&gt;, " prefix for display, and the
+    /// description is taken from the underlying granted element (the proxy's own description is just
+    /// engine boilerplate about gaining a benefit).
+    /// </summary>
+    public static IReadOnlyList<ItemSearchResult> SearchCustomFeatures(string category, string query)
+    {
+        IEnumerable<Builder.Data.ElementBase> source = DataManager.Current.ElementsCollection.Where(e =>
+            ItemTypes.Contains(e.Type) &&
+            string.Equals(GetCustomFeatureCategory(e), category, StringComparison.OrdinalIgnoreCase));
+
+        if (!string.IsNullOrWhiteSpace(query))
+            source = source.Where(e => (e.Name ?? "").Contains(query, StringComparison.OrdinalIgnoreCase));
+
+        return source
+            .OrderBy(e => e.Name)
+            .Take(500)
+            .Select(e =>
+            {
+                // Resolve the real feat/spell/feature the proxy grants so the detail pane shows its
+                // actual rules text instead of the proxy's "adding this grants a benefit" boilerplate.
+                var underlying = ResolveCustomFeatureTarget(e);
+                return new ItemSearchResult(
+                    e.Id,
+                    CleanCustomFeatureName(e.Name ?? "", category),
+                    e.Type,
+                    GetDescription(underlying),
+                    e.Source ?? "");
+            })
+            .ToList();
+    }
+
+    /// <summary>
+    /// Resolves the real element an "Additional …" proxy grants. The engine's proxy generator stores
+    /// the underlying element id in its <see cref="GrantRule"/> (in the now-obsolete Name field, which
+    /// still holds the value). Non-proxy entries (e.g. Supernatural Gifts) resolve to themselves.
+    /// </summary>
+    public static Builder.Data.ElementBase ResolveCustomFeatureTarget(Builder.Data.ElementBase proxy)
+    {
+        if (proxy.Name?.StartsWith("Additional ", StringComparison.OrdinalIgnoreCase) != true)
+            return proxy;
+#pragma warning disable CS0618 // Type or member is obsolete
+        var grantedId = proxy.Rules?
+            .OfType<GrantRule>()
+            .Select(g => g.Attributes?.Name)
+            .FirstOrDefault(n => !string.IsNullOrWhiteSpace(n));
+#pragma warning restore CS0618
+        if (string.IsNullOrWhiteSpace(grantedId)) return proxy;
+        return DataManager.Current.ElementsCollection.GetElement(grantedId) ?? proxy;
+    }
+
+    public static bool IsRepeatableCustomFeature(Builder.Data.ElementBase element)
+    {
+        if (element.AllowMultipleElements)
+            return true;
+
+        if (!element.ElementSetters.ContainsSetter("stackable"))
+            return false;
+
+        string? value = element.ElementSetters.GetSetter("stackable")?.Value;
+        return string.IsNullOrWhiteSpace(value)
+               || value.Equals("true", StringComparison.OrdinalIgnoreCase)
+               || value.Equals("1", StringComparison.OrdinalIgnoreCase)
+               || value.Equals("yes", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string CleanCustomFeatureName(string name, string category)
+    {
+        var prefix = category + ", ";
+        return name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ? name[prefix.Length..] : name;
     }
 
     // ── Gear slots ────────────────────────────────────────────────────────────────

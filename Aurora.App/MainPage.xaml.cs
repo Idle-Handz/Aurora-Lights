@@ -10,8 +10,19 @@ public partial class MainPage : ContentPage
         DebugLogService.Instance.Info("MainPage InitializeComponent completed.");
 
         Loaded += OnLoaded;
-        blazorWebView.BlazorWebViewInitializing += (_, _) =>
+        blazorWebView.BlazorWebViewInitializing += (_, args) =>
+        {
+#if WINDOWS
+            var userDataFolder = Path.Combine(FileSystem.Current.AppDataDirectory, "WebView2");
+            Directory.CreateDirectory(userDataFolder);
+            args.UserDataFolder = userDataFolder;
+            DebugLogService.Instance.Info(
+                "BlazorWebView initializing.",
+                $"Host page: {blazorWebView.HostPage}; WebView2 user data: {userDataFolder}");
+#else
             DebugLogService.Instance.Info("BlazorWebView initializing.", $"Host page: {blazorWebView.HostPage}");
+#endif
+        };
         blazorWebView.BlazorWebViewInitialized += (_, _) =>
             DebugLogService.Instance.Info("BlazorWebView initialized.");
         blazorWebView.HandlerChanged += OnBlazorWebViewHandlerChanged;
