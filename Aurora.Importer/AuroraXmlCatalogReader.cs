@@ -217,7 +217,7 @@ internal static class AuroraXmlCatalogReader
                     allowReplace = ParseBool(child.Attribute("allowReplace")?.Value),
                     extend       = ParseBool(child.Attribute("extend")?.Value) ?? false,
                     list         = child.Element("list") is { } listEl ? ParseTextCollection(listEl.Value) : null,
-                    extendList   = child.Element("extend") is { } extEl ? ParseTextCollection(extEl.Value) : null
+                    extendList   = ParseSpellcastingExtendCollection(child)
                 };
                 handled = true;
             }
@@ -459,6 +459,20 @@ internal static class AuroraXmlCatalogReader
         if (string.IsNullOrWhiteSpace(raw)) return null;
         var col = new AuroraTextCollection { raw = raw.Trim() };
         col.AddRange(SplitTopLevel(raw, ','));
+        return col;
+    }
+
+    private static AuroraTextCollection? ParseSpellcastingExtendCollection(XElement spellcasting)
+    {
+        var entries = SpellcastingExtensionText
+            .SplitEntries(SpellcastingExtensionText.JoinEntries(spellcasting.Elements("extend").Select(e => e.Value)))
+            .ToList();
+
+        if (entries.Count == 0)
+            return null;
+
+        var col = new AuroraTextCollection { raw = string.Join(", ", entries) };
+        col.AddRange(entries);
         return col;
     }
 
