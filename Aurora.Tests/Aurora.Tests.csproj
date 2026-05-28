@@ -18,6 +18,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Aurora.Logic\Aurora.Logic.csproj" />
     <ProjectReference Include="..\Aurora.Components\Aurora.Components.csproj" />
+    <ProjectReference Include="..\Aurora.Importer\Aurora.Importer.csproj" />
     <Reference Include="Builder.Core">
       <HintPath>..\lib\Builder.Core.dll</HintPath>
     </Reference>

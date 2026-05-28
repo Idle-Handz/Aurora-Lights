@@ -135,7 +135,7 @@ internal static class DbElementLoader
             ["rule_scopes"] = ["rule_scope_id", "owner_element_id", "owner_kind"],
             ["selects"] = ["rule_scope_id", "select_type", "name_text", "supports_text", "select_level", "number_to_choose", "default_choice_text", "is_optional", "spellcasting_profile_id", "raw_xml", "requirements_text", "ordinal"],
             ["stats"] = ["rule_scope_id", "stat_name", "value_expression_text", "bonus_expression_text", "equipped_expression_text", "stat_level", "inline_display", "alt_text", "requirements_text", "ordinal"],
-            ["spellcasting_profiles"] = ["owner_element_id", "profile_name", "ability_name", "is_extended", "prepare_spells", "allow_replace", "list_text"],
+            ["spellcasting_profiles"] = ["owner_element_id", "profile_name", "ability_name", "is_extended", "prepare_spells", "allow_replace", "list_text", "extend_text"],
             ["spells"] = ["element_id", "spell_level", "school_name", "casting_time_text", "range_text", "duration_text", "has_verbal", "has_somatic", "has_material", "material_text", "is_concentration", "is_ritual"],
             ["classes"] = ["element_id", "hit_die", "short_text"],
             ["class_multiclass"] = ["class_element_id", "multiclass_aurora_id", "prerequisite_text", "requirements_text", "proficiencies_text"],
@@ -274,7 +274,7 @@ internal static class DbElementLoader
     private record StatRow(long ElementId, string OwnerKind, string StatName, string? Value,
         string? Bonus, string? Equipped, int? Level, bool Inline, string? Alt, string? Requirements);
     private record SpellcastingRow(long ElementId, string ProfileName, string? Ability,
-        bool IsExtended, bool? Prepare, bool? AllowReplace, string? ListText);
+        bool IsExtended, bool? Prepare, bool? AllowReplace, string? ListText, string? ExtendText);
     private record SpellRow(long ElementId, int Level, string? School, string? CastingTime,
         string? Range, string? Duration, bool HasVerbal, bool HasSomatic, bool HasMaterial,
         string? Material, bool IsConcentration, bool IsRitual);
@@ -662,6 +662,12 @@ internal static class DbElementLoader
             list.InnerText = sc.ListText;
             el.AppendChild(list);
         }
+        foreach (string entry in SpellcastingExtensionText.SplitEntries(sc.ExtendText))
+        {
+            XmlElement extend = doc.CreateElement("extend");
+            extend.InnerText = entry;
+            el.AppendChild(extend);
+        }
         node.AppendChild(el);
     }
 
@@ -979,7 +985,7 @@ internal static class DbElementLoader
         using var cmd = conn.CreateCommand();
         cmd.CommandText = @"
             SELECT owner_element_id, profile_name, ability_name,
-                   is_extended, prepare_spells, allow_replace, list_text
+                   is_extended, prepare_spells, allow_replace, list_text, extend_text
             FROM spellcasting_profiles;";
         using var r = cmd.ExecuteReader();
         while (r.Read())
@@ -989,7 +995,8 @@ internal static class DbElementLoader
                 r.GetInt32(3) == 1,
                 r.IsDBNull(4) ? null : r.GetInt32(4) == 1,
                 r.IsDBNull(5) ? null : r.GetInt32(5) == 1,
-                r.IsDBNull(6) ? null : r.GetString(6));
+                r.IsDBNull(6) ? null : r.GetString(6),
+                r.IsDBNull(7) ? null : r.GetString(7));
         return map;
     }
 
