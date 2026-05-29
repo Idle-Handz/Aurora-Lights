@@ -38,4 +38,10 @@
     <Content Include="Fixtures\ParityScenarios\*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <!-- SemVer lives in Aurora.App (MAUI target). Link the source here so we can test the parser
+       without dragging the MAUI workload into Aurora.Tests. -->
+  <ItemGroup>
+    <Compile Include="..\Aurora.App\Services\Updates\SemVer.cs" Link="Linked\SemVer.cs" />
+  </ItemGroup>
+
 </Project>

@@ -245,4 +245,49 @@ public sealed class UserPreferencesService
         get => Preferences.Default.Get(KeyStartFeatureCardsOnNewPage, defaultValue: false);
         set => Preferences.Default.Set(KeyStartFeatureCardsOnNewPage, value);
     }
+
+    // ── Update channels ───────────────────────────────────────────────────────
+    //
+    // Naming mirrors the legacy WPF settings (StartupCheckForUpdates / StartupCheckForContentUpdated)
+    // so the UX vocabulary stays the same across builders.
+
+    private const string KeyStartupCheckForAppUpdates       = "updates.app.startup";
+    private const string KeyStartupCheckForContentUpdates   = "updates.content.startup";
+    private const string KeyAutoDownloadContentOnStartup    = "updates.content.auto_download";
+    private const string KeyIncludePrereleasesInUpdateCheck = "updates.include_prereleases";
+
+    /// <summary>Whether to check for a newer app binary on startup. Default: false (matches the WPF default).</summary>
+    public bool StartupCheckForAppUpdates
+    {
+        get => Preferences.Default.Get(KeyStartupCheckForAppUpdates, defaultValue: false);
+        set => Preferences.Default.Set(KeyStartupCheckForAppUpdates, value);
+    }
+
+    /// <summary>Whether to check for new content packs on startup. Default: false.</summary>
+    public bool StartupCheckForContentUpdates
+    {
+        get => Preferences.Default.Get(KeyStartupCheckForContentUpdates, defaultValue: false);
+        set => Preferences.Default.Set(KeyStartupCheckForContentUpdates, value);
+    }
+
+    /// <summary>
+    /// Whether the legacy IndicesUpdateService content download runs in the background on
+    /// startup. Independent of <see cref="StartupCheckForContentUpdates"/> (the GitHub channel
+    /// check) because the index download is the *active* content delivery path users opt
+    /// into by installing an .index file. On Updated the user gets a snackbar + an AppBar
+    /// reload prompt; on no-op nothing surfaces. Default: true.
+    /// </summary>
+    public bool AutoDownloadContentOnStartup
+    {
+        get => Preferences.Default.Get(KeyAutoDownloadContentOnStartup, defaultValue: true);
+        set => Preferences.Default.Set(KeyAutoDownloadContentOnStartup, value);
+    }
+
+    /// <summary>Whether the update check considers pre-releases (alphas, betas, RCs). Default: true
+    /// while the app is still pre-1.0 — otherwise the check would silently never see anything.</summary>
+    public bool IncludePrereleasesInUpdateCheck
+    {
+        get => Preferences.Default.Get(KeyIncludePrereleasesInUpdateCheck, defaultValue: true);
+        set => Preferences.Default.Set(KeyIncludePrereleasesInUpdateCheck, value);
+    }
 }

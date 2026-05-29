@@ -737,6 +737,11 @@ public static class BuildService
             if (saveToFile)
                 SaveCharacterFile(tab, file);
             }
+            catch (CharacterFileExternalChangeException ex)
+            {
+                DebugLogService.Instance.LogException(ex, "BuildService.ApplySelectionAsync");
+                taskError = ex.Message;
+            }
             catch (Exception ex)
             {
                 DebugLogService.Instance.LogException(ex, "BuildService.ApplySelectionAsync");

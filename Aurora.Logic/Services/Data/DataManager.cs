@@ -15,6 +15,7 @@ using Builder.Data.Strings;
 using Builder.Presentation.Events.Data;
 using Builder.Presentation.Logging;
 using Builder.Presentation.Models;
+using Builder.Presentation.Utilities;
 
 using System;
 using System.Collections.Generic;
@@ -187,6 +188,7 @@ public sealed class DataManager
     List<XmlDocument> xmlDocumentList = this.LoadElementDocumentsFromResource();
     foreach (XmlDocument xmlDocument in xmlDocumentList)
     {
+      AuroraXmlCompatibilityRepair.RepairDocument(xmlDocument);
       ElementHeader elementHeader = (ElementHeader) null;
       try
       {
@@ -253,6 +255,7 @@ public sealed class DataManager
         {
           ElementBaseCollection applicationElements = new ElementBaseCollection();
           XmlDocument xmlDocument = await DataManager.CreateXmlDocument(file.FullName);
+          AuroraXmlCompatibilityRepair.RepairDocument(xmlDocument);
           ObservableCollection<XmlNode> elementNodes = ef.ElementNodes;
           if (xmlDocument.DocumentElement != null)
           {
@@ -593,6 +596,7 @@ public sealed class DataManager
     foreach (XmlDocument resourceDoc in this.LoadElementDocumentsFromResource())
     {
       if (resourceDoc.DocumentElement == null) continue;
+      AuroraXmlCompatibilityRepair.RepairDocument(resourceDoc);
       foreach (XmlNode elementNode in resourceDoc.DocumentElement.ChildNodes
         .Cast<XmlNode>()
         .Where<XmlNode>((Func<XmlNode, bool>) (x => x.NodeType != XmlNodeType.Comment && x.Name.Equals("element"))))
@@ -1130,6 +1134,7 @@ public sealed class DataManager
   {
     foreach (XmlNode appendNode in appendNodes)
     {
+      AuroraXmlCompatibilityRepair.RepairNode(appendNode);
       if (appendNode.ContainsAttribute("id"))
       {
         string appendId = appendNode.GetAttributeValue("id");

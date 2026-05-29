@@ -1,8 +1,8 @@
-using System.Text;
 using System.Xml;
 using Builder.Presentation;
 using Builder.Presentation.Models;
 using Builder.Presentation.Models.Equipment;
+using Builder.Presentation.Utilities;
 using Builder.Presentation.ViewModels.Shell.Items;
 
 namespace Aurora.App.Services;
@@ -26,8 +26,7 @@ public static class CharacterFileSaveExtensions
 
         try
         {
-            var doc = new XmlDocument();
-            doc.Load(path);
+            var doc = LoadForPatch(file, out bool updateKnownStamp);
 
             var currency = doc.DocumentElement?["build"]?["input"]?["currency"];
             if (currency == null) return false;
@@ -38,7 +37,7 @@ public static class CharacterFileSaveExtensions
             SetText(currency, "gold",     snap.CoinGold.ToString());
             SetText(currency, "platinum", snap.CoinPlatinum.ToString());
 
-            SaveAtomic(path, doc);
+            SavePatch(file, doc, updateKnownStamp);
             return true;
         }
         catch (Exception ex)
@@ -59,8 +58,7 @@ public static class CharacterFileSaveExtensions
         if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
             return false;
 
-        var doc = new XmlDocument();
-        doc.Load(path);
+        var doc = LoadForPatch(file, out bool updateKnownStamp);
 
         var root = doc.DocumentElement;
         if (root == null) return false;
@@ -204,7 +202,7 @@ public static class CharacterFileSaveExtensions
         }
 
         // ── write ────────────────────────────────────────────────────────────
-        SaveAtomic(path, doc);
+        SavePatch(file, doc, updateKnownStamp);
         return true;
     }
 
@@ -220,8 +218,7 @@ public static class CharacterFileSaveExtensions
 
         try
         {
-            var doc = new XmlDocument();
-            doc.Load(path);
+            var doc = LoadForPatch(file, out bool updateKnownStamp);
 
             var buildNode = doc.DocumentElement?["build"];
             if (buildNode == null) return false;
@@ -233,7 +230,7 @@ public static class CharacterFileSaveExtensions
 
             buildNode.AppendChild(CreateEquipmentNode(doc, character));
 
-            SaveAtomic(path, doc);
+            SavePatch(file, doc, updateKnownStamp);
             return true;
         }
         catch (Exception ex)
@@ -353,8 +350,7 @@ public static class CharacterFileSaveExtensions
 
         try
         {
-            var doc = new XmlDocument();
-            doc.Load(path);
+            var doc = CharacterFileIo.LoadXmlDocument(path);
 
             var session = doc.DocumentElement?["session"];
             if (session == null) return new SessionState();
@@ -424,8 +420,7 @@ public static class CharacterFileSaveExtensions
 
         try
         {
-            var doc = new XmlDocument();
-            doc.Load(path);
+            var doc = LoadForPatch(file, out bool updateKnownStamp);
 
             var root = doc.DocumentElement;
             if (root == null) return false;
@@ -480,7 +475,7 @@ public static class CharacterFileSaveExtensions
 
             root.AppendChild(node);
 
-            SaveAtomic(path, doc);
+            SavePatch(file, doc, updateKnownStamp);
             return true;
         }
         catch (Exception ex)
@@ -504,8 +499,7 @@ public static class CharacterFileSaveExtensions
 
         try
         {
-            var doc = new XmlDocument();
-            doc.Load(path);
+            var doc = LoadForPatch(file, out bool updateKnownStamp);
 
             var root = doc.DocumentElement;
             if (root == null) return false;
@@ -522,7 +516,7 @@ public static class CharacterFileSaveExtensions
             }
             root.AppendChild(node);
 
-            SaveAtomic(path, doc);
+            SavePatch(file, doc, updateKnownStamp);
             return true;
         }
         catch (Exception ex)
@@ -542,8 +536,7 @@ public static class CharacterFileSaveExtensions
 
         try
         {
-            var doc = new XmlDocument();
-            doc.Load(path);
+            var doc = CharacterFileIo.LoadXmlDocument(path);
             var node = doc.DocumentElement?["custom-features"];
             if (node == null) return result;
 
@@ -575,8 +568,7 @@ public static class CharacterFileSaveExtensions
 
         try
         {
-            var doc = new XmlDocument();
-            doc.Load(path);
+            var doc = LoadForPatch(file, out bool updateKnownStamp);
 
             var root = doc.DocumentElement;
             if (root == null) return false;
@@ -608,7 +600,7 @@ public static class CharacterFileSaveExtensions
             sourcesNode.AppendChild(restrictedNode);
             root.AppendChild(sourcesNode);
 
-            SaveAtomic(path, doc);
+            SavePatch(file, doc, updateKnownStamp);
             return true;
         }
         catch (Exception ex)
@@ -618,33 +610,18 @@ public static class CharacterFileSaveExtensions
         }
     }
 
-    /// <summary>
-    /// Writes <paramref name="doc"/> to <paramref name="path"/> atomically: serializes to a
-    /// uniquely-named sibling temp file first, then renames it over the destination. If the
-    /// process is killed or the disk fills mid-write, the original file is preserved and only
-    /// the temp file is left behind (cleaned up on the failure path).
-    /// </summary>
-    private static void SaveAtomic(string path, XmlDocument doc)
+    /// <summary>Loads the latest XML while remembering whether this patch is based on the expected on-disk revision.</summary>
+    private static XmlDocument LoadForPatch(CharacterFile file, out bool updateKnownStamp)
     {
-        string tmp = $"{path}.{Guid.NewGuid():N}.tmp";
-        try
-        {
-            using (var writer = new XmlTextWriter(tmp, Encoding.UTF8)
-            {
-                Formatting  = Formatting.Indented,
-                IndentChar  = '\t',
-                Indentation = 1,
-            })
-            {
-                doc.Save(writer);
-            }
-            File.Move(tmp, path, overwrite: true);
-        }
-        catch
-        {
-            try { if (File.Exists(tmp)) File.Delete(tmp); } catch { }
-            throw;
-        }
+        updateKnownStamp = !file.HasExternalFileChanges();
+        return CharacterFileIo.LoadXmlDocument(file.FilePath);
+    }
+
+    private static void SavePatch(CharacterFile file, XmlDocument doc, bool updateKnownStamp)
+    {
+        CharacterFileIo.SaveXmlDocumentAtomic(file.FilePath, doc);
+        if (updateKnownStamp)
+            file.RefreshKnownDiskStamp();
     }
 
     private static int ParseInt(string? s, int fallback) =>

@@ -17,11 +17,15 @@ public sealed class ContentService
 {
     private readonly CharacterService _characters;
     private readonly CharacterTabService _tabs;
+    private readonly ContentDatabaseService _contentDb;
+    private readonly SemaphoreSlim _startupRefreshLock = new(1, 1);
+    private bool _startupRefreshAttempted;
 
-    public ContentService(CharacterService characters, CharacterTabService tabs)
+    public ContentService(CharacterService characters, CharacterTabService tabs, ContentDatabaseService contentDb)
     {
         _characters = characters;
         _tabs = tabs;
+        _contentDb = contentDb;
     }
 
     // ── Additional custom directories ─────────────────────────────────────────
@@ -37,7 +41,9 @@ public sealed class ContentService
     /// The built-in custom elements directory: …/Documents/5e Character Builder/custom
     /// </summary>
     public string BuiltInCustomDirectory =>
-        DataManager.Current.UserDocumentsCustomElementsDirectory ?? "";
+        GetBuiltInCustomDirectory();
+
+    public bool ContentReloadPending { get; private set; }
 
     /// <summary>
     /// Adds a directory to the additional custom content paths and persists the change.
@@ -76,7 +82,7 @@ public sealed class ContentService
     {
         get
         {
-            string dir = BuiltInCustomDirectory;
+            string dir = GetBuiltInCustomDirectory();
             if (!Directory.Exists(dir)) return [];
             return Directory.GetFiles(dir, "*.index")
                             .Select(Path.GetFileName)
@@ -107,7 +113,7 @@ public sealed class ContentService
             if (indexFile is null)
                 return (false, "Failed to download index file — server returned no content.");
 
-            string savePath = Path.Combine(BuiltInCustomDirectory, indexFile.Info.UpdateFilename);
+            string savePath = Path.Combine(GetBuiltInCustomDirectory(), indexFile.Info.UpdateFilename);
             indexFile.SaveContent(new FileInfo(savePath));
 
             Changed?.Invoke();
@@ -131,11 +137,11 @@ public sealed class ContentService
             // Patch any http:// URLs inside installed index files before the DLL reads them.
             // Android blocks cleartext HTTP; index files saved by the WPF app or authored
             // with http:// URLs would otherwise fail silently on Android 9+.
-            UpgradeIndexFileProtocols(BuiltInCustomDirectory);
+            UpgradeIndexFileProtocols(GetBuiltInCustomDirectory());
 
             var version = typeof(ContentService).Assembly.GetName().Version ?? new Version(1, 0, 0);
             var svc = new IndicesUpdateService(version);
-            bool updated = await svc.UpdateIndexFiles(BuiltInCustomDirectory);
+            bool updated = await svc.UpdateIndexFiles(GetBuiltInCustomDirectory());
             Changed?.Invoke();
             return updated
                 ? (ContentUpdateOutcome.Updated,  "Content files updated. Reload content to apply changes.")
@@ -156,7 +162,7 @@ public sealed class ContentService
     {
         try
         {
-            string dir = BuiltInCustomDirectory;
+            string dir = GetBuiltInCustomDirectory();
             string path = Path.Combine(dir, filename);
             if (File.Exists(path))
             {
@@ -180,19 +186,88 @@ public sealed class ContentService
     /// Closes all open character tabs and reloads the element collection from disk.
     /// Must be called on the UI thread (or via InvokeAsync) so TabsChanged fires correctly.
     /// Returns null on success or an error message on failure.
+    ///
+    /// As of this build the call also runs an incremental DB sync first when the SQLite cache
+    /// is out of date. The engine reads from that DB, so a download → reload chain that skipped
+    /// the sync would silently still see the old content. Doing it here means every "Reload"
+    /// surface (Settings, the snackbar action raised by <see cref="ContentDownloaded"/>) ends up
+    /// with the engine seeing the latest disk state, no matter where it was triggered.
     /// </summary>
     public async Task<string?> ReloadContentAsync()
     {
         try
         {
+            // Cheap MD5-based staleness check; only pay for the full incremental import if it
+            // actually changed. No-op if no content directory is configured yet.
+            if (_contentDb.CheckIsStale())
+                await _contentDb.SyncAsync().ConfigureAwait(false);
+
             _tabs.CloseAllTabs();
             await _characters.ReloadElementsAsync();
+            ClearContentReloadPending();
             return null;
         }
         catch (Exception ex)
         {
             return DebugLogService.Catch(ex, "ContentService.ReloadContentAsync");
         }
+    }
+
+    // ── Startup auto-refresh ──────────────────────────────────────────────────
+
+    /// <summary>
+    /// Raised after a successful startup content download when at least one tracked index
+    /// produced new files. Carries a short human-readable message suitable for a snackbar.
+    /// Subscribed by <c>MainLayout</c> so the user is offered a one-click Reload.
+    /// </summary>
+    public event Action<string>? ContentDownloaded;
+
+    /// <summary>
+    /// Fire-and-forget startup refresh: pulls every installed index, downloading any files
+    /// the server now reports as newer. Same path as the user-visible "Check for Updates"
+    /// button, but driven by the startup preference. Best-effort — failures are swallowed
+    /// into the debug log so they never bubble out into the launch sequence.
+    ///
+    /// On a successful update the <see cref="ContentDownloaded"/> event fires; the UI layer
+    /// decides how to surface it (today: a snackbar with a Reload action when no dirty tab
+    /// would be lost, otherwise a passive "open Settings" prompt).
+    /// </summary>
+    public async Task RunStartupContentRefreshAsync()
+    {
+        await _startupRefreshLock.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            if (_startupRefreshAttempted)
+                return;
+
+            _startupRefreshAttempted = true;
+            var (outcome, _) = await CheckForUpdatesAsync().ConfigureAwait(false);
+            if (outcome == ContentUpdateOutcome.Updated)
+            {
+                ContentReloadPending = true;
+                Changed?.Invoke();
+                ContentDownloaded?.Invoke("Content updates downloaded. Reload to apply.");
+            }
+        }
+        catch (Exception ex)
+        {
+            // CheckForUpdatesAsync already catches its own exceptions and returns Failed,
+            // so this is belt-and-braces against anything escaping the event handlers.
+            DebugLogService.Catch(ex, "ContentService.RunStartupContentRefreshAsync");
+        }
+        finally
+        {
+            _startupRefreshLock.Release();
+        }
+    }
+
+    public void ClearContentReloadPending()
+    {
+        if (!ContentReloadPending)
+            return;
+
+        ContentReloadPending = false;
+        Changed?.Invoke();
     }
 
     /// <summary>
@@ -216,4 +291,13 @@ public sealed class ContentService
 
     /// <summary>Fires when the directory list or installed index files change.</summary>
     public event Action? Changed;
+
+    private string GetBuiltInCustomDirectory()
+    {
+        _characters.EnsureDirectoriesInitialized();
+        string dir = DataManager.Current.UserDocumentsCustomElementsDirectory ?? string.Empty;
+        if (!string.IsNullOrWhiteSpace(dir))
+            Directory.CreateDirectory(dir);
+        return dir;
+    }
 }

@@ -1,4 +1,5 @@
 using Aurora.App.Services;
+using Aurora.App.Services.Updates;
 using Builder.Presentation;
 using Microsoft.Extensions.Logging;
 using MudBlazor.Services;
@@ -62,6 +63,13 @@ public static class MauiProgram
         builder.Services.AddSingleton<ContentDatabaseService>();
         builder.Services.AddSingleton<ContentDatabaseParityService>();
         builder.Services.AddSingleton<PdfImportService>();
+
+        // Update channels: shared HttpClient for the GitHub Releases API + the two channel services.
+        // Phase 1 is notify-only; the call sites stay shape-stable when Velopack lands underneath.
+        builder.Services.AddHttpClient<GithubReleasesClient>();
+        builder.Services.AddSingleton<AppUpdateService>();
+        builder.Services.AddSingleton<ContentUpdateService>();
+
         var debugLog = new DebugLogService();
         DebugLogService.Instance = debugLog;
         debugLog.InitializePersistentLog(FileSystem.Current.AppDataDirectory);

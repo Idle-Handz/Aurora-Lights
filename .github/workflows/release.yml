@@ -12,10 +12,49 @@ permissions:
   contents: write
 
 jobs:
+  # Single source of truth for the version values stamped into the binaries. The release
+  # tag the user types (e.g. "v0.1.0-alpha") is parsed once and reused by every build job
+  # so Windows / macOS / Android all advertise the same version, and the in-app update
+  # check can read InformationalVersion and compare it against the GitHub release tag.
+  #
+  # Three forms come out:
+  #   semver    — full SemVer with pre-release (e.g. "0.1.0-alpha"); user-visible
+  #   assembly  — numeric MAJOR.MINOR.PATCH only (e.g. "0.1.0"); MSBuild Version /
+  #               AssemblyVersion / FileVersion all require this form
+  #   info      — copy of semver, fed to InformationalVersion (which DOES accept suffix)
+  prep_version:
+    runs-on: ubuntu-latest
+    outputs:
+      semver:   ${{ steps.parse.outputs.semver }}
+      assembly: ${{ steps.parse.outputs.assembly }}
+      info:     ${{ steps.parse.outputs.info }}
+    steps:
+      - id: parse
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          RAW="${INPUT_VERSION#v}"          # strip leading 'v'
+          ASM="${RAW%%-*}"                  # drop pre-release suffix for assembly stamp
+          # Sanity: assembly must be three dot-separated integers
+          if ! echo "$ASM" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "ERROR: assembly version '$ASM' (from input '$INPUT_VERSION') is not MAJOR.MINOR.PATCH"
+            exit 1
+          fi
+          echo "semver=$RAW"     >> "$GITHUB_OUTPUT"
+          echo "assembly=$ASM"   >> "$GITHUB_OUTPUT"
+          echo "info=$RAW"       >> "$GITHUB_OUTPUT"
+          echo "Parsed input '$INPUT_VERSION' → semver=$RAW assembly=$ASM"
+
   build-windows-x64:
+    needs: prep_version
     runs-on: windows-latest
     env:
       PROJECT: Aurora.App/Aurora.App.csproj
+      VERSION_SEMVER:   ${{ needs.prep_version.outputs.semver }}
+      VERSION_ASSEMBLY: ${{ needs.prep_version.outputs.assembly }}
+      VERSION_INFO:     ${{ needs.prep_version.outputs.info }}
     steps:
       - uses: actions/checkout@v4
 
@@ -54,6 +93,11 @@ jobs:
             --no-restore \
             -p:PublishReadyToRun=false \
             -p:WindowsPackageType=None \
+            -p:Version=$VERSION_ASSEMBLY \
+            -p:AssemblyVersion=$VERSION_ASSEMBLY.0 \
+            -p:FileVersion=$VERSION_ASSEMBLY.0 \
+            -p:InformationalVersion=$VERSION_INFO \
+            -p:ApplicationDisplayVersion=$VERSION_ASSEMBLY \
             -o publish/win-x64
 
       - name: Zip (win-x64)
@@ -67,9 +111,13 @@ jobs:
           if-no-files-found: error
 
   build-windows-arm64:
+    needs: prep_version
     runs-on: windows-latest
     env:
       PROJECT: Aurora.App/Aurora.App.csproj
+      VERSION_SEMVER:   ${{ needs.prep_version.outputs.semver }}
+      VERSION_ASSEMBLY: ${{ needs.prep_version.outputs.assembly }}
+      VERSION_INFO:     ${{ needs.prep_version.outputs.info }}
     steps:
       - uses: actions/checkout@v4
 
@@ -108,6 +156,11 @@ jobs:
             --no-restore \
             -p:PublishReadyToRun=false \
             -p:WindowsPackageType=None \
+            -p:Version=$VERSION_ASSEMBLY \
+            -p:AssemblyVersion=$VERSION_ASSEMBLY.0 \
+            -p:FileVersion=$VERSION_ASSEMBLY.0 \
+            -p:InformationalVersion=$VERSION_INFO \
+            -p:ApplicationDisplayVersion=$VERSION_ASSEMBLY \
             -o publish/win-arm64
 
       - name: Zip (win-arm64)
@@ -121,9 +174,13 @@ jobs:
           if-no-files-found: error
 
   build-android:
+    needs: prep_version
     runs-on: ubuntu-latest
     env:
       PROJECT: Aurora.App/Aurora.App.csproj
+      VERSION_SEMVER:   ${{ needs.prep_version.outputs.semver }}
+      VERSION_ASSEMBLY: ${{ needs.prep_version.outputs.assembly }}
+      VERSION_INFO:     ${{ needs.prep_version.outputs.info }}
     steps:
       - uses: actions/checkout@v4
 
@@ -167,7 +224,12 @@ jobs:
             -p:AndroidSigningKeyAlias=aurora \
             -p:AndroidSigningKeyPass=aurora-ci \
             -p:AndroidSigningStorePass=aurora-ci \
-            -p:ApplicationVersion=${{ github.run_number }}
+            -p:ApplicationVersion=${{ github.run_number }} \
+            -p:Version=$VERSION_ASSEMBLY \
+            -p:AssemblyVersion=$VERSION_ASSEMBLY.0 \
+            -p:FileVersion=$VERSION_ASSEMBLY.0 \
+            -p:InformationalVersion=$VERSION_INFO \
+            -p:ApplicationDisplayVersion=$VERSION_ASSEMBLY
 
       - name: Locate APK
         run: |
@@ -185,9 +247,13 @@ jobs:
           if-no-files-found: error
 
   build-macos-x64:
+    needs: prep_version
     runs-on: macos-26-intel
     env:
       PROJECT: Aurora.App/Aurora.App.csproj
+      VERSION_SEMVER:   ${{ needs.prep_version.outputs.semver }}
+      VERSION_ASSEMBLY: ${{ needs.prep_version.outputs.assembly }}
+      VERSION_INFO:     ${{ needs.prep_version.outputs.info }}
     steps:
       - uses: actions/checkout@v4
 
@@ -214,7 +280,12 @@ jobs:
             -r maccatalyst-x64 \
             -c Release \
             -p:CreatePackage=false \
-            -p:MtouchLink=None
+            -p:MtouchLink=None \
+            -p:Version=$VERSION_ASSEMBLY \
+            -p:AssemblyVersion=$VERSION_ASSEMBLY.0 \
+            -p:FileVersion=$VERSION_ASSEMBLY.0 \
+            -p:InformationalVersion=$VERSION_INFO \
+            -p:ApplicationDisplayVersion=$VERSION_ASSEMBLY
 
       - name: Stage x64 app bundle
         run: |
@@ -235,9 +306,13 @@ jobs:
           if-no-files-found: error
 
   build-macos-arm64:
+    needs: prep_version
     runs-on: macos-26-intel
     env:
       PROJECT: Aurora.App/Aurora.App.csproj
+      VERSION_SEMVER:   ${{ needs.prep_version.outputs.semver }}
+      VERSION_ASSEMBLY: ${{ needs.prep_version.outputs.assembly }}
+      VERSION_INFO:     ${{ needs.prep_version.outputs.info }}
     steps:
       - uses: actions/checkout@v4
 
@@ -264,7 +339,12 @@ jobs:
             -r maccatalyst-arm64 \
             -c Release \
             -p:CreatePackage=false \
-            -p:MtouchLink=None
+            -p:MtouchLink=None \
+            -p:Version=$VERSION_ASSEMBLY \
+            -p:AssemblyVersion=$VERSION_ASSEMBLY.0 \
+            -p:FileVersion=$VERSION_ASSEMBLY.0 \
+            -p:InformationalVersion=$VERSION_INFO \
+            -p:ApplicationDisplayVersion=$VERSION_ASSEMBLY
 
       - name: Stage arm64 app bundle
         run: |

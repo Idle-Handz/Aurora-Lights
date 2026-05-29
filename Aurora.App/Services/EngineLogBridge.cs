@@ -1,4 +1,5 @@
 using Builder.Core.Logging;
+using Builder.Presentation.Logging;
 
 namespace Aurora.App.Services;
 
@@ -20,7 +21,13 @@ internal sealed class EngineLogBridge : ILogger
     public void Info(string message, params object[] args) { /* dropped to keep the Console focused */ }
 
     public void Warning(string message, params object[] args)
-        => DebugLogService.Instance.Warn("[engine] " + Format(message, args));
+    {
+        string formatted = Format(message, args);
+        if (EngineLogNoiseFilter.ShouldSuppressWarning(formatted))
+            return;
+
+        DebugLogService.Instance.Warn("[engine] " + formatted);
+    }
 
     public void Exception(Exception ex)
         => DebugLogService.Instance.LogException(ex, "engine");

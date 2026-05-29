@@ -1,3 +1,4 @@
+using System.Reflection;
 using Microsoft.Maui.ApplicationModel;
 
 namespace Aurora.App.Services;
@@ -18,7 +19,12 @@ public sealed class AppIdentityService
         {
             try
             {
-                string version = AppInfo.Current.VersionString;
+                string? informational = typeof(AppIdentityService).Assembly
+                    .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+                    ?.InformationalVersion;
+                string version = string.IsNullOrWhiteSpace(informational)
+                    ? AppInfo.Current.VersionString
+                    : informational;
                 string build = AppInfo.Current.BuildString;
                 return string.IsNullOrWhiteSpace(build) ? version : $"{version} (build {build})";
             }

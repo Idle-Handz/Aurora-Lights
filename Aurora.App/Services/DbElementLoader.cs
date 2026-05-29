@@ -1,6 +1,7 @@
 using Builder.Data;
 using Builder.Data.Elements;
 using Builder.Presentation.Services.Data;
+using Builder.Presentation.Utilities;
 using Aurora.Importer;
 using Microsoft.Data.Sqlite;
 using System.Xml;
@@ -388,6 +389,7 @@ internal static class DbElementLoader
 
                 // Attach to the document root so the parser sees a proper node tree.
                 docRoot.AppendChild(node);
+                AuroraXmlCompatibilityRepair.RepairNode(node);
                 try
                 {
                     ElementHeader header = currentParser.ParseElementHeader(node);

@@ -31,6 +31,11 @@
                     Repository
                 </MudButton>
                 <MudButton Variant="Variant.Outlined"
+                           StartIcon="@Icons.Material.Filled.NewReleases"
+                           OnClick="OpenReleasesAsync">
+                    Releases
+                </MudButton>
+                <MudButton Variant="Variant.Outlined"
                            StartIcon="@Icons.Material.Filled.BugReport"
                            OnClick="OpenIssuesAsync">
                     Report an Issue
@@ -49,6 +54,8 @@
     private void Close() => MudDialog.Close();
 
     private Task OpenRepositoryAsync() => Launcher.Default.OpenAsync(Brand.RepositoryUrl);
+
+    private Task OpenReleasesAsync() => Launcher.Default.OpenAsync($"{Brand.RepositoryUrl}/releases");
 
     private Task OpenIssuesAsync() => Launcher.Default.OpenAsync(Brand.IssuesUrl);
 }

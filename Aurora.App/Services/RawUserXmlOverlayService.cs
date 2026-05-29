@@ -3,6 +3,7 @@ using Builder.Data.Extensions;
 using Builder.Data.Files;
 using Builder.Data.Rules;
 using Builder.Presentation.Services.Data;
+using Builder.Presentation.Utilities;
 using System.Xml;
 
 namespace Aurora.App.Services;
@@ -43,6 +44,7 @@ internal static class RawUserXmlOverlayService
                     continue;
 
                 XmlDocument xmlDocument = CreateXmlDocument(file.FullName);
+                AuroraXmlCompatibilityRepair.RepairDocument(xmlDocument);
                 if (xmlDocument.DocumentElement == null)
                     continue;
 
@@ -112,6 +114,7 @@ internal static class RawUserXmlOverlayService
         int applied = 0;
         foreach (XmlNode appendNode in appendNodes)
         {
+            AuroraXmlCompatibilityRepair.RepairNode(appendNode);
             if (!appendNode.ContainsAttribute("id"))
                 continue;
 

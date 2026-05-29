@@ -10,6 +10,9 @@
 @inject ISnackbar Snackbar
 @inject UserPreferencesService Prefs
 @inject DebugLogService DebugLog
+@inject Aurora.App.Services.AppIdentityService Brand
+@inject Aurora.App.Services.Updates.AppUpdateService AppUpdates
+@inject Aurora.App.Services.Updates.ContentUpdateService ContentUpdates
 
 <MudText Typo="Typo.h5" Class="mb-4">Settings</MudText>
 
@@ -360,12 +363,17 @@
                                    OnClick="SyncNowAsync">
                             Sync Now
                         </MudButton>
-                        @if (ContentDb.SyncState == ContentDatabaseSyncState.Done && Tabs.Tabs.Count == 0)
+                        @* The Reload Elements button used to be gated on SyncState==Done — meaning the
+                           user had to click "Sync Now" first. The handler now runs an incremental DB
+                           sync itself when the cache is stale, so the button can stand alone whenever
+                           there's no character tab to discard. One click = "make the engine see the
+                           latest disk state." *@
+                        @if (Tabs.Tabs.Count == 0 && !string.IsNullOrWhiteSpace(ContentDb.ContentDirectory))
                         {
                             <MudButton Variant="Variant.Outlined"
                                        Color="Color.Secondary"
                                        Size="Size.Small"
-                                       Disabled="@_reloadingElements"
+                                       Disabled="@(_reloadingElements || ContentDb.SyncState == ContentDatabaseSyncState.Syncing)"
                                        OnClick="ReloadElementsAsync">
                                 @(_reloadingElements ? "Reloading…" : "Reload Elements")
                             </MudButton>
@@ -519,11 +527,15 @@
                         </div>
 
                         <div class="settings-action-row" style="margin-bottom: 10px;">
+                            @* Immediate="true" fires the binding on every keypress/paste — without
+                               it the field only commits on blur or Enter, so a freshly-pasted URL
+                               leaves Fetch Index stuck disabled until the user nudges focus. *@
                             <MudTextField @bind-Value="_indexUrl"
                                           Label="Index URL"
                                           Placeholder="https://raw.githubusercontent.com/.../core.index"
                                           Variant="Variant.Outlined"
                                           Margin="Margin.Dense"
+                                          Immediate="true"
                                           Style="flex: 1; font-size: 13px;"
                                           Disabled="_contentWorking" />
                             <MudButton Variant="Variant.Outlined"
@@ -586,6 +598,182 @@
             </MudTabPanel>
 
         </MudTabs>
+
+    </MudTabPanel>
+
+    <!-- ── Updates ──────────────────────────────────────────────────────────── -->
+    <MudTabPanel Text="Updates">
+
+        @* App-binary updates ─ parity with the WPF "Startup Check for Updates" toggle, but pointed at
+           the GitHub Releases for the MAUI app. Notify-only today (Phase 1); the same UX surface will
+           drive the one-click apply once Velopack is wired in. *@
+        <div class="pref-section">
+            <div class="section-label">App</div>
+
+            <div class="pref-row">
+                <div class="pref-row-text">
+                    <div class="pref-row-title">Current version</div>
+                    <div class="pref-row-desc">@Brand.VersionLabel</div>
+                </div>
+            </div>
+
+            <div class="pref-row" style="margin-top: 16px;">
+                <div class="pref-row-text">
+                    <div class="pref-row-title">Check for app updates on startup</div>
+                    <div class="pref-row-desc">
+                        Quietly checks the project's GitHub Releases when the app starts and surfaces a
+                        banner if a newer version is published. No download or install — that's a
+                        manual choice today.
+                    </div>
+                </div>
+                <MudSwitch Value="Prefs.StartupCheckForAppUpdates"
+                           ValueChanged="@((bool v) => Prefs.StartupCheckForAppUpdates = v)"
+                           Color="Color.Primary" />
+            </div>
+
+            <div class="pref-row" style="margin-top: 16px;">
+                <div class="pref-row-text">
+                    <div class="pref-row-title">Include pre-releases</div>
+                    <div class="pref-row-desc">
+                        Includes alpha/beta/RC builds in the check. Recommended while the app is still
+                        in early development — otherwise the check sees nothing.
+                    </div>
+                </div>
+                <MudSwitch Value="Prefs.IncludePrereleasesInUpdateCheck"
+                           ValueChanged="@((bool v) => Prefs.IncludePrereleasesInUpdateCheck = v)"
+                           Color="Color.Primary" />
+            </div>
+
+            <div class="pref-row" style="margin-top: 16px;">
+                <div class="pref-row-text">
+                    <div class="pref-row-title">Check now</div>
+                    <div class="pref-row-desc">
+                        @if (AppUpdates.IsChecking)
+                        {
+                            <text>Checking GitHub…</text>
+                        }
+                        else if (AppUpdates.LastError is { Length: > 0 } err)
+                        {
+                            <text>Last check failed: @err</text>
+                        }
+                        else if (AppUpdates.Latest is { } a)
+                        {
+                            <text>
+                                Latest: <b>@a.LatestTag</b>
+                                @(a.IsPreRelease ? "(pre-release) " : "")
+                                — @(a.IsNewer ? "newer than current" : "you're up to date")
+                                · checked @(FormatChecked(AppUpdates.LastChecked))
+                            </text>
+                        }
+                        else if (AppUpdates.LastChecked is { } when_)
+                        {
+                            <text>No eligible release found · checked @(FormatChecked(when_))</text>
+                        }
+                        else
+                        {
+                            <text>Never checked.</text>
+                        }
+                    </div>
+                </div>
+                <MudButton Variant="Variant.Outlined"
+                           StartIcon="@Icons.Material.Filled.Refresh"
+                           OnClick="CheckAppNowAsync"
+                           Disabled="AppUpdates.IsChecking">
+                    Check now
+                </MudButton>
+            </div>
+
+            @if (AppUpdates.Latest is { IsNewer: true } avail)
+            {
+                <div class="pref-row" style="margin-top: 16px;">
+                    <div class="pref-row-text">
+                        <div class="pref-row-title">View release</div>
+                        <div class="pref-row-desc">Opens the GitHub release page for @avail.LatestTag in your browser.</div>
+                    </div>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.OpenInNew"
+                               OnClick="@(() => Launcher.Default.OpenAsync(avail.ReleaseUrl))">
+                        Open release
+                    </MudButton>
+                </div>
+            }
+        </div>
+
+        @* Content-pack updates ─ separate channel (tag prefix "content-"), notify-only for now.
+           Same surface so it stays parallel with the app channel. *@
+        <div class="pref-section" style="margin-top: 24px;">
+            <div class="section-label">Content</div>
+
+            <div class="pref-row">
+                <div class="pref-row-text">
+                    <div class="pref-row-title">Auto-download content on startup</div>
+                    <div class="pref-row-desc">
+                        Runs <em>Check for Updates</em> in the background when the app launches and
+                        downloads any new files for installed index sources. You'll see a snackbar
+                        and a reload prompt when something arrives — nothing happens silently behind
+                        you.
+                    </div>
+                </div>
+                <MudSwitch Value="Prefs.AutoDownloadContentOnStartup"
+                           ValueChanged="@((bool v) => Prefs.AutoDownloadContentOnStartup = v)"
+                           Color="Color.Primary" />
+            </div>
+
+            <div class="pref-row" style="margin-top: 16px;">
+                <div class="pref-row-text">
+                    <div class="pref-row-title">Check for content updates on startup</div>
+                    <div class="pref-row-desc">
+                        Checks for new official content packs (rule updates, errata) published between
+                        app releases. Same channel, separate tag stream. Currently notify-only —
+                        download/install lands when the content release stream is set up.
+                    </div>
+                </div>
+                <MudSwitch Value="Prefs.StartupCheckForContentUpdates"
+                           ValueChanged="@((bool v) => Prefs.StartupCheckForContentUpdates = v)"
+                           Color="Color.Primary" />
+            </div>
+
+            <div class="pref-row" style="margin-top: 16px;">
+                <div class="pref-row-text">
+                    <div class="pref-row-title">Check now</div>
+                    <div class="pref-row-desc">
+                        @if (ContentUpdates.IsChecking)
+                        {
+                            <text>Checking GitHub…</text>
+                        }
+                        else if (ContentUpdates.LastError is { Length: > 0 } err)
+                        {
+                            <text>Last check failed: @err</text>
+                        }
+                        else if (ContentUpdates.Latest is { } c)
+                        {
+                            <text>
+                                Latest: <b>@c.LatestTag</b>
+                                — @(ContentUpdates.HasRecordedInstalledVersion
+                                      ? (c.IsNewer ? "newer than installed" : "content is up to date")
+                                      : "release notice; install support coming later")
+                                · checked @(FormatChecked(ContentUpdates.LastChecked))
+                            </text>
+                        }
+                        else if (ContentUpdates.LastChecked is { } when_)
+                        {
+                            <text>No content releases found · checked @(FormatChecked(when_))</text>
+                        }
+                        else
+                        {
+                            <text>Never checked.</text>
+                        }
+                    </div>
+                </div>
+                <MudButton Variant="Variant.Outlined"
+                           StartIcon="@Icons.Material.Filled.Refresh"
+                           OnClick="CheckContentNowAsync"
+                           Disabled="ContentUpdates.IsChecking">
+                    Check now
+                </MudButton>
+            </div>
+        </div>
 
     </MudTabPanel>
 
@@ -808,8 +996,23 @@
     {
         ContentDb.StateChanged += OnStateChanged;
         Content.Changed += OnContentChanged;
+        AppUpdates.Changed += OnAppUpdatesChanged;
+        ContentUpdates.Changed += OnContentUpdatesChanged;
         RefreshDatabaseDiagnostics();
     }
+
+    private void OnAppUpdatesChanged() => InvokeAsync(StateHasChanged);
+    private void OnContentUpdatesChanged() => InvokeAsync(StateHasChanged);
+
+    private Task CheckAppNowAsync() =>
+        AppUpdates.CheckAsync(Prefs.IncludePrereleasesInUpdateCheck);
+
+    private Task CheckContentNowAsync() =>
+        ContentUpdates.CheckAsync(Prefs.IncludePrereleasesInUpdateCheck);
+
+    /// <summary>Render the last-checked timestamp as the user's local time, short form.</summary>
+    private static string FormatChecked(DateTimeOffset? when) =>
+        when is null ? "never" : when.Value.ToLocalTime().ToString("g");
 
     private async Task TogglePackageAsync(long packageId, bool enabled)
     {
@@ -884,8 +1087,20 @@
         StateHasChanged();
         try
         {
+            // Sync the SQLite cache first when it's behind disk. The engine reads from the DB,
+            // so a Reload Elements that skipped this would silently still see the old content.
+            // CheckIsStale is a fast MD5 compare; SyncAsync is incremental.
+            if (ContentDb.CheckIsStale())
+            {
+                _cts?.Cancel();
+                _cts = new CancellationTokenSource();
+                await ContentDb.SyncAsync(_cts.Token);
+                if (_disposed) return;
+            }
+
             Tabs.CloseAllTabs();
             await Characters.ReloadElementsAsync();
+            Content.ClearContentReloadPending();
             if (_disposed) return;
             RefreshDatabaseDiagnostics();
         }
@@ -1019,6 +1234,15 @@
         {
             _contentWorking = false;
         }
+
+        // Newly-installed indices are empty — they're just a manifest pointing at the real
+        // content URLs. Without an immediate Check-for-Updates the user is left with a
+        // registered-but-empty index and has to click again to actually pull anything.
+        // Chain into the existing handler so a single click of "Fetch Index" delivers the
+        // payload too. CheckForUpdatesAsync manages its own _contentStatus / _checkingUpdates
+        // state so the UI surfaces the progress and final tally.
+        if (_contentStatusSeverity == Severity.Success && !_disposed)
+            await CheckForUpdatesAsync();
     }
 
     private async Task CheckForUpdatesAsync()
@@ -1147,6 +1371,8 @@
         _disposed = true;
         ContentDb.StateChanged -= OnStateChanged;
         Content.Changed -= OnContentChanged;
+        AppUpdates.Changed -= OnAppUpdatesChanged;
+        ContentUpdates.Changed -= OnContentUpdatesChanged;
         _cts?.Cancel();
         _cts?.Dispose();
     }

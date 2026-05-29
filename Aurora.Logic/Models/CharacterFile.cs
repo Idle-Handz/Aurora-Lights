@@ -74,6 +74,7 @@ public class CharacterFile : ObservableObject
     private string _fileName;
     private string _displayVersion;
     private string _collectionGroupName;
+    private CharacterFileDiskStamp? _lastKnownDiskStamp;
 
     public CharacterFile(string filepath)
     {
@@ -194,6 +195,20 @@ public class CharacterFile : ObservableObject
 
     public string DisplayBuild => $"Level {this.DisplayLevel} {this.DisplayRace} {this.DisplayClass}";
 
+    public CharacterFileDiskStamp? LastKnownDiskStamp => this._lastKnownDiskStamp;
+
+    public bool HasExternalFileChanges() =>
+        CharacterFileIo.HasChangedSince(this._filepath, this._lastKnownDiskStamp);
+
+    public void RefreshKnownDiskStamp() =>
+        this._lastKnownDiskStamp = CharacterFileDiskStamp.Capture(this._filepath);
+
+    public void RestoreKnownDiskStamp(CharacterFileDiskStamp? stamp) =>
+        this._lastKnownDiskStamp = stamp;
+
+    public void EnsureNoExternalFileChanges() =>
+        CharacterFileIo.ThrowIfChangedSince(this._filepath, this._lastKnownDiskStamp);
+
     public void InitializeDisplayPropertiesFromCharacter(Character character)
     {
         this.DisplayName = character.Name;
@@ -210,8 +225,7 @@ public class CharacterFile : ObservableObject
         try
         {
             this.IsInitialized = false;
-            this._document = new XmlDocument();
-            this._document.Load(this._filepath);
+            this._document = CharacterFileIo.LoadXmlDocument(this._filepath, out this._lastKnownDiskStamp);
             XmlElement xmlElement1 = this._document["character"];
             XmlElement xmlElement2 = xmlElement1?["display-properties"];
             this.ReadInformationNode((XmlNode)xmlElement1);
@@ -294,8 +308,8 @@ public class CharacterFile : ObservableObject
     {
         try
         {
-            this._document = new XmlDocument();
-            this._document.Load(this._filepath);
+            bool updateKnownStamp = !this.HasExternalFileChanges();
+            this._document = CharacterFileIo.LoadXmlDocument(this._filepath);
             XmlNode parentNode = this._document.DocumentElement.ChildNodes.Cast<XmlNode>().FirstOrDefault<XmlNode>((Func<XmlNode, bool>)(x => x.Name.Equals("information")));
             if (parentNode == null)
             {
@@ -304,7 +318,9 @@ public class CharacterFile : ObservableObject
             }
             if (parentNode.ContainsChildNode("group"))
                 parentNode.GetChildNode("group").InnerText = newGroup;
-            this._document.Save(this._filepath);
+            CharacterFileIo.SaveXmlDocumentAtomic(this._filepath, this._document);
+            if (updateKnownStamp)
+                this.RefreshKnownDiskStamp();
             this.CollectionGroupName = newGroup;
         }
         catch (Exception ex)
@@ -318,15 +334,11 @@ public class CharacterFile : ObservableObject
 
     public bool Save(Character character)
     {
+        this.EnsureNoExternalFileChanges();
         BuildDocument(character);
-        using (XmlTextWriter w = new XmlTextWriter(this._filepath, Encoding.UTF8))
-        {
-            w.Formatting = Formatting.Indented;
-            w.IndentChar = '\t';
-            w.Indentation = 1;
-            this._document.Save((XmlWriter)w);
-            return true;
-        }
+        CharacterFileIo.SaveXmlDocumentAtomic(this._filepath, this._document);
+        this.RefreshKnownDiskStamp();
+        return true;
     }
 
     /// <summary>

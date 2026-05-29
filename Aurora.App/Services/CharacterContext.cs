@@ -128,6 +128,8 @@ public static class CharacterContext
         //    to the on-disk file path for the first activation of a tab.
         if (incoming.StateXml is { Length: > 0 } bytes)
         {
+            string originalPath = incoming.File.FilePath;
+            var originalStamp = incoming.File.LastKnownDiskStamp;
             string temp = Path.Combine(
                 Path.GetTempPath(),
                 $"aurora_ctx_{Guid.NewGuid():N}.dnd5e");
@@ -138,6 +140,8 @@ public static class CharacterContext
             }
             finally
             {
+                incoming.File.FilePath = originalPath;
+                incoming.File.RestoreKnownDiskStamp(originalStamp);
                 try { if (File.Exists(temp)) File.Delete(temp); } catch { }
             }
         }

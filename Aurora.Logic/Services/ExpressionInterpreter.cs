@@ -250,10 +250,8 @@ public class ExpressionInterpreter
       this._manager = CharacterManager.Current;
     if (this._manager.StatisticsCalculator.StatisticValues.ContainsGroup(key))
     {
-      Logger.Warning($"checking statistics expression key: [{key}]:[{value}]");
       return this._manager.StatisticsCalculator.StatisticValues.GetValue(key) >= Convert.ToInt32(value);
     }
-    Logger.Warning($"unknown statistics expression key: [{key}]:[{value}]");
     return false;
   }
 

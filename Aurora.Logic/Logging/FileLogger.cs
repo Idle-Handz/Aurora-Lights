@@ -55,6 +55,8 @@ public class FileLogger : ILogger
       string str = message;
       if (args != null)
         str = string.Format(message, args);
+      if (EngineLogNoiseFilter.ShouldSuppressWarning(str))
+        return;
       File.AppendAllText(Path.Combine(this._directory, this._errorsFilename), FileLogger.GeneratePrefix(Log.Warning) + str + Environment.NewLine);
     }
     catch (System.Exception)

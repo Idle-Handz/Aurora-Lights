@@ -232,7 +232,7 @@ public class ProgressionManager
             {
               if (!element2.Id.Equals("ID_RACIAL_TRAIT_DWARVEN_TOOL_PROFICIENCY"))
               {
-                Logger.Warning("\tnot granting: {0} due to not meeting element requirements", (object) element2);
+                Logger.Debug("\tnot granting: {0} due to not meeting element requirements", (object) element2);
                 continue;
               }
               continue;

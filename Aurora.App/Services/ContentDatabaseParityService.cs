@@ -4,6 +4,7 @@ using Builder.Data.Extensions;
 using Builder.Data.Files;
 using Builder.Presentation;
 using Builder.Presentation.Services.Data;
+using Builder.Presentation.Utilities;
 using System.Xml;
 
 namespace Aurora.App.Services;
@@ -139,6 +140,7 @@ public sealed class ContentDatabaseParityService
             cancellationToken.ThrowIfCancellationRequested();
             if (xmlDocument.DocumentElement == null)
                 continue;
+            AuroraXmlCompatibilityRepair.RepairDocument(xmlDocument);
 
             foreach (XmlNode elementNode in xmlDocument.DocumentElement.ChildNodes
                          .Cast<XmlNode>()
@@ -173,6 +175,7 @@ public sealed class ContentDatabaseParityService
                 XmlDocument xmlDocument = await CreateXmlDocumentAsync(file.FullName);
                 if (xmlDocument.DocumentElement != null)
                 {
+                    AuroraXmlCompatibilityRepair.RepairDocument(xmlDocument);
                     foreach (XmlNode elementNode in xmlDocument.DocumentElement.ChildNodes
                                  .Cast<XmlNode>()
                                  .Where(x => x.NodeType != XmlNodeType.Comment && x.Name.Equals("element")))
@@ -314,6 +317,7 @@ public sealed class ContentDatabaseParityService
     {
         foreach (XmlNode appendNode in appendNodes)
         {
+            AuroraXmlCompatibilityRepair.RepairNode(appendNode);
             if (!appendNode.ContainsAttribute("id"))
                 continue;
 

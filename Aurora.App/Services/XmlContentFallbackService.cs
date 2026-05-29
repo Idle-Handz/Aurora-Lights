@@ -4,6 +4,7 @@ using Builder.Data.Files;
 using Builder.Data.Rules;
 using Builder.Presentation;
 using Builder.Presentation.Services.Data;
+using Builder.Presentation.Utilities;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Xml;
@@ -203,6 +204,7 @@ public static class XmlContentFallbackService
 
         foreach (XmlDocument xmlDocument in DataManager.Current.LoadElementDocumentsFromResource())
         {
+            AuroraXmlCompatibilityRepair.RepairDocument(xmlDocument);
             documentCount++;
             LoadDocument(xmlDocument, byId, appendNodes, isUserOverride: false, ref skipped);
         }
@@ -216,6 +218,7 @@ public static class XmlContentFallbackService
                     continue;
 
                 XmlDocument xmlDocument = CreateXmlDocument(file.FullName);
+                AuroraXmlCompatibilityRepair.RepairDocument(xmlDocument);
                 documentCount++;
                 LoadDocument(xmlDocument, byId, appendNodes, IsUserOverrideFile(file), ref skipped);
             }
@@ -328,6 +331,7 @@ public static class XmlContentFallbackService
     {
         try
         {
+            AuroraXmlCompatibilityRepair.RepairNode(xmlElement.Node);
             ElementParser defaultParser = new();
             ElementHeader header = defaultParser.ParseElementHeader(xmlElement.Node);
             ElementParser parser = ElementParserFactory.GetParsers()
