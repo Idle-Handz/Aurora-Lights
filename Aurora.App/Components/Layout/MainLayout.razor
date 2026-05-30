@@ -484,6 +484,7 @@
         {
             if (_disposed) return;
             _mobileMoreOpen = false;
+            _errorBoundary?.RecoverPage();
             StateHasChanged();
         });
     }

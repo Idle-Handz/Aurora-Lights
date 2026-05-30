@@ -20,6 +20,8 @@ else
 }
 
 @code {
+    public void RecoverPage() => Recover();
+
     protected override Task OnErrorAsync(Exception exception)
     {
         DebugLog.LogException(exception, "Page render");

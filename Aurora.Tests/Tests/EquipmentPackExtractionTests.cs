@@ -15,6 +15,10 @@ public sealed class EquipmentPackExtractionTests : IAsyncLifetime
     private const string TorchId = "ID_WOTC_PHB_ITEM_TORCH";
     private const string RationsId = "ID_WOTC_PHB_ITEM_RATIONS_1DAY";
     private const string RopeId = "ID_WOTC_PHB_ITEM_ROPE_HEMPEN_50FEET";
+    private const string CalligraphersSuppliesId = "ID_WOTC_PHB_ITEM_TOOL_CALLIGRAPHERS_SUPPLIES";
+    private const string InkId = "ID_WOTC_PHB_ITEM_INK_1OUNCEBOTTLE";
+    private const string ParchmentId = "ID_WOTC_PHB_ITEM_PARCHMENT_ONESHEET";
+    private const string InkPenId = "ID_WOTC_PHB_ITEM_INKPEN";
 
     private readonly ITestOutputHelper _output;
 
@@ -48,7 +52,7 @@ public sealed class EquipmentPackExtractionTests : IAsyncLifetime
     public void ExtractPack_ExpandsLegacyXmlComponentsAndConsumesPack()
     {
         if (!ContentFixture.SkipIfUnavailable(_output)) return;
-        if (!EnsureElementsAvailable()) return;
+        if (!EnsureElementsAvailable(ExplorersPackId, BackpackId, BedrollId, TorchId, RationsId, RopeId)) return;
 
         var character = new Character();
         EquipmentService.AddItem(character, ExplorersPackId).Should().BeTrue();
@@ -77,17 +81,44 @@ public sealed class EquipmentPackExtractionTests : IAsyncLifetime
         FindAmount(character, RopeId).Should().Be(1);
     }
 
-    private bool EnsureElementsAvailable()
+    [Fact]
+    public void ExtractPack_ExpandsCalligraphersSuppliesUsingRenamedInkPenProxy()
     {
-        string[] requiredIds =
-        [
-            ExplorersPackId,
-            BackpackId,
-            BedrollId,
-            TorchId,
-            RationsId,
-            RopeId,
-        ];
+        if (!ContentFixture.SkipIfUnavailable(_output)) return;
+        if (!EnsureElementsAvailable(CalligraphersSuppliesId, InkId, ParchmentId, InkPenId)) return;
+
+        var character = new Character();
+        EquipmentService.AddItem(character, CalligraphersSuppliesId).Should().BeTrue();
+
+        var supplies = character.Inventory.Items
+            .Single(item => item.Item.Id.Equals(CalligraphersSuppliesId, StringComparison.OrdinalIgnoreCase));
+
+        EquipmentService.CanExtractPack(character, supplies.Identifier).Should().BeTrue();
+        EquipmentService.GetPackComponents(character, supplies.Identifier)
+            .Should().Contain(component =>
+                component.ElementId == InkPenId &&
+                component.Amount == 3 &&
+                component.Name == "Quill");
+
+        var result = EquipmentService.ExtractPack(character, supplies.Identifier);
+
+        result.Success.Should().BeTrue();
+        result.MissingElementIds.Should().BeEmpty();
+        character.Inventory.Items
+            .Should().NotContain(item => item.Item.Id.Equals(CalligraphersSuppliesId, StringComparison.OrdinalIgnoreCase));
+        FindAmount(character, InkId).Should().Be(1);
+        FindAmount(character, ParchmentId).Should().Be(12);
+
+        var quills = character.Inventory.Items
+            .Single(item =>
+                item.Item.Id.Equals(InkPenId, StringComparison.OrdinalIgnoreCase) &&
+                item.AlternativeName == "Quill");
+        quills.Amount.Should().Be(3);
+        quills.DisplayName.Should().Be("Quill (3)");
+    }
+
+    private bool EnsureElementsAvailable(params string[] requiredIds)
+    {
 
         var missing = requiredIds
             .Where(id => DataManager.Current.ElementsCollection.GetElement(id) == null)

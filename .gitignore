@@ -44,6 +44,19 @@ packages/
 # Publish output
 **/publish/
 
+# Local diagnostics and scratch output
+/%TEMP%/
+/buildtmp/
+/tmp/
+/tmp_query_artificer.cs
+/aurora-windows-x64.zip
+
+# Local character portrait library
+/Assets/portraits/
+
+# Claude Code transient state
+.claude/scheduled_tasks.lock
+
 # Aurora.Web runtime data
 Aurora.Web/App_Data/
 

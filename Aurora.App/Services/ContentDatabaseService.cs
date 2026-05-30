@@ -20,6 +20,7 @@ public sealed class ContentDatabaseService
     public AuroraImportResult?      LastResult { get; private set; }
 
     public bool IsStale { get; private set; }
+    public string? LastReadFailure { get; private set; }
 
     /// <summary>Fires on the calling (background) thread whenever state changes.</summary>
     public event Action? StateChanged;
@@ -63,25 +64,49 @@ public sealed class ContentDatabaseService
     /// Returns an empty list when the database does not exist yet.
     /// </summary>
     public IReadOnlyList<ContentPackageInfo> GetPackages() =>
-        DatabasePath is { } p ? AuroraContentImporter.GetPackages(p) : [];
+        TryRead(
+            "read content packages",
+            () => DatabasePath is { } p ? AuroraContentImporter.GetPackages(p) : [],
+            []);
 
     public ContentDatabaseMetadata? GetMetadata() =>
-        DatabasePath is { } p ? AuroraContentImporter.GetMetadata(p) : null;
+        TryRead(
+            "read database metadata",
+            () => DatabasePath is { } p ? AuroraContentImporter.GetMetadata(p) : null,
+            fallback: null);
 
     public ContentDatabaseHealthReport? GetHealthReport() =>
-        DatabasePath is { } p ? AuroraContentImporter.GetHealthReport(p) : null;
+        TryRead(
+            "read database health",
+            () => DatabasePath is { } p ? AuroraContentImporter.GetHealthReport(p) : null,
+            fallback: null);
 
     /// <summary>
     /// Toggles a package's enabled state and rebuilds the resolution cache.
     /// Fires <see cref="StateChanged"/> on completion so the UI can refresh.
     /// The caller should prompt for an element reload after calling this.
     /// </summary>
-    public Task SetPackageEnabledAsync(long packageId, bool enabled) => Task.Run(() =>
+    public async Task<string?> SetPackageEnabledAsync(long packageId, bool enabled)
     {
-        if (DatabasePath is not { } p) return;
-        AuroraContentImporter.SetPackageEnabled(p, packageId, enabled);
-        StateChanged?.Invoke();
-    });
+        try
+        {
+            if (DatabasePath is not { } p)
+                return "Content database path could not be determined.";
+
+            await Task.Run(() => AuroraContentImporter.SetPackageEnabled(p, packageId, enabled));
+            LastReadFailure = null;
+            return null;
+        }
+        catch (Exception ex)
+        {
+            RecordReadFailure("update content package", ex);
+            return ex.Message;
+        }
+        finally
+        {
+            StateChanged?.Invoke();
+        }
+    }
 
     public void NotifyContentDirectoryChanged()
     {
@@ -90,7 +115,31 @@ public sealed class ContentDatabaseService
         Progress   = null;
         LastResult = null;
         IsStale    = false;
+        LastReadFailure = null;
         StateChanged?.Invoke();
+    }
+
+    private T TryRead<T>(string operation, Func<T> action, T fallback)
+    {
+        try
+        {
+            T result = action();
+            LastReadFailure = null;
+            return result;
+        }
+        catch (Exception ex)
+        {
+            RecordReadFailure(operation, ex);
+            return fallback;
+        }
+    }
+
+    private void RecordReadFailure(string operation, Exception ex)
+    {
+        string message = $"{operation}: {ex.Message}";
+        if (!string.Equals(LastReadFailure, message, StringComparison.Ordinal))
+            DebugLogService.Instance.Warn($"Content database could not {operation}.", ex.ToString());
+        LastReadFailure = message;
     }
 
     // ── Staleness check ──────────────────────────────────────────────────────

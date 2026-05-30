@@ -19,6 +19,26 @@ public sealed record ContentPackageInfo(
 public static class AuroraContentImporter
 {
     /// <summary>
+    /// Opens an existing database for queries. Normal reads remain read-only, but a leftover
+    /// rollback journal requires a writable connection so SQLite can recover an interrupted
+    /// transaction before serving data.
+    /// </summary>
+    public static SqliteConnection OpenReadableConnection(string sqlitePath)
+    {
+        var connection = new SqliteConnection(
+            new SqliteConnectionStringBuilder
+            {
+                DataSource = sqlitePath,
+                Mode = File.Exists(sqlitePath + "-journal")
+                    ? SqliteOpenMode.ReadWrite
+                    : SqliteOpenMode.ReadOnly,
+                Pooling = false
+            }.ToString());
+        connection.Open();
+        return connection;
+    }
+
+    /// <summary>
     /// Returns true if the SQLite database does not exist or is out of date
     /// relative to the XML files in <paramref name="contentDirectory"/>.
     /// </summary>
@@ -70,9 +90,7 @@ public static class AuroraContentImporter
         if (!File.Exists(sqlitePath)) return [];
 
         var result = new List<ContentPackageInfo>();
-        using var connection = new SqliteConnection(
-            new SqliteConnectionStringBuilder { DataSource = sqlitePath, Mode = SqliteOpenMode.ReadOnly }.ToString());
-        connection.Open();
+        using var connection = OpenReadableConnection(sqlitePath);
 
         using var cmd = connection.CreateCommand();
         cmd.CommandText = @"

@@ -328,6 +328,12 @@
                         {
                             <div style="color: var(--mud-palette-text-secondary); font-size: 13px;">Reloading elements…</div>
                         }
+                        else if (!string.IsNullOrWhiteSpace(ContentDb.LastReadFailure))
+                        {
+                            <div style="color: var(--mud-palette-warning); font-size: 13px;">
+                                Database read failed: @ContentDb.LastReadFailure
+                            </div>
+                        }
                         else if (ContentDb.LastResult != null)
                         {
                             <div style="color: @(ContentDb.LastResult.Success ? "var(--mud-palette-success)" : "var(--mud-palette-error)"); font-size: 13px;">
@@ -1140,7 +1146,16 @@
 
     private async Task TogglePackageAsync(long packageId, bool enabled)
     {
-        await ContentDb.SetPackageEnabledAsync(packageId, enabled);
+        string? error = await ContentDb.SetPackageEnabledAsync(packageId, enabled);
+        if (error != null)
+        {
+            Snackbar.Add(
+                $"Could not update content source: {error}",
+                Severity.Error,
+                cfg => cfg.VisibleStateDuration = 8000);
+            return;
+        }
+
         _needsContentReload = true;
         StateHasChanged();
     }

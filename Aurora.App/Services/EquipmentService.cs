@@ -19,6 +19,19 @@ public static class EquipmentService
         "Tool", "Mount", "Vehicle", "Pack", "Gear", "Adventuring Gear"
     };
 
+    private static readonly IReadOnlyDictionary<string, IReadOnlyList<ExtractionRecipeEntry>> SupplementalExtractionRecipes =
+        new Dictionary<string, IReadOnlyList<ExtractionRecipeEntry>>(StringComparer.OrdinalIgnoreCase)
+        {
+            // The PHB describes these contents in prose but Aurora XML does not include an <extract>.
+            // Reuse the ink pen element as a persisted inventory backing item for quills.
+            ["ID_WOTC_PHB_ITEM_TOOL_CALLIGRAPHERS_SUPPLIES"] =
+            [
+                new("ID_WOTC_PHB_ITEM_INK_1OUNCEBOTTLE", 1),
+                new("ID_WOTC_PHB_ITEM_PARCHMENT_ONESHEET", 12),
+                new("ID_WOTC_PHB_ITEM_INKPEN", 3, "Quill"),
+            ],
+        };
+
     // ── General inventory ───────────────────────────────────────────────────────
 
     /// <summary>
@@ -257,19 +270,19 @@ public static class EquipmentService
         var item = FindInventoryItem(character, identifier);
         if (item == null || !IsExtractable(item)) return [];
 
-        return item.Item.Extractables
+        return GetExtractionRecipe(item)
             .Select(entry =>
             {
-                var element = DataManager.Current.ElementsCollection.GetElement(entry.Key);
-                var name = element?.Name ?? entry.Key;
-                return new EquipmentPackComponent(entry.Key, Math.Max(1, entry.Value), name);
+                var element = DataManager.Current.ElementsCollection.GetElement(entry.ElementId);
+                var name = entry.AlternativeName ?? element?.Name ?? entry.ElementId;
+                return new EquipmentPackComponent(entry.ElementId, entry.Amount, name);
             })
             .ToList();
     }
 
     /// <summary>
-    /// Extracts an equipment pack into its declared component items and consumes one pack.
-    /// Mirrors the legacy WPF path that reads Item.Extractables from the parsed XML model.
+    /// Extracts an equipment pack into its component items and consumes one pack.
+    /// Uses the parsed legacy XML model, with supplemental recipes for prose-defined contents.
     /// </summary>
     public static EquipmentPackExtractionResult ExtractPack(Character character, string identifier)
     {
@@ -282,34 +295,40 @@ public static class EquipmentService
         var missing = new List<string>();
         var pending = new List<PendingExtractedItem>();
 
-        foreach (var entry in pack.Item.Extractables)
+        foreach (var entry in GetExtractionRecipe(pack))
         {
-            var element = DataManager.Current.ElementsCollection.GetElement(entry.Key);
+            var element = DataManager.Current.ElementsCollection.GetElement(entry.ElementId);
             if (element == null)
             {
-                missing.Add(entry.Key);
+                missing.Add(entry.ElementId);
                 continue;
             }
 
-            var amount = Math.Max(1, entry.Value);
-            var component = new EquipmentPackComponent(entry.Key, amount, element.Name);
+            var component = new EquipmentPackComponent(
+                entry.ElementId,
+                entry.Amount,
+                entry.AlternativeName ?? element.Name);
             RefactoredEquipmentItem? existingStack = null;
             RefactoredEquipmentItem? newItem = null;
 
             if (IsStackableElement(element))
             {
                 existingStack = character.Inventory.Items.FirstOrDefault(item =>
-                    string.Equals(item.Item?.Id, element.Id, StringComparison.OrdinalIgnoreCase));
+                    string.Equals(item.Item?.Id, element.Id, StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(
+                        NormalizeAlternativeName(item.AlternativeName),
+                        NormalizeAlternativeName(entry.AlternativeName),
+                        StringComparison.OrdinalIgnoreCase));
             }
 
             if (existingStack == null)
             {
-                newItem = CreateInventoryItem(element, amount);
+                newItem = CreateInventoryItem(element, entry.Amount, entry.AlternativeName);
             }
 
             if (existingStack == null && newItem == null)
             {
-                missing.Add(entry.Key);
+                missing.Add(entry.ElementId);
                 continue;
             }
 
@@ -379,11 +398,12 @@ public static class EquipmentService
         character.Inventory.Items.FirstOrDefault(i => i.Identifier == identifier);
 
     private static bool IsExtractable(RefactoredEquipmentItem item) =>
-        item.Item?.IsExtractable == true && item.Item.Extractables.Count > 0;
+        GetExtractionRecipe(item).Count > 0;
 
     private static RefactoredEquipmentItem? CreateInventoryItem(
         Builder.Data.ElementBase element,
-        int amount)
+        int amount,
+        string? alternativeName = null)
     {
         var elementType = element.GetType();
 
@@ -407,8 +427,28 @@ public static class EquipmentService
 
         var item = (RefactoredEquipmentItem)ctor.Invoke(args);
         item.Amount = Math.Max(1, amount);
+        if (!string.IsNullOrWhiteSpace(alternativeName))
+            item.AlternativeName = alternativeName;
         return item;
     }
+
+    private static IReadOnlyList<ExtractionRecipeEntry> GetExtractionRecipe(RefactoredEquipmentItem item)
+    {
+        if (item.Item?.IsExtractable == true && item.Item.Extractables.Count > 0)
+        {
+            return item.Item.Extractables
+                .Select(entry => new ExtractionRecipeEntry(entry.Key, entry.Value))
+                .ToList();
+        }
+
+        return item.Item != null &&
+               SupplementalExtractionRecipes.TryGetValue(item.Item.Id, out var recipe)
+            ? recipe
+            : [];
+    }
+
+    private static string NormalizeAlternativeName(string? name) =>
+        string.IsNullOrWhiteSpace(name) ? "" : name.Trim();
 
     private static bool IsStackableElement(Builder.Data.ElementBase element)
     {
@@ -438,6 +478,11 @@ public static class EquipmentService
         EquipmentPackComponent Component,
         RefactoredEquipmentItem? ExistingStack,
         RefactoredEquipmentItem? NewItem);
+
+    private sealed record ExtractionRecipeEntry(string ElementId, int RawAmount, string? AlternativeName = null)
+    {
+        public int Amount => Math.Max(1, RawAmount);
+    }
 
     // ── Custom features (Additional-X proxies + Supernatural Gifts) ─────────────────
 

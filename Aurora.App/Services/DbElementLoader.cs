@@ -182,8 +182,7 @@ internal static class DbElementLoader
         {
             try
             {
-                using var conn = new SqliteConnection($"Data Source={dbPath};Mode=ReadOnly;");
-                conn.Open();
+                using var conn = AuroraContentImporter.OpenReadableConnection(dbPath);
                 using var cmd = conn.CreateCommand();
                 cmd.CommandText = @"
                     SELECT DISTINCT sb.name
@@ -298,8 +297,7 @@ internal static class DbElementLoader
 
     private static DbLoadResult LoadFromDb(string dbPath, ElementBaseCollection target)
     {
-        using var conn = new SqliteConnection($"Data Source={dbPath};Mode=ReadOnly");
-        conn.Open();
+        using var conn = AuroraContentImporter.OpenReadableConnection(dbPath);
 
         int? schemaVersion = QuerySchemaVersion(conn);
         HashSet<string> existingTables = QueryExistingTables(conn);

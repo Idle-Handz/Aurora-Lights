@@ -255,9 +255,7 @@ internal static class AuroraSqliteImporter
 
         try
         {
-            using var conn = new SqliteConnection(
-                new SqliteConnectionStringBuilder { DataSource = sqlitePath, Mode = SqliteOpenMode.ReadOnly }.ToString());
-            conn.Open();
+            using var conn = AuroraContentImporter.OpenReadableConnection(sqlitePath);
 
             // Check schema exists (if not, DB is stale/empty).
             using (var chk = conn.CreateCommand())
@@ -301,9 +299,7 @@ internal static class AuroraSqliteImporter
     {
         if (!File.Exists(sqlitePath)) return null;
 
-        using var conn = new SqliteConnection(
-            new SqliteConnectionStringBuilder { DataSource = sqlitePath, Mode = SqliteOpenMode.ReadOnly }.ToString());
-        conn.Open();
+        using var conn = AuroraContentImporter.OpenReadableConnection(sqlitePath);
 
         using (var tableCheck = conn.CreateCommand())
         {
@@ -339,9 +335,7 @@ WHERE singleton_id = 1;";
     {
         if (!File.Exists(sqlitePath)) return null;
 
-        using var conn = new SqliteConnection(
-            new SqliteConnectionStringBuilder { DataSource = sqlitePath, Mode = SqliteOpenMode.ReadOnly }.ToString());
-        conn.Open();
+        using var conn = AuroraContentImporter.OpenReadableConnection(sqlitePath);
 
         int actionableUnresolvedLinks = ExecuteCount(
             conn,

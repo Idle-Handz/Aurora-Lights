@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Net;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using Aurora.Importer;
 using Builder.Presentation.Services.Data;
 using Microsoft.Data.Sqlite;
 
@@ -808,16 +809,7 @@ LIMIT 1;
     }
 
     private static SqliteConnection OpenReadOnlyConnection(string dbPath)
-    {
-        var builder = new SqliteConnectionStringBuilder
-        {
-            DataSource = dbPath,
-            Mode = SqliteOpenMode.ReadOnly
-        };
-        var conn = new SqliteConnection(builder.ToString());
-        conn.Open();
-        return conn;
-    }
+        => AuroraContentImporter.OpenReadableConnection(dbPath);
 
     private static string GetString(object target, string propertyName)
     {
