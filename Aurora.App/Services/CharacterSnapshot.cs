@@ -149,7 +149,7 @@ public sealed class CharacterSnapshot
             Deity       = c.Deity      ?? "",
             Dragonmark  = c.Dragonmark ?? "",
 
-            ArmorClass  = c.ArmorClass,
+            ArmorClass  = GetStatGroupValue(cm, "ac"),
             MaxHp       = c.MaxHp,
             Speed       = c.Speed,
             Initiative  = c.Initiative,
@@ -1062,7 +1062,8 @@ public sealed class CharacterSnapshot
                 a.Range.Content ?? ""))
             .ToList();
 
-        ArmorClass = c.ArmorClass;
+        ArmorClass = CharacterManager.Current.StatisticsCalculator.StatisticValues
+            .FirstOrDefault(g => g.GroupName.Equals("ac", StringComparison.OrdinalIgnoreCase))?.Sum() ?? c.ArmorClass;
         Initiative = c.Initiative;
         Speed      = c.Speed;
         MaxHp      = c.MaxHp;

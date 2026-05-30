@@ -28,6 +28,28 @@
     </MudTooltip>
 </div>
 
+<div class="session-combat-strip">
+    <div class="combat-stat">
+        <div class="combat-stat-value">@_snap.ArmorClass</div>
+        <div class="combat-stat-label">AC</div>
+    </div>
+    <div class="combat-sep"></div>
+    <div class="combat-stat">
+        <div class="combat-stat-value">@FormatBonus(_snap.Initiative)</div>
+        <div class="combat-stat-label">Initiative</div>
+    </div>
+    <div class="combat-sep"></div>
+    <div class="combat-stat">
+        <div class="combat-stat-value">@FormatBonus(_snap.Proficiency)</div>
+        <div class="combat-stat-label">Proficiency</div>
+    </div>
+    <div class="combat-sep"></div>
+    <div class="combat-stat">
+        <div class="combat-stat-value">@_snap.Speed ft.</div>
+        <div class="combat-stat-label">Speed</div>
+    </div>
+</div>
+
 <div class="detail-advancement-strip">
     <div class="detail-advancement-meta">
         <div class="section-label" style="margin-bottom: 6px;">Advancement</div>
@@ -354,6 +376,8 @@
 </div>
 
 @code {
+    private static string FormatBonus(int value) => value >= 0 ? $"+{value}" : value.ToString();
+
     private CharacterTab? _tab;
     private CharacterSnapshot? _snap;
     private SessionState _s = new();

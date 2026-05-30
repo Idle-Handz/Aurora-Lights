@@ -2621,6 +2621,17 @@ html, body {
 }
 
 /* ── Session page ── */
+.session-combat-strip {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 12px;
+    padding: 10px 16px;
+    background: var(--mud-palette-surface, #313244);
+    border-radius: 8px;
+    flex-wrap: wrap;
+}
+
 .session-card {
     background: var(--mud-palette-surface, #313244);
     border-radius: 8px;
