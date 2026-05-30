@@ -33,6 +33,23 @@
         </div>
     }
 
+    @if (Characters.Count > 0)
+    {
+        <div class="character-browser-search-row">
+            <input class="character-browser-search"
+                   type="search"
+                   placeholder="Search characters…"
+                   value="@_searchText"
+                   @oninput="OnSearchInput" />
+            @if (!string.IsNullOrWhiteSpace(_searchText))
+            {
+                <span class="character-browser-search-count">
+                    @_filtered.Count of @Characters.Count
+                </span>
+            }
+        </div>
+    }
+
     @if (!string.IsNullOrWhiteSpace(BusyMessage))
     {
         <div class="character-browser-status">@BusyMessage</div>
@@ -45,6 +62,10 @@
         {
             <p class="character-browser-empty-sub">@EmptySubMessage</p>
         }
+    }
+    else if (_filtered.Count == 0)
+    {
+        <p class="character-browser-empty">No characters match "@_searchText".</p>
     }
     else
     {
@@ -171,6 +192,8 @@
 </div>
 
 @code {
+    private string _searchText = "";
+    private IReadOnlyList<CharacterBrowserEntry> _filtered = [];
     private IReadOnlyList<CharacterBrowserEntry> _favorites = [];
     private IReadOnlyList<IGrouping<string, CharacterBrowserEntry>> _groups = [];
 
@@ -216,13 +239,31 @@
     [Parameter]
     public RenderFragment? AdditionalHeaderContent { get; set; }
 
-    protected override void OnParametersSet()
+    protected override void OnParametersSet() => ApplyFilter();
+
+    private void OnSearchInput(ChangeEventArgs e)
     {
-        _favorites = Characters.Where(character => character.IsFavorite).ToList();
-        _groups = Characters
-            .Where(character => !character.IsFavorite)
-            .GroupBy(character => string.IsNullOrWhiteSpace(character.GroupName) ? "Characters" : character.GroupName!)
-            .OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase)
+        _searchText = e.Value?.ToString() ?? "";
+        ApplyFilter();
+    }
+
+    private void ApplyFilter()
+    {
+        _filtered = string.IsNullOrWhiteSpace(_searchText)
+            ? Characters
+            : Characters.Where(c =>
+                c.DisplayName.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
+                c.PrimaryText.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
+                (c.SecondaryText?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) == true) ||
+                (c.CaptionText?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) == true) ||
+                (c.GroupName?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) == true))
+            .ToList();
+
+        _favorites = _filtered.Where(c => c.IsFavorite).ToList();
+        _groups = _filtered
+            .Where(c => !c.IsFavorite)
+            .GroupBy(c => string.IsNullOrWhiteSpace(c.GroupName) ? "Characters" : c.GroupName!)
+            .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
             .ToList();
     }
 
