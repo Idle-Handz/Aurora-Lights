@@ -237,8 +237,8 @@ public sealed class CharacterSnapshot
                 .Where(a => a.IsDisplayed)
                 .Select(a => new AttackEntry(
                     a.Name.Content ?? "",
-                    a.DisplayCalculatedAttack ?? a.Attack.Content ?? "",
-                    a.DisplayCalculatedDamage ?? a.Damage.Content ?? "",
+                    a.Attack.Content ?? a.DisplayCalculatedAttack ?? "",
+                    a.Damage.Content ?? a.DisplayCalculatedDamage ?? "",
                     a.Range.Content ?? ""))
                 .ToList(),
 
