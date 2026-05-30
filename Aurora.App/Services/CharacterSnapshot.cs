@@ -149,7 +149,7 @@ public sealed class CharacterSnapshot
             Deity       = c.Deity      ?? "",
             Dragonmark  = c.Dragonmark ?? "",
 
-            ArmorClass  = GetStatGroupValue(cm, "ac"),
+            ArmorClass  = GetStatGroupValue(cm, "ac") is var ac && ac > 0 ? ac : c.ArmorClass,
             MaxHp       = c.MaxHp,
             Speed       = c.Speed,
             Initiative  = c.Initiative,
@@ -275,9 +275,11 @@ public sealed class CharacterSnapshot
     /// </summary>
     private static int GetStatGroupValue(CharacterManager cm, string groupName)
     {
-        var group = cm.StatisticsCalculator.StatisticValues
-            .FirstOrDefault(g => g.GroupName.Equals(groupName, StringComparison.OrdinalIgnoreCase));
-        return group?.Sum() ?? 0;
+        var values = cm.StatisticsCalculator?.StatisticValues;
+        if (values is null) return 0;
+        return values
+            .FirstOrDefault(g => g.GroupName.Equals(groupName, StringComparison.OrdinalIgnoreCase))
+            ?.Sum() ?? 0;
     }
 
     private static CompanionSnapshot? BuildCompanionSnapshot(Character c)

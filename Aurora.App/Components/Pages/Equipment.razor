@@ -8,7 +8,6 @@
 @using Builder.Presentation.Models.Equipment
 @using Builder.Presentation.ViewModels.Shell.Items
 @using Builder.Presentation
-@using Builder.Presentation.Services.Data
 
 @if (_initError is not null)
 {
@@ -462,10 +461,10 @@
         Tabs.ActiveTab?.Character?.Inventory?.Items
             .FirstOrDefault(i => i.Identifier == identifier);
 
-    private void RefreshEquipment()
+    private void RefreshEquipment(bool reprocess = true)
     {
         if (Tabs.ActiveTab is not { Character: { } character, Snapshot: { } snap }) return;
-        CharacterManager.Current.ReprocessCharacter();
+        if (reprocess) CharacterManager.Current.ReprocessCharacter();
         snap.RefreshEquipmentFromCharacter(character);
         _snap = snap;
         RefreshGearNames();
@@ -680,7 +679,7 @@
             liveItem.AlternativeName = edit.AlternativeName;
             liveItem.Notes           = edit.Notes;
 
-            RefreshEquipment();
+            RefreshEquipment(reprocess: false);
             file.SaveInventoryItems(character);
             MarkDirty();
             StateHasChanged();
