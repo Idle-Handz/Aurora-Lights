@@ -374,7 +374,16 @@ SELECT
     COALESCE(item_meta.weight_text, ''),
     COALESCE(comp.creature_type, ''),
     COALESCE(comp.size_text, ''),
-    COALESCE(comp.challenge_text, '')
+    COALESCE(comp.challenge_text, ''),
+    COALESCE(sp.casting_time_text, ''),
+    COALESCE(sp.range_text, ''),
+    COALESCE(sp.duration_text, ''),
+    COALESCE(sp.has_verbal, 0),
+    COALESCE(sp.has_somatic, 0),
+    COALESCE(sp.has_material, 0),
+    COALESCE(sp.material_text, ''),
+    COALESCE(sp.is_concentration, 0),
+    COALESCE(sp.is_ritual, 0)
 FROM resolved_elements_cache AS rec
 JOIN elements AS e
     ON e.element_id = rec.winning_element_id
@@ -443,7 +452,17 @@ ORDER BY e.name COLLATE NOCASE;
             string creatureType = reader.IsDBNull(11) ? string.Empty : reader.GetString(11);
             string creatureSize = reader.IsDBNull(12) ? string.Empty : reader.GetString(12);
             string challenge = reader.IsDBNull(13) ? string.Empty : reader.GetString(13);
-            string searchText = string.Join(" ", name, type, source, spellSchool, itemRarity, displayWeight, creatureType, creatureSize, challenge, string.Join(" ", spellClasses), preview);
+            string spellCastingTime = reader.IsDBNull(14) ? string.Empty : reader.GetString(14);
+            string spellRange = reader.IsDBNull(15) ? string.Empty : reader.GetString(15);
+            string spellDuration = reader.IsDBNull(16) ? string.Empty : reader.GetString(16);
+            string spellComponents = FormatSpellComponents(
+                !reader.IsDBNull(17) && reader.GetInt64(17) != 0,
+                !reader.IsDBNull(18) && reader.GetInt64(18) != 0,
+                !reader.IsDBNull(19) && reader.GetInt64(19) != 0,
+                reader.IsDBNull(20) ? string.Empty : reader.GetString(20));
+            bool spellConcentration = !reader.IsDBNull(21) && reader.GetInt64(21) != 0;
+            bool spellRitual = !reader.IsDBNull(22) && reader.GetInt64(22) != 0;
+            string searchText = string.Join(" ", name, type, source, spellSchool, spellCastingTime, spellRange, spellDuration, spellComponents, itemRarity, displayWeight, creatureType, creatureSize, challenge, string.Join(" ", spellClasses), preview);
 
             rows.Add(new CompendiumEntryModel(
                 id,
@@ -462,6 +481,12 @@ ORDER BY e.name COLLATE NOCASE;
                 creatureType,
                 creatureSize,
                 challenge,
+                spellCastingTime,
+                spellRange,
+                spellComponents,
+                spellDuration,
+                spellConcentration,
+                spellRitual,
                 false));
         }
 
@@ -479,7 +504,16 @@ ORDER BY e.name COLLATE NOCASE;
         cmd.CommandText = """
 SELECT
     COALESCE(markup.raw_xml, ''),
-    COALESCE(description.body, '')
+    COALESCE(description.body, ''),
+    COALESCE(sp.casting_time_text, ''),
+    COALESCE(sp.range_text, ''),
+    COALESCE(sp.duration_text, ''),
+    COALESCE(sp.has_verbal, 0),
+    COALESCE(sp.has_somatic, 0),
+    COALESCE(sp.has_material, 0),
+    COALESCE(sp.material_text, ''),
+    COALESCE(sp.is_concentration, 0),
+    COALESCE(sp.is_ritual, 0)
 FROM resolved_elements_cache AS rec
 JOIN elements AS e
     ON e.element_id = rec.winning_element_id
@@ -489,6 +523,8 @@ LEFT JOIN element_texts AS description
    AND description.ordinal = 1
 LEFT JOIN element_text_markup AS markup
     ON markup.element_text_id = description.element_text_id
+LEFT JOIN spells AS sp
+    ON sp.element_id = e.element_id
 WHERE e.aurora_id = $auroraId
 LIMIT 1;
 """;
@@ -514,12 +550,29 @@ LIMIT 1;
             ? fallback.SearchText
             : string.Join(" ", fallback.SearchText, plain);
 
+        string spellCastingTime = reader.IsDBNull(2) ? string.Empty : reader.GetString(2);
+        string spellRange = reader.IsDBNull(3) ? string.Empty : reader.GetString(3);
+        string spellDuration = reader.IsDBNull(4) ? string.Empty : reader.GetString(4);
+        string spellComponents = FormatSpellComponents(
+            !reader.IsDBNull(5) && reader.GetInt64(5) != 0,
+            !reader.IsDBNull(6) && reader.GetInt64(6) != 0,
+            !reader.IsDBNull(7) && reader.GetInt64(7) != 0,
+            reader.IsDBNull(8) ? string.Empty : reader.GetString(8));
+        bool spellConcentration = !reader.IsDBNull(9) && reader.GetInt64(9) != 0;
+        bool spellRitual = !reader.IsDBNull(10) && reader.GetInt64(10) != 0;
+
         return fallback with
         {
             Summary = string.IsNullOrWhiteSpace(summary) ? fallback.Summary : summary,
             DescriptionHtml = descriptionHtml,
-            SearchText = searchText,
-            SearchKey = searchText.ToUpperInvariant(),
+            SpellCastingTime = string.IsNullOrWhiteSpace(spellCastingTime) ? fallback.SpellCastingTime : spellCastingTime,
+            SpellRange = string.IsNullOrWhiteSpace(spellRange) ? fallback.SpellRange : spellRange,
+            SpellComponents = string.IsNullOrWhiteSpace(spellComponents) ? fallback.SpellComponents : spellComponents,
+            SpellDuration = string.IsNullOrWhiteSpace(spellDuration) ? fallback.SpellDuration : spellDuration,
+            SpellIsConcentration = spellConcentration || fallback.SpellIsConcentration,
+            SpellIsRitual = spellRitual || fallback.SpellIsRitual,
+            SearchText = string.Join(" ", searchText, spellCastingTime, spellRange, spellDuration, spellComponents),
+            SearchKey = string.Join(" ", searchText, spellCastingTime, spellRange, spellDuration, spellComponents).ToUpperInvariant(),
             HasComputedDetail = true
         };
     }
@@ -668,6 +721,13 @@ LIMIT 1;
                 .OrderBy(s => s)
                 .ToList()
             : [];
+        bool isSpell = string.Equals(type, "Spell", StringComparison.OrdinalIgnoreCase);
+        string spellCastingTime = isSpell ? GetString(element, "CastingTime") : string.Empty;
+        string spellRange = isSpell ? GetString(element, "Range") : string.Empty;
+        string spellDuration = isSpell ? GetString(element, "Duration") : string.Empty;
+        string spellComponents = isSpell ? InvokeStringMethod(element, "GetComponentsString") : string.Empty;
+        bool spellConcentration = isSpell && GetBool(element, "IsConcentration") == true;
+        bool spellRitual = isSpell && GetBool(element, "IsRitual") == true;
         string itemRarity = isItemLike ? GetSetterValue(element, "rarity") : string.Empty;
         bool requiresAttunement = isItemLike && string.Equals(GetSetterValue(element, "attunement"), "true", StringComparison.OrdinalIgnoreCase);
         string displayWeight = isItemLike ? GetString(element, "DisplayWeight") : string.Empty;
@@ -683,7 +743,7 @@ LIMIT 1;
             source,
             preview,
             string.Empty,
-            string.Join(" ", name, type, source, spellSchool, itemRarity, displayWeight, creatureType, creatureSize, challenge, string.Join(" ", spellClasses), preview),
+            string.Join(" ", name, type, source, spellSchool, spellCastingTime, spellRange, spellDuration, spellComponents, itemRarity, displayWeight, creatureType, creatureSize, challenge, string.Join(" ", spellClasses), preview),
             spellLevel,
             spellSchool,
             spellClasses,
@@ -693,6 +753,12 @@ LIMIT 1;
             creatureType,
             creatureSize,
             challenge,
+            spellCastingTime,
+            spellRange,
+            spellComponents,
+            spellDuration,
+            spellConcentration,
+            spellRitual,
             false);
     }
 
@@ -724,6 +790,22 @@ LIMIT 1;
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(value => value)
             .ToList();
+
+    private static string FormatSpellComponents(bool verbal, bool somatic, bool material, string materialText)
+    {
+        List<string> components = [];
+        if (verbal) components.Add("V");
+        if (somatic) components.Add("S");
+        if (material)
+        {
+            string materialComponent = "M";
+            if (!string.IsNullOrWhiteSpace(materialText))
+                materialComponent += $" ({materialText.Trim()})";
+            components.Add(materialComponent);
+        }
+
+        return string.Join(", ", components);
+    }
 
     private static SqliteConnection OpenReadOnlyConnection(string dbPath)
     {
@@ -777,6 +859,21 @@ LIMIT 1;
         return [];
     }
 
+    private static string InvokeStringMethod(object target, string methodName)
+    {
+        try
+        {
+            return target.GetType()
+                .GetMethod(methodName, BindingFlags.Instance | BindingFlags.Public, Type.EmptyTypes)
+                ?.Invoke(target, null)
+                ?.ToString() ?? string.Empty;
+        }
+        catch
+        {
+            return string.Empty;
+        }
+    }
+
     private static string GetSetterValue(object target, string setterName)
     {
         PropertyInfo? property = GetProperty(target, "ElementSetters");
@@ -821,6 +918,12 @@ public sealed record CompendiumEntryModel(
     string CreatureType,
     string CreatureSize,
     string ChallengeText,
+    string SpellCastingTime,
+    string SpellRange,
+    string SpellComponents,
+    string SpellDuration,
+    bool SpellIsConcentration,
+    bool SpellIsRitual,
     bool HasComputedDetail)
 {
     public string SpellLevelLabel => SpellLevel switch
@@ -832,5 +935,11 @@ public sealed record CompendiumEntryModel(
 
     public bool IsItemLike => CompendiumService.IsItemLike(Type);
     public bool IsCompanionLike => Type.StartsWith("Companion", StringComparison.OrdinalIgnoreCase);
+    public bool HasSpellPropertyDetails =>
+        !string.IsNullOrWhiteSpace(SpellCastingTime) ||
+        !string.IsNullOrWhiteSpace(SpellRange) ||
+        !string.IsNullOrWhiteSpace(SpellComponents) ||
+        !string.IsNullOrWhiteSpace(SpellDuration);
+    public bool HasSpellDetails => HasSpellPropertyDetails || SpellIsConcentration || SpellIsRitual;
     public string SearchKey { get; init; } = SearchText.ToUpperInvariant();
 }

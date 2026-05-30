@@ -1,5 +1,9 @@
 using Microsoft.Maui.Storage;
 
+#if MACCATALYST
+using CommunityToolkit.Maui.Storage;
+#endif
+
 namespace Aurora.App.Services;
 
 /// <summary>

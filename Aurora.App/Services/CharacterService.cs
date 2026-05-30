@@ -7,6 +7,10 @@ using Builder.Presentation.Services.Data;
 using Builder.Presentation.Views.Sliders;
 using Microsoft.Maui.Storage;
 
+#if MACCATALYST
+using CommunityToolkit.Maui.Storage;
+#endif
+
 namespace Aurora.App.Services;
 
 public sealed record NewCharacterInfo(string Name, string PlayerName);

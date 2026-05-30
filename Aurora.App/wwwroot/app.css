@@ -538,6 +538,38 @@ html, body {
     align-items: center;
 }
 
+.compendium-spell-props {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 18px;
+    margin: 0 0 18px;
+    padding: 12px 0;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.compendium-spell-prop {
+    display: grid;
+    grid-template-columns: 104px minmax(0, 1fr);
+    gap: 8px;
+    align-items: baseline;
+    min-width: 0;
+}
+
+.compendium-spell-prop-label {
+    color: var(--mud-palette-text-disabled, #6c7086);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.compendium-spell-prop-value {
+    min-width: 0;
+    color: var(--mud-palette-text-primary, #cdd6f4);
+    line-height: 1.35;
+}
+
 .compendium-description {
     line-height: 1.55;
 }
@@ -3413,6 +3445,10 @@ input.equipment-currency-input::-webkit-inner-spin-button { -webkit-appearance: 
     .compendium-results-panel {
         max-height: 40vh;
         min-height: 120px;
+    }
+
+    .compendium-spell-props {
+        grid-template-columns: 1fr;
     }
 
     .compendium-filter-actions {

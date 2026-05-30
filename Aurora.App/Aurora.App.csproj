@@ -79,6 +79,9 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.0" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="9.*" />
+    <!-- Mac Catalyst folder selection is provided by the toolkit core essentials API. -->
+    <PackageReference Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'"
+                      Include="CommunityToolkit.Maui.Core" Version="13.0.0" />
     <!-- Velopack: Windows-only; provides VelopackApp bootstrap + UpdateManager for in-app apply. -->
     <PackageReference Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'"
                       Include="Velopack" Version="1.0.1" />

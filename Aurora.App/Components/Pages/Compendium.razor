@@ -278,6 +278,14 @@
                             {
                                 <MudText Typo="Typo.caption" Color="Color.Secondary">@_selectedEntry.SpellSchool</MudText>
                             }
+                            @if (_selectedEntry.SpellIsRitual)
+                            {
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">ritual</MudText>
+                            }
+                            @if (_selectedEntry.SpellIsConcentration)
+                            {
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">concentration</MudText>
+                            }
                         }
                     </MudStack>
                 </MudStack>
@@ -291,6 +299,16 @@
                             <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@spellClass</MudChip>
                         }
                     </MudStack>
+                }
+
+                @if (string.Equals(_selectedEntry.Type, "Spell", StringComparison.OrdinalIgnoreCase) && _selectedEntry.HasSpellPropertyDetails)
+                {
+                    <div class="compendium-spell-props">
+                        @SpellDetailRow("Casting Time", _selectedEntry.SpellCastingTime)
+                        @SpellDetailRow("Range", _selectedEntry.SpellRange)
+                        @SpellDetailRow("Components", _selectedEntry.SpellComponents)
+                        @SpellDetailRow("Duration", _selectedEntry.SpellDuration)
+                    </div>
                 }
 
                 @if (_selectedEntry.IsItemLike && (!string.IsNullOrWhiteSpace(_selectedEntry.ItemRarity) || _selectedEntry.RequiresAttunement || !string.IsNullOrWhiteSpace(_selectedEntry.DisplayWeight)))
@@ -391,6 +409,24 @@
     private string SearchHint => string.Equals(_selectedType, "All", StringComparison.OrdinalIgnoreCase)
         ? "Tip: choose a type like Spell, Item, or Companion first, then search within that category."
         : $"Searching within {_selectedType}. Refine further with text or additional filters.";
+
+    private RenderFragment SpellDetailRow(string label, string value) => builder =>
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return;
+
+        builder.OpenElement(0, "div");
+        builder.AddAttribute(1, "class", "compendium-spell-prop");
+        builder.OpenElement(2, "span");
+        builder.AddAttribute(3, "class", "compendium-spell-prop-label");
+        builder.AddContent(4, label);
+        builder.CloseElement();
+        builder.OpenElement(5, "span");
+        builder.AddAttribute(6, "class", "compendium-spell-prop-value");
+        builder.AddContent(7, value);
+        builder.CloseElement();
+        builder.CloseElement();
+    };
 
     protected override void OnInitialized()
     {
