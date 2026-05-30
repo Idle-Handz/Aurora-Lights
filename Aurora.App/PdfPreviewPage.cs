@@ -221,12 +221,12 @@ internal sealed class PdfPreviewPage : ContentPage
         public override IQLPreviewItem GetPreviewItem(QLPreviewController controller, nint index) => new PreviewItem(_url);
     }
 
-    private class PreviewItem : QLPreviewItem
+    private class PreviewItem : NSObject, IQLPreviewItem
     {
         private readonly NSUrl _url;
         public PreviewItem(NSUrl url) => _url = url;
-        public override NSUrl ItemUrl => _url;
-        public override string ItemTitle => Path.GetFileName(_url.Path ?? string.Empty) ?? "";
+        public NSUrl? PreviewItemURL => _url;
+        public string? PreviewItemTitle => Path.GetFileName(_url.Path ?? string.Empty) ?? "";
     }
 #endif
 
