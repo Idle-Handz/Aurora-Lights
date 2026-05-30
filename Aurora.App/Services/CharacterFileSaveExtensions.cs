@@ -14,6 +14,57 @@ namespace Aurora.App.Services;
 public static class CharacterFileSaveExtensions
 {
     /// <summary>
+    /// Patches Notes1/Notes2 in the character XML from the snapshot.
+    /// </summary>
+    public static bool SaveNotes(this CharacterFile file, CharacterSnapshot snap)
+    {
+        var path = file.FilePath;
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+            return false;
+
+        try
+        {
+            var doc = LoadForPatch(file, out bool updateKnownStamp);
+
+            var input = doc.DocumentElement?["build"]?["input"];
+            if (input == null) return false;
+
+            var notesNode = input["notes"];
+            if (notesNode == null)
+            {
+                notesNode = doc.CreateElement("notes");
+                input.AppendChild(notesNode);
+            }
+
+            SetNoteByColumn(doc, notesNode, "left",  snap.Notes1);
+            SetNoteByColumn(doc, notesNode, "right", snap.Notes2);
+
+            SavePatch(file, doc, updateKnownStamp);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            DebugLogService.Instance.LogException(ex, "SaveNotes");
+            return false;
+        }
+    }
+
+    private static void SetNoteByColumn(XmlDocument doc, XmlNode notesNode, string column, string text)
+    {
+        XmlElement? existing = notesNode.ChildNodes
+            .OfType<XmlElement>()
+            .FirstOrDefault(n => n.Name == "note" &&
+                                 n.GetAttribute("column") == column);
+        if (existing == null)
+        {
+            existing = doc.CreateElement("note");
+            existing.SetAttribute("column", column);
+            notesNode.AppendChild(existing);
+        }
+        existing.InnerText = text;
+    }
+
+    /// <summary>
     /// Patches only the currency values in the character XML from the snapshot.
     /// Used by the Session page so coin edits can persist without implicitly
     /// saving unrelated pending text edits from other pages.

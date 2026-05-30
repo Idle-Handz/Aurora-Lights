@@ -358,6 +358,23 @@
     }
 </div>
 
+@* ── Notes ── *@
+<div class="session-card">
+    <div class="session-card-title">Notes</div>
+    <div class="session-notes-row">
+        <textarea class="session-notes-area"
+                  rows="4"
+                  placeholder="Notes…"
+                  value="@_snap.Notes1"
+                  @oninput="args => OnNotesInput(1, args.Value?.ToString() ?? string.Empty)"></textarea>
+        <textarea class="session-notes-area"
+                  rows="4"
+                  placeholder="More notes…"
+                  value="@_snap.Notes2"
+                  @oninput="args => OnNotesInput(2, args.Value?.ToString() ?? string.Empty)"></textarea>
+    </div>
+</div>
+
 @* ── Rest Buttons ── *@
 <div class="session-rest-row">
     <MudButton Variant="Variant.Outlined"
@@ -756,13 +773,26 @@
         }
     }
 
+    private void OnNotesInput(int field, string value)
+    {
+        if (_snap is null) return;
+        if (field == 1) _snap.Notes1 = value;
+        else            _snap.Notes2 = value;
+        if (_tab?.Character is { } ch)
+        {
+            if (field == 1) ch.Notes1 = value;
+            else            ch.Notes2 = value;
+        }
+    }
+
     private bool PersistSessionChanges()
     {
         if (_tab is null || _snap is null) return false;
 
-        var sessionSaved = _tab.File.SaveSession(_s);
+        var sessionSaved  = _tab.File.SaveSession(_s);
         var currencySaved = _tab.File.SaveCurrency(_snap);
-        if (sessionSaved && currencySaved)
+        var notesSaved    = _tab.File.SaveNotes(_snap);
+        if (sessionSaved && currencySaved && notesSaved)
         {
             _saveError = null;
             return true;

@@ -2621,6 +2621,37 @@ html, body {
 }
 
 /* ── Session page ── */
+.session-notes-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.session-notes-area {
+    width: 100%;
+    box-sizing: border-box;
+    resize: vertical;
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--mud-palette-lines-default, rgba(255,255,255,0.12));
+    background: var(--mud-palette-background, #1e1e2e);
+    color: var(--mud-palette-text-primary);
+    font-size: 0.9rem;
+    font-family: inherit;
+    line-height: 1.4;
+}
+
+.session-notes-area:focus {
+    outline: none;
+    border-color: var(--mud-palette-primary, #89b4fa);
+}
+
+@media (max-width: 600px) {
+    .session-notes-row {
+        grid-template-columns: 1fr;
+    }
+}
+
 .session-combat-strip {
     display: flex;
     align-items: center;

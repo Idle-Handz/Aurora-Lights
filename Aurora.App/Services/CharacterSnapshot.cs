@@ -108,10 +108,10 @@ public sealed class CharacterSnapshot
 
     // ── Race features and alternate movement (calculated) ──
     public IReadOnlyList<FeatureEntry> RaceFeatures { get; init; } = [];
-    public int SpeedFly    { get; init; }
-    public int SpeedClimb  { get; init; }
-    public int SpeedSwim   { get; init; }
-    public int SpeedBurrow { get; init; }
+    public int SpeedFly    { get; set; }
+    public int SpeedClimb  { get; set; }
+    public int SpeedSwim   { get; set; }
+    public int SpeedBurrow { get; set; }
 
     // ── Companion (calculated; null when no companion is active) ──
     public CompanionSnapshot? Companion { get; init; }
@@ -259,10 +259,10 @@ public sealed class CharacterSnapshot
             WeaponProficiencies = CollectWeaponProficiencies(),
             ToolProficiencies   = CollectToolProficiencies(),
             RaceFeatures        = CollectRaceFeatures(),
-            SpeedFly    = GetStatGroupValue(cm, "speed:fly"),
-            SpeedClimb  = GetStatGroupValue(cm, "speed:climb"),
-            SpeedSwim   = GetStatGroupValue(cm, "speed:swim"),
-            SpeedBurrow = GetStatGroupValue(cm, "speed:burrow"),
+            SpeedFly    = GetAltSpeed(cm, "speed:fly",    "innate speed:fly"),
+            SpeedClimb  = GetAltSpeed(cm, "speed:climb",  "innate speed:climb"),
+            SpeedSwim   = GetAltSpeed(cm, "speed:swim",   "innate speed:swim"),
+            SpeedBurrow = GetAltSpeed(cm, "speed:burrow", "innate speed:burrow"),
             Companion   = cm.Status.HasCompanion ? BuildCompanionSnapshot(c) : null,
         };
     }
@@ -281,6 +281,17 @@ public sealed class CharacterSnapshot
             .FirstOrDefault(g => g.GroupName.Equals(groupName, StringComparison.OrdinalIgnoreCase))
             ?.Sum() ?? 0;
     }
+
+    /// <summary>
+    /// Returns the best available value for an alternate speed stat. Takes the
+    /// max of the final calculated stat (e.g. "speed:fly", which may be 0 due to
+    /// an equipped-armor restriction) and the raw innate stat (e.g.
+    /// "innate speed:fly", which holds the base racial value before restrictions).
+    /// This ensures a Sprite's 40 ft. fly speed is displayed even while wearing
+    /// medium armor that restricts active flight.
+    /// </summary>
+    private static int GetAltSpeed(CharacterManager cm, string statName, string innateName)
+        => Math.Max(GetStatGroupValue(cm, statName), GetStatGroupValue(cm, innateName));
 
     private static CompanionSnapshot? BuildCompanionSnapshot(Character c)
     {
@@ -1064,11 +1075,15 @@ public sealed class CharacterSnapshot
                 a.Range.Content ?? ""))
             .ToList();
 
-        ArmorClass = CharacterManager.Current.StatisticsCalculator.StatisticValues
-            .FirstOrDefault(g => g.GroupName.Equals("ac", StringComparison.OrdinalIgnoreCase))?.Sum() ?? c.ArmorClass;
-        Initiative = c.Initiative;
-        Speed      = c.Speed;
-        MaxHp      = c.MaxHp;
+        var cm = CharacterManager.Current;
+        ArmorClass  = GetStatGroupValue(cm, "ac") is var ac && ac > 0 ? ac : c.ArmorClass;
+        Initiative  = c.Initiative;
+        Speed       = c.Speed;
+        MaxHp       = c.MaxHp;
+        SpeedFly    = GetAltSpeed(cm, "speed:fly",    "innate speed:fly");
+        SpeedClimb  = GetAltSpeed(cm, "speed:climb",  "innate speed:climb");
+        SpeedSwim   = GetAltSpeed(cm, "speed:swim",   "innate speed:swim");
+        SpeedBurrow = GetAltSpeed(cm, "speed:burrow", "innate speed:burrow");
     }
 }
 
