@@ -259,12 +259,25 @@ public sealed class CharacterSnapshot
             WeaponProficiencies = CollectWeaponProficiencies(),
             ToolProficiencies   = CollectToolProficiencies(),
             RaceFeatures        = CollectRaceFeatures(),
-            SpeedFly    = CharacterManager.Current.StatisticsCalculator.StatisticValues.GetValue("speed:fly"),
-            SpeedClimb  = CharacterManager.Current.StatisticsCalculator.StatisticValues.GetValue("speed:climb"),
-            SpeedSwim   = CharacterManager.Current.StatisticsCalculator.StatisticValues.GetValue("speed:swim"),
-            SpeedBurrow = CharacterManager.Current.StatisticsCalculator.StatisticValues.GetValue("speed:burrow"),
+            SpeedFly    = GetStatGroupValue(cm, "speed:fly"),
+            SpeedClimb  = GetStatGroupValue(cm, "speed:climb"),
+            SpeedSwim   = GetStatGroupValue(cm, "speed:swim"),
+            SpeedBurrow = GetStatGroupValue(cm, "speed:burrow"),
             Companion   = cm.Status.HasCompanion ? BuildCompanionSnapshot(c) : null,
         };
+    }
+
+    /// <summary>
+    /// Case-insensitive stat group lookup — mirrors AdditionalStatisticsPanelContentViewModel
+    /// which uses OrdinalIgnoreCase. Some content (e.g. MotM races) may store group names in a
+    /// different case than the lowercase names used in core-levels.xml, causing GetValue() to
+    /// silently return 0.
+    /// </summary>
+    private static int GetStatGroupValue(CharacterManager cm, string groupName)
+    {
+        var group = cm.StatisticsCalculator.StatisticValues
+            .FirstOrDefault(g => g.GroupName.Equals(groupName, StringComparison.OrdinalIgnoreCase));
+        return group?.Sum() ?? 0;
     }
 
     private static CompanionSnapshot? BuildCompanionSnapshot(Character c)
