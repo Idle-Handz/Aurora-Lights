@@ -26,7 +26,7 @@
         <h2>Current Character</h2>
         @if (_currentCharacter is null)
         {
-            <p class="empty-state">No character is currently active for this browser session. Open one from the <a href="/characters">Characters</a> page.</p>
+            <p class="empty-state">No character is currently active for this browser session. Open one from the <a href="/">Characters</a> page.</p>
         }
         else
         {
@@ -56,7 +56,7 @@
                 <a class="action-link" href="/magic">Magic</a>
                 <button class="action-link primary" @onclick="DownloadCharacterAsync" disabled="@_busy">Download .dnd5e</button>
                 <button class="action-link" @onclick="DownloadPdfAsync" disabled="@_busy">Download PDF</button>
-                <a class="action-link" href="/characters">Switch Character</a>
+                <a class="action-link" href="/">Switch Character</a>
             </div>
         }
     </div>

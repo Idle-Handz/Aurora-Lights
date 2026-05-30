@@ -92,17 +92,20 @@ public static class FileSaveService
 #endif
 
 #if MACCATALYST
-    private static Task<string?> PickSaveLocationMacAsync(
+    private static async Task<string?> PickSaveLocationMacAsync(
         string suggestedFileName,
         IReadOnlyList<FileTypeChoice> fileTypes,
         string? initialDirectory)
     {
-        // NSSavePanel is an AppKit type not included in the Mac Catalyst managed
-        // binding. Save directly to the requested directory (or Documents) instead.
-        string dir = !string.IsNullOrEmpty(initialDirectory) && Directory.Exists(initialDirectory)
-            ? initialDirectory
-            : Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-        return Task.FromResult<string?>(Path.Combine(dir, suggestedFileName));
+        // NSSavePanel is AppKit-only and has no managed binding in Mac Catalyst.
+        // UIDocumentPickerViewController (folder-open mode) maps to NSOpenPanel on macOS,
+        // giving the user a real Finder-style dialog. We pick a destination folder and
+        // append the suggestedFileName so the caller can write directly to the result.
+        // Requires the com.apple.security.files.user-selected.read-write entitlement.
+        _ = initialDirectory; // FolderPicker starts in the OS default location
+        var result = await FolderPicker.Default.PickAsync(CancellationToken.None);
+        if (!result.IsSuccessful) return null;
+        return Path.Combine(result.Folder.Path, suggestedFileName);
     }
 #endif
 }

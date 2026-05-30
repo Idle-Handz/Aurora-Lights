@@ -1,20 +1,20 @@
 namespace Aurora.App.Services.Updates;
 
 /// <summary>Result of an update check against a single release channel.</summary>
+/// <param name="LatestTag">Tag of the highest release seen on the channel, for example "v0.2.0-alpha". Always set.</param>
+/// <param name="LatestVersion">Parsed SemVer of the latest tag.</param>
+/// <param name="CurrentVersion">The currently-running build's version, as parsed from the assembly.</param>
+/// <param name="IsNewer">True when LatestVersion is strictly greater than CurrentVersion.</param>
+/// <param name="ReleaseUrl">Direct browser link to the release page, or empty if not provided.</param>
+/// <param name="ReleaseNotes">Release notes body, possibly empty or null.</param>
+/// <param name="IsPreRelease">Whether the latest release is flagged as a pre-release on GitHub.</param>
+/// <param name="PublishedAt">Publish time from GitHub, if reported.</param>
 public sealed record UpdateAvailability(
-    /// <summary>Tag of the highest release seen on the channel (e.g. "v0.2.0-alpha"). Always set.</summary>
     string LatestTag,
-    /// <summary>Parsed SemVer of <see cref="LatestTag"/>.</summary>
     SemVer LatestVersion,
-    /// <summary>The currently-running build's version (as parsed from the assembly).</summary>
     SemVer CurrentVersion,
-    /// <summary><c>true</c> when <see cref="LatestVersion"/> is strictly greater than <see cref="CurrentVersion"/>.</summary>
     bool IsNewer,
-    /// <summary>Direct browser link to the release page (or empty if not provided).</summary>
     string ReleaseUrl,
-    /// <summary>Release notes body (markdown, possibly empty/null).</summary>
     string? ReleaseNotes,
-    /// <summary>Whether the latest release is flagged as a pre-release on GitHub.</summary>
     bool IsPreRelease,
-    /// <summary>Publish time from GitHub, if reported.</summary>
     DateTimeOffset? PublishedAt);

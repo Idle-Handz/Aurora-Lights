@@ -29,7 +29,7 @@ public static class MauiProgram
             if (externalBase != null)
             {
                 var dir = Path.Combine(externalBase, "5e Character Builder");
-                Directory.CreateDirectory(dir); // must exist before DataManager checks it
+                try { Directory.CreateDirectory(dir); } catch { /* storage unavailable; DataManager will handle missing path */ }
                 appContext.Settings.DocumentsRootDirectory = dir;
             }
         }
@@ -66,7 +66,10 @@ public static class MauiProgram
 
         // Update channels: shared HttpClient for the GitHub Releases API + the two channel services.
         // Phase 1 is notify-only; the call sites stay shape-stable when Velopack lands underneath.
-        builder.Services.AddHttpClient<GithubReleasesClient>();
+        builder.Services.AddHttpClient<GithubReleasesClient>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(15);
+        });
         builder.Services.AddSingleton<AppUpdateService>();
         builder.Services.AddSingleton<ContentUpdateService>();
 

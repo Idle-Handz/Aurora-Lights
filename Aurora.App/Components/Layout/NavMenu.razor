@@ -75,9 +75,19 @@
 @code {
     private bool _disposed;
 
-    protected override void OnInitialized() => Tabs.TabsChanged += OnTabsChanged;
+    protected override void OnInitialized()
+    {
+        Tabs.TabsChanged += OnTabsChanged;
+        Prefs.DeveloperModeChanged += OnDeveloperModeChanged;
+    }
 
     private void OnTabsChanged()
+    {
+        if (_disposed) return;
+        _ = InvokeAsync(() => { if (!_disposed) StateHasChanged(); });
+    }
+
+    private void OnDeveloperModeChanged()
     {
         if (_disposed) return;
         _ = InvokeAsync(() => { if (!_disposed) StateHasChanged(); });
@@ -87,5 +97,6 @@
     {
         _disposed = true;
         Tabs.TabsChanged -= OnTabsChanged;
+        Prefs.DeveloperModeChanged -= OnDeveloperModeChanged;
     }
 }

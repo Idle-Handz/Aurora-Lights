@@ -484,8 +484,11 @@ public sealed class CharacterService :
 
     /// <summary>
     /// Opens a native folder-picker dialog and returns the chosen path, or null if
-    /// the user cancelled. Only presents a picker on Windows; returns null elsewhere
-    /// (use platform-specific shortcuts like <see cref="GetAndroidExternalStoragePath"/>).
+    /// the user cancelled.
+    /// Windows: WinRT <c>FolderPicker</c> (native dialog).
+    /// Mac Catalyst: <c>UIDocumentPickerViewController</c> via MAUI (maps to NSOpenPanel).
+    /// Android: returns null — folder selection is surfaced via the "Use External Storage"
+    /// shortcut instead, because SAF content URIs are not filesystem paths.
     /// </summary>
     public static async Task<string?> PickCharactersDirectoryAsync()
     {
@@ -501,6 +504,9 @@ public sealed class CharacterService :
         }
         var folder = await picker.PickSingleFolderAsync();
         return folder?.Path;
+#elif MACCATALYST
+        var result = await FolderPicker.Default.PickAsync(CancellationToken.None);
+        return result.IsSuccessful ? result.Folder.Path : null;
 #else
         return await Task.FromResult<string?>(null);
 #endif

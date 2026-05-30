@@ -214,6 +214,7 @@
         Tabs.TabsChanged              += OnTabsChanged;
         CharacterContext.CaptureError += OnCaptureError;
         Prefs.ThemeChanged            += OnThemeChanged;
+        Prefs.DeveloperModeChanged    += OnDeveloperModeChanged;
         Nav.LocationChanged           += OnLocationChanged;
         AppUpdates.Changed            += OnUpdatesChanged;
         ContentUpdates.Changed        += OnUpdatesChanged;
@@ -336,6 +337,12 @@
         _ = InvokeAsync(() => { if (!_disposed) StateHasChanged(); });
     }
 
+    private void OnDeveloperModeChanged()
+    {
+        if (_disposed) return;
+        _ = InvokeAsync(() => { if (!_disposed) StateHasChanged(); });
+    }
+
     private bool _disposed;
 
     private void OnTabsChanged()
@@ -360,6 +367,7 @@
         Tabs.TabsChanged              -= OnTabsChanged;
         CharacterContext.CaptureError -= OnCaptureError;
         Prefs.ThemeChanged            -= OnThemeChanged;
+        Prefs.DeveloperModeChanged    -= OnDeveloperModeChanged;
         Nav.LocationChanged           -= OnLocationChanged;
         AppUpdates.Changed            -= OnUpdatesChanged;
         ContentUpdates.Changed        -= OnUpdatesChanged;

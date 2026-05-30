@@ -685,6 +685,66 @@
 
             @if (AppUpdates.Latest is { IsNewer: true } avail)
             {
+#if WINDOWS
+                @* On a Velopack install the user gets a one-click "Install and restart" path.
+                   On a plain ZIP extract IsVelopackInstall is false, so we fall back to the
+                   browser link. Both paths show on Windows; only the browser link on other
+                   platforms (macOS pending signing, Android via Play Store). *@
+                @if (AppUpdates.IsVelopackInstall)
+                {
+                    <div class="pref-row" style="margin-top: 16px;">
+                        <div class="pref-row-text">
+                            <div class="pref-row-title">
+                                @(_applying ? "Downloading update…" : $"Install {avail.LatestTag} and restart")
+                            </div>
+                            <div class="pref-row-desc">
+                                @if (_applying)
+                                {
+                                    <MudProgressLinear Value="@_applyProgress"
+                                                       Min="0" Max="100"
+                                                       Color="Color.Primary"
+                                                       Class="mt-1"
+                                                       Style="max-width: 280px;" />
+                                }
+                                else if (_applyError is { Length: > 0 } err)
+                                {
+                                    <text>Update failed: @err</text>
+                                }
+                                else
+                                {
+                                    <text>Downloads @avail.LatestTag, swaps the binaries, and restarts the app.</text>
+                                }
+                            </div>
+                        </div>
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.SystemUpdateAlt"
+                                   Disabled="_applying"
+                                   OnClick="ApplyUpdateAsync">
+                            @(_applying ? "Downloading…" : "Install and restart")
+                        </MudButton>
+                    </div>
+                }
+                else
+                {
+                    <div class="pref-row" style="margin-top: 16px;">
+                        <div class="pref-row-text">
+                            <div class="pref-row-title">View release</div>
+                            <div class="pref-row-desc">
+                                Opens the GitHub release page for @avail.LatestTag in your browser.
+                                Run the installer from there to upgrade.
+                            </div>
+                        </div>
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.OpenInNew"
+                                   Disabled="@string.IsNullOrWhiteSpace(avail.ReleaseUrl)"
+                                   OnClick="@(() => OpenReleaseAsync(avail.ReleaseUrl))">
+                            Open release
+                        </MudButton>
+                    </div>
+                }
+#else
                 <div class="pref-row" style="margin-top: 16px;">
                     <div class="pref-row-text">
                         <div class="pref-row-title">View release</div>
@@ -693,10 +753,12 @@
                     <MudButton Variant="Variant.Filled"
                                Color="Color.Primary"
                                StartIcon="@Icons.Material.Filled.OpenInNew"
-                               OnClick="@(() => Launcher.Default.OpenAsync(avail.ReleaseUrl))">
+                               Disabled="@string.IsNullOrWhiteSpace(avail.ReleaseUrl)"
+                               OnClick="@(() => OpenReleaseAsync(avail.ReleaseUrl))">
                         Open release
                     </MudButton>
                 </div>
+#endif
             }
         </div>
 
@@ -1013,6 +1075,68 @@
     /// <summary>Render the last-checked timestamp as the user's local time, short form.</summary>
     private static string FormatChecked(DateTimeOffset? when) =>
         when is null ? "never" : when.Value.ToLocalTime().ToString("g");
+
+    private async Task OpenReleaseAsync(string releaseUrl)
+    {
+        if (string.IsNullOrWhiteSpace(releaseUrl))
+        {
+            Snackbar.Add("That release did not include a browser link.", Severity.Warning);
+            return;
+        }
+
+        try
+        {
+            bool opened = await Launcher.Default.OpenAsync(releaseUrl);
+            if (!opened)
+                Snackbar.Add("Could not open the release page.", Severity.Warning);
+        }
+        catch (Exception ex)
+        {
+            DebugLogService.Catch(ex, "Settings.OpenReleaseAsync");
+            Snackbar.Add("Could not open the release page.", Severity.Warning);
+        }
+    }
+
+#if WINDOWS
+    private bool   _applying;
+    private int    _applyProgress;
+    private string? _applyError;
+
+    private async Task ApplyUpdateAsync()
+    {
+        _applying = true;
+        _applyProgress = 0;
+        _applyError = null;
+        StateHasChanged();
+        try
+        {
+            var progress = new Progress<int>(p =>
+            {
+                _applyProgress = p;
+                _ = InvokeAsync(StateHasChanged);
+            });
+
+            // ApplyAsync downloads and then normally exits via Velopack restart.
+            // Any returned string means the process is still alive and the user needs feedback.
+            string? error = await AppUpdates.ApplyAsync(
+                Prefs.IncludePrereleasesInUpdateCheck, progress);
+
+            if (error != null)
+            {
+                _applyError = error;
+                _applying = false;
+                await InvokeAsync(StateHasChanged);
+            }
+            // On success the process has already been replaced — we never reach here.
+        }
+        catch (Exception ex)
+        {
+            _applyError = ex.Message;
+            _applying = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+#endif
 
     private async Task TogglePackageAsync(long packageId, bool enabled)
     {

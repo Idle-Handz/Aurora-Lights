@@ -1,4 +1,12 @@
+using Aurora.App.Services;
+
 namespace Aurora.App;
+
+#if MACCATALYST
+using Foundation;
+using QuickLook;
+using UIKit;
+#endif
 
 /// <summary>
 /// Native MAUI window that displays a PDF preview using WebView2's built-in
@@ -55,7 +63,9 @@ internal sealed class PdfPreviewPage : ContentPage
                     statusLabel.IsVisible = true;
 #if MACCATALYST
                     // Reveal the saved file in Finder — standard macOS UX.
-                    System.Diagnostics.Process.Start("open", $"-R \"{savedPath}\"");
+                    // Silently swallowed: sandbox restrictions may prevent subprocess launch.
+                    try { System.Diagnostics.Process.Start("open", $"-R \"{savedPath}\""); }
+                    catch (Exception revealEx) { DebugLogService.Instance.Warn($"PdfPreviewPage: Finder reveal failed: {revealEx.Message}"); }
 #endif
                 }
                 else
@@ -105,8 +115,21 @@ internal sealed class PdfPreviewPage : ContentPage
         toolbar.Add(statusLabel, column: 1);
         toolbar.Add(closeBtn,    column: 2);
 
-        // ── PDF WebView ──────────────────────────────────────────────────────────
-        // WebView2 natively renders PDFs from file:// URIs (same engine as Edge).
+        // ── PDF WebView / native preview ──────────────────────────────────────────
+        // WebView2 natively renders PDFs on Windows. On Mac Catalyst use QuickLook
+        // to present a native PDF preview since WebView (WebKit) may not render
+        // application/pdf the same way.
+#if MACCATALYST
+        var webView = new Label
+        {
+            Text = "Preview will open using the native macOS preview.",
+            TextColor = Color.FromArgb("#cdd6f4"),
+            HorizontalTextAlignment = TextAlignment.Center,
+            VerticalTextAlignment = TextAlignment.Center,
+            HorizontalOptions = LayoutOptions.Fill,
+            VerticalOptions = LayoutOptions.Fill,
+        };
+#else
         // Convert Windows path (C:\...) to a proper file:/// URL.
         var fileUrl = new Uri(tempPdfPath).AbsoluteUri;
 
@@ -117,6 +140,7 @@ internal sealed class PdfPreviewPage : ContentPage
             VerticalOptions     = LayoutOptions.Fill,
             BackgroundColor     = Color.FromArgb("#1e1e2e"),
         };
+#endif
 
         // ── Layout ───────────────────────────────────────────────────────────────
 
@@ -141,6 +165,17 @@ internal sealed class PdfPreviewPage : ContentPage
         if (Window?.Handler?.PlatformView is Microsoft.UI.Xaml.Window w)
             w.Content.KeyDown += OnWindowKeyDown;
 #endif
+#if MACCATALYST
+        // Present native QuickLook preview once when the page appears.
+        try
+        {
+            if (!string.IsNullOrEmpty(_tempPdfPath))
+            {
+                PresentQuickLookPreview(_tempPdfPath);
+            }
+        }
+        catch { }
+#endif
     }
 
     protected override void OnDisappearing()
@@ -152,6 +187,48 @@ internal sealed class PdfPreviewPage : ContentPage
 #endif
         TryDeleteTempFile();
     }
+
+#if MACCATALYST
+    private bool _qlPresented;
+
+    private void PresentQuickLookPreview(string path)
+    {
+        if (_qlPresented) return;
+        _qlPresented = true;
+
+        var url = NSUrl.FromFilename(path);
+        var preview = new QLPreviewController();
+        preview.DataSource = new SingleFilePreviewDataSource(url);
+
+        // Find topmost view controller
+        var root = UIApplication.SharedApplication.KeyWindow?.RootViewController;
+        if (root == null)
+        {
+            root = UIApplication.SharedApplication.Windows?.FirstOrDefault()?.RootViewController;
+        }
+        if (root == null) return;
+        while (root.PresentedViewController != null)
+            root = root.PresentedViewController;
+
+        root.PresentViewController(preview, true, null);
+    }
+
+    private class SingleFilePreviewDataSource : QLPreviewControllerDataSource
+    {
+        private readonly NSUrl _url;
+        public SingleFilePreviewDataSource(NSUrl url) => _url = url;
+        public override nint PreviewItemCount(QLPreviewController controller) => 1;
+        public override IQLPreviewItem GetPreviewItem(QLPreviewController controller, nint index) => new PreviewItem(_url);
+    }
+
+    private class PreviewItem : QLPreviewItem
+    {
+        private readonly NSUrl _url;
+        public PreviewItem(NSUrl url) => _url = url;
+        public override NSUrl ItemUrl => _url;
+        public override string ItemTitle => Path.GetFileName(_url.Path ?? string.Empty) ?? "";
+    }
+#endif
 
 #if WINDOWS
     private void OnWindowKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)

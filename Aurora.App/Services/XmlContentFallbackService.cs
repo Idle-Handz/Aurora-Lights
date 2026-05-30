@@ -26,6 +26,59 @@ public static class XmlContentFallbackService
             _snapshot = null;
     }
 
+    /// <summary>
+    /// Materializes every XML element from all custom content directories that is not already
+    /// present in the live collection. Call this after a DB load to pull in any XML files that
+    /// have not yet been synced to the database. User-override files (under custom/user/) are
+    /// intentionally skipped here because <see cref="RawUserXmlOverlayService"/> handles them
+    /// with full upsert semantics including append-node support.
+    /// </summary>
+    public static void MergeUnsynced()
+    {
+        try
+        {
+            XmlFallbackSnapshot snapshot = EnsureLoaded();
+
+            HashSet<string> liveIds = DataManager.Current.ElementsCollection
+                .Where(e => !string.IsNullOrWhiteSpace(e.Id))
+                .Select(e => e.Id)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            int added = 0;
+            int failed = 0;
+            foreach (XmlFallbackElement xmlElement in snapshot.ById.Values)
+            {
+                if (xmlElement.IsUserOverride)
+                    continue;
+
+                if (liveIds.Contains(xmlElement.Id))
+                    continue;
+
+                ElementBase? materialized = TryMaterializeElement(xmlElement, replaceExisting: false);
+                if (materialized != null)
+                {
+                    liveIds.Add(materialized.Id);
+                    added++;
+                }
+                else
+                {
+                    failed++;
+                }
+            }
+
+            if (added > 0 || failed > 0)
+            {
+                DebugLogService.Instance.Log(LogLevel.Info,
+                    $"[XmlContentFallback] merged {added} unsynced XML element(s) into live collection" +
+                    (failed > 0 ? $"; {failed} failed to materialize" : ""));
+            }
+        }
+        catch (Exception ex)
+        {
+            DebugLogService.Instance.LogException(ex, "XmlContentFallbackService.MergeUnsynced");
+        }
+    }
+
     public static IReadOnlyList<ElementBase> GetElementFallbacks(SelectRule rule)
     {
         try

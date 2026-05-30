@@ -38,10 +38,19 @@
     <Content Include="Fixtures\ParityScenarios\*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
-  <!-- SemVer lives in Aurora.App (MAUI target). Link the source here so we can test the parser
-       without dragging the MAUI workload into Aurora.Tests. -->
+  <!-- Update-service source files live in Aurora.App (MAUI target). Link the pure-.NET ones here
+       so we can test parsing, channel filtering, and comparison logic without pulling in MAUI.
+       DebugLogService, GithubReleasesClient, UpdateAvailability, and GithubReleaseChannelService
+       have no MAUI dependencies; AppUpdateService and ContentUpdateService do (Velopack / FileSystem)
+       so those are not linked — test helpers in GithubUpdateChannelTests cover the logic via
+       concrete subclasses. -->
   <ItemGroup>
-    <Compile Include="..\Aurora.App\Services\Updates\SemVer.cs" Link="Linked\SemVer.cs" />
+    <Compile Include="..\Aurora.App\Services\Updates\SemVer.cs"                   Link="Linked\SemVer.cs" />
+    <Compile Include="..\Aurora.App\Services\DebugLogService.cs"                  Link="Linked\DebugLogService.cs" />
+    <Compile Include="..\Aurora.App\Services\Updates\GithubReleasesClient.cs"     Link="Linked\GithubReleasesClient.cs" />
+    <Compile Include="..\Aurora.App\Services\Updates\UpdateAvailability.cs"       Link="Linked\UpdateAvailability.cs" />
+    <Compile Include="..\Aurora.App\Services\Updates\GithubReleaseChannelService.cs" Link="Linked\GithubReleaseChannelService.cs" />
+    <Compile Include="..\Aurora.App\Services\EquipmentService.cs"                 Link="Linked\EquipmentService.cs" />
   </ItemGroup>
 
 </Project>

@@ -171,70 +171,69 @@
             }
             else
             {
-                <MudList T="CompendiumEntryModel" Dense="true">
-                    @foreach (var entry in _filteredEntries)
-                    {
-                        <MudListItem T="CompendiumEntryModel"
-                                     Value="@entry"
-                                     OnClick="@(() => SelectEntryAsync(entry))"
-                                     Class="@(string.Equals(entry.Id, _selectedEntry?.Id, StringComparison.Ordinal) ? "compendium-result-selected" : "compendium-result-item")">
+                <div class="compendium-result-list">
+                    <Virtualize Items="@_filteredEntries" Context="entry" OverscanCount="8" ItemSize="104">
+                        <button type="button"
+                                @key="entry.Id"
+                                @onclick="@(() => SelectEntryAsync(entry))"
+                                class="compendium-result-button @(string.Equals(entry.Id, _selectedEntry?.Id, StringComparison.Ordinal) ? "compendium-result-selected" : "compendium-result-item")">
                             <div class="compendium-result-body">
                                 <div class="compendium-result-header">
-                                    <MudText Typo="Typo.subtitle2">@entry.Name</MudText>
-                                    <MudText Typo="Typo.caption" Class="compendium-type-pill">@entry.Type</MudText>
+                                    <span class="compendium-result-name">@entry.Name</span>
+                                    <span class="compendium-type-pill">@entry.Type</span>
                                 </div>
-                                <MudText Typo="Typo.caption" Color="Color.Secondary">@entry.Source</MudText>
+                                <span class="compendium-result-source">@entry.Source</span>
                                 @if (string.Equals(entry.Type, "Spell", StringComparison.OrdinalIgnoreCase))
                                 {
-                                    <MudStack Row="true" Spacing="1" Class="mt-1 compendium-meta-row">
+                                    <div class="compendium-meta-row">
                                         @if (!string.IsNullOrWhiteSpace(entry.SpellLevelLabel))
                                         {
-                                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@entry.SpellLevelLabel</MudChip>
+                                            <span class="compendium-mini-chip">@entry.SpellLevelLabel</span>
                                         }
                                         @if (!string.IsNullOrWhiteSpace(entry.SpellSchool))
                                         {
-                                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@entry.SpellSchool</MudChip>
+                                            <span class="compendium-mini-chip">@entry.SpellSchool</span>
                                         }
-                                    </MudStack>
+                                    </div>
                                 }
                                 @if (entry.IsItemLike && (!string.IsNullOrWhiteSpace(entry.ItemRarity) || entry.RequiresAttunement))
                                 {
-                                    <MudStack Row="true" Spacing="1" Class="mt-1 compendium-meta-row">
+                                    <div class="compendium-meta-row">
                                         @if (!string.IsNullOrWhiteSpace(entry.ItemRarity))
                                         {
-                                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@entry.ItemRarity</MudChip>
+                                            <span class="compendium-mini-chip">@entry.ItemRarity</span>
                                         }
                                         @if (entry.RequiresAttunement)
                                         {
-                                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">Attunement</MudChip>
+                                            <span class="compendium-mini-chip">Attunement</span>
                                         }
-                                    </MudStack>
+                                    </div>
                                 }
                                 @if (entry.IsCompanionLike && (!string.IsNullOrWhiteSpace(entry.CreatureType) || !string.IsNullOrWhiteSpace(entry.CreatureSize) || !string.IsNullOrWhiteSpace(entry.ChallengeText)))
                                 {
-                                    <MudStack Row="true" Spacing="1" Class="mt-1 compendium-meta-row">
+                                    <div class="compendium-meta-row">
                                         @if (!string.IsNullOrWhiteSpace(entry.CreatureType))
                                         {
-                                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@entry.CreatureType</MudChip>
+                                            <span class="compendium-mini-chip">@entry.CreatureType</span>
                                         }
                                         @if (!string.IsNullOrWhiteSpace(entry.CreatureSize))
                                         {
-                                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@entry.CreatureSize</MudChip>
+                                            <span class="compendium-mini-chip">@entry.CreatureSize</span>
                                         }
                                         @if (!string.IsNullOrWhiteSpace(entry.ChallengeText))
                                         {
-                                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">CR @entry.ChallengeText</MudChip>
+                                            <span class="compendium-mini-chip">CR @entry.ChallengeText</span>
                                         }
-                                    </MudStack>
+                                    </div>
                                 }
                                 @if (!string.IsNullOrWhiteSpace(entry.Summary))
                                 {
-                                    <MudText Typo="Typo.body2" Class="mt-1 compendium-result-summary">@entry.Summary</MudText>
+                                    <span class="compendium-result-summary">@entry.Summary</span>
                                 }
                             </div>
-                        </MudListItem>
-                    }
-                </MudList>
+                        </button>
+                    </Virtualize>
+                </div>
             }
         </MudPaper>
     <MudPaper Class="pa-4 compendium-panel compendium-detail-panel">

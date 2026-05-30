@@ -52,7 +52,8 @@
                              OnChangeAmount="ChangeAmountAsync"
                              OnCoinChanged="ChangeCoinAsync"
                              OnNoteChanged="ChangeNoteAsync"
-                             OnEditItem="EditItemAsync" />
+                             OnEditItem="EditItemAsync"
+                             OnExtractItem="ExtractPackAsync" />
 
 @code {
     private CharacterSnapshot? _snap;
@@ -90,7 +91,9 @@
                     item.IsAttuned,
                     item.DisplayWeight,
                     item.DisplayPrice,
-                    item.IsEquippable))
+                    item.IsEquippable,
+                    Tabs.ActiveTab?.Character is { } character &&
+                        EquipmentService.CanExtractPack(character, item.Identifier)))
                 .ToList(),
             Copper   = _snap.CoinCopper,
             Silver   = _snap.CoinSilver,
@@ -301,6 +304,66 @@
         RefreshEquipment();
         file.SaveInventoryItems(character);
         MarkDirty();
+        StateHasChanged();
+    }
+
+    private async Task ExtractPackAsync(string identifier)
+    {
+        var tab = Tabs.ActiveTab;
+        if (tab is not { Character: { } character, File: { } file })
+        {
+            WarnUnavailable("Items cannot be extracted because there is no active character.");
+            return;
+        }
+
+        var components = EquipmentService.GetPackComponents(character, identifier);
+        if (components.Count == 0)
+        {
+            WarnUnavailable("That inventory item cannot be extracted.");
+            return;
+        }
+
+        var packName = _snap?.InventoryItems
+            .FirstOrDefault(i => i.Identifier == identifier)?.Name ?? "this pack";
+        var preview = string.Join(", ", components.Select(FormatPackComponent).Take(8));
+        if (components.Count > 8)
+            preview += $", and {components.Count - 8} more";
+
+        bool? confirmed = await DialogService.ShowMessageBox(
+            "Extract Pack",
+            $"Extract \"{packName}\" into {preview}? The pack will be removed from inventory.",
+            yesText: "Extract", cancelText: "Cancel");
+
+        if (confirmed != true) return;
+
+        using var scope = await CharacterContext.EnterAsync(tab);
+        var result = EquipmentService.ExtractPack(character, identifier);
+
+        if (result.Added.Count == 0)
+        {
+            var message = result.MissingElementIds.Count > 0
+                ? $"Could not extract pack: {result.MissingElementIds.Count} component(s) could not be resolved. The pack was left unchanged."
+                : "Could not extract pack contents. The pack was left unchanged.";
+            Snackbar.Add(message, Severity.Warning, cfg => cfg.VisibleStateDuration = 6000);
+            return;
+        }
+
+        RefreshEquipment();
+        file.SaveInventoryItems(character);
+        MarkDirty();
+
+        if (result.Success)
+        {
+            Snackbar.Add($"Extracted {result.PackName}.", Severity.Success);
+        }
+        else
+        {
+            Snackbar.Add(
+                $"Extracted {result.Added.Count} item(s), but {result.MissingElementIds.Count} component(s) could not be resolved.",
+                Severity.Warning,
+                cfg => cfg.VisibleStateDuration = 6000);
+        }
+
         StateHasChanged();
     }
 
@@ -562,6 +625,9 @@
 
         return count > 1 ? $"{count}x {label}" : label;
     }
+
+    private static string FormatPackComponent(EquipmentPackComponent component) =>
+        component.Amount > 1 ? $"{component.Name} ({component.Amount})" : component.Name;
 
     private static void DepositStartingCoins(Builder.Presentation.Models.Character character, StartingEquipmentResult se)
     {

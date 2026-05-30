@@ -222,6 +222,7 @@ internal static class DbElementLoader
     private static async Task<DbLoadResult> TryLoadInternalAsync(ElementBaseCollection target, bool runPostProcessing)
     {
         ResetCaches();
+        XmlContentFallbackService.Invalidate();
 
         string? dbPath = DbPath;
         if (dbPath is null)
@@ -240,6 +241,7 @@ internal static class DbElementLoader
             if (result.Success && runPostProcessing)
             {
                 await Task.Run(() => RawUserXmlOverlayService.ApplyTo(target));
+                await Task.Run(() => XmlContentFallbackService.MergeUnsynced());
                 await Task.Run(() => DataManager.Current.RunPostProcessing());
                 DebugLogService.Instance.Info(
                     "DbElementLoader: load complete.",

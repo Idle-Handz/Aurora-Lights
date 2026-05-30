@@ -1,5 +1,11 @@
 using System.Reflection;
+using System.Runtime.InteropServices;
 using Microsoft.Maui.ApplicationModel;
+
+#if WINDOWS
+using Velopack;
+using Velopack.Sources;
+#endif
 
 namespace Aurora.App.Services.Updates;
 
@@ -37,4 +43,82 @@ public sealed class AppUpdateService : GithubReleaseChannelService
     // App-binary tags: anything that parses as SemVer and doesn't start with a sub-channel prefix.
     protected override bool TagBelongsToChannel(string tag)
         => !tag.StartsWith("content-", StringComparison.OrdinalIgnoreCase);
+
+#if WINDOWS
+    // ── Velopack apply (Windows only) ────────────────────────────────────────
+
+    private bool? _isVelopackInstall;
+
+    /// <summary>
+    /// True when the app was installed by Velopack and can apply updates in-place.
+    /// Uses Velopack's own <see cref="UpdateManager.IsInstalled"/> which checks for
+    /// the bootstrapper layout. ZIP-extracted copies return false, so the
+    /// "Install and restart" button is hidden for them.
+    /// Result is cached for the lifetime of the service — install layout never changes
+    /// while the app is running.
+    /// </summary>
+    public bool IsVelopackInstall
+    {
+        get
+        {
+            if (_isVelopackInstall.HasValue) return _isVelopackInstall.Value;
+            try
+            {
+                var channel = RuntimeInformation.ProcessArchitecture == Architecture.Arm64
+                    ? "win-arm64" : "win-x64";
+                var mgr = new UpdateManager(
+                    new GithubSource("https://github.com/Idle-Handz/Aurora-Lights", null, false),
+                    new UpdateOptions { ExplicitChannel = channel });
+                _isVelopackInstall = mgr.IsInstalled;
+            }
+            catch { _isVelopackInstall = false; }
+            return _isVelopackInstall.Value;
+        }
+    }
+
+    /// <summary>
+    /// Downloads the pending update and restarts the app into the new version.
+    /// Progress is 0–100. This method does NOT return on success — Velopack terminates
+    /// the process and relaunches via the bootstrapper.
+    /// Returns an error message string on failure, or null if the restart was initiated.
+    /// </summary>
+    public async Task<string?> ApplyAsync(
+        bool includePreReleases,
+        IProgress<int>? progress = null,
+        CancellationToken ct = default)
+    {
+        try
+        {
+            // The channel matches the RID suffix used when packing in CI so the UpdateManager
+            // fetches the right RELEASES-{channel} manifest and the correct nupkg variant.
+            var channel = RuntimeInformation.ProcessArchitecture == Architecture.Arm64
+                ? "win-arm64"
+                : "win-x64";
+
+            var source  = new GithubSource(
+                "https://github.com/Idle-Handz/Aurora-Lights",
+                accessToken:  null,
+                prerelease:   includePreReleases,
+                downloader:   null);
+
+            var manager = new UpdateManager(source, new UpdateOptions { ExplicitChannel = channel });
+
+            var updateInfo = await manager.CheckForUpdatesAsync().ConfigureAwait(false);
+            if (updateInfo == null)
+                return $"No applicable Velopack update was found for the {channel} channel.";
+
+            await manager.DownloadUpdatesAsync(updateInfo, p => progress?.Report(p), ct)
+                         .ConfigureAwait(false);
+
+            // Terminates the process and relaunches — nothing below here runs on success.
+            manager.ApplyUpdatesAndRestart(updateInfo.TargetFullRelease);
+            return "The update was downloaded, but automatic restart did not begin. Close and reopen the app to finish applying it.";
+        }
+        catch (Exception ex)
+        {
+            DebugLogService.Instance.LogException(ex, "AppUpdateService.ApplyAsync");
+            return ex.Message;
+        }
+    }
+#endif
 }

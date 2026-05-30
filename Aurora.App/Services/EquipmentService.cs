@@ -238,32 +238,102 @@ public static class EquipmentService
 
         try
         {
-            var elementType = element.GetType();
+            var item = CreateInventoryItem(element, amount);
+            if (item == null) return false;
 
-            // Find the constructor whose first parameter accepts this element type,
-            // with all remaining parameters optional (has default values).
-            var ctor = typeof(RefactoredEquipmentItem)
-                .GetConstructors()
-                .FirstOrDefault(c =>
-                {
-                    var ps = c.GetParameters();
-                    return ps.Length >= 1
-                        && ps[0].ParameterType.IsAssignableFrom(elementType)
-                        && ps.Skip(1).All(p => p.HasDefaultValue);
-                });
-
-            if (ctor == null) return false;
-
-            // Build the argument list: first arg is the element, rest use their defaults.
-            var ps = ctor.GetParameters();
-            var args = ps.Select((p, i) => i == 0 ? (object?)element : p.DefaultValue).ToArray();
-
-            var item = (RefactoredEquipmentItem)ctor.Invoke(args);
-            item.Amount = Math.Max(1, amount);
             character.Inventory.Items.Add(item);
             return true;
         }
         catch { return false; }
+    }
+
+    /// <summary>Returns true when an inventory item can be expanded into component items.</summary>
+    public static bool CanExtractPack(Character character, string identifier) =>
+        FindInventoryItem(character, identifier) is { } item && IsExtractable(item);
+
+    /// <summary>Returns the component items that would be added by extracting a pack.</summary>
+    public static IReadOnlyList<EquipmentPackComponent> GetPackComponents(Character character, string identifier)
+    {
+        var item = FindInventoryItem(character, identifier);
+        if (item == null || !IsExtractable(item)) return [];
+
+        return item.Item.Extractables
+            .Select(entry =>
+            {
+                var element = DataManager.Current.ElementsCollection.GetElement(entry.Key);
+                var name = element?.Name ?? entry.Key;
+                return new EquipmentPackComponent(entry.Key, Math.Max(1, entry.Value), name);
+            })
+            .ToList();
+    }
+
+    /// <summary>
+    /// Extracts an equipment pack into its declared component items and consumes one pack.
+    /// Mirrors the legacy WPF path that reads Item.Extractables from the parsed XML model.
+    /// </summary>
+    public static EquipmentPackExtractionResult ExtractPack(Character character, string identifier)
+    {
+        var pack = FindInventoryItem(character, identifier);
+        if (pack == null || !IsExtractable(pack))
+            return new EquipmentPackExtractionResult(false, "", [], []);
+
+        var packName = pack.DisplayName ?? pack.Name ?? "pack";
+        var added = new List<EquipmentPackComponent>();
+        var missing = new List<string>();
+        var pending = new List<PendingExtractedItem>();
+
+        foreach (var entry in pack.Item.Extractables)
+        {
+            var element = DataManager.Current.ElementsCollection.GetElement(entry.Key);
+            if (element == null)
+            {
+                missing.Add(entry.Key);
+                continue;
+            }
+
+            var amount = Math.Max(1, entry.Value);
+            var component = new EquipmentPackComponent(entry.Key, amount, element.Name);
+            RefactoredEquipmentItem? existingStack = null;
+            RefactoredEquipmentItem? newItem = null;
+
+            if (IsStackableElement(element))
+            {
+                existingStack = character.Inventory.Items.FirstOrDefault(item =>
+                    string.Equals(item.Item?.Id, element.Id, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (existingStack == null)
+            {
+                newItem = CreateInventoryItem(element, amount);
+            }
+
+            if (existingStack == null && newItem == null)
+            {
+                missing.Add(entry.Key);
+                continue;
+            }
+
+            pending.Add(new PendingExtractedItem(component, existingStack, newItem));
+        }
+
+        if (missing.Count > 0)
+            return new EquipmentPackExtractionResult(false, packName, [], missing);
+
+        foreach (var item in pending)
+        {
+            if (item.ExistingStack != null)
+                item.ExistingStack.Amount += item.Component.Amount;
+            else if (item.NewItem != null)
+                character.Inventory.Items.Add(item.NewItem);
+
+            added.Add(item.Component);
+        }
+
+        ConsumeOneInventoryItem(character, pack);
+        character.Inventory.CalculateWeight();
+        character.Inventory.CalculateAttunedItemCount();
+
+        return new EquipmentPackExtractionResult(true, packName, added, missing);
     }
 
     /// <summary>
@@ -304,6 +374,70 @@ public static class EquipmentService
         if (item != null)
             item.Amount = Math.Max(1, amount);
     }
+
+    private static RefactoredEquipmentItem? FindInventoryItem(Character character, string identifier) =>
+        character.Inventory.Items.FirstOrDefault(i => i.Identifier == identifier);
+
+    private static bool IsExtractable(RefactoredEquipmentItem item) =>
+        item.Item?.IsExtractable == true && item.Item.Extractables.Count > 0;
+
+    private static RefactoredEquipmentItem? CreateInventoryItem(
+        Builder.Data.ElementBase element,
+        int amount)
+    {
+        var elementType = element.GetType();
+
+        // Find the constructor whose first parameter accepts this element type,
+        // with all remaining parameters optional (has default values).
+        var ctor = typeof(RefactoredEquipmentItem)
+            .GetConstructors()
+            .FirstOrDefault(c =>
+            {
+                var ps = c.GetParameters();
+                return ps.Length >= 1
+                    && ps[0].ParameterType.IsAssignableFrom(elementType)
+                    && ps.Skip(1).All(p => p.HasDefaultValue);
+            });
+
+        if (ctor == null) return null;
+
+        // Build the argument list: first arg is the element, rest use their defaults.
+        var ps = ctor.GetParameters();
+        var args = ps.Select((p, i) => i == 0 ? (object?)element : p.DefaultValue).ToArray();
+
+        var item = (RefactoredEquipmentItem)ctor.Invoke(args);
+        item.Amount = Math.Max(1, amount);
+        return item;
+    }
+
+    private static bool IsStackableElement(Builder.Data.ElementBase element)
+    {
+        try
+        {
+            dynamic item = element;
+            return item.IsStackable == true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static void ConsumeOneInventoryItem(Character character, RefactoredEquipmentItem item)
+    {
+        if (item.Amount > 1)
+        {
+            item.Amount--;
+            return;
+        }
+
+        RemoveItem(character, item.Identifier);
+    }
+
+    private sealed record PendingExtractedItem(
+        EquipmentPackComponent Component,
+        RefactoredEquipmentItem? ExistingStack,
+        RefactoredEquipmentItem? NewItem);
 
     // ── Custom features (Additional-X proxies + Supernatural Gifts) ─────────────────
 
@@ -553,3 +687,9 @@ public sealed record ItemSearchResult(string Id, string Name, string Type, strin
 public sealed record ItemPickerResult(string ElementId, int Amount);
 public sealed record InventoryItemOption(string Identifier, string Name);
 public sealed record GearPickerResult(string? Identifier, string? ElementId, bool IsNew);
+public sealed record EquipmentPackComponent(string ElementId, int Amount, string Name);
+public sealed record EquipmentPackExtractionResult(
+    bool Success,
+    string PackName,
+    IReadOnlyList<EquipmentPackComponent> Added,
+    IReadOnlyList<string> MissingElementIds);

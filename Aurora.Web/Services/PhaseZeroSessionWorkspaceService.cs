@@ -151,6 +151,34 @@ public sealed class PhaseZeroSessionWorkspaceService
         return Task.FromResult(relativePath);
     }
 
+    public Task<bool> DeleteCharacterFileAsync(string relativePath)
+    {
+        PhaseZeroSessionWorkspace workspace = EnsureWorkspace();
+        ImportedSessionFile? file = workspace.ImportedFiles.FirstOrDefault(candidate =>
+            candidate.Kind == ImportedContentKind.CharacterFile &&
+            string.Equals(candidate.RelativePath, relativePath, StringComparison.OrdinalIgnoreCase));
+        if (file is null)
+        {
+            return Task.FromResult(false);
+        }
+
+        string fullPath = Path.GetFullPath(Path.Combine(workspace.WorkspacePath, file.RelativePath));
+        string rootPath = Path.GetFullPath(workspace.WorkspacePath);
+        if (!fullPath.StartsWith(rootPath, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("Requested workspace file is outside the current session workspace.");
+        }
+
+        if (File.Exists(fullPath))
+        {
+            File.Delete(fullPath);
+        }
+
+        workspace.ImportedFiles.Remove(file);
+        Touch(workspace);
+        return Task.FromResult(true);
+    }
+
     private PhaseZeroSessionWorkspace EnsureWorkspace()
     {
         if (_workspace != null)

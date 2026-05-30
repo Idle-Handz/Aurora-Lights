@@ -1,7 +1,9 @@
 @page "/characters"
+@page "/"
 @rendermode InteractiveServer
 @inject WebCharacterSessionService CharacterSession
 @inject NavigationManager Nav
+@inject IJSRuntime JS
 
 <PageTitle>Characters</PageTitle>
 
@@ -24,10 +26,12 @@
                           Title="Imported Files"
                           DirectoryCaption="@DirectoryCaption"
                           EmptyMessage="No imported character files are available yet. Upload one on the Import page."
+                          EmptySubMessage="Create a character here, or import an existing .dnd5e file."
                           BusyMessage="@BusyMessage"
                           ShowCreateButton="false"
                           SelectedId="@_selectedCharacter?.RelativePath"
-                          OnSelected="OnBrowserSelected" />
+                          OnSelected="OnBrowserSelected"
+                          OnDelete="DeleteCharacterAsync" />
     </BrowserContent>
 
     <DetailContent>
@@ -165,6 +169,44 @@
                 string.Equals(character.RelativePath, runtimeState.Summary.RelativePath, StringComparison.OrdinalIgnoreCase));
             _message = runtimeState.StatusMessage;
             Nav.NavigateTo("/build");
+        }
+        catch (Exception ex)
+        {
+            _failed = true;
+            _message = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task DeleteCharacterAsync(CharacterBrowserEntry entry)
+    {
+        bool confirmed = await JS.InvokeAsync<bool>(
+            "confirm",
+            $"Remove \"{entry.DisplayName}\" from this browser workspace?");
+        if (!confirmed)
+        {
+            return;
+        }
+
+        _busy = true;
+        _failed = false;
+        _message = null;
+
+        try
+        {
+            bool deleted = await CharacterSession.DeleteCharacterAsync(entry.Id);
+            if (!deleted)
+            {
+                _failed = true;
+                _message = "That character is no longer available in the current session.";
+                return;
+            }
+
+            await LoadAsync();
+            _message = $"{entry.DisplayName} was removed from the browser workspace.";
         }
         catch (Exception ex)
         {

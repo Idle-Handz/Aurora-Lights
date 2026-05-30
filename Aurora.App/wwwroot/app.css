@@ -428,6 +428,31 @@ html, body {
     transition: background 0.15s ease, border-color 0.15s ease;
 }
 
+.compendium-result-list {
+    min-height: 100%;
+}
+
+.compendium-result-button {
+    appearance: none;
+    display: block;
+    width: 100%;
+    padding: 0;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+    font: inherit;
+}
+
+.compendium-result-button:hover {
+    border-color: rgba(137, 180, 250, 0.35);
+    background: rgba(137, 180, 250, 0.05);
+}
+
+.compendium-result-button:focus-visible {
+    outline: 2px solid var(--mud-palette-primary, #89b4fa);
+    outline-offset: 2px;
+}
+
 .compendium-result-item {
     border: 1px solid rgba(255,255,255,0.04);
     background: rgba(255,255,255,0.015);
@@ -450,21 +475,58 @@ html, body {
     gap: 8px;
 }
 
+.compendium-result-name {
+    min-width: 0;
+    color: var(--mud-palette-text-primary, #cdd6f4);
+    font-size: 0.94rem;
+    font-weight: 600;
+    line-height: 1.25;
+}
+
+.compendium-result-source {
+    display: block;
+    margin-top: 2px;
+    color: var(--mud-palette-text-secondary, #a6adc8);
+    font-size: 0.75rem;
+    line-height: 1.25;
+}
+
 .compendium-type-pill {
     display: inline-block;
     padding: 2px 8px;
     border-radius: 999px;
     background: rgba(137, 180, 250, 0.12);
     color: var(--mud-palette-primary, #89b4fa);
+    font-size: 0.7rem;
+    line-height: 1.35;
     white-space: nowrap;
 }
 
 .compendium-meta-row {
+    display: flex;
+    gap: 4px;
+    margin-top: 4px;
     flex-wrap: wrap;
+}
+
+.compendium-mini-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 22px;
+    padding: 2px 8px;
+    border: 1px solid rgba(255,255,255,0.16);
+    border-radius: 999px;
+    color: var(--mud-palette-text-secondary, #a6adc8);
+    font-size: 0.72rem;
+    line-height: 1.2;
 }
 
 .compendium-result-summary {
     display: -webkit-box;
+    margin-top: 4px;
+    color: var(--mud-palette-text-primary, #cdd6f4);
+    font-size: 0.84rem;
+    line-height: 1.35;
     -webkit-line-clamp: 2;
     line-clamp: 2;
     -webkit-box-orient: vertical;

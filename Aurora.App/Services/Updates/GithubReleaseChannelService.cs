@@ -100,6 +100,7 @@ public abstract class GithubReleaseChannelService
         }
         catch (Exception ex)
         {
+            LastChecked = DateTimeOffset.UtcNow;
             LastError = ex.Message;
             DebugLogService.Instance.LogException(ex, $"update:{_channel}");
             return null;

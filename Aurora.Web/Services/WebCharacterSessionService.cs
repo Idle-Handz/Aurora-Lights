@@ -77,6 +77,17 @@ public sealed class WebCharacterSessionService
         return true;
     }
 
+    public async Task<bool> DeleteCharacterAsync(string relativePath)
+    {
+        bool deleted = await _workspaceService.DeleteCharacterFileAsync(relativePath);
+        if (deleted && string.Equals(_currentCharacterPath, relativePath, StringComparison.OrdinalIgnoreCase))
+        {
+            ClearCurrentCharacter();
+        }
+
+        return deleted;
+    }
+
     public void ClearCurrentCharacter()
     {
         _currentCharacterPath = null;

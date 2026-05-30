@@ -1,3 +1,5 @@
+using Builder.Presentation;
+
 namespace Aurora.App.Services;
 
 public enum HpMethod { Average, Rolled }
@@ -20,6 +22,12 @@ public sealed class UserPreferencesService
     private const string KeyLightMode          = "app.light_mode";
 
     public event Action? ThemeChanged;
+    public event Action? DeveloperModeChanged;
+
+    public UserPreferencesService()
+    {
+        SyncDeveloperMode(DevMode);
+    }
 
     /// <summary>
     /// When true, the app uses a light colour palette instead of the default dark theme.
@@ -68,7 +76,24 @@ public sealed class UserPreferencesService
     public bool DevMode
     {
         get => Preferences.Default.Get(KeyDevMode, defaultValue: false);
-        set => Preferences.Default.Set(KeyDevMode, value);
+        set
+        {
+            Preferences.Default.Set(KeyDevMode, value);
+            SyncDeveloperMode(value);
+            DeveloperModeChanged?.Invoke();
+        }
+    }
+
+    private static void SyncDeveloperMode(bool enabled)
+    {
+        try
+        {
+            ApplicationContext.Current.IsInDeveloperMode = enabled;
+        }
+        catch (InvalidOperationException)
+        {
+            // Unit-test or design-time construction before MauiProgram wires ApplicationContext.
+        }
     }
 
     /// <summary>

@@ -66,6 +66,12 @@ jobs:
       - name: Install MAUI workloads
         run: dotnet workload install maui
 
+      - name: Install vpk tool
+        shell: bash
+        run: |
+          dotnet tool install -g vpk --version 0.0.1298
+          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+
       - name: Restore Windows runtime graph
         shell: bash
         run: |
@@ -100,6 +106,37 @@ jobs:
             -p:ApplicationDisplayVersion=$VERSION_ASSEMBLY \
             -o publish/win-x64
 
+      - name: Download previous release for delta (win-x64)
+        # Best-effort: skipped silently on first release or if GitHub rate-limits.
+        # vpk pack still produces a full nupkg; only the delta is missing.
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          mkdir -p releases/win-x64
+          PRE_ARGS=()
+          if [[ "$VERSION_SEMVER" == *-* ]]; then
+            PRE_ARGS+=(--pre)
+          fi
+          vpk --yes --skip-updates download github \
+            --repoUrl https://github.com/${{ github.repository }} \
+            --token "$GITHUB_TOKEN" \
+            --channel win-x64 \
+            --outputDir releases/win-x64 \
+            "${PRE_ARGS[@]}" \
+          || echo "No previous release found for win-x64 — delta will be skipped."
+
+      - name: Pack with Velopack (win-x64)
+        shell: bash
+        run: |
+          vpk --yes --skip-updates pack \
+            --packId    Aurora.Reflections \
+            --packVersion "$VERSION_SEMVER" \
+            --packDir   publish/win-x64 \
+            --mainExe   Aurora.Reflections.exe \
+            --outputDir releases/win-x64 \
+            --channel   win-x64
+
       - name: Zip (win-x64)
         shell: pwsh
         run: Compress-Archive -Path publish\win-x64 -DestinationPath aurora-windows-x64.zip
@@ -108,6 +145,12 @@ jobs:
         with:
           name: windows-x64
           path: aurora-windows-x64.zip
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: velopack-win-x64
+          path: releases/win-x64/
           if-no-files-found: error
 
   build-windows-arm64:
@@ -128,6 +171,12 @@ jobs:
 
       - name: Install MAUI workloads
         run: dotnet workload install maui
+
+      - name: Install vpk tool
+        shell: bash
+        run: |
+          dotnet tool install -g vpk --version 0.0.1298
+          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
 
       - name: Restore Windows runtime graph
         shell: bash
@@ -163,6 +212,35 @@ jobs:
             -p:ApplicationDisplayVersion=$VERSION_ASSEMBLY \
             -o publish/win-arm64
 
+      - name: Download previous release for delta (win-arm64)
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          mkdir -p releases/win-arm64
+          PRE_ARGS=()
+          if [[ "$VERSION_SEMVER" == *-* ]]; then
+            PRE_ARGS+=(--pre)
+          fi
+          vpk --yes --skip-updates download github \
+            --repoUrl https://github.com/${{ github.repository }} \
+            --token "$GITHUB_TOKEN" \
+            --channel win-arm64 \
+            --outputDir releases/win-arm64 \
+            "${PRE_ARGS[@]}" \
+          || echo "No previous release found for win-arm64 — delta will be skipped."
+
+      - name: Pack with Velopack (win-arm64)
+        shell: bash
+        run: |
+          vpk --yes --skip-updates pack \
+            --packId    Aurora.Reflections \
+            --packVersion "$VERSION_SEMVER" \
+            --packDir   publish/win-arm64 \
+            --mainExe   Aurora.Reflections.exe \
+            --outputDir releases/win-arm64 \
+            --channel   win-arm64
+
       - name: Zip (win-arm64)
         shell: pwsh
         run: Compress-Archive -Path publish\win-arm64 -DestinationPath aurora-windows-arm64.zip
@@ -171,6 +249,12 @@ jobs:
         with:
           name: windows-arm64
           path: aurora-windows-arm64.zip
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: velopack-win-arm64
+          path: releases/win-arm64/
           if-no-files-found: error
 
   build-android:
@@ -384,13 +468,24 @@ jobs:
           REPO: ${{ github.repository }}
           VERSION: ${{ inputs.version }}
         run: |
+          # Collect Velopack assets. On the very first release there are no delta nupkgs, only
+          # full nupkgs + Setup.exe + RELEASES manifest — all of them land in the artifact dirs.
+          # Glob expansion handles both first-release (no delta) and subsequent (full + delta).
+          VELO_X64=$(ls artifacts/velopack-win-x64/ | xargs -I{} echo "artifacts/velopack-win-x64/{}")
+          VELO_ARM64=$(ls artifacts/velopack-win-arm64/ | xargs -I{} echo "artifacts/velopack-win-arm64/{}")
+          RELEASE_FLAGS=(--draft --generate-notes)
+          if [[ "${VERSION#v}" == *-* ]]; then
+            RELEASE_FLAGS+=(--prerelease)
+          fi
+
           gh release create "$VERSION" \
             --repo "$REPO" \
             --title "Aurora Lights $VERSION" \
-            --draft \
-            --generate-notes \
+            "${RELEASE_FLAGS[@]}" \
             "artifacts/windows-x64/aurora-windows-x64.zip" \
             "artifacts/windows-arm64/aurora-windows-arm64.zip" \
             "artifacts/android-arm64/aurora-android-arm64.apk" \
             "artifacts/macos-x64/aurora-maccatalyst-x64.zip" \
-            "artifacts/macos-arm64/aurora-maccatalyst-arm64.zip"
+            "artifacts/macos-arm64/aurora-maccatalyst-arm64.zip" \
+            $VELO_X64 \
+            $VELO_ARM64

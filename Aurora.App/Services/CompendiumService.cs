@@ -301,12 +301,8 @@ public sealed class CompendiumService
 
         if (!string.IsNullOrWhiteSpace(query))
         {
-            string trimmed = query.Trim();
-            filtered = filtered.Where(entry =>
-                entry.Name.Contains(trimmed, StringComparison.OrdinalIgnoreCase) ||
-                entry.Source.Contains(trimmed, StringComparison.OrdinalIgnoreCase) ||
-                entry.Type.Contains(trimmed, StringComparison.OrdinalIgnoreCase) ||
-                entry.SearchText.Contains(trimmed, StringComparison.OrdinalIgnoreCase));
+            string normalizedQuery = query.Trim().ToUpperInvariant();
+            filtered = filtered.Where(entry => entry.SearchKey.Contains(normalizedQuery, StringComparison.Ordinal));
         }
 
         return filtered.ToList();
@@ -514,11 +510,16 @@ LIMIT 1;
             ? plain[..217].TrimEnd() + "..."
             : plain;
 
+        string searchText = string.IsNullOrWhiteSpace(plain)
+            ? fallback.SearchText
+            : string.Join(" ", fallback.SearchText, plain);
+
         return fallback with
         {
             Summary = string.IsNullOrWhiteSpace(summary) ? fallback.Summary : summary,
             DescriptionHtml = descriptionHtml,
-            SearchText = string.IsNullOrWhiteSpace(plain) ? fallback.SearchText : string.Join(" ", fallback.SearchText, plain),
+            SearchText = searchText,
+            SearchKey = searchText.ToUpperInvariant(),
             HasComputedDetail = true
         };
     }
@@ -553,11 +554,16 @@ LIMIT 1;
             ? plain[..217].TrimEnd() + "..."
             : plain;
 
+        string searchText = string.IsNullOrWhiteSpace(plain)
+            ? entry.SearchText
+            : string.Join(" ", entry.SearchText, plain);
+
         return entry with
         {
             Summary = string.IsNullOrWhiteSpace(summary) ? entry.Summary : summary,
             DescriptionHtml = descriptionHtml,
-            SearchText = string.IsNullOrWhiteSpace(plain) ? entry.SearchText : string.Join(" ", entry.SearchText, plain),
+            SearchText = searchText,
+            SearchKey = searchText.ToUpperInvariant(),
             HasComputedDetail = true
         };
     }
@@ -826,4 +832,5 @@ public sealed record CompendiumEntryModel(
 
     public bool IsItemLike => CompendiumService.IsItemLike(Type);
     public bool IsCompanionLike => Type.StartsWith("Companion", StringComparison.OrdinalIgnoreCase);
+    public string SearchKey { get; init; } = SearchText.ToUpperInvariant();
 }

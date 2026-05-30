@@ -254,6 +254,17 @@
     color: #1e1e2e;
 }
 
+.equipment-tag.extract {
+    min-width: 4.25rem;
+    color: var(--mud-palette-info, #89dceb);
+    border-color: color-mix(in srgb, var(--mud-palette-info, #89dceb) 52%, var(--mud-palette-lines-inputs, #45475a));
+}
+
+.equipment-tag.extract:hover {
+    background: color-mix(in srgb, var(--mud-palette-info, #89dceb) 12%, transparent);
+    border-color: var(--mud-palette-info, #89dceb);
+}
+
 .equipment-remove-button,
 .equipment-edit-button {
     width: 2rem;

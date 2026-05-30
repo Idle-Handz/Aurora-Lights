@@ -32,7 +32,8 @@ public sealed record EquipmentInventoryItemModel(
     bool IsAttuned,
     string DisplayWeight,
     string DisplayPrice,
-    bool IsEquippable);
+    bool IsEquippable,
+    bool CanExtract = false);
 
 public sealed record EquipmentCoinChangeModel(string CoinId, long Value);
 

@@ -166,6 +166,16 @@
                                     @(item.IsAttuned ? "A" : "◇")
                                 </button>
                             }
+                            @if (item.CanExtract && OnExtractItem.HasDelegate)
+                            {
+                                <button type="button"
+                                        class="equipment-tag extract"
+                                        disabled="@Busy"
+                                        title="Extract pack contents"
+                                        @onclick="() => OnExtractItem.InvokeAsync(item.Identifier)">
+                                    Extract
+                                </button>
+                            }
                         </span>
                         <span>
                             @if (item.IsStackable && OnChangeAmount.HasDelegate)
@@ -278,6 +288,9 @@
 
     [Parameter]
     public EventCallback<string> OnEditItem { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnExtractItem { get; set; }
 
     private Task ChangeAmountAsync(string identifier, ChangeEventArgs args)
     {

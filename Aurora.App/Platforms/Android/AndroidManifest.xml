@@ -9,8 +9,7 @@
     <!-- Required by BlazorWebView to load app resources -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <!-- For picking character files from external storage -->
+    <!-- For picking character files from external storage (API ≤ 32 only; SAF handles higher) -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
                      android:maxSdkVersion="32" />
-    <uses-permission android:name="android.permission.READ_MEDIA_DOCUMENTS" />
 </manifest>

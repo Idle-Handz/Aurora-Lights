@@ -8,7 +8,7 @@ namespace Aurora.App.Services.Updates;
 ///
 /// This is notify-only for now (parity with the legacy WPF <c>IndicesUpdateService</c> UX surface).
 /// The actual download + extract + DataManager reload is a follow-up; the call site is the same shape
-/// as the app channel (<see cref="CheckAsync"/>), so the UI doesn't need to change when it lands.
+/// as the app channel check, so the UI doesn't need to change when it lands.
 /// </summary>
 public sealed class ContentUpdateService : GithubReleaseChannelService
 {
