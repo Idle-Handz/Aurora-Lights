@@ -50,6 +50,7 @@ packages/
 /tmp/
 /tmp_query_artificer.cs
 /aurora-windows-x64.zip
+/tools/PdfTestRunner/
 
 # Local character portrait library
 /Assets/portraits/

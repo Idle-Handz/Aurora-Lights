@@ -43,7 +43,8 @@ else
                               DisableCreateButton="@_preloading"
                               OnCreate="OnNewCharacter"
                               OnSelected="OnBrowserSelected"
-                              OnDelete="OnDeleteCharacter">
+                              OnDelete="OnDeleteCharacter"
+                              OnEditGroup="OnEditGroupCharacter">
                 <AdditionalHeaderContent>
                     <button class="character-browser-create"
                             type="button"
@@ -78,6 +79,17 @@ else
 
     private IReadOnlyList<CharacterBrowserEntry> BrowserEntries => _browserEntries;
 
+    private IReadOnlyList<string> ExistingGroups =>
+        new[] { "Characters" }
+            .Concat(
+                _characters
+                    .Select(c => c.CollectionGroupName)
+                    .Where(g => !string.IsNullOrWhiteSpace(g) &&
+                                !string.Equals(g, "Characters", StringComparison.OrdinalIgnoreCase))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(g => g, StringComparer.OrdinalIgnoreCase))
+            .ToList();
+
     private string DirectoryCaption =>
         _characters.Count == 0
             ? CharSvc.CharactersDirectory
@@ -98,12 +110,15 @@ else
         _portraitCts?.Dispose();
     }
 
-    protected override Task OnInitializedAsync()
+    protected override async Task OnInitializedAsync()
     {
         try
         {
-            _characters = CharSvc.LoadCharacterFiles().ToList();
-            RebuildBrowserEntries();
+            CharSvc.EnsureInitialized();
+            // Run the file scan on a background thread so the loading spinner
+            // can render while each .dnd5e file is read and parsed.
+            _characters = await Task.Run(() => CharSvc.LoadCharacterFiles().ToList());
+            if (!_disposed) RebuildBrowserEntries();
         }
         catch (Exception ex)
         {
@@ -116,7 +131,6 @@ else
         }
 
         _ = RunPreloadAsync();
-        return Task.CompletedTask;
     }
 
     private void RebuildBrowserEntries()
@@ -131,28 +145,46 @@ else
     private async Task LoadPortraitsAsync(CancellationToken ct)
     {
         var snapshot = _characters.ToList();
-        List<string?> portraits;
+        if (snapshot.Count == 0) return;
+
+        // Load up to 4 portraits in parallel. Each one updates the grid the
+        // moment it finishes so the user sees portraits appear progressively
+        // rather than all at once after a long wait.
+        using var throttle = new SemaphoreSlim(4, 4);
+
+        async Task LoadOneAsync(Builder.Presentation.Models.CharacterFile character, int index)
+        {
+            await throttle.WaitAsync(ct);
+            string? url;
+            try
+            {
+                if (ct.IsCancellationRequested || _disposed) return;
+                url = await Task.Run(() => ToPortraitDataUrl(character), ct);
+            }
+            catch (OperationCanceledException) { return; }
+            finally { throttle.Release(); }
+
+            if (url == null || ct.IsCancellationRequested || _disposed) return;
+
+            // Mutate the list and notify the UI on the dispatcher thread.
+            await InvokeAsync(() =>
+            {
+                if (!ct.IsCancellationRequested &&
+                    !_disposed &&
+                    index < _browserEntries.Count &&
+                    string.Equals(_browserEntries[index].Id, character.FilePath, StringComparison.Ordinal))
+                {
+                    _browserEntries[index] = _browserEntries[index] with { PortraitDataUrl = url };
+                    StateHasChanged();
+                }
+            });
+        }
+
         try
         {
-            portraits = await Task.Run(() => snapshot.Select(ToPortraitDataUrl).ToList(), ct);
+            await Task.WhenAll(snapshot.Select((c, i) => LoadOneAsync(c, i)));
         }
-        catch (OperationCanceledException)
-        {
-            return;
-        }
-        if (ct.IsCancellationRequested || _disposed) return;
-
-        bool anyUpdated = false;
-        for (int i = 0; i < portraits.Count && i < _browserEntries.Count; i++)
-        {
-            if (portraits[i] != null)
-            {
-                _browserEntries[i] = _browserEntries[i] with { PortraitDataUrl = portraits[i] };
-                anyUpdated = true;
-            }
-        }
-        if (anyUpdated && !_disposed)
-            await InvokeAsync(StateHasChanged);
+        catch (OperationCanceledException) { }
     }
 
     private async Task RunPreloadAsync()
@@ -181,6 +213,18 @@ else
                         CharSvc.BeginPreload(mruFile);
                     }
                 }
+            }
+        }
+        catch (Exception ex)
+        {
+            DebugLogService.Instance.LogException(ex, "CharactersPage.RunPreloadAsync");
+            if (!_disposed)
+            {
+                await InvokeAsync(() =>
+                {
+                    if (!_disposed)
+                        Snackbar.Add($"Could not preload content data: {ex.Message}", Severity.Warning);
+                });
             }
         }
         finally
@@ -321,7 +365,11 @@ else
 
     private async Task OnNewCharacter()
     {
-        IDialogReference dialog = await DialogService.ShowAsync<NewCharacterDialog>("New Character");
+        var parameters = new DialogParameters<NewCharacterDialog>
+        {
+            { d => d.ExistingGroups, ExistingGroups }
+        };
+        IDialogReference dialog = await DialogService.ShowAsync<NewCharacterDialog>("New Character", parameters);
         DialogResult? result = await dialog.Result;
         if (result is not { Canceled: false, Data: NewCharacterInfo info })
         {
@@ -344,6 +392,9 @@ else
                 StateHasChanged();
                 return;
             }
+
+            if (!string.IsNullOrWhiteSpace(info.Group))
+                file.UpdateGroupName(info.Group);
 
             CharacterTab tab = Tabs.OpenTab(file, CharSvc.CurrentCharacter);
             tab.Snapshot = CharacterSnapshot.From(CharSvc.CurrentCharacter);
@@ -401,6 +452,41 @@ else
         catch (Exception ex)
         {
             Snackbar.Add($"Could not delete {file.DisplayName}: {ex.Message}", Severity.Error);
+            return;
+        }
+
+        _characters = CharSvc.LoadCharacterFiles().ToList();
+        RebuildBrowserEntries();
+        StateHasChanged();
+    }
+
+    private async Task OnEditGroupCharacter(CharacterBrowserEntry entry)
+    {
+        Builder.Presentation.Models.CharacterFile? file = _characters.FirstOrDefault(c =>
+            string.Equals(c.FilePath, entry.Id, StringComparison.Ordinal));
+        if (file == null) return;
+
+        var parameters = new DialogParameters<EditGroupDialog>
+        {
+            { d => d.CurrentGroup,    file.CollectionGroupName },
+            { d => d.ExistingGroups,  ExistingGroups }
+        };
+        IDialogReference dialog = await DialogService.ShowAsync<EditGroupDialog>("Edit Group", parameters);
+        DialogResult? result = await dialog.Result;
+        if (result is not { Canceled: false, Data: string newGroup })
+            return;
+
+        string resolved = string.IsNullOrWhiteSpace(newGroup) ? "Characters" : newGroup;
+        if (string.Equals(resolved, file.CollectionGroupName, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        try
+        {
+            file.UpdateGroupName(resolved);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Could not update group: {ex.Message}", Severity.Error);
             return;
         }
 

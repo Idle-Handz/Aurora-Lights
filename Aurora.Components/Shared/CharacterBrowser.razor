@@ -76,54 +76,12 @@
                 <div class="character-browser-grid">
                     @foreach (CharacterBrowserEntry character in _favorites)
                     {
-                        <div class="character-browser-card-wrapper">
-                            <button class="@GetCardClass(character)"
-                                    type="button"
-                                    @onclick="() => OnSelected.InvokeAsync(character)">
-                                <div class="character-browser-portrait">
-                                    @if (!string.IsNullOrWhiteSpace(character.PortraitDataUrl))
-                                    {
-                                        <img src="@character.PortraitDataUrl" alt="@character.DisplayName" />
-                                    }
-                                    else
-                                    {
-                                        <span>@GetInitials(character.DisplayName)</span>
-                                    }
-                                </div>
-
-                                <div class="character-browser-card-body">
-                                    <div class="character-browser-name-row">
-                                        <span class="character-browser-name">@character.DisplayName</span>
-                                        @if (character.IsFavorite)
-                                        {
-                                            <span class="character-browser-star" aria-hidden="true">★</span>
-                                        }
-                                    </div>
-
-                                    <div class="character-browser-primary">@character.PrimaryText</div>
-
-                                    @if (!string.IsNullOrWhiteSpace(character.SecondaryText))
-                                    {
-                                        <div class="character-browser-secondary">@character.SecondaryText</div>
-                                    }
-
-                                    @if (!string.IsNullOrWhiteSpace(character.CaptionText))
-                                    {
-                                        <div class="character-browser-tertiary">@character.CaptionText</div>
-                                    }
-                                </div>
-                            </button>
-                            @if (OnDelete.HasDelegate)
-                            {
-                                <button class="character-browser-delete-btn"
-                                        type="button"
-                                        title="Delete character"
-                                        @onclick="() => OnDelete.InvokeAsync(character)"
-                                        @onclick:stopPropagation="true">
-                                    ×
-                                </button>
-                            }
-                        </div>
+                        <CharacterBrowserCard @key="character.Id"
+                                              Character="character"
+                                              Selected="@IsSelected(character)"
+                                              OnSelected="OnSelected"
+                                              OnDelete="OnDelete"
+                                              OnEditGroup="OnEditGroup" />
                     }
                 </div>
             </section>
@@ -136,54 +94,12 @@
                 <div class="character-browser-grid">
                     @foreach (CharacterBrowserEntry character in group)
                     {
-                        <div class="character-browser-card-wrapper">
-                            <button class="@GetCardClass(character)"
-                                    type="button"
-                                    @onclick="() => OnSelected.InvokeAsync(character)">
-                                <div class="character-browser-portrait">
-                                    @if (!string.IsNullOrWhiteSpace(character.PortraitDataUrl))
-                                    {
-                                        <img src="@character.PortraitDataUrl" alt="@character.DisplayName" />
-                                    }
-                                    else
-                                    {
-                                        <span>@GetInitials(character.DisplayName)</span>
-                                    }
-                                </div>
-
-                                <div class="character-browser-card-body">
-                                    <div class="character-browser-name-row">
-                                        <span class="character-browser-name">@character.DisplayName</span>
-                                        @if (character.IsFavorite)
-                                        {
-                                            <span class="character-browser-star" aria-hidden="true">★</span>
-                                        }
-                                    </div>
-
-                                    <div class="character-browser-primary">@character.PrimaryText</div>
-
-                                    @if (!string.IsNullOrWhiteSpace(character.SecondaryText))
-                                    {
-                                        <div class="character-browser-secondary">@character.SecondaryText</div>
-                                    }
-
-                                    @if (!string.IsNullOrWhiteSpace(character.CaptionText))
-                                    {
-                                        <div class="character-browser-tertiary">@character.CaptionText</div>
-                                    }
-                                </div>
-                            </button>
-                            @if (OnDelete.HasDelegate)
-                            {
-                                <button class="character-browser-delete-btn"
-                                        type="button"
-                                        title="Delete character"
-                                        @onclick="() => OnDelete.InvokeAsync(character)"
-                                        @onclick:stopPropagation="true">
-                                    ×
-                                </button>
-                            }
-                        </div>
+                        <CharacterBrowserCard @key="character.Id"
+                                              Character="character"
+                                              Selected="@IsSelected(character)"
+                                              OnSelected="OnSelected"
+                                              OnDelete="OnDelete"
+                                              OnEditGroup="OnEditGroup" />
                     }
                 </div>
             </section>
@@ -234,6 +150,9 @@
     public EventCallback<CharacterBrowserEntry> OnDelete { get; set; }
 
     [Parameter]
+    public EventCallback<CharacterBrowserEntry> OnEditGroup { get; set; }
+
+    [Parameter]
     public EventCallback OnCreate { get; set; }
 
     [Parameter]
@@ -253,9 +172,6 @@
             ? Characters
             : Characters.Where(c =>
                 c.DisplayName.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
-                c.PrimaryText.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
-                (c.SecondaryText?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) == true) ||
-                (c.CaptionText?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) == true) ||
                 (c.GroupName?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) == true))
             .ToList();
 
@@ -267,27 +183,6 @@
             .ToList();
     }
 
-    private string GetCardClass(CharacterBrowserEntry character)
-    {
-        bool isSelected = string.Equals(character.Id, SelectedId, StringComparison.Ordinal);
-        return isSelected
-            ? "character-browser-card selected"
-            : "character-browser-card";
-    }
-
-    private static string GetInitials(string value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return "?";
-        }
-
-        string[] parts = value.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        if (parts.Length == 1)
-        {
-            return parts[0][0].ToString().ToUpperInvariant();
-        }
-
-        return string.Concat(parts.Take(2).Select(part => char.ToUpperInvariant(part[0])));
-    }
+    private bool IsSelected(CharacterBrowserEntry character) =>
+        string.Equals(character.Id, SelectedId, StringComparison.Ordinal);
 }

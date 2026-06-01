@@ -7,6 +7,7 @@
             <CharacterCreationFields Model="_model"
                                      NamePlaceholder="Character Name"
                                      PlayerNamePlaceholder="Player Name"
+                                     ExistingGroups="ExistingGroups"
                                      OnKeyDown="OnKeyDown" />
             @if (_nameError != null)
             {
@@ -27,6 +28,8 @@
 
 @code {
     [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter] public IReadOnlyList<string> ExistingGroups { get; set; } = [];
 
     private readonly CharacterCreationModel _model = new();
     private string? _nameError;
@@ -51,6 +54,6 @@
             return;
         }
         _nameError = null;
-        MudDialog.Close(new NewCharacterInfo(name, _model.PlayerName.Trim()));
+        MudDialog.Close(new NewCharacterInfo(name, _model.PlayerName.Trim(), _model.Group.Trim()));
     }
 }

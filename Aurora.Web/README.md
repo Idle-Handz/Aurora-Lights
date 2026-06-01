@@ -19,15 +19,26 @@ This first implementation slice focuses on anonymous, session-scoped usage:
 
 ## Current Scope
 
-This project does not yet expose the full Aurora builder UI in the browser.
-The current implementation is intended to land the web host, upload model, merged-content browsing, and the first create/open/export character loop so the next passes can connect full editing, richer compendium pages, and richer PDF/export flows.
+The browser client now exposes first-pass editing surfaces for:
+
+- character creation and temporary session workspaces
+- unresolved build selections
+- narrative details and source toggles
+- inventory, equipment slots, currency, and item state
+- known spells, prepared spells, and spell-slot usage
+- `.dnd5e` downloads and lightweight summary PDFs
+
+These are useful browser workflows, but they are intentionally narrower than the
+desktop applications. Uploaded files remain ephemeral and private to the current
+anonymous session.
 
 ## Near-Term Next Steps
 
 - expand the merged content service beyond the first compendium page
-- extract or link shared Razor UI into a reusable component assembly
+- reuse more shared Razor UI from `Aurora.Components`
 - replace the lightweight PDF summary export with a fuller character-sheet renderer
-- add full round-trip editing flows
+- deepen browser editing workflows where the first-pass pages do not yet match
+  the desktop clients
 
 ## Current Constraints
 

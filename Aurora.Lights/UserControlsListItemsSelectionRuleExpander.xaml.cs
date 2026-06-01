@@ -132,7 +132,7 @@ public partial class ListItemsSelectionRuleExpander :
     if (this.GetViewModel().IsInDebugMode)
       MessageDialogService.Show(this.SelectionRule.UniqueIdentifier);
     else
-      MessageDialogService.Show("INFORMATION ONLY AVAILABLE WHEN DEBUGGER IS ATTACHED \r\n\r\nTODO: REMOVE FROM RELEASE BUILD");
+      MessageDialogService.Show("Selection-rule details are available while the application is running in debug mode.");
   }
 
   void ISubscriber<SettingsChangedEvent>.OnHandleEvent(SettingsChangedEvent args)

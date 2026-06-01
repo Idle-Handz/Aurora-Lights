@@ -20,6 +20,23 @@
                @bind:event="oninput"
                @onkeydown="OnKeyDown" />
     </div>
+
+    <div class="character-creation-field">
+        <label for="@GroupFieldId">Group</label>
+        <input id="@GroupFieldId"
+               class="character-creation-input"
+               list="@GroupListId"
+               placeholder="Characters"
+               @bind="Model.Group"
+               @bind:event="oninput"
+               @onkeydown="OnKeyDown" />
+        <datalist id="@GroupListId">
+            @foreach (var g in ExistingGroups)
+            {
+                <option value="@g" />
+            }
+        </datalist>
+    </div>
 </div>
 
 @code {
@@ -39,9 +56,13 @@
     public string PlayerNamePlaceholder { get; set; } = "Optional";
 
     [Parameter]
+    public IReadOnlyList<string> ExistingGroups { get; set; } = [];
+
+    [Parameter]
     public EventCallback<KeyboardEventArgs> OnKeyDown { get; set; }
 
     private string NameFieldId { get; } = $"character-name-{Guid.NewGuid():N}";
-
     private string PlayerFieldId { get; } = $"player-name-{Guid.NewGuid():N}";
+    private string GroupFieldId { get; } = $"character-group-{Guid.NewGuid():N}";
+    private string GroupListId { get; } = $"character-group-list-{Guid.NewGuid():N}";
 }

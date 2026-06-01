@@ -97,7 +97,11 @@ public sealed class WebCharacterEngineService
         }
     }
 
-    public async Task<WebCharacterRuntimeState> CreateCharacterAsync(PhaseZeroSessionWorkspace workspace, string name, string playerName)
+    public async Task<WebCharacterRuntimeState> CreateCharacterAsync(
+        PhaseZeroSessionWorkspace workspace,
+        string name,
+        string playerName,
+        string group)
     {
         await _operationLock.WaitAsync();
         try
@@ -123,6 +127,7 @@ public sealed class WebCharacterEngineService
             }
 
             CharacterFile file = new(path);
+            file.CollectionGroupName = string.IsNullOrWhiteSpace(group) ? "Characters" : group.Trim();
             file.Save(character);
 
             string relativePath = Path.GetRelativePath(workspace.WorkspacePath, path);

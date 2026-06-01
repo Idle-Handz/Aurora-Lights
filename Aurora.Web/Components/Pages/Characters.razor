@@ -13,7 +13,8 @@
                        StatusIsError="@_failed">
     <CreationContent>
         <div class="create-panel">
-            <CharacterCreationFields Model="_creationModel" />
+            <CharacterCreationFields Model="_creationModel"
+                                     ExistingGroups="ExistingGroups" />
 
             <div class="action-row">
                 <button class="action-link primary" @onclick="CreateCharacterAsync" disabled="@(_busy || string.IsNullOrWhiteSpace(_creationModel.Name))">Create New Character</button>
@@ -62,6 +63,17 @@
 
     private IReadOnlyList<CharacterBrowserEntry> BrowserEntries =>
         _characters.Select(ToBrowserEntry).ToList();
+
+    private IReadOnlyList<string> ExistingGroups =>
+        new[] { "Characters" }
+            .Concat(
+                _characters
+                    .Select(character => character.GroupName)
+                    .Where(group => !string.IsNullOrWhiteSpace(group) &&
+                                    !string.Equals(group, "Characters", StringComparison.OrdinalIgnoreCase))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(group => group, StringComparer.OrdinalIgnoreCase))
+            .ToList();
 
     private string DirectoryCaption =>
         _loading
@@ -163,7 +175,10 @@
 
         try
         {
-            WebCharacterRuntimeState runtimeState = await CharacterSession.CreateCharacterAsync(_creationModel.Name, _creationModel.PlayerName);
+            WebCharacterRuntimeState runtimeState = await CharacterSession.CreateCharacterAsync(
+                _creationModel.Name,
+                _creationModel.PlayerName,
+                _creationModel.Group);
             await LoadAsync();
             _selectedCharacter = _characters.FirstOrDefault(character =>
                 string.Equals(character.RelativePath, runtimeState.Summary.RelativePath, StringComparison.OrdinalIgnoreCase));

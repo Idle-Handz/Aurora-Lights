@@ -1,0 +1,126 @@
+<div class="character-browser-card-wrapper">
+    <button class="@CardClass"
+            type="button"
+            @onclick="SelectAsync">
+        <div class="character-browser-portrait">
+            @if (!string.IsNullOrWhiteSpace(Character.PortraitDataUrl))
+            {
+                <img src="@Character.PortraitDataUrl" alt="@Character.DisplayName" />
+            }
+            else
+            {
+                <span>@GetInitials(Character.DisplayName)</span>
+            }
+        </div>
+
+        <div class="character-browser-card-body">
+            <div class="character-browser-name-row">
+                <span class="character-browser-name">@Character.DisplayName</span>
+                @if (Character.IsFavorite)
+                {
+                    <span class="character-browser-star" aria-hidden="true">&#9733;</span>
+                }
+            </div>
+
+            <div class="character-browser-primary">@Character.PrimaryText</div>
+
+            @if (!string.IsNullOrWhiteSpace(Character.SecondaryText))
+            {
+                <div class="character-browser-secondary">@Character.SecondaryText</div>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(Character.CaptionText))
+            {
+                <div class="character-browser-tertiary">@Character.CaptionText</div>
+            }
+        </div>
+    </button>
+    @if (OnEditGroup.HasDelegate)
+    {
+        <button class="character-browser-group-btn"
+                type="button"
+                title="Edit group"
+                @onclick="EditGroupAsync"
+                @onclick:stopPropagation="true">
+            &#9698;
+        </button>
+    }
+    @if (OnDelete.HasDelegate)
+    {
+        <button class="character-browser-delete-btn"
+                type="button"
+                title="Delete character"
+                @onclick="DeleteAsync"
+                @onclick:stopPropagation="true">
+            &times;
+        </button>
+    }
+</div>
+
+@code {
+    private CharacterBrowserEntry? _renderedCharacter;
+    private bool _renderedSelected;
+    private bool _renderedCanDelete;
+    private bool _renderedCanEditGroup;
+
+    [Parameter, EditorRequired]
+    public CharacterBrowserEntry Character { get; set; } = default!;
+
+    [Parameter]
+    public bool Selected { get; set; }
+
+    [Parameter]
+    public EventCallback<CharacterBrowserEntry> OnSelected { get; set; }
+
+    [Parameter]
+    public EventCallback<CharacterBrowserEntry> OnDelete { get; set; }
+
+    [Parameter]
+    public EventCallback<CharacterBrowserEntry> OnEditGroup { get; set; }
+
+    private string CardClass => Selected
+        ? "character-browser-card selected"
+        : "character-browser-card";
+
+    protected override bool ShouldRender()
+    {
+        bool shouldRender =
+            !ReferenceEquals(_renderedCharacter, Character) ||
+            _renderedSelected != Selected ||
+            _renderedCanDelete != OnDelete.HasDelegate ||
+            _renderedCanEditGroup != OnEditGroup.HasDelegate;
+
+        CaptureRenderState();
+        return shouldRender;
+    }
+
+    protected override void OnAfterRender(bool firstRender) => CaptureRenderState();
+
+    private void CaptureRenderState()
+    {
+        _renderedCharacter = Character;
+        _renderedSelected = Selected;
+        _renderedCanDelete = OnDelete.HasDelegate;
+        _renderedCanEditGroup = OnEditGroup.HasDelegate;
+    }
+
+    private Task SelectAsync() => OnSelected.InvokeAsync(Character);
+    private Task DeleteAsync() => OnDelete.InvokeAsync(Character);
+    private Task EditGroupAsync() => OnEditGroup.InvokeAsync(Character);
+
+    private static string GetInitials(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return "?";
+        }
+
+        string[] parts = value.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (parts.Length == 1)
+        {
+            return parts[0][0].ToString().ToUpperInvariant();
+        }
+
+        return string.Concat(parts.Take(2).Select(part => char.ToUpperInvariant(part[0])));
+    }
+}

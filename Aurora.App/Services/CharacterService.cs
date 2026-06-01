@@ -13,7 +13,7 @@ using CommunityToolkit.Maui.Storage;
 
 namespace Aurora.App.Services;
 
-public sealed record NewCharacterInfo(string Name, string PlayerName);
+public sealed record NewCharacterInfo(string Name, string PlayerName, string Group = "");
 
 /// <summary>
 /// Wraps DataManager to provide character file listing and full character loading.
@@ -233,9 +233,19 @@ public sealed class CharacterService :
     /// the caller. Safe to call speculatively — errors are swallowed. The caller can
     /// check <see cref="IsPreloaded"/> later to see whether it finished.
     /// </summary>
-    public void BeginPreload(CharacterFile file) =>
-        // LoadCharacterAsync catches all exceptions internally, so fire-and-forget is safe.
-        _ = LoadCharacterAsync(file);
+    public void BeginPreload(CharacterFile file) => _ = BeginPreloadAsync(file);
+
+    private async Task BeginPreloadAsync(CharacterFile file)
+    {
+        try
+        {
+            await LoadCharacterAsync(file);
+        }
+        catch (Exception ex)
+        {
+            DebugLogService.Instance.LogException(ex, "CharacterService.BeginPreloadAsync");
+        }
+    }
 
     public async Task<(bool Success, string Message)> LoadCharacterAsync(CharacterFile file)
     {
@@ -290,6 +300,11 @@ public sealed class CharacterService :
                 DebugLogService.Instance.LogException(ex, "CharacterService.LoadCharacterAsync");
                 return (false, BuildErrorMessage(ex));
             }
+        }
+        catch (Exception ex)
+        {
+            DebugLogService.Instance.LogException(ex, "CharacterService.LoadCharacterAsync");
+            return (false, BuildErrorMessage(ex));
         }
         finally
         {

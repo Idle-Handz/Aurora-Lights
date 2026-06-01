@@ -95,10 +95,10 @@ public sealed class WebCharacterSessionService
         _currentMagicState = null;
     }
 
-    public async Task<WebCharacterRuntimeState> CreateCharacterAsync(string name, string playerName)
+    public async Task<WebCharacterRuntimeState> CreateCharacterAsync(string name, string playerName, string group)
     {
         PhaseZeroSessionWorkspace workspace = await _workspaceService.GetWorkspaceAsync();
-        WebCharacterRuntimeState runtimeState = await _engine.CreateCharacterAsync(workspace, name, playerName);
+        WebCharacterRuntimeState runtimeState = await _engine.CreateCharacterAsync(workspace, name, playerName, group);
         string absolutePath = Path.Combine(workspace.WorkspacePath, runtimeState.Summary.RelativePath);
         string relativePath = await _workspaceService.TrackGeneratedCharacterAsync(absolutePath);
         _currentCharacterPath = relativePath;

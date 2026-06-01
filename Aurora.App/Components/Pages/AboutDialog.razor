@@ -40,6 +40,11 @@
                            OnClick="OpenIssuesAsync">
                     Report an Issue
                 </MudButton>
+                <MudButton Variant="Variant.Outlined"
+                           StartIcon="@Icons.Material.Filled.Language"
+                           OnClick="OpenPublisherAsync">
+                    Idle Handz
+                </MudButton>
             </MudStack>
         </div>
     </DialogContent>
@@ -58,4 +63,6 @@
     private Task OpenReleasesAsync() => Launcher.Default.OpenAsync($"{Brand.RepositoryUrl}/releases");
 
     private Task OpenIssuesAsync() => Launcher.Default.OpenAsync(Brand.IssuesUrl);
+
+    private Task OpenPublisherAsync() => Launcher.Default.OpenAsync(Brand.PublisherUrl);
 }

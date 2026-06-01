@@ -53,16 +53,21 @@ Current status:
 - new temporary characters can now be created and downloaded back out as `.dnd5e`
 - a lightweight PDF summary export is now available for the active session character
 - stale temporary workspaces are cleaned up automatically
-- the shared UI/component extraction work is still ahead
+- `Aurora.Components` now provides shared UI fragments used by the MAUI and web
+  clients
+- first-pass Build, Manage, Equipment, and Magic editing workflows are available
+  in the browser workspace
 
 Planned implementation shape:
 
 1. Add a web host project.
-2. Introduce a shared Razor/component assembly so the MAUI and web hosts can reuse the same UI source.
+2. Continue moving reusable Razor UI into `Aurora.Components` so the MAUI and
+   web hosts can share the same source.
 3. Build a session-scoped content overlay service.
 4. Parse uploaded XML once per session and build in-memory indexes for compendium/equipment/spell lookups.
 5. Add temporary workspace cleanup/expiration.
 6. Introduce a download-focused character/PDF flow instead of any server persistence.
+7. Deepen the first browser editing workflows toward desktop parity.
 
 ## Web Phase 0 Non-Goals
 
