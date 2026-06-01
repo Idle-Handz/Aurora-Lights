@@ -4,8 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version tag (e.g. v0.1.0-alpha)'
-        required: true
+        description: 'Version tag override, or auto for the next minor release'
+        required: false
+        default: 'auto'
         type: string
 
 permissions:
@@ -13,11 +14,12 @@ permissions:
 
 jobs:
   # Single source of truth for the version values stamped into the binaries. The release
-  # tag the user types (e.g. "v0.1.0-alpha") is parsed once and reused by every build job
+  # tag selected by the auto-suggestion or user override is parsed once and reused by every build job
   # so Windows / macOS / Android all advertise the same version, and the in-app update
   # check can read InformationalVersion and compare it against the GitHub release tag.
   #
-  # Three forms come out:
+  # Four forms come out:
+  #   tag       — full release tag with leading "v" (e.g. "v0.1.0-alpha")
   #   semver    — full SemVer with pre-release (e.g. "0.1.0-alpha"); user-visible
   #   assembly  — numeric MAJOR.MINOR.PATCH only (e.g. "0.1.0"); MSBuild Version /
   #               AssemblyVersion / FileVersion all require this form
@@ -25,27 +27,76 @@ jobs:
   prep_version:
     runs-on: ubuntu-latest
     outputs:
+      tag:      ${{ steps.parse.outputs.tag }}
       semver:   ${{ steps.parse.outputs.semver }}
       assembly: ${{ steps.parse.outputs.assembly }}
       info:     ${{ steps.parse.outputs.info }}
+      latest:   ${{ steps.parse.outputs.latest }}
+      suggested: ${{ steps.parse.outputs.suggested }}
     steps:
       - id: parse
         env:
           INPUT_VERSION: ${{ inputs.version }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
         shell: bash
         run: |
           set -euo pipefail
-          RAW="${INPUT_VERSION#v}"          # strip leading 'v'
+
+          LATEST_TAG="$(gh api "repos/$REPO/releases?per_page=100" \
+            --jq '[.[] | select(.draft == false)] | sort_by(.published_at) | last | .tag_name // empty')"
+
+          if [[ -n "$LATEST_TAG" ]]; then
+            LATEST_RAW="${LATEST_TAG#v}"
+            if [[ ! "$LATEST_RAW" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)(-[0-9A-Za-z.-]+)?$ ]]; then
+              echo "ERROR: latest published release '$LATEST_TAG' is not a supported SemVer tag"
+              exit 1
+            fi
+            PRERELEASE_SUFFIX="${BASH_REMATCH[4]:-}"
+            SUGGESTED_TAG="v${BASH_REMATCH[1]}.$((10#${BASH_REMATCH[2]} + 1)).0${PRERELEASE_SUFFIX}"
+          else
+            LATEST_TAG="(none)"
+            SUGGESTED_TAG="v0.1.0-beta"
+          fi
+
+          REQUESTED_TAG="${INPUT_VERSION:-auto}"
+          if [[ "$REQUESTED_TAG" == "auto" ]]; then
+            RESOLVED_TAG="$SUGGESTED_TAG"
+          elif [[ "$REQUESTED_TAG" == v* ]]; then
+            RESOLVED_TAG="$REQUESTED_TAG"
+          else
+            RESOLVED_TAG="v$REQUESTED_TAG"
+          fi
+
+          RAW="${RESOLVED_TAG#v}"           # strip leading 'v'
           ASM="${RAW%%-*}"                  # drop pre-release suffix for assembly stamp
-          # Sanity: assembly must be three dot-separated integers
-          if ! echo "$ASM" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-            echo "ERROR: assembly version '$ASM' (from input '$INPUT_VERSION') is not MAJOR.MINOR.PATCH"
+          if [[ ! "$RAW" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "ERROR: release tag '$RESOLVED_TAG' is not a supported SemVer tag"
             exit 1
           fi
+          # Sanity: assembly must be three dot-separated integers
+          if ! echo "$ASM" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "ERROR: assembly version '$ASM' (from tag '$RESOLVED_TAG') is not MAJOR.MINOR.PATCH"
+            exit 1
+          fi
+          echo "tag=$RESOLVED_TAG" >> "$GITHUB_OUTPUT"
           echo "semver=$RAW"     >> "$GITHUB_OUTPUT"
           echo "assembly=$ASM"   >> "$GITHUB_OUTPUT"
           echo "info=$RAW"       >> "$GITHUB_OUTPUT"
-          echo "Parsed input '$INPUT_VERSION' → semver=$RAW assembly=$ASM"
+          echo "latest=$LATEST_TAG" >> "$GITHUB_OUTPUT"
+          echo "suggested=$SUGGESTED_TAG" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Release version"
+            echo ""
+            echo "| Item | Version |"
+            echo "| --- | --- |"
+            echo "| Latest published release | \`$LATEST_TAG\` |"
+            echo "| Suggested next minor | \`$SUGGESTED_TAG\` |"
+            echo "| Publishing | \`$RESOLVED_TAG\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "Latest published release: $LATEST_TAG"
+          echo "Suggested next minor: $SUGGESTED_TAG"
+          echo "Publishing: $RESOLVED_TAG (semver=$RAW assembly=$ASM)"
 
   build-windows-x64:
     needs: prep_version
@@ -430,6 +481,7 @@ jobs:
 
   release:
     needs:
+      - prep_version
       - build-windows-x64
       - build-windows-arm64
       - build-android
@@ -446,7 +498,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
-          VERSION: ${{ inputs.version }}
+          VERSION: ${{ needs.prep_version.outputs.tag }}
         run: |
           # Collect Velopack assets. On the very first release there are no delta nupkgs, only
           # full nupkgs + Setup.exe + RELEASES manifest — all of them land in the artifact dirs.
