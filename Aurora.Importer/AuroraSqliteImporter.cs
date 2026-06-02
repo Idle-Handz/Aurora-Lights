@@ -1310,8 +1310,7 @@ VALUES
         {
             // target_aurora_id is set only for direct ID_* references; the raw id
             // attribute is always preserved in target_semantic_key for diagnostics.
-            string? targetAuroraId = grant.id?.StartsWith("ID_", StringComparison.OrdinalIgnoreCase) == true
-                ? grant.id : null;
+            string? targetAuroraId = GetGrantTargetAuroraId(grant);
             ExecuteInsert(connection, transaction,
                 "INSERT INTO grants (rule_scope_id, ordinal, grant_type, target_aurora_id, target_semantic_key, target_semantic_kind, target_semantic_name, raw_xml, name_text, grant_level, spellcasting_name, is_prepared, requirements_text) VALUES ($rule_scope_id, $ordinal, $grant_type, $target_aurora_id, $target_semantic_key, $target_semantic_kind, $target_semantic_name, $raw_xml, $name_text, $grant_level, $spellcasting_name, $is_prepared, $requirements_text);",
                 ("$rule_scope_id",         ruleScopeId), ("$ordinal", ordinal++),
@@ -1352,7 +1351,7 @@ VALUES
                     "INSERT INTO select_supports (select_id, ordinal, support_text) VALUES ($select_id, $ordinal, $support_text);",
                     ("$select_id", selectId), ("$ordinal", suppOrdinal++), ("$support_text", s));
 
-            InsertSelectItems(connection, transaction, selectId, select.items);
+            InsertSelectItems(connection, transaction, selectId, select, select.items);
         }
 
         ordinal = 1;
@@ -1373,19 +1372,25 @@ VALUES
         }
     }
 
-    private static void InsertSelectItems(SqliteConnection connection, SqliteTransaction transaction, long selectId, IEnumerable<AuroraItemEntry>? items)
+    private static void InsertSelectItems(
+        SqliteConnection connection,
+        SqliteTransaction transaction,
+        long selectId,
+        Select select,
+        IEnumerable<AuroraItemEntry>? items)
     {
         if (items?.Any() != true) return;
         int ordinal = 1;
         foreach (var item in items)
         {
             string? targetAuroraId = GetItemTargetAuroraId(item);
+            string optionKind = DetermineSelectItemOptionKind(select, item, targetAuroraId);
             ExecuteInsert(connection, transaction,
                 "INSERT INTO select_items (select_id, ordinal, item_text, target_aurora_id, option_kind) VALUES ($select_id, $ordinal, $item_text, $target_aurora_id, $option_kind);",
                 ("$select_id", selectId), ("$ordinal", ordinal++),
                 ("$item_text",       (object?)item.value ?? DBNull.Value),
                 ("$target_aurora_id",(object?)targetAuroraId ?? DBNull.Value),
-                ("$option_kind",     targetAuroraId != null ? "aurora-reference" : "name-reference-candidate"));
+                ("$option_kind",     optionKind));
 
             long selectItemId = GetLastInsertRowId(connection, transaction);
             int attrOrdinal = 1;
@@ -1713,6 +1718,12 @@ UPDATE archetypes SET parent_class_element_id =
         OR (archetypes.parent_support_text = 'Arcane Tradition'    AND class_element.name = 'Wizard')
         OR (archetypes.parent_support_text = 'Otherworldly Patron' AND class_element.name = 'Warlock')
         OR (archetypes.parent_support_text = 'Primal Path'         AND class_element.name = 'Barbarian')
+        OR (archetypes.parent_support_text = 'Blood Hunter Order'  AND class_element.name = 'Blood Hunter')
+        OR (archetypes.parent_support_text = 'Artificer Specialist' AND class_element.name = 'Artificer')
+        OR (archetypes.parent_support_text = 'UA Artificer Specialist' AND class_element.name = 'Artificer')
+        OR (archetypes.parent_support_text = 'Bender Discipline'   AND class_element.name = 'Bender')
+        OR (archetypes.parent_support_text = 'Avenger Archetype'   AND class_element.name = 'Avenger')
+        OR (archetypes.parent_support_text = 'Kibbles Psionic Archetype' AND class_element.name = 'Psion')
     )
 )
 WHERE parent_class_element_id IS NULL AND parent_support_text IS NOT NULL;");
@@ -1893,11 +1904,81 @@ ON CONFLICT(singleton_id) DO UPDATE SET
     private static string? GetItemTargetAuroraId(AuroraItemEntry item)
     {
         string? attributeId = item?.GetAttribute("id");
-        if (!string.IsNullOrWhiteSpace(attributeId) && attributeId.StartsWith("ID_", StringComparison.OrdinalIgnoreCase))
-            return attributeId;
-        if (!string.IsNullOrWhiteSpace(item?.value) && item.value.StartsWith("ID_", StringComparison.OrdinalIgnoreCase))
-            return item.value;
+        if (LooksLikeAuroraId(attributeId))
+            return attributeId!.Trim();
+        if (LooksLikeAuroraId(item?.value))
+            return item!.value!.Trim();
         return null;
+    }
+
+    private static string? GetGrantTargetAuroraId(Grant grant)
+    {
+        if (LooksLikeAuroraId(grant?.id))
+            return grant!.id!.Trim();
+
+        if (LooksLikeAuroraId(grant?.name))
+            return grant!.name!.Trim();
+
+        return null;
+    }
+
+    private static bool LooksLikeAuroraId(string? value) =>
+        !string.IsNullOrWhiteSpace(value)
+        && value.TrimStart().StartsWith("ID_", StringComparison.OrdinalIgnoreCase);
+
+    private static string DetermineSelectItemOptionKind(Select select, AuroraItemEntry item, string? targetAuroraId)
+    {
+        if (!string.IsNullOrWhiteSpace(targetAuroraId))
+            return "aurora-reference";
+
+        if (string.Equals(select?.type, "List", StringComparison.OrdinalIgnoreCase))
+            return "text-choice";
+
+        string? itemText = item?.value?.Trim();
+        if (IsLikelyTextChoice(select?.name, itemText))
+            return "text-choice";
+
+        return "name-reference-candidate";
+    }
+
+    private static bool IsLikelyTextChoice(string? selectName, string? itemText)
+    {
+        if (string.IsNullOrWhiteSpace(itemText))
+            return true;
+
+        string normalizedSelectName = (selectName ?? string.Empty).Trim().ToLowerInvariant();
+        string normalizedItemText = itemText.Trim();
+
+        string[] textChoiceKeywords =
+        [
+            "personality",
+            "ideal",
+            "bond",
+            "flaw",
+            "specialty",
+            "speciality",
+            "trait",
+            "harrowing event",
+            "memento",
+            "life event",
+            "favorite scheme",
+            "guild business",
+            "characteristic"
+        ];
+
+        if (textChoiceKeywords.Any(keyword => normalizedSelectName.Contains(keyword, StringComparison.Ordinal)))
+            return true;
+
+        int wordCount = normalizedItemText
+            .Split([' '], StringSplitOptions.RemoveEmptyEntries)
+            .Length;
+
+        return normalizedItemText.Contains('.')
+            || normalizedItemText.Contains(',')
+            || normalizedItemText.Contains(';')
+            || normalizedItemText.Contains(':')
+            || normalizedItemText.Length >= 60
+            || wordCount >= 8;
     }
 
     private static string? GetPreferredSupportText(AuroraTextCollection? supports, params string[] ignoredSupports)

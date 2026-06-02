@@ -29,6 +29,11 @@
       "type": "Feat",
       "bucket": "Feat",
       "minOptions": 1
+    },
+    {
+      "type": "Ability Score Improvement",
+      "bucket": "AbilityScores",
+      "minOptions": 2
     }
   ]
 }

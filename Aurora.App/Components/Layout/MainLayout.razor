@@ -51,8 +51,8 @@
                            title="Save (Ctrl+S)"
                            OnClick="@(() => SaveActive())" />
         }
-        @* Update available indicator — single icon button covers both channels. Clicking jumps to
-           Settings → Updates where the user can read details and open the GitHub release. The badge
+        @* Update available indicator — single icon button covers both channels. App releases jump
+           directly to Settings → Updates; downloaded content jumps to Settings → Content. The badge
            coalesces app + content so we don't crowd the AppBar with two icons. *@
         @if (UpdateAvailableCount > 0)
         {
@@ -279,7 +279,10 @@
         _ = InvokeAsync(() => { if (!_disposed) StateHasChanged(); });
     }
 
-    private void OpenUpdatesPage() => Nav.NavigateTo("/settings");
+    private void OpenUpdatesPage() =>
+        Nav.NavigateTo(AppUpdates.UpdateAvailable
+            ? "/settings?tab=updates"
+            : "/settings?tab=content");
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {

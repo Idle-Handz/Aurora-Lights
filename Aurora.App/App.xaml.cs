@@ -29,10 +29,13 @@ public partial class App : Application
         {
             Title = AppIdentityService.DefaultAppName
         };
+#if WINDOWS
+        window.Destroying += (_, _) => _appUpdates.TryApplyPreparedUpdateOnExit();
+#endif
 
-        // Fire-and-forget the startup update check on a background task — never block window creation
-        // on network I/O, and never throw out of here. Each channel is independently gated by its own
-        // preference (default off, matching the WPF), so a first-time user sees no network traffic.
+        // Fire-and-forget the startup release check on a background task — never block window creation
+        // on network I/O, and never throw out of here. The single app-update preference gates both GitHub
+        // release streams, so a first-time user sees no network traffic.
         _ = Task.Run(RunStartupUpdateChecksAsync);
 
         DebugLogService.Instance.Info("App.CreateWindow completed.");
@@ -43,13 +46,15 @@ public partial class App : Application
     {
         try
         {
-            bool incl = _prefs.IncludePrereleasesInUpdateCheck;
+            bool includePreReleases = _prefs.IncludePrereleasesInUpdateCheck;
             if (_prefs.StartupCheckForAppUpdates)
-                await _appUpdates.CheckAsync(incl).ConfigureAwait(false);
-            // This is only the notify-only GitHub Releases stream. The real content download
-            // path is deferred until MainLayout renders so directories and UI subscribers exist.
-            if (_prefs.StartupCheckForContentUpdates)
-                await _contentUpdates.CheckAsync(incl).ConfigureAwait(false);
+            {
+                // Also check the reserved content-* release stream. The real index download path
+                // remains deferred until MainLayout renders so directories and UI subscribers exist.
+                await Task.WhenAll(
+                    _appUpdates.CheckAsync(includePreReleases),
+                    _contentUpdates.CheckAsync(includePreReleases)).ConfigureAwait(false);
+            }
         }
         catch (Exception ex)
         {

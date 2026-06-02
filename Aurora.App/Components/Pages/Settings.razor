@@ -16,7 +16,11 @@
 
 <MudText Typo="Typo.h5" Class="mb-4">Settings</MudText>
 
-<MudTabs Elevation="0" Rounded="false" ApplyEffectsToContainer="true" PanelClass="pt-4">
+<MudTabs Elevation="0"
+         Rounded="false"
+         ApplyEffectsToContainer="true"
+         PanelClass="pt-4"
+         @bind-ActivePanelIndex="_activeSettingsTabIndex">
 
     <!-- ── General ─────────────────────────────────────────────────────────── -->
     <MudTabPanel Text="General">
@@ -466,6 +470,23 @@
 
                 <div class="pref-section">
 
+                    @if (ContentUpdates.Latest is { } contentRelease)
+                    {
+                        <MudAlert Severity="Severity.Info" Class="mb-4" Dense="true">
+                            Content release <b>@contentRelease.LatestTag</b> is published.
+                            This release stream is informational for now; installed <code>.index</code>
+                            sources continue to update through the controls below.
+                            @if (!string.IsNullOrWhiteSpace(contentRelease.ReleaseUrl))
+                            {
+                                <MudLink Href="@contentRelease.ReleaseUrl"
+                                         Target="_blank"
+                                         Style="margin-left: 6px;">
+                                    View release
+                                </MudLink>
+                            }
+                        </MudAlert>
+                    }
+
                     <div style="margin-bottom: 16px;">
                         <div class="pref-row-title" style="margin-bottom: 4px;">Built-in custom directory</div>
                         <div style="font-family: monospace; font-size: 12px; color: var(--mud-palette-text-secondary); word-break: break-all;">
@@ -530,6 +551,16 @@
                         <div class="pref-row-desc" style="margin-bottom: 10px;">
                             Paste a URL ending in <code>.index</code> to register it, then check for updates
                             to download the content. Requires a network connection.
+                        </div>
+
+                        <MudSwitch T="bool"
+                                   Value="Prefs.AutoDownloadContentOnStartup"
+                                   ValueChanged="@(v => Prefs.AutoDownloadContentOnStartup = v)"
+                                   Color="Color.Primary"
+                                   Label="Auto-download content on startup" />
+                        <div class="pref-row-desc" style="margin-bottom: 10px;">
+                            Quietly checks installed index sources when the app launches and downloads
+                            changed XML files. A reload prompt appears when new content arrives.
                         </div>
 
                         <div class="settings-action-row" style="margin-bottom: 10px;">
@@ -610,9 +641,8 @@
     <!-- ── Updates ──────────────────────────────────────────────────────────── -->
     <MudTabPanel Text="Updates">
 
-        @* App-binary updates ─ parity with the WPF "Startup Check for Updates" toggle, but pointed at
-           the GitHub Releases for the MAUI app. Notify-only today (Phase 1); the same UX surface will
-           drive the one-click apply once Velopack is wired in. *@
+        @* The app update check also quietly looks for the reserved content-* release stream.
+           Installed .index source updates belong in the Content tab. *@
         <div class="pref-section">
             <div class="section-label">App</div>
 
@@ -627,9 +657,8 @@
                 <div class="pref-row-text">
                     <div class="pref-row-title">Check for app updates on startup</div>
                     <div class="pref-row-desc">
-                        Quietly checks the project's GitHub Releases when the app starts and surfaces a
-                        banner if a newer version is published. No download or install — that's a
-                        manual choice today.
+                        Quietly checks the project's GitHub Releases when the app starts and surfaces the
+                        update badge if a newer app version is published.
                     </div>
                 </div>
                 <MudSwitch Value="Prefs.StartupCheckForAppUpdates"
@@ -654,7 +683,7 @@
                 <div class="pref-row-text">
                     <div class="pref-row-title">Check now</div>
                     <div class="pref-row-desc">
-                        @if (AppUpdates.IsChecking)
+                        @if (_checkingReleaseChannels || AppUpdates.IsChecking)
                         {
                             <text>Checking GitHub…</text>
                         }
@@ -684,7 +713,7 @@
                 <MudButton Variant="Variant.Outlined"
                            StartIcon="@Icons.Material.Filled.Refresh"
                            OnClick="CheckAppNowAsync"
-                           Disabled="AppUpdates.IsChecking">
+                           Disabled="@(_checkingReleaseChannels || AppUpdates.IsChecking)">
                     Check now
                 </MudButton>
             </div>
@@ -701,7 +730,11 @@
                     <div class="pref-row" style="margin-top: 16px;">
                         <div class="pref-row-text">
                             <div class="pref-row-title">
-                                @(_applying ? "Downloading update…" : $"Install {avail.LatestTag} and restart")
+                                @(AppUpdates.ApplyOnExitScheduled
+                                    ? $"{avail.LatestTag} ready for next launch"
+                                    : _applying
+                                        ? "Downloading update…"
+                                        : $"Install {avail.LatestTag}")
                             </div>
                             <div class="pref-row-desc">
                                 @if (_applying)
@@ -712,23 +745,36 @@
                                                        Class="mt-1"
                                                        Style="max-width: 280px;" />
                                 }
+                                else if (AppUpdates.ApplyOnExitScheduled)
+                                {
+                                    <text>The update is downloaded. Close the app normally when convenient; your next launch will use @avail.LatestTag.</text>
+                                }
                                 else if (_applyError is { Length: > 0 } err)
                                 {
                                     <text>Update failed: @err</text>
                                 }
                                 else
                                 {
-                                    <text>Downloads @avail.LatestTag, swaps the binaries, and restarts the app.</text>
+                                    <text>Install immediately and restart, or download now and finish the update when you close the app.</text>
                                 }
                             </div>
                         </div>
-                        <MudButton Variant="Variant.Filled"
-                                   Color="Color.Primary"
-                                   StartIcon="@Icons.Material.Filled.SystemUpdateAlt"
-                                   Disabled="_applying"
-                                   OnClick="ApplyUpdateAsync">
-                            @(_applying ? "Downloading…" : "Install and restart")
-                        </MudButton>
+                        <div class="settings-inline-actions">
+                            <MudButton Variant="Variant.Filled"
+                                       Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.SystemUpdateAlt"
+                                       Disabled="_applying"
+                                       OnClick="ApplyUpdateAsync">
+                                @(_applying ? "Downloading…" : "Install and restart")
+                            </MudButton>
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.Schedule"
+                                       Disabled="@(_applying || AppUpdates.ApplyOnExitScheduled)"
+                                       OnClick="PrepareUpdateOnCloseAsync">
+                                @(AppUpdates.ApplyOnExitScheduled ? "Ready on close" : "Install on close")
+                            </MudButton>
+                        </div>
                     </div>
                 }
                 else
@@ -766,81 +812,6 @@
                 </div>
 #endif
             }
-        </div>
-
-        @* Content-pack updates ─ separate channel (tag prefix "content-"), notify-only for now.
-           Same surface so it stays parallel with the app channel. *@
-        <div class="pref-section" style="margin-top: 24px;">
-            <div class="section-label">Content</div>
-
-            <div class="pref-row">
-                <div class="pref-row-text">
-                    <div class="pref-row-title">Auto-download content on startup</div>
-                    <div class="pref-row-desc">
-                        Runs <em>Check for Updates</em> in the background when the app launches and
-                        downloads any new files for installed index sources. You'll see a snackbar
-                        and a reload prompt when something arrives — nothing happens silently behind
-                        you.
-                    </div>
-                </div>
-                <MudSwitch Value="Prefs.AutoDownloadContentOnStartup"
-                           ValueChanged="@((bool v) => Prefs.AutoDownloadContentOnStartup = v)"
-                           Color="Color.Primary" />
-            </div>
-
-            <div class="pref-row" style="margin-top: 16px;">
-                <div class="pref-row-text">
-                    <div class="pref-row-title">Check for content updates on startup</div>
-                    <div class="pref-row-desc">
-                        Checks for new official content packs (rule updates, errata) published between
-                        app releases. Same channel, separate tag stream. Currently notify-only —
-                        download/install lands when the content release stream is set up.
-                    </div>
-                </div>
-                <MudSwitch Value="Prefs.StartupCheckForContentUpdates"
-                           ValueChanged="@((bool v) => Prefs.StartupCheckForContentUpdates = v)"
-                           Color="Color.Primary" />
-            </div>
-
-            <div class="pref-row" style="margin-top: 16px;">
-                <div class="pref-row-text">
-                    <div class="pref-row-title">Check now</div>
-                    <div class="pref-row-desc">
-                        @if (ContentUpdates.IsChecking)
-                        {
-                            <text>Checking GitHub…</text>
-                        }
-                        else if (ContentUpdates.LastError is { Length: > 0 } err)
-                        {
-                            <text>Last check failed: @err</text>
-                        }
-                        else if (ContentUpdates.Latest is { } c)
-                        {
-                            <text>
-                                Latest: <b>@c.LatestTag</b>
-                                — @(ContentUpdates.HasRecordedInstalledVersion
-                                      ? (c.IsNewer ? "newer than installed" : "content is up to date")
-                                      : "release notice; install support coming later")
-                                · checked @(FormatChecked(ContentUpdates.LastChecked))
-                            </text>
-                        }
-                        else if (ContentUpdates.LastChecked is { } when_)
-                        {
-                            <text>No content releases found · checked @(FormatChecked(when_))</text>
-                        }
-                        else
-                        {
-                            <text>Never checked.</text>
-                        }
-                    </div>
-                </div>
-                <MudButton Variant="Variant.Outlined"
-                           StartIcon="@Icons.Material.Filled.Refresh"
-                           OnClick="CheckContentNowAsync"
-                           Disabled="ContentUpdates.IsChecking">
-                    Check now
-                </MudButton>
-            </div>
         </div>
 
     </MudTabPanel>
@@ -965,7 +936,8 @@
                     <div class="pref-row-title" style="margin-bottom: 6px;">Database vs XML parity</div>
                     <div class="pref-row-desc" style="margin-bottom: 10px;">
                         Runs the XML parser pipeline in isolation and compares its element snapshot to the SQLite reconstruction path.
-                        This is slower than the health check, so it runs only when requested.
+                        This is slower than the health check, so it runs only when requested. XML-only internal resources and
+                        overlapping installed content trees can produce reviewable differences without breaking SQLite loading.
                     </div>
                     <MudButton Variant="Variant.Outlined"
                                Color="Color.Secondary"
@@ -1040,6 +1012,9 @@
 </MudTabs>
 
 @code {
+    [SupplyParameterFromQuery(Name = "tab")]
+    public string? RequestedTab { get; set; }
+
     private bool _disposed;
     private CancellationTokenSource? _cts;
 
@@ -1050,6 +1025,7 @@
     private Severity _contentStatusSeverity = Severity.Success;
     private bool _contentWorking;
     private bool _checkingUpdates;
+    private bool _checkingReleaseChannels;
     private bool _parityRunning;
     private bool _stalenessChecked;
     private bool _checkingStale;
@@ -1059,6 +1035,17 @@
     private ContentDatabaseParityReport? _dbParity;
     private bool _dirBusy;
     private string? _dirError;
+    private int _activeSettingsTabIndex;
+
+    protected override void OnParametersSet()
+    {
+        _activeSettingsTabIndex = RequestedTab?.ToLowerInvariant() switch
+        {
+            "content" => 2,
+            "updates" => 3,
+            _ => 0
+        };
+    }
 
     protected override void OnInitialized()
     {
@@ -1072,11 +1059,24 @@
     private void OnAppUpdatesChanged() => InvokeAsync(StateHasChanged);
     private void OnContentUpdatesChanged() => InvokeAsync(StateHasChanged);
 
-    private Task CheckAppNowAsync() =>
-        AppUpdates.CheckAsync(Prefs.IncludePrereleasesInUpdateCheck);
+    private async Task CheckAppNowAsync()
+    {
+        if (_checkingReleaseChannels)
+            return;
 
-    private Task CheckContentNowAsync() =>
-        ContentUpdates.CheckAsync(Prefs.IncludePrereleasesInUpdateCheck);
+        _checkingReleaseChannels = true;
+        try
+        {
+            bool includePreReleases = Prefs.IncludePrereleasesInUpdateCheck;
+            await Task.WhenAll(
+                AppUpdates.CheckAsync(includePreReleases),
+                ContentUpdates.CheckAsync(includePreReleases));
+        }
+        finally
+        {
+            _checkingReleaseChannels = false;
+        }
+    }
 
     /// <summary>Render the last-checked timestamp as the user's local time, short form.</summary>
     private static string FormatChecked(DateTimeOffset? when) =>
@@ -1134,6 +1134,45 @@
                 await InvokeAsync(StateHasChanged);
             }
             // On success the process has already been replaced — we never reach here.
+        }
+        catch (Exception ex)
+        {
+            _applyError = ex.Message;
+            _applying = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task PrepareUpdateOnCloseAsync()
+    {
+        _applying = true;
+        _applyProgress = 0;
+        _applyError = null;
+        StateHasChanged();
+        try
+        {
+            var progress = new Progress<int>(p =>
+            {
+                _applyProgress = p;
+                _ = InvokeAsync(StateHasChanged);
+            });
+
+            string? error = await AppUpdates.PrepareApplyOnExitAsync(
+                Prefs.IncludePrereleasesInUpdateCheck, progress);
+
+            _applying = false;
+            if (error != null)
+            {
+                _applyError = error;
+            }
+            else
+            {
+                Snackbar.Add(
+                    "Update downloaded. Close the app normally when convenient; your next launch will use the new version.",
+                    Severity.Success,
+                    cfg => cfg.VisibleStateDuration = 10000);
+            }
+            await InvokeAsync(StateHasChanged);
         }
         catch (Exception ex)
         {
@@ -1312,6 +1351,8 @@
     private static string ParitySummary(ContentDatabaseParityReport report) => report.Status switch
     {
         ContentDatabaseParityStatus.Healthy => "SQLite and XML snapshots matched in this audit run.",
+        ContentDatabaseParityStatus.Warning when report.TotalMismatchCount > 0
+            => $"Parity audit found {report.TotalMismatchCount} snapshot difference(s). Review duplicate installs and XML-only internal elements before treating these as reconstruction failures.",
         ContentDatabaseParityStatus.Warning => "Parity audit matched structurally, but one of the loaders skipped elements during reconstruction.",
         ContentDatabaseParityStatus.Error when !report.Success => $"Parity audit failed: {report.FailureReason}",
         ContentDatabaseParityStatus.Error => $"Parity audit found {report.TotalMismatchCount} mismatch bucket(s) between XML and SQLite snapshots.",
@@ -1346,9 +1387,9 @@
                 ? $"Content database looks healthy. {health.ClassifiedUnresolvedLinks} known unresolved link(s) were classified as non-actionable."
                 : "Content database looks healthy.",
         ContentDatabaseHealthStatus.Warning
-            => $"Content database has {health.ActionableUnresolvedLinks} actionable unresolved link(s) to review.",
+            => $"Content database loaded with {health.ActionableUnresolvedLinks} unresolved link(s) and {health.SourceIntegrityIssues} source-quality warning(s) to review.",
         ContentDatabaseHealthStatus.Error
-            => $"Content database has {health.TotalIssues} issue(s) affecting trust or typed projections.",
+            => $"Content database is missing {health.ProjectionIssues} typed projection row(s). Rebuild the database before relying on SQLite content.",
         _ => "Content health is unavailable."
     };
 

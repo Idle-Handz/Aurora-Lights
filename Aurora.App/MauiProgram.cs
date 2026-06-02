@@ -65,7 +65,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<PdfImportService>();
 
         // Update channels: shared HttpClient for the GitHub Releases API + the two channel services.
-        // Phase 1 is notify-only; the call sites stay shape-stable when Velopack lands underneath.
+        // App binaries use Velopack on Windows; content-* releases remain notify-only for now.
         builder.Services.AddHttpClient<GithubReleasesClient>(client =>
         {
             client.Timeout = TimeSpan.FromSeconds(15);

@@ -873,7 +873,9 @@ LEFT JOIN winner_counts
 LEFT JOIN duplicate_counts
     ON duplicate_counts.content_package_id = cp.content_package_id;
 
-CREATE VIEW IF NOT EXISTS v_unresolved_loader_links AS
+DROP VIEW IF EXISTS v_unresolved_loader_link_diagnostics;
+DROP VIEW IF EXISTS v_unresolved_loader_links;
+CREATE VIEW v_unresolved_loader_links AS
 SELECT
     'grant' AS link_kind,
     owner.element_id AS owner_element_id,
@@ -977,7 +979,7 @@ JOIN element_types AS archetype_type
 WHERE archetype_meta.parent_support_text IS NOT NULL
   AND archetype_meta.parent_class_element_id IS NULL;
 
-CREATE VIEW IF NOT EXISTS v_unresolved_loader_link_diagnostics AS
+CREATE VIEW v_unresolved_loader_link_diagnostics AS
 WITH background_file_counts AS
 (
     SELECT
@@ -1037,6 +1039,14 @@ SELECT
         WHEN raw.link_kind = 'grant'
          AND COALESCE(trim(raw.unresolved_key), '') = ''
             THEN 'missing-source'
+        WHEN raw.link_kind = 'grant'
+         AND
+         (
+             upper(raw.unresolved_key) GLOB 'ID_SIZE_*'
+             OR upper(raw.unresolved_key) GLOB 'ID_INTERNAL_CONDITION_DAMAGE_*'
+             OR upper(raw.unresolved_key) GLOB 'ID_INTERNAL_PROFICIENCY_SPELLFOCUS_GROUP_*'
+         )
+            THEN 'runtime-resource'
         ELSE 'actionable'
     END AS diagnostic_status,
     CASE
@@ -1069,6 +1079,14 @@ SELECT
         WHEN raw.link_kind = 'grant'
          AND COALESCE(trim(raw.unresolved_key), '') = ''
             THEN 'grant-empty-target-id'
+        WHEN raw.link_kind = 'grant'
+         AND
+         (
+             upper(raw.unresolved_key) GLOB 'ID_SIZE_*'
+             OR upper(raw.unresolved_key) GLOB 'ID_INTERNAL_CONDITION_DAMAGE_*'
+             OR upper(raw.unresolved_key) GLOB 'ID_INTERNAL_PROFICIENCY_SPELLFOCUS_GROUP_*'
+         )
+            THEN 'embedded-resource-overlay'
         ELSE NULL
     END AS diagnostic_reason
 FROM v_unresolved_loader_links AS raw
@@ -1079,7 +1097,8 @@ LEFT JOIN background_file_counts
 LEFT JOIN feature_parent_family_counts
     ON feature_parent_family_counts.unresolved_text = raw.unresolved_text;
 
-CREATE VIEW IF NOT EXISTS v_source_integrity_issues AS
+DROP VIEW IF EXISTS v_source_integrity_issues;
+CREATE VIEW v_source_integrity_issues AS
 SELECT
     'grant-target-id-in-name-attribute' AS issue_kind,
     sf.source_file_id,

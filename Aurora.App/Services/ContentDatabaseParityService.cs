@@ -42,7 +42,7 @@ public sealed record ContentDatabaseParityReport(
         !Success
             ? ContentDatabaseParityStatus.Error
             : TotalMismatchCount > 0
-                ? ContentDatabaseParityStatus.Error
+                ? ContentDatabaseParityStatus.Warning
                 : XmlSkippedElements > 0 || DatabaseSkippedElements > 0
                     ? ContentDatabaseParityStatus.Warning
                     : ContentDatabaseParityStatus.Healthy;

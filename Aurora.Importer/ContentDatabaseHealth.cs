@@ -22,9 +22,9 @@ public sealed record ContentDatabaseHealthReport(
         ActionableUnresolvedLinks + SourceIntegrityIssues + ProjectionIssues;
 
     public ContentDatabaseHealthStatus Status =>
-        SourceIntegrityIssues > 0 || ProjectionIssues > 0
+        ProjectionIssues > 0
             ? ContentDatabaseHealthStatus.Error
-            : ActionableUnresolvedLinks > 0
+            : ActionableUnresolvedLinks > 0 || SourceIntegrityIssues > 0
                 ? ContentDatabaseHealthStatus.Warning
                 : ContentDatabaseHealthStatus.Healthy;
 }

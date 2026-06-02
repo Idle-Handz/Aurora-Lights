@@ -1894,9 +1894,10 @@ public static class BuildService
         var asi  = GetAsiEntries();
 
         BuildGuidanceTarget? next = null;
-        var coreOrder = preferClassFirst
-            ? new[] { "Class", "Race" }
-            : new[] { "Race", "Class" };
+        // Race comes first in the guided flow even when an older or reopened tab keeps
+        // the class-first visual tab ordering. Race rules establish movement, languages,
+        // and origin ASI choices that the remaining build depends on.
+        var coreOrder = new[] { "Race", "Class" };
 
         foreach (var label in coreOrder)
         {

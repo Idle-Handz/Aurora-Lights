@@ -297,10 +297,46 @@ else if (_workflowSuggestion != null)
     }
 
     @* Ability Scores tab — always last *@
-    <MudTabPanel Text="Ability Scores">
+    <MudTabPanel Text="@AbilityScoresTabLabel">
         @if (_abilities != null)
         {
             bool _hasAsi = _abilityRows.Any(r => r.Item.AdditionalScore != 0);
+
+            @if (_asiEntries.Count > 0)
+            {
+                <div class="build-section">
+                    <div class="section-label">Ability Score Improvements</div>
+                    <div class="build-rule-list">
+                        @foreach (var entry in _asiEntries)
+                        {
+                            bool _isOptional = entry.Rule?.Attributes?.Optional == true;
+                            <div class="@GetRuleRowClass(entry)" @ondblclick="() => OpenPickerAsync(entry)">
+                                <div class="build-rule-label">
+                                    @entry.Label
+                                    @if (_isOptional)
+                                    {
+                                        <span class="build-rule-optional-badge">optional</span>
+                                    }
+                                </div>
+                                <div class="build-rule-value @(entry.CurrentName == null ? "build-rule-empty" : "")">
+                                    @(entry.CurrentName ?? (_isOptional ? "—" : "Choose..."))
+                                </div>
+                                <button class="build-rule-btn" @onclick="() => OpenPickerAsync(entry)"
+                                        @ondblclick:stopPropagation="true">Change</button>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="build-section">
+                    <div class="section-label">Ability Score Improvements</div>
+                    <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">
+                        Origin ability-score choices appear here after you choose a race or a 2024 background that provides them.
+                    </MudText>
+                </div>
+            }
 
             <div class="build-section">
                 @* Method selector *@
@@ -466,33 +502,6 @@ else if (_workflowSuggestion != null)
                 </div>@* end ability-stats-table-wrapper *@
             </div>
 
-            @* ASI / Feat selections — below the score table *@
-            @if (_asiEntries.Count > 0)
-            {
-                <div class="build-section">
-                    <div class="section-label">Ability Score Improvements</div>
-                    <div class="build-rule-list">
-                        @foreach (var entry in _asiEntries)
-                        {
-                            bool _isOptional = entry.Rule?.Attributes?.Optional == true;
-                            <div class="@GetRuleRowClass(entry)" @ondblclick="() => OpenPickerAsync(entry)">
-                                <div class="build-rule-label">
-                                    @entry.Label
-                                    @if (_isOptional)
-                                    {
-                                        <span class="build-rule-optional-badge">optional</span>
-                                    }
-                                </div>
-                                <div class="build-rule-value @(entry.CurrentName == null ? "build-rule-empty" : "")">
-                                    @(entry.CurrentName ?? (_isOptional ? "—" : "Choose..."))
-                                </div>
-                                <button class="build-rule-btn" @onclick="() => OpenPickerAsync(entry)"
-                                        @ondblclick:stopPropagation="true">Change</button>
-                            </div>
-                        }
-                    </div>
-                </div>
-            }
         }
     </MudTabPanel>
 
@@ -784,6 +793,15 @@ else if (_workflowSuggestion != null)
 
     private string GetBuildTabLabel(BuildTabGroup tab) =>
         tab.UnresolvedCount > 0 ? $"{tab.Label} ({tab.UnresolvedCount})" : tab.Label;
+
+    private string AbilityScoresTabLabel
+    {
+        get
+        {
+            int unresolved = _asiEntries.Count(entry => entry.CurrentName == null && !entry.IsOptional);
+            return unresolved > 0 ? $"Ability Scores ({unresolved})" : "Ability Scores";
+        }
+    }
 
     private static bool IsOptionalEntry(SelectionRuleEntry entry) => entry.IsOptional;
 

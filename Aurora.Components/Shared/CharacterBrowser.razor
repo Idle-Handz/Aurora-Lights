@@ -69,24 +69,6 @@
     }
     else
     {
-        @if (_favorites.Count > 0)
-        {
-            <section class="character-browser-section">
-                <h3 class="character-browser-section-title">Favorites</h3>
-                <div class="character-browser-grid">
-                    @foreach (CharacterBrowserEntry character in _favorites)
-                    {
-                        <CharacterBrowserCard @key="character.Id"
-                                              Character="character"
-                                              Selected="@IsSelected(character)"
-                                              OnSelected="OnSelected"
-                                              OnDelete="OnDelete"
-                                              OnEditGroup="OnEditGroup" />
-                    }
-                </div>
-            </section>
-        }
-
         @foreach (IGrouping<string, CharacterBrowserEntry> group in _groups)
         {
             <section class="character-browser-section">
@@ -110,7 +92,6 @@
 @code {
     private string _searchText = "";
     private IReadOnlyList<CharacterBrowserEntry> _filtered = [];
-    private IReadOnlyList<CharacterBrowserEntry> _favorites = [];
     private IReadOnlyList<IGrouping<string, CharacterBrowserEntry>> _groups = [];
 
     [Parameter, EditorRequired]
@@ -175,10 +156,12 @@
                 (c.GroupName?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) == true))
             .ToList();
 
-        _favorites = _filtered.Where(c => c.IsFavorite).ToList();
         _groups = _filtered
-            .Where(c => !c.IsFavorite)
-            .GroupBy(c => string.IsNullOrWhiteSpace(c.GroupName) ? "Characters" : c.GroupName!)
+            .OrderBy(c => !c.IsFavorite)
+            .ThenBy(c => c.DisplayName, StringComparer.OrdinalIgnoreCase)
+            .GroupBy(
+                c => string.IsNullOrWhiteSpace(c.GroupName) ? "Characters" : c.GroupName!,
+                StringComparer.OrdinalIgnoreCase)
             .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
             .ToList();
     }

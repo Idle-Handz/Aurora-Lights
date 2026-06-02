@@ -48,6 +48,12 @@ public sealed class AppUpdateService : GithubReleaseChannelService
     // ── Velopack apply (Windows only) ────────────────────────────────────────
 
     private bool? _isVelopackInstall;
+    private bool _applyOnExitScheduled;
+
+    /// <summary>
+    /// True after an update has been downloaded and scheduled to install when the main window closes.
+    /// </summary>
+    public bool ApplyOnExitScheduled => _applyOnExitScheduled;
 
     /// <summary>
     /// True when the app was installed by Velopack and can apply updates in-place.
@@ -64,11 +70,7 @@ public sealed class AppUpdateService : GithubReleaseChannelService
             if (_isVelopackInstall.HasValue) return _isVelopackInstall.Value;
             try
             {
-                var channel = RuntimeInformation.ProcessArchitecture == Architecture.Arm64
-                    ? "win-arm64" : "win-x64";
-                var mgr = new UpdateManager(
-                    new GithubSource("https://github.com/Idle-Handz/Aurora-Lights", null, false),
-                    new UpdateOptions { ExplicitChannel = channel });
+                var mgr = CreateUpdateManager(includePreReleases: false);
                 _isVelopackInstall = mgr.IsInstalled;
             }
             catch { _isVelopackInstall = false; }
@@ -89,23 +91,11 @@ public sealed class AppUpdateService : GithubReleaseChannelService
     {
         try
         {
-            // The channel matches the RID suffix used when packing in CI so the UpdateManager
-            // fetches the right RELEASES-{channel} manifest and the correct nupkg variant.
-            var channel = RuntimeInformation.ProcessArchitecture == Architecture.Arm64
-                ? "win-arm64"
-                : "win-x64";
-
-            var source  = new GithubSource(
-                "https://github.com/Idle-Handz/Aurora-Lights",
-                accessToken:  null,
-                prerelease:   includePreReleases,
-                downloader:   null);
-
-            var manager = new UpdateManager(source, new UpdateOptions { ExplicitChannel = channel });
+            var manager = CreateUpdateManager(includePreReleases);
 
             var updateInfo = await manager.CheckForUpdatesAsync().ConfigureAwait(false);
             if (updateInfo == null)
-                return $"No applicable Velopack update was found for the {channel} channel.";
+                return $"No applicable Velopack update was found for the {WindowsChannel} channel.";
 
             await manager.DownloadUpdatesAsync(updateInfo, p => progress?.Report(p), ct)
                          .ConfigureAwait(false);
@@ -119,6 +109,92 @@ public sealed class AppUpdateService : GithubReleaseChannelService
             DebugLogService.Instance.LogException(ex, "AppUpdateService.ApplyAsync");
             return ex.Message;
         }
+    }
+
+    /// <summary>
+    /// Downloads an available update now and remembers to install it when the main window closes.
+    /// The Velopack helper itself is launched from <see cref="TryApplyPreparedUpdateOnExit"/> so its
+    /// 60-second graceful-exit timeout starts only when the application is actually closing.
+    /// </summary>
+    public async Task<string?> PrepareApplyOnExitAsync(
+        bool includePreReleases,
+        IProgress<int>? progress = null,
+        CancellationToken ct = default)
+    {
+        if (_applyOnExitScheduled)
+            return null;
+
+        try
+        {
+            var manager = CreateUpdateManager(includePreReleases);
+            var updateInfo = await manager.CheckForUpdatesAsync().ConfigureAwait(false);
+            if (updateInfo == null)
+                return $"No applicable Velopack update was found for the {WindowsChannel} channel.";
+
+            await manager.DownloadUpdatesAsync(updateInfo, p => progress?.Report(p), ct)
+                         .ConfigureAwait(false);
+
+            _applyOnExitScheduled = true;
+            DebugLogService.Instance.Info(
+                $"[update:app] downloaded {updateInfo.TargetFullRelease.Version}; will install when the app closes");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            DebugLogService.Instance.LogException(ex, "AppUpdateService.PrepareApplyOnExitAsync");
+            return ex.Message;
+        }
+    }
+
+    /// <summary>
+    /// Starts Velopack's graceful-exit updater after a prepared update has been requested.
+    /// Call this while the main window is closing so Velopack does not exhaust its wait timeout.
+    /// </summary>
+    public void TryApplyPreparedUpdateOnExit()
+    {
+        if (!_applyOnExitScheduled)
+            return;
+
+        try
+        {
+            var manager = CreateUpdateManager(includePreReleases: true);
+            var pending = manager.UpdatePendingRestart;
+            if (pending == null)
+            {
+                DebugLogService.Instance.Warn(
+                    "[update:app] install-on-close was requested, but no prepared update was found");
+                return;
+            }
+
+            manager.WaitExitThenApplyUpdates(
+                pending,
+                silent: false,
+                restart: false,
+                restartArgs: []);
+            _applyOnExitScheduled = false;
+        }
+        catch (Exception ex)
+        {
+            DebugLogService.Instance.LogException(ex, "AppUpdateService.TryApplyPreparedUpdateOnExit");
+        }
+    }
+
+    private static string WindowsChannel =>
+        RuntimeInformation.ProcessArchitecture == Architecture.Arm64
+            ? "win-arm64"
+            : "win-x64";
+
+    private static UpdateManager CreateUpdateManager(bool includePreReleases)
+    {
+        // The channel matches the RID suffix used when packing in CI so the manager fetches
+        // the right RELEASES-{channel} manifest and the correct nupkg variant.
+        var source = new GithubSource(
+            "https://github.com/Idle-Handz/Aurora-Lights",
+            accessToken: null,
+            prerelease: includePreReleases,
+            downloader: null);
+
+        return new UpdateManager(source, new UpdateOptions { ExplicitChannel = WindowsChannel });
     }
 #endif
 }
