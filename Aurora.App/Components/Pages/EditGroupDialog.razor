@@ -4,17 +4,21 @@
     </TitleContent>
     <DialogContent>
         <div class="new-character-dialog-content">
-            <MudAutocomplete T="string"
-                             Label="Group"
-                             Placeholder="Select or type a group..."
-                             @bind-Value="_group"
-                             SearchFunc="SearchGroupsAsync"
-                             CoerceText="true"
-                             CoerceValue="true"
-                             Clearable="true"
-                             Dense="true"
-                             Margin="Margin.Dense"
-                             Variant="Variant.Outlined" />
+            <div class="edit-group-field">
+                <label for="@GroupFieldId">Group</label>
+                <input id="@GroupFieldId"
+                       class="edit-group-input"
+                       list="@GroupListId"
+                       placeholder="Select or type a group..."
+                       @bind="_group"
+                       @bind:event="oninput" />
+                <datalist id="@GroupListId">
+                    @foreach (string group in ExistingGroups)
+                    {
+                        <option value="@group" />
+                    }
+                </datalist>
+            </div>
             <p style="margin: 0.25rem 0 0; font-size: 0.82rem; color: var(--mud-palette-text-disabled);">
                 Choose an existing group or type a new name. Leave empty to use "Characters".
             </p>
@@ -33,17 +37,10 @@
     [Parameter] public IReadOnlyList<string> ExistingGroups { get; set; } = [];
 
     private string _group = "";
+    private string GroupFieldId { get; } = $"character-group-{Guid.NewGuid():N}";
+    private string GroupListId { get; } = $"character-group-list-{Guid.NewGuid():N}";
 
     protected override void OnParametersSet() => _group = CurrentGroup;
-
-    private Task<IEnumerable<string>> SearchGroupsAsync(string value, CancellationToken ct)
-    {
-        IEnumerable<string> groups = ExistingGroups;
-        if (!string.IsNullOrWhiteSpace(value))
-            groups = groups.Where(group => group.Contains(value, StringComparison.OrdinalIgnoreCase));
-
-        return Task.FromResult(groups);
-    }
 
     private void Cancel() => MudDialog.Cancel();
     private void Confirm() => MudDialog.Close(_group.Trim());

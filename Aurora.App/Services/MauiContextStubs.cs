@@ -855,13 +855,8 @@ internal sealed class MauiCharacterSheetGenerator : ICharacterSheetGenerator
         var alwaysPreparedIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var e in cm.GetElements().Where(e => e.Type == "Spell"))
         {
-            try
-            {
-                dynamic d = e;
-                if ((bool)d.Aquisition.WasGranted && (bool)d.Aquisition.GrantRule.IsAlwaysPrepared())
-                    alwaysPreparedIds.Add((string)d.Id);
-            }
-            catch { }
+            if (IsAlwaysPreparedSpell(e) && !string.IsNullOrWhiteSpace(e.Id))
+                alwaysPreparedIds.Add(e.Id);
         }
 
         // Spell list: registered elements of type Spell
@@ -942,5 +937,29 @@ internal sealed class MauiCharacterSheetGenerator : ICharacterSheetGenerator
     private static int GetSpellLevel(ElementBase e)
     {
         try { dynamic d = e; return (int)d.Level; } catch { return -1; }
+    }
+
+    private static bool IsAlwaysPreparedSpell(ElementBase spell)
+    {
+        try
+        {
+            if (spell.Aquisition.WasGranted && HasPreparedSetter(spell.Aquisition.GrantRule.Setters))
+                return true;
+            if (spell.Aquisition.WasSelected && HasPreparedSetter(spell.Aquisition.SelectRule.Setters))
+                return true;
+        }
+        catch
+        {
+        }
+
+        return false;
+    }
+
+    private static bool HasPreparedSetter(ElementSetters setters)
+    {
+        var setter = setters.GetSetter("prepared");
+        return setter is not null
+               && bool.TryParse(setter.Value, out bool prepared)
+               && prepared;
     }
 }

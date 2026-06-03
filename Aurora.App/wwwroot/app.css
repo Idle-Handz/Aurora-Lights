@@ -3272,10 +3272,14 @@ input.equipment-currency-input::-webkit-inner-spin-button { -webkit-appearance: 
         gap: 1px;
         padding: 0;
         overflow: hidden;
+        align-items: stretch;
+        width: 100%;
     }
 
     .combat-stat {
         padding: 10px 4px;
+        min-width: 0;
+        background: color-mix(in srgb, var(--mud-palette-surface, #313244) 92%, var(--mud-palette-background, #1e1e2e));
     }
 
     .combat-sep {

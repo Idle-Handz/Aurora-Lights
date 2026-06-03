@@ -327,6 +327,21 @@ jobs:
       - name: Restore
         run: dotnet restore "$PROJECT"
 
+      - name: Compute Android version code
+        id: android_version
+        shell: bash
+        run: |
+          # Use one monotonic sequence across CI and release workflows. GitHub run_number
+          # is workflow-local, so release APKs could otherwise look older than CI APKs.
+          BASE_EPOCH=1577836800 # 2020-01-01T00:00:00Z
+          VERSION_CODE=$(( $(date -u +%s) - BASE_EPOCH ))
+          if (( VERSION_CODE <= 0 || VERSION_CODE > 2100000000 )); then
+            echo "ERROR: Android versionCode '$VERSION_CODE' is outside the supported range."
+            exit 1
+          fi
+          echo "code=$VERSION_CODE" >> "$GITHUB_OUTPUT"
+          echo "Android versionCode: $VERSION_CODE"
+
       - name: Publish (android-arm64)
         run: |
           dotnet publish "$PROJECT" \
@@ -339,7 +354,7 @@ jobs:
             -p:AndroidSigningKeyAlias=aurora \
             -p:AndroidSigningKeyPass=aurora-ci \
             -p:AndroidSigningStorePass=aurora-ci \
-            -p:ApplicationVersion=${{ github.run_number }} \
+            -p:ApplicationVersion=${{ steps.android_version.outputs.code }} \
             -p:Version=$VERSION_ASSEMBLY \
             -p:AssemblyVersion=$VERSION_ASSEMBLY.0 \
             -p:FileVersion=$VERSION_ASSEMBLY.0 \
@@ -354,6 +369,20 @@ jobs:
           fi
           cp "$APK" aurora-android-arm64.apk
           echo "Found: $APK"
+
+      - name: Verify APK signing and version
+        run: |
+          BUILD_TOOLS=$(ls -d "$ANDROID_SDK_ROOT/build-tools"/*/ 2>/dev/null | sort -V | tail -1)
+          echo "Using build-tools: $BUILD_TOOLS"
+          echo "=== APK package info ==="
+          "$BUILD_TOOLS/aapt2" dump badging aurora-android-arm64.apk \
+            | grep -E "package|versionCode|versionName|sdkVersion"
+          "$BUILD_TOOLS/aapt2" dump badging aurora-android-arm64.apk \
+            | grep -q "name='com.auroralights.app'"
+          "$BUILD_TOOLS/aapt2" dump badging aurora-android-arm64.apk \
+            | grep -q "versionCode='${{ steps.android_version.outputs.code }}'"
+          echo "=== APK signing certificate ==="
+          "$BUILD_TOOLS/apksigner" verify --print-certs aurora-android-arm64.apk
 
       - uses: actions/upload-artifact@v4
         with:

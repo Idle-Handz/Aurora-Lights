@@ -39,10 +39,11 @@
     {
         <button class="character-browser-group-btn"
                 type="button"
-                title="Edit group"
+                title="Edit character group"
+                aria-label="Edit character group"
                 @onclick="EditGroupAsync"
                 @onclick:stopPropagation="true">
-            &#9698;
+            &#9998;
         </button>
     }
     @if (OnDelete.HasDelegate)

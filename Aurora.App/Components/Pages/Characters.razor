@@ -39,12 +39,14 @@ else
                               EmptySubMessage="@EmptySubMessage"
                               BusyMessage="@BusyMessage"
                               ShowCreateButton="true"
+                              AutoFocusSearch="true"
                               CreateButtonText="New Character"
                               DisableCreateButton="@_preloading"
                               OnCreate="OnNewCharacter"
                               OnSelected="OnBrowserSelected"
                               OnDelete="OnDeleteCharacter"
-                              OnEditGroup="OnEditGroupCharacter">
+                              OnEditGroup="OnEditGroupCharacter"
+                              OnRenameGroup="OnRenameGroup">
                 <AdditionalHeaderContent>
                     <button class="character-browser-create"
                             type="button"
@@ -112,13 +114,27 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        // Fast path: render immediately from the singleton cache so return visits
+        // are instant — no disk scan, no loading spinner, no portrait re-decode.
+        if (CharSvc.TryGetCachedFiles(out IReadOnlyList<Builder.Presentation.Models.CharacterFile> cachedFiles))
+        {
+            _characters = cachedFiles.ToList();
+            RebuildBrowserEntries();
+            _loading = false;
+            _ = RunPreloadAsync();
+            return;
+        }
+
+        // Cold start: scan from disk on a background thread.
         try
         {
             CharSvc.EnsureInitialized();
-            // Run the file scan on a background thread so the loading spinner
-            // can render while each .dnd5e file is read and parsed.
             _characters = await Task.Run(() => CharSvc.LoadCharacterFiles().ToList());
-            if (!_disposed) RebuildBrowserEntries();
+            if (!_disposed)
+            {
+                CharSvc.UpdateFileListCache(_characters);
+                RebuildBrowserEntries();
+            }
         }
         catch (Exception ex)
         {
@@ -165,6 +181,9 @@ else
             finally { throttle.Release(); }
 
             if (url == null || ct.IsCancellationRequested || _disposed) return;
+
+            // Store in the singleton cache so return visits don't re-decode.
+            CharSvc.CachePortrait(character.FilePath, url);
 
             // Mutate the list and notify the UI on the dispatcher thread.
             await InvokeAsync(() =>
@@ -316,6 +335,7 @@ else
             new DialogOptions { MaxWidth = MaxWidth.Medium, CloseButton = true });
         await dialog.Result;
         _characters = CharSvc.LoadCharacterFiles().ToList();
+        CharSvc.UpdateFileListCache(_characters);
         RebuildBrowserEntries();
         StateHasChanged();
     }
@@ -344,6 +364,7 @@ else
 
             imported = file;
             _characters = CharSvc.LoadCharacterFiles().ToList();
+            CharSvc.UpdateFileListCache(_characters);
             RebuildBrowserEntries();
             StateHasChanged();
         }
@@ -403,6 +424,7 @@ else
             CharacterContext.ClaimAfterLoad(tab);
 
             _characters = CharSvc.LoadCharacterFiles().ToList();
+            CharSvc.UpdateFileListCache(_characters);
             RebuildBrowserEntries();
             Nav.NavigateTo("/build");
         }
@@ -456,6 +478,7 @@ else
         }
 
         _characters = CharSvc.LoadCharacterFiles().ToList();
+        CharSvc.UpdateFileListCache(_characters);
         RebuildBrowserEntries();
         StateHasChanged();
     }
@@ -491,7 +514,61 @@ else
         }
 
         _characters = CharSvc.LoadCharacterFiles().ToList();
+        CharSvc.UpdateFileListCache(_characters);
         RebuildBrowserEntries();
+        StateHasChanged();
+    }
+
+    private async Task OnRenameGroup(string currentGroup)
+    {
+        var parameters = new DialogParameters<EditGroupDialog>
+        {
+            { d => d.CurrentGroup,    currentGroup },
+            { d => d.ExistingGroups,  ExistingGroups }
+        };
+        IDialogReference dialog = await DialogService.ShowAsync<EditGroupDialog>("Rename Group", parameters);
+        DialogResult? result = await dialog.Result;
+        if (result is not { Canceled: false, Data: string newGroup })
+            return;
+
+        string resolved = string.IsNullOrWhiteSpace(newGroup) ? "Characters" : newGroup;
+        if (string.Equals(resolved, currentGroup, StringComparison.Ordinal))
+            return;
+
+        List<Builder.Presentation.Models.CharacterFile> groupCharacters = _characters
+            .Where(file => string.Equals(ResolveGroupName(file.CollectionGroupName), currentGroup, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        HashSet<string> groupCharacterPaths = groupCharacters
+            .Select(file => file.FilePath)
+            .ToHashSet(StringComparer.Ordinal);
+
+        try
+        {
+            foreach (Builder.Presentation.Models.CharacterFile file in groupCharacters)
+                file.UpdateGroupName(resolved);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Could not rename group: {ex.Message}", Severity.Error);
+            return;
+        }
+
+        _characters = CharSvc.LoadCharacterFiles().ToList();
+        CharSvc.UpdateFileListCache(_characters);
+        RebuildBrowserEntries();
+        int remainingCount = _characters.Count(file =>
+            groupCharacterPaths.Contains(file.FilePath) &&
+            !string.Equals(ResolveGroupName(file.CollectionGroupName), resolved, StringComparison.Ordinal));
+        if (remainingCount > 0)
+        {
+            Snackbar.Add(
+                $"Renamed group to \"{resolved}\", but {remainingCount} character file{(remainingCount == 1 ? " remains" : "s remain")} in \"{currentGroup}\".",
+                Severity.Warning);
+        }
+        else
+        {
+            Snackbar.Add($"Renamed group to \"{resolved}\".", Severity.Success);
+        }
         StateHasChanged();
     }
 
@@ -511,7 +588,10 @@ else
     private static IReadOnlyList<ClassProgressionSnapshot> SnapshotProgressionManagers() =>
         BuildService.SnapshotProgressionManagers();
 
-    private static CharacterBrowserEntry ToBrowserEntry(Builder.Presentation.Models.CharacterFile character) =>
+    private static string ResolveGroupName(string? groupName) =>
+        string.IsNullOrWhiteSpace(groupName) ? "Characters" : groupName;
+
+    private CharacterBrowserEntry ToBrowserEntry(Builder.Presentation.Models.CharacterFile character) =>
         new(
             character.FilePath,
             character.DisplayName,
@@ -520,7 +600,7 @@ else
             string.IsNullOrWhiteSpace(character.CollectionGroupName) ? null : character.CollectionGroupName,
             character.CollectionGroupName,
             character.IsFavorite,
-            PortraitDataUrl: null);  // loaded asynchronously by LoadPortraitsAsync
+            PortraitDataUrl: CharSvc.GetCachedPortrait(character.FilePath));
 
     private static string? ToPortraitDataUrl(Builder.Presentation.Models.CharacterFile character)
     {

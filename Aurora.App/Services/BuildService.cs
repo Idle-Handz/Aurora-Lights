@@ -1026,6 +1026,17 @@ public static class BuildService
             for (int lvl = 1; lvl <= m.ProgressionLevel; lvl++)
                 byLevel[lvl] = [];
 
+            var levelByElementId = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            foreach (var levelEl in m.LevelElements)
+            {
+                int atLevel = GetLevelElementLevel(levelEl);
+                if (atLevel < 1 || atLevel > m.ProgressionLevel) continue;
+
+                foreach (var e in AdvancementWalkChildren(levelEl))
+                    if (!string.IsNullOrWhiteSpace(e.Id))
+                        levelByElementId.TryAdd(e.Id, atLevel);
+            }
+
             foreach (var e in m.GetElements())
             {
                 if (e.Type != "Class Feature" && e.Type != "Archetype Feature") continue;
@@ -1034,8 +1045,7 @@ public static class BuildService
                     e.Name.StartsWith("Ability Score Improvement") ||
                     e.Name.Equals("Feat", StringComparison.OrdinalIgnoreCase)) continue;
 
-                int atLevel = 1;
-                try { dynamic d = e; atLevel = (int)d.Attributes.Level; } catch { }
+                int atLevel = ResolveAdvancementFeatureLevel(e, levelByElementId, m.ProgressionLevel);
                 if (atLevel < 1 || atLevel > m.ProgressionLevel) continue;
                 if (!byLevel.TryGetValue(atLevel, out var list)) continue;
                 if (list.Any(f => f.Name == e.Name)) continue;
@@ -2480,6 +2490,76 @@ public static class BuildService
             return (current as ElementBase)?.Name;
         }
         catch { return null; }
+    }
+
+    private static int GetLevelElementLevel(ElementBase levelEl)
+    {
+        if (levelEl is LevelElement level)
+            return level.Level;
+
+        return int.TryParse(levelEl.ElementSetters.GetSetter("Level")?.Value, out int parsed)
+            ? parsed
+            : 0;
+    }
+
+    private static int ResolveAdvancementFeatureLevel(
+        ElementBase feature,
+        IReadOnlyDictionary<string, int> levelByElementId,
+        int maxLevel)
+    {
+        foreach (string id in GetAdvancementAnchorIds(feature))
+            if (levelByElementId.TryGetValue(id, out int level))
+                return level;
+
+        int requiredLevel = GetAcquisitionRequiredLevel(feature);
+        if (requiredLevel >= 1 && requiredLevel <= maxLevel)
+            return requiredLevel;
+
+        return 1;
+    }
+
+    private static IEnumerable<string> GetAdvancementAnchorIds(ElementBase feature)
+    {
+        if (!string.IsNullOrWhiteSpace(feature.Id))
+            yield return feature.Id;
+
+        var parent = feature.Aquisition.GetParentHeader();
+        if (!string.IsNullOrWhiteSpace(parent?.Id))
+            yield return parent.Id;
+
+        if (feature.Aquisition.WasGranted &&
+            !string.IsNullOrWhiteSpace(feature.Aquisition.GrantRule?.ElementHeader?.Id))
+            yield return feature.Aquisition.GrantRule.ElementHeader.Id;
+
+        if (feature.Aquisition.WasSelected &&
+            !string.IsNullOrWhiteSpace(feature.Aquisition.SelectRule?.ElementHeader?.Id))
+            yield return feature.Aquisition.SelectRule.ElementHeader.Id;
+    }
+
+    private static int GetAcquisitionRequiredLevel(ElementBase feature)
+    {
+        try
+        {
+            if (feature.Aquisition.WasGranted)
+                return feature.Aquisition.GrantRule.Attributes.RequiredLevel;
+            if (feature.Aquisition.WasSelected)
+                return feature.Aquisition.SelectRule.Attributes.RequiredLevel;
+        }
+        catch { }
+
+        return 0;
+    }
+
+    private static IEnumerable<ElementBase> AdvancementWalkChildren(ElementBase parent)
+    {
+        yield return parent;
+
+        foreach (var child in parent.RuleElements)
+        {
+            yield return child;
+            foreach (var grandchild in AdvancementWalkChildren(child))
+                yield return grandchild;
+        }
     }
 }
 

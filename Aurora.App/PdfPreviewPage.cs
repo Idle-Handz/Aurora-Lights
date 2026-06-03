@@ -10,7 +10,7 @@ using UIKit;
 
 /// <summary>
 /// Native MAUI window that displays a PDF preview using WebView2's built-in
-/// PDF renderer and offers a Save button to persist the file to Documents.
+/// PDF renderer and offers a Save As button to persist the file.
 /// </summary>
 internal sealed class PdfPreviewPage : ContentPage
 {
@@ -20,7 +20,7 @@ internal sealed class PdfPreviewPage : ContentPage
     /// Creates the preview page for <paramref name="characterName"/>.
     /// <paramref name="tempPdfPath"/> is deleted when the window closes.
     /// </summary>
-    public PdfPreviewPage(string tempPdfPath, string characterName, Func<Task<string?>> saveToDocuments)
+    public PdfPreviewPage(string tempPdfPath, string characterName, Func<Task<string?>> saveAs)
     {
         _tempPdfPath    = tempPdfPath;
         Title           = $"Preview — {characterName}";
@@ -30,7 +30,7 @@ internal sealed class PdfPreviewPage : ContentPage
 
         var saveBtn = new Button
         {
-            Text            = "Save to Documents",
+            Text            = "Save As...",
             BackgroundColor = Color.FromArgb("#89b4fa"),
             TextColor       = Colors.Black,
             FontSize        = 13,
@@ -55,10 +55,11 @@ internal sealed class PdfPreviewPage : ContentPage
             statusLabel.IsVisible = false;
             try
             {
-                var savedPath = await saveToDocuments();
+                var savedPath = await saveAs();
                 if (savedPath != null)
                 {
-                    saveBtn.Text          = "Saved!";
+                    saveBtn.Text          = "Save As...";
+                    saveBtn.IsEnabled     = true;
                     statusLabel.Text      = $"Saved to {savedPath}";
                     statusLabel.IsVisible = true;
 #if MACCATALYST
@@ -71,13 +72,13 @@ internal sealed class PdfPreviewPage : ContentPage
                 else
                 {
                     // null = user cancelled the save dialog; restore the button.
-                    saveBtn.Text      = "Save to Documents";
+                    saveBtn.Text      = "Save As...";
                     saveBtn.IsEnabled = true;
                 }
             }
             catch (Exception ex)
             {
-                saveBtn.Text      = "Save to Documents";
+                saveBtn.Text      = "Save As...";
                 saveBtn.IsEnabled = true;
                 await DisplayAlertAsync("Save Failed", ex.Message, "OK");
             }

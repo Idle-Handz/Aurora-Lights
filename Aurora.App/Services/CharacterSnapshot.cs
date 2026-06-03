@@ -830,18 +830,13 @@ public sealed class CharacterSnapshot
         extensionSupports ??= [];
         int effectiveMax = maxSlot > 0 ? maxSlot : 9;
 
-        // Track which registered spells are always-prepared (granted via a grant rule
-        // that sets the "prepared" setter, i.e. IsAlwaysPrepared() == true).
+        // Track registered spells that are always-prepared. These can come from grant rules
+        // (domain/subclass spells) or select rules (feature/race/background spell choices).
         var alwaysPreparedIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var e in CharacterManager.Current.GetElements().Where(e => e.Type == "Spell"))
         {
-            try
-            {
-                dynamic d = e;
-                if ((bool)d.Aquisition.WasGranted && (bool)d.Aquisition.GrantRule.IsAlwaysPrepared())
-                    alwaysPreparedIds.Add((string)d.Id);
-            }
-            catch { }
+            if (IsAlwaysPreparedSpell(e) && !string.IsNullOrWhiteSpace(e.Id))
+                alwaysPreparedIds.Add(e.Id);
         }
 
         // Build source restriction sets — mirror the WPF SpellcasterSelectionControlViewModel logic.
@@ -1019,6 +1014,30 @@ public sealed class CharacterSnapshot
     // Spell-typed elements are always Builder.Data.Elements.Spell (verified by SpellTypeInvariantTests),
     // so read Level via a static cast instead of dynamic — no silent binder failure → wrong level.
     private static int GetSpellLevel(object e) => e is Spell sp ? sp.Level : 0;
+
+    private static bool IsAlwaysPreparedSpell(ElementBase spell)
+    {
+        try
+        {
+            if (spell.Aquisition.WasGranted && HasPreparedSetter(spell.Aquisition.GrantRule.Setters))
+                return true;
+            if (spell.Aquisition.WasSelected && HasPreparedSetter(spell.Aquisition.SelectRule.Setters))
+                return true;
+        }
+        catch
+        {
+        }
+
+        return false;
+    }
+
+    private static bool HasPreparedSetter(ElementSetters setters)
+    {
+        var setter = setters.GetSetter("prepared");
+        return setter is not null
+               && bool.TryParse(setter.Value, out bool prepared)
+               && prepared;
+    }
 
     private static string GetDynamicString(object e, string propertyName)
     {

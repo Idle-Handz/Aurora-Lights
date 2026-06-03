@@ -58,32 +58,52 @@
 .character-browser-search-row {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+}
+
+.character-browser-search-wrap {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    gap: 0.4rem;
+    padding: 0 0.9rem;
+    border-radius: 999px;
+    border: 2px solid var(--mud-palette-primary, #1f6feb);
+    background: var(--mud-palette-surface, #1e1e2e);
+    transition: box-shadow 120ms ease;
+}
+
+.character-browser-search-wrap:focus-within {
+    box-shadow: 0 0 0 3px var(--mud-palette-primary-hover, rgba(31, 111, 235, 0.22));
+}
+
+.character-browser-search-icon {
+    font-size: 1rem;
+    opacity: 0.7;
+    flex-shrink: 0;
 }
 
 .character-browser-search {
     flex: 1;
     min-width: 0;
-    padding: 0.55rem 0.9rem;
-    border-radius: 999px;
-    border: 1px solid var(--mud-palette-lines-default, rgba(0,0,0,0.12));
-    background: var(--mud-palette-surface, #fff);
-    color: var(--mud-palette-text-primary, #16202c);
+    padding: 0.6rem 0;
+    border: none;
+    background: transparent;
+    color: var(--mud-palette-text-primary, #cdd6f4);
     font-size: 0.95rem;
     outline: none;
-    transition: border-color 120ms ease, box-shadow 120ms ease;
 }
 
-.character-browser-search:focus {
-    border-color: var(--mud-palette-primary, #1f6feb);
-    box-shadow: 0 0 0 2px var(--mud-palette-primary-hover, rgba(31, 111, 235, 0.18));
-}
-
+/* Remove the browser's built-in search clear button — the pill already signals type */
 .character-browser-search-count {
     flex-shrink: 0;
-    font-size: 0.88rem;
-    color: var(--mud-palette-text-secondary, #5f6b7a);
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--mud-palette-primary, #89b4fa);
     white-space: nowrap;
+    padding-left: 0.3rem;
 }
 
 .character-browser-status,
@@ -111,11 +131,34 @@
     gap: 0.8rem;
 }
 
+.character-browser-section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+}
+
 .character-browser-section-title {
     margin: 0;
     font-size: 1rem;
     font-weight: 700;
     color: var(--mud-palette-text-primary, #1c2735);
+}
+
+.character-browser-section-action {
+    border: 0;
+    padding: 0.1rem 0.25rem;
+    background: transparent;
+    color: var(--mud-palette-text-secondary, #5f6b7a);
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    opacity: 0.5;
+    transition: opacity 120ms ease, color 120ms ease;
+}
+
+.character-browser-section-action:hover {
+    opacity: 1;
+    color: var(--mud-palette-primary, #2563eb);
 }
 
 .character-browser-grid {

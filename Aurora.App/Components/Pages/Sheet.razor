@@ -80,7 +80,7 @@
         Save PDF
     </MudButton>
     <MudText Typo="Typo.caption" Color="Color.Secondary" Style="margin-left: 12px; align-self: center;">
-        Saves to @GetExportLocationLabel()
+        Choose a destination when saving.
     </MudText>
 
     <MudButton StartIcon="@Icons.Material.Filled.Share"
@@ -324,7 +324,7 @@
             await MainThread.InvokeOnMainThreadAsync(() =>
             {
                 var page = new PdfPreviewPage(tempPath, snapCopy?.Name ?? "Character",
-                    saveToDocuments: async () =>
+                    saveAs: async () =>
                     {
                         var safeName = string.Concat((snapCopy?.Name ?? "Character")
                             .Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
@@ -334,11 +334,7 @@
                             GetPreferredExportDirectory());
                         if (chosenPath is null) return null;
 
-                        using var saveScope = await CharacterContext.EnterAsync(tab);
-                        await Task.Run(() =>
-                        {
-                            CharacterSheetGeneratorContext.Current!.GenerateNewSheet(chosenPath, isPreview: false);
-                        });
+                        await Task.Run(() => File.Copy(tempPath, chosenPath, overwrite: true));
                         await FileSaveService.ShareFileAsync(chosenPath, $"{safeName}.pdf");
                         await InvokeAsync(() =>
                         {
@@ -504,9 +500,4 @@
         return folder;
     }
 
-    private static string GetExportLocationLabel()
-    {
-        string folder = GetPreferredExportDirectory();
-        return Path.GetFileName(folder) is { Length: > 0 } leaf ? leaf : folder;
-    }
 }

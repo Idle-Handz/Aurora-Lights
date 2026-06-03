@@ -36,17 +36,21 @@
     @if (Characters.Count > 0)
     {
         <div class="character-browser-search-row">
-            <input class="character-browser-search"
-                   type="search"
-                   placeholder="Search characters…"
-                   value="@_searchText"
-                   @oninput="OnSearchInput" />
-            @if (!string.IsNullOrWhiteSpace(_searchText))
-            {
-                <span class="character-browser-search-count">
-                    @_filtered.Count of @Characters.Count
-                </span>
-            }
+            <div class="character-browser-search-wrap">
+                <span class="character-browser-search-icon" aria-hidden="true">&#128269;</span>
+                <input class="character-browser-search"
+                       @ref="_searchInput"
+                       type="search"
+                       placeholder="Search characters…"
+                       value="@_searchText"
+                       @oninput="OnSearchInput" />
+                @if (!string.IsNullOrWhiteSpace(_searchText))
+                {
+                    <span class="character-browser-search-count">
+                        @_filtered.Count of @Characters.Count
+                    </span>
+                }
+            </div>
         </div>
     }
 
@@ -72,7 +76,19 @@
         @foreach (IGrouping<string, CharacterBrowserEntry> group in _groups)
         {
             <section class="character-browser-section">
-                <h3 class="character-browser-section-title">@group.Key</h3>
+                <div class="character-browser-section-header">
+                    <h3 class="character-browser-section-title">@group.Key</h3>
+                    @if (OnRenameGroup.HasDelegate)
+                    {
+                        <button class="character-browser-section-action"
+                                type="button"
+                                title="Rename group"
+                                aria-label="Rename group"
+                                @onclick="() => OnRenameGroup.InvokeAsync(group.Key)">
+                            &#9998;
+                        </button>
+                    }
+                </div>
                 <div class="character-browser-grid">
                     @foreach (CharacterBrowserEntry character in group)
                     {
@@ -93,6 +109,8 @@
     private string _searchText = "";
     private IReadOnlyList<CharacterBrowserEntry> _filtered = [];
     private IReadOnlyList<IGrouping<string, CharacterBrowserEntry>> _groups = [];
+    private ElementReference _searchInput;
+    private bool _searchFocused;
 
     [Parameter, EditorRequired]
     public IReadOnlyList<CharacterBrowserEntry> Characters { get; set; } = [];
@@ -125,6 +143,9 @@
     public string? SelectedId { get; set; }
 
     [Parameter]
+    public bool AutoFocusSearch { get; set; }
+
+    [Parameter]
     public EventCallback<CharacterBrowserEntry> OnSelected { get; set; }
 
     [Parameter]
@@ -134,12 +155,24 @@
     public EventCallback<CharacterBrowserEntry> OnEditGroup { get; set; }
 
     [Parameter]
+    public EventCallback<string> OnRenameGroup { get; set; }
+
+    [Parameter]
     public EventCallback OnCreate { get; set; }
 
     [Parameter]
     public RenderFragment? AdditionalHeaderContent { get; set; }
 
     protected override void OnParametersSet() => ApplyFilter();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!AutoFocusSearch || _searchFocused || Characters.Count == 0)
+            return;
+
+        _searchFocused = true;
+        await _searchInput.FocusAsync(preventScroll: true);
+    }
 
     private void OnSearchInput(ChangeEventArgs e)
     {

@@ -50,6 +50,21 @@ jobs:
       - name: Restore
         run: dotnet restore "$PROJECT"
 
+      - name: Compute Android version code
+        id: android_version
+        shell: bash
+        run: |
+          # Use one monotonic sequence across CI and release workflows. GitHub run_number
+          # is workflow-local, so release APKs could otherwise look older than CI APKs.
+          BASE_EPOCH=1577836800 # 2020-01-01T00:00:00Z
+          VERSION_CODE=$(( $(date -u +%s) - BASE_EPOCH ))
+          if (( VERSION_CODE <= 0 || VERSION_CODE > 2100000000 )); then
+            echo "ERROR: Android versionCode '$VERSION_CODE' is outside the supported range."
+            exit 1
+          fi
+          echo "code=$VERSION_CODE" >> "$GITHUB_OUTPUT"
+          echo "Android versionCode: $VERSION_CODE"
+
       - name: Publish (android-arm64)
         run: |
           dotnet publish "$PROJECT" \
@@ -62,7 +77,7 @@ jobs:
             -p:AndroidSigningKeyAlias=aurora \
             -p:AndroidSigningKeyPass=aurora-ci \
             -p:AndroidSigningStorePass=aurora-ci \
-            -p:ApplicationVersion=${{ github.run_number }}
+            -p:ApplicationVersion=${{ steps.android_version.outputs.code }}
 
       - name: Locate APK
         id: find_apk
@@ -84,6 +99,8 @@ jobs:
           "$BUILD_TOOLS/aapt2" dump badging "$APK" | grep -E "package|versionCode|versionName|sdkVersion"
           echo "=== APK signing certificate ==="
           "$BUILD_TOOLS/apksigner" verify --print-certs "$APK"
+          "$BUILD_TOOLS/aapt2" dump badging "$APK" \
+            | grep -q "versionCode='${{ steps.android_version.outputs.code }}'"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4

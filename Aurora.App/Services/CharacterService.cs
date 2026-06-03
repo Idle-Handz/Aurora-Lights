@@ -4,8 +4,10 @@ using Builder.Presentation.Events.Shell;
 using Builder.Presentation.Models;
 using Builder.Presentation.Services;
 using Builder.Presentation.Services.Data;
+using Builder.Presentation.Utilities;
 using Builder.Presentation.Views.Sliders;
 using Microsoft.Maui.Storage;
+using System.Collections.Concurrent;
 
 #if MACCATALYST
 using CommunityToolkit.Maui.Storage;
@@ -28,6 +30,13 @@ public sealed class CharacterService :
     private bool _directoriesInitialized;
     private bool _elementsInitialized;
     private readonly SemaphoreSlim _elementLock  = new(1, 1);
+
+    // ── Character list cache ────────────────────────────────────────────────
+    private List<CharacterFile>? _fileListCache;
+    private Dictionary<string, CharacterFileDiskStamp> _fileListStampCache =
+        new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, string> _portraitCache =
+        new(StringComparer.Ordinal);
     // Serialized access to CharacterManager.Current is owned by CharacterContext; callers that
     // perform full-file loads acquire it via CharacterContext.EnterForLoadAsync().
     private volatile bool _isCharacterLoading;
@@ -209,6 +218,57 @@ public sealed class CharacterService :
 
     public string CustomElementsDirectory => DataManager.Current.UserDocumentsCustomElementsDirectory ?? "(not initialized)";
 
+    /// <summary>
+    /// Returns a cached file list when the underlying .dnd5e directory has not changed.
+    /// A cheap path/length/timestamp scan catches edits made by Aurora Legacy or a file manager.
+    /// </summary>
+    public bool TryGetCachedFiles(out IReadOnlyList<CharacterFile> files)
+    {
+        files = [];
+        if (_fileListCache is null)
+            return false;
+
+        if (!IsFileListCacheCurrent())
+        {
+            InvalidateFileListCache();
+            return false;
+        }
+
+        files = _fileListCache.ToList();
+        return true;
+    }
+
+    /// <summary>Updates the in-memory file list cache after any mutation.</summary>
+    public void UpdateFileListCache(IEnumerable<CharacterFile> files)
+    {
+        _fileListCache = files.ToList();
+        _fileListStampCache = CaptureCharacterFileStamps();
+        var activePaths = _fileListCache
+            .Select(file => file.FilePath)
+            .ToHashSet(StringComparer.Ordinal);
+        foreach (string cachedPath in _portraitCache.Keys)
+        {
+            if (!activePaths.Contains(cachedPath))
+                _portraitCache.TryRemove(cachedPath, out _);
+        }
+    }
+
+    /// <summary>Drops the file list cache so the next visit re-scans from disk.</summary>
+    public void InvalidateFileListCache()
+    {
+        _fileListCache = null;
+        _fileListStampCache.Clear();
+        _portraitCache.Clear();
+    }
+
+    /// <summary>Stores a portrait data URL keyed by file path so portraits survive navigation.</summary>
+    public void CachePortrait(string filePath, string dataUrl) =>
+        _portraitCache[filePath] = dataUrl;
+
+    /// <summary>Returns a cached portrait data URL, or null if not yet loaded.</summary>
+    public string? GetCachedPortrait(string filePath) =>
+        _portraitCache.TryGetValue(filePath, out var url) ? url : null;
+
     public IReadOnlyList<CharacterFile> LoadCharacterFiles()
     {
         EnsureInitialized();
@@ -216,6 +276,40 @@ public sealed class CharacterService :
             .OrderBy(x => !x.IsFavorite)
             .ThenBy(x => x.DisplayName)
             .ToList();
+    }
+
+    private bool IsFileListCacheCurrent()
+    {
+        Dictionary<string, CharacterFileDiskStamp> currentStamps = CaptureCharacterFileStamps();
+        if (currentStamps.Count != _fileListStampCache.Count)
+            return false;
+
+        foreach (var (path, stamp) in currentStamps)
+        {
+            if (!_fileListStampCache.TryGetValue(path, out CharacterFileDiskStamp cachedStamp)
+                || cachedStamp != stamp)
+                return false;
+        }
+
+        return true;
+    }
+
+    private Dictionary<string, CharacterFileDiskStamp> CaptureCharacterFileStamps()
+    {
+        EnsureInitialized();
+        var result = new Dictionary<string, CharacterFileDiskStamp>(StringComparer.Ordinal);
+        string dir = DataManager.Current.UserDocumentsRootDirectory;
+        if (string.IsNullOrWhiteSpace(dir) || !Directory.Exists(dir))
+            return result;
+
+        foreach (string path in Directory.EnumerateFiles(dir, "*.dnd5e", SearchOption.TopDirectoryOnly))
+        {
+            CharacterFileDiskStamp? stamp = CharacterFileDiskStamp.Capture(path);
+            if (stamp.HasValue)
+                result[path] = stamp.Value;
+        }
+
+        return result;
     }
 
     /// <summary>True while a character is being loaded.</summary>
@@ -553,6 +647,7 @@ public sealed class CharacterService :
         ApplicationContext.Current.Settings.DocumentsRootDirectory = path ?? "";
         ApplicationContext.Current.Settings.Save();
         DataManager.Current.InitializeDirectories();
+        InvalidateFileListCache();
         return null;
     }
 
