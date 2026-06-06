@@ -133,6 +133,7 @@ public sealed class LegacyParityScenarioTests : IAsyncLifetime
             (expectation.NameContains is null || rule.Name.Contains(expectation.NameContains, StringComparison.OrdinalIgnoreCase)) &&
             (expectation.OwnerId is null || rule.OwnerId.Equals(expectation.OwnerId, StringComparison.OrdinalIgnoreCase)) &&
             (expectation.Bucket is null || rule.Bucket.Equals(expectation.Bucket, StringComparison.OrdinalIgnoreCase)) &&
+            (expectation.RequiredLevel is null || rule.RequiredLevel == expectation.RequiredLevel.Value) &&
             (expectation.OptionalFlavor is null || rule.OptionalFlavor == expectation.OptionalFlavor.Value))
             .ToList();
 

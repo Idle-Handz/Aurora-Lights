@@ -60,9 +60,59 @@ public sealed class CharacterFixtureParityTests : IAsyncLifetime
         manager.GetElements().Should().Contain(element => element.Id == "ID_WOTC_ARMOR_HEAVY_CHAIN_MAIL");
     }
 
+    [Fact]
+    public async Task PreparedDomainCleric_DistinguishesManualAndAlwaysPreparedSpells()
+    {
+        if (!ContentFixture.SkipIfUnavailable(_output)) return;
+
+        await LoadFixture("prepared-domain-cleric.dnd5e");
+
+        var snapshot = CharacterParitySnapshotter.Capture();
+        var cleric = snapshot.Spellcasting.Should().ContainSingle(section => section.Name == "Cleric").Subject;
+
+        snapshot.Level.Should().Be(5);
+        snapshot.Combat.ArmorClass.Should().BeGreaterThan(0);
+        snapshot.Combat.MaxHp.Should().BeGreaterThan(0);
+        snapshot.Combat.FlySpeed.Should().BeGreaterThan(0);
+        cleric.PreparedIds.Should().HaveCount(15);
+        cleric.AlwaysPreparedIds.Should().NotBeEmpty();
+        cleric.AlwaysPreparedIds.Should().Contain("ID_PHB_SPELL_FAERIE_FIRE");
+    }
+
+    [Fact]
+    public async Task PreparedDomainCleric_ParitySnapshotSurvivesSaveReload()
+    {
+        if (!ContentFixture.SkipIfUnavailable(_output)) return;
+
+        await LoadFixture("prepared-domain-cleric.dnd5e");
+        var original = CharacterParitySnapshotter.Capture();
+        var bytes = CharacterManager.Current.File.SerializeCharacter(CharacterManager.Current.Character);
+        string tempPath = Path.Combine(Path.GetTempPath(), $"aurora_fixture_parity_{Guid.NewGuid():N}.dnd5e");
+
+        try
+        {
+            await File.WriteAllBytesAsync(tempPath, bytes);
+            var handler = new TestSpellHandler();
+            SpellcastingSectionContext.Current = handler;
+            CharacterLoadCompatibilityService.PrepareForCharacterLoad();
+            await new CharacterFile(tempPath).Load();
+
+            var reloaded = CharacterParitySnapshotter.Capture();
+            reloaded.Level.Should().Be(original.Level);
+            reloaded.Combat.Should().Be(original.Combat);
+            reloaded.AbilityScores.Should().BeEquivalentTo(original.AbilityScores);
+            reloaded.Spellcasting.Should().BeEquivalentTo(original.Spellcasting);
+        }
+        finally
+        {
+            if (File.Exists(tempPath)) File.Delete(tempPath);
+        }
+    }
+
     [Theory]
     [InlineData("multiclass-prepared-caster.dnd5e")]
     [InlineData("prepared-paladin.dnd5e")]
+    [InlineData("prepared-domain-cleric.dnd5e")]
     public void SanitizedCharacterFixture_DoesNotContainPrivateOrLargeEmbeddedData(string fileName)
     {
         string path = ContentFixture.GetCharacterFixturePath(fileName);

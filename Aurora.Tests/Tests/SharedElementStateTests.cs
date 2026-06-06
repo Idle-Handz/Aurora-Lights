@@ -63,8 +63,7 @@ public sealed class SharedElementStateTests : IAsyncLifetime
     {
         if (!ContentFixture.SkipIfUnavailable(_output)) return;
 
-        var path = ContentFixture.FindFirstCharacterFile();
-        if (path is null) { _output.WriteLine("[SKIP] no character file found."); return; }
+        var path = ContentFixture.GetCharacterFixturePath("prepared-paladin.dnd5e");
 
         // A Multiclass element is very unlikely to be used by a basic test character, so it's a good
         // "unrelated element" probe: stamp it, then load a real character and see if the stamp clears.

@@ -40,6 +40,8 @@ public sealed record CharacterParityRuleExpectation
 
     public int? MinOptions { get; init; }
 
+    public int? RequiredLevel { get; init; }
+
     public string[] ExpectedOptionIds { get; init; } = [];
 
     public bool? OptionalFlavor { get; init; }

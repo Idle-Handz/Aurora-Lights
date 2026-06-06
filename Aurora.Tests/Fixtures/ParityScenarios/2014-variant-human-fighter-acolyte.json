@@ -30,6 +30,7 @@
       "type": "Racial Trait",
       "nameContains": "Ability Score Increase",
       "bucket": "AbilityScores",
+      "requiredLevel": 1,
       "minOptions": 1,
       "expectedOptionIds": [
         "ID_RACE_VARIANT_HUMAN_VARIANT_STRENGTH",

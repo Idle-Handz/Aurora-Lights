@@ -1,6 +1,7 @@
 using Aurora.Components.Models;
 using Builder.Data;
 using Builder.Data.Elements;
+using Builder.Data.Extensions;
 using Builder.Data.Rules;
 using Builder.Presentation;
 using Builder.Presentation.Models;
@@ -11,10 +12,21 @@ namespace Aurora.Tests.Helpers;
 
 public sealed record CharacterParitySnapshot(
     int Level,
+    CombatSnapshot Combat,
     IReadOnlyDictionary<string, AbilityScoreSnapshot> AbilityScores,
     IReadOnlyList<ElementSnapshot> RegisteredElements,
     IReadOnlyList<SelectionRuleSnapshot> SelectionRules,
     IReadOnlyList<SpellcastingSnapshot> Spellcasting);
+
+public sealed record CombatSnapshot(
+    int ArmorClass,
+    int MaxHp,
+    int Initiative,
+    int Speed,
+    int FlySpeed,
+    int ClimbSpeed,
+    int SwimSpeed,
+    int BurrowSpeed);
 
 public sealed record AbilityScoreSnapshot(int Base, int Additional, int Final);
 
@@ -38,7 +50,9 @@ public sealed record SpellcastingSnapshot(
     string Name,
     string SourceId,
     string Ability,
-    bool Prepare);
+    bool Prepare,
+    IReadOnlyList<string> PreparedIds,
+    IReadOnlyList<string> AlwaysPreparedIds);
 
 public static class CharacterParitySnapshotter
 {
@@ -70,16 +84,74 @@ public static class CharacterParitySnapshotter
                 info.Name,
                 info.ElementHeader?.Id ?? "",
                 info.AbilityName,
-                info.Prepare))
+                info.Prepare,
+                GetPreparedIds(info.Name),
+                GetAlwaysPreparedIds(elements, info.Name)))
             .OrderBy(info => info.Name, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
         return new CharacterParitySnapshot(
             character.Level,
+            CaptureCombat(cm, character),
             CaptureAbilities(character),
             registeredElements,
             selectionRules,
             spellcasting);
+    }
+
+    private static CombatSnapshot CaptureCombat(CharacterManager manager, Character character)
+    {
+        var values = manager.StatisticsCalculator.StatisticValues;
+        return new CombatSnapshot(
+            character.ArmorClass,
+            character.MaxHp,
+            character.Initiative,
+            character.Speed,
+            values.GetValue("speed:fly"),
+            values.GetValue("speed:climb"),
+            values.GetValue("speed:swim"),
+            values.GetValue("speed:burrow"));
+    }
+
+    private static IReadOnlyList<string> GetPreparedIds(string spellcastingName) =>
+        (SpellcastingSectionContext.Current?.GetPreparedIds(spellcastingName) ?? Array.Empty<string>())
+        .OrderBy(id => id, StringComparer.OrdinalIgnoreCase)
+        .ToList();
+
+    private static IReadOnlyList<string> GetAlwaysPreparedIds(
+        IEnumerable<ElementBase> elements,
+        string spellcastingName) =>
+        elements
+            .Where(element => element.Type == "Spell")
+            .Where(element => IsAlwaysPreparedFor(element, spellcastingName))
+            .Select(element => element.Id)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(id => id, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+    private static bool IsAlwaysPreparedFor(ElementBase spell, string spellcastingName)
+    {
+        if (spell.Aquisition.WasGranted)
+        {
+            var rule = spell.Aquisition.GrantRule;
+            return rule.IsAlwaysPrepared()
+                && rule.Setters.ContainsSetter("spellcasting")
+                && rule.Setters.GetSetter("spellcasting").Value.Equals(
+                    spellcastingName,
+                    StringComparison.OrdinalIgnoreCase);
+        }
+
+        if (spell.Aquisition.WasSelected)
+        {
+            var rule = spell.Aquisition.SelectRule;
+            return rule.IsAlwaysPrepared()
+                && rule.Attributes.ContainsSpellcastingName()
+                && rule.Attributes.SpellcastingName.Equals(
+                    spellcastingName,
+                    StringComparison.OrdinalIgnoreCase);
+        }
+
+        return false;
     }
 
     private static IReadOnlyDictionary<string, AbilityScoreSnapshot> CaptureAbilities(Character character)

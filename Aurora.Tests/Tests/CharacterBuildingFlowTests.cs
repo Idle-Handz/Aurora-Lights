@@ -69,8 +69,7 @@ public sealed class CharacterBuildingFlowTests : IAsyncLifetime
     {
         if (!ContentFixture.SkipIfUnavailable(_output)) return;
 
-        var path = ContentFixture.FindFirstCharacterFile();
-        if (path is null) { _output.WriteLine("[SKIP] No .dnd5e character files found."); return; }
+        var path = ContentFixture.GetCharacterFixturePath("prepared-paladin.dnd5e");
 
         var file = new CharacterFile(path);
         CharacterLoadCompatibilityService.PrepareForCharacterLoad();
@@ -89,8 +88,7 @@ public sealed class CharacterBuildingFlowTests : IAsyncLifetime
     {
         if (!ContentFixture.SkipIfUnavailable(_output)) return;
 
-        var path = ContentFixture.FindCharacterFileWithEquipment();
-        if (path is null) { _output.WriteLine("[SKIP] No .dnd5e character files with equipment found."); return; }
+        var path = ContentFixture.GetCharacterFixturePath("prepared-paladin.dnd5e");
 
         var file = new CharacterFile(path);
         CharacterLoadCompatibilityService.PrepareForCharacterLoad();
@@ -139,8 +137,7 @@ public sealed class CharacterBuildingFlowTests : IAsyncLifetime
     {
         if (!ContentFixture.SkipIfUnavailable(_output)) return;
 
-        var path = ContentFixture.FindPreparedCasterCharacterFile();
-        if (path is null) { _output.WriteLine("[SKIP] No prepared-caster character files found."); return; }
+        var path = ContentFixture.GetCharacterFixturePath("prepared-domain-cleric.dnd5e");
 
         // Load with a fresh handler so we capture what was stored in the file.
         var handler = new TestSpellHandler();
@@ -205,8 +202,7 @@ public sealed class CharacterBuildingFlowTests : IAsyncLifetime
     {
         if (!ContentFixture.SkipIfUnavailable(_output)) return;
 
-        var path = ContentFixture.FindPreparedCasterCharacterFile();
-        if (path is null) { _output.WriteLine("[SKIP] No prepared-caster character files found."); return; }
+        var path = ContentFixture.GetCharacterFixturePath("prepared-domain-cleric.dnd5e");
 
         var handler = new TestSpellHandler();
         SpellcastingSectionContext.Current = handler;

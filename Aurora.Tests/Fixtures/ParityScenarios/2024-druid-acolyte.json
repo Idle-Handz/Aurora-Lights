@@ -33,6 +33,7 @@
     {
       "type": "Ability Score Improvement",
       "bucket": "AbilityScores",
+      "requiredLevel": 1,
       "minOptions": 2
     }
   ]
