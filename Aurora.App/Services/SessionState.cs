@@ -47,6 +47,12 @@ public sealed class SessionState
     // ── Custom resources ──────────────────────────────────────────────────────
     public List<CustomResource> CustomResources { get; set; } = [];
 
+    // Attack reminders shown on the Session page. Default non-weapon attacks
+    // (unarmed strikes, racial/natural attacks, etc.) are shown unless hidden;
+    // weapon attacks are opt-in and constrained to currently on-hand weapons.
+    public List<string> AttackReminderWeaponIds { get; set; } = [];
+    public List<string> HiddenDefaultAttackReminderKeys { get; set; } = [];
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     public void InitializeIfNew(int maxHp)

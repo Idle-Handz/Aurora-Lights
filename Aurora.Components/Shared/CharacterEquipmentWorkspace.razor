@@ -156,6 +156,17 @@
                                     E
                                 </button>
                             }
+                            @if (item.HasVersatile && item.IsEquipped)
+                            {
+                                var wieldedTwoHanded = string.Equals(item.EquippedLocation, "Two-Handed (Versatile)", StringComparison.OrdinalIgnoreCase);
+                                <button type="button"
+                                        class="equipment-tag @(wieldedTwoHanded ? "active" : string.Empty)"
+                                        disabled="@(!OnToggleVersatileWield.HasDelegate || Busy)"
+                                        title="@(wieldedTwoHanded ? "Wield one-handed" : "Wield two-handed")"
+                                        @onclick="() => OnToggleVersatileWield.InvokeAsync(item.Identifier)">
+                                    @(wieldedTwoHanded ? "2H" : "1H")
+                                </button>
+                            }
                             @if (item.IsAttunable)
                             {
                                 <button type="button"
@@ -273,6 +284,9 @@
 
     [Parameter]
     public EventCallback<string> OnToggleEquipped { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnToggleVersatileWield { get; set; }
 
     [Parameter]
     public EventCallback<string> OnToggleAttuned { get; set; }

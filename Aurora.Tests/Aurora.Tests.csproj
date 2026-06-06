@@ -52,6 +52,7 @@
     <Compile Include="..\Aurora.App\Services\Updates\UpdateAvailability.cs"       Link="Linked\UpdateAvailability.cs" />
     <Compile Include="..\Aurora.App\Services\Updates\GithubReleaseChannelService.cs" Link="Linked\GithubReleaseChannelService.cs" />
     <Compile Include="..\Aurora.App\Services\EquipmentService.cs"                 Link="Linked\EquipmentService.cs" />
+    <Compile Include="..\Aurora.App\Services\SessionAttackReminderService.cs"     Link="Linked\SessionAttackReminderService.cs" />
   </ItemGroup>
 
 </Project>

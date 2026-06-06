@@ -49,6 +49,7 @@
                              OnUnequipGearSlot="UnequipGearAsync"
                              OnRemoveItem="RemoveItemAsync"
                              OnToggleEquipped="ToggleEquippedAsync"
+                             OnToggleVersatileWield="ToggleVersatileWieldAsync"
                              OnToggleAttuned="ToggleAttunedAsync"
                              OnChangeAmount="ChangeAmountAsync"
                              OnCoinChanged="ChangeCoinAsync"
@@ -93,6 +94,7 @@
                     item.DisplayWeight,
                     item.DisplayPrice,
                     item.IsEquippable,
+                    item.HasVersatile,
                     Tabs.ActiveTab?.Character is { } character &&
                         EquipmentService.CanExtractPack(character, item.Identifier)))
                 .ToList(),
@@ -451,6 +453,35 @@
             item.DeactivateAttunement();
         else
             item.Activate(equip: item.IsEquipped, attune: true);
+
+        RefreshEquipment();
+        file.SaveInventoryItems(character);
+        MarkDirty();
+    }
+
+    private async Task ToggleVersatileWieldAsync(string identifier)
+    {
+        var tab = Tabs.ActiveTab;
+        if (tab is not { Character: { } character, File: { } file })
+        {
+            WarnUnavailable("Equipment cannot be changed because there is no active character.");
+            return;
+        }
+        using var scope = await CharacterContext.EnterAsync(tab);
+
+        var item = FindLiveItem(identifier);
+        if (item is null || !item.Item.HasVersatile || !item.IsEquipped)
+        {
+            WarnUnavailable("That item cannot be wielded with two hands right now.");
+            return;
+        }
+
+        bool twoHanded = !string.Equals(item.EquippedLocation, "Two-Handed (Versatile)", StringComparison.OrdinalIgnoreCase);
+        if (!EquipmentService.SetVersatileWield(character, identifier, twoHanded))
+        {
+            WarnUnavailable("That item's wield state could not be changed.");
+            return;
+        }
 
         RefreshEquipment();
         file.SaveInventoryItems(character);

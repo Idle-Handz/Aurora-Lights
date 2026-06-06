@@ -2895,6 +2895,30 @@ html, body {
 }
 .session-condition-remove:hover { color: #f38ba8; }
 
+/* Attack reminders */
+.session-attack-table {
+    display: grid;
+    gap: 0;
+}
+.session-attack-row {
+    display: grid;
+    grid-template-columns: minmax(120px, 1fr) minmax(80px, 0.7fr) minmax(120px, 1fr) minmax(70px, 0.6fr) 32px;
+    gap: 10px;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(205, 214, 244, 0.08);
+    color: var(--mud-palette-text-secondary, #a6adc8);
+    font-size: 13px;
+}
+.session-attack-row:last-child { border-bottom: none; }
+.session-attack-header {
+    color: var(--mud-palette-text-disabled, #6c7086);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
 /* Spell slots */
 .session-slots-grid {
     display: flex;
@@ -3474,6 +3498,39 @@ input.equipment-currency-input::-webkit-inner-spin-button { -webkit-appearance: 
 
     .session-resource-name {
         min-width: 0;
+    }
+
+    .session-attack-header {
+        display: none;
+    }
+
+    .session-attack-row:not(.session-attack-header) {
+        grid-template-columns: 1fr auto;
+        gap: 4px 10px;
+        padding: 10px 0;
+    }
+
+    .session-attack-row:not(.session-attack-header) > span {
+        min-width: 0;
+    }
+
+    .session-attack-row:not(.session-attack-header) > span:nth-child(1) {
+        grid-column: 1;
+        color: var(--mud-palette-text-primary, #cdd6f4);
+        font-weight: 600;
+    }
+
+    .session-attack-row:not(.session-attack-header) > span:nth-child(2),
+    .session-attack-row:not(.session-attack-header) > span:nth-child(3),
+    .session-attack-row:not(.session-attack-header) > span:nth-child(4) {
+        grid-column: 1;
+        font-size: 12px;
+    }
+
+    .session-attack-row:not(.session-attack-header) > span:nth-child(5) {
+        grid-column: 2;
+        grid-row: 1 / span 4;
+        align-self: start;
     }
 
     .console-log {

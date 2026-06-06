@@ -68,7 +68,7 @@ public static class CharacterLoadCompatibilityService
                 else if (location is "Primary Hand" or "Two-Handed" or "Two-Handed (Versatile)"
                          && inv.EquippedPrimary == null)
                 {
-                    inv.EquipPrimary(item, item.IsTwoHandTarget());
+                    inv.EquipPrimary(item, item.IsTwoHandTarget() || location == "Two-Handed (Versatile)");
                 }
                 else if (location == "Secondary Hand" && inv.EquippedSecondary == null)
                 {

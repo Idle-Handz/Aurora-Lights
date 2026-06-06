@@ -446,6 +446,26 @@ public static class CharacterFileSaveExtensions
                     });
                 }
 
+            var attackRemindersNode = session["attack-reminders"];
+            if (attackRemindersNode != null)
+            {
+                foreach (XmlNode reminderNode in attackRemindersNode.ChildNodes)
+                {
+                    if (reminderNode.Name == "weapon")
+                    {
+                        var id = reminderNode.Attributes?["identifier"]?.Value;
+                        if (!string.IsNullOrWhiteSpace(id))
+                            state.AttackReminderWeaponIds.Add(id);
+                    }
+                    else if (reminderNode.Name == "hidden-default")
+                    {
+                        var key = reminderNode.Attributes?["key"]?.Value;
+                        if (!string.IsNullOrWhiteSpace(key))
+                            state.HiddenDefaultAttackReminderKeys.Add(key);
+                    }
+                }
+            }
+
             return state;
         }
         catch (Exception ex)
@@ -523,6 +543,28 @@ public static class CharacterFileSaveExtensions
                 resNode.AppendChild(rn);
             }
             node.AppendChild(resNode);
+
+            var attackRemindersNode = doc.CreateElement("attack-reminders");
+            foreach (var identifier in session.AttackReminderWeaponIds.Distinct(StringComparer.OrdinalIgnoreCase))
+            {
+                if (string.IsNullOrWhiteSpace(identifier))
+                    continue;
+
+                var weaponNode = doc.CreateElement("weapon");
+                weaponNode.SetAttribute("identifier", identifier);
+                attackRemindersNode.AppendChild(weaponNode);
+            }
+
+            foreach (var key in session.HiddenDefaultAttackReminderKeys.Distinct(StringComparer.OrdinalIgnoreCase))
+            {
+                if (string.IsNullOrWhiteSpace(key))
+                    continue;
+
+                var hiddenNode = doc.CreateElement("hidden-default");
+                hiddenNode.SetAttribute("key", key);
+                attackRemindersNode.AppendChild(hiddenNode);
+            }
+            node.AppendChild(attackRemindersNode);
 
             root.AppendChild(node);
 

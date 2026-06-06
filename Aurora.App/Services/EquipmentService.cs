@@ -628,6 +628,42 @@ public static class EquipmentService
         return true;
     }
 
+    public static bool SetVersatileWield(Character character, string identifier, bool twoHanded)
+    {
+        var item = character.Inventory.Items.FirstOrDefault(i => i.Identifier == identifier);
+        if (item == null || !item.Item.HasVersatile || !item.IsEquipped)
+            return false;
+
+        if (twoHanded)
+        {
+            if (!ReferenceEquals(character.Inventory.EquippedPrimary, item))
+            {
+                if (character.Inventory.EquippedPrimary != null)
+                    character.Inventory.UnequipPrimary();
+            }
+
+            if (character.Inventory.EquippedSecondary != null &&
+                !ReferenceEquals(character.Inventory.EquippedSecondary, item))
+            {
+                character.Inventory.UnequipSecondary();
+            }
+
+            character.Inventory.EquipPrimary(item, twohanded: true);
+        }
+        else
+        {
+            if (!character.Inventory.IsEquippedVersatile() ||
+                !ReferenceEquals(character.Inventory.EquippedPrimary, item))
+                return false;
+
+            character.Inventory.UnequipPrimary();
+            character.Inventory.EquipPrimary(item, twohanded: false);
+        }
+
+        character.Inventory.CalculateAttunedItemCount();
+        return true;
+    }
+
     /// <summary>
     /// Adds a new item by element ID, then equips it to the given slot.
     /// </summary>

@@ -240,7 +240,8 @@ public sealed class CharacterSnapshot
                     i.DisplayWeight ?? "",
                     i.DisplayPrice  ?? "",
                     i.IsEquippable,
-                    i.Identifier))
+                    i.Identifier,
+                    i.Item?.HasVersatile ?? false))
                 .ToList(),
 
             Attacks = c.AttacksSection.Items
@@ -249,7 +250,8 @@ public sealed class CharacterSnapshot
                     a.Name.Content ?? "",
                     a.Attack.Content ?? a.DisplayCalculatedAttack ?? "",
                     a.Damage.Content ?? a.DisplayCalculatedDamage ?? "",
-                    a.Range.Content ?? ""))
+                    a.Range.Content ?? "",
+                    a.EquipmentItem?.Identifier ?? ""))
                 .ToList(),
 
             HasSpellcasting        = spellSections.Count > 0,
@@ -1090,7 +1092,8 @@ public sealed class CharacterSnapshot
                 i.DisplayWeight ?? "",
                 i.DisplayPrice  ?? "",
                 i.IsEquippable,
-                i.Identifier))
+                i.Identifier,
+                i.Item?.HasVersatile ?? false))
             .ToList();
 
         AttunedCount = c.Inventory.AttunedItemCount;
@@ -1102,7 +1105,8 @@ public sealed class CharacterSnapshot
                 a.Name.Content ?? "",
                 a.DisplayCalculatedAttack ?? a.Attack.Content ?? "",
                 a.DisplayCalculatedDamage ?? a.Damage.Content ?? "",
-                a.Range.Content ?? ""))
+                a.Range.Content ?? "",
+                a.EquipmentItem?.Identifier ?? ""))
             .ToList();
 
         var cm = CharacterManager.Current;
@@ -1151,13 +1155,15 @@ public sealed record EquipmentItemEntry(
     string DisplayWeight,
     string DisplayPrice,
     bool   IsEquippable = false,
-    string Identifier   = "");
+    string Identifier   = "",
+    bool   HasVersatile = false);
 
 public sealed record AttackEntry(
     string Name,
     string Attack,
     string Damage,
-    string Range);
+    string Range,
+    string EquipmentIdentifier = "");
 
 /// <summary>
 /// Name and Id are set once at snapshot time (init); IsPrepared is editable by the user.

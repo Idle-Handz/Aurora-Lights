@@ -50,6 +50,61 @@
     </div>
 </div>
 
+<div class="session-card">
+    <div class="session-card-title-row">
+        <div class="session-card-title">Attack Reminders</div>
+        <MudMenu Icon="@Icons.Material.Filled.AddCircleOutline"
+                 Size="Size.Small"
+                 Dense="true"
+                 AnchorOrigin="Origin.BottomRight"
+                 TransformOrigin="Origin.TopRight"
+                 Disabled="@(_availableAttackReminders.Count == 0)">
+            @foreach (var reminder in _availableAttackReminders)
+            {
+                var row = reminder;
+                <MudMenuItem OnClick="() => AddAttackReminder(row)">
+                    @row.Name
+                </MudMenuItem>
+            }
+        </MudMenu>
+    </div>
+
+    @if (_attackReminders.Count == 0)
+    {
+        <MudText Typo="Typo.body2" Color="Color.Secondary" Style="font-size: 12px;">
+            No attack reminders shown. Equip a weapon with an attack entry, or add unarmed/racial attacks on the Equipment page.
+        </MudText>
+    }
+    else
+    {
+        <div class="session-attack-table">
+            <div class="session-attack-row session-attack-header">
+                <span>Name</span>
+                <span>Attack</span>
+                <span>Damage</span>
+                <span>Range</span>
+                <span></span>
+            </div>
+            @foreach (var reminder in _attackReminders)
+            {
+                var row = reminder;
+                <div class="session-attack-row">
+                    <span>@row.Name</span>
+                    <span>@row.Attack</span>
+                    <span>@row.Damage</span>
+                    <span>@row.Range</span>
+                    <span>
+                        <button type="button"
+                                class="session-condition-remove"
+                                title="Remove reminder"
+                                @onclick="() => RemoveAttackReminder(row)">x</button>
+                    </span>
+                </div>
+            }
+        </div>
+    }
+</div>
+
 <div class="detail-advancement-strip">
     <div class="detail-advancement-meta">
         <div class="section-label" style="margin-bottom: 6px;">Advancement</div>
@@ -399,6 +454,8 @@
     private CharacterSnapshot? _snap;
     private SessionState _s = new();
     private List<SpellLevelEntry> _spellLevels = [];
+    private IReadOnlyList<SessionAttackReminder> _attackReminders = [];
+    private IReadOnlyList<SessionAttackReminder> _availableAttackReminders = [];
     private string _spellcastingSummary = string.Empty;
     private string? _saveError;
     private bool _advancementBusy;
@@ -445,6 +502,9 @@
             _s.InitializeIfNew(_snap?.MaxHp ?? 0);
         }
         _spellLevels = BuildAggregatedSpellLevels(_snap);
+        var attackReminderSet = BuildAttackReminderSet();
+        _attackReminders = attackReminderSet.Visible;
+        _availableAttackReminders = attackReminderSet.AvailableWeapons;
         _spellcastingSummary = _snap?.SpellcastingSections.Count > 1
             ? string.Join(", ", _snap.SpellcastingSections.Select(section => section.Name).Distinct(StringComparer.OrdinalIgnoreCase))
             : string.Empty;
@@ -655,6 +715,69 @@
         var used = _s.SpellSlotsUsed.GetValueOrDefault(level, 0);
         _s.SpellSlotsUsed[level] = used == idx ? idx - 1 : idx;
         AutoSave();
+    }
+
+    private void AddAttackReminder(SessionAttackReminder reminder)
+    {
+        if (reminder.EquipmentIdentifier is null)
+            return;
+
+        if (!_s.AttackReminderWeaponIds.Contains(reminder.EquipmentIdentifier, StringComparer.OrdinalIgnoreCase))
+            _s.AttackReminderWeaponIds.Add(reminder.EquipmentIdentifier);
+
+        AutoSave();
+        RefreshAttackReminders();
+    }
+
+    private void RemoveAttackReminder(SessionAttackReminder reminder)
+    {
+        if (reminder.EquipmentIdentifier is { } identifier)
+        {
+            _s.AttackReminderWeaponIds.RemoveAll(id =>
+                string.Equals(id, identifier, StringComparison.OrdinalIgnoreCase));
+        }
+        else if (!_s.HiddenDefaultAttackReminderKeys.Contains(reminder.Key, StringComparer.OrdinalIgnoreCase))
+        {
+            _s.HiddenDefaultAttackReminderKeys.Add(reminder.Key);
+        }
+
+        AutoSave();
+        RefreshAttackReminders();
+    }
+
+    private void RefreshAttackReminders()
+    {
+        var attackReminderSet = BuildAttackReminderSet();
+        _attackReminders = attackReminderSet.Visible;
+        _availableAttackReminders = attackReminderSet.AvailableWeapons;
+    }
+
+    private SessionAttackReminderSet BuildAttackReminderSet()
+    {
+        if (_snap is null)
+            return new SessionAttackReminderSet([], []);
+
+        var attacks = _snap.Attacks
+            .Select(attack => new SessionAttackSource(
+                attack.Name,
+                attack.Attack,
+                attack.Damage,
+                attack.Range,
+                attack.EquipmentIdentifier))
+            .ToList();
+
+        var inventory = _snap.InventoryItems
+            .Select(item => new SessionInventorySource(
+                item.Identifier,
+                item.IsEquipped,
+                item.EquippedLocation))
+            .ToList();
+
+        return SessionAttackReminderService.Build(
+            attacks,
+            inventory,
+            _s.AttackReminderWeaponIds,
+            _s.HiddenDefaultAttackReminderKeys);
     }
 
     private static List<SpellLevelEntry> BuildAggregatedSpellLevels(CharacterSnapshot? snap)
