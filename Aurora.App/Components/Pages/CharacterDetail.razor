@@ -722,9 +722,7 @@
         _portraitSrc      = Tabs.ActiveTab?.File is { } f ? ResolvePortrait(f) : null;
         _selectedSpellKey = null;
         _spellDetail      = null;
-        _timeline         = Tabs.ActiveTab?.Snapshot != null
-            ? BuildService.GetAdvancementTimeline()
-            : [];
+        _timeline         = Tabs.ActiveTab?.Snapshot?.AdvancementTimeline ?? [];
 
         _activeSpellSectionId = _snap?.SpellcastingSections.FirstOrDefault()?.UniqueIdentifier;
         RefreshActiveSpellCantrips();

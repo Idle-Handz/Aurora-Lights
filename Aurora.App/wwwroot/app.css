@@ -277,6 +277,7 @@ html, body {
 .combat-strip {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     background: var(--mud-palette-surface, #313244);
     border-radius: 6px;
     padding: 12px 0;
@@ -284,6 +285,7 @@ html, body {
 }
 .combat-stat {
     flex: 1;
+    min-width: 72px;
     text-align: center;
 }
 .combat-stat-value {

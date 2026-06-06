@@ -1012,67 +1012,23 @@ public static class BuildService
 
     /// <summary>
     /// Returns a per-level breakdown of features for each class in the current character,
-    /// grouped by class-level. Only features that unlock at each specific level are included
-    /// (not cumulative); feature level is read via dynamic dispatch on e.Attributes.Level.
+    /// adapting the shared advancement query into Reflections display models and descriptions.
     /// </summary>
     public static IReadOnlyList<AdvancementClassTimeline> GetAdvancementTimeline()
     {
-        var cm = CharacterManager.Current;
-        var result = new List<AdvancementClassTimeline>();
-
-        foreach (var m in cm.ClassProgressionManagers)
-        {
-            var byLevel = new Dictionary<int, List<FeatureEntry>>();
-            for (int lvl = 1; lvl <= m.ProgressionLevel; lvl++)
-                byLevel[lvl] = [];
-
-            var levelByElementId = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-            foreach (var levelEl in m.LevelElements)
-            {
-                int atLevel = GetLevelElementLevel(levelEl);
-                if (atLevel < 1 || atLevel > m.ProgressionLevel) continue;
-
-                foreach (var e in AdvancementWalkChildren(levelEl))
-                    if (!string.IsNullOrWhiteSpace(e.Id))
-                        levelByElementId.TryAdd(e.Id, atLevel);
-            }
-
-            foreach (var e in m.GetElements())
-            {
-                if (e.Type != "Class Feature" && e.Type != "Archetype Feature") continue;
-                if (string.IsNullOrWhiteSpace(e.Name)) continue;
-                if (e.Name.StartsWith("Ability Score Increase") ||
-                    e.Name.StartsWith("Ability Score Improvement") ||
-                    e.Name.Equals("Feat", StringComparison.OrdinalIgnoreCase)) continue;
-
-                int atLevel = ResolveAdvancementFeatureLevel(e, levelByElementId, m.ProgressionLevel);
-                if (atLevel < 1 || atLevel > m.ProgressionLevel) continue;
-                if (!byLevel.TryGetValue(atLevel, out var list)) continue;
-                if (list.Any(f => f.Name == e.Name)) continue;
-                list.Add(new FeatureEntry(e.Name!, GetFeatureDescription(e)));
-            }
-
-            var hitDieVal = 0;
-            try { hitDieVal = m.GetHitDieValue(); } catch { }
-
-            var levels = Enumerable.Range(1, m.ProgressionLevel)
-                .Select(lvl =>
-                {
-                    int avgHp = lvl == 1 && m.IsMainClass
-                        ? hitDieVal
-                        : (hitDieVal / 2) + 1;
-                    return new AdvancementLevelEntry(lvl, avgHp, byLevel[lvl]);
-                })
-                .ToList();
-
-            result.Add(new AdvancementClassTimeline(
-                m.ClassElement?.Name ?? "Unknown",
-                m.HD ?? "—",
-                m.IsMainClass,
-                levels));
-        }
-
-        return result;
+        return AdvancementTimelineQuery.Build(CharacterManager.Current)
+            .Select(timeline => new AdvancementClassTimeline(
+                timeline.ClassName,
+                timeline.HitDie,
+                timeline.IsMainClass,
+                timeline.Levels.Select(level => new AdvancementLevelEntry(
+                        level.Level,
+                        level.AverageHp,
+                        level.Features.Select(feature =>
+                                new FeatureEntry(feature.Name!, GetFeatureDescription(feature)))
+                            .ToList()))
+                    .ToList()))
+            .ToList();
     }
 
     // ── Spell detail lookup ──────────────────────────────────────────────────────
@@ -2492,75 +2448,6 @@ public static class BuildService
         catch { return null; }
     }
 
-    private static int GetLevelElementLevel(ElementBase levelEl)
-    {
-        if (levelEl is LevelElement level)
-            return level.Level;
-
-        return int.TryParse(levelEl.ElementSetters.GetSetter("Level")?.Value, out int parsed)
-            ? parsed
-            : 0;
-    }
-
-    private static int ResolveAdvancementFeatureLevel(
-        ElementBase feature,
-        IReadOnlyDictionary<string, int> levelByElementId,
-        int maxLevel)
-    {
-        foreach (string id in GetAdvancementAnchorIds(feature))
-            if (levelByElementId.TryGetValue(id, out int level))
-                return level;
-
-        int requiredLevel = GetAcquisitionRequiredLevel(feature);
-        if (requiredLevel >= 1 && requiredLevel <= maxLevel)
-            return requiredLevel;
-
-        return 1;
-    }
-
-    private static IEnumerable<string> GetAdvancementAnchorIds(ElementBase feature)
-    {
-        if (!string.IsNullOrWhiteSpace(feature.Id))
-            yield return feature.Id;
-
-        var parent = feature.Aquisition.GetParentHeader();
-        if (!string.IsNullOrWhiteSpace(parent?.Id))
-            yield return parent.Id;
-
-        if (feature.Aquisition.WasGranted &&
-            !string.IsNullOrWhiteSpace(feature.Aquisition.GrantRule?.ElementHeader?.Id))
-            yield return feature.Aquisition.GrantRule.ElementHeader.Id;
-
-        if (feature.Aquisition.WasSelected &&
-            !string.IsNullOrWhiteSpace(feature.Aquisition.SelectRule?.ElementHeader?.Id))
-            yield return feature.Aquisition.SelectRule.ElementHeader.Id;
-    }
-
-    private static int GetAcquisitionRequiredLevel(ElementBase feature)
-    {
-        try
-        {
-            if (feature.Aquisition.WasGranted)
-                return feature.Aquisition.GrantRule.Attributes.RequiredLevel;
-            if (feature.Aquisition.WasSelected)
-                return feature.Aquisition.SelectRule.Attributes.RequiredLevel;
-        }
-        catch { }
-
-        return 0;
-    }
-
-    private static IEnumerable<ElementBase> AdvancementWalkChildren(ElementBase parent)
-    {
-        yield return parent;
-
-        foreach (var child in parent.RuleElements)
-        {
-            yield return child;
-            foreach (var grandchild in AdvancementWalkChildren(child))
-                yield return grandchild;
-        }
-    }
 }
 
 // ── Build tab group ───────────────────────────────────────────────────────────

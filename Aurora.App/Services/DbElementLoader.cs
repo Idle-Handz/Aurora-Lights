@@ -459,7 +459,7 @@ internal static class DbElementLoader
         node.SetAttribute("source", el.Source);
 
         // Level attribute — authoritative minimum level for feature elements.
-        // BuildService.GetAdvancementTimeline reads d.Attributes.Level via dynamic dispatch.
+        // AdvancementTimelineQuery resolves feature levels through progression ownership.
         if (featureMinLevelMap.TryGetValue(el.Id, out int featureLevel) && featureLevel > 0)
             node.SetAttribute("level", featureLevel.ToString());
 

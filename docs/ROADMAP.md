@@ -25,6 +25,14 @@ Current focus:
 - validate Mac Catalyst behavior on actual macOS hardware
 - keep MAUI-only features, such as sessions, where they provide clear value for migration
 
+Next slice:
+
+- Add sanitized `.dnd5e` character fixtures for recurring Reflections testing. Characters grouped under `Old Characters` are acceptable source material; active characters should be approximated or sanitized before committing.
+- Cover fragile fixture scenarios: level-1 build choices, race/background ASI options, prepared casters with always-prepared spells, multiclassing, portraits/groups, and Legacy-edited files.
+- Run a Legacy/Reflections parity pass over similar build tasks before moving more logic: selection rules, advancement timelines, spell preparation, ASI surfacing, leveling, and character save/reload behavior.
+- Inventory `Aurora.App.Services.BuildService` responsibilities and identify which pure, non-UI pieces could move closer to `Aurora.Logic` or a shared/testable service. Keep MAUI dialogs, file pickers, page state, and app cache behavior in `.App`.
+- Prefer fixture-backed parity tests before refactoring shared build logic, so behavior stays aligned with the original WPF expectations unless a deliberate fix is being made.
+
 ## WPF
 
 Current position:

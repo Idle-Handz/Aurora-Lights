@@ -113,6 +113,9 @@ public sealed class CharacterSnapshot
     public int SpeedSwim   { get; set; }
     public int SpeedBurrow { get; set; }
 
+    // ── Advancement timeline (calculated at snapshot time, tab-specific) ──
+    public IReadOnlyList<AdvancementClassTimeline> AdvancementTimeline { get; init; } = [];
+
     // ── Companion (calculated; null when no companion is active) ──
     public CompanionSnapshot? Companion { get; init; }
     public bool HasCompanion => Companion is not null;
@@ -125,6 +128,13 @@ public sealed class CharacterSnapshot
         // Spellcasting: SpellcastingCollection is never populated in MAUI (it relies on
         // SpellContentViewModel which is WPF-only). Use SpellcastingInformation instead.
         var cm = CharacterManager.Current;
+        if (!ReferenceEquals(c, cm.Character))
+        {
+            throw new InvalidOperationException(
+                "Cannot capture a character snapshot while CharacterManager.Current owns a different character. " +
+                "Enter the character's CharacterContext before rebuilding its snapshot.");
+        }
+
         var allSpellInfos = cm.GetSpellcastingInformations()
             .GroupBy(x => x.UniqueIdentifier)
             .Select(g => g.First())
@@ -263,6 +273,7 @@ public sealed class CharacterSnapshot
             SpeedClimb  = GetAltSpeed(cm, "speed:climb",  "innate speed:climb"),
             SpeedSwim   = GetAltSpeed(cm, "speed:swim",   "innate speed:swim"),
             SpeedBurrow = GetAltSpeed(cm, "speed:burrow", "innate speed:burrow"),
+            AdvancementTimeline = BuildService.GetAdvancementTimeline(),
             Companion   = cm.Status.HasCompanion ? BuildCompanionSnapshot(c) : null,
         };
     }

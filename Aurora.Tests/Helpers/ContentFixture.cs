@@ -70,6 +70,9 @@ public static class ContentFixture
     /// Returns the first .dnd5e character file found in the Aurora characters directory,
     /// or null if none exist. Callers should call SkipIfUnavailable() first.
     /// </summary>
+    public static string GetCharacterFixturePath(string fileName) =>
+        Path.Combine(AppContext.BaseDirectory, "Fixtures", "Characters", fileName);
+
     public static string? FindFirstCharacterFile()
     {
         var dir = DataManager.Current.UserDocumentsRootDirectory;
