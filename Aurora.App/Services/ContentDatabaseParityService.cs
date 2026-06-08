@@ -30,13 +30,27 @@ public sealed record ContentDatabaseParityReport(
     IReadOnlyList<string> MissingInDatabaseSample,
     IReadOnlyList<string> MissingInXmlSample,
     IReadOnlyList<ContentDatabaseParityMismatch> TypeMismatches,
-    IReadOnlyList<ContentDatabaseParityMismatch> SourceMismatches)
+    IReadOnlyList<ContentDatabaseParityMismatch> SourceMismatches,
+    int KnownXmlOnlyInternalMissingInDatabaseCount = 0,
+    IReadOnlyList<string>? KnownXmlOnlyInternalMissingInDatabaseSample = null)
 {
     public int TotalMismatchCount =>
         MissingInDatabaseCount +
         MissingInXmlCount +
         TypeMismatches.Count +
         SourceMismatches.Count;
+
+    public int ReviewableMissingInDatabaseCount =>
+        Math.Max(0, MissingInDatabaseCount - KnownXmlOnlyInternalMissingInDatabaseCount);
+
+    public int ReviewableMismatchCount =>
+        ReviewableMissingInDatabaseCount +
+        MissingInXmlCount +
+        TypeMismatches.Count +
+        SourceMismatches.Count;
+
+    public IReadOnlyList<string> KnownXmlOnlyInternalSample =>
+        KnownXmlOnlyInternalMissingInDatabaseSample ?? [];
 
     public ContentDatabaseParityStatus Status =>
         !Success
@@ -242,7 +256,19 @@ public sealed class ContentDatabaseParityService
             .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        List<string> missingInDatabase = missingInDatabaseAll
+        List<string> knownXmlOnlyInternalMissingInDatabase = missingInDatabaseAll
+            .Where(id => xmlById.TryGetValue(id, out var element) && IsKnownXmlOnlyInternalElement(element))
+            .ToList();
+
+        List<string> reviewableMissingInDatabaseAll = missingInDatabaseAll
+            .Except(knownXmlOnlyInternalMissingInDatabase, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        List<string> missingInDatabase = reviewableMissingInDatabaseAll
+            .Take(15)
+            .ToList();
+
+        List<string> knownXmlOnlyInternalMissingInDatabaseSample = knownXmlOnlyInternalMissingInDatabase
             .Take(15)
             .ToList();
 
@@ -270,7 +296,24 @@ public sealed class ContentDatabaseParityService
             missingInDatabase,
             missingInXml,
             typeMismatches,
-            sourceMismatches);
+            sourceMismatches,
+            knownXmlOnlyInternalMissingInDatabase.Count,
+            knownXmlOnlyInternalMissingInDatabaseSample);
+    }
+
+    private static bool IsKnownXmlOnlyInternalElement(ElementBase element)
+    {
+        if (element.Id.StartsWith("ID_INTERNAL_", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        return element.Type is
+            "Ability Score Improvement" or
+            "Core" or
+            "Ignore" or
+            "Internal" or
+            "Level" or
+            "Multiclass" or
+            "Support";
     }
 
     private static IReadOnlyList<ContentDatabaseParityMismatch> BuildMismatches(

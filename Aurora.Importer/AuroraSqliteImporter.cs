@@ -384,7 +384,112 @@ WHERE et.type_name = 'Companion'
             sourceIntegrityIssues,
             missingResolvedSpellRows,
             missingResolvedItemRows,
-            missingResolvedCompanionRows);
+            missingResolvedCompanionRows,
+            QueryHealthIssueGroups(conn),
+            QueryHealthIssueSamples(conn));
+    }
+
+    private static IReadOnlyList<ContentDatabaseHealthIssueGroup> QueryHealthIssueGroups(SqliteConnection connection)
+    {
+        var groups = new List<ContentDatabaseHealthIssueGroup>();
+
+        using (var cmd = connection.CreateCommand())
+        {
+            cmd.CommandText = @"
+SELECT
+    'unresolved-link' AS area,
+    diagnostic_status AS status,
+    COALESCE(diagnostic_reason, 'actionable') AS reason,
+    link_kind AS kind,
+    '' AS file_path,
+    COUNT(*) AS issue_count
+FROM v_unresolved_loader_link_diagnostics
+GROUP BY diagnostic_status, diagnostic_reason, link_kind
+ORDER BY
+    CASE diagnostic_status
+        WHEN 'actionable' THEN 0
+        WHEN 'runtime-resource' THEN 1
+        WHEN 'option-pool' THEN 2
+        ELSE 3
+    END,
+    issue_count DESC;";
+
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                groups.Add(ReadHealthIssueGroup(reader));
+        }
+
+        using (var cmd = connection.CreateCommand())
+        {
+            cmd.CommandText = @"
+SELECT
+    'source-integrity' AS area,
+    'review' AS status,
+    issue_kind AS reason,
+    COALESCE(owner_type_name, '') AS kind,
+    relative_path AS file_path,
+    COUNT(*) AS issue_count
+FROM v_source_integrity_issues
+GROUP BY issue_kind, owner_type_name, relative_path
+ORDER BY issue_count DESC, issue_kind, relative_path
+LIMIT 24;";
+
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                groups.Add(ReadHealthIssueGroup(reader));
+        }
+
+        return groups;
+    }
+
+    private static IReadOnlyList<ContentDatabaseHealthIssueSample> QueryHealthIssueSamples(SqliteConnection connection)
+    {
+        var samples = new List<ContentDatabaseHealthIssueSample>();
+
+        using (var cmd = connection.CreateCommand())
+        {
+            cmd.CommandText = @"
+SELECT
+    'unresolved-link' AS area,
+    diagnostic_status AS status,
+    COALESCE(diagnostic_reason, 'actionable') AS reason,
+    link_kind AS kind,
+    '' AS file_path,
+    COALESCE(owner_aurora_id, owner_name, '') AS owner,
+    COALESCE(unresolved_key, '') AS issue_key,
+    COALESCE(unresolved_text, '') AS issue_text
+FROM v_unresolved_loader_link_diagnostics
+WHERE diagnostic_status = 'actionable'
+ORDER BY link_kind, owner_type_name, owner_name
+LIMIT 12;";
+
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                samples.Add(ReadHealthIssueSample(reader));
+        }
+
+        using (var cmd = connection.CreateCommand())
+        {
+            cmd.CommandText = @"
+SELECT
+    'source-integrity' AS area,
+    'review' AS status,
+    issue_kind AS reason,
+    COALESCE(owner_type_name, '') AS kind,
+    relative_path AS file_path,
+    COALESCE(owner_aurora_id, owner_name, '') AS owner,
+    COALESCE(issue_key, '') AS issue_key,
+    COALESCE(issue_text, '') AS issue_text
+FROM v_source_integrity_issues
+ORDER BY issue_kind, relative_path, owner_name
+LIMIT 12;";
+
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                samples.Add(ReadHealthIssueSample(reader));
+        }
+
+        return samples;
     }
 
     // ── Schema / DB setup ────────────────────────────────────────────────────
@@ -2031,6 +2136,55 @@ ON CONFLICT(singleton_id) DO UPDATE SET
         using var cmd = connection.CreateCommand();
         cmd.CommandText = sql;
         return Convert.ToInt32(cmd.ExecuteScalar() ?? 0);
+    }
+
+    private static ContentDatabaseHealthIssueGroup ReadHealthIssueGroup(SqliteDataReader reader) =>
+        new(
+            ClassifyTrustImpact(ReadString(reader, 0), ReadString(reader, 1), ReadString(reader, 2)),
+            ReadString(reader, 0),
+            ReadString(reader, 1),
+            ReadString(reader, 2),
+            ReadString(reader, 3),
+            ReadString(reader, 4),
+            Convert.ToInt32(reader.GetValue(5)));
+
+    private static ContentDatabaseHealthIssueSample ReadHealthIssueSample(SqliteDataReader reader) =>
+        new(
+            ClassifyTrustImpact(ReadString(reader, 0), ReadString(reader, 1), ReadString(reader, 2)),
+            ReadString(reader, 0),
+            ReadString(reader, 1),
+            ReadString(reader, 2),
+            ReadString(reader, 3),
+            ReadString(reader, 4),
+            ReadString(reader, 5),
+            ReadString(reader, 6),
+            ReadString(reader, 7));
+
+    private static string ReadString(SqliteDataReader reader, int ordinal) =>
+        reader.IsDBNull(ordinal) ? string.Empty : reader.GetString(ordinal);
+
+    private static ContentDatabaseTrustImpact ClassifyTrustImpact(string area, string status, string reason)
+    {
+        if (string.Equals(area, "unresolved-link", StringComparison.OrdinalIgnoreCase))
+        {
+            return string.Equals(status, "actionable", StringComparison.OrdinalIgnoreCase)
+                ? ContentDatabaseTrustImpact.Blocking
+                : ContentDatabaseTrustImpact.Expected;
+        }
+
+        if (!string.Equals(area, "source-integrity", StringComparison.OrdinalIgnoreCase))
+            return ContentDatabaseTrustImpact.ManualReview;
+
+        return reason switch
+        {
+            "grant-target-id-in-name-attribute" => ContentDatabaseTrustImpact.AutoRecovered,
+            "recovered-grant-target-id-in-name-attribute" => ContentDatabaseTrustImpact.AutoRecovered,
+            "duplicate-element-id-in-file" => ContentDatabaseTrustImpact.ManualReview,
+            "blank-grant-target-id" => ContentDatabaseTrustImpact.ManualReview,
+            "blank-select-type" => ContentDatabaseTrustImpact.ManualReview,
+            "blank-stat-name" => ContentDatabaseTrustImpact.ManualReview,
+            _ => ContentDatabaseTrustImpact.ManualReview
+        };
     }
 
     private static int QueryElementCount(SqliteConnection connection, SqliteTransaction transaction)

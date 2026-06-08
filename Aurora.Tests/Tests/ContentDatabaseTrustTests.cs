@@ -45,7 +45,26 @@ public sealed class ContentDatabaseTrustTests
             health.ActionableUnresolvedLinks.Should().Be(0);
             health.ClassifiedUnresolvedLinks.Should().Be(1);
             health.SourceIntegrityIssues.Should().Be(2);
-            health.Status.Should().Be(ContentDatabaseHealthStatus.Warning);
+            health.BlockingIssueCount.Should().Be(0);
+            health.ManualReviewIssueCount.Should().Be(0);
+            health.AutoRecoveredIssueCount.Should().Be(2);
+            health.ExpectedIssueCount.Should().Be(1);
+            health.Status.Should().Be(ContentDatabaseHealthStatus.Healthy);
+            health.Groups.Should().Contain(group =>
+                group.Area == "unresolved-link"
+                && group.Impact == ContentDatabaseTrustImpact.Expected
+                && group.Status == "runtime-resource"
+                && group.Reason == "embedded-resource-overlay"
+                && group.Count == 1);
+            health.Groups.Should().Contain(group =>
+                group.Area == "source-integrity"
+                && group.Impact == ContentDatabaseTrustImpact.AutoRecovered
+                && group.Reason == "grant-target-id-in-name-attribute"
+                && group.Count == 2);
+            health.Samples.Should().Contain(sample =>
+                sample.Area == "source-integrity"
+                && sample.Reason == "grant-target-id-in-name-attribute"
+                && sample.Owner == "ID_TEST_BACKGROUND");
 
             using (var connection = AuroraContentImporter.OpenReadableConnection(sqlitePath))
             {

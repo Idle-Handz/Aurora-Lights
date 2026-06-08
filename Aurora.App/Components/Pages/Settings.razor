@@ -2,12 +2,14 @@
 @implements IDisposable
 @using Aurora.Importer
 @using Builder.Presentation
+@using System.Text
 @inject ContentDatabaseService ContentDb
 @inject ContentService Content
 @inject CharacterService Characters
 @inject ContentDatabaseParityService Parity
 @inject CharacterTabService Tabs
 @inject ISnackbar Snackbar
+@inject IJSRuntime JS
 @inject UserPreferencesService Prefs
 @inject DebugLogService DebugLog
 @inject Aurora.App.Services.AppIdentityService Brand
@@ -916,19 +918,53 @@
                 @if (_dbHealth != null)
                 {
                     <div style="margin-bottom: 16px;">
-                        <div class="pref-row-title" style="margin-bottom: 6px;">Content health</div>
+                        <div class="pref-row-title" style="margin-bottom: 6px;">Content trust</div>
                         <MudAlert Severity="@HealthSeverity(_dbHealth)"
                                   Dense="true"
                                   Variant="Variant.Outlined"
                                   Class="mb-2">
                             @HealthSummary(_dbHealth)
                         </MudAlert>
+                        <div class="pref-row-desc">
+                            Blocking: @_dbHealth.BlockingIssueCount
+                            · Manual review: @_dbHealth.ManualReviewIssueCount
+                            · Auto-recovered: @_dbHealth.AutoRecoveredIssueCount
+                            · Expected: @_dbHealth.ExpectedIssueCount
+                        </div>
                         <div class="pref-row-desc">Actionable unresolved links: @_dbHealth.ActionableUnresolvedLinks</div>
                         <div class="pref-row-desc">Classified unresolved links: @_dbHealth.ClassifiedUnresolvedLinks</div>
                         <div class="pref-row-desc">Source integrity issues: @_dbHealth.SourceIntegrityIssues</div>
                         <div class="pref-row-desc">Missing spell rows: @_dbHealth.MissingResolvedSpellRows</div>
                         <div class="pref-row-desc">Missing item rows: @_dbHealth.MissingResolvedItemRows</div>
                         <div class="pref-row-desc">Missing companion rows: @_dbHealth.MissingResolvedCompanionRows</div>
+                        @if (_dbHealth.Groups.Count > 0)
+                        {
+                            <div class="pref-row-title" style="margin-top: 10px; margin-bottom: 4px;">Diagnostic categories</div>
+                            @foreach (var group in _dbHealth.Groups.Take(12))
+                            {
+                                <div class="pref-row-desc">
+                                    @TrustImpactLabel(group.Impact): @HealthGroupLabel(group): @group.Count
+                                </div>
+                            }
+                        }
+                        @if (_dbHealth.Samples.Count > 0)
+                        {
+                            <div class="pref-row-title" style="margin-top: 10px; margin-bottom: 4px;">Review samples</div>
+                            @foreach (var sample in _dbHealth.Samples.Take(8))
+                            {
+                                <div class="pref-row-desc" style="font-family: monospace;">
+                                    @HealthSampleLabel(sample)
+                                </div>
+                            }
+                        }
+                        <MudButton Variant="Variant.Outlined"
+                                   Color="Color.Secondary"
+                                   Size="Size.Small"
+                                   StartIcon="@Icons.Material.Filled.ContentCopy"
+                                   Style="margin-top: 10px;"
+                                   OnClick="CopyContentDiagnosticsAsync">
+                            Copy Diagnostics
+                        </MudButton>
                     </div>
                 }
 
@@ -964,11 +1000,21 @@
                             <div class="pref-row-desc">XML skipped during audit: @_dbParity.XmlSkippedElements</div>
                             <div class="pref-row-desc">Database skipped during audit: @_dbParity.DatabaseSkippedElements</div>
                             <div class="pref-row-desc">Missing from DB: @_dbParity.MissingInDatabaseCount</div>
+                            <div class="pref-row-desc">Reviewable missing from DB: @_dbParity.ReviewableMissingInDatabaseCount</div>
+                            <div class="pref-row-desc">Known XML-only internal missing from DB: @_dbParity.KnownXmlOnlyInternalMissingInDatabaseCount</div>
                             <div class="pref-row-desc">Missing from XML: @_dbParity.MissingInXmlCount</div>
                             @if (_dbParity.MissingInDatabaseSample.Count > 0)
                             {
-                                <div class="pref-row-title" style="margin-top: 10px; margin-bottom: 4px;">Present in XML but missing from DB (sample)</div>
+                                <div class="pref-row-title" style="margin-top: 10px; margin-bottom: 4px;">Reviewable XML entries missing from DB (sample)</div>
                                 @foreach (string id in _dbParity.MissingInDatabaseSample)
+                                {
+                                    <div class="pref-row-desc" style="font-family: monospace;">@id</div>
+                                }
+                            }
+                            @if (_dbParity.KnownXmlOnlyInternalSample.Count > 0)
+                            {
+                                <div class="pref-row-title" style="margin-top: 10px; margin-bottom: 4px;">Known XML-only internal entries missing from DB (sample)</div>
+                                @foreach (string id in _dbParity.KnownXmlOnlyInternalSample)
                                 {
                                     <div class="pref-row-desc" style="font-family: monospace;">@id</div>
                                 }
@@ -1351,8 +1397,10 @@
     private static string ParitySummary(ContentDatabaseParityReport report) => report.Status switch
     {
         ContentDatabaseParityStatus.Healthy => "SQLite and XML snapshots matched in this audit run.",
+        ContentDatabaseParityStatus.Warning when report.ReviewableMismatchCount > 0
+            => $"Parity audit found {report.ReviewableMismatchCount} reviewable snapshot difference(s). Known XML-only internal entries are counted separately.",
         ContentDatabaseParityStatus.Warning when report.TotalMismatchCount > 0
-            => $"Parity audit found {report.TotalMismatchCount} snapshot difference(s). Review duplicate installs and XML-only internal elements before treating these as reconstruction failures.",
+            => $"Parity audit found only known/internal snapshot differences ({report.TotalMismatchCount} total).",
         ContentDatabaseParityStatus.Warning => "Parity audit matched structurally, but one of the loaders skipped elements during reconstruction.",
         ContentDatabaseParityStatus.Error when !report.Success => $"Parity audit failed: {report.FailureReason}",
         ContentDatabaseParityStatus.Error => $"Parity audit found {report.TotalMismatchCount} mismatch bucket(s) between XML and SQLite snapshots.",
@@ -1383,15 +1431,145 @@
     private static string HealthSummary(ContentDatabaseHealthReport health) => health.Status switch
     {
         ContentDatabaseHealthStatus.Healthy
-            => health.ClassifiedUnresolvedLinks > 0
-                ? $"Content database looks healthy. {health.ClassifiedUnresolvedLinks} known unresolved link(s) were classified as non-actionable."
-                : "Content database looks healthy.",
+            => health.AutoRecoveredIssueCount > 0 || health.ExpectedIssueCount > 0
+                ? $"Content trust is load-safe. {health.AutoRecoveredIssueCount} issue(s) were auto-recovered and {health.ExpectedIssueCount} expected diagnostic(s) were classified."
+                : "Content trust is load-safe.",
         ContentDatabaseHealthStatus.Warning
-            => $"Content database loaded with {health.ActionableUnresolvedLinks} unresolved link(s) and {health.SourceIntegrityIssues} source-quality warning(s) to review.",
+            => $"Content trust has {health.ManualReviewIssueCount} manual-review issue(s), with no blocking loader failures.",
         ContentDatabaseHealthStatus.Error
-            => $"Content database is missing {health.ProjectionIssues} typed projection row(s). Rebuild the database before relying on SQLite content.",
+            => $"Content trust has {health.BlockingIssueCount} blocking issue(s). Rebuild or fix content before relying on SQLite content.",
         _ => "Content health is unavailable."
     };
+
+    private static string TrustImpactLabel(ContentDatabaseTrustImpact impact) => impact switch
+    {
+        ContentDatabaseTrustImpact.Blocking => "Blocking",
+        ContentDatabaseTrustImpact.ManualReview => "Manual review",
+        ContentDatabaseTrustImpact.AutoRecovered => "Auto-recovered",
+        ContentDatabaseTrustImpact.Expected => "Expected",
+        _ => impact.ToString()
+    };
+
+    private static string HealthGroupLabel(ContentDatabaseHealthIssueGroup group)
+    {
+        string file = string.IsNullOrWhiteSpace(group.FilePath) ? "" : $" in {group.FilePath}";
+        return group.Area switch
+        {
+            "unresolved-link" => $"{group.Status}/{group.Reason} {group.Kind}",
+            "source-integrity" => $"{group.Reason}{file}",
+            _ => $"{group.Area}/{group.Reason}{file}"
+        };
+    }
+
+    private static string HealthSampleLabel(ContentDatabaseHealthIssueSample sample)
+    {
+        bool hasFile = !string.IsNullOrWhiteSpace(sample.FilePath);
+        string location = hasFile ? sample.FilePath : sample.Owner;
+        string owner = hasFile && !string.IsNullOrWhiteSpace(sample.Owner) ? $" {sample.Owner}" : "";
+        string key = string.IsNullOrWhiteSpace(sample.Key) ? "" : $" [{sample.Key}]";
+        string text = string.IsNullOrWhiteSpace(sample.Text) ? "" : $" {sample.Text}";
+        return $"{sample.Reason}: {location}{owner}{key}{text}";
+    }
+
+    private async Task CopyContentDiagnosticsAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", BuildContentDiagnosticsReport());
+            Snackbar.Add("Content diagnostics copied.", Severity.Success);
+        }
+        catch
+        {
+            Snackbar.Add("Could not copy diagnostics. The report is still visible in Settings.", Severity.Error);
+        }
+    }
+
+    private string BuildContentDiagnosticsReport()
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("Aurora content diagnostics");
+        sb.AppendLine($"Generated: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC");
+
+        if (ContentDb.GetMetadata() is { } meta)
+        {
+            sb.AppendLine();
+            sb.AppendLine("Database metadata");
+            sb.AppendLine($"Schema: {meta.SchemaVersion}");
+            sb.AppendLine($"Data: {meta.DataVersion}");
+            sb.AppendLine($"Importer: {meta.ImporterVersion}");
+            sb.AppendLine($"Built: {FormatUtc(meta.BuiltUtc)}");
+            sb.AppendLine($"Indexed files: {meta.SourceFileCount}");
+            sb.AppendLine($"Elements: {meta.ElementCount}");
+        }
+
+        if (_dbHealth is { } health)
+        {
+            sb.AppendLine();
+            sb.AppendLine("Content trust");
+            sb.AppendLine($"Status: {health.Status}");
+            sb.AppendLine($"Summary: {HealthSummary(health)}");
+            sb.AppendLine($"Blocking: {health.BlockingIssueCount}");
+            sb.AppendLine($"Manual review: {health.ManualReviewIssueCount}");
+            sb.AppendLine($"Auto-recovered: {health.AutoRecoveredIssueCount}");
+            sb.AppendLine($"Expected: {health.ExpectedIssueCount}");
+            sb.AppendLine($"Actionable unresolved links: {health.ActionableUnresolvedLinks}");
+            sb.AppendLine($"Classified unresolved links: {health.ClassifiedUnresolvedLinks}");
+            sb.AppendLine($"Source integrity issues: {health.SourceIntegrityIssues}");
+            sb.AppendLine($"Missing spell rows: {health.MissingResolvedSpellRows}");
+            sb.AppendLine($"Missing item rows: {health.MissingResolvedItemRows}");
+            sb.AppendLine($"Missing companion rows: {health.MissingResolvedCompanionRows}");
+
+            if (health.Groups.Count > 0)
+            {
+                sb.AppendLine();
+                sb.AppendLine("Diagnostic categories");
+                foreach (var group in health.Groups)
+                    sb.AppendLine($"- {TrustImpactLabel(group.Impact)} | {HealthGroupLabel(group)} | {group.Count}");
+            }
+
+            if (health.Samples.Count > 0)
+            {
+                sb.AppendLine();
+                sb.AppendLine("Review samples");
+                foreach (var sample in health.Samples)
+                    sb.AppendLine($"- {TrustImpactLabel(sample.Impact)} | {HealthSampleLabel(sample)}");
+            }
+        }
+
+        if (_dbParity is { } parity)
+        {
+            sb.AppendLine();
+            sb.AppendLine("Database vs XML parity");
+            sb.AppendLine($"Status: {parity.Status}");
+            sb.AppendLine($"Success: {parity.Success}");
+            if (!string.IsNullOrWhiteSpace(parity.FailureReason))
+                sb.AppendLine($"Failure: {parity.FailureReason}");
+            sb.AppendLine($"XML elements: {parity.XmlElementCount}");
+            sb.AppendLine($"Database elements: {parity.DatabaseElementCount}");
+            sb.AppendLine($"XML skipped: {parity.XmlSkippedElements}");
+            sb.AppendLine($"Database skipped: {parity.DatabaseSkippedElements}");
+            sb.AppendLine($"Missing from DB: {parity.MissingInDatabaseCount}");
+            sb.AppendLine($"Reviewable missing from DB: {parity.ReviewableMissingInDatabaseCount}");
+            sb.AppendLine($"Known XML-only internal missing from DB: {parity.KnownXmlOnlyInternalMissingInDatabaseCount}");
+            sb.AppendLine($"Missing from XML: {parity.MissingInXmlCount}");
+            AppendList(sb, "Reviewable XML entries missing from DB", parity.MissingInDatabaseSample);
+            AppendList(sb, "Known XML-only internal entries missing from DB", parity.KnownXmlOnlyInternalSample);
+            AppendList(sb, "DB entries missing from XML", parity.MissingInXmlSample);
+        }
+
+        return sb.ToString();
+    }
+
+    private static void AppendList(StringBuilder sb, string title, IReadOnlyList<string> values)
+    {
+        if (values.Count == 0)
+            return;
+
+        sb.AppendLine();
+        sb.AppendLine(title);
+        foreach (string value in values)
+            sb.AppendLine($"- {value}");
+    }
 
     private async Task FetchIndexAsync()
     {
