@@ -292,7 +292,7 @@
 
                 @if (string.Equals(_selectedEntry.Type, "Spell", StringComparison.OrdinalIgnoreCase) && _selectedEntry.SpellClasses.Count > 0)
                 {
-                    <MudText Typo="Typo.subtitle2" Class="mb-1">Available To</MudText>
+                    <MudText Typo="Typo.subtitle2" Class="mb-1">Tags</MudText>
                     <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="1" Class="mb-3">
                         @foreach (var spellClass in _selectedEntry.SpellClasses)
                         {
@@ -349,14 +349,16 @@
                     </MudStack>
                 }
 
-                @if (!string.IsNullOrWhiteSpace(_selectedEntry.Summary))
-                {
-                    <MudText Typo="Typo.body1" Class="mb-3">@_selectedEntry.Summary</MudText>
-                }
-
                 @if (string.IsNullOrWhiteSpace(_selectedEntry.DescriptionHtml))
                 {
-                    <MudText Color="Color.Secondary">No description is available for this entry.</MudText>
+                    @if (!string.IsNullOrWhiteSpace(_selectedEntry.Summary))
+                    {
+                        <MudText Typo="Typo.body1">@_selectedEntry.Summary</MudText>
+                    }
+                    else
+                    {
+                        <MudText Color="Color.Secondary">No description is available for this entry.</MudText>
+                    }
                 }
                 else
                 {

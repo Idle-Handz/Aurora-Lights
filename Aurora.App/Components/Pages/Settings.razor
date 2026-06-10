@@ -332,7 +332,7 @@
                         }
                         else if (_reloadingElements)
                         {
-                            <div style="color: var(--mud-palette-text-secondary); font-size: 13px;">Reloading elements…</div>
+                            <div style="color: var(--mud-palette-text-secondary); font-size: 13px;">Refreshing database...</div>
                         }
                         else if (!string.IsNullOrWhiteSpace(ContentDb.LastReadFailure))
                         {
@@ -348,7 +348,7 @@
                         }
                         else if (ContentDb.IsStale)
                         {
-                            <div style="color: var(--mud-palette-warning); font-size: 13px;">Database is out of date. Sync to update it.</div>
+                            <div style="color: var(--mud-palette-warning); font-size: 13px;">Database is out of date. Refresh Database to sync and refresh element data.</div>
                         }
                         else if (_stalenessChecked)
                         {
@@ -371,31 +371,16 @@
                         <MudButton Variant="Variant.Filled"
                                    Color="Color.Primary"
                                    Size="Size.Small"
-                                   Disabled="@(ContentDb.SyncState == ContentDatabaseSyncState.Syncing || string.IsNullOrWhiteSpace(ContentDb.ContentDirectory))"
-                                   OnClick="SyncNowAsync">
-                            Sync Now
+                                   Disabled="@(_reloadingElements || ContentDb.SyncState == ContentDatabaseSyncState.Syncing || string.IsNullOrWhiteSpace(ContentDb.ContentDirectory) || Tabs.Tabs.Count > 0)"
+                                   OnClick="RefreshDatabaseAsync">
+                            @(_reloadingElements ? "Refreshing..." : "Refresh Database")
                         </MudButton>
-                        @* The Reload Elements button used to be gated on SyncState==Done — meaning the
-                           user had to click "Sync Now" first. The handler now runs an incremental DB
-                           sync itself when the cache is stale, so the button can stand alone whenever
-                           there's no character tab to discard. One click = "make the engine see the
-                           latest disk state." *@
-                        @if (Tabs.Tabs.Count == 0 && !string.IsNullOrWhiteSpace(ContentDb.ContentDirectory))
-                        {
-                            <MudButton Variant="Variant.Outlined"
-                                       Color="Color.Secondary"
-                                       Size="Size.Small"
-                                       Disabled="@(_reloadingElements || ContentDb.SyncState == ContentDatabaseSyncState.Syncing)"
-                                       OnClick="ReloadElementsAsync">
-                                @(_reloadingElements ? "Reloading…" : "Reload Elements")
-                            </MudButton>
-                        }
                     </div>
 
-                    @if (ContentDb.SyncState == ContentDatabaseSyncState.Done && ContentDb.LastResult?.Success == true && Tabs.Tabs.Count > 0)
+                    @if (Tabs.Tabs.Count > 0 && !string.IsNullOrWhiteSpace(ContentDb.ContentDirectory))
                     {
                         <MudAlert Severity="Severity.Info" Class="mt-4" Dense="true">
-                            Close all character tabs and click <strong>Reload Elements</strong> to use the updated database.
+                            Close all character tabs before refreshing the database so loaded characters do not keep stale element references.
                         </MudAlert>
                     }
                 </div>
@@ -409,7 +394,7 @@
                     <div class="section-label">Sources</div>
                     <div class="pref-row-desc" style="margin-bottom: 10px;">
                         Enable or disable individual content sources. Disabled sources are excluded
-                        from element resolution. Reload elements after making changes for them to take effect.
+                        from element resolution. Refresh the database after making changes for them to take effect.
                     </div>
                     @{
                         var packages = ContentDb.GetPackages();
@@ -423,7 +408,7 @@
                     @if (packages.Count == 0)
                     {
                         <div style="font-size: 13px; color: var(--mud-palette-text-disabled);">
-                            No sources found. Sync the content database first.
+                            No sources found. Refresh Database first to index installed content.
                         </div>
                     }
                     else
@@ -472,30 +457,13 @@
 
                 <div class="pref-section">
 
-                    @if (ContentUpdates.Latest is { } contentRelease)
-                    {
-                        <MudAlert Severity="Severity.Info" Class="mb-4" Dense="true">
-                            Content release <b>@contentRelease.LatestTag</b> is published.
-                            This release stream is informational for now; installed <code>.index</code>
-                            sources continue to update through the controls below.
-                            @if (!string.IsNullOrWhiteSpace(contentRelease.ReleaseUrl))
-                            {
-                                <MudLink Href="@contentRelease.ReleaseUrl"
-                                         Target="_blank"
-                                         Style="margin-left: 6px;">
-                                    View release
-                                </MudLink>
-                            }
-                        </MudAlert>
-                    }
-
                     <div style="margin-bottom: 16px;">
                         <div class="pref-row-title" style="margin-bottom: 4px;">Built-in custom directory</div>
                         <div style="font-family: monospace; font-size: 12px; color: var(--mud-palette-text-secondary); word-break: break-all;">
                             @Content.BuiltInCustomDirectory
                         </div>
                         <div class="pref-row-desc" style="margin-top: 4px;">
-                            Place XML files or .index files here and reload elements to pick them up.
+                            Place XML files or .index files here and refresh the database to pick them up.
                         </div>
                     </div>
 
@@ -562,9 +530,12 @@
                                    Label="Auto-download content on startup" />
                         <div class="pref-row-desc" style="margin-bottom: 10px;">
                             Quietly checks installed index sources when the app launches and downloads
-                            changed XML files. A reload prompt appears when new content arrives.
+                            changed XML files. A refresh prompt appears when new content arrives.
                         </div>
 
+                        @{
+                            int installedIndexCount = Content.InstalledIndexNames.Count;
+                        }
                         <div class="settings-action-row" style="margin-bottom: 10px;">
                             @* Immediate="true" fires the binding on every keypress/paste — without
                                it the field only commits on blur or Enter, so a freshly-pasted URL
@@ -590,14 +561,14 @@
                         <div class="settings-inline-actions">
                             <MudButton Variant="Variant.Outlined"
                                        Color="Color.Default"
-                                       StartIcon="@(_checkingUpdates ? null : Icons.Material.Filled.Sync)"
+                                       StartIcon="@(IsCheckingInstalledSources ? null : Icons.Material.Filled.Sync)"
                                        Size="Size.Small"
-                                       Disabled="_contentWorking"
+                                       Disabled="@(_contentWorking || IsCheckingInstalledSources || installedIndexCount == 0)"
                                        OnClick="CheckForUpdatesAsync"
                                        Style="min-width: 160px;">
-                                @(_checkingUpdates ? "Checking for updates…" : "Check for Updates")
+                                @InstalledSourceButtonText
                             </MudButton>
-                            @if (_checkingUpdates)
+                            @if (IsCheckingInstalledSources)
                             {
                                 <MudProgressCircular Indeterminate="true"
                                                      Size="Size.Small"
@@ -605,21 +576,43 @@
                                                      Style="width: 18px; height: 18px;" />
                             }
                         </div>
+                        @if (Content.IsCheckingContentUpdates)
+                        {
+                            <div style="margin-top: 8px;">
+                                @if (Content.ContentUpdateProgress is int progress)
+                                {
+                                    <MudProgressLinear Value="@progress"
+                                                       Min="0"
+                                                       Max="100"
+                                                       Color="Color.Primary"
+                                                       Class="mt-1" />
+                                }
+                                else
+                                {
+                                    <MudProgressLinear Indeterminate="true"
+                                                       Color="Color.Primary"
+                                                       Class="mt-1" />
+                                }
+                                <div class="pref-row-desc" style="margin-top: 4px;">
+                                    @InstalledSourceStatusText
+                                </div>
+                            </div>
+                        }
                     </div>
 
                     @if (_needsContentReload)
                     {
                         <MudAlert Severity="Severity.Info" Class="mt-4" Dense="true">
-                            Content changes will not take effect until elements are reloaded.
+                            Content changes will not take effect until the database is refreshed.
                             @if (Content.HasOpenTabs)
                             {
-                                <span> Open characters will be closed.</span>
+                                <span> Close open character tabs first.</span>
                             }
                             <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
-                                       Disabled="_contentWorking"
-                                       OnClick="ReloadContentAsync"
+                                       Disabled="@(_contentWorking || Content.HasOpenTabs)"
+                                       OnClick="RefreshDatabaseAsync"
                                        Style="margin-left: 12px;">
-                                @(_contentWorking ? "Reloading..." : "Reload Now")
+                                @(_contentWorking ? "Refreshing..." : "Refresh Database")
                             </MudButton>
                         </MudAlert>
                     }
@@ -643,8 +636,8 @@
     <!-- ── Updates ──────────────────────────────────────────────────────────── -->
     <MudTabPanel Text="Updates">
 
-        @* The app update check also quietly looks for the reserved content-* release stream.
-           Installed .index source updates belong in the Content tab. *@
+        @* Release-channel checks cover app builds plus the reserved content-* stream.
+           Installed .index sources are checked separately because they update local XML files. *@
         <div class="pref-section">
             <div class="section-label">App</div>
 
@@ -683,11 +676,11 @@
 
             <div class="pref-row" style="margin-top: 16px;">
                 <div class="pref-row-text">
-                    <div class="pref-row-title">Check now</div>
+                    <div class="pref-row-title">App release channel</div>
                     <div class="pref-row-desc">
                         @if (_checkingReleaseChannels || AppUpdates.IsChecking)
                         {
-                            <text>Checking GitHub…</text>
+                            <text>Checking GitHub...</text>
                         }
                         else if (AppUpdates.LastError is { Length: > 0 } err)
                         {
@@ -714,9 +707,9 @@
                 </div>
                 <MudButton Variant="Variant.Outlined"
                            StartIcon="@Icons.Material.Filled.Refresh"
-                           OnClick="CheckAppNowAsync"
+                           OnClick="CheckAppReleaseNowAsync"
                            Disabled="@(_checkingReleaseChannels || AppUpdates.IsChecking)">
-                    Check now
+                    Check app release
                 </MudButton>
             </div>
 
@@ -813,6 +806,158 @@
                     </MudButton>
                 </div>
 #endif
+            }
+        </div>
+
+        <div class="pref-section" style="margin-top: 24px;">
+            <div class="section-label">Content</div>
+
+            <div class="pref-row">
+                <div class="pref-row-text">
+                    <div class="pref-row-title">Content release channel</div>
+                    <div class="pref-row-desc">
+                        @if (_checkingReleaseChannels || ContentUpdates.IsChecking)
+                        {
+                            <text>Checking GitHub...</text>
+                        }
+                        else if (ContentUpdates.LastError is { Length: > 0 } err)
+                        {
+                            <text>Last check failed: @err</text>
+                        }
+                        else if (ContentUpdates.Latest is { } c)
+                        {
+                            <text>
+                                Latest: <b>@c.LatestTag</b>
+                                @(c.IsPreRelease ? "(pre-release) " : "")
+                                @ContentReleaseStatusText()
+                                · checked @(FormatChecked(ContentUpdates.LastChecked))
+                            </text>
+                        }
+                        else if (ContentUpdates.LastChecked is { } when_)
+                        {
+                            <text>No eligible content release found · checked @(FormatChecked(when_))</text>
+                        }
+                        else
+                        {
+                            <text>Never checked.</text>
+                        }
+                    </div>
+                </div>
+                <MudButton Variant="Variant.Outlined"
+                           StartIcon="@Icons.Material.Filled.Refresh"
+                           OnClick="CheckContentReleaseNowAsync"
+                           Disabled="@(_checkingReleaseChannels || ContentUpdates.IsChecking)">
+                    Check content release
+                </MudButton>
+            </div>
+
+            @if (ContentUpdates.Latest is { } contentReleaseOnUpdates)
+            {
+                <div class="pref-row" style="margin-top: 16px;">
+                    <div class="pref-row-text">
+                        <div class="pref-row-title">View content release</div>
+                        <div class="pref-row-desc">
+                            This release stream is informational for now. Installed XML content still updates through .index sources.
+                        </div>
+                    </div>
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.OpenInNew"
+                               Disabled="@string.IsNullOrWhiteSpace(contentReleaseOnUpdates.ReleaseUrl)"
+                               OnClick="@(() => OpenReleaseAsync(contentReleaseOnUpdates.ReleaseUrl))">
+                        Open release
+                    </MudButton>
+                </div>
+            }
+
+            @{
+                int installedIndexCountOnUpdates = Content.InstalledIndexNames.Count;
+            }
+            <div class="pref-row" style="margin-top: 16px;">
+                <div class="pref-row-text">
+                    <div class="pref-row-title">Installed content sources</div>
+                    <div class="pref-row-desc">
+                        @if (IsCheckingInstalledSources)
+                        {
+                            @InstalledSourceStatusText
+                        }
+                        else if (installedIndexCountOnUpdates == 0)
+                        {
+                            <text>No installed .index sources found. Manage source registration in Content.</text>
+                        }
+                        else if (!string.IsNullOrWhiteSpace(Content.ContentUpdateStatus))
+                        {
+                            @Content.ContentUpdateStatus
+                        }
+                        else
+                        {
+                            <text>@installedIndexCountOnUpdates installed .index source(s). Manage source registration in Content.</text>
+                        }
+                    </div>
+                </div>
+                <div class="settings-inline-actions">
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               StartIcon="@(IsCheckingInstalledSources ? null : Icons.Material.Filled.Sync)"
+                               Disabled="@(_contentWorking || IsCheckingInstalledSources || installedIndexCountOnUpdates == 0)"
+                               OnClick="CheckForUpdatesAsync">
+                        @InstalledSourceButtonText
+                    </MudButton>
+                    @if (IsCheckingInstalledSources)
+                    {
+                        <MudProgressCircular Indeterminate="true"
+                                             Size="Size.Small"
+                                             Color="Color.Default"
+                                             Style="width: 18px; height: 18px;" />
+                    }
+                </div>
+            </div>
+
+            @if (Content.IsCheckingContentUpdates)
+            {
+                <div style="margin-top: 10px;">
+                    @if (Content.ContentUpdateProgress is int progress)
+                    {
+                        <MudProgressLinear Value="@progress"
+                                           Min="0"
+                                           Max="100"
+                                           Color="Color.Primary"
+                                           Class="mt-1" />
+                    }
+                    else
+                    {
+                        <MudProgressLinear Indeterminate="true"
+                                           Color="Color.Primary"
+                                           Class="mt-1" />
+                    }
+                </div>
+            }
+
+            @if (_needsContentReload)
+            {
+                <MudAlert Severity="Severity.Info" Class="mt-4" Dense="true">
+                    Content changes will not take effect until the database is refreshed.
+                    @if (Content.HasOpenTabs)
+                    {
+                        <span> Close open character tabs first.</span>
+                    }
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               Size="Size.Small"
+                               Disabled="@(_contentWorking || Content.HasOpenTabs)"
+                               OnClick="RefreshDatabaseAsync"
+                               Style="margin-left: 12px;">
+                        @(_contentWorking ? "Refreshing..." : "Refresh Database")
+                    </MudButton>
+                </MudAlert>
+            }
+
+            @if (_contentStatus != null)
+            {
+                <MudAlert Severity="@_contentStatusSeverity" Class="mt-3" Dense="true"
+                          ShowCloseIcon="true" CloseIconClicked="() => _contentStatus = null">
+                    @_contentStatus
+                </MudAlert>
             }
         </div>
 
@@ -1062,8 +1207,6 @@
     public string? RequestedTab { get; set; }
 
     private bool _disposed;
-    private CancellationTokenSource? _cts;
-
     private string _indexUrl = "";
     private string _newDirPath = "";
     private string _packageSearch = "";
@@ -1105,7 +1248,13 @@
     private void OnAppUpdatesChanged() => InvokeAsync(StateHasChanged);
     private void OnContentUpdatesChanged() => InvokeAsync(StateHasChanged);
 
-    private async Task CheckAppNowAsync()
+    private Task CheckAppReleaseNowAsync() =>
+        CheckReleaseChannelAsync(includePreReleases => AppUpdates.CheckAsync(includePreReleases));
+
+    private Task CheckContentReleaseNowAsync() =>
+        CheckReleaseChannelAsync(includePreReleases => ContentUpdates.CheckAsync(includePreReleases));
+
+    private async Task CheckReleaseChannelAsync<T>(Func<bool, Task<T>> checkAsync)
     {
         if (_checkingReleaseChannels)
             return;
@@ -1113,10 +1262,7 @@
         _checkingReleaseChannels = true;
         try
         {
-            bool includePreReleases = Prefs.IncludePrereleasesInUpdateCheck;
-            await Task.WhenAll(
-                AppUpdates.CheckAsync(includePreReleases),
-                ContentUpdates.CheckAsync(includePreReleases));
+            await checkAsync(Prefs.IncludePrereleasesInUpdateCheck);
         }
         finally
         {
@@ -1127,6 +1273,37 @@
     /// <summary>Render the last-checked timestamp as the user's local time, short form.</summary>
     private static string FormatChecked(DateTimeOffset? when) =>
         when is null ? "never" : when.Value.ToLocalTime().ToString("g");
+
+    private string ContentReleaseStatusText() =>
+        ContentUpdates.InstalledUpdateAvailable
+            ? "- newer than recorded content"
+            : ContentUpdates.ReleaseNoticeAvailable
+                ? "- published, no installed content release recorded"
+                : "- recorded content is up to date";
+
+    private bool IsCheckingInstalledSources =>
+        _checkingUpdates || Content.IsCheckingContentUpdates;
+
+    private string InstalledSourceButtonText =>
+        IsCheckingInstalledSources ? "Checking..." : "Check installed sources";
+
+    private string InstalledSourceStatusText
+    {
+        get
+        {
+            string status = string.IsNullOrWhiteSpace(Content.ContentUpdateStatus)
+                ? "Checking installed .index sources..."
+                : Content.ContentUpdateStatus!;
+
+            if (Content.ContentUpdateProgress is int progress)
+                status += $" ({progress}%)";
+
+            if (Content.ContentUpdatedFileCount > 0)
+                status += $" - {Content.ContentUpdatedFileCount} file(s) updated";
+
+            return status;
+        }
+    }
 
     private async Task OpenReleaseAsync(string releaseUrl)
     {
@@ -1295,41 +1472,32 @@
         }
     }
 
-    private async Task SyncNowAsync()
+    private async Task RefreshDatabaseAsync()
     {
-        _stalenessChecked = false;
-        _cts?.Cancel();
-        _cts = new CancellationTokenSource();
-        await ContentDb.SyncAsync(_cts.Token);
-        if (_disposed) return;
-        RefreshDatabaseDiagnostics();
-    }
-
-    private async Task ReloadElementsAsync()
-    {
+        _contentWorking = true;
         _reloadingElements = true;
+        _contentStatus = null;
         StateHasChanged();
         try
         {
-            // Sync the SQLite cache first when it's behind disk. The engine reads from the DB,
-            // so a Reload Elements that skipped this would silently still see the old content.
-            // CheckIsStale is a fast MD5 compare; SyncAsync is incremental.
-            if (ContentDb.CheckIsStale())
-            {
-                _cts?.Cancel();
-                _cts = new CancellationTokenSource();
-                await ContentDb.SyncAsync(_cts.Token);
-                if (_disposed) return;
-            }
-
-            Tabs.CloseAllTabs();
-            await Characters.ReloadElementsAsync();
-            Content.ClearContentReloadPending();
+            string? error = await Content.ReloadContentAsync();
             if (_disposed) return;
-            RefreshDatabaseDiagnostics();
+            if (error != null)
+            {
+                _contentStatus = $"Refresh failed: {error}";
+                _contentStatusSeverity = Severity.Error;
+            }
+            else
+            {
+                _needsContentReload = false;
+                _stalenessChecked = true;
+                RefreshDatabaseDiagnostics();
+                Snackbar.Add("Database refreshed.", Severity.Success);
+            }
         }
         finally
         {
+            _contentWorking = false;
             _reloadingElements = false;
             await InvokeAsync(StateHasChanged);
         }
@@ -1629,33 +1797,6 @@
         }
     }
 
-    private async Task ReloadContentAsync()
-    {
-        _contentWorking = true;
-        _contentStatus = null;
-        StateHasChanged();
-        try
-        {
-            string? error = await Content.ReloadContentAsync();
-            if (_disposed) return;
-            if (error != null)
-            {
-                _contentStatus = $"Reload failed: {error}";
-                _contentStatusSeverity = Severity.Error;
-            }
-            else
-            {
-                _needsContentReload = false;
-                RefreshDatabaseDiagnostics();
-                Snackbar.Add("Content reloaded.", Severity.Success);
-            }
-        }
-        finally
-        {
-            _contentWorking = false;
-        }
-    }
-
     // ── Character storage directory ──────────────────────────────────────────
 
     private async Task BrowseCharactersDirAsync()
@@ -1731,7 +1872,5 @@
         Content.Changed -= OnContentChanged;
         AppUpdates.Changed -= OnAppUpdatesChanged;
         ContentUpdates.Changed -= OnContentUpdatesChanged;
-        _cts?.Cancel();
-        _cts?.Dispose();
     }
 }

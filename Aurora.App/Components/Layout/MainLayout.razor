@@ -51,20 +51,30 @@
                            title="Save (Ctrl+S)"
                            OnClick="@(() => SaveActive())" />
         }
-        @* Update available indicator — single icon button covers both channels. App releases jump
-           directly to Settings → Updates; downloaded content jumps to Settings → Content. The badge
-           coalesces app + content so we don't crowd the AppBar with two icons. *@
-        @if (UpdateAvailableCount > 0)
+        @* Update indicator — single icon button covers both release channels plus pending content refresh.
+           It also appears while checks are running so manual/startup checks have visible feedback. *@
+        @if (ShowUpdateIndicator)
         {
             <MudTooltip Text="@UpdateTooltip">
-                <MudBadge Content="@UpdateAvailableCount"
-                          Color="Color.Primary"
-                          Overlap="true"
-                          Bordered="true">
-                    <MudIconButton Icon="@Icons.Material.Filled.SystemUpdateAlt"
+                @if (UpdateAvailableCount > 0)
+                {
+                    <MudBadge Content="@UpdateAvailableCount"
+                              Color="Color.Primary"
+                              Overlap="true"
+                              Bordered="true">
+                        <MudIconButton Icon="@UpdateIcon"
+                                       Color="Color.Inherit"
+                                       Class="@UpdateIconClass"
+                                       OnClick="OpenUpdatesPage" />
+                    </MudBadge>
+                }
+                else
+                {
+                    <MudIconButton Icon="@UpdateIcon"
                                    Color="Color.Inherit"
+                                   Class="@UpdateIconClass"
                                    OnClick="OpenUpdatesPage" />
-                </MudBadge>
+                }
             </MudTooltip>
         }
         <MudMenu Icon="@Icons.Material.Filled.HelpOutline"
@@ -237,8 +247,8 @@
             if (_disposed) return;
             bool hasDirty = Tabs.Tabs.Any(t => t.IsDirty);
             string suffix = hasDirty
-                ? " Open Settings → Content to reload when ready (you have unsaved changes)."
-                : " Open Settings → Content to reload, or click the update icon.";
+                ? " Open Settings > Updates to refresh when ready (you have unsaved changes)."
+                : " Open Settings > Updates to refresh, or click the update icon.";
             Snackbar.Add(message + suffix, Severity.Info,
                          cfg => cfg.VisibleStateDuration = 12000);
             StateHasChanged();
@@ -249,18 +259,34 @@
     /// How many distinct attention-worthy signals to badge in the AppBar (0–3):
     ///   • a newer app release (GitHub)
     ///   • a newer content release (GitHub, content- tag)
-    ///   • a startup-downloaded content pack pending reload
+    ///   • a startup-downloaded content pack pending refresh
     /// </summary>
     private int UpdateAvailableCount =>
         (AppUpdates.UpdateAvailable ? 1 : 0) +
         (ContentUpdates.InstalledUpdateAvailable || ContentUpdates.ReleaseNoticeAvailable ? 1 : 0) +
         (Content.ContentReloadPending ? 1 : 0);
 
+    private bool UpdatesAreChecking =>
+        AppUpdates.IsChecking ||
+        ContentUpdates.IsChecking ||
+        Content.IsCheckingContentUpdates;
+
+    private bool ShowUpdateIndicator => UpdatesAreChecking || UpdateAvailableCount > 0;
+
+    private string UpdateIcon =>
+        UpdatesAreChecking ? Icons.Material.Filled.Sync : Icons.Material.Filled.SystemUpdateAlt;
+
+    private string? UpdateIconClass => UpdatesAreChecking ? "appbar-update-checking" : null;
+
     private string UpdateTooltip
     {
         get
         {
             var parts = new List<string>();
+            if (Content.IsCheckingContentUpdates)
+                parts.Add(Content.ContentUpdateStatus ?? "Checking installed content sources...");
+            if (AppUpdates.IsChecking || ContentUpdates.IsChecking)
+                parts.Add("Checking release channels...");
             if (AppUpdates.UpdateAvailable)
                 parts.Add($"App: {AppUpdates.Latest!.LatestTag}");
             if (ContentUpdates.InstalledUpdateAvailable)
@@ -268,7 +294,7 @@
             else if (ContentUpdates.ReleaseNoticeAvailable)
                 parts.Add($"Content release: {ContentUpdates.Latest!.LatestTag}");
             if (Content.ContentReloadPending)
-                parts.Add("Reload to apply downloaded content");
+                parts.Add("Refresh database to apply downloaded content");
             return parts.Count == 0 ? "Updates" : string.Join(" • ", parts);
         }
     }
@@ -280,7 +306,11 @@
     }
 
     private void OpenUpdatesPage() =>
-        Nav.NavigateTo(AppUpdates.UpdateAvailable
+        Nav.NavigateTo(UpdatesAreChecking ||
+                       AppUpdates.UpdateAvailable ||
+                       ContentUpdates.InstalledUpdateAvailable ||
+                       ContentUpdates.ReleaseNoticeAvailable ||
+                       Content.ContentReloadPending
             ? "/settings?tab=updates"
             : "/settings?tab=content");
 

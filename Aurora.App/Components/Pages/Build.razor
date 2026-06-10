@@ -90,7 +90,7 @@
             </MudButton>
         </div>
         <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary); margin-top: 2px;">
-            Recommended 5e flow: Race → Class → Ability Scores → Describe Character → Equipment.
+            @GuidanceDescription(_nextStep)
         </MudText>
     </div>
 }
@@ -107,7 +107,7 @@ else if (_workflowSuggestion != null)
             </MudButton>
         </div>
         <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary); margin-top: 2px;">
-            Recommended 5e flow: Race → Class → Ability Scores → Describe Character → Equipment.
+            @WorkflowSuggestionDescription(_workflowSuggestion.Value)
         </MudText>
     </div>
 }
@@ -816,9 +816,22 @@ else if (_workflowSuggestion != null)
                "build-rule-row";
     }
 
+    private static string GuidanceDescription(BuildGuidanceTarget target) =>
+        target.ActionKind == BuildGuidanceActionKind.AbilityScores
+            ? "Set your starting ability scores before reviewing the rest of the build."
+            : "This required choice is still empty. Jump to the highlighted row and choose an option.";
+
+    private static string WorkflowSuggestionDescription((string StepLabel, string TargetLabel, string? TabLabel, string? Route) suggestion) =>
+        suggestion.Route == "/equipment"
+            ? "Your core build choices look complete. Review starting equipment next."
+            : suggestion.StepLabel.Contains("appearance", StringComparison.OrdinalIgnoreCase)
+                ? "These details help the character sheet feel complete, but they can wait."
+                : "Narrative details can be filled in now or saved for later.";
+
     private (string StepLabel, string TargetLabel, string? TabLabel, string? Route)? ComputeWorkflowSuggestion()
     {
         if (_snap == null) return null;
+        if (Tabs.ActiveTab?.IsNew != true) return null;
 
         if (NeedsCharacterBackgroundDetails())
             return ("Describe your character", "Background tab", "Background", null);

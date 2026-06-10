@@ -11,7 +11,7 @@ public enum ContentUpdateOutcome { Updated, UpToDate, Failed }
 /// <summary>
 /// Manages custom homebrew content paths and .index file operations.
 /// Settings are persisted to AppSettingsStore (shared with DataManager).
-/// Element data must be reloaded for changes to take effect.
+/// Element data must be refreshed for changes to take effect.
 /// </summary>
 public sealed class ContentService
 {
@@ -19,6 +19,7 @@ public sealed class ContentService
     private readonly CharacterTabService _tabs;
     private readonly ContentDatabaseService _contentDb;
     private readonly SemaphoreSlim _startupRefreshLock = new(1, 1);
+    private readonly SemaphoreSlim _contentUpdateLock = new(1, 1);
     private bool _startupRefreshAttempted;
 
     public ContentService(CharacterService characters, CharacterTabService tabs, ContentDatabaseService contentDb)
@@ -44,6 +45,14 @@ public sealed class ContentService
         GetBuiltInCustomDirectory();
 
     public bool ContentReloadPending { get; private set; }
+
+    public bool IsCheckingContentUpdates { get; private set; }
+    public string? ContentUpdateStatus { get; private set; }
+    public int? ContentUpdateProgress { get; private set; }
+    public int ContentUpdateSourceCount { get; private set; }
+    public int ContentUpdatedFileCount { get; private set; }
+    public DateTimeOffset? ContentUpdateStartedUtc { get; private set; }
+    public DateTimeOffset? ContentUpdateCompletedUtc { get; private set; }
 
     /// <summary>
     /// Adds a directory to the additional custom content paths and persists the change.
@@ -83,11 +92,7 @@ public sealed class ContentService
         get
         {
             string dir = GetBuiltInCustomDirectory();
-            if (!Directory.Exists(dir)) return [];
-            return Directory.GetFiles(dir, "*.index")
-                            .Select(Path.GetFileName)
-                            .Where(n => n != null)
-                            .ToList()!;
+            return GetInstalledIndexNames(dir);
         }
     }
 
@@ -117,7 +122,7 @@ public sealed class ContentService
             indexFile.SaveContent(new FileInfo(savePath));
 
             Changed?.Invoke();
-            return (true, $"'{indexFile.Info.UpdateFilename}' installed. Run Check for Updates to download content.");
+            return (true, $"'{indexFile.Info.UpdateFilename}' installed. Run Check installed sources to download content.");
         }
         catch (Exception ex)
         {
@@ -132,25 +137,86 @@ public sealed class ContentService
     /// </summary>
     public async Task<(ContentUpdateOutcome Outcome, string Message)> CheckForUpdatesAsync()
     {
+        string dir = GetBuiltInCustomDirectory();
+        IReadOnlyList<string> indexNames = GetInstalledIndexNames(dir);
+        if (indexNames.Count == 0)
+        {
+            ContentUpdateStatus = "No installed .index sources found.";
+            ContentUpdateProgress = null;
+            ContentUpdateSourceCount = 0;
+            ContentUpdatedFileCount = 0;
+            ContentUpdateCompletedUtc = DateTimeOffset.UtcNow;
+            Changed?.Invoke();
+            return (ContentUpdateOutcome.UpToDate, ContentUpdateStatus);
+        }
+
+        if (!await _contentUpdateLock.WaitAsync(0).ConfigureAwait(false))
+            return (ContentUpdateOutcome.UpToDate, "A content source update check is already running.");
+
+        IndicesUpdateService? svc = null;
+        EventHandler<IndicesUpdateStatusChangedEventArgs>? statusHandler = null;
+        EventHandler<IndicesUpdateStatusChangedEventArgs>? fileUpdatedHandler = null;
+        var started = DateTimeOffset.UtcNow;
+        IsCheckingContentUpdates = true;
+        ContentUpdateStartedUtc = started;
+        ContentUpdateCompletedUtc = null;
+        ContentUpdateSourceCount = indexNames.Count;
+        ContentUpdatedFileCount = 0;
+        ContentUpdateProgress = null;
+        ContentUpdateStatus = $"Checking {indexNames.Count} installed .index source(s)...";
+        Changed?.Invoke();
+
         try
         {
             // Patch any http:// URLs inside installed index files before the DLL reads them.
             // Android blocks cleartext HTTP; index files saved by the WPF app or authored
             // with http:// URLs would otherwise fail silently on Android 9+.
-            UpgradeIndexFileProtocols(GetBuiltInCustomDirectory());
+            UpgradeIndexFileProtocols(dir);
 
             var version = typeof(ContentService).Assembly.GetName().Version ?? new Version(1, 0, 0);
-            var svc = new IndicesUpdateService(version);
-            bool updated = await svc.UpdateIndexFiles(GetBuiltInCustomDirectory());
+            svc = new IndicesUpdateService(version);
+            statusHandler = (_, e) => UpdateContentCheckStatus(e.StatusMessage, e.ProgressPercentage);
+            fileUpdatedHandler = (_, e) =>
+            {
+                ContentUpdatedFileCount++;
+                UpdateContentCheckStatus(e.StatusMessage, e.ProgressPercentage);
+            };
+            svc.StatusChanged += statusHandler;
+            svc.FileUpdated += fileUpdatedHandler;
+
+            bool updated = await svc.UpdateIndexFiles(dir);
+            string duration = FormatDuration(DateTimeOffset.UtcNow - started);
+            ContentUpdateProgress = 100;
+            ContentUpdateStatus = updated
+                ? $"Updated {ContentUpdatedFileCount} content file(s) from {indexNames.Count} source(s) in {duration}."
+                : $"Checked {indexNames.Count} source(s) in {duration}; content is up to date.";
             Changed?.Invoke();
             return updated
-                ? (ContentUpdateOutcome.Updated,  "Content files updated. Reload content to apply changes.")
-                : (ContentUpdateOutcome.UpToDate, "All content is up to date.");
+                ? (ContentUpdateOutcome.Updated,  $"{ContentUpdateStatus} Refresh the database to apply changes.")
+                : (ContentUpdateOutcome.UpToDate, ContentUpdateStatus);
         }
         catch (Exception ex)
         {
             DebugLogService.Catch(ex, "ContentService.CheckForUpdatesAsync");
+            ContentUpdateStatus = ex.Message;
+            ContentUpdateProgress = null;
+            Changed?.Invoke();
             return (ContentUpdateOutcome.Failed, ex.Message);
+        }
+        finally
+        {
+            if (svc != null)
+            {
+                if (statusHandler != null)
+                    svc.StatusChanged -= statusHandler;
+                if (fileUpdatedHandler != null)
+                    svc.FileUpdated -= fileUpdatedHandler;
+            }
+
+            IsCheckingContentUpdates = false;
+            ContentUpdateCompletedUtc = DateTimeOffset.UtcNow;
+            Changed?.Invoke();
+            _contentUpdateLock.Release();
         }
     }
 
@@ -218,13 +284,13 @@ public sealed class ContentService
     /// <summary>
     /// Raised after a successful startup content download when at least one tracked index
     /// produced new files. Carries a short human-readable message suitable for a snackbar.
-    /// Subscribed by <c>MainLayout</c> so the user is offered a one-click Reload.
+    /// Subscribed by <c>MainLayout</c> so the user is offered a one-click refresh.
     /// </summary>
     public event Action<string>? ContentDownloaded;
 
     /// <summary>
     /// Fire-and-forget startup refresh: pulls every installed index, downloading any files
-    /// the server now reports as newer. Same path as the user-visible "Check for Updates"
+    /// the server now reports as newer. Same path as the user-visible "Check installed sources"
     /// button, but driven by the startup preference. Best-effort — failures are swallowed
     /// into the debug log so they never bubble out into the launch sequence.
     ///
@@ -246,7 +312,7 @@ public sealed class ContentService
             {
                 ContentReloadPending = true;
                 Changed?.Invoke();
-                ContentDownloaded?.Invoke("Content updates downloaded. Reload to apply.");
+                ContentDownloaded?.Invoke("Content updates downloaded. Refresh the database to apply.");
             }
         }
         catch (Exception ex)
@@ -287,6 +353,36 @@ public sealed class ContentService
             }
             catch { }
         }
+    }
+
+    private static IReadOnlyList<string> GetInstalledIndexNames(string directory)
+    {
+        if (!Directory.Exists(directory)) return [];
+        return Directory.GetFiles(directory, "*.index")
+                        .Select(Path.GetFileName)
+                        .Where(n => n != null)
+                        .ToList()!;
+    }
+
+    private void UpdateContentCheckStatus(string? statusMessage, int progressPercentage)
+    {
+        if (!string.IsNullOrWhiteSpace(statusMessage))
+            ContentUpdateStatus = statusMessage;
+
+        ContentUpdateProgress = progressPercentage is >= 0 and <= 100
+            ? progressPercentage
+            : null;
+
+        Changed?.Invoke();
+    }
+
+    private static string FormatDuration(TimeSpan duration)
+    {
+        if (duration.TotalSeconds < 1)
+            return "less than a second";
+        if (duration.TotalMinutes < 1)
+            return $"{Math.Max(1, (int)Math.Round(duration.TotalSeconds))}s";
+        return $"{(int)duration.TotalMinutes}m {duration.Seconds}s";
     }
 
     /// <summary>Fires when the directory list or installed index files change.</summary>
