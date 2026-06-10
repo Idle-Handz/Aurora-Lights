@@ -285,10 +285,10 @@ public sealed class UserPreferencesService
     }
 
     /// <summary>
-    /// Whether the legacy IndicesUpdateService content download runs in the background on
-    /// startup. This is the active content delivery path users opt into by installing an
-    /// .index file. On Updated the user gets a snackbar + an AppBar reload prompt; on no-op
-    /// nothing surfaces. Default: true.
+    /// Whether installed .index content sources are checked in the background on startup.
+    /// This is the active content delivery path users opt into by installing an .index file.
+    /// On Updated the user gets a snackbar + an AppBar reload prompt; on no-op nothing
+    /// surfaces. Default: true.
     /// </summary>
     public bool AutoDownloadContentOnStartup
     {

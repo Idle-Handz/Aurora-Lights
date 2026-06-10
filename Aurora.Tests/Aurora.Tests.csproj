@@ -42,9 +42,8 @@
   <!-- Update-service source files live in Aurora.App (MAUI target). Link the pure-.NET ones here
        so we can test parsing, channel filtering, and comparison logic without pulling in MAUI.
        DebugLogService, GithubReleasesClient, UpdateAvailability, and GithubReleaseChannelService
-       have no MAUI dependencies; AppUpdateService and ContentUpdateService do (Velopack / FileSystem)
-       so those are not linked — test helpers in GithubUpdateChannelTests cover the logic via
-       concrete subclasses. -->
+       have no MAUI dependencies; AppUpdateService does (Velopack/AppInfo) so it is not linked.
+       Test helpers in GithubUpdateChannelTests cover the logic via concrete subclasses. -->
   <ItemGroup>
     <Compile Include="..\Aurora.App\Services\Updates\SemVer.cs"                   Link="Linked\SemVer.cs" />
     <Compile Include="..\Aurora.App\Services\DebugLogService.cs"                  Link="Linked\DebugLogService.cs" />

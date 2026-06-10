@@ -2,12 +2,9 @@ namespace Aurora.App.Services.Updates;
 
 /// <summary>
 /// Shared base for "check a GitHub release channel for a newer version than the one we're running."
-/// Both <see cref="AppUpdateService"/> (the app binary) and <see cref="ContentUpdateService"/>
-/// (separately-published content packs) work the same way against the same repo's Releases — they
-/// differ only in which release tags belong to them and what "currently running version" means.
+/// <see cref="AppUpdateService"/> uses this against the project's GitHub Releases feed.
 ///
-/// Notify-only. No download/apply here; that's Phase 2 (Velopack) for the app channel, and a
-/// to-be-defined extract-into-content-dir for the content channel.
+/// Notify-only. Download/apply is handled by the app-update service where supported.
 /// </summary>
 public abstract class GithubReleaseChannelService
 {
@@ -28,7 +25,7 @@ public abstract class GithubReleaseChannelService
     /// <summary>The version this channel considers "currently installed."</summary>
     protected abstract SemVer CurrentVersion { get; }
 
-    /// <summary>True when this tag belongs to this channel (e.g. <c>v*</c> for app, <c>content-*</c> for content).</summary>
+    /// <summary>True when this tag belongs to this channel.</summary>
     protected abstract bool TagBelongsToChannel(string tag);
 
     /// <summary>Strip the channel prefix and parse to <see cref="SemVer"/>. Default strips nothing.</summary>

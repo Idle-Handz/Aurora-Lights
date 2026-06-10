@@ -1202,7 +1202,10 @@ WHERE COALESCE(trim(st.stat_name), '') = ''
 UNION ALL
 
 SELECT
-    'duplicate-element-id-in-file' AS issue_kind,
+    CASE
+        WHEN dup.signature_count = 1 THEN 'duplicate-element-signature-in-file'
+        ELSE 'duplicate-element-id-in-file'
+    END AS issue_kind,
     dup.source_file_id,
     sf.relative_path,
     NULL AS owner_element_id,
@@ -1214,12 +1217,18 @@ SELECT
 FROM
 (
     SELECT
-        source_file_id,
-        aurora_id,
+        e.source_file_id,
+        e.aurora_id,
+        COUNT(DISTINCT
+            e.name || char(31) ||
+            e.element_type_id || char(31) ||
+            COALESCE(CAST(e.source_book_id AS TEXT), '') || char(31) ||
+            e.compendium_display
+        ) AS signature_count,
         COUNT(*) AS duplicate_count
-    FROM elements
-    WHERE COALESCE(trim(aurora_id), '') <> ''
-    GROUP BY source_file_id, aurora_id
+    FROM elements AS e
+    WHERE COALESCE(trim(e.aurora_id), '') <> ''
+    GROUP BY e.source_file_id, e.aurora_id
     HAVING COUNT(*) > 1
 ) AS dup
 JOIN source_files AS sf

@@ -157,5 +157,6 @@ public static class CharacterContext
         //    build, so file.Load doesn't restore them; without this their granted content (e.g. feat
         //    spells) silently disappears on tab swap. Reads the persisted <custom-features> list.
         BuildService.ReapplyCustomFeatures(incoming.File);
+        BuildService.NormalizeSelectionState();
     }
 }

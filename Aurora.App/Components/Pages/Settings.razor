@@ -14,7 +14,6 @@
 @inject DebugLogService DebugLog
 @inject Aurora.App.Services.AppIdentityService Brand
 @inject Aurora.App.Services.Updates.AppUpdateService AppUpdates
-@inject Aurora.App.Services.Updates.ContentUpdateService ContentUpdates
 
 <MudText Typo="Typo.h5" Class="mb-4">Settings</MudText>
 
@@ -636,8 +635,8 @@
     <!-- ── Updates ──────────────────────────────────────────────────────────── -->
     <MudTabPanel Text="Updates">
 
-        @* Release-channel checks cover app builds plus the reserved content-* stream.
-           Installed .index sources are checked separately because they update local XML files. *@
+        @* GitHub release checks cover app builds. Installed .index sources are checked
+           separately because they update local XML files. *@
         <div class="pref-section">
             <div class="section-label">App</div>
 
@@ -812,68 +811,10 @@
         <div class="pref-section" style="margin-top: 24px;">
             <div class="section-label">Content</div>
 
-            <div class="pref-row">
-                <div class="pref-row-text">
-                    <div class="pref-row-title">Content release channel</div>
-                    <div class="pref-row-desc">
-                        @if (_checkingReleaseChannels || ContentUpdates.IsChecking)
-                        {
-                            <text>Checking GitHub...</text>
-                        }
-                        else if (ContentUpdates.LastError is { Length: > 0 } err)
-                        {
-                            <text>Last check failed: @err</text>
-                        }
-                        else if (ContentUpdates.Latest is { } c)
-                        {
-                            <text>
-                                Latest: <b>@c.LatestTag</b>
-                                @(c.IsPreRelease ? "(pre-release) " : "")
-                                @ContentReleaseStatusText()
-                                · checked @(FormatChecked(ContentUpdates.LastChecked))
-                            </text>
-                        }
-                        else if (ContentUpdates.LastChecked is { } when_)
-                        {
-                            <text>No eligible content release found · checked @(FormatChecked(when_))</text>
-                        }
-                        else
-                        {
-                            <text>Never checked.</text>
-                        }
-                    </div>
-                </div>
-                <MudButton Variant="Variant.Outlined"
-                           StartIcon="@Icons.Material.Filled.Refresh"
-                           OnClick="CheckContentReleaseNowAsync"
-                           Disabled="@(_checkingReleaseChannels || ContentUpdates.IsChecking)">
-                    Check content release
-                </MudButton>
-            </div>
-
-            @if (ContentUpdates.Latest is { } contentReleaseOnUpdates)
-            {
-                <div class="pref-row" style="margin-top: 16px;">
-                    <div class="pref-row-text">
-                        <div class="pref-row-title">View content release</div>
-                        <div class="pref-row-desc">
-                            This release stream is informational for now. Installed XML content still updates through .index sources.
-                        </div>
-                    </div>
-                    <MudButton Variant="Variant.Outlined"
-                               Color="Color.Primary"
-                               StartIcon="@Icons.Material.Filled.OpenInNew"
-                               Disabled="@string.IsNullOrWhiteSpace(contentReleaseOnUpdates.ReleaseUrl)"
-                               OnClick="@(() => OpenReleaseAsync(contentReleaseOnUpdates.ReleaseUrl))">
-                        Open release
-                    </MudButton>
-                </div>
-            }
-
             @{
                 int installedIndexCountOnUpdates = Content.InstalledIndexNames.Count;
             }
-            <div class="pref-row" style="margin-top: 16px;">
+            <div class="pref-row">
                 <div class="pref-row-text">
                     <div class="pref-row-title">Installed content sources</div>
                     <div class="pref-row-desc">
@@ -1241,18 +1182,13 @@
         ContentDb.StateChanged += OnStateChanged;
         Content.Changed += OnContentChanged;
         AppUpdates.Changed += OnAppUpdatesChanged;
-        ContentUpdates.Changed += OnContentUpdatesChanged;
         RefreshDatabaseDiagnostics();
     }
 
     private void OnAppUpdatesChanged() => InvokeAsync(StateHasChanged);
-    private void OnContentUpdatesChanged() => InvokeAsync(StateHasChanged);
 
     private Task CheckAppReleaseNowAsync() =>
         CheckReleaseChannelAsync(includePreReleases => AppUpdates.CheckAsync(includePreReleases));
-
-    private Task CheckContentReleaseNowAsync() =>
-        CheckReleaseChannelAsync(includePreReleases => ContentUpdates.CheckAsync(includePreReleases));
 
     private async Task CheckReleaseChannelAsync<T>(Func<bool, Task<T>> checkAsync)
     {
@@ -1273,13 +1209,6 @@
     /// <summary>Render the last-checked timestamp as the user's local time, short form.</summary>
     private static string FormatChecked(DateTimeOffset? when) =>
         when is null ? "never" : when.Value.ToLocalTime().ToString("g");
-
-    private string ContentReleaseStatusText() =>
-        ContentUpdates.InstalledUpdateAvailable
-            ? "- newer than recorded content"
-            : ContentUpdates.ReleaseNoticeAvailable
-                ? "- published, no installed content release recorded"
-                : "- recorded content is up to date";
 
     private bool IsCheckingInstalledSources =>
         _checkingUpdates || Content.IsCheckingContentUpdates;
@@ -1871,6 +1800,5 @@
         ContentDb.StateChanged -= OnStateChanged;
         Content.Changed -= OnContentChanged;
         AppUpdates.Changed -= OnAppUpdatesChanged;
-        ContentUpdates.Changed -= OnContentUpdatesChanged;
     }
 }

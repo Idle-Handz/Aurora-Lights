@@ -1,6 +1,6 @@
 using Builder.Data.Files;
-using Builder.Data.Files.Updater;
 using Builder.Presentation;
+using Builder.Presentation.Services.Content;
 using Builder.Presentation.Services.Data;
 
 namespace Aurora.App.Services;
@@ -132,8 +132,7 @@ public sealed class ContentService
     }
 
     /// <summary>
-    /// Runs <see cref="IndicesUpdateService"/> against all installed .index files,
-    /// downloading or refreshing the referenced XML content files.
+    /// Checks all installed .index trees, downloading or refreshing referenced XML content files.
     /// </summary>
     public async Task<(ContentUpdateOutcome Outcome, string Message)> CheckForUpdatesAsync()
     {
@@ -153,9 +152,6 @@ public sealed class ContentService
         if (!await _contentUpdateLock.WaitAsync(0).ConfigureAwait(false))
             return (ContentUpdateOutcome.UpToDate, "A content source update check is already running.");
 
-        IndicesUpdateService? svc = null;
-        EventHandler<IndicesUpdateStatusChangedEventArgs>? statusHandler = null;
-        EventHandler<IndicesUpdateStatusChangedEventArgs>? fileUpdatedHandler = null;
         var started = DateTimeOffset.UtcNow;
         IsCheckingContentUpdates = true;
         ContentUpdateStartedUtc = started;
@@ -173,26 +169,38 @@ public sealed class ContentService
             // with http:// URLs would otherwise fail silently on Android 9+.
             UpgradeIndexFileProtocols(dir);
 
-            var version = typeof(ContentService).Assembly.GetName().Version ?? new Version(1, 0, 0);
-            svc = new IndicesUpdateService(version);
-            statusHandler = (_, e) => UpdateContentCheckStatus(e.StatusMessage, e.ProgressPercentage);
-            fileUpdatedHandler = (_, e) =>
+            var updater = new ContentIndexUpdateService();
+            var progress = new Progress<ContentIndexUpdateProgress>(update =>
             {
-                ContentUpdatedFileCount++;
-                UpdateContentCheckStatus(e.StatusMessage, e.ProgressPercentage);
-            };
-            svc.StatusChanged += statusHandler;
-            svc.FileUpdated += fileUpdatedHandler;
+                ContentUpdatedFileCount = update.UpdatedFileCount;
+                UpdateContentCheckStatus(update.StatusMessage, update.ProgressPercentage);
+            });
 
-            bool updated = await svc.UpdateIndexFiles(dir);
-            string duration = FormatDuration(DateTimeOffset.UtcNow - started);
+            ContentIndexUpdateResult result = await updater.UpdateAsync(
+                    new ContentIndexUpdateRequest(dir, indexNames),
+                    progress)
+                .ConfigureAwait(false);
+
+            string duration = FormatDuration(result.Duration);
             ContentUpdateProgress = 100;
-            ContentUpdateStatus = updated
-                ? $"Updated {ContentUpdatedFileCount} content file(s) from {indexNames.Count} source(s) in {duration}."
-                : $"Checked {indexNames.Count} source(s) in {duration}; content is up to date.";
+            ContentUpdatedFileCount = result.UpdatedFileCount;
+
+            string checkedSummary = $"Checked {result.CheckedEntryCount} content entries across {result.IndexFileCount} index file(s) in {duration}";
+            string failureSuffix = result.FailedFileCount > 0
+                ? $" {result.FailedFileCount} file(s) failed."
+                : string.Empty;
+            ContentUpdateStatus = result.Updated
+                ? $"Updated {result.UpdatedFileCount} content file(s) across {result.IndexFileCount} index file(s) in {duration}.{failureSuffix}"
+                : result.FailedFileCount > 0
+                    ? $"{checkedSummary}; {result.FailedFileCount} file(s) failed."
+                    : $"{checkedSummary}; content is up to date.";
             Changed?.Invoke();
-            return updated
-                ? (ContentUpdateOutcome.Updated,  $"{ContentUpdateStatus} Refresh the database to apply changes.")
+
+            if (result.Updated)
+                return (ContentUpdateOutcome.Updated, $"{ContentUpdateStatus} Refresh the database to apply changes.");
+
+            return result.FailedFileCount > 0
+                ? (ContentUpdateOutcome.Failed, ContentUpdateStatus)
                 : (ContentUpdateOutcome.UpToDate, ContentUpdateStatus);
         }
         catch (Exception ex)
@@ -205,14 +213,6 @@ public sealed class ContentService
         }
         finally
         {
-            if (svc != null)
-            {
-                if (statusHandler != null)
-                    svc.StatusChanged -= statusHandler;
-                if (fileUpdatedHandler != null)
-                    svc.FileUpdated -= fileUpdatedHandler;
-            }
-
             IsCheckingContentUpdates = false;
             ContentUpdateCompletedUtc = DateTimeOffset.UtcNow;
             Changed?.Invoke();
@@ -364,7 +364,7 @@ public sealed class ContentService
                         .ToList()!;
     }
 
-    private void UpdateContentCheckStatus(string? statusMessage, int progressPercentage)
+    private void UpdateContentCheckStatus(string? statusMessage, int? progressPercentage)
     {
         if (!string.IsNullOrWhiteSpace(statusMessage))
             ContentUpdateStatus = statusMessage;

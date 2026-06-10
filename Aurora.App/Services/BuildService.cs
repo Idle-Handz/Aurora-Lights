@@ -214,35 +214,10 @@ public static class BuildService
             // If the expression evaluated but returned nothing (can happen with macro expressions),
             // also try the spell fallback for Spell-type rules.
             bool isSpellRule = rule.Attributes.Type?.Equals("Spell", StringComparison.OrdinalIgnoreCase) == true;
-            var list = elements
-                .Where(e => !string.IsNullOrWhiteSpace(e.Name))
-                .OrderBy(e => isSpellRule ? GetElementSpellLevel(e) : 0)
-                .ThenBy(e => e.Name)
-                .Select(e => new ElementOption(
-                    e.Id, e.Name!,
-                    isSpellRule ? GetSpellPickerDescription(e) : GetFeatureDescription(e),
-                    e.Source ?? "",
-                    e.HasRequirements ? FormatRequirements(e.Requirements) : "",
-                    SpellLevel: isSpellRule ? GetElementSpellLevel(e) : 0,
-                    School: isSpellRule ? GetElementSchool(e) : "",
-                    IsRitual: isSpellRule && GetElementIsRitual(e),
-                    IsConcentration: isSpellRule && GetElementIsConcentration(e)))
-                .ToList();
+            var list = BuildElementOptions(elements, isSpellRule);
 
             if (list.Count == 0 && isSpellRule)
-                list = SpellFallbackOptions(rule, baseCollection)
-                    .Where(e => !string.IsNullOrWhiteSpace(e.Name))
-                    .OrderBy(e => GetElementSpellLevel(e))
-                    .ThenBy(e => e.Name)
-                    .Select(e => new ElementOption(
-                        e.Id, e.Name!, GetSpellPickerDescription(e),
-                        e.Source ?? "",
-                        e.HasRequirements ? FormatRequirements(e.Requirements) : "",
-                        SpellLevel: GetElementSpellLevel(e),
-                        School: GetElementSchool(e),
-                        IsRitual: GetElementIsRitual(e),
-                        IsConcentration: GetElementIsConcentration(e)))
-                    .ToList();
+                list = BuildElementOptions(SpellFallbackOptions(rule, baseCollection), isSpellRule: true);
 
             // Case-insensitive fallback: only used when the main expression returned nothing AND
             // this is not a Spell rule (Spell rules use SpellFallbackOptions above). Catches
@@ -253,33 +228,15 @@ public static class BuildService
             if (list.Count == 0 && rule.Attributes.ContainsSupports()
                 && !string.Equals(rule.Attributes.Type, "Spell", StringComparison.OrdinalIgnoreCase))
             {
-                list = FilterBySupportsCaseInsensitive(rule.Attributes.Supports, baseCollection)
-                    .Where(e => !string.IsNullOrWhiteSpace(e.Name))
-                    .OrderBy(e => e.Name)
-                    .Select(e => new ElementOption(
-                        e.Id, e.Name!, GetFeatureDescription(e),
-                        e.Source ?? "",
-                        e.HasRequirements ? FormatRequirements(e.Requirements) : ""))
-                    .ToList();
+                list = BuildElementOptions(
+                    FilterBySupportsCaseInsensitive(rule.Attributes.Supports, baseCollection),
+                    isSpellRule: false);
             }
 
             var deduplicated = DeduplicateOptions(list);
             if (deduplicated.Count == 0)
             {
-                var xmlFallback = XmlContentFallbackService.GetElementFallbacks(rule)
-                    .Where(e => !string.IsNullOrWhiteSpace(e.Name))
-                    .OrderBy(e => isSpellRule ? GetElementSpellLevel(e) : 0)
-                    .ThenBy(e => e.Name)
-                    .Select(e => new ElementOption(
-                        e.Id, e.Name!,
-                        isSpellRule ? GetSpellPickerDescription(e) : GetFeatureDescription(e),
-                        e.Source ?? "",
-                        e.HasRequirements ? FormatRequirements(e.Requirements) : "",
-                        SpellLevel: isSpellRule ? GetElementSpellLevel(e) : 0,
-                        School: isSpellRule ? GetElementSchool(e) : "",
-                        IsRitual: isSpellRule && GetElementIsRitual(e),
-                        IsConcentration: isSpellRule && GetElementIsConcentration(e)))
-                    .ToList();
+                var xmlFallback = BuildElementOptions(XmlContentFallbackService.GetElementFallbacks(rule), isSpellRule);
 
                 if (xmlFallback.Count > 0)
                     return DeduplicateOptions(xmlFallback);
@@ -398,6 +355,55 @@ public static class BuildService
             }
         }
         return result;
+    }
+
+    private static List<ElementOption> BuildElementOptions(IEnumerable<ElementBase> elements, bool isSpellRule)
+    {
+        return OrderElementOptions(
+                elements
+                    .Where(e => !string.IsNullOrWhiteSpace(e.Name))
+                    .Select(e => CreateElementOption(e, isSpellRule)),
+                isSpellRule)
+            .ToList();
+    }
+
+    private static ElementOption CreateElementOption(ElementBase element, bool isSpellRule)
+    {
+        var metadata = TryGetElementSortMetadata(element);
+
+        return new ElementOption(
+            element.Id,
+            element.Name ?? "",
+            isSpellRule ? GetSpellPickerDescription(element) : GetFeatureDescription(element),
+            element.Source ?? "",
+            element.HasRequirements ? FormatRequirements(element.Requirements) : "",
+            SpellLevel: isSpellRule ? GetElementSpellLevel(element) : 0,
+            School: isSpellRule ? GetElementSchool(element) : "",
+            IsRitual: isSpellRule && GetElementIsRitual(element),
+            IsConcentration: isSpellRule && GetElementIsConcentration(element),
+            SourceReleaseDate: metadata?.SourceReleaseDate,
+            SourceFileModifiedUtc: metadata?.SourceFileModifiedUtc);
+    }
+
+    private static IOrderedEnumerable<ElementOption> OrderElementOptions(
+        IEnumerable<ElementOption> options,
+        bool isSpellRule)
+    {
+        return options
+            .OrderBy(o => isSpellRule ? o.SpellLevel : 0)
+            .ThenBy(o => o.Name, StringComparer.OrdinalIgnoreCase)
+            .ThenByDescending(o => o.SourceReleaseDate ?? DateTimeOffset.MinValue)
+            .ThenByDescending(o => o.SourceFileModifiedUtc ?? DateTimeOffset.MinValue)
+            .ThenBy(o => o.Source, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(o => o.Id, StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static DbElementLoader.ElementSortMetadata? TryGetElementSortMetadata(ElementBase element)
+    {
+        DbElementLoader.ElementSortMetadataMap.TryGetValue(
+            DbElementLoader.MakeElementSortMetadataKey(element.Id, element.Source),
+            out var metadata);
+        return metadata;
     }
 
     /// <summary>
@@ -628,6 +634,8 @@ public static class BuildService
             // 2. Re-run progression processing so grant rules and requirement checks fire.
             cm.ReprocessCharacter();
 
+            NormalizeSelectionState(invalidated);
+
             // 3. Validate every other SelectionRule: check if its registered element is
             //    still a valid option. If not, unregister it to avoid an inconsistent state.
             var currentIds = cm.GetElements().Select(e => e.Id).ToHashSet();
@@ -853,6 +861,7 @@ public static class BuildService
             FlushSnapshotToCharacter(tab.Snapshot, tab.Character);
 
         EnsureMulticlassSelectionsRegistered();
+        NormalizeSelectionState();
 
         // CharacterFile.Save() rebuilds the document from the model, dropping app-specific
         // root nodes such as <custom-features>. Preserve that node across the rebuild so
@@ -880,6 +889,21 @@ public static class BuildService
         if (tab.Character == null) return;
         tab.Snapshot             = CharacterSnapshot.From(tab.Character);
         tab.ProgressionSnapshots = SnapshotProgressionManagers();
+    }
+
+    public static IReadOnlyList<string> NormalizeSelectionState()
+    {
+        var invalidated = new List<string>();
+        NormalizeSelectionState(invalidated);
+        return invalidated;
+    }
+
+    private static void NormalizeSelectionState(List<string> invalidated)
+    {
+        int countBefore = invalidated.Count;
+        ClearStaleSelectedAbilityScoreElements(invalidated);
+        if (invalidated.Count > countBefore)
+            CharacterManager.Current.ReprocessCharacter();
     }
 
     // ── Snapshot helpers (shared with Start.razor) ───────────────────────────
@@ -1491,9 +1515,8 @@ public static class BuildService
     /// </summary>
     public static IReadOnlyList<ElementOption> GetMulticlassOptions()
     {
-        return DataManager.Current.ElementsCollection
+        var options = DataManager.Current.ElementsCollection
             .Where(e => e.Type == "Multiclass")
-            .OrderBy(e => e.Name)
             .Select(e => new ElementOption(
                 e.Id,
                 e.Name ?? "",
@@ -1501,8 +1524,12 @@ public static class BuildService
                 e.Source ?? "",
                 // The multiclass ability-score prerequisite (e.g. "Strength 13 or Dexterity 13"),
                 // surfaced in the picker's detail pane as "Requires: …".
-                e.Prerequisite ?? ""))
+                e.Prerequisite ?? "",
+                SourceReleaseDate: TryGetElementSortMetadata(e)?.SourceReleaseDate,
+                SourceFileModifiedUtc: TryGetElementSortMetadata(e)?.SourceFileModifiedUtc))
             .ToList();
+
+        return OrderElementOptions(options, isSpellRule: false).ToList();
     }
 
     /// <summary>
@@ -1594,10 +1621,12 @@ public static class BuildService
                 e.Name ?? "",
                 GetFeatureDescription(e),
                 e.Source ?? "",
-                e.Prerequisite ?? ""))
+                e.Prerequisite ?? "",
+                SourceReleaseDate: TryGetElementSortMetadata(e)?.SourceReleaseDate,
+                SourceFileModifiedUtc: TryGetElementSortMetadata(e)?.SourceFileModifiedUtc))
             .ToList();
 
-        return DeduplicateOptions(options);
+        return DeduplicateOptions(OrderElementOptions(options, isSpellRule: false).ToList());
     }
 
     public static async Task<string?> AddMulticlassLevelAsync(CharacterTab tab, string multiclassElementId)
@@ -2273,6 +2302,67 @@ public static class BuildService
         }
     }
 
+    private static void ClearStaleSelectedAbilityScoreElements(List<string> invalidated)
+    {
+        var cm = CharacterManager.Current;
+        var activeRuleIds = cm.SelectionRules
+            .Select(rule => rule.UniqueIdentifier)
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .ToHashSet(StringComparer.Ordinal);
+
+        foreach (var element in cm.GetElements().ToList())
+        {
+            if (!element.Type.Equals("Ability Score Improvement", StringComparison.OrdinalIgnoreCase))
+                continue;
+            if (!element.Aquisition.WasSelected)
+                continue;
+
+            var selectedRule = element.Aquisition.SelectRule;
+            if (selectedRule == null)
+                continue;
+
+            var selectedRuleId = selectedRule.UniqueIdentifier;
+            if (!string.IsNullOrWhiteSpace(selectedRuleId) && activeRuleIds.Contains(selectedRuleId))
+                continue;
+
+            int slot = FindRegisteredSelectionSlot(selectedRule, element);
+            try
+            {
+                cm.UnregisterElement(element);
+                if (slot > 0)
+                    SelectionRuleExpanderContext.Current?.ClearRegisteredElement(selectedRule, slot);
+            }
+            catch { }
+
+            invalidated.Add(slot > 0
+                ? BuildSelectionLabel(selectedRule, slot)
+                : (selectedRule.Attributes.Name ?? selectedRule.Attributes.Type ?? "Ability Score Improvement"));
+        }
+    }
+
+    private static int FindRegisteredSelectionSlot(SelectRule rule, ElementBase element)
+    {
+        int count = Math.Max(1, rule.Attributes.Number);
+        for (int n = 1; n <= count; n++)
+        {
+            try
+            {
+                var current = SelectionRuleExpanderContext.Current?.GetRegisteredElement(rule, n) as ElementBase;
+                if (current == null)
+                    continue;
+
+                if (ReferenceEquals(current, element) ||
+                    current.Id.Equals(element.Id, StringComparison.OrdinalIgnoreCase))
+                {
+                    return n;
+                }
+            }
+            catch { }
+        }
+
+        return 0;
+    }
+
     private static string BuildSelectionLabel(SelectRule rule, int number)
     {
         string ruleName = rule.Attributes.Name ?? rule.Attributes.Type ?? "Selection";
@@ -2495,7 +2585,9 @@ public sealed record ElementOption(
     int SpellLevel = 0,
     string School = "",
     bool IsRitual = false,
-    bool IsConcentration = false);
+    bool IsConcentration = false,
+    DateTimeOffset? SourceReleaseDate = null,
+    DateTimeOffset? SourceFileModifiedUtc = null);
 
 /// <summary>A class the character can level up: its element id (Class or Multiclass), display name,
 /// current level in that class, and whether it's the main class.</summary>

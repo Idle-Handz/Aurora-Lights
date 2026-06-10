@@ -2179,6 +2179,7 @@ ON CONFLICT(singleton_id) DO UPDATE SET
         {
             "grant-target-id-in-name-attribute" => ContentDatabaseTrustImpact.AutoRecovered,
             "recovered-grant-target-id-in-name-attribute" => ContentDatabaseTrustImpact.AutoRecovered,
+            "duplicate-element-signature-in-file" => ContentDatabaseTrustImpact.AutoRecovered,
             "duplicate-element-id-in-file" => ContentDatabaseTrustImpact.ManualReview,
             "blank-grant-target-id" => ContentDatabaseTrustImpact.ManualReview,
             "blank-select-type" => ContentDatabaseTrustImpact.ManualReview,

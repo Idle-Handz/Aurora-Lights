@@ -9,10 +9,9 @@ namespace Aurora.Tests.Tests;
 /// draft/pre-release exclusion, version ordering, and state lifecycle.
 ///
 /// <para>
-/// We can't link <c>AppUpdateService</c> or <c>ContentUpdateService</c> into this project
-/// because they depend on MAUI APIs (<c>AppInfo</c>, <c>FileSystem</c>).  Instead we
-/// drive the shared base-class logic through two small concrete channel implementations
-/// that mirror the real ones exactly.
+/// We can't link <c>AppUpdateService</c> into this project because it depends on MAUI APIs
+/// (<c>AppInfo</c>). Instead we drive the shared base-class logic through a small concrete
+/// channel implementation that mirrors the real one.
 /// </para>
 /// </summary>
 public class GithubUpdateChannelTests
@@ -26,18 +25,6 @@ public class GithubUpdateChannelTests
         protected override SemVer CurrentVersion => current;
         protected override bool TagBelongsToChannel(string tag) =>
             !tag.StartsWith("content-", StringComparison.OrdinalIgnoreCase);
-    }
-
-    /// <summary>Mirrors ContentUpdateService's filtering: accepts only "content-*" tags, strips prefix before parsing.</summary>
-    private sealed class ContentChannel(GithubReleasesClient client, SemVer current = default)
-        : GithubReleaseChannelService(client, "test-content")
-    {
-        private const string Prefix = "content-";
-        protected override SemVer CurrentVersion => current;
-        protected override bool TagBelongsToChannel(string tag) =>
-            tag.StartsWith(Prefix, StringComparison.OrdinalIgnoreCase);
-        protected override bool TryParseTagVersion(string tag, out SemVer version) =>
-            SemVer.TryParse(tag[Prefix.Length..], out version);
     }
 
     // ── HTTP helpers ─────────────────────────────────────────────────────────
@@ -102,39 +89,6 @@ public class GithubUpdateChannelTests
 
         result.Should().NotBeNull();
         result!.LatestTag.Should().Be("v1.2.3");
-    }
-
-    [Fact]
-    public async Task ContentChannel_ignores_plain_version_tags()
-    {
-        var ch = new ContentChannel(MakeClient(Release("v1.5.0"), Release("content-v0.1.0")));
-        var result = await ch.CheckAsync(includePreReleases: true);
-
-        result.Should().NotBeNull();
-        result!.LatestTag.Should().Be("content-v0.1.0");
-    }
-
-    [Fact]
-    public async Task ContentChannel_accepts_content_prefixed_tags()
-    {
-        var ch = new ContentChannel(MakeClient(Release("content-v2.0.0")));
-        var result = await ch.CheckAsync(includePreReleases: true);
-
-        result.Should().NotBeNull();
-        result!.LatestTag.Should().Be("content-v2.0.0");
-        result.LatestVersion.Should().Be(new SemVer(2, 0, 0, null));
-    }
-
-    [Fact]
-    public async Task ContentChannel_strips_prefix_before_parsing_version()
-    {
-        // "content-v1.2.3-rc.1" → strips "content-" → parses "v1.2.3-rc.1" → SemVer(1,2,3,"rc.1")
-        var ch = new ContentChannel(MakeClient(Release("content-v1.2.3-rc.1", preRelease: true)));
-        var result = await ch.CheckAsync(includePreReleases: true);
-
-        result.Should().NotBeNull();
-        result!.LatestVersion.Should().Be(new SemVer(1, 2, 3, "rc.1"));
-        result.IsPreRelease.Should().BeTrue();
     }
 
     // ── Draft / pre-release exclusion ────────────────────────────────────────
@@ -228,7 +182,7 @@ public class GithubUpdateChannelTests
     public async Task Default_current_version_is_zero_so_any_release_is_newer()
     {
         // When CurrentVersion returns default(SemVer) = 0.0.0, any published release wins.
-        // This is the "fresh install / no version recorded" sentinel used by both channels.
+        // This is the fresh-install sentinel used by the app channel.
         var ch = new AppChannel(MakeClient(Release("v0.0.1")));
         var result = await ch.CheckAsync(includePreReleases: false);
 

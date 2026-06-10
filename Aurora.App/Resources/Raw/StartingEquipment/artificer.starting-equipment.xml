@@ -7,10 +7,13 @@
         2014 rules (D&D 5e) — identical printed equipment, so these share one block:
           - ID_WOTC_TCOE_CLASS_ARTIFICER (Tasha's Cauldron of Everything): authoritative for 5e.
           - ID_WOTC_ERLW_CLASS_ARTIFICER (Eberron: Rising from the Last War): the 2014 Eberron Artificer.
-          - ID_WOTC_UA_CLASS_ARTIFICER / ID_WOTC_UA20190228_CLASS_ARTIFICER: Unearthed Arcana playtest
-            (the Feb-2019 UA matches the published kit exactly; the earlier UA reuses it as an approximation).
+          - ID_WOTC_UA20190228_CLASS_ARTIFICER: Unearthed Arcana playtest that matches the published kit.
         Gold for these: Artificer isn't in the PHB "Starting Wealth by Class" table, so 5d4 x 10 gp
         mirrors the other half-casters (Paladin/Ranger) — the value commonly used for Artificer.
+
+        Earlier UA:
+          - ID_WOTC_UA_CLASS_ARTIFICER (Unearthed Arcana: Artificer, 2017): separate weapon choices and
+            no printed alternate-gold line in the installed source text.
 
         5.5 rules (D&D 2024):
           - ID_EFA_CLASS_ARTIFICER (Eberron: Forge of the Artificer): authoritative for 5.5. Uses the 2024
@@ -22,17 +25,11 @@
         <starting-equipment>
             <gold-alternative roll="5d4" multiplier="10" />
 
-            <!-- (a) any two simple weapons or (b) a light crossbow and 20 bolts -->
-            <choice>
-                <option label="a">
-                    <item category="Simple Weapon" />
-                    <item category="Simple Weapon" />
-                </option>
-                <option label="b">
-                    <item id="ID_WOTC_PHB_WEAPON_CROSSBOW_LIGHT" />
-                    <item id="ID_WOTC_PHB_ITEM_CROSSBOWBOLT" count="20" />
-                </option>
-            </choice>
+            <!-- Fixed: any two simple weapons, plus a light crossbow and 20 bolts -->
+            <item category="Simple Weapon" />
+            <item category="Simple Weapon" />
+            <item id="ID_WOTC_PHB_WEAPON_CROSSBOW_LIGHT" />
+            <item id="ID_WOTC_PHB_ITEM_CROSSBOWBOLT" count="20" />
 
             <!-- (a) studded leather armor or (b) scale mail -->
             <choice>
@@ -54,17 +51,11 @@
         <starting-equipment>
             <gold-alternative roll="5d4" multiplier="10" />
 
-            <!-- (a) any two simple weapons or (b) a light crossbow and 20 bolts -->
-            <choice>
-                <option label="a">
-                    <item category="Simple Weapon" />
-                    <item category="Simple Weapon" />
-                </option>
-                <option label="b">
-                    <item id="ID_WOTC_PHB_WEAPON_CROSSBOW_LIGHT" />
-                    <item id="ID_WOTC_PHB_ITEM_CROSSBOWBOLT" count="20" />
-                </option>
-            </choice>
+            <!-- Fixed: any two simple weapons, plus a light crossbow and 20 bolts -->
+            <item category="Simple Weapon" />
+            <item category="Simple Weapon" />
+            <item id="ID_WOTC_PHB_WEAPON_CROSSBOW_LIGHT" />
+            <item id="ID_WOTC_PHB_ITEM_CROSSBOWBOLT" count="20" />
 
             <!-- (a) studded leather armor or (b) scale mail -->
             <choice>
@@ -84,27 +75,29 @@
 
     <entry element-id="ID_WOTC_UA_CLASS_ARTIFICER">
         <starting-equipment>
-            <gold-alternative roll="5d4" multiplier="10" />
-
-            <!-- (a) any two simple weapons or (b) a light crossbow and 20 bolts -->
+            <!-- (a) a handaxe and a light hammer or (b) any two simple weapons -->
             <choice>
                 <option label="a">
-                    <item category="Simple Weapon" />
-                    <item category="Simple Weapon" />
+                    <item id="ID_WOTC_PHB_WEAPON_HANDAXE" />
+                    <item id="ID_WOTC_PHB_WEAPON_LIGHTHAMMER" />
                 </option>
                 <option label="b">
-                    <item id="ID_WOTC_PHB_WEAPON_CROSSBOW_LIGHT" />
-                    <item id="ID_WOTC_PHB_ITEM_CROSSBOWBOLT" count="20" />
+                    <item category="Simple Weapon" />
+                    <item category="Simple Weapon" />
                 </option>
             </choice>
 
-            <!-- (a) studded leather armor or (b) scale mail -->
+            <!-- Fixed: a light crossbow and 20 bolts -->
+            <item id="ID_WOTC_PHB_WEAPON_CROSSBOW_LIGHT" />
+            <item id="ID_WOTC_PHB_ITEM_CROSSBOWBOLT" count="20" />
+
+            <!-- (a) scale mail or (b) studded leather armor -->
             <choice>
                 <option label="a">
-                    <item id="ID_WOTC_ARMOR_LIGHT_STUDDED_LEATHER" />
+                    <item id="ID_WOTC_ARMOR_MEDIUM_SCALE_MAIL" />
                 </option>
                 <option label="b">
-                    <item id="ID_WOTC_ARMOR_MEDIUM_SCALE_MAIL" />
+                    <item id="ID_WOTC_ARMOR_LIGHT_STUDDED_LEATHER" />
                 </option>
             </choice>
 
@@ -118,17 +111,11 @@
         <starting-equipment>
             <gold-alternative roll="5d4" multiplier="10" />
 
-            <!-- (a) any two simple weapons or (b) a light crossbow and 20 bolts -->
-            <choice>
-                <option label="a">
-                    <item category="Simple Weapon" />
-                    <item category="Simple Weapon" />
-                </option>
-                <option label="b">
-                    <item id="ID_WOTC_PHB_WEAPON_CROSSBOW_LIGHT" />
-                    <item id="ID_WOTC_PHB_ITEM_CROSSBOWBOLT" count="20" />
-                </option>
-            </choice>
+            <!-- Fixed: any two simple weapons, plus a light crossbow and 20 bolts -->
+            <item category="Simple Weapon" />
+            <item category="Simple Weapon" />
+            <item id="ID_WOTC_PHB_WEAPON_CROSSBOW_LIGHT" />
+            <item id="ID_WOTC_PHB_ITEM_CROSSBOWBOLT" count="20" />
 
             <!-- (a) studded leather armor or (b) scale mail -->
             <choice>

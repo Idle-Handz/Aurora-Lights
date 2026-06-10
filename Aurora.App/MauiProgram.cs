@@ -64,14 +64,13 @@ public static class MauiProgram
         builder.Services.AddSingleton<ContentDatabaseParityService>();
         builder.Services.AddSingleton<PdfImportService>();
 
-        // Update channels: shared HttpClient for the GitHub Releases API + the two channel services.
-        // App binaries use Velopack on Windows; content-* releases remain notify-only for now.
+        // Update channel: shared HttpClient for the GitHub Releases API + the app channel service.
+        // XML content updates flow through installed .index sources instead of GitHub release tags.
         builder.Services.AddHttpClient<GithubReleasesClient>(client =>
         {
             client.Timeout = TimeSpan.FromSeconds(15);
         });
         builder.Services.AddSingleton<AppUpdateService>();
-        builder.Services.AddSingleton<ContentUpdateService>();
 
         var debugLog = new DebugLogService();
         DebugLogService.Instance = debugLog;

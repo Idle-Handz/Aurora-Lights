@@ -377,6 +377,7 @@ public sealed class CharacterService :
                     // Re-apply user-added custom features (feats/spells/ASIs from the Extras flow):
                     // they live outside the standard build and aren't round-tripped by file.Load.
                     BuildService.ReapplyCustomFeatures(file);
+                    BuildService.NormalizeSelectionState();
 
                     CurrentCharacter     = character;
                     CurrentCharacterFile = file;

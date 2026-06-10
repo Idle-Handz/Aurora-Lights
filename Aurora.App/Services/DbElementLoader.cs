@@ -4,6 +4,7 @@ using Builder.Presentation.Services.Data;
 using Builder.Presentation.Utilities;
 using Aurora.Importer;
 using Microsoft.Data.Sqlite;
+using System.Globalization;
 using System.Xml;
 
 namespace Aurora.App.Services;
@@ -107,6 +108,8 @@ internal static class DbElementLoader
         "elements",
         "element_types",
         "source_books",
+        "source_files",
+        "source_elements",
         "element_supports",
         "element_requirements",
         "element_texts",
@@ -129,6 +132,8 @@ internal static class DbElementLoader
             ["elements"] = ["element_id", "aurora_id", "name", "element_type_id", "source_book_id", "loader_priority"],
             ["element_types"] = ["element_type_id", "type_name"],
             ["source_books"] = ["source_book_id", "name"],
+            ["source_files"] = ["source_file_id", "relative_path"],
+            ["source_elements"] = ["element_id", "release_text"],
             ["element_supports"] = ["element_id", "support_text"],
             ["element_requirements"] = ["element_id", "requirement_text", "ordinal"],
             ["element_texts"] = ["element_id", "text_kind", "ordinal", "level", "display", "alt_text", "action_text", "usage_text", "body"],
@@ -156,6 +161,10 @@ internal static class DbElementLoader
     public static IReadOnlyDictionary<string, IReadOnlySet<string>> SpellAccessMap { get; private set; } =
         new Dictionary<string, IReadOnlySet<string>>(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>Picker ordering metadata keyed by Aurora element id + source name. Empty when XML fallback is active.</summary>
+    public static IReadOnlyDictionary<string, ElementSortMetadata> ElementSortMetadataMap { get; private set; } =
+        new Dictionary<string, ElementSortMetadata>(StringComparer.OrdinalIgnoreCase);
+
     public static string? DbPath => ContentDatabaseService.GetDatabasePath();
 
     public static bool IsAvailable =>
@@ -165,7 +174,11 @@ internal static class DbElementLoader
     {
         ArchetypeParentMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         SpellAccessMap = new Dictionary<string, IReadOnlySet<string>>(StringComparer.OrdinalIgnoreCase);
+        ElementSortMetadataMap = new Dictionary<string, ElementSortMetadata>(StringComparer.OrdinalIgnoreCase);
     }
+
+    public static string MakeElementSortMetadataKey(string? auroraId, string? sourceName) =>
+        $"{auroraId ?? string.Empty}\u001f{sourceName ?? string.Empty}";
 
     /// <summary>
     /// Returns the set of source book names that appear in the resolved elements cache,
@@ -265,7 +278,19 @@ internal static class DbElementLoader
 
     // ── Raw DB rows ──────────────────────────────────────────────────────────
 
-    private record ElementRow(long Id, string AuroraId, string Name, string TypeName, string Source);
+    public sealed record ElementSortMetadata(
+        DateTimeOffset? SourceReleaseDate,
+        DateTimeOffset? SourceFileModifiedUtc,
+        string? SourceReleaseText);
+
+    private record ElementRow(
+        long Id,
+        string AuroraId,
+        string Name,
+        string TypeName,
+        string Source,
+        string SourceFileRelativePath,
+        string? SourceReleaseText);
     private record TextRow(long ElementId, string Kind, int Ordinal, int? Level, bool? Display,
         string? AltText, string? ActionText, string? UsageText, string Body);
     private record GrantRow(long ElementId, string OwnerKind, string GrantType,
@@ -421,6 +446,7 @@ internal static class DbElementLoader
         // Populate runtime caches for use by services after load.
         ArchetypeParentMap = BuildArchetypeParentMap(elements, archetypeParentIds);
         SpellAccessMap     = spellAccessMap;
+        ElementSortMetadataMap = BuildElementSortMetadataMap(elements);
 
         return DbLoadResult.Loaded(
             dbPath,
@@ -822,17 +848,86 @@ internal static class DbElementLoader
         var rows = new List<ElementRow>();
         using var cmd = conn.CreateCommand();
         cmd.CommandText = @"
-            SELECT e.element_id, e.aurora_id, e.name, et.type_name, COALESCE(sb.name, '')
+            SELECT
+                e.element_id,
+                e.aurora_id,
+                e.name,
+                et.type_name,
+                COALESCE(sb.name, ''),
+                COALESCE(sf.relative_path, ''),
+                source_meta.release_text
             FROM resolved_elements_cache rec
             JOIN elements e ON e.element_id = rec.winning_element_id
             JOIN element_types et ON et.element_type_id = e.element_type_id
             LEFT JOIN source_books sb ON sb.source_book_id = e.source_book_id
+            LEFT JOIN source_files sf ON sf.source_file_id = e.source_file_id
+            LEFT JOIN
+            (
+                SELECT src.name AS source_name, MAX(se.release_text) AS release_text
+                FROM source_elements se
+                JOIN elements src ON src.element_id = se.element_id
+                JOIN element_types src_type ON src_type.element_type_id = src.element_type_id
+                WHERE src_type.type_name = 'Source'
+                  AND COALESCE(trim(se.release_text), '') <> ''
+                GROUP BY src.name
+            ) source_meta ON source_meta.source_name = sb.name
             ORDER BY rec.resolution_rank, e.loader_priority, e.element_id;";
         using var r = cmd.ExecuteReader();
         while (r.Read())
             rows.Add(new ElementRow(r.GetInt64(0), r.GetString(1), r.GetString(2),
-                                    r.GetString(3), r.GetString(4)));
+                                    r.GetString(3), r.GetString(4), r.GetString(5),
+                                    r.IsDBNull(6) ? null : r.GetString(6)));
         return rows;
+    }
+
+    private static IReadOnlyDictionary<string, ElementSortMetadata> BuildElementSortMetadataMap(
+        IReadOnlyList<ElementRow> elements)
+    {
+        var map = new Dictionary<string, ElementSortMetadata>(StringComparer.OrdinalIgnoreCase);
+        string contentRoot = ContentDatabaseService.GetContentDirectory();
+
+        foreach (var element in elements)
+        {
+            DateTimeOffset? fileModifiedUtc = TryGetSourceFileModifiedUtc(contentRoot, element.SourceFileRelativePath);
+            map[MakeElementSortMetadataKey(element.AuroraId, element.Source)] = new ElementSortMetadata(
+                SourceReleaseDate: TryParseSourceReleaseDate(element.SourceReleaseText),
+                SourceFileModifiedUtc: fileModifiedUtc,
+                SourceReleaseText: element.SourceReleaseText);
+        }
+
+        return map;
+    }
+
+    private static DateTimeOffset? TryGetSourceFileModifiedUtc(string contentRoot, string relativePath)
+    {
+        if (string.IsNullOrWhiteSpace(contentRoot) || string.IsNullOrWhiteSpace(relativePath))
+            return null;
+
+        try
+        {
+            string normalizedRelative = relativePath.Replace('/', Path.DirectorySeparatorChar)
+                                                    .Replace('\\', Path.DirectorySeparatorChar);
+            string path = Path.Combine(contentRoot, normalizedRelative);
+            return File.Exists(path) ? new DateTimeOffset(File.GetLastWriteTimeUtc(path), TimeSpan.Zero) : null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static DateTimeOffset? TryParseSourceReleaseDate(string? releaseText)
+    {
+        if (string.IsNullOrWhiteSpace(releaseText))
+            return null;
+
+        return DateTimeOffset.TryParse(
+            releaseText,
+            CultureInfo.InvariantCulture,
+            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+            out var parsed)
+            ? parsed
+            : null;
     }
 
     private static Dictionary<long, string> QuerySupports(SqliteConnection conn)

@@ -8,7 +8,6 @@
 @inject AppIdentityService Brand
 @inject IJSRuntime JS
 @inject Aurora.App.Services.Updates.AppUpdateService AppUpdates
-@inject Aurora.App.Services.Updates.ContentUpdateService ContentUpdates
 @inject ContentService Content
 
 <MudThemeProvider Theme="_theme" IsDarkMode="@(!Prefs.LightMode)" />
@@ -227,7 +226,6 @@
         Prefs.DeveloperModeChanged    += OnDeveloperModeChanged;
         Nav.LocationChanged           += OnLocationChanged;
         AppUpdates.Changed            += OnUpdatesChanged;
-        ContentUpdates.Changed        += OnUpdatesChanged;
         Content.ContentDownloaded     += OnContentDownloaded;
         Content.Changed               += OnUpdatesChanged;
     }
@@ -256,19 +254,16 @@
     }
 
     /// <summary>
-    /// How many distinct attention-worthy signals to badge in the AppBar (0–3):
+    /// How many distinct attention-worthy signals to badge in the AppBar:
     ///   • a newer app release (GitHub)
-    ///   • a newer content release (GitHub, content- tag)
     ///   • a startup-downloaded content pack pending refresh
     /// </summary>
     private int UpdateAvailableCount =>
         (AppUpdates.UpdateAvailable ? 1 : 0) +
-        (ContentUpdates.InstalledUpdateAvailable || ContentUpdates.ReleaseNoticeAvailable ? 1 : 0) +
         (Content.ContentReloadPending ? 1 : 0);
 
     private bool UpdatesAreChecking =>
         AppUpdates.IsChecking ||
-        ContentUpdates.IsChecking ||
         Content.IsCheckingContentUpdates;
 
     private bool ShowUpdateIndicator => UpdatesAreChecking || UpdateAvailableCount > 0;
@@ -285,14 +280,10 @@
             var parts = new List<string>();
             if (Content.IsCheckingContentUpdates)
                 parts.Add(Content.ContentUpdateStatus ?? "Checking installed content sources...");
-            if (AppUpdates.IsChecking || ContentUpdates.IsChecking)
-                parts.Add("Checking release channels...");
+            if (AppUpdates.IsChecking)
+                parts.Add("Checking app release...");
             if (AppUpdates.UpdateAvailable)
                 parts.Add($"App: {AppUpdates.Latest!.LatestTag}");
-            if (ContentUpdates.InstalledUpdateAvailable)
-                parts.Add($"Content update: {ContentUpdates.Latest!.LatestTag}");
-            else if (ContentUpdates.ReleaseNoticeAvailable)
-                parts.Add($"Content release: {ContentUpdates.Latest!.LatestTag}");
             if (Content.ContentReloadPending)
                 parts.Add("Refresh database to apply downloaded content");
             return parts.Count == 0 ? "Updates" : string.Join(" • ", parts);
@@ -308,8 +299,6 @@
     private void OpenUpdatesPage() =>
         Nav.NavigateTo(UpdatesAreChecking ||
                        AppUpdates.UpdateAvailable ||
-                       ContentUpdates.InstalledUpdateAvailable ||
-                       ContentUpdates.ReleaseNoticeAvailable ||
                        Content.ContentReloadPending
             ? "/settings?tab=updates"
             : "/settings?tab=content");
@@ -403,7 +392,6 @@
         Prefs.DeveloperModeChanged    -= OnDeveloperModeChanged;
         Nav.LocationChanged           -= OnLocationChanged;
         AppUpdates.Changed            -= OnUpdatesChanged;
-        ContentUpdates.Changed        -= OnUpdatesChanged;
         Content.ContentDownloaded     -= OnContentDownloaded;
         Content.Changed               -= OnUpdatesChanged;
         try { _ = JS.InvokeVoidAsync("AuroraShortcuts.unregister"); } catch { }
