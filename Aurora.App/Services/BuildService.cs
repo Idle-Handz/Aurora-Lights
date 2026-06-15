@@ -2295,14 +2295,22 @@ public static class BuildService
                 if (registered == null)
                     continue;
 
+                bool cleared = false;
                 try
                 {
                     cm.UnregisterElement(registered);
                     SelectionRuleExpanderContext.Current?.ClearRegisteredElement(rule, n);
+                    cleared = true;
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    DebugLogService.Instance.LogException(
+                        ex,
+                        "BuildService.ClearOriginAbilityScoreSelections");
+                }
 
-                invalidated.Add(BuildSelectionLabel(rule, n));
+                if (cleared)
+                    invalidated.Add(BuildSelectionLabel(rule, n));
             }
         }
     }
@@ -2331,17 +2339,27 @@ public static class BuildService
                 continue;
 
             int slot = FindRegisteredSelectionSlot(selectedRule, element);
+            bool cleared = false;
             try
             {
                 cm.UnregisterElement(element);
                 if (slot > 0)
                     SelectionRuleExpanderContext.Current?.ClearRegisteredElement(selectedRule, slot);
+                cleared = true;
             }
-            catch { }
+            catch (Exception ex)
+            {
+                DebugLogService.Instance.LogException(
+                    ex,
+                    "BuildService.ClearStaleSelectedAbilityScoreElements");
+            }
 
-            invalidated.Add(slot > 0
-                ? BuildSelectionLabel(selectedRule, slot)
-                : (selectedRule.Attributes.Name ?? selectedRule.Attributes.Type ?? "Ability Score Improvement"));
+            if (cleared)
+            {
+                invalidated.Add(slot > 0
+                    ? BuildSelectionLabel(selectedRule, slot)
+                    : (selectedRule.Attributes.Name ?? selectedRule.Attributes.Type ?? "Ability Score Improvement"));
+            }
         }
     }
 
@@ -2362,7 +2380,12 @@ public static class BuildService
                     return n;
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                DebugLogService.Instance.LogException(
+                    ex,
+                    "BuildService.FindRegisteredSelectionSlot");
+            }
         }
 
         return 0;

@@ -177,6 +177,49 @@ public sealed class ContentIndexUpdateServiceTests
         }
     }
 
+    [Fact]
+    public async Task UpdateAsync_reports_stalled_download_and_continues_with_other_entries()
+    {
+        string root = CreateTempDirectory();
+        try
+        {
+            File.WriteAllText(
+                Path.Combine(root, "content.index"),
+                """
+                <index>
+                  <files>
+                    <file name="slow.xml" url="https://example.test/slow.xml" />
+                    <file name="fast.xml" url="https://example.test/fast.xml" />
+                  </files>
+                </index>
+                """);
+
+            var handler = new SequenceHandler();
+            handler.Respond("https://example.test/slow.xml", Stalled());
+            handler.Respond("https://example.test/fast.xml", Ok("<elements id=\"fast\" />"));
+
+            var service = new ContentIndexUpdateService(new HttpClient(handler));
+
+            ContentIndexUpdateResult result = await service.UpdateAsync(
+                new ContentIndexUpdateRequest(
+                    root,
+                    ["content.index"],
+                    MaxConcurrency: 1,
+                    EntryDownloadTimeout: TimeSpan.FromMilliseconds(50)));
+
+            result.Updated.Should().BeTrue();
+            result.UpdatedFileCount.Should().Be(1);
+            result.FailedFileCount.Should().Be(1);
+            result.CheckedEntryCount.Should().Be(2);
+            File.Exists(Path.Combine(root, "content", "slow.xml")).Should().BeFalse();
+            File.ReadAllText(Path.Combine(root, "content", "fast.xml")).Should().Contain("fast");
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     private static string CreateTempDirectory()
     {
         string path = Path.Combine(Path.GetTempPath(), "Aurora.Tests", Guid.NewGuid().ToString("N"));
@@ -201,6 +244,12 @@ public sealed class ContentIndexUpdateServiceTests
 
     private static Func<HttpRequestMessage, HttpResponseMessage> NotModified()
         => _ => new HttpResponseMessage(HttpStatusCode.NotModified);
+
+    private static Func<HttpRequestMessage, HttpResponseMessage> Stalled()
+        => _ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StalledContent()
+        };
 
     private sealed record RecordedRequest(string Url, IReadOnlyList<string> IfNoneMatch, DateTimeOffset? IfModifiedSince);
 
@@ -238,6 +287,24 @@ public sealed class ContentIndexUpdateServiceTests
             }
 
             return Task.FromResult(responseFactory(request));
+        }
+    }
+
+    private sealed class StalledContent : HttpContent
+    {
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context)
+            => Task.Delay(Timeout.InfiniteTimeSpan);
+
+        protected override Task SerializeToStreamAsync(
+            Stream stream,
+            TransportContext? context,
+            CancellationToken cancellationToken)
+            => Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+
+        protected override bool TryComputeLength(out long length)
+        {
+            length = -1;
+            return false;
         }
     }
 }

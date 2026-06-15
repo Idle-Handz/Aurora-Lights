@@ -2,6 +2,7 @@ using Builder.Data.Files;
 using Builder.Presentation;
 using Builder.Presentation.Services.Content;
 using Builder.Presentation.Services.Data;
+using System.Text.RegularExpressions;
 
 namespace Aurora.App.Services;
 
@@ -15,6 +16,10 @@ public enum ContentUpdateOutcome { Updated, UpToDate, Failed }
 /// </summary>
 public sealed class ContentService
 {
+    private static readonly Regex IndexUrlAttributeRegex = new(
+        @"(?i)(\burl\s*=\s*[""'])http://",
+        RegexOptions.Compiled);
+
     private readonly CharacterService _characters;
     private readonly CharacterTabService _tabs;
     private readonly ContentDatabaseService _contentDb;
@@ -350,7 +355,9 @@ public sealed class ContentService
             {
                 string text = File.ReadAllText(path);
                 if (!text.Contains("http://", StringComparison.Ordinal)) continue;
-                File.WriteAllText(path, text.Replace("http://", "https://", StringComparison.Ordinal));
+                string upgraded = IndexUrlAttributeRegex.Replace(text, "$1https://");
+                if (upgraded != text)
+                    File.WriteAllText(path, upgraded);
             }
             catch { }
         }

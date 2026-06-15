@@ -11,7 +11,8 @@ namespace Builder.Presentation.Services.Content;
 public sealed record ContentIndexUpdateRequest(
     string RootDirectory,
     IReadOnlyList<string> IndexFileNames,
-    int MaxConcurrency = 8);
+    int MaxConcurrency = 8,
+    TimeSpan? EntryDownloadTimeout = null);
 
 public sealed record ContentIndexUpdateProgress(
     string StatusMessage,
@@ -38,6 +39,7 @@ public sealed record ContentIndexUpdateResult(
 /// </summary>
 public sealed class ContentIndexUpdateService
 {
+    private static readonly TimeSpan DefaultEntryDownloadTimeout = TimeSpan.FromSeconds(30);
     private static readonly HttpClient SharedHttpClient = new();
     private readonly HttpClient _httpClient;
 
@@ -73,13 +75,14 @@ public sealed class ContentIndexUpdateService
 
         var started = DateTimeOffset.UtcNow;
         int maxConcurrency = Math.Clamp(request.MaxConcurrency, 1, 16);
+        TimeSpan entryDownloadTimeout = NormalizeEntryDownloadTimeout(request.EntryDownloadTimeout);
         using var gate = new SemaphoreSlim(maxConcurrency, maxConcurrency);
 
         foreach (string indexName in indexNames)
         {
             cancellationToken.ThrowIfCancellationRequested();
             string indexPath = ResolveChildPath(rootDirectory, indexName);
-            await ProcessIndexAsync(indexPath, gate, state, cancellationToken).ConfigureAwait(false);
+            await ProcessIndexAsync(indexPath, gate, state, entryDownloadTimeout, cancellationToken).ConfigureAwait(false);
         }
 
         state.Report("Content source check complete.", forceComplete: true);
@@ -97,6 +100,7 @@ public sealed class ContentIndexUpdateService
         string indexPath,
         SemaphoreSlim gate,
         UpdateState state,
+        TimeSpan entryDownloadTimeout,
         CancellationToken cancellationToken)
     {
         indexPath = Path.GetFullPath(indexPath);
@@ -123,6 +127,7 @@ public sealed class ContentIndexUpdateService
                 indexPath,
                 gate,
                 state,
+                entryDownloadTimeout,
                 cancellationToken).ConfigureAwait(false);
 
             if (updateResult == DownloadResult.Updated &&
@@ -146,11 +151,11 @@ public sealed class ContentIndexUpdateService
         {
             cancellationToken.ThrowIfCancellationRequested();
             string childPath = ResolveChildPath(contentDirectory, entry.Name);
-            var result = await DownloadEntryAsync(entry, childPath, gate, state, cancellationToken)
+            var result = await DownloadEntryAsync(entry, childPath, gate, state, entryDownloadTimeout, cancellationToken)
                 .ConfigureAwait(false);
 
             if (entry.IsIndex && File.Exists(childPath) && result != DownloadResult.Failed)
-                await ProcessIndexAsync(childPath, gate, state, cancellationToken).ConfigureAwait(false);
+                await ProcessIndexAsync(childPath, gate, state, entryDownloadTimeout, cancellationToken).ConfigureAwait(false);
         });
 
         await Task.WhenAll(tasks).ConfigureAwait(false);
@@ -161,6 +166,7 @@ public sealed class ContentIndexUpdateService
         string destinationPath,
         SemaphoreSlim gate,
         UpdateState state,
+        TimeSpan entryDownloadTimeout,
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(entry.Url))
@@ -170,6 +176,10 @@ public sealed class ContentIndexUpdateService
         }
 
         await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        using var downloadCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        if (entryDownloadTimeout != Timeout.InfiniteTimeSpan)
+            downloadCts.CancelAfter(entryDownloadTimeout);
+
         try
         {
             string url = NormalizeUrl(entry.Url);
@@ -191,7 +201,7 @@ public sealed class ContentIndexUpdateService
             using HttpResponseMessage response = await _httpClient.SendAsync(
                     message,
                     HttpCompletionOption.ResponseHeadersRead,
-                    cancellationToken)
+                    downloadCts.Token)
                 .ConfigureAwait(false);
 
             if (response.StatusCode == HttpStatusCode.NotModified)
@@ -210,7 +220,7 @@ public sealed class ContentIndexUpdateService
                 return DownloadResult.Failed;
             }
 
-            byte[] remoteBytes = await response.Content.ReadAsByteArrayAsync(cancellationToken)
+            byte[] remoteBytes = await response.Content.ReadAsByteArrayAsync(downloadCts.Token)
                 .ConfigureAwait(false);
 
             bool changed = true;
@@ -235,6 +245,14 @@ public sealed class ContentIndexUpdateService
 
             state.MarkProcessed(entry.Name, updated: changed);
             return changed ? DownloadResult.Updated : DownloadResult.Unchanged;
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            string timeout = entryDownloadTimeout == Timeout.InfiniteTimeSpan
+                ? "the configured timeout"
+                : $"{entryDownloadTimeout.TotalSeconds:0.#}s";
+            state.MarkProcessed(entry.Name, updated: false, failed: true, $"Timed out after {timeout}.");
+            return DownloadResult.Failed;
         }
         catch (OperationCanceledException)
         {
@@ -374,6 +392,18 @@ public sealed class ContentIndexUpdateService
         return url.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
             ? "https://" + url[7..]
             : url;
+    }
+
+    private static TimeSpan NormalizeEntryDownloadTimeout(TimeSpan? timeout)
+    {
+        if (timeout is null)
+            return DefaultEntryDownloadTimeout;
+        if (timeout == Timeout.InfiniteTimeSpan)
+            return timeout.Value;
+
+        return timeout.Value > TimeSpan.Zero
+            ? timeout.Value
+            : DefaultEntryDownloadTimeout;
     }
 
     private static string GetContentDirectory(string indexPath) =>

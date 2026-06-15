@@ -351,7 +351,7 @@
             {
                 var level = entry.Level;
                 var total = entry.TotalSlots;
-                var used  = _s.SpellSlotsUsed.GetValueOrDefault(level, 0);
+                var used = ClampSlotUsage(level, total);
                 <div class="session-slot-row">
                     <div class="session-slot-label">@OrdinalLevel(level)</div>
                     <div class="session-pips">
@@ -663,14 +663,14 @@
 
     private void AdjustHp(int delta)
     {
-        int max = (_snap?.MaxHp ?? 0) + _s.TempHp;
-        _s.CurrentHp = Math.Clamp(_s.CurrentHp + delta, 0, max);
+        _s.CurrentHp = Math.Clamp(_s.CurrentHp + delta, 0, CurrentHpMaximum);
         AutoSave();
     }
 
     private void AdjustTempHp(int delta)
     {
         _s.TempHp = Math.Max(0, _s.TempHp + delta);
+        ClampCurrentHp();
         AutoSave();
     }
 
@@ -678,8 +678,7 @@
     {
         if (int.TryParse(e.Value?.ToString(), out var v))
         {
-            int max = (_snap?.MaxHp ?? 0) + _s.TempHp;
-            _s.CurrentHp = Math.Clamp(v, 0, max);
+            _s.CurrentHp = Math.Clamp(v, 0, CurrentHpMaximum);
             AutoSave();
         }
     }
@@ -689,8 +688,16 @@
         if (int.TryParse(e.Value?.ToString(), out var v))
         {
             _s.TempHp = Math.Max(0, v);
+            ClampCurrentHp();
             AutoSave();
         }
+    }
+
+    private int CurrentHpMaximum => Math.Max(0, (_snap?.MaxHp ?? 0) + _s.TempHp);
+
+    private void ClampCurrentHp()
+    {
+        _s.CurrentHp = Math.Clamp(_s.CurrentHp, 0, CurrentHpMaximum);
     }
 
     // ── Death saves ───────────────────────────────────────────────────────────
@@ -736,18 +743,24 @@
 
     private void ToggleSlot(int level, int idx)
     {
-        var used = _s.SpellSlotsUsed.GetValueOrDefault(level, 0);
+        var total = _spellLevels.FirstOrDefault(entry => entry.Level == level)?.TotalSlots ?? idx;
+        var used = ClampSlotUsage(level, total);
         _s.SpellSlotsUsed[level] = used == idx ? idx - 1 : idx;
         AutoSave();
     }
 
+    private int ClampSlotUsage(int level, int total)
+    {
+        return Math.Clamp(_s.SpellSlotsUsed.GetValueOrDefault(level, 0), 0, Math.Max(0, total));
+    }
+
     private void AddAttackReminder(SessionAttackReminder reminder)
     {
-        if (reminder.EquipmentIdentifier is null)
+        if (!reminder.IsWeapon || string.IsNullOrWhiteSpace(reminder.Key))
             return;
 
-        if (!_s.AttackReminderWeaponIds.Contains(reminder.EquipmentIdentifier, StringComparer.OrdinalIgnoreCase))
-            _s.AttackReminderWeaponIds.Add(reminder.EquipmentIdentifier);
+        if (!_s.AttackReminderWeaponIds.Contains(reminder.Key, StringComparer.OrdinalIgnoreCase))
+            _s.AttackReminderWeaponIds.Add(reminder.Key);
 
         AutoSave();
         RefreshAttackReminders();
@@ -804,10 +817,29 @@
             _s.CustomAttackReminders.RemoveAll(custom =>
                 string.Equals(custom.Id, customIdentifier, StringComparison.OrdinalIgnoreCase));
         }
-        else if (reminder.EquipmentIdentifier is { } identifier)
+        else if (reminder.IsWeapon)
         {
+            bool removedLegacyWeaponSelection = false;
+            if (reminder.EquipmentIdentifier is { } identifier)
+            {
+                removedLegacyWeaponSelection = _s.AttackReminderWeaponIds.RemoveAll(id =>
+                    string.Equals(id, identifier, StringComparison.OrdinalIgnoreCase)) > 0;
+            }
+
             _s.AttackReminderWeaponIds.RemoveAll(id =>
-                string.Equals(id, identifier, StringComparison.OrdinalIgnoreCase));
+                string.Equals(id, reminder.Key, StringComparison.OrdinalIgnoreCase));
+
+            if (removedLegacyWeaponSelection && reminder.EquipmentIdentifier is { } legacyIdentifier)
+            {
+                foreach (var remaining in _attackReminders.Where(other =>
+                    other.IsWeapon &&
+                    string.Equals(other.EquipmentIdentifier, legacyIdentifier, StringComparison.OrdinalIgnoreCase) &&
+                    !string.Equals(other.Key, reminder.Key, StringComparison.OrdinalIgnoreCase)))
+                {
+                    if (!_s.AttackReminderWeaponIds.Contains(remaining.Key, StringComparer.OrdinalIgnoreCase))
+                        _s.AttackReminderWeaponIds.Add(remaining.Key);
+                }
+            }
         }
         else if (!_s.HiddenDefaultAttackReminderKeys.Contains(reminder.Key, StringComparer.OrdinalIgnoreCase))
         {

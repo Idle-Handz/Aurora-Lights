@@ -71,7 +71,7 @@ public static class SessionAttackReminderService
             .Where(reminder => reminder.IsWeapon &&
                                reminder.EquipmentIdentifier is { } id &&
                                inventoryIdentifiers.Contains(id))
-            .GroupBy(reminder => reminder.EquipmentIdentifier!, StringComparer.OrdinalIgnoreCase)
+            .GroupBy(reminder => reminder.Key, StringComparer.OrdinalIgnoreCase)
             .Select(group => group.First())
             .ToList();
 
@@ -89,11 +89,11 @@ public static class SessionAttackReminderService
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         var selectedWeapons = weaponOptions
-            .Where(reminder => reminder.EquipmentIdentifier is { } id && selectedWeaponSet.Contains(id))
+            .Where(reminder => IsSelectedWeaponReminder(reminder, selectedWeaponSet))
             .ToList();
 
         var availableWeapons = weaponOptions
-            .Where(reminder => reminder.EquipmentIdentifier is { } id && !selectedWeaponSet.Contains(id))
+            .Where(reminder => !IsSelectedWeaponReminder(reminder, selectedWeaponSet))
             .ToList();
 
         return new SessionAttackReminderSet(
@@ -108,7 +108,7 @@ public static class SessionAttackReminderService
             : attack.EquipmentIdentifier;
         var isWeapon = equipmentIdentifier is not null;
         var key = isWeapon
-            ? $"weapon:{equipmentIdentifier}"
+            ? BuildWeaponKey(equipmentIdentifier!, attack.Name, attack.Attack, attack.Damage, attack.Range)
             : $"default:{NormalizeKeyPart(attack.Name)}:{NormalizeKeyPart(attack.Attack)}:{NormalizeKeyPart(attack.Damage)}:{NormalizeKeyPart(attack.Range)}";
 
         return new SessionAttackReminder(
@@ -140,10 +140,9 @@ public static class SessionAttackReminderService
 
     private static SessionAttackReminder ToInventoryWeaponReminder(SessionInventorySource item)
     {
-        string key = $"weapon:{item.Identifier}";
         string name = string.IsNullOrWhiteSpace(item.Name) ? "Weapon" : item.Name;
         return new SessionAttackReminder(
-            key,
+            BuildWeaponKey(item.Identifier, name, string.Empty, item.Damage, item.Range),
             name,
             string.Empty,
             item.Damage,
@@ -151,6 +150,30 @@ public static class SessionAttackReminderService
             item.Identifier,
             true);
     }
+
+    private static bool IsSelectedWeaponReminder(
+        SessionAttackReminder reminder,
+        IReadOnlySet<string> selectedWeaponSet)
+    {
+        if (selectedWeaponSet.Contains(reminder.Key))
+            return true;
+
+        // Legacy sidecars stored just the equipment identifier, which selected
+        // the whole weapon. Keep that meaning so old session state continues to
+        // light up every generated row for the item.
+        return reminder.EquipmentIdentifier is { } id && selectedWeaponSet.Contains(id);
+    }
+
+    private static string BuildWeaponKey(
+        string equipmentIdentifier,
+        string name,
+        string attack,
+        string damage,
+        string range) =>
+        $"weapon:{NormalizeIdentifier(equipmentIdentifier)}:{NormalizeKeyPart(name)}:{NormalizeKeyPart(attack)}:{NormalizeKeyPart(damage)}:{NormalizeKeyPart(range)}";
+
+    private static string NormalizeIdentifier(string value) =>
+        value.Trim().ToLowerInvariant();
 
     private static string NormalizeKeyPart(string value) =>
         new(value

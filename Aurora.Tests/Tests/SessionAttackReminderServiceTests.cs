@@ -67,6 +67,58 @@ public sealed class SessionAttackReminderServiceTests
     }
 
     [Fact]
+    public void Build_DeduplicatesOnlyIdenticalRowsForTheSameWeapon()
+    {
+        SessionInventorySource[] inventory =
+        [
+            new("blade-1", true, "Primary Hand", "Longsword", true),
+        ];
+        SessionAttackSource[] attacks =
+        [
+            new("Longsword", "+5 vs AC", "1d8+3 slashing", "5 ft", "blade-1"),
+            new("Longsword", "+5 vs AC", "1d8+3 slashing", "5 ft", "blade-1"),
+            new("Longsword", "+5 vs AC", "1d10+3 slashing", "5 ft", "blade-1"),
+        ];
+
+        var result = SessionAttackReminderService.Build(attacks, inventory, [], []);
+
+        result.AvailableWeapons.Select(reminder => reminder.Damage)
+            .Should().BeEquivalentTo(["1d8+3 slashing", "1d10+3 slashing"]);
+    }
+
+    [Fact]
+    public void Build_SelectsSpecificWeaponRowsByKeyAndLegacyIdentifierSelectsAllRows()
+    {
+        SessionInventorySource[] inventory =
+        [
+            new("blade-1", true, "Primary Hand", "Longsword", true),
+        ];
+        SessionAttackSource[] attacks =
+        [
+            new("Longsword", "+5 vs AC", "1d8+3 slashing", "5 ft", "blade-1"),
+            new("Longsword", "+5 vs AC", "1d10+3 slashing", "5 ft", "blade-1"),
+        ];
+
+        var unselected = SessionAttackReminderService.Build(attacks, inventory, [], []);
+        string oneHandedKey = unselected.AvailableWeapons
+            .Single(reminder => reminder.Damage == "1d8+3 slashing")
+            .Key;
+
+        var rowSelected = SessionAttackReminderService.Build(attacks, inventory, [oneHandedKey], []);
+
+        rowSelected.Visible.Select(reminder => reminder.Damage)
+            .Should().BeEquivalentTo(["1d8+3 slashing"]);
+        rowSelected.AvailableWeapons.Select(reminder => reminder.Damage)
+            .Should().BeEquivalentTo(["1d10+3 slashing"]);
+
+        var legacySelected = SessionAttackReminderService.Build(attacks, inventory, ["blade-1"], []);
+
+        legacySelected.Visible.Select(reminder => reminder.Damage)
+            .Should().BeEquivalentTo(["1d8+3 slashing", "1d10+3 slashing"]);
+        legacySelected.AvailableWeapons.Should().BeEmpty();
+    }
+
+    [Fact]
     public void Build_ShowsCustomAttackReminders()
     {
         CustomAttackReminder[] customReminders =
