@@ -28,15 +28,17 @@
         <div class="equipment-gear-slots">
             @foreach (EquipmentGearSlotModel slot in Model.GearSlots)
             {
-                <div class="equipment-gear-row @(OnOpenGearSlot.HasDelegate ? "equipment-gear-row--clickable" : string.Empty)"
-                     @ondblclick="() => OnOpenGearSlot.InvokeAsync(slot.Id)"
-                     title="@(OnOpenGearSlot.HasDelegate ? "Double-click to change" : null)"
+                var hasEquippedItem = !string.IsNullOrWhiteSpace(slot.EquippedIdentifier);
+                var canOpenGearRow = OnOpenGearSlot.HasDelegate || (hasEquippedItem && OnOpenItemDetails.HasDelegate);
+                <div class="equipment-gear-row @(canOpenGearRow ? "equipment-gear-row--clickable" : string.Empty)"
+                     @ondblclick="() => OpenGearRowAsync(slot)"
+                     title="@(hasEquippedItem && OnOpenItemDetails.HasDelegate ? "Double-click for details" : OnOpenGearSlot.HasDelegate ? "Double-click to change" : null)"
                      >
                     <div class="equipment-gear-label">@slot.Label</div>
                     <div class="@(slot.EquippedName is null ? "equipment-gear-empty" : "equipment-gear-item")">
                         @(slot.EquippedName ?? "- None -")
                     </div>
-                    @if (OnOpenGearSlot.HasDelegate || OnUnequipGearSlot.HasDelegate)
+                    @if (OnOpenGearSlot.HasDelegate || OnOpenItemDetails.HasDelegate || OnUnequipGearSlot.HasDelegate)
                     {
                         <div class="equipment-gear-actions">
                             @if (OnOpenGearSlot.HasDelegate)
@@ -46,6 +48,15 @@
                                         disabled="@Busy"
                                         @onclick="() => OnOpenGearSlot.InvokeAsync(slot.Id)">
                                     @(slot.EquippedName is null ? "Equip" : "Change")
+                                </button>
+                            }
+                            @if (hasEquippedItem && OnOpenItemDetails.HasDelegate)
+                            {
+                                <button type="button"
+                                        class="equipment-action-button secondary"
+                                        disabled="@Busy"
+                                        @onclick="() => OnOpenItemDetails.InvokeAsync(slot.EquippedIdentifier!)">
+                                    Details
                                 </button>
                             }
                             @if (slot.EquippedName is not null && OnUnequipGearSlot.HasDelegate)
@@ -143,7 +154,9 @@
                 </div>
                 @foreach (EquipmentInventoryItemModel item in Model.InventoryItems)
                 {
-                    <div class="equipment-inventory-row">
+                    <div class="equipment-inventory-row @(OnOpenItemDetails.HasDelegate ? "equipment-inventory-row--clickable" : string.Empty)"
+                         title="@(OnOpenItemDetails.HasDelegate ? "Double-click for details" : null)"
+                         @ondblclick="() => OpenInventoryItemAsync(item.Identifier)">
                         <span>@item.Name</span>
                         <span class="equipment-tag-strip">
                             @if (item.IsEquippable)
@@ -208,6 +221,19 @@
                         <span>@item.DisplayPrice</span>
                         <span>
                             <div class="equipment-item-actions">
+                                @if (OnOpenItemDetails.HasDelegate)
+                                {
+                                    <button type="button"
+                                            class="equipment-icon-button"
+                                            disabled="@Busy"
+                                            aria-label="View item details"
+                                            title="View item details"
+                                            @onclick="() => OnOpenItemDetails.InvokeAsync(item.Identifier)">
+                                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                            <path d="M11 17h2v-6h-2v6Zm1-8c.69 0 1.25-.56 1.25-1.25S12.69 6.5 12 6.5s-1.25.56-1.25 1.25S11.31 9 12 9Zm0 13A10 10 0 1 1 12 2a10 10 0 0 1 0 20Zm0-2A8 8 0 1 0 12 4a8 8 0 0 0 0 16Z" />
+                                        </svg>
+                                    </button>
+                                }
                                 @if (OnEditItem.HasDelegate)
                                 {
                                     <button type="button"
@@ -280,6 +306,9 @@
     public EventCallback<string> OnUnequipGearSlot { get; set; }
 
     [Parameter]
+    public EventCallback<string> OnOpenItemDetails { get; set; }
+
+    [Parameter]
     public EventCallback<string> OnRemoveItem { get; set; }
 
     [Parameter]
@@ -321,6 +350,21 @@
 
         return OnChangeAmount.InvokeAsync(new EquipmentAmountChangeModel(identifier, amount));
     }
+
+    private Task OpenGearRowAsync(EquipmentGearSlotModel slot)
+    {
+        if (!string.IsNullOrWhiteSpace(slot.EquippedIdentifier) && OnOpenItemDetails.HasDelegate)
+            return OnOpenItemDetails.InvokeAsync(slot.EquippedIdentifier);
+
+        return OnOpenGearSlot.HasDelegate
+            ? OnOpenGearSlot.InvokeAsync(slot.Id)
+            : Task.CompletedTask;
+    }
+
+    private Task OpenInventoryItemAsync(string identifier) =>
+        OnOpenItemDetails.HasDelegate
+            ? OnOpenItemDetails.InvokeAsync(identifier)
+            : Task.CompletedTask;
 
     private Task ChangeCoinAsync(string coinId, string? rawValue)
     {

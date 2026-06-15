@@ -19,7 +19,7 @@ public sealed class EquipmentOverviewModel
 
 public sealed record EquipmentAttackModel(string Name, string Attack, string Damage, string Range);
 
-public sealed record EquipmentGearSlotModel(string Id, string Label, string? EquippedName);
+public sealed record EquipmentGearSlotModel(string Id, string Label, string? EquippedName, string? EquippedIdentifier = null);
 
 public sealed record EquipmentInventoryItemModel(
     string Identifier,

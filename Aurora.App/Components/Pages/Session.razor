@@ -23,8 +23,9 @@
     <MudTooltip Text="Save session">
         <MudIconButton Icon="@Icons.Material.Filled.Save"
                        Size="Size.Small"
+                       Color="Color.Primary"
                        OnClick="SaveSession"
-                       Style="color: var(--mud-palette-text-disabled); margin-top: 2px;" />
+                       Style="margin-top: 2px;" />
     </MudTooltip>
 </div>
 
@@ -57,22 +58,30 @@
                  Size="Size.Small"
                  Dense="true"
                  AnchorOrigin="Origin.BottomRight"
-                 TransformOrigin="Origin.TopRight"
-                 Disabled="@(_availableAttackReminders.Count == 0)">
-            @foreach (var reminder in _availableAttackReminders)
+                 TransformOrigin="Origin.TopRight">
+            @if (_availableAttackReminders.Count == 0)
             {
-                var row = reminder;
-                <MudMenuItem OnClick="() => AddAttackReminder(row)">
-                    @row.Name
-                </MudMenuItem>
+                <MudMenuItem Disabled="true">No inventory weapon reminders</MudMenuItem>
             }
+            else
+            {
+                @foreach (var reminder in _availableAttackReminders)
+                {
+                    var row = reminder;
+                    <MudMenuItem OnClick="() => AddAttackReminder(row)">
+                        @row.Name
+                    </MudMenuItem>
+                }
+            }
+            <MudDivider />
+            <MudMenuItem OnClick="OpenAddCustomAttackReminderDialog">Custom reminder...</MudMenuItem>
         </MudMenu>
     </div>
 
     @if (_attackReminders.Count == 0)
     {
         <MudText Typo="Typo.body2" Color="Color.Secondary" Style="font-size: 12px;">
-            No attack reminders shown. Equip a weapon with an attack entry, or add unarmed/racial attacks on the Equipment page.
+            No attack reminders shown. Add a weapon from inventory, or add unarmed/racial attacks on the Equipment page.
         </MudText>
     }
     else
@@ -93,11 +102,20 @@
                     <span>@row.Attack</span>
                     <span>@row.Damage</span>
                     <span>@row.Range</span>
-                    <span>
-                        <button type="button"
-                                class="session-condition-remove"
-                                title="Remove reminder"
-                                @onclick="() => RemoveAttackReminder(row)">x</button>
+                    <span class="session-attack-actions">
+                        @if (row.IsCustom)
+                        {
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                           Size="Size.Small"
+                                           Color="Color.Secondary"
+                                           title="Edit reminder"
+                                           OnClick="() => OpenEditCustomAttackReminderDialog(row)" />
+                        }
+                        <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
+                                       Size="Size.Small"
+                                       Color="Color.Secondary"
+                                       title="Remove reminder"
+                                       OnClick="() => RemoveAttackReminder(row)" />
                     </span>
                 </div>
             }
@@ -421,12 +439,14 @@
                   rows="4"
                   placeholder="Notes…"
                   value="@_snap.Notes1"
-                  @oninput="args => OnNotesInput(1, args.Value?.ToString() ?? string.Empty)"></textarea>
+                  @oninput="args => OnNotesInput(1, args.Value?.ToString() ?? string.Empty)"
+                  @onchange="args => SaveNotesInput(1, args.Value?.ToString() ?? string.Empty)"></textarea>
         <textarea class="session-notes-area"
                   rows="4"
                   placeholder="More notes…"
                   value="@_snap.Notes2"
-                  @oninput="args => OnNotesInput(2, args.Value?.ToString() ?? string.Empty)"></textarea>
+                  @oninput="args => OnNotesInput(2, args.Value?.ToString() ?? string.Empty)"
+                  @onchange="args => SaveNotesInput(2, args.Value?.ToString() ?? string.Empty)"></textarea>
     </div>
 </div>
 
@@ -499,7 +519,11 @@
         if (_tab != null)
         {
             _s = _tab.Session;
-            _s.InitializeIfNew(_snap?.MaxHp ?? 0);
+            // Only initialise once the snapshot exists — during eager navigation the tab
+            // can be present while still loading, and InitializeIfNew(0) would permanently
+            // stamp CurrentHp = 0 instead of max HP.
+            if (_snap != null)
+                _s.InitializeIfNew(_snap.MaxHp);
         }
         _spellLevels = BuildAggregatedSpellLevels(_snap);
         var attackReminderSet = BuildAttackReminderSet();
@@ -729,9 +753,58 @@
         RefreshAttackReminders();
     }
 
+    private async Task OpenAddCustomAttackReminderDialog()
+    {
+        var dialog = await DialogService.ShowAsync<CustomAttackReminderDialog>("Add Attack Reminder");
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: CustomAttackReminder customReminder })
+        {
+            _s.CustomAttackReminders.Add(customReminder);
+            AutoSave();
+            RefreshAttackReminders();
+        }
+    }
+
+    private async Task OpenEditCustomAttackReminderDialog(SessionAttackReminder reminder)
+    {
+        if (reminder.CustomIdentifier is not { } customIdentifier)
+            return;
+
+        var existing = _s.CustomAttackReminders.FirstOrDefault(custom =>
+            string.Equals(custom.Id, customIdentifier, StringComparison.OrdinalIgnoreCase));
+        if (existing is null)
+            return;
+
+        var parameters = new DialogParameters
+        {
+            [nameof(CustomAttackReminderDialog.Existing)] = existing,
+            [nameof(CustomAttackReminderDialog.IsEdit)] = true,
+        };
+        var dialog = await DialogService.ShowAsync<CustomAttackReminderDialog>("Edit Attack Reminder", parameters);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: CustomAttackReminder updated })
+        {
+            var index = _s.CustomAttackReminders.IndexOf(existing);
+            if (index >= 0)
+                _s.CustomAttackReminders[index] = updated;
+            else
+                _s.CustomAttackReminders.Add(updated);
+
+            AutoSave();
+            RefreshAttackReminders();
+        }
+    }
+
     private void RemoveAttackReminder(SessionAttackReminder reminder)
     {
-        if (reminder.EquipmentIdentifier is { } identifier)
+        if (reminder.CustomIdentifier is { } customIdentifier)
+        {
+            _s.CustomAttackReminders.RemoveAll(custom =>
+                string.Equals(custom.Id, customIdentifier, StringComparison.OrdinalIgnoreCase));
+        }
+        else if (reminder.EquipmentIdentifier is { } identifier)
         {
             _s.AttackReminderWeaponIds.RemoveAll(id =>
                 string.Equals(id, identifier, StringComparison.OrdinalIgnoreCase));
@@ -770,14 +843,19 @@
             .Select(item => new SessionInventorySource(
                 item.Identifier,
                 item.IsEquipped,
-                item.EquippedLocation))
+                item.EquippedLocation,
+                item.Name,
+                item.IsWeaponLike,
+                item.Damage,
+                item.Range))
             .ToList();
 
         return SessionAttackReminderService.Build(
             attacks,
             inventory,
             _s.AttackReminderWeaponIds,
-            _s.HiddenDefaultAttackReminderKeys);
+            _s.HiddenDefaultAttackReminderKeys,
+            _s.CustomAttackReminders);
     }
 
     private static List<SpellLevelEntry> BuildAggregatedSpellLevels(CharacterSnapshot? snap)
@@ -878,6 +956,11 @@
             case "gp": _snap.CoinGold     = val; break;
             case "pp": _snap.CoinPlatinum = val; break;
         }
+        // Write through to the model (like OnNotesInput): ResnapTab rebuilds the snapshot
+        // from the Character, so snapshot-only edits would be reverted by a level-up or
+        // any other full save.
+        if (_tab?.Character is { } ch)
+            ch.Inventory.Coins.Set(_snap.CoinCopper, _snap.CoinSilver, _snap.CoinElectrum, _snap.CoinGold, _snap.CoinPlatinum);
         PersistSessionChanges();
     }
 
@@ -908,11 +991,17 @@
         }
     }
 
+    private void SaveNotesInput(int field, string value)
+    {
+        OnNotesInput(field, value);
+        AutoSave();
+    }
+
     private bool PersistSessionChanges()
     {
         if (_tab is null || _snap is null) return false;
 
-        var sessionSaved  = _tab.File.SaveSession(_s);
+        var sessionSaved  = SessionStore.Save(_tab.File.FilePath, _s);
         var currencySaved = _tab.File.SaveCurrency(_snap);
         var notesSaved    = _tab.File.SaveNotes(_snap);
         if (sessionSaved && currencySaved && notesSaved)

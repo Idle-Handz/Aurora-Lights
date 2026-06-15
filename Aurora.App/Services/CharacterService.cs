@@ -440,6 +440,8 @@ public sealed class CharacterService :
             if (File.Exists(file.FilePath))
                 File.Delete(file.FilePath);
 
+            SessionStore.Delete(file.FilePath);
+
             // Purge stale file-location registry entries (mirrors ShellWindowViewModel.DeleteCharacter).
             DataManager.Current.RemoveNonExistingCharacterFileLocations();
 

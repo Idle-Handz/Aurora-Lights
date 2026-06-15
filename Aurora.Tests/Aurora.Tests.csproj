@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="bunit" Version="2.7.2" />
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="xunit" Version="2.9.3" />
@@ -45,13 +46,15 @@
        have no MAUI dependencies; AppUpdateService does (Velopack/AppInfo) so it is not linked.
        Test helpers in GithubUpdateChannelTests cover the logic via concrete subclasses. -->
   <ItemGroup>
-    <Compile Include="..\Aurora.App\Services\Updates\SemVer.cs"                   Link="Linked\SemVer.cs" />
-    <Compile Include="..\Aurora.App\Services\DebugLogService.cs"                  Link="Linked\DebugLogService.cs" />
-    <Compile Include="..\Aurora.App\Services\Updates\GithubReleasesClient.cs"     Link="Linked\GithubReleasesClient.cs" />
-    <Compile Include="..\Aurora.App\Services\Updates\UpdateAvailability.cs"       Link="Linked\UpdateAvailability.cs" />
+    <Compile Include="..\Aurora.App\Services\Updates\SemVer.cs" Link="Linked\SemVer.cs" />
+    <Compile Include="..\Aurora.App\Services\DebugLogService.cs" Link="Linked\DebugLogService.cs" />
+    <Compile Include="..\Aurora.App\Services\Updates\GithubReleasesClient.cs" Link="Linked\GithubReleasesClient.cs" />
+    <Compile Include="..\Aurora.App\Services\Updates\UpdateAvailability.cs" Link="Linked\UpdateAvailability.cs" />
     <Compile Include="..\Aurora.App\Services\Updates\GithubReleaseChannelService.cs" Link="Linked\GithubReleaseChannelService.cs" />
-    <Compile Include="..\Aurora.App\Services\EquipmentService.cs"                 Link="Linked\EquipmentService.cs" />
-    <Compile Include="..\Aurora.App\Services\SessionAttackReminderService.cs"     Link="Linked\SessionAttackReminderService.cs" />
+    <Compile Include="..\Aurora.App\Services\EquipmentService.cs" Link="Linked\EquipmentService.cs" />
+    <Compile Include="..\Aurora.App\Services\SessionAttackReminderService.cs" Link="Linked\SessionAttackReminderService.cs" />
+    <Compile Include="..\Aurora.App\Services\SessionState.cs" Link="Linked\SessionState.cs" />
+    <Compile Include="..\Aurora.App\Services\SessionStore.cs" Link="Linked\SessionStore.cs" />
   </ItemGroup>
 
 </Project>

@@ -262,10 +262,12 @@ public sealed class ContentDatabaseService
             try { process.Kill(entireProcessTree: true); } catch { }
         });
 
-        string stdout = await process.StandardOutput.ReadToEndAsync(cancellationToken);
-        string stderr = await process.StandardError.ReadToEndAsync(cancellationToken);
+        Task<string> stdoutTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
+        Task<string> stderrTask = process.StandardError.ReadToEndAsync(cancellationToken);
 
         await process.WaitForExitAsync(cancellationToken);
+        string stdout = await stdoutTask;
+        string stderr = await stderrTask;
 
         cancellationToken.ThrowIfCancellationRequested();
 

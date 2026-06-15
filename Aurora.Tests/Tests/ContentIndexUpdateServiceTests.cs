@@ -140,6 +140,43 @@ public sealed class ContentIndexUpdateServiceTests
         }
     }
 
+    [Fact]
+    public async Task UpdateAsync_reports_bad_index_and_continues_with_other_sources()
+    {
+        string root = CreateTempDirectory();
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "bad.index"), "<index><files>");
+            File.WriteAllText(
+                Path.Combine(root, "good.index"),
+                """
+                <index>
+                  <files>
+                    <file name="a.xml" url="https://example.test/a.xml" />
+                  </files>
+                </index>
+                """);
+
+            var handler = new SequenceHandler();
+            handler.Respond("https://example.test/a.xml", Ok("<elements id=\"good\" />"));
+
+            var service = new ContentIndexUpdateService(new HttpClient(handler));
+
+            ContentIndexUpdateResult result = await service.UpdateAsync(
+                new ContentIndexUpdateRequest(root, ["bad.index", "good.index"]));
+
+            result.Updated.Should().BeTrue();
+            result.UpdatedFileCount.Should().Be(1);
+            result.FailedFileCount.Should().Be(1);
+            result.IndexFileCount.Should().Be(2);
+            File.ReadAllText(Path.Combine(root, "good", "a.xml")).Should().Contain("good");
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     private static string CreateTempDirectory()
     {
         string path = Path.Combine(Path.GetTempPath(), "Aurora.Tests", Guid.NewGuid().ToString("N"));

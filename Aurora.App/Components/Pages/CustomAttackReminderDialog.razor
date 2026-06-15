@@ -1,0 +1,84 @@
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">@(IsEdit ? "Edit Attack Reminder" : "Add Attack Reminder")</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudStack Spacing="2">
+            <MudTextField @bind-Value="_name"
+                          Label="Name"
+                          Placeholder="e.g. Blowgun of Flame"
+                          Variant="Variant.Outlined"
+                          Immediate="true" />
+            <MudTextField @bind-Value="_attack"
+                          Label="Attack"
+                          Placeholder="e.g. +6 vs AC"
+                          Variant="Variant.Outlined"
+                          Immediate="true" />
+            <MudTextField @bind-Value="_damage"
+                          Label="Damage"
+                          Placeholder="e.g. 1 piercing + 1d6 fire"
+                          Variant="Variant.Outlined"
+                          Immediate="true" />
+            <MudTextField @bind-Value="_range"
+                          Label="Range"
+                          Placeholder="e.g. 25/100"
+                          Variant="Variant.Outlined"
+                          Immediate="true" />
+            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                These reminders are session-only. They do not alter the character's saved attack list.
+            </MudText>
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Variant="Variant.Text">Cancel</MudButton>
+        <MudButton OnClick="Submit"
+                   Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   Disabled="@string.IsNullOrWhiteSpace(_name)">
+            @(IsEdit ? "Save" : "Add")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public CustomAttackReminder? Existing { get; set; }
+
+    [Parameter]
+    public bool IsEdit { get; set; }
+
+    private string _name = "";
+    private string _attack = "";
+    private string _damage = "";
+    private string _range = "";
+
+    protected override void OnParametersSet()
+    {
+        if (Existing is null)
+            return;
+
+        _name = Existing.Name;
+        _attack = Existing.Attack;
+        _damage = Existing.Damage;
+        _range = Existing.Range;
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private void Submit()
+    {
+        if (string.IsNullOrWhiteSpace(_name))
+            return;
+
+        MudDialog.Close(DialogResult.Ok(new CustomAttackReminder
+        {
+            Id = Existing?.Id ?? Guid.NewGuid().ToString("N")[..8],
+            Name = _name.Trim(),
+            Attack = _attack.Trim(),
+            Damage = _damage.Trim(),
+            Range = _range.Trim(),
+        }));
+    }
+}

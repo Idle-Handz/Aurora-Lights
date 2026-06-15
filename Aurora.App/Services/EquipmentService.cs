@@ -3,6 +3,7 @@ using Builder.Presentation;
 using Builder.Presentation.Models;
 using Builder.Presentation.Services.Data;
 using Builder.Presentation.ViewModels.Shell.Items;
+using System.Reflection;
 
 namespace Aurora.App.Services;
 
@@ -463,6 +464,60 @@ public static class EquipmentService
         }
     }
 
+    public static EquipmentItemDetail? GetItemDetail(Character character, string identifier)
+    {
+        var item = FindInventoryItem(character, identifier);
+        if (item?.Item is null)
+            return null;
+
+        var element = item.Item;
+        return new EquipmentItemDetail(
+            item.DisplayName ?? item.Name ?? element.Name ?? identifier,
+            item.Name ?? element.Name ?? identifier,
+            element.Type ?? "",
+            element.Source ?? "",
+            GetDescription(element),
+            item.Notes ?? "",
+            FormatItemDamage(element),
+            GetElementString(element, "Range"),
+            GetElementString(element, "DisplayWeaponProperties"),
+            item.DisplayWeight ?? GetElementString(element, "DisplayWeight"),
+            item.DisplayPrice ?? GetElementString(element, "DisplayPrice"),
+            item.IsEquipped,
+            item.EquippedLocation ?? "");
+    }
+
+    public static string FormatItemDamage(Builder.Data.ElementBase element)
+    {
+        string damage = GetElementString(element, "Damage");
+        if (string.IsNullOrWhiteSpace(damage) || damage == "—")
+            return string.Empty;
+
+        string damageType = GetElementString(element, "DamageType");
+        return string.IsNullOrWhiteSpace(damageType)
+            ? damage
+            : $"{damage} {damageType}";
+    }
+
+    public static string GetItemRange(Builder.Data.ElementBase element) =>
+        GetElementString(element, "Range");
+
+    public static string GetItemProperties(Builder.Data.ElementBase element) =>
+        GetElementString(element, "DisplayWeaponProperties");
+
+    private static string GetElementString(object element, string propertyName)
+    {
+        try
+        {
+            PropertyInfo? property = element.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public);
+            return property?.GetValue(element)?.ToString()?.Trim() ?? string.Empty;
+        }
+        catch
+        {
+            return string.Empty;
+        }
+    }
+
     private static void ConsumeOneInventoryItem(Character character, RefactoredEquipmentItem item)
     {
         if (item.Amount > 1)
@@ -631,7 +686,7 @@ public static class EquipmentService
     public static bool SetVersatileWield(Character character, string identifier, bool twoHanded)
     {
         var item = character.Inventory.Items.FirstOrDefault(i => i.Identifier == identifier);
-        if (item == null || !item.Item.HasVersatile || !item.IsEquipped)
+        if (item == null || item.Item?.HasVersatile != true || !item.IsEquipped)
             return false;
 
         if (twoHanded)
@@ -774,3 +829,17 @@ public sealed record EquipmentPackExtractionResult(
     string PackName,
     IReadOnlyList<EquipmentPackComponent> Added,
     IReadOnlyList<string> MissingElementIds);
+public sealed record EquipmentItemDetail(
+    string Name,
+    string BaseName,
+    string Type,
+    string Source,
+    string Description,
+    string Notes,
+    string Damage,
+    string Range,
+    string Properties,
+    string DisplayWeight,
+    string DisplayPrice,
+    bool IsEquipped,
+    string EquippedLocation);

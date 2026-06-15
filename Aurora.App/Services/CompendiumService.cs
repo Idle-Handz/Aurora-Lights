@@ -373,6 +373,12 @@ SELECT
     COALESCE(item_meta.rarity, ''),
     COALESCE(item_meta.requires_attunement, 0),
     COALESCE(item_meta.weight_text, ''),
+    COALESCE(item_meta.cost_text, ''),
+    COALESCE(item_meta.cost_currency, ''),
+    COALESCE(item_meta.damage_dice_text, ''),
+    COALESCE(item_meta.damage_type_text, ''),
+    COALESCE(item_meta.range_text, ''),
+    COALESCE(item_meta.properties_text, ''),
     COALESCE(comp.creature_type, ''),
     COALESCE(comp.size_text, ''),
     COALESCE(comp.challenge_text, ''),
@@ -413,7 +419,19 @@ LEFT JOIN (
 LEFT JOIN (
     SELECT
         i.element_id,
+        i.cost_text,
         i.weight_text,
+        i.damage_dice_text,
+        COALESCE(MAX(CASE
+            WHEN LOWER(se.setter_name) = 'damage'
+             AND LOWER(sea.attribute_name) = 'type'
+            THEN sea.attribute_value END), i.damage_type_text, '') AS damage_type_text,
+        i.properties_text,
+        COALESCE(MAX(CASE
+            WHEN LOWER(se.setter_name) = 'cost'
+             AND LOWER(sea.attribute_name) = 'currency'
+            THEN sea.attribute_value END), '') AS cost_currency,
+        COALESCE(MAX(CASE WHEN LOWER(se.setter_name) = 'range' THEN se.setter_value END), '') AS range_text,
         COALESCE(MAX(CASE WHEN LOWER(se.setter_name) = 'rarity' THEN se.setter_value END), '') AS rarity,
         COALESCE(MAX(CASE
             WHEN LOWER(se.setter_name) = 'attunement'
@@ -425,7 +443,9 @@ LEFT JOIN (
        AND ss.owner_kind = 'element'
     LEFT JOIN setter_entries AS se
         ON se.setter_scope_id = ss.setter_scope_id
-    GROUP BY i.element_id, i.weight_text
+    LEFT JOIN setter_entry_attributes AS sea
+        ON sea.setter_entry_id = se.setter_entry_id
+    GROUP BY i.element_id, i.cost_text, i.weight_text, i.damage_dice_text, i.damage_type_text, i.properties_text
 ) AS item_meta
     ON item_meta.element_id = e.element_id
 LEFT JOIN companions AS comp
@@ -450,20 +470,29 @@ ORDER BY e.name COLLATE NOCASE;
             string itemRarity = reader.IsDBNull(8) ? string.Empty : reader.GetString(8);
             bool requiresAttunement = !reader.IsDBNull(9) && reader.GetInt64(9) != 0;
             string displayWeight = reader.IsDBNull(10) ? string.Empty : reader.GetString(10);
-            string creatureType = reader.IsDBNull(11) ? string.Empty : reader.GetString(11);
-            string creatureSize = reader.IsDBNull(12) ? string.Empty : reader.GetString(12);
-            string challenge = reader.IsDBNull(13) ? string.Empty : reader.GetString(13);
-            string spellCastingTime = reader.IsDBNull(14) ? string.Empty : reader.GetString(14);
-            string spellRange = reader.IsDBNull(15) ? string.Empty : reader.GetString(15);
-            string spellDuration = reader.IsDBNull(16) ? string.Empty : reader.GetString(16);
+            string displayPrice = FormatDatabaseItemPrice(
+                reader.IsDBNull(11) ? string.Empty : reader.GetString(11),
+                reader.IsDBNull(12) ? string.Empty : reader.GetString(12));
+            string itemProperties = FormatDatabaseItemProperties(reader.IsDBNull(16) ? string.Empty : reader.GetString(16));
+            string itemDamage = FormatDatabaseItemDamage(
+                reader.IsDBNull(13) ? string.Empty : reader.GetString(13),
+                reader.IsDBNull(14) ? string.Empty : reader.GetString(14),
+                reader.IsDBNull(16) ? string.Empty : reader.GetString(16));
+            string itemRange = reader.IsDBNull(15) ? string.Empty : reader.GetString(15);
+            string creatureType = reader.IsDBNull(17) ? string.Empty : reader.GetString(17);
+            string creatureSize = reader.IsDBNull(18) ? string.Empty : reader.GetString(18);
+            string challenge = reader.IsDBNull(19) ? string.Empty : reader.GetString(19);
+            string spellCastingTime = reader.IsDBNull(20) ? string.Empty : reader.GetString(20);
+            string spellRange = reader.IsDBNull(21) ? string.Empty : reader.GetString(21);
+            string spellDuration = reader.IsDBNull(22) ? string.Empty : reader.GetString(22);
             string spellComponents = FormatSpellComponents(
-                !reader.IsDBNull(17) && reader.GetInt64(17) != 0,
-                !reader.IsDBNull(18) && reader.GetInt64(18) != 0,
-                !reader.IsDBNull(19) && reader.GetInt64(19) != 0,
-                reader.IsDBNull(20) ? string.Empty : reader.GetString(20));
-            bool spellConcentration = !reader.IsDBNull(21) && reader.GetInt64(21) != 0;
-            bool spellRitual = !reader.IsDBNull(22) && reader.GetInt64(22) != 0;
-            string searchText = string.Join(" ", name, type, source, spellSchool, spellCastingTime, spellRange, spellDuration, spellComponents, itemRarity, displayWeight, creatureType, creatureSize, challenge, string.Join(" ", spellClasses), preview);
+                !reader.IsDBNull(23) && reader.GetInt64(23) != 0,
+                !reader.IsDBNull(24) && reader.GetInt64(24) != 0,
+                !reader.IsDBNull(25) && reader.GetInt64(25) != 0,
+                reader.IsDBNull(26) ? string.Empty : reader.GetString(26));
+            bool spellConcentration = !reader.IsDBNull(27) && reader.GetInt64(27) != 0;
+            bool spellRitual = !reader.IsDBNull(28) && reader.GetInt64(28) != 0;
+            string searchText = string.Join(" ", name, type, source, spellSchool, spellCastingTime, spellRange, spellDuration, spellComponents, itemRarity, displayWeight, displayPrice, itemDamage, itemRange, itemProperties, creatureType, creatureSize, challenge, string.Join(" ", spellClasses), preview);
 
             rows.Add(new CompendiumEntryModel(
                 id,
@@ -479,6 +508,10 @@ ORDER BY e.name COLLATE NOCASE;
                 itemRarity,
                 requiresAttunement,
                 displayWeight,
+                displayPrice,
+                itemDamage,
+                itemRange,
+                itemProperties,
                 creatureType,
                 creatureSize,
                 challenge,
@@ -732,6 +765,10 @@ LIMIT 1;
         string itemRarity = isItemLike ? GetSetterValue(element, "rarity") : string.Empty;
         bool requiresAttunement = isItemLike && string.Equals(GetSetterValue(element, "attunement"), "true", StringComparison.OrdinalIgnoreCase);
         string displayWeight = isItemLike ? GetString(element, "DisplayWeight") : string.Empty;
+        string displayPrice = isItemLike ? GetString(element, "DisplayPrice") : string.Empty;
+        string itemDamage = isItemLike ? FormatItemDamage(element) : string.Empty;
+        string itemRange = isItemLike ? GetString(element, "Range") : string.Empty;
+        string itemProperties = isItemLike ? GetString(element, "DisplayWeaponProperties") : string.Empty;
         string creatureType = string.Equals(type, "Companion", StringComparison.OrdinalIgnoreCase) ? GetString(element, "CreatureType") : string.Empty;
         string creatureSize = string.Equals(type, "Companion", StringComparison.OrdinalIgnoreCase) ? GetString(element, "Size") : string.Empty;
         string challenge = string.Equals(type, "Companion", StringComparison.OrdinalIgnoreCase) ? GetString(element, "Challenge") : string.Empty;
@@ -744,13 +781,17 @@ LIMIT 1;
             source,
             preview,
             string.Empty,
-            string.Join(" ", name, type, source, spellSchool, spellCastingTime, spellRange, spellDuration, spellComponents, itemRarity, displayWeight, creatureType, creatureSize, challenge, string.Join(" ", spellClasses), preview),
+            string.Join(" ", name, type, source, spellSchool, spellCastingTime, spellRange, spellDuration, spellComponents, itemRarity, displayWeight, displayPrice, itemDamage, itemRange, itemProperties, creatureType, creatureSize, challenge, string.Join(" ", spellClasses), preview),
             spellLevel,
             spellSchool,
             spellClasses,
             itemRarity,
             requiresAttunement,
             displayWeight,
+            displayPrice,
+            itemDamage,
+            itemRange,
+            itemProperties,
             creatureType,
             creatureSize,
             challenge,
@@ -765,6 +806,95 @@ LIMIT 1;
 
     internal static bool IsItemLike(string type) =>
         type is "Weapon" or "Armor" or "Item" or "Magic Item" or "Ammunition" or "Tool" or "Mount" or "Vehicle" or "Pack" or "Gear" or "Adventuring Gear";
+
+    private static string FormatItemDamage(object element)
+    {
+        string damage = GetString(element, "Damage").Trim();
+        if (IsMissingDamage(damage))
+            return string.Empty;
+
+        string damageType = GetString(element, "DamageType").Trim();
+        return string.IsNullOrWhiteSpace(damageType)
+            ? damage
+            : $"{damage} {damageType}";
+    }
+
+    private static string FormatDatabaseItemPrice(string cost, string currency)
+    {
+        cost = cost.Trim();
+        if (string.IsNullOrWhiteSpace(cost))
+            return string.Empty;
+
+        currency = currency.Trim();
+        return string.IsNullOrWhiteSpace(currency)
+            ? cost
+            : $"{cost} {currency}";
+    }
+
+    private static string FormatDatabaseItemDamage(string damage, string damageType, string supports)
+    {
+        damage = damage.Trim();
+        if (IsMissingDamage(damage))
+            return string.Empty;
+
+        damageType = damageType.Trim();
+        if (string.IsNullOrWhiteSpace(damageType))
+            damageType = GetDamageTypeFromSupports(supports);
+
+        return string.IsNullOrWhiteSpace(damageType)
+            ? damage
+            : $"{damage} {damageType}";
+    }
+
+    private static bool IsMissingDamage(string damage) =>
+        string.IsNullOrWhiteSpace(damage) ||
+        string.Equals(damage, "\u2014", StringComparison.Ordinal) ||
+        string.Equals(damage, "-", StringComparison.Ordinal);
+
+    private static string FormatDatabaseItemProperties(string supports)
+    {
+        if (string.IsNullOrWhiteSpace(supports))
+            return string.Empty;
+
+        return string.Join(", ",
+            supports.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+                .Select(FormatWeaponPropertySupport)
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Distinct(StringComparer.OrdinalIgnoreCase));
+    }
+
+    private static string FormatWeaponPropertySupport(string support)
+    {
+        const string marker = "_WEAPON_PROPERTY_";
+        int markerIndex = support.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+        if (markerIndex < 0)
+            return string.Empty;
+
+        string value = support[(markerIndex + marker.Length)..].Trim();
+        if (string.IsNullOrWhiteSpace(value))
+            return string.Empty;
+
+        value = value switch
+        {
+            "TWOHANDED" => "TWO_HANDED",
+            _ => value
+        };
+
+        return CultureInfo.InvariantCulture.TextInfo.ToTitleCase(value.Replace('_', ' ').ToLowerInvariant())
+            .Replace("Two Handed", "Two-Handed", StringComparison.Ordinal);
+    }
+
+    private static string GetDamageTypeFromSupports(string supports)
+    {
+        const string prefix = "ID_INTERNAL_DAMAGE_TYPE_";
+        string? damageType = supports
+            .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .FirstOrDefault(value => value.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+
+        return string.IsNullOrWhiteSpace(damageType)
+            ? string.Empty
+            : damageType[prefix.Length..].Trim().Replace('_', ' ').ToLowerInvariant();
+    }
 
     private static string CreatePreviewText(string content)
     {
@@ -907,6 +1037,10 @@ public sealed record CompendiumEntryModel(
     string ItemRarity,
     bool RequiresAttunement,
     string DisplayWeight,
+    string DisplayPrice,
+    string ItemDamage,
+    string ItemRange,
+    string ItemProperties,
     string CreatureType,
     string CreatureSize,
     string ChallengeText,
@@ -926,6 +1060,14 @@ public sealed record CompendiumEntryModel(
     };
 
     public bool IsItemLike => CompendiumService.IsItemLike(Type);
+    public bool HasItemDetails =>
+        !string.IsNullOrWhiteSpace(ItemRarity) ||
+        RequiresAttunement ||
+        !string.IsNullOrWhiteSpace(DisplayWeight) ||
+        !string.IsNullOrWhiteSpace(DisplayPrice) ||
+        !string.IsNullOrWhiteSpace(ItemDamage) ||
+        !string.IsNullOrWhiteSpace(ItemRange) ||
+        !string.IsNullOrWhiteSpace(ItemProperties);
     public bool IsCompanionLike => Type.StartsWith("Companion", StringComparison.OrdinalIgnoreCase);
     public bool HasSpellPropertyDetails =>
         !string.IsNullOrWhiteSpace(SpellCastingTime) ||

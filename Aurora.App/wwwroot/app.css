@@ -2917,7 +2917,7 @@ html, body {
 }
 .session-attack-row {
     display: grid;
-    grid-template-columns: minmax(120px, 1fr) minmax(80px, 0.7fr) minmax(120px, 1fr) minmax(70px, 0.6fr) 32px;
+    grid-template-columns: minmax(120px, 1fr) minmax(80px, 0.7fr) minmax(120px, 1fr) minmax(70px, 0.6fr) 64px;
     gap: 10px;
     align-items: center;
     padding: 8px 0;
@@ -2932,6 +2932,13 @@ html, body {
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
+}
+
+.session-attack-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 2px;
 }
 
 /* Spell slots */

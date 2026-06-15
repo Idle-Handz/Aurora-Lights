@@ -263,10 +263,11 @@ public sealed class ContentService
     {
         try
         {
-            // Cheap MD5-based staleness check; only pay for the full incremental import if it
-            // actually changed. No-op if no content directory is configured yet.
-            if (_contentDb.CheckIsStale())
-                await _contentDb.SyncAsync().ConfigureAwait(false);
+            // MD5-based staleness check; only pay for the full incremental import if it
+            // actually changed. Run the catalog/hash scan off the UI thread.
+            bool isStale = await Task.Run(() => _contentDb.CheckIsStale());
+            if (isStale)
+                await _contentDb.SyncAsync();
 
             _tabs.CloseAllTabs();
             await _characters.ReloadElementsAsync();

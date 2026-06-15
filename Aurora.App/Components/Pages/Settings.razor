@@ -1182,7 +1182,11 @@
         ContentDb.StateChanged += OnStateChanged;
         Content.Changed += OnContentChanged;
         AppUpdates.Changed += OnAppUpdatesChanged;
-        RefreshDatabaseDiagnostics();
+        _ = InvokeAsync(async () =>
+        {
+            await RefreshDatabaseDiagnosticsAsync();
+            StateHasChanged();
+        });
     }
 
     private void OnAppUpdatesChanged() => InvokeAsync(StateHasChanged);
@@ -1360,9 +1364,15 @@
         _ => "#6c7086",
     };
 
-    private void OnStateChanged() => InvokeAsync(() =>
+    private void OnStateChanged() => _ = InvokeAsync(async () =>
     {
-        RefreshDatabaseDiagnostics();
+        if (ContentDb.SyncState != ContentDatabaseSyncState.Syncing &&
+            !_reloadingElements &&
+            !_contentWorking)
+        {
+            await RefreshDatabaseDiagnosticsAsync();
+        }
+
         StateHasChanged();
     });
     private void OnContentChanged() => InvokeAsync(StateHasChanged);
@@ -1420,7 +1430,7 @@
             {
                 _needsContentReload = false;
                 _stalenessChecked = true;
-                RefreshDatabaseDiagnostics();
+                await RefreshDatabaseDiagnosticsAsync();
                 Snackbar.Add("Database refreshed.", Severity.Success);
             }
         }
@@ -1478,9 +1488,13 @@
             : utcText;
     }
 
-    private void RefreshDatabaseDiagnostics()
+    private async Task RefreshDatabaseDiagnosticsAsync()
     {
-        _dbHealth = ContentDb.GetHealthReport();
+        var health = await Task.Run(() => ContentDb.GetHealthReport());
+        if (_disposed)
+            return;
+
+        _dbHealth = health;
     }
 
     private static Severity ParitySeverity(ContentDatabaseParityReport report) => report.Status switch
@@ -1791,7 +1805,11 @@
         _stalenessChecked = false;
         _dbParity = null;
         _needsContentReload = true;
-        RefreshDatabaseDiagnostics();
+        _ = InvokeAsync(async () =>
+        {
+            await RefreshDatabaseDiagnosticsAsync();
+            StateHasChanged();
+        });
     }
 
     public void Dispose()

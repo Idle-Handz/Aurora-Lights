@@ -46,6 +46,7 @@
 <CharacterEquipmentWorkspace Model="@EquipmentModel"
                              OnAddItem="OpenAddItemDialog"
                              OnOpenGearSlot="OpenGearSlotDialogAsync"
+                             OnOpenItemDetails="OpenItemDetailsAsync"
                              OnUnequipGearSlot="UnequipGearAsync"
                              OnRemoveItem="RemoveItemAsync"
                              OnToggleEquipped="ToggleEquippedAsync"
@@ -64,6 +65,9 @@
     private string? _armorName;
     private string? _mainHandName;
     private string? _offHandName;
+    private string? _armorIdentifier;
+    private string? _mainHandIdentifier;
+    private string? _offHandIdentifier;
 
     private EquipmentOverviewModel _equipmentModel = new();
     private EquipmentOverviewModel EquipmentModel => _equipmentModel;
@@ -77,9 +81,9 @@
             Attacks = _snap.Attacks.Select(atk => new EquipmentAttackModel(atk.Name, atk.Attack, atk.Damage, atk.Range)).ToList(),
             GearSlots =
             [
-                new("armor",     "Armor",     _armorName),
-                new("main-hand", "Main Hand", _mainHandName),
-                new("off-hand",  "Off Hand",  _offHandName)
+                new("armor",     "Armor",     _armorName, _armorIdentifier),
+                new("main-hand", "Main Hand", _mainHandName, _mainHandIdentifier),
+                new("off-hand",  "Off Hand",  _offHandName, _offHandIdentifier)
             ],
             InventoryItems = _snap.InventoryItems
                 .Select(item => new EquipmentInventoryItemModel(
@@ -137,14 +141,18 @@
         if (_snap is null)
         {
             _armorName = _mainHandName = _offHandName = null;
+            _armorIdentifier = _mainHandIdentifier = _offHandIdentifier = null;
             return;
         }
-        _armorName    = _snap.InventoryItems
-            .FirstOrDefault(i => i.IsEquipped && i.EquippedLocation == "Armor")?.Name;
-        _mainHandName = _snap.InventoryItems
-            .FirstOrDefault(i => i.IsEquipped && i.EquippedLocation is "Primary Hand" or "Two-Handed" or "Two-Handed (Versatile)")?.Name;
-        _offHandName  = _snap.InventoryItems
-            .FirstOrDefault(i => i.IsEquipped && i.EquippedLocation == "Secondary Hand")?.Name;
+        var armor    = _snap.InventoryItems.FirstOrDefault(i => i.IsEquipped && i.EquippedLocation == "Armor");
+        var mainHand = _snap.InventoryItems.FirstOrDefault(i => i.IsEquipped && i.EquippedLocation is "Primary Hand" or "Two-Handed" or "Two-Handed (Versatile)");
+        var offHand  = _snap.InventoryItems.FirstOrDefault(i => i.IsEquipped && i.EquippedLocation == "Secondary Hand");
+        _armorName = armor?.Name;
+        _armorIdentifier = armor?.Identifier;
+        _mainHandName = mainHand?.Name;
+        _mainHandIdentifier = mainHand?.Identifier;
+        _offHandName = offHand?.Name;
+        _offHandIdentifier = offHand?.Identifier;
     }
 
     private bool _disposed;
@@ -470,7 +478,7 @@
         using var scope = await CharacterContext.EnterAsync(tab);
 
         var item = FindLiveItem(identifier);
-        if (item is null || !item.Item.HasVersatile || !item.IsEquipped)
+        if (item is null || item.Item?.HasVersatile != true || !item.IsEquipped)
         {
             WarnUnavailable("That item cannot be wielded with two hands right now.");
             return;
@@ -715,6 +723,28 @@
             MarkDirty();
             StateHasChanged();
         }
+    }
+
+    private async Task OpenItemDetailsAsync(string identifier)
+    {
+        if (Tabs.ActiveTab?.Character is not { } character)
+        {
+            WarnUnavailable("Item details cannot be shown because there is no active character.");
+            return;
+        }
+
+        var detail = EquipmentService.GetItemDetail(character, identifier);
+        if (detail is null)
+        {
+            WarnUnavailable("That item could not be found.");
+            return;
+        }
+
+        var parameters = new DialogParameters
+        {
+            [nameof(ItemDetailDialog.Detail)] = detail,
+        };
+        await DialogService.ShowAsync<ItemDetailDialog>("", parameters);
     }
 
     private void WarnUnavailable(string message) =>

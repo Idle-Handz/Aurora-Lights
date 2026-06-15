@@ -311,10 +311,22 @@
                     </div>
                 }
 
-                @if (_selectedEntry.IsItemLike && (!string.IsNullOrWhiteSpace(_selectedEntry.ItemRarity) || _selectedEntry.RequiresAttunement || !string.IsNullOrWhiteSpace(_selectedEntry.DisplayWeight)))
+                @if (_selectedEntry.IsItemLike && _selectedEntry.HasItemDetails)
                 {
                     <MudText Typo="Typo.subtitle2" Class="mb-1">Item Details</MudText>
                     <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="1" Class="mb-3">
+                        @if (!string.IsNullOrWhiteSpace(_selectedEntry.ItemDamage))
+                        {
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">Damage: @_selectedEntry.ItemDamage</MudChip>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(_selectedEntry.ItemRange))
+                        {
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">Range: @_selectedEntry.ItemRange</MudChip>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(_selectedEntry.ItemProperties))
+                        {
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@_selectedEntry.ItemProperties</MudChip>
+                        }
                         @if (!string.IsNullOrWhiteSpace(_selectedEntry.ItemRarity))
                         {
                             <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@_selectedEntry.ItemRarity</MudChip>
@@ -326,6 +338,10 @@
                         @if (!string.IsNullOrWhiteSpace(_selectedEntry.DisplayWeight))
                         {
                             <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">Weight: @_selectedEntry.DisplayWeight</MudChip>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(_selectedEntry.DisplayPrice))
+                        {
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">Value: @_selectedEntry.DisplayPrice</MudChip>
                         }
                     </MudStack>
                 }

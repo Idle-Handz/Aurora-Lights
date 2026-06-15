@@ -129,7 +129,7 @@ internal static class DbElementLoader
     private static readonly IReadOnlyDictionary<string, string[]> RequiredColumns =
         new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
         {
-            ["elements"] = ["element_id", "aurora_id", "name", "element_type_id", "source_book_id", "loader_priority"],
+            ["elements"] = ["element_id", "aurora_id", "name", "element_type_id", "source_book_id", "source_file_id", "loader_priority"],
             ["element_types"] = ["element_type_id", "type_name"],
             ["source_books"] = ["source_book_id", "name"],
             ["source_files"] = ["source_file_id", "relative_path"],

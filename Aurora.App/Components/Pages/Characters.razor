@@ -574,7 +574,7 @@ else
 
     private SessionState LoadSessionWithWarning(Builder.Presentation.Models.CharacterFile file)
     {
-        SessionState session = file.LoadSession(out bool corrupted);
+        SessionState session = SessionStore.Load(file.FilePath, out bool corrupted);
         if (corrupted)
         {
             Snackbar.Add(

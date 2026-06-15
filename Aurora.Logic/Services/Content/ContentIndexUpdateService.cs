@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Xml;
 using System.Xml.Linq;
 
 namespace Builder.Presentation.Services.Content;
@@ -111,7 +112,8 @@ public sealed class ContentIndexUpdateService
             return;
         }
 
-        ParsedIndex parsed = ParseIndex(indexPath);
+        if (!TryParseIndex(indexPath, state, out ParsedIndex parsed))
+            return;
 
         if (parsed.UpdateFile is { } updateFile)
         {
@@ -123,8 +125,11 @@ public sealed class ContentIndexUpdateService
                 state,
                 cancellationToken).ConfigureAwait(false);
 
-            if (updateResult == DownloadResult.Updated)
-                parsed = ParseIndex(indexPath);
+            if (updateResult == DownloadResult.Updated &&
+                !TryParseIndex(indexPath, state, out parsed))
+            {
+                return;
+            }
         }
 
         string contentDirectory = GetContentDirectory(indexPath);
@@ -219,7 +224,14 @@ public sealed class ContentIndexUpdateService
             if (changed)
                 await WriteFileAtomicallyAsync(destinationPath, remoteBytes, cancellationToken).ConfigureAwait(false);
 
-            await WriteCacheAsync(cachePath, CreateCacheEntry(response), cancellationToken).ConfigureAwait(false);
+            try
+            {
+                await WriteCacheAsync(cachePath, CreateCacheEntry(response), cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
+            {
+                state.Report($"{entry.Name} cache metadata was not saved: {ex.Message}", currentFileName: entry.Name);
+            }
 
             state.MarkProcessed(entry.Name, updated: changed);
             return changed ? DownloadResult.Updated : DownloadResult.Unchanged;
@@ -273,6 +285,21 @@ public sealed class ContentIndexUpdateService
             UpdateFile: updateFile is null ? null : CreateEntry(updateFile, isObsolete: false),
             FileEntries: entries,
             ObsoleteEntries: obsoleteEntries);
+    }
+
+    private static bool TryParseIndex(string indexPath, UpdateState state, out ParsedIndex parsed)
+    {
+        try
+        {
+            parsed = ParseIndex(indexPath);
+            return true;
+        }
+        catch (Exception ex) when (ex is XmlException or IOException or UnauthorizedAccessException or InvalidDataException)
+        {
+            parsed = new ParsedIndex(null, [], []);
+            state.MarkFailure(indexPath, ex.Message);
+            return false;
+        }
     }
 
     private static IndexEntry? CreateEntry(XElement element, bool isObsolete)

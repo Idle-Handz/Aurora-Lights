@@ -102,6 +102,62 @@ public static class CharacterFileIo
         }
     }
 
+    /// <summary>
+    /// Reads a text file with the same transient-lock retry policy and share-tolerant open
+    /// as <see cref="LoadXmlDocument(string)"/>. Used for character sidecar files (e.g. the
+    /// session JSON), which live next to the .dnd5e and face the same sync/AV interference.
+    /// </summary>
+    public static string LoadTextFile(string path) =>
+        ExecuteWithRetry(
+            () =>
+            {
+                using var stream = new FileStream(
+                    path,
+                    FileMode.Open,
+                    FileAccess.Read,
+                    FileShare.ReadWrite | FileShare.Delete,
+                    bufferSize: 4096,
+                    FileOptions.SequentialScan);
+                using var reader = new StreamReader(stream, Encoding.UTF8);
+                return reader.ReadToEnd();
+            },
+            path,
+            "read");
+
+    /// <summary>
+    /// Writes a text file atomically (temp + move) with the same retry policy as
+    /// <see cref="SaveXmlDocumentAtomic"/>.
+    /// </summary>
+    public static void SaveTextFileAtomic(string path, string content)
+    {
+        string tmp = $"{path}.{Guid.NewGuid():N}.tmp";
+        try
+        {
+            ExecuteWithRetry(
+                () =>
+                {
+                    File.WriteAllText(tmp, content);
+                    return true;
+                },
+                tmp,
+                "write");
+
+            ExecuteWithRetry(
+                () =>
+                {
+                    File.Move(tmp, path, overwrite: true);
+                    return true;
+                },
+                path,
+                "replace");
+        }
+        catch
+        {
+            try { if (File.Exists(tmp)) File.Delete(tmp); } catch { }
+            throw;
+        }
+    }
+
     public static bool HasChangedSince(string path, CharacterFileDiskStamp? expectedStamp)
     {
         if (!expectedStamp.HasValue)

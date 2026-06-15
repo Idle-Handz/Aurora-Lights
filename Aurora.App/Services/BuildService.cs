@@ -874,6 +874,11 @@ public static class BuildService
         if (customFeatures.Count > 0)
             targetFile.SaveCustomFeatures(customFeatures);
 
+        // Session state lives in a JSON sidecar (SessionStore), so a full save can't drop
+        // it any more. Refreshing it here keeps the sidecar in step with the character file
+        // and makes any save-to-a-new-path carry the session along automatically.
+        SessionStore.Save(targetFile.FilePath, tab.Session);
+
         if (tab.Snapshot != null && !targetFile.SaveTextEdits(tab.Snapshot))
             throw new InvalidOperationException("Character save completed, but snapshot-backed edits could not be patched into the file.");
     }

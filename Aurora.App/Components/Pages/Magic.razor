@@ -472,7 +472,7 @@
 
         BuildMagicModel();
 
-        if (tab.File.SaveSession(tab.Session))
+        if (SessionStore.Save(tab.File.FilePath, tab.Session))
         {
             _saveError = null;
         }

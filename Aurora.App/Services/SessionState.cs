@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Aurora.App.Services;
 
 public enum ResetOn { LongRest, ShortRest, Manual }
@@ -14,9 +16,20 @@ public sealed class CustomResource
     public int    Used    { get; set; } = 0;
     public ResetOn ResetOn { get; set; } = ResetOn.LongRest;
 
+    [JsonIgnore]
     public int Remaining => Math.Max(0, Max - Used);
     /// <summary>True when Max is large enough that pips would be unwieldy; show numeric instead.</summary>
+    [JsonIgnore]
     public bool UseNumeric => Max > 10;
+}
+
+public sealed class CustomAttackReminder
+{
+    public string Id     { get; set; } = Guid.NewGuid().ToString("N")[..8];
+    public string Name   { get; set; } = "";
+    public string Attack { get; set; } = "";
+    public string Damage { get; set; } = "";
+    public string Range  { get; set; } = "";
 }
 
 /// <summary>
@@ -49,9 +62,10 @@ public sealed class SessionState
 
     // Attack reminders shown on the Session page. Default non-weapon attacks
     // (unarmed strikes, racial/natural attacks, etc.) are shown unless hidden;
-    // weapon attacks are opt-in and constrained to currently on-hand weapons.
+    // weapon attacks are opt-in and constrained to weapons still in inventory.
     public List<string> AttackReminderWeaponIds { get; set; } = [];
     public List<string> HiddenDefaultAttackReminderKeys { get; set; } = [];
+    public List<CustomAttackReminder> CustomAttackReminders { get; set; } = [];
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 

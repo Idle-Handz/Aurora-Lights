@@ -5,13 +5,13 @@ namespace Aurora.Tests.Tests;
 public sealed class SessionAttackReminderServiceTests
 {
     [Fact]
-    public void Build_ShowsDefaultAttacksAndOnlySelectedOnHandWeapons()
+    public void Build_ShowsDefaultAttacksAndInventoryWeapons()
     {
         string[] selectedWeapons = ["main-weapon", "stowed-weapon"];
         SessionInventorySource[] inventory =
         [
             new("main-weapon", true, "Primary Hand"),
-            new("stowed-weapon", true, "Backpack"),
+            new("stowed-weapon", false, "Backpack"),
             new("off-weapon", true, "Secondary Hand"),
         ];
         SessionAttackSource[] attacks =
@@ -25,7 +25,7 @@ public sealed class SessionAttackReminderServiceTests
         var result = SessionAttackReminderService.Build(attacks, inventory, selectedWeapons, []);
 
         result.Visible.Select(reminder => reminder.Name)
-            .Should().BeEquivalentTo(["Unarmed Strike", "Longsword"]);
+            .Should().BeEquivalentTo(["Unarmed Strike", "Longsword", "Dagger"]);
         result.AvailableWeapons.Select(reminder => reminder.Name)
             .Should().BeEquivalentTo(["Mace"]);
     }
@@ -47,5 +47,40 @@ public sealed class SessionAttackReminderServiceTests
             [hiddenKey]);
 
         result.Visible.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Build_AddsInventoryWeaponOptionsWhenNoAttackRowExists()
+    {
+        SessionInventorySource[] inventory =
+        [
+            new("blowgun", false, "Backpack", "Blowgun", true, "1 piercing", "25/100"),
+            new("backpack", false, "Backpack", "Backpack", false),
+        ];
+
+        var result = SessionAttackReminderService.Build([], inventory, [], []);
+
+        result.AvailableWeapons.Should().ContainSingle();
+        result.AvailableWeapons[0].Name.Should().Be("Blowgun");
+        result.AvailableWeapons[0].Damage.Should().Be("1 piercing");
+        result.AvailableWeapons[0].Range.Should().Be("25/100");
+    }
+
+    [Fact]
+    public void Build_ShowsCustomAttackReminders()
+    {
+        CustomAttackReminder[] customReminders =
+        [
+            new() { Id = "fire-blowgun", Name = "Blowgun of Flame", Attack = "+6 vs AC", Damage = "1 piercing + 1d6 fire", Range = "25/100" },
+        ];
+
+        var result = SessionAttackReminderService.Build([], [], [], [], customReminders);
+
+        result.Visible.Should().ContainSingle();
+        result.Visible[0].IsCustom.Should().BeTrue();
+        result.Visible[0].CustomIdentifier.Should().Be("fire-blowgun");
+        result.Visible[0].Name.Should().Be("Blowgun of Flame");
+        result.Visible[0].Attack.Should().Be("+6 vs AC");
+        result.Visible[0].Damage.Should().Be("1 piercing + 1d6 fire");
     }
 }

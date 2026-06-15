@@ -1,0 +1,88 @@
+<MudDialog Style="max-height: 90vh; width: min(720px, 95vw);">
+    <TitleContent>
+        <MudText Typo="Typo.h6">@Detail.Name</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudStack Spacing="2">
+            <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="1">
+                @if (!string.IsNullOrWhiteSpace(Detail.Type))
+                {
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@Detail.Type</MudChip>
+                }
+                @if (!string.Equals(Detail.Name, Detail.BaseName, StringComparison.Ordinal) && !string.IsNullOrWhiteSpace(Detail.BaseName))
+                {
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">Base: @Detail.BaseName</MudChip>
+                }
+                @if (!string.IsNullOrWhiteSpace(Detail.Source))
+                {
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@Detail.Source</MudChip>
+                }
+                @if (Detail.IsEquipped)
+                {
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">Equipped: @Detail.EquippedLocation</MudChip>
+                }
+            </MudStack>
+
+            @if (HasRulesDetails)
+            {
+                <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="1">
+                    @if (!string.IsNullOrWhiteSpace(Detail.Damage))
+                    {
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">Damage: @Detail.Damage</MudChip>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Detail.Range))
+                    {
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">Range: @Detail.Range</MudChip>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Detail.Properties))
+                    {
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@Detail.Properties</MudChip>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Detail.DisplayWeight))
+                    {
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">Weight: @Detail.DisplayWeight</MudChip>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Detail.DisplayPrice))
+                    {
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">Value: @Detail.DisplayPrice</MudChip>
+                    }
+                </MudStack>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(Detail.Description))
+            {
+                <MudText Typo="Typo.body2" Style="white-space: pre-wrap;">@Detail.Description</MudText>
+            }
+            else
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary">No description is available for this item.</MudText>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(Detail.Notes))
+            {
+                <MudDivider />
+                <MudText Typo="Typo.subtitle2">Notes</MudText>
+                <MudText Typo="Typo.body2" Style="white-space: pre-wrap;">@Detail.Notes</MudText>
+            }
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Close" Variant="Variant.Text">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public EquipmentItemDetail Detail { get; set; } = default!;
+
+    private bool HasRulesDetails =>
+        !string.IsNullOrWhiteSpace(Detail.Damage) ||
+        !string.IsNullOrWhiteSpace(Detail.Range) ||
+        !string.IsNullOrWhiteSpace(Detail.Properties) ||
+        !string.IsNullOrWhiteSpace(Detail.DisplayWeight) ||
+        !string.IsNullOrWhiteSpace(Detail.DisplayPrice);
+
+    private void Close() => MudDialog.Close();
+}

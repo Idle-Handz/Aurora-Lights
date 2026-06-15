@@ -4,6 +4,7 @@ using Builder.Presentation;
 using Builder.Presentation.Models;
 using Builder.Presentation.Services.Data;
 using Builder.Presentation.Utilities;
+using Builder.Presentation.ViewModels.Shell.Items;
 
 namespace Aurora.App.Services;
 
@@ -229,19 +230,7 @@ public sealed class CharacterSnapshot
 
             InventoryItems = c.Inventory.Items
                 .Where(i => i.IncludeInEquipmentPageInventory)
-                .Select(i => new EquipmentItemEntry(
-                    i.DisplayName ?? i.Name ?? "",
-                    i.Amount,
-                    i.IsStackable,
-                    i.IsEquipped,
-                    i.EquippedLocation ?? "",
-                    i.IsAttunable,
-                    i.IsAttuned,
-                    i.DisplayWeight ?? "",
-                    i.DisplayPrice  ?? "",
-                    i.IsEquippable,
-                    i.Identifier,
-                    i.Item?.HasVersatile ?? false))
+                .Select(CreateEquipmentItemEntry)
                 .ToList(),
 
             Attacks = c.AttacksSection.Items
@@ -1081,19 +1070,7 @@ public sealed class CharacterSnapshot
 
         InventoryItems = c.Inventory.Items
             .Where(i => i.IncludeInEquipmentPageInventory)
-            .Select(i => new EquipmentItemEntry(
-                i.DisplayName ?? i.Name ?? "",
-                i.Amount,
-                i.IsStackable,
-                i.IsEquipped,
-                i.EquippedLocation ?? "",
-                i.IsAttunable,
-                i.IsAttuned,
-                i.DisplayWeight ?? "",
-                i.DisplayPrice  ?? "",
-                i.IsEquippable,
-                i.Identifier,
-                i.Item?.HasVersatile ?? false))
+            .Select(CreateEquipmentItemEntry)
             .ToList();
 
         AttunedCount = c.Inventory.AttunedItemCount;
@@ -1118,6 +1095,33 @@ public sealed class CharacterSnapshot
         SpeedClimb  = GetAltSpeed(cm, "speed:climb",  "innate speed:climb");
         SpeedSwim   = GetAltSpeed(cm, "speed:swim",   "innate speed:swim");
         SpeedBurrow = GetAltSpeed(cm, "speed:burrow", "innate speed:burrow");
+    }
+
+    private static EquipmentItemEntry CreateEquipmentItemEntry(RefactoredEquipmentItem item)
+    {
+        string damage = item.Item is null ? string.Empty : EquipmentService.FormatItemDamage(item.Item);
+        string range = item.Item is null ? string.Empty : EquipmentService.GetItemRange(item.Item);
+        string properties = item.Item is null ? string.Empty : EquipmentService.GetItemProperties(item.Item);
+        bool isWeaponLike = string.Equals(item.Item?.Type, "Weapon", StringComparison.OrdinalIgnoreCase) ||
+                            !string.IsNullOrWhiteSpace(damage);
+
+        return new EquipmentItemEntry(
+            item.DisplayName ?? item.Name ?? "",
+            item.Amount,
+            item.IsStackable,
+            item.IsEquipped,
+            item.EquippedLocation ?? "",
+            item.IsAttunable,
+            item.IsAttuned,
+            item.DisplayWeight ?? "",
+            item.DisplayPrice  ?? "",
+            item.IsEquippable,
+            item.Identifier,
+            item.Item?.HasVersatile ?? false,
+            isWeaponLike,
+            damage,
+            range,
+            properties);
     }
 }
 
@@ -1156,7 +1160,11 @@ public sealed record EquipmentItemEntry(
     string DisplayPrice,
     bool   IsEquippable = false,
     string Identifier   = "",
-    bool   HasVersatile = false);
+    bool   HasVersatile = false,
+    bool   IsWeaponLike = false,
+    string Damage = "",
+    string Range = "",
+    string Properties = "");
 
 public sealed record AttackEntry(
     string Name,

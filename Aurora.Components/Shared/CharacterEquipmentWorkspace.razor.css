@@ -66,7 +66,12 @@
     cursor: pointer;
 }
 
-.equipment-gear-row--clickable:hover {
+.equipment-inventory-row--clickable {
+    cursor: pointer;
+}
+
+.equipment-gear-row--clickable:hover,
+.equipment-inventory-row--clickable:hover {
     border-color: var(--mud-palette-primary);
     background: color-mix(in srgb, var(--mud-palette-primary) 6%, var(--mud-palette-surface, #313244));
 }
@@ -129,6 +134,7 @@
 
 .equipment-action-button,
 .equipment-remove-button,
+.equipment-icon-button,
 .equipment-edit-button,
 .equipment-tag {
     border: 1px solid var(--mud-palette-lines-inputs, #45475a);
@@ -164,6 +170,7 @@
 
 .equipment-action-button:disabled,
 .equipment-remove-button:disabled,
+.equipment-icon-button:disabled,
 .equipment-edit-button:disabled,
 .equipment-tag:disabled {
     cursor: default;
@@ -266,10 +273,24 @@
 }
 
 .equipment-remove-button,
+.equipment-icon-button,
 .equipment-edit-button {
     width: 2rem;
     height: 2rem;
     font-size: 1rem;
+}
+
+.equipment-icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.equipment-icon-button svg {
+    width: 1rem;
+    height: 1rem;
+    fill: currentColor;
 }
 
 .equipment-remove-button:hover {
@@ -278,7 +299,8 @@
     background: rgba(243, 139, 168, 0.1);
 }
 
-.equipment-edit-button:hover {
+.equipment-edit-button:hover,
+.equipment-icon-button:hover {
     color: var(--mud-palette-primary, #89b4fa);
     border-color: var(--mud-palette-primary, #89b4fa);
     background: rgba(137, 180, 250, 0.1);
