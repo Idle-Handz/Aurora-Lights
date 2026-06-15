@@ -1,0 +1,15 @@
+{
+  "private": true,
+  "name": "aurora-lights",
+  "version": "0.0.0",
+  "description": "Local tooling for Aurora: Reflections visual and browser smoke tests.",
+  "scripts": {
+    "e2e": "playwright test",
+    "e2e:visual": "playwright test tests/e2e/web-shell.spec.ts",
+    "e2e:update": "playwright test tests/e2e/web-shell.spec.ts --update-snapshots",
+    "playwright:install": "playwright install chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.53.0"
+  }
+}

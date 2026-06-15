@@ -82,35 +82,37 @@
 
     <div class="content-card">
         <h2>Entries</h2>
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Type</th>
-                    <th>Source</th>
-                    <th>Origin</th>
-                    <th>File</th>
-                    <th>Id</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (ContentCatalogEntry entry in _filteredElements.Take(250))
-                {
+        <div class="table-scroll">
+            <table class="data-table">
+                <thead>
                     <tr>
-                        <td>@entry.Name</td>
-                        <td>@entry.Type</td>
-                        <td>@entry.Source</td>
-                        <td>
-                            <span class="origin-pill @(entry.Origin == ContentCatalogOrigin.Session ? "session" : "baseline")">
-                                @entry.Origin
-                            </span>
-                        </td>
-                        <td>@entry.FileName</td>
-                        <td><code>@entry.Id</code></td>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Source</th>
+                        <th>Origin</th>
+                        <th>File</th>
+                        <th>Id</th>
                     </tr>
-                }
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @foreach (ContentCatalogEntry entry in _filteredElements.Take(250))
+                    {
+                        <tr>
+                            <td>@entry.Name</td>
+                            <td>@entry.Type</td>
+                            <td>@entry.Source</td>
+                            <td>
+                                <span class="origin-pill @(entry.Origin == ContentCatalogOrigin.Session ? "session" : "baseline")">
+                                    @entry.Origin
+                                </span>
+                            </td>
+                            <td>@entry.FileName</td>
+                            <td><code>@entry.Id</code></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
 
         @if (_filteredElements.Count > 250)
         {

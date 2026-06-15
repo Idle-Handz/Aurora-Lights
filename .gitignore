@@ -41,6 +41,11 @@ packages/
 !**/packages/repositories.config
 *.nuspec
 
+# Node / Playwright
+node_modules/
+playwright-report/
+test-results/
+
 # Publish output
 **/publish/
 

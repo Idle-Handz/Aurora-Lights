@@ -461,6 +461,11 @@ button.action-link:disabled {
     margin-top: 1rem;
 }
 
+.table-scroll {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
 .data-table th,
 .data-table td {
     padding: 0.85rem 0.75rem;
@@ -856,6 +861,37 @@ button.action-link:disabled {
 }
 
 @media (max-width: 640px) {
+    .mud-layout.mud-drawer-open-mini-md-left {
+        --mud-drawer-width-left: 56px;
+        --mud-drawer-width-mini-left: 56px;
+    }
+
+    .web-nav-drawer.mud-drawer {
+        width: 56px !important;
+        min-width: 56px !important;
+        max-width: 56px !important;
+        overflow: hidden;
+    }
+
+    .web-nav-drawer .mud-drawer-content {
+        width: 56px;
+        overflow: hidden;
+    }
+
+    .web-nav-drawer .mud-nav-link-text {
+        display: none !important;
+    }
+
+    .web-nav-drawer .mud-nav-link {
+        justify-content: center;
+        padding-right: 0;
+        padding-left: 0;
+    }
+
+    .mud-main-content {
+        margin-left: 56px !important;
+    }
+
     .app-brand-subtitle,
     .appbar-search-form {
         display: none;
