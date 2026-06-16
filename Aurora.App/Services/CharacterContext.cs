@@ -69,6 +69,22 @@ public static class CharacterContext
     public static Task ReleaseAsync(CharacterTab tab) => _guard.ReleaseAsync(tab);
 
     /// <summary>
+    /// Reloads <paramref name="tab"/>'s character from its file on disk, discarding any in-memory
+    /// mutations. Only valid while the caller holds the CharacterContext lock (inside an
+    /// <see cref="EnterAsync"/> scope for the same tab). Used to roll back a failed save so
+    /// the in-memory state matches what's actually on disk.
+    /// </summary>
+    internal static async Task ReloadFromDiskAsync(CharacterTab tab)
+    {
+        tab.StateXml = null;
+        CharacterLoadCompatibilityService.PrepareForCharacterLoad();
+        await tab.File.Load();
+        tab.Character = CharacterManager.Current.Character;
+        BuildService.ReapplyCustomFeatures(tab.File);
+        BuildService.NormalizeSelectionState();
+    }
+
+    /// <summary>
     /// Captures the active tab's current character state into its <see cref="CharacterTab.StateXml"/>
     /// buffer (so unsaved edits survive), then drops the active tab reference. Call this immediately
     /// before an external flow mutates <see cref="CharacterManager.Current"/> outside of EnterAsync.

@@ -508,7 +508,8 @@ public static class CharacterFileSaveExtensions
     /// <summary>Loads the latest XML while remembering whether this patch is based on the expected on-disk revision.</summary>
     private static XmlDocument LoadForPatch(CharacterFile file, out bool updateKnownStamp)
     {
-        updateKnownStamp = !file.HasExternalFileChanges();
+        file.EnsureNoExternalFileChanges();
+        updateKnownStamp = true;
         return CharacterFileIo.LoadXmlDocument(file.FilePath);
     }
 

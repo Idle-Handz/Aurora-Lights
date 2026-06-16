@@ -50,6 +50,16 @@ public sealed class CharacterTab
     /// </summary>
     public byte[]? StateXml { get; set; }
 
+    /// <summary>
+    /// Serializes concurrent writes to this character's XML file so a background full save
+    /// (SaveCharacterFile) and UI-triggered patch saves (SaveCurrency, SaveNotes, etc.)
+    /// cannot interleave their read-modify-write cycles.
+    ///
+    /// Use <see cref="CharacterFileWriteCoordinator"/> for app-facing writes so stale-file
+    /// detection and failure reporting stay consistent.
+    /// </summary>
+    public SemaphoreSlim FileSaveSemaphore { get; } = new(1, 1);
+
     public CharacterTab(CharacterFile file) => File = file;
 }
 

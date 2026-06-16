@@ -1033,10 +1033,27 @@
     {
         if (_tab is null || _snap is null) return false;
 
-        var sessionSaved  = SessionStore.Save(_tab.File.FilePath, _s);
-        var currencySaved = _tab.File.SaveCurrency(_snap);
-        var notesSaved    = _tab.File.SaveNotes(_snap);
-        if (sessionSaved && currencySaved && notesSaved)
+        // The sidecar is a separate file — no write gate needed; saves immediately.
+        var sessionSaved = SessionStore.Save(_tab.File.FilePath, _s);
+
+        // XML patch saves (currency, notes) must not interleave with a background full save's
+        // SaveTextEdits. Fire them on a background task so we can await the shared write
+        // coordinator without blocking the UI thread.
+        var tab  = _tab;
+        var snap = _snap;
+        _ = Task.Run(async () =>
+        {
+            var result = await CharacterFileWriteCoordinator.WriteAsync(
+                tab.FileSaveSemaphore,
+                tab.File,
+                "Session currency and notes",
+                () => tab.File.SaveCurrency(snap) && tab.File.SaveNotes(snap));
+
+            if (!result.Succeeded && !_disposed)
+                await InvokeAsync(() => HandleSessionPatchFailureAsync(tab, result));
+        });
+
+        if (sessionSaved)
         {
             _saveError = null;
             return true;
@@ -1049,6 +1066,51 @@
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private async Task HandleSessionPatchFailureAsync(CharacterTab tab, CharacterFileWriteResult result)
+    {
+        if (_disposed) return;
+
+        if (result.IsExternalChange)
+        {
+            Snackbar.Add(
+                "Session saved, but the character file changed on disk. Reloaded the character instead of overwriting notes or currency.",
+                Severity.Warning,
+                cfg => cfg.VisibleStateDuration = 7000);
+
+            if (_tab == tab)
+                await ReloadAfterExternalChangeAsync(tab);
+            return;
+        }
+
+        if (result.Exception is not null)
+            DebugLogService.Instance.LogException(result.Exception, "Session.PersistSessionChanges");
+
+        Snackbar.Add(
+            $"Session saved, but currency and notes could not be written to the character file. {result.Message}",
+            Severity.Warning,
+            cfg => cfg.VisibleStateDuration = 7000);
+    }
+
+    private async Task ReloadAfterExternalChangeAsync(CharacterTab tab)
+    {
+        try
+        {
+            using var scope = await CharacterContext.EnterAsync(tab);
+            await CharacterContext.ReloadFromDiskAsync(tab);
+            BuildService.ResnapTab(tab);
+            Refresh();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            DebugLogService.Instance.LogException(ex, "Session.ReloadAfterExternalChangeAsync");
+            Snackbar.Add(
+                "The character file changed on disk, but Reflections could not reload it automatically. Close and reopen the character before making more session changes.",
+                Severity.Error,
+                cfg => cfg.VisibleStateDuration = 9000);
+        }
+    }
 
     private static string ExhaustionTooltip(int level) => level switch
     {

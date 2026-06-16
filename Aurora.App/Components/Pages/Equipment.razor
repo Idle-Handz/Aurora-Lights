@@ -239,7 +239,7 @@
             }
 
             RefreshEquipment();
-            file.SaveInventoryItems(character);
+            if (!await PersistInventoryAsync(tab, character)) return;
             MarkDirty();
             StateHasChanged();
         }
@@ -257,7 +257,7 @@
 
         EquipmentService.UnequipSlot(character, slot);
         RefreshEquipment();
-        file.SaveInventoryItems(character);
+        if (!await PersistInventoryAsync(tab, character)) return;
         MarkDirty();
         StateHasChanged();
     }
@@ -285,7 +285,7 @@
             }
 
             RefreshEquipment();
-            file.SaveInventoryItems(character);
+            if (!await PersistInventoryAsync(tab, character)) return;
             MarkDirty();
             StateHasChanged();
         }
@@ -313,7 +313,7 @@
         using var scope = await CharacterContext.EnterAsync(tab);
         EquipmentService.RemoveItem(character, identifier);
         RefreshEquipment();
-        file.SaveInventoryItems(character);
+        if (!await PersistInventoryAsync(tab, character)) return;
         MarkDirty();
         StateHasChanged();
     }
@@ -360,7 +360,7 @@
         }
 
         RefreshEquipment();
-        file.SaveInventoryItems(character);
+        if (!await PersistInventoryAsync(tab, character)) return;
         MarkDirty();
 
         if (result.Success)
@@ -390,7 +390,7 @@
 
         EquipmentService.SetAmount(character, change.Identifier, change.Amount);
         RefreshEquipment();
-        file.SaveInventoryItems(character);
+        if (!await PersistInventoryAsync(tab, character)) return;
         MarkDirty();
         // No explicit StateHasChanged here: this — and the sibling Toggle*/ChangeCoin/ChangeNote
         // handlers — runs via the child workspace's EventCallback, which re-renders this
@@ -436,7 +436,7 @@
         }
 
         RefreshEquipment();
-        file.SaveInventoryItems(character);
+        if (!await PersistInventoryAsync(tab, character)) return;
         MarkDirty();
     }
 
@@ -463,7 +463,7 @@
             item.Activate(equip: item.IsEquipped, attune: true);
 
         RefreshEquipment();
-        file.SaveInventoryItems(character);
+        if (!await PersistInventoryAsync(tab, character)) return;
         MarkDirty();
     }
 
@@ -492,7 +492,7 @@
         }
 
         RefreshEquipment();
-        file.SaveInventoryItems(character);
+        if (!await PersistInventoryAsync(tab, character)) return;
         MarkDirty();
     }
 
@@ -631,12 +631,8 @@
         if (unresolvedItems.Count > 0)
             WarnUnresolvedStartingEquipment(unresolvedItems);
 
-        var inventorySaved = file.SaveInventoryItems(character);
-        var currencySaved = _snap is null || file.SaveCurrency(_snap);
-        if (!inventorySaved || !currencySaved)
-        {
-            Snackbar.Add("Starting equipment was applied in memory, but some changes could not be written to the character file yet.", Severity.Error);
-        }
+        if (!await PersistStartingEquipmentAsync(tab, character))
+            return;
 
         MarkDirty();
         StateHasChanged();
@@ -719,7 +715,7 @@
             liveItem.Notes           = edit.Notes;
 
             RefreshEquipment(reprocess: false);
-            file.SaveInventoryItems(character);
+            if (!await PersistInventoryAsync(tab, character)) return;
             MarkDirty();
             StateHasChanged();
         }
@@ -745,6 +741,75 @@
             [nameof(ItemDetailDialog.Detail)] = detail,
         };
         await DialogService.ShowAsync<ItemDetailDialog>("", parameters);
+    }
+
+    private async Task<bool> PersistInventoryAsync(CharacterTab tab, Builder.Presentation.Models.Character character)
+    {
+        var result = await CharacterFileWriteCoordinator.WriteAsync(
+            tab.FileSaveSemaphore,
+            tab.File,
+            "Inventory",
+            () => tab.File.SaveInventoryItems(character));
+
+        return await HandleCharacterFileWriteResultAsync(
+            tab,
+            result,
+            "Inventory changed in memory, but could not be written to the character file yet.",
+            "The character file changed on disk. Reloaded the character instead of overwriting those changes.");
+    }
+
+    private async Task<bool> PersistStartingEquipmentAsync(CharacterTab tab, Builder.Presentation.Models.Character character)
+    {
+        var result = await CharacterFileWriteCoordinator.WriteAsync(
+            tab.FileSaveSemaphore,
+            tab.File,
+            "Starting equipment",
+            () => tab.File.SaveInventoryItems(character) && (_snap is null || tab.File.SaveCurrency(_snap)));
+
+        return await HandleCharacterFileWriteResultAsync(
+            tab,
+            result,
+            "Starting equipment was applied in memory, but some changes could not be written to the character file yet.",
+            "The character file changed on disk. Reloaded the character instead of applying starting equipment over those changes.");
+    }
+
+    private async Task<bool> HandleCharacterFileWriteResultAsync(
+        CharacterTab tab,
+        CharacterFileWriteResult result,
+        string failureMessage,
+        string externalChangeMessage)
+    {
+        if (result.Succeeded)
+            return true;
+
+        if (result.IsExternalChange)
+        {
+            Snackbar.Add(externalChangeMessage, Severity.Warning, cfg => cfg.VisibleStateDuration = 7000);
+            await ReloadAfterExternalChangeAsync(tab);
+            return false;
+        }
+
+        if (result.Exception is not null)
+            DebugLog.LogException(result.Exception, "Equipment.PersistCharacterFile");
+
+        Snackbar.Add($"{failureMessage} {result.Message}", Severity.Warning, cfg => cfg.VisibleStateDuration = 7000);
+        return true;
+    }
+
+    private async Task ReloadAfterExternalChangeAsync(CharacterTab tab)
+    {
+        try
+        {
+            await CharacterContext.ReloadFromDiskAsync(tab);
+            BuildService.ResnapTab(tab);
+            LoadFromActiveTab();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            DebugLog.LogException(ex, "Equipment.ReloadAfterExternalChangeAsync");
+            Snackbar.Add("The character file changed on disk, but Reflections could not reload it automatically. Close and reopen the character before making more equipment changes.", Severity.Error, cfg => cfg.VisibleStateDuration = 9000);
+        }
     }
 
     private void WarnUnavailable(string message) =>

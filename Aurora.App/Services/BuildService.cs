@@ -54,7 +54,7 @@ public static class BuildService
 
                 var entry = new SelectionRuleEntry(
                     rule, n, label, currentName, rule.Attributes.RequiredLevel,
-                    BuildEntryKey(ruleType, ruleName, n));
+                    BuildEntryKey(rule, n, ruleType, ruleName));
 
                 if (classMgr != null)
                 {
@@ -138,7 +138,7 @@ public static class BuildService
                     byClass[groupName] = [];
                 byClass[groupName].Add(new SelectionRuleEntry(
                     rule, n, label, currentName, rule.Attributes.RequiredLevel,
-                    BuildEntryKey(ruleType, ruleName, n), spellLevel, spellId));
+                    BuildEntryKey(rule, n, ruleType, ruleName), spellLevel, spellId));
             }
         }
 
@@ -619,6 +619,7 @@ public static class BuildService
         var invalidated = new List<string>();
 
         string? taskError = null;
+        bool needsRollback = false;
 
         await Task.Run(() =>
         {
@@ -749,6 +750,7 @@ public static class BuildService
             {
                 DebugLogService.Instance.LogException(ex, "BuildService.ApplySelectionAsync");
                 taskError = ex.Message;
+                needsRollback = true;
             }
             catch (Exception ex)
             {
@@ -762,6 +764,18 @@ public static class BuildService
 
         if (taskError != null)
             invalidated.Add($"[Error: {taskError}]");
+
+        // On external-change failure the selection was NOT saved; roll back CharacterManager
+        // to the on-disk state so ResnapTab sees the actual persisted state, not the mutation
+        // we couldn't write.
+        if (needsRollback)
+        {
+            try { await CharacterContext.ReloadFromDiskAsync(tab); }
+            catch (Exception reloadEx)
+            {
+                DebugLogService.Instance.LogException(reloadEx, "BuildService.ApplySelectionAsync rollback");
+            }
+        }
 
         // 7. Rebuild the in-memory snapshot and progression list.
         ResnapTab(tab);
@@ -857,30 +871,35 @@ public static class BuildService
         if (targetFile is null)
             throw new InvalidOperationException("No file associated with this tab.");
 
-        if (tab.Snapshot != null && tab.Character != null)
-            FlushSnapshotToCharacter(tab.Snapshot, tab.Character);
+        CharacterFileWriteCoordinator.Write(tab.FileSaveSemaphore, targetFile, "Character", () =>
+        {
+            if (tab.Snapshot != null && tab.Character != null)
+                FlushSnapshotToCharacter(tab.Snapshot, tab.Character);
 
-        EnsureMulticlassSelectionsRegistered();
-        NormalizeSelectionState();
+            EnsureMulticlassSelectionsRegistered();
+            NormalizeSelectionState();
 
-        // CharacterFile.Save() rebuilds the document from the model, dropping app-specific
-        // root nodes such as <custom-features>. Preserve that node across the rebuild so
-        // multiple custom additions (and adds interleaved with other build edits) keep their
-        // tracking rather than each save clobbering the previous list.
-        var customFeatures = targetFile.LoadCustomFeatures();
+            // CharacterFile.Save() rebuilds the document from the model, dropping app-specific
+            // root nodes such as <custom-features>. Preserve that node across the rebuild so
+            // multiple custom additions (and adds interleaved with other build edits) keep their
+            // tracking rather than each save clobbering the previous list.
+            var customFeatures = targetFile.LoadCustomFeatures();
 
-        targetFile.Save();
+            targetFile.Save();
 
-        if (customFeatures.Count > 0)
-            targetFile.SaveCustomFeatures(customFeatures);
+            if (customFeatures.Count > 0 && !targetFile.SaveCustomFeatures(customFeatures))
+                throw new InvalidOperationException("Character save completed, but custom feature tracking could not be restored.");
 
-        // Session state lives in a JSON sidecar (SessionStore), so a full save can't drop
-        // it any more. Refreshing it here keeps the sidecar in step with the character file
-        // and makes any save-to-a-new-path carry the session along automatically.
-        SessionStore.Save(targetFile.FilePath, tab.Session);
+            // Session state lives in a JSON sidecar (SessionStore), so a full save can't drop
+            // it any more. Refreshing it here keeps the sidecar in step with the character file
+            // and makes any save-to-a-new-path carry the session along automatically.
+            SessionStore.Save(targetFile.FilePath, tab.Session);
 
-        if (tab.Snapshot != null && !targetFile.SaveTextEdits(tab.Snapshot))
-            throw new InvalidOperationException("Character save completed, but snapshot-backed edits could not be patched into the file.");
+            if (tab.Snapshot != null && !targetFile.SaveTextEdits(tab.Snapshot))
+                throw new InvalidOperationException("Character save completed, but snapshot-backed edits could not be patched into the file.");
+
+            return true;
+        }).ThrowIfFailed();
     }
 
     // ── Re-snapshot ──────────────────────────────────────────────────────────
@@ -1333,7 +1352,11 @@ public static class BuildService
                     if (repeatable || !list.Contains(targetId, StringComparer.OrdinalIgnoreCase))
                     {
                         list.Add(targetId);
-                        file.SaveCustomFeatures(list);
+                        CharacterFileWriteCoordinator.Write(
+                            tab.FileSaveSemaphore,
+                            file,
+                            "Custom features",
+                            () => file.SaveCustomFeatures(list)).ThrowIfFailed();
                     }
                 }
                 return (string?)null;
@@ -1448,7 +1471,11 @@ public static class BuildService
                     int index = list.FindIndex(x => string.Equals(x, elementId, StringComparison.OrdinalIgnoreCase));
                     if (index >= 0)
                         list.RemoveAt(index);
-                    file.SaveCustomFeatures(list);
+                    CharacterFileWriteCoordinator.Write(
+                        tab.FileSaveSemaphore,
+                        file,
+                        "Custom features",
+                        () => file.SaveCustomFeatures(list)).ThrowIfFailed();
                 }
                 return (string?)null;
             }
@@ -2029,7 +2056,7 @@ public static class BuildService
 
                 var entry = new SelectionRuleEntry(
                     rule, n, label, currentName, rule.Attributes.RequiredLevel,
-                    BuildEntryKey(ruleType, ruleName, n));
+                    BuildEntryKey(rule, n, ruleType, ruleName));
 
                 switch (ClassifyBuildRule(rule, classMgr))
                 {
@@ -2192,7 +2219,7 @@ public static class BuildService
                 string label    = rule.Attributes.Number > 1 ? $"{ruleName} ({n})" : ruleName;
                 result.Add(new SelectionRuleEntry(
                     rule, n, label, currentName, rule.Attributes.RequiredLevel,
-                    BuildEntryKey(ruleType, ruleName, n)));
+                    BuildEntryKey(rule, n, ruleType, ruleName)));
             }
         }
 
@@ -2440,8 +2467,20 @@ public static class BuildService
     private static int CountUnresolved(IEnumerable<SelectionRuleGroup> groups) =>
         groups.SelectMany(g => g.Rules).Count(r => r.CurrentName == null && !r.IsOptional);
 
-    private static string BuildEntryKey(string ruleType, string ruleName, int number) =>
-        $"{ruleType}|{ruleName}|{number}";
+    private static string BuildEntryKey(SelectRule rule, int number, string ruleType, string ruleName)
+    {
+        if (!string.IsNullOrWhiteSpace(rule.UniqueIdentifier))
+            return $"rule:{rule.UniqueIdentifier}|slot:{number}";
+
+        try
+        {
+            return $"crc:{rule.GetCrC(number)}";
+        }
+        catch
+        {
+            return $"legacy:{ruleType}|{ruleName}|slot:{number}";
+        }
+    }
 
     private static BuildRuleBucket ClassifyBuildRule(SelectRule rule, ClassProgressionManager? classMgr)
     {

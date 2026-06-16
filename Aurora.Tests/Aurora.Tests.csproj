@@ -52,6 +52,7 @@
     <Compile Include="..\Aurora.App\Services\Updates\UpdateAvailability.cs" Link="Linked\UpdateAvailability.cs" />
     <Compile Include="..\Aurora.App\Services\Updates\GithubReleaseChannelService.cs" Link="Linked\GithubReleaseChannelService.cs" />
     <Compile Include="..\Aurora.App\Services\EquipmentService.cs" Link="Linked\EquipmentService.cs" />
+    <Compile Include="..\Aurora.App\Services\CharacterFileWriteCoordinator.cs" Link="Linked\CharacterFileWriteCoordinator.cs" />
     <Compile Include="..\Aurora.App\Services\SessionAttackReminderService.cs" Link="Linked\SessionAttackReminderService.cs" />
     <Compile Include="..\Aurora.App\Services\SessionState.cs" Link="Linked\SessionState.cs" />
     <Compile Include="..\Aurora.App\Services\SessionStore.cs" Link="Linked\SessionStore.cs" />

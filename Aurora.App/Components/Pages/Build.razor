@@ -330,6 +330,7 @@ else if (_workflowSuggestion != null)
                     <div style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; align-items: center;">
                         <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
                                    StartIcon="@Icons.Material.Filled.Casino"
+                                   Disabled="@_saving"
                                    OnClick="RollAllAsync">Roll All</MudButton>
                         <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-disabled);">
                             Use the 🎲 button on each stat to reroll individually.
@@ -421,7 +422,7 @@ else if (_workflowSuggestion != null)
                                 {
                                     <div class="ability-score-adj">
                                         <span class="ability-score-num">@row.Item.BaseScore</span>
-                                        <button class="ability-roll-btn-sm" @onclick="() => RollStatAsync(row.Item)" title="Reroll">🎲</button>
+                                        <button class="ability-roll-btn-sm" @onclick="() => RollStatAsync(row.Item)" title="Reroll" disabled="@_saving">🎲</button>
                                     </div>
                                     @if (row.Item.AdditionalScore != 0)
                                     {
@@ -503,6 +504,12 @@ else if (_workflowSuggestion != null)
                 </div>
             }
 
+        }
+        else
+        {
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Style="margin-top: 12px;">
+                Load a character to view and set ability scores.
+            </MudText>
         }
     </MudTabPanel>
 
