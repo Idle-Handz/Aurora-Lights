@@ -4,7 +4,8 @@ public sealed record WebCharacterBuildState(
     ImportedCharacterSummary Summary,
     IReadOnlyList<WebBuildSelectionGroup> Groups,
     int OpenSelectionCount,
-    string StatusMessage);
+    string StatusMessage,
+    IReadOnlyList<string>? InvalidatedSelections = null);
 
 public sealed record WebBuildSelectionGroup(
     string Id,
@@ -24,3 +25,23 @@ public sealed record WebBuildSelectionOption(
     string Description,
     string Source,
     string Requirements);
+
+public sealed record WebAbilityScoreState(
+    ImportedCharacterSummary Summary,
+    bool CanLevelUp,
+    bool CanLevelDown,
+    bool UseAverageHp,
+    int Level,
+    int MaxHp,
+    IReadOnlyList<WebAbilityScoreEntry> Scores,
+    int AvailablePoints,
+    string StatusMessage);
+
+public sealed record WebAbilityScoreEntry(
+    string Stat,
+    string Name,
+    string Abbrev,
+    int BaseScore,
+    int AdditionalScore,
+    int FinalScore,
+    string ModifierString);

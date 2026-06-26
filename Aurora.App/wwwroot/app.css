@@ -1183,13 +1183,23 @@ html, body {
     min-height: 0;
 }
 .picker-item {
+    width: 100%;
     padding: 8px 10px;
     border-radius: 4px;
     cursor: pointer;
     border: 1px solid transparent;
     transition: background 0.1s;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
 }
 .picker-item:hover  { background: var(--mud-palette-surface, #313244); }
+.picker-item-disabled {
+    cursor: not-allowed;
+    opacity: 0.58;
+}
+.picker-item-disabled:hover { background: transparent; }
 .picker-item-selected {
     background: color-mix(in srgb, var(--mud-palette-primary, #89b4fa) 18%, var(--mud-palette-background, #1e1e2e));
     border-color: var(--mud-palette-primary, #89b4fa);
@@ -1200,6 +1210,11 @@ html, body {
     color: var(--mud-palette-text-primary, #cdd6f4);
     overflow-wrap: anywhere;
     word-break: break-word;
+}
+.picker-item-status {
+    margin-top: 2px;
+    font-size: 11px;
+    color: var(--mud-palette-text-secondary, #a6adc8);
 }
 /* Detail panel */
 .picker-detail {

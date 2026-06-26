@@ -3,6 +3,7 @@ using Builder.Data.Rules;
 using Builder.Presentation;
 using Builder.Presentation.Models.Sources;
 using Builder.Presentation.Models;
+using Builder.Presentation.Models.Collections;
 using Builder.Presentation.Services;
 using Builder.Presentation.Services.Data;
 using Builder.Presentation.Utilities;
@@ -931,19 +932,12 @@ public sealed class WebCharacterEngineService
         await DataManager.Current.InitializeElementDataAsync();
     }
 
-    private static ImportedCharacterSummary BuildSummary(string relativePath, FileInfo fileInfo, Character character, CharacterFile characterFile) =>
-        new(
-            relativePath,
-            fileInfo.Name,
-            string.IsNullOrWhiteSpace(character.Name) ? characterFile.DisplayName : character.Name,
-            character.PlayerName ?? string.Empty,
-            character.Level.ToString(),
-            character.Race ?? characterFile.DisplayRace ?? string.Empty,
-            character.Class ?? characterFile.DisplayClass ?? string.Empty,
-            character.Background ?? characterFile.DisplayBackground ?? string.Empty,
-            characterFile.CollectionGroupName ?? string.Empty,
-            characterFile.DisplayVersion ?? string.Empty,
-            fileInfo.Length);
+    private static ImportedCharacterSummary BuildSummary(
+        string relativePath,
+        FileInfo fileInfo,
+        Character character,
+        CharacterFile characterFile) =>
+        ImportedCharacterSummary.FromCharacterFile(relativePath, fileInfo, character, characterFile);
 
     private static Character RequireCurrentCharacter() =>
         CharacterManager.Current?.Character
@@ -2426,4 +2420,242 @@ public sealed class WebCharacterEngineService
 
         return absolutePath;
     }
+
+    // ── Ability scores ──────────────────────────────────────────────────────────
+
+    public async Task<WebAbilityScoreState> GetCurrentAbilityScoreStateAsync(
+        PhaseZeroSessionWorkspace workspace, string relativePath, string statusMessage = "")
+    {
+        await _operationLock.WaitAsync();
+        try
+        {
+            Character character = RequireCurrentCharacter();
+            character.Abilities.CalculateAvailablePoints();
+            string absolutePath = ResolveWorkspaceFile(workspace, relativePath);
+            ImportedCharacterSummary summary = BuildSummary(relativePath, new FileInfo(absolutePath), character, new CharacterFile(absolutePath));
+            return BuildAbilityScoreState(character, summary, statusMessage);
+        }
+        finally
+        {
+            _operationLock.Release();
+        }
+    }
+
+    public async Task<WebAbilityScoreState> SetAbilityScoresAsync(
+        PhaseZeroSessionWorkspace workspace, string relativePath, Dictionary<string, int> baseScores)
+    {
+        await _operationLock.WaitAsync();
+        try
+        {
+            Character character = RequireCurrentCharacter();
+            foreach ((string stat, int score) in baseScores)
+            {
+                AbilityItem? item = GetAbilityItem(character, stat);
+                if (item != null)
+                    item.BaseScore = Math.Clamp(score, 1, 30);
+            }
+
+            character.Abilities.DisablePointsCalculation = false;
+            character.Abilities.CalculateAvailablePoints();
+            CharacterManager.Current.ReprocessCharacter();
+
+            string absolutePath = ResolveWorkspaceFile(workspace, relativePath);
+            CharacterFile file = new(absolutePath);
+            file.Save();
+
+            ImportedCharacterSummary summary = BuildSummary(relativePath, new FileInfo(absolutePath), character, file);
+            return BuildAbilityScoreState(character, summary, "Ability scores updated.");
+        }
+        finally
+        {
+            _operationLock.Release();
+        }
+    }
+
+    public async Task<WebAbilityScoreState> RollAbilityScoresAsync(
+        PhaseZeroSessionWorkspace workspace, string relativePath, bool use4d6, string? singleStat = null)
+    {
+        await _operationLock.WaitAsync();
+        try
+        {
+            Character character = RequireCurrentCharacter();
+            string[] targets = singleStat != null
+                ? [singleStat]
+                : ["str", "dex", "con", "int", "wis", "cha"];
+
+            foreach (string stat in targets)
+            {
+                AbilityItem? item = GetAbilityItem(character, stat);
+                if (item != null)
+                    item.BaseScore = use4d6 ? Roll4d6DropLowest() : Roll3d6();
+            }
+
+            character.Abilities.DisablePointsCalculation = true;
+            CharacterManager.Current.ReprocessCharacter();
+
+            string absolutePath = ResolveWorkspaceFile(workspace, relativePath);
+            CharacterFile file = new(absolutePath);
+            file.Save();
+
+            ImportedCharacterSummary summary = BuildSummary(relativePath, new FileInfo(absolutePath), character, file);
+            return BuildAbilityScoreState(character, summary,
+                singleStat != null ? "Score rerolled." : "All scores rolled.");
+        }
+        finally
+        {
+            _operationLock.Release();
+        }
+    }
+
+    // ── HP method ───────────────────────────────────────────────────────────────
+
+    public async Task<WebAbilityScoreState> SetHpMethodAsync(
+        PhaseZeroSessionWorkspace workspace, string relativePath, bool useAverage)
+    {
+        await _operationLock.WaitAsync();
+        try
+        {
+            Character character = RequireCurrentCharacter();
+            CharacterManager cm = CharacterManager.Current;
+            string optionId = Builder.Data.Strings.InternalOptions.AllowAverageHitPoints;
+
+            bool hasAverage = cm.ContainsAverageHitPointsOption();
+            if (useAverage && !hasAverage)
+            {
+                ElementBase? el = DataManager.Current.ElementsCollection.FirstOrDefault(e => e.Id == optionId);
+                if (el != null) cm.RegisterElement(el);
+            }
+            else if (!useAverage && hasAverage)
+            {
+                ElementBase? el = cm.GetElements().FirstOrDefault(e => e.Id == optionId);
+                if (el != null) cm.UnregisterElement(el);
+            }
+
+            cm.ReprocessCharacter();
+
+            string absolutePath = ResolveWorkspaceFile(workspace, relativePath);
+            CharacterFile file = new(absolutePath);
+            file.Save();
+
+            ImportedCharacterSummary summary = BuildSummary(relativePath, new FileInfo(absolutePath), character, file);
+            return BuildAbilityScoreState(character, summary,
+                useAverage ? "HP set to average." : "HP set to rolled.");
+        }
+        finally
+        {
+            _operationLock.Release();
+        }
+    }
+
+    // ── Leveling ────────────────────────────────────────────────────────────────
+
+    public async Task<WebAbilityScoreState> LevelUpAsync(
+        PhaseZeroSessionWorkspace workspace, string relativePath)
+    {
+        await _operationLock.WaitAsync();
+        try
+        {
+            Character character = RequireCurrentCharacter();
+            CharacterManager cm = CharacterManager.Current;
+            int hpBefore = character.MaxHp;
+
+            cm.LevelUpMain();
+
+            if (character.MaxHp == hpBefore)
+            {
+                cm.ReprocessCharacter();
+            }
+
+            int hpGained = character.MaxHp - hpBefore;
+            bool isAverage = cm.ContainsAverageHitPointsOption();
+
+            string absolutePath = ResolveWorkspaceFile(workspace, relativePath);
+            CharacterFile file = new(absolutePath);
+            file.Save();
+
+            ImportedCharacterSummary summary = BuildSummary(relativePath, new FileInfo(absolutePath), character, file);
+            string hpNote = hpGained > 0 ? $" +{hpGained} HP ({(isAverage ? "avg" : "rolled")})" : "";
+            return BuildAbilityScoreState(character, summary, $"Leveled up to {character.Level}.{hpNote}");
+        }
+        finally
+        {
+            _operationLock.Release();
+        }
+    }
+
+    public async Task<WebAbilityScoreState> LevelDownAsync(
+        PhaseZeroSessionWorkspace workspace, string relativePath)
+    {
+        await _operationLock.WaitAsync();
+        try
+        {
+            Character character = RequireCurrentCharacter();
+            CharacterManager.Current.LevelDown();
+
+            string absolutePath = ResolveWorkspaceFile(workspace, relativePath);
+            CharacterFile file = new(absolutePath);
+            file.Save();
+
+            ImportedCharacterSummary summary = BuildSummary(relativePath, new FileInfo(absolutePath), character, file);
+            return BuildAbilityScoreState(character, summary, $"Level reduced to {character.Level}.");
+        }
+        finally
+        {
+            _operationLock.Release();
+        }
+    }
+
+    // ── Ability score helpers ────────────────────────────────────────────────────
+
+    private static WebAbilityScoreState BuildAbilityScoreState(
+        Character character, ImportedCharacterSummary summary, string statusMessage)
+    {
+        AbilitiesCollection abilities = character.Abilities;
+        abilities.CalculateAvailablePoints();
+        CharacterManager cm = CharacterManager.Current;
+
+        return new WebAbilityScoreState(
+            summary,
+            cm.Status.CanLevelUp,
+            cm.Status.CanLevelDown,
+            cm.ContainsAverageHitPointsOption(),
+            character.Level,
+            character.MaxHp,
+            [
+                MakeEntry("str", "Strength",     "STR", abilities.Strength),
+                MakeEntry("dex", "Dexterity",    "DEX", abilities.Dexterity),
+                MakeEntry("con", "Constitution", "CON", abilities.Constitution),
+                MakeEntry("int", "Intelligence", "INT", abilities.Intelligence),
+                MakeEntry("wis", "Wisdom",       "WIS", abilities.Wisdom),
+                MakeEntry("cha", "Charisma",     "CHA", abilities.Charisma),
+            ],
+            abilities.AvailablePoints,
+            statusMessage);
+    }
+
+    private static WebAbilityScoreEntry MakeEntry(string stat, string name, string abbrev, AbilityItem item) =>
+        new(stat, name, abbrev, item.BaseScore, item.AdditionalScore, item.FinalScore, item.ModifierString);
+
+    private static AbilityItem? GetAbilityItem(Character character, string stat) => stat switch
+    {
+        "str" => character.Abilities.Strength,
+        "dex" => character.Abilities.Dexterity,
+        "con" => character.Abilities.Constitution,
+        "int" => character.Abilities.Intelligence,
+        "wis" => character.Abilities.Wisdom,
+        "cha" => character.Abilities.Charisma,
+        _ => null
+    };
+
+    private static readonly Random _random = Random.Shared;
+
+    private static int Roll4d6DropLowest()
+    {
+        int a = _random.Next(1, 7), b = _random.Next(1, 7),
+            c = _random.Next(1, 7), d = _random.Next(1, 7);
+        return a + b + c + d - Math.Min(Math.Min(a, b), Math.Min(c, d));
+    }
+
+    private static int Roll3d6() =>
+        _random.Next(1, 7) + _random.Next(1, 7) + _random.Next(1, 7);
 }

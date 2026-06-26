@@ -912,7 +912,7 @@ else if (_workflowSuggestion != null)
 
         _saving = true;
         StateHasChanged();
-        var options = await Task.Run(() => BuildService.GetOptions(entry.Rule));
+        var options = await Task.Run(() => BuildService.GetOptions(entry.Rule, entry.Number));
         _saving = false;
         StateHasChanged();
 

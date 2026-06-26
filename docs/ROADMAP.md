@@ -65,6 +65,11 @@ Current status:
   clients
 - first-pass Build, Manage, Equipment, and Magic editing workflows are available
   in the browser workspace
+- ability score assignment is available in the browser Build page across all five
+  methods (Manual, Roll 4d6, Roll 3d6, Standard Array, Point Buy) with ASI bonus
+  display and modifier row
+- level up, level down, and the HP method toggle (average or rolled) are available
+  from the browser Build page advancement strip
 
 Planned implementation shape:
 
@@ -86,6 +91,30 @@ Planned implementation shape:
 - whole-desktop-folder mirroring as the initial upload model
 
 ## Likely Later Web Phases
+
+**Phase 1 candidate — Aurora XML Studio (content creation)**
+
+Phase 0 covers content *consumption*: upload existing XML, build a character,
+download your work. A natural Phase 1 would add content *authoring* without
+changing the storage model.
+
+The AuroraXMLHelper project (`repos/AuroraXMLHelper`) already encodes the full
+Aurora element schema in `aurora-xml-shape.js` and handles PDF→XML conversion
+via deterministic parsing. The Studio concept extends that by adding form-based
+authoring — create elements from scratch with no PDF, export a valid Aurora XML
+file, store it locally, re-upload via the existing import workflow.
+
+**Development path**: prototype the form-based authoring inside AuroraXMLHelper
+first, where the schema knowledge already lives and iteration is fast. Once
+proven, bring it into Aurora.Web and/or Aurora.Lights — either as an embedded
+feature or by linking out to a rebranded standalone tool. The delivery mechanism
+(integrate vs. link, rebrand or not) is TBD once the authoring workflow is
+working end-to-end.
+
+Suggested first-pass element types: Races, Classes, Subclasses, Backgrounds,
+Feats, Spells, Items, and Magic Items.
+
+**Later phases (unscoped)**
 
 - optional accounts for persistent user libraries
 - richer upload/import ergonomics

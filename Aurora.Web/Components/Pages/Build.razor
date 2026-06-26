@@ -1,5 +1,4 @@
 @page "/build"
-@rendermode InteractiveServer
 @inject WebCharacterSessionService CharacterSession
 
 <PageTitle>Build</PageTitle>
@@ -29,6 +28,42 @@
                     <span>open choices</span>
                 </div>
             </section>
+
+            @if (_abilityState is not null)
+            {
+                <div class="detail-advancement-strip">
+                    <div class="detail-advancement-actions">
+                        <button class="action-link primary"
+                                disabled="@(_busy || !_abilityState.CanLevelUp)"
+                                @onclick="LevelUpAsync">Level Up</button>
+                        <button class="action-link"
+                                disabled="@(_busy || !_abilityState.CanLevelDown)"
+                                @onclick="LevelDownAsync">Level Down</button>
+                        <div class="build-hp-toggle" title="How HP is assigned on each level-up">
+                            <span class="build-hp-label">HP:</span>
+                            <button class="build-hp-btn @(_abilityState.UseAverageHp ? "active" : "")"
+                                    disabled="@_busy"
+                                    @onclick="() => SetHpMethodAsync(true)">Avg</button>
+                            <button class="build-hp-btn @(!_abilityState.UseAverageHp ? "active" : "")"
+                                    disabled="@_busy"
+                                    @onclick="() => SetHpMethodAsync(false)">Roll</button>
+                        </div>
+                    </div>
+                    <div class="detail-advancement-meta">
+                        Level @_abilityState.Level - @_abilityState.MaxHp HP max
+                        @if (!_abilityState.CanLevelUp) { <span> - Max level</span> }
+                        @if (!_abilityState.CanLevelDown) { <span> - Level 1 min</span> }
+                    </div>
+                </div>
+            }
+
+            @if (_invalidated.Count > 0)
+            {
+                <div class="build-invalidated-alert">
+                    <span>The following selections were removed because they are no longer valid: <strong>@string.Join(", ", _invalidated)</strong></span>
+                    <button type="button" class="action-link" @onclick="() => _invalidated.Clear()">Dismiss</button>
+                </div>
+            }
 
             @if (_state.Groups.Count == 0)
             {
@@ -68,6 +103,164 @@
                         </section>
                     }
                 </div>
+            }
+
+            @if (_abilityState is not null)
+            {
+                bool _hasAsi = _abilityState.Scores.Any(s => s.AdditionalScore != 0);
+
+                <section class="build-ability-section">
+                    <header class="build-ability-header">Ability Scores</header>
+
+                    <div class="ability-method-tabs">
+                        @foreach (var method in _allMethods)
+                        {
+                            <button class="ability-method-btn @(_abilityMethod == method.Key ? "active" : "")"
+                                    @onclick="() => SetAbilityMethod(method.Key)">@method.Label</button>
+                        }
+                    </div>
+
+                    @if (_abilityMethod == "pointbuy")
+                    {
+                        int remaining = _abilityState.AvailablePoints;
+                        <div class="ability-points-bar @(remaining < 0 ? "ability-points-over" : "")">
+                            <span>Points spent: <strong>@(27 - remaining) / 27</strong></span>
+                            <span style="margin-left: 16px;">Remaining: <strong>@remaining</strong></span>
+                        </div>
+                        <p class="ability-hint">Scores range from 8 (free) to 15 (9 pts). Cost increases at 14 and 15.</p>
+                    }
+                    else if (_abilityMethod is "roll4d6" or "roll3d6")
+                    {
+                        <div class="ability-roll-actions">
+                            <button class="action-link primary" disabled="@_busy" @onclick="RollAllAsync">Roll All</button>
+                            <span class="ability-hint">Use the Roll button on each stat to reroll individually.</span>
+                        </div>
+                    }
+                    else if (_abilityMethod == "array")
+                    {
+                        <div class="ability-array-display">
+                            <span class="ability-hint">Array:</span>
+                            @foreach (int v in _standardArray)
+                            {
+                                bool used = _arrayAssignments.Values.Any(a => a == v);
+                                <span class="ability-array-chip @(used ? "used" : "")">@v</span>
+                            }
+                        </div>
+                        <p class="ability-hint">Assign each value to exactly one ability score.</p>
+                    }
+
+                    <div class="ability-stats-table-wrapper">
+                    <div class="ability-stats-table">
+
+                        <div class="ability-stats-row ability-row-header">
+                            @foreach (WebAbilityScoreEntry score in _abilityState.Scores)
+                            {
+                                <div class="ability-stats-cell">
+                                    <div class="ability-abbrev-lbl">@score.Abbrev</div>
+                                    <div class="ability-name-lbl">@score.Name</div>
+                                </div>
+                            }
+                        </div>
+
+                        @if (_hasAsi)
+                        {
+                            <div class="ability-stats-row ability-row-asi">
+                                @foreach (WebAbilityScoreEntry score in _abilityState.Scores)
+                                {
+                                    <div class="ability-stats-cell">
+                                        @if (score.AdditionalScore != 0)
+                                        {
+                                            <div class="ability-asi-badge">
+                                                <span class="ability-asi-val">@(score.AdditionalScore > 0 ? "+" : "")@score.AdditionalScore</span>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+
+                        <div class="ability-stats-row ability-row-total">
+                            @foreach (WebAbilityScoreEntry score in _abilityState.Scores)
+                            {
+                                <div class="ability-stats-cell">
+                                    @if (_abilityMethod == "manual")
+                                    {
+                                        <input class="ability-manual-input" type="number" min="1" max="30"
+                                               value="@score.BaseScore"
+                                               disabled="@_busy"
+                                               @onchange="async e => await OnManualScoreChangedAsync(score.Stat, int.TryParse(e.Value?.ToString(), out int mv) ? mv : score.BaseScore)" />
+                                        @if (score.AdditionalScore != 0)
+                                        {
+                                            <div class="ability-sublabel">to @score.FinalScore total</div>
+                                        }
+                                    }
+                                    else if (_abilityMethod == "pointbuy")
+                                    {
+                                        <div class="ability-score-adj">
+                                            <button class="ability-adj-btn-sm"
+                                                    disabled="@(!CanDecrement(score) || _busy)"
+                                                    @onclick="() => DecrementScoreAsync(score.Stat, score.BaseScore)">-</button>
+                                            <span class="ability-score-num">@score.BaseScore</span>
+                                            <button class="ability-adj-btn-sm"
+                                                    disabled="@(!CanIncrement(score) || _busy)"
+                                                    @onclick="() => IncrementScoreAsync(score.Stat, score.BaseScore)">+</button>
+                                        </div>
+                                        @if (score.AdditionalScore != 0)
+                                        {
+                                            <div class="ability-sublabel">to @score.FinalScore total</div>
+                                        }
+                                    }
+                                    else if (_abilityMethod is "roll4d6" or "roll3d6")
+                                    {
+                                        <div class="ability-score-adj">
+                                            <span class="ability-score-num">@score.BaseScore</span>
+                                            <button class="ability-roll-btn-sm"
+                                                    disabled="@_busy"
+                                                    title="Reroll"
+                                                    @onclick="() => RollStatAsync(score.Stat)">Roll</button>
+                                        </div>
+                                        @if (score.AdditionalScore != 0)
+                                        {
+                                            <div class="ability-sublabel">to @score.FinalScore total</div>
+                                        }
+                                    }
+                                    else if (_abilityMethod == "array")
+                                    {
+                                        <select class="ability-array-select-sm"
+                                                value="@_arrayAssignments.GetValueOrDefault(score.Stat, 0)"
+                                                disabled="@_busy"
+                                                @onchange="async e => await AssignArrayValueAsync(score.Stat, int.TryParse(e.Value?.ToString(), out int sv) ? sv : 0)">
+                                            @if (_arrayAssignments.GetValueOrDefault(score.Stat, 0) == 0)
+                                            {
+                                                <option value="0">--</option>
+                                            }
+                                            @foreach (int av in GetAvailableArrayValues(score.Stat))
+                                            {
+                                                <option value="@av" selected="@(av == _arrayAssignments.GetValueOrDefault(score.Stat, 0))">@av</option>
+                                            }
+                                        </select>
+                                        @if (_arrayAssignments.GetValueOrDefault(score.Stat, 0) != 0 && score.AdditionalScore != 0)
+                                        {
+                                            <div class="ability-sublabel">to @score.FinalScore total</div>
+                                        }
+                                    }
+                                </div>
+                            }
+                        </div>
+
+                        <div class="ability-stats-row ability-row-mod">
+                            @foreach (WebAbilityScoreEntry score in _abilityState.Scores)
+                            {
+                                <div class="ability-stats-cell">
+                                    <div class="ability-mod-badge">@score.ModifierString</div>
+                                    <div class="ability-sublabel">modifier</div>
+                                </div>
+                            }
+                        </div>
+
+                    </div>
+                    </div>
+                </section>
             }
 
             @if (_pickerEntry is not null)
@@ -157,7 +350,19 @@
 </CharacterLibraryShell>
 
 @code {
+    private static readonly (string Key, string Label)[] _allMethods =
+    [
+        ("manual",   "Manual"),
+        ("roll4d6",  "Roll 4d6"),
+        ("roll3d6",  "Roll 3d6"),
+        ("array",    "Standard Array"),
+        ("pointbuy", "Point Buy"),
+    ];
+
+    private static readonly int[] _standardArray = [15, 14, 13, 12, 10, 8];
+
     private WebCharacterBuildState? _state;
+    private WebAbilityScoreState? _abilityState;
     private WebBuildSelectionEntry? _pickerEntry;
     private IReadOnlyList<WebBuildSelectionOption> _pickerOptions = [];
     private string _pickerQuery = string.Empty;
@@ -165,6 +370,9 @@
     private bool _busy;
     private bool _failed;
     private string? _statusMessage;
+    private List<string> _invalidated = [];
+    private string _abilityMethod = "manual";
+    private readonly Dictionary<string, int> _arrayAssignments = new();
 
     private IReadOnlyList<CharacterDetailField> DetailFields =>
         _state is null
@@ -189,6 +397,8 @@
         {
             _state = await CharacterSession.GetCurrentBuildStateAsync();
             _statusMessage = _state?.StatusMessage;
+            _abilityState = await CharacterSession.GetCurrentAbilityScoreStateAsync();
+            InitArrayAssignments();
         }
         catch (Exception ex)
         {
@@ -200,6 +410,20 @@
             _loading = false;
         }
     }
+
+    private void InitArrayAssignments()
+    {
+        if (_abilityState is null) return;
+        var sortedScores = _abilityState.Scores.Select(s => s.BaseScore).OrderBy(x => x).ToList();
+        bool isValidArray = sortedScores.SequenceEqual(_standardArray.OrderBy(x => x));
+        _arrayAssignments.Clear();
+        foreach (WebAbilityScoreEntry score in _abilityState.Scores)
+        {
+            _arrayAssignments[score.Stat] = isValidArray ? score.BaseScore : 0;
+        }
+    }
+
+    // Build selection picker
 
     private async Task OpenSelectionPickerAsync(WebBuildSelectionEntry entry)
     {
@@ -217,10 +441,7 @@
 
     private async Task SearchSelectionOptionsAsync()
     {
-        if (_pickerEntry is null)
-        {
-            return;
-        }
+        if (_pickerEntry is null) return;
 
         _busy = true;
         _failed = false;
@@ -241,10 +462,7 @@
 
     private async Task ApplySelectionAsync(string optionId)
     {
-        if (_pickerEntry is null)
-        {
-            return;
-        }
+        if (_pickerEntry is null) return;
 
         _busy = true;
         _failed = false;
@@ -252,6 +470,10 @@
         {
             _state = await CharacterSession.ChangeCurrentBuildSelectionAsync(_pickerEntry.Key, optionId);
             _statusMessage = _state.StatusMessage;
+            if (_state.InvalidatedSelections is { Count: > 0 } inv)
+                _invalidated = [.. _invalidated, .. inv];
+            _abilityState = await CharacterSession.GetCurrentAbilityScoreStateAsync();
+            InitArrayAssignments();
             CloseSelectionPicker();
         }
         catch (Exception ex)
@@ -265,6 +487,204 @@
         }
     }
 
+    // Advancement
+
+    private async Task LevelUpAsync()
+    {
+        _busy = true;
+        _failed = false;
+        try
+        {
+            _abilityState = await CharacterSession.LevelUpCurrentCharacterAsync();
+            _state = await CharacterSession.GetCurrentBuildStateAsync();
+            _statusMessage = _state?.StatusMessage;
+        }
+        catch (Exception ex)
+        {
+            _failed = true;
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task LevelDownAsync()
+    {
+        _busy = true;
+        _failed = false;
+        try
+        {
+            _abilityState = await CharacterSession.LevelDownCurrentCharacterAsync();
+            _state = await CharacterSession.GetCurrentBuildStateAsync();
+            _statusMessage = _state?.StatusMessage;
+        }
+        catch (Exception ex)
+        {
+            _failed = true;
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task SetHpMethodAsync(bool useAverage)
+    {
+        _busy = true;
+        _failed = false;
+        try
+        {
+            _abilityState = await CharacterSession.SetCurrentHpMethodAsync(useAverage);
+        }
+        catch (Exception ex)
+        {
+            _failed = true;
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    // Ability method
+
+    private void SetAbilityMethod(string method)
+    {
+        _abilityMethod = method;
+        if (method == "array")
+            InitArrayAssignments();
+    }
+
+    // Ability scores: manual
+
+    private async Task OnManualScoreChangedAsync(string stat, int value)
+    {
+        if (_abilityState is null) return;
+        var scores = BuildScoresDict(stat, Math.Clamp(value, 1, 30));
+        await ApplyScoresAsync(scores);
+    }
+
+    // Ability scores: point buy
+
+    private bool CanIncrement(WebAbilityScoreEntry score)
+    {
+        if (score.BaseScore >= 15) return false;
+        int cost = score.BaseScore >= 13 ? 2 : 1;
+        return (_abilityState?.AvailablePoints ?? 0) >= cost;
+    }
+
+    private static bool CanDecrement(WebAbilityScoreEntry score) => score.BaseScore > 8;
+
+    private async Task IncrementScoreAsync(string stat, int current)
+    {
+        if (_abilityState is null) return;
+        var scores = BuildScoresDict(stat, current + 1);
+        await ApplyScoresAsync(scores);
+    }
+
+    private async Task DecrementScoreAsync(string stat, int current)
+    {
+        if (_abilityState is null) return;
+        var scores = BuildScoresDict(stat, current - 1);
+        await ApplyScoresAsync(scores);
+    }
+
+    // Ability scores: rolling
+
+    private async Task RollAllAsync()
+    {
+        _busy = true;
+        _failed = false;
+        try
+        {
+            bool use4d6 = _abilityMethod == "roll4d6";
+            _abilityState = await CharacterSession.RollCurrentAbilityScoresAsync(use4d6);
+        }
+        catch (Exception ex)
+        {
+            _failed = true;
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task RollStatAsync(string stat)
+    {
+        _busy = true;
+        _failed = false;
+        try
+        {
+            bool use4d6 = _abilityMethod == "roll4d6";
+            _abilityState = await CharacterSession.RollCurrentAbilityScoresAsync(use4d6, stat);
+        }
+        catch (Exception ex)
+        {
+            _failed = true;
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    // Ability scores: standard array
+
+    private IEnumerable<int> GetAvailableArrayValues(string stat)
+    {
+        var usedElsewhere = _arrayAssignments
+            .Where(kv => kv.Key != stat && kv.Value != 0)
+            .Select(kv => kv.Value)
+            .ToHashSet();
+        return _standardArray.Where(v => !usedElsewhere.Contains(v));
+    }
+
+    private async Task AssignArrayValueAsync(string stat, int value)
+    {
+        _arrayAssignments[stat] = value;
+        if (value == 0) return;
+        var scores = BuildScoresDict(stat, value);
+        await ApplyScoresAsync(scores);
+    }
+
+    // Shared score save
+
+    private Dictionary<string, int> BuildScoresDict(string? changedStat = null, int? newValue = null)
+    {
+        var dict = _abilityState!.Scores.ToDictionary(s => s.Stat, s => s.BaseScore);
+        if (changedStat != null && newValue.HasValue)
+            dict[changedStat] = newValue.Value;
+        return dict;
+    }
+
+    private async Task ApplyScoresAsync(Dictionary<string, int> scores)
+    {
+        _busy = true;
+        _failed = false;
+        try
+        {
+            _abilityState = await CharacterSession.SetCurrentAbilityScoresAsync(scores);
+        }
+        catch (Exception ex)
+        {
+            _failed = true;
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    // Helpers
+
     private static string FormatLevel(int requiredLevel) =>
         requiredLevel > 0 ? $"- level {requiredLevel}" : string.Empty;
 
@@ -272,10 +692,7 @@
     {
         List<string> parts = [];
         if (!string.IsNullOrWhiteSpace(option.Source))
-        {
             parts.Add(option.Source);
-        }
-
         return parts.Count == 0 ? string.Empty : string.Join(" - ", parts);
     }
 

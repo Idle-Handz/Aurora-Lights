@@ -1,8 +1,7 @@
-using Builder.Data;
 using Builder.Data.Rules;
 using Builder.Presentation;
 using Builder.Presentation.Interfaces;
-using Builder.Presentation.Services.Data;
+using Builder.Presentation.Services;
 
 namespace Aurora.Tests.Helpers;
 
@@ -27,44 +26,10 @@ public sealed class TestSelectionRuleExpanderHandler : ISelectionRuleExpanderHan
     }
 
     public void SetRegisteredElement(SelectRule selectionRule, string id, int number = 1)
-    {
-        if (selectionRule.Attributes.IsList)
-        {
-            var listItem = selectionRule.Attributes.ListItems?
-                .FirstOrDefault(item => item.ID.ToString().Equals(id, StringComparison.Ordinal));
-            if (listItem is not null)
-                _registered[Key(selectionRule, number)] = listItem;
-            return;
-        }
-
-        ElementBase? element = DataManager.Current.ElementsCollection
-            .FirstOrDefault(e => e.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
-        if (element is null)
-        {
-            _registered[Key(selectionRule, number)] = id;
-            return;
-        }
-
-        var existingSelection = CharacterManager.Current.Elements
-            .FirstOrDefault(e =>
-                e.Id.Equals(id, StringComparison.OrdinalIgnoreCase) &&
-                e.Aquisition.WasSelected &&
-                ReferenceEquals(e.Aquisition.SelectRule, selectionRule));
-        if (existingSelection is not null)
-        {
-            _registered[Key(selectionRule, number)] = existingSelection;
-            return;
-        }
-
-        element.Aquisition.WasSelected = true;
-        element.Aquisition.SelectRule = selectionRule;
-
-        CharacterManager.Current.RegisterElement(element);
-        _registered[Key(selectionRule, number)] = element;
-    }
+        => SelectionRuleRegistrationService.SetRegisteredElement(_registered, selectionRule, id, number);
 
     public void ClearRegisteredElement(SelectRule selectionRule, int number = 1)
-        => _registered.Remove(Key(selectionRule, number));
+        => SelectionRuleRegistrationService.ClearRegisteredElement(_registered, selectionRule, number);
 
     public int GetExpandersCount() => 0;
 

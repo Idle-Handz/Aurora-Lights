@@ -1,5 +1,4 @@
 @page "/compendium"
-@rendermode InteractiveServer
 @inject WebContentCatalogService CatalogService
 
 <PageTitle>Compendium</PageTitle>
@@ -29,7 +28,7 @@
             </div>
             <div class="summary-item">
                 <div class="summary-number">@_catalog.BaselineElementCount</div>
-                <div class="summary-caption">Baseline entries</div>
+                <div class="summary-caption">Bundled/SRD entries</div>
             </div>
             <div class="summary-item">
                 <div class="summary-number">@_catalog.SessionElementCount</div>
@@ -73,7 +72,7 @@
                 <label for="compendium-origin">Origin</label>
                 <select id="compendium-origin" class="select-filter" @bind="_selectedOrigin">
                     <option value="">All origins</option>
-                    <option value="@ContentCatalogOrigin.Baseline">Baseline</option>
+                    <option value="@ContentCatalogOrigin.Baseline">Bundled/SRD</option>
                     <option value="@ContentCatalogOrigin.Session">Session</option>
                 </select>
             </div>
@@ -103,7 +102,7 @@
                             <td>@entry.Source</td>
                             <td>
                                 <span class="origin-pill @(entry.Origin == ContentCatalogOrigin.Session ? "session" : "baseline")">
-                                    @entry.Origin
+                                    @FormatOrigin(entry.Origin)
                                 </span>
                             </td>
                             <td>@entry.FileName</td>
@@ -182,6 +181,38 @@
         return entry.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase)
             || entry.Id.Contains(_searchText, StringComparison.OrdinalIgnoreCase)
             || entry.Source.Contains(_searchText, StringComparison.OrdinalIgnoreCase)
-            || entry.FileName.Contains(_searchText, StringComparison.OrdinalIgnoreCase);
+            || entry.FileName.Contains(_searchText, StringComparison.OrdinalIgnoreCase)
+            || MatchesOriginAlias(entry, _searchText);
     }
+
+    private static string FormatOrigin(ContentCatalogOrigin origin) =>
+        origin == ContentCatalogOrigin.Baseline ? "Bundled/SRD" : "Session";
+
+    private static bool MatchesOriginAlias(ContentCatalogEntry entry, string searchText)
+    {
+        string normalized = searchText.Trim();
+        if (string.IsNullOrWhiteSpace(normalized))
+        {
+            return false;
+        }
+
+        if (entry.Origin == ContentCatalogOrigin.Baseline &&
+            (MatchesAlias(normalized, "srd")
+             || MatchesAlias(normalized, "system reference document")
+             || MatchesAlias(normalized, "bundled")
+             || MatchesAlias(normalized, "baseline")
+             || MatchesAlias(normalized, "built-in")))
+        {
+            return true;
+        }
+
+        return entry.Origin == ContentCatalogOrigin.Session &&
+               (MatchesAlias(normalized, "session")
+                || MatchesAlias(normalized, "imported")
+                || MatchesAlias(normalized, "upload"));
+    }
+
+    private static bool MatchesAlias(string searchText, string alias) =>
+        alias.Contains(searchText, StringComparison.OrdinalIgnoreCase)
+        || searchText.Contains(alias, StringComparison.OrdinalIgnoreCase);
 }

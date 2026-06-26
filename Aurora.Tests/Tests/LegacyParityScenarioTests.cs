@@ -146,6 +146,13 @@ public sealed class LegacyParityScenarioTests : IAsyncLifetime
                 because: $"{scenario.Name} rule '{Describe(expectation)}' should have selectable options");
         }
 
+        if (expectation.ExpectedSelectedCount is int expectedSelectedCount)
+        {
+            matches.Should().Contain(rule =>
+                    rule.SelectedIds.Count(id => !string.IsNullOrWhiteSpace(id)) == expectedSelectedCount,
+                because: $"{scenario.Name} rule '{Describe(expectation)}' should preserve its expected selection state");
+        }
+
         if (expectation.ExpectedOptionIds.Length > 0)
         {
             matches.SelectMany(rule => rule.OptionIds)

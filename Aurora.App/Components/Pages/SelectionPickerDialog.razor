@@ -72,11 +72,21 @@
                         @foreach (var opt in _filtered)
                         {
                             var isSelected = opt.Id == _selectedId;
-                            <div class="picker-item @(isSelected ? "picker-item-selected" : "")"
-                                 @onclick="() => SelectItem(opt)"
-                                 @ondblclick="() => ConfirmItem(opt)">
+                            <button type="button"
+                                    class="picker-item @(isSelected ? "picker-item-selected" : "") @(opt.IsDisabled ? "picker-item-disabled" : "")"
+                                    disabled="@opt.IsDisabled"
+                                    @onclick="() => SelectItem(opt)"
+                                    @ondblclick="() => ConfirmItem(opt)">
                                 <div class="picker-item-name">@opt.Name</div>
-                            </div>
+                                @if (opt.IsCurrentSelection)
+                                {
+                                    <div class="picker-item-status">Current selection</div>
+                                }
+                                else if (opt.IsDisabled)
+                                {
+                                    <div class="picker-item-status">Already selected</div>
+                                }
+                            </button>
                         }
                     </div>
                 }
@@ -199,9 +209,14 @@
             .OrderBy(s => s)
             .ToList();
         RebuildFilter();
-        if (Entry.CurrentName != null)
+        var current = Options.FirstOrDefault(o => o.IsCurrentSelection);
+        if (current != null)
         {
-            var current = Options.FirstOrDefault(o =>
+            SelectItem(current);
+        }
+        else if (Entry.CurrentName != null)
+        {
+            current = Options.FirstOrDefault(o =>
                 string.Equals(o.Name, Entry.CurrentName, StringComparison.OrdinalIgnoreCase));
             if (current != null)
                 SelectItem(current);
@@ -210,11 +225,21 @@
 
     private void SelectItem(ElementOption opt)
     {
+        if (opt.IsDisabled)
+            return;
+
         _selectedId  = opt.Id;
         _selectedOpt = opt;
     }
 
     private void Cancel()      => MudDialog.Cancel();
     private void Confirm()     { if (_selectedId != null) MudDialog.Close(_selectedId); }
-    private void ConfirmItem(ElementOption opt) { SelectItem(opt); Confirm(); }
+    private void ConfirmItem(ElementOption opt)
+    {
+        if (opt.IsDisabled)
+            return;
+
+        SelectItem(opt);
+        Confirm();
+    }
 }

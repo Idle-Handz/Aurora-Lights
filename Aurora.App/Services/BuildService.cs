@@ -17,7 +17,7 @@ namespace Aurora.App.Services;
 /// Also owns the SnapshotProgressionManagers / GetFeatureDescription helpers (moved here from Start.razor)
 /// so they can be called from both Start.razor (on load) and Build.razor (after editing).
 /// </summary>
-public static class BuildService
+public static partial class BuildService
 {
     // ── SelectionRule groups ─────────────────────────────────────────────────
 
@@ -155,10 +155,12 @@ public static class BuildService
     /// Returns the full list of valid options for a SelectRule, filtered from DataManager.
     /// Uses ElementsOrganizerRefactored which applies the rule's supports expression.
     /// </summary>
-    public static IReadOnlyList<ElementOption> GetOptions(SelectRule rule)
+    public static IReadOnlyList<ElementOption> GetOptions(SelectRule rule, int number = 1)
     {
         try
         {
+            string? currentSelectionId = ResolveCurrentSelectionId(rule, number);
+
             // List-type rules (Bond, Ideal, Flaw, Personality Trait) store their options as
             // inline <item> children in the XML, not as elements in the element collection.
             bool isList = rule.Attributes.Type?.Equals("List") == true;
@@ -170,15 +172,17 @@ public static class BuildService
                     $"listItems={(listItems == null ? "null" : listItems.Count.ToString())} " +
                     $"elemId={rule.ElementHeader?.Id}");
                 if (listItems?.Count > 0)
-                    return listItems
+                    return MarkCurrentSelection(listItems
                         .Select(li => new ElementOption(li.ID.ToString(), li.Text, li.Text, "", ""))
-                        .ToList();
+                        .ToList(), currentSelectionId);
                 // ListItems not populated — read directly from the owner element's XML node.
                 var fromElementNode = GetListOptionsFromElementNode(rule);
                 return fromElementNode.Count > 0
-                    ? fromElementNode
-                    : XmlContentFallbackService.GetListFallbackOptions(rule);
+                    ? MarkCurrentSelection(fromElementNode, currentSelectionId)
+                    : MarkCurrentSelection(XmlContentFallbackService.GetListFallbackOptions(rule), currentSelectionId);
             }
+
+            var ownedNonRepeatableElementIds = GetOwnedNonRepeatableElementIds(rule);
 
             // Use the same approach as SelectionRuleCollectionService / SelectionRuleComboBoxViewModel:
             // • InitializeWithSelectionRule so level-based expressions can resolve
@@ -214,10 +218,18 @@ public static class BuildService
             // If the expression evaluated but returned nothing (can happen with macro expressions),
             // also try the spell fallback for Spell-type rules.
             bool isSpellRule = rule.Attributes.Type?.Equals("Spell", StringComparison.OrdinalIgnoreCase) == true;
-            var list = BuildElementOptions(elements, isSpellRule);
+            var list = BuildElementOptions(
+                elements,
+                isSpellRule,
+                currentSelectionId,
+                ownedNonRepeatableElementIds);
 
             if (list.Count == 0 && isSpellRule)
-                list = BuildElementOptions(SpellFallbackOptions(rule, baseCollection), isSpellRule: true);
+                list = BuildElementOptions(
+                    SpellFallbackOptions(rule, baseCollection),
+                    isSpellRule: true,
+                    currentSelectionId: currentSelectionId,
+                    ownedNonRepeatableElementIds: ownedNonRepeatableElementIds);
 
             // Case-insensitive fallback: only used when the main expression returned nothing AND
             // this is not a Spell rule (Spell rules use SpellFallbackOptions above). Catches
@@ -230,13 +242,19 @@ public static class BuildService
             {
                 list = BuildElementOptions(
                     FilterBySupportsCaseInsensitive(rule.Attributes.Supports, baseCollection),
-                    isSpellRule: false);
+                    isSpellRule: false,
+                    currentSelectionId: currentSelectionId,
+                    ownedNonRepeatableElementIds: ownedNonRepeatableElementIds);
             }
 
             var deduplicated = DeduplicateOptions(list);
             if (deduplicated.Count == 0)
             {
-                var xmlFallback = BuildElementOptions(XmlContentFallbackService.GetElementFallbacks(rule), isSpellRule);
+                var xmlFallback = BuildElementOptions(
+                    XmlContentFallbackService.GetElementFallbacks(rule),
+                    isSpellRule,
+                    currentSelectionId,
+                    ownedNonRepeatableElementIds);
 
                 if (xmlFallback.Count > 0)
                     return DeduplicateOptions(xmlFallback);
@@ -351,25 +369,46 @@ public static class BuildService
                          .Where(s => !string.IsNullOrEmpty(s))
                          .Distinct(StringComparer.OrdinalIgnoreCase)
                          .OrderBy(s => s));
-                result.Add(group.First() with { Source = combined });
+                // Keep an actionable option whenever duplicate source records differ in
+                // availability. The current slot wins over another available source.
+                var representative = group.FirstOrDefault(o => o.IsCurrentSelection)
+                    ?? group.FirstOrDefault(o => !o.IsDisabled)
+                    ?? group.First();
+                result.Add(representative with { Source = combined });
             }
         }
         return result;
     }
 
-    private static List<ElementOption> BuildElementOptions(IEnumerable<ElementBase> elements, bool isSpellRule)
+    private static List<ElementOption> BuildElementOptions(
+        IEnumerable<ElementBase> elements,
+        bool isSpellRule,
+        string? currentSelectionId,
+        IReadOnlySet<string> ownedNonRepeatableElementIds)
     {
         return OrderElementOptions(
                 elements
                     .Where(e => !string.IsNullOrWhiteSpace(e.Name))
-                    .Select(e => CreateElementOption(e, isSpellRule)),
+                    .Select(e => CreateElementOption(
+                        e,
+                        isSpellRule,
+                        currentSelectionId,
+                        ownedNonRepeatableElementIds)),
                 isSpellRule)
             .ToList();
     }
 
-    private static ElementOption CreateElementOption(ElementBase element, bool isSpellRule)
+    private static ElementOption CreateElementOption(
+        ElementBase element,
+        bool isSpellRule,
+        string? currentSelectionId,
+        IReadOnlySet<string> ownedNonRepeatableElementIds)
     {
         var metadata = TryGetElementSortMetadata(element);
+        bool isCurrentSelection = string.Equals(
+            element.Id,
+            currentSelectionId,
+            StringComparison.OrdinalIgnoreCase);
 
         return new ElementOption(
             element.Id,
@@ -382,7 +421,66 @@ public static class BuildService
             IsRitual: isSpellRule && GetElementIsRitual(element),
             IsConcentration: isSpellRule && GetElementIsConcentration(element),
             SourceReleaseDate: metadata?.SourceReleaseDate,
-            SourceFileModifiedUtc: metadata?.SourceFileModifiedUtc);
+            SourceFileModifiedUtc: metadata?.SourceFileModifiedUtc,
+            IsDisabled: SelectionOptionAvailability.IsDisabled(
+                element.Id,
+                element.AllowDuplicate,
+                currentSelectionId,
+                ownedNonRepeatableElementIds),
+            IsCurrentSelection: isCurrentSelection);
+    }
+
+    private static HashSet<string> GetOwnedNonRepeatableElementIds(SelectRule rule)
+    {
+        try
+        {
+            return CharacterManager.Current.GetElements()
+                .Where(element =>
+                    element.Type.Equals(rule.Attributes.Type, StringComparison.Ordinal) &&
+                    !element.AllowDuplicate)
+                .Select(element => element.Id)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        }
+    }
+
+    private static IReadOnlyList<ElementOption> MarkCurrentSelection(
+        IReadOnlyList<ElementOption> options,
+        string? currentSelectionId)
+    {
+        if (string.IsNullOrWhiteSpace(currentSelectionId))
+            return options;
+
+        return options
+            .Select(option => option with
+            {
+                IsCurrentSelection = string.Equals(
+                    option.Id,
+                    currentSelectionId,
+                    StringComparison.OrdinalIgnoreCase),
+            })
+            .ToList();
+    }
+
+    private static string? ResolveCurrentSelectionId(SelectRule rule, int number)
+    {
+        try
+        {
+            return SelectionRuleExpanderContext.Current?.GetRegisteredElement(rule, number) switch
+            {
+                ElementBase element => element.Id,
+                SelectionRuleListItem listItem => listItem.ID.ToString(),
+                string id => id,
+                _ => null,
+            };
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private static IOrderedEnumerable<ElementOption> OrderElementOptions(
@@ -620,6 +718,7 @@ public static class BuildService
 
         string? taskError = null;
         bool needsRollback = false;
+        bool selectionMutationStarted = false;
 
         await Task.Run(() =>
         {
@@ -628,6 +727,8 @@ public static class BuildService
             var cm = CharacterManager.Current;
 
             // 1. Register the new selection (handler also unregisters the previous one).
+            EnsureSelectionCandidateIsAvailable(rule, elementId, number);
+            selectionMutationStarted = true;
             SelectionRuleExpanderContext.Current?.SetRegisteredElement(rule, elementId, number);
             ClearConflictingOriginAbilityScoreSelections(rule, invalidated);
             ClearExistingOriginAbilityScoreCollisions(invalidated);
@@ -759,6 +860,7 @@ public static class BuildService
                 var firstFrame = ex.StackTrace?.Split('\n')
                     .FirstOrDefault(l => l.TrimStart().StartsWith("at "))?.Trim() ?? "";
                 taskError = $"{ex.GetType().Name}: {ex.Message} | {firstFrame}";
+                needsRollback = saveToFile && selectionMutationStarted;
             }
         });
 
@@ -860,6 +962,29 @@ public static class BuildService
                 continue;
 
             expander.SetRegisteredElement(manager.SelectRule, manager.ClassElement.Id);
+        }
+    }
+
+    /// <summary>
+    /// Applies the same option-availability policy used by the picker at the mutation
+    /// boundary. This protects saves triggered from stale UI state, import flows, or future
+    /// callers that do not pass through the picker UI.
+    /// </summary>
+    private static void EnsureSelectionCandidateIsAvailable(SelectRule rule, string elementId, int number)
+    {
+        var option = GetOptions(rule, number)
+            .FirstOrDefault(candidate => candidate.Id.Equals(elementId, StringComparison.OrdinalIgnoreCase));
+
+        if (option is null)
+        {
+            throw new InvalidOperationException(
+                "That selection is no longer available. Reload the character and choose an available option.");
+        }
+
+        if (option.IsDisabled)
+        {
+            throw new InvalidOperationException(
+                $"'{option.Name}' is already selected and cannot be selected again.");
         }
     }
 
@@ -1298,190 +1423,6 @@ public static class BuildService
         });
     }
 
-    /// <summary>
-    /// Adds a custom-feature proxy (an "Additional …" feat/spell/feature/etc. or a Supernatural
-    /// Gift) to the active character and activates it so its granted content applies, then
-    /// reprocesses, re-snaps, and saves. Returns null on success or an error message.
-    /// </summary>
-    public static async Task<string?> AddCustomFeatureAsync(CharacterTab tab, string elementId)
-    {
-        using var scope = await CharacterContext.EnterAsync(tab);
-        return await Task.Run(() =>
-        {
-            try
-            {
-                var proxy = DataManager.Current.ElementsCollection.GetElement(elementId);
-                if (proxy == null) return "That feature could not be found.";
-
-                // "Additional X" proxies wrap the real feat/spell/feature; resolve the underlying
-                // element so its grant applies. Non-proxy items (e.g. Supernatural Gifts) resolve to
-                // themselves. See EquipmentService.ResolveCustomFeatureTarget.
-                var target = EquipmentService.ResolveCustomFeatureTarget(proxy);
-                string targetId = target.Id ?? elementId;
-                bool repeatable = EquipmentService.IsRepeatableCustomFeature(target)
-                                  || EquipmentService.IsRepeatableCustomFeature(proxy);
-
-                var file = tab.File;
-                var list = file?.LoadCustomFeatures() ?? [];
-                if (!repeatable && list.Contains(targetId, StringComparer.OrdinalIgnoreCase))
-                    return (string?)null;
-
-                // Ability-score elements (e.g. ID_INTERNAL_ASI_DEXTERITY) are shared singletons that
-                // races / Tasha's origins / level-up ASIs also register. Each instance carries a single
-                // Aquisition record, so re-registering the same instance clobbers the other source's
-                // bookkeeping and the two increases cancel out. The engine's own answer to "register
-                // another copy of this element" is ElementBaseCollection.GetFresh, which mints a fresh
-                // instance with blank acquisition — the same mechanism the legacy app uses to let an
-                // ASI stack. Its blank acquisition also lets RemoveCustomFeatureAsync tell our copy
-                // apart from an owned original of the same id.
-                var toRegister = target;
-                if (repeatable || string.Equals(target.Type, "Ability Score Improvement", StringComparison.OrdinalIgnoreCase))
-                {
-                    toRegister = DataManager.Current.ElementsCollection.GetFresh(targetId) ?? target;
-                }
-
-                CharacterManager.Current.RegisterElement(toRegister);
-                CharacterManager.Current.ReprocessCharacter();
-                ResnapTab(tab);
-                SaveCharacterFile(tab);
-
-                // Track the added id (root-level <custom-features> node) so the Extras tab can
-                // list and remove it. Written after SaveCharacterFile so it lands in the saved file.
-                if (file != null)
-                {
-                    if (repeatable || !list.Contains(targetId, StringComparer.OrdinalIgnoreCase))
-                    {
-                        list.Add(targetId);
-                        CharacterFileWriteCoordinator.Write(
-                            tab.FileSaveSemaphore,
-                            file,
-                            "Custom features",
-                            () => file.SaveCustomFeatures(list)).ThrowIfFailed();
-                    }
-                }
-                return (string?)null;
-            }
-            catch (Exception ex) { return DebugLogService.Catch(ex, "BuildService.AddCustomFeatureAsync"); }
-        });
-    }
-
-    /// <summary>
-    /// Returns the custom features added to the active character (id, display name, type),
-    /// resolved from the persisted &lt;custom-features&gt; id list.
-    /// </summary>
-    public static IReadOnlyList<(string Id, string Name, string Type)> GetCustomFeatures(CharacterTab tab)
-    {
-        var file = tab.File;
-        if (file == null) return [];
-        var result = new List<(string, string, string)>();
-        foreach (var id in file.LoadCustomFeatures())
-        {
-            var el = DataManager.Current.ElementsCollection.GetElement(id);
-            var target = el == null ? null : EquipmentService.ResolveCustomFeatureTarget(el);
-            result.Add((id, target?.Name ?? el?.Name ?? id, target?.Type ?? el?.Type ?? ""));
-        }
-        return result;
-    }
-
-    /// <summary>
-    /// Re-registers the character's custom features (the persisted &lt;custom-features&gt; ids) into the
-    /// freshly-loaded CharacterManager so their granted content (spells, etc.) takes effect again.
-    /// CharacterFile.Save rebuilds only the standard build, so a directly-registered custom feature is
-    /// NOT round-tripped by a normal load — it must be re-applied here. Call once after each character
-    /// load. Idempotent: a feature already present as our (blank-acquisition) instance is skipped, so a
-    /// duplicate call is harmless. Mirrors <see cref="AddCustomFeatureAsync"/>'s registration.
-    /// </summary>
-    public static void ReapplyCustomFeatures(CharacterFile? file)
-    {
-        if (file == null) return;
-        var ids = file.LoadCustomFeatures();
-        if (ids.Count == 0) return;
-
-        var cm = CharacterManager.Current;
-        if (cm?.Character == null) return;
-
-        bool any = false;
-        foreach (var group in ids.GroupBy(id => id, StringComparer.OrdinalIgnoreCase))
-        {
-            string id = group.Key;
-            var proxy = DataManager.Current.ElementsCollection.GetElement(id);
-            if (proxy == null) continue;
-
-            var target = EquipmentService.ResolveCustomFeatureTarget(proxy);
-            string targetId = target.Id ?? id;
-            bool repeatable = EquipmentService.IsRepeatableCustomFeature(target)
-                              || EquipmentService.IsRepeatableCustomFeature(proxy);
-
-            // Skip if already re-applied: our copies carry blank acquisition, whereas a same-id
-            // instance owned by the race/class/level-up build carries GrantedBy/SelectedBy.
-            int existingBlankCount = cm.GetElements().Count(e => e.Id == targetId
-                && !e.Aquisition.WasGranted && !e.Aquisition.WasSelected);
-            int desiredCount = repeatable ? group.Count() : 1;
-            int toAddCount = Math.Max(0, desiredCount - existingBlankCount);
-            if (toAddCount == 0)
-                continue;
-
-            for (int i = 0; i < toAddCount; i++)
-            {
-                // Ability-score and repeatable elements should be fresh engine instances so they stack
-                // instead of reusing one singleton/acquisition record.
-                var toRegister = target;
-                if (repeatable || string.Equals(target.Type, "Ability Score Improvement", StringComparison.OrdinalIgnoreCase))
-                    toRegister = DataManager.Current.ElementsCollection.GetFresh(targetId) ?? target;
-
-                cm.RegisterElement(toRegister);
-                any = true;
-            }
-        }
-
-        if (any) cm.ReprocessCharacter();
-    }
-
-    /// <summary>
-    /// Removes a previously added custom feature: unregisters the element, reprocesses, saves,
-    /// and drops its id from the &lt;custom-features&gt; list. Returns null on success.
-    /// </summary>
-    public static async Task<string?> RemoveCustomFeatureAsync(CharacterTab tab, string elementId)
-    {
-        using var scope = await CharacterContext.EnterAsync(tab);
-        return await Task.Run(() =>
-        {
-            try
-            {
-                var cm = CharacterManager.Current;
-                var proxy = DataManager.Current.ElementsCollection.GetElement(elementId);
-                var target = proxy == null ? null : EquipmentService.ResolveCustomFeatureTarget(proxy);
-                string targetId = target?.Id ?? elementId;
-
-                // Prefer an instance with blank acquisition — that's the copy we registered for this
-                // custom feature (see MakeStackableCopy), not an identically-id'd instance owned by a
-                // race / level-up ASI. Falls back to any match for ordinary (uniquely-owned) features.
-                var matches = cm.GetElements().Where(e => e.Id == targetId).ToList();
-                var el = matches.FirstOrDefault(e => !e.Aquisition.WasGranted && !e.Aquisition.WasSelected)
-                         ?? matches.FirstOrDefault();
-                if (el != null) cm.UnregisterElement(el);
-                cm.ReprocessCharacter();
-                ResnapTab(tab);
-                SaveCharacterFile(tab);
-
-                var file = tab.File;
-                if (file != null)
-                {
-                    var list = file.LoadCustomFeatures();
-                    int index = list.FindIndex(x => string.Equals(x, elementId, StringComparison.OrdinalIgnoreCase));
-                    if (index >= 0)
-                        list.RemoveAt(index);
-                    CharacterFileWriteCoordinator.Write(
-                        tab.FileSaveSemaphore,
-                        file,
-                        "Custom features",
-                        () => file.SaveCustomFeatures(list)).ThrowIfFailed();
-                }
-                return (string?)null;
-            }
-            catch (Exception ex) { return DebugLogService.Catch(ex, "BuildService.RemoveCustomFeatureAsync"); }
-        });
-    }
 
     /// <summary>
     /// Adds a level to the main class (or the bare level if class not yet chosen).
@@ -1540,1071 +1481,6 @@ public static class BuildService
         });
     }
 
-    /// <summary>
-    /// Returns all Multiclass elements from the data collection — the list of classes
-    /// the character could multiclass into. Uses dynamic dispatch since Multiclass is
-    /// a Builder.Data type not directly nameable from Aurora.App.
-    /// </summary>
-    public static IReadOnlyList<ElementOption> GetMulticlassOptions()
-    {
-        var options = DataManager.Current.ElementsCollection
-            .Where(e => e.Type == "Multiclass")
-            .Select(e => new ElementOption(
-                e.Id,
-                e.Name ?? "",
-                GetFeatureDescription(e),
-                e.Source ?? "",
-                // The multiclass ability-score prerequisite (e.g. "Strength 13 or Dexterity 13"),
-                // surfaced in the picker's detail pane as "Requires: …".
-                e.Prerequisite ?? "",
-                SourceReleaseDate: TryGetElementSortMetadata(e)?.SourceReleaseDate,
-                SourceFileModifiedUtc: TryGetElementSortMetadata(e)?.SourceFileModifiedUtc))
-            .ToList();
-
-        return OrderElementOptions(options, isSpellRule: false).ToList();
-    }
-
-    /// <summary>
-    /// Returns the character's current classes (main class + any multiclasses) for the "which class
-    /// do you want to level?" picker. Id is the class's element id — the main class's Class element
-    /// id, or a multiclass's Multiclass element id — which routes the level-up (see LevelUpAsync).
-    /// </summary>
-    public static async Task<IReadOnlyList<LevelUpClassOption>> GetLevelUpClassesAsync(CharacterTab tab)
-    {
-        using var scope = await CharacterContext.EnterAsync(tab);
-        return await Task.Run(() =>
-        {
-            try
-            {
-                var cm = CharacterManager.Current;
-                return (IReadOnlyList<LevelUpClassOption>)cm.ClassProgressionManagers
-                    .Where(m => m.ClassElement != null)
-                    .Select(m => new LevelUpClassOption(
-                        m.ClassElement!.Id ?? "",
-                        m.ClassElement.Name ?? "Class",
-                        m.ProgressionLevel,
-                        m.IsMainClass))
-                    // Main class first, then multiclasses alphabetically.
-                    .OrderByDescending(o => o.IsMain)
-                    .ThenBy(o => o.Name)
-                    .ToList();
-            }
-            catch (Exception ex)
-            {
-                DebugLogService.Catch(ex, "BuildService.GetLevelUpClassesAsync");
-                return [];
-            }
-        });
-    }
-
-    /// <summary>
-    /// Returns the multiclass choices this character can currently take.
-    /// Includes existing multiclass progressions so the same dialog can add another level to them.
-    /// </summary>
-    public static async Task<IReadOnlyList<ElementOption>> GetAvailableMulticlassOptionsAsync(CharacterTab tab)
-    {
-        using var scope = await CharacterContext.EnterAsync(tab);
-        return await Task.Run(() =>
-        {
-            try
-            {
-                var cm = CharacterManager.Current;
-                if (!cm.Status.HasMainClass || !cm.Status.CanLevelUp || !IsMulticlassingEnabled(cm))
-                    return [];
-
-                if (!CanCurrentBuildMulticlass(cm))
-                    return [];
-
-                // Classes the character already has (main class + any multiclasses), by display name.
-                // Used to keep one source of a class at a time: a class already on the character can't
-                // be added again from a different source. Existing multiclasses are matched by id below
-                // so they stay available to level up.
-                var currentClassNames = cm.ClassProgressionManagers
-                    .Select(m => m.ClassElement?.Name)
-                    .Where(n => !string.IsNullOrWhiteSpace(n))
-                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-                var elements = DataManager.Current.ElementsCollection
-                    .Where(e => e.Type == "Multiclass")
-                    .Where(e =>
-                        // Keep an existing multiclass (so it can be leveled), otherwise only offer a
-                        // class the character doesn't already have (any source) and meets the prereq for.
-                        FindMulticlassProgression(cm, e.Id) != null ||
-                        (!currentClassNames.Contains(e.Name ?? "") &&
-                         MeetsMulticlassElementRequirements(e, cm, out _)))
-                    .OrderBy(e => e.Name)
-                    .ToList();
-
-                return BuildMulticlassOptions(elements);
-            }
-            catch (Exception ex)
-            {
-                DebugLogService.Catch(ex, "BuildService.GetAvailableMulticlassOptionsAsync");
-                return [];
-            }
-        });
-    }
-
-    private static IReadOnlyList<ElementOption> BuildMulticlassOptions(List<ElementBase> elements)
-    {
-        var options = elements
-            .Select(e => new ElementOption(
-                e.Id,
-                e.Name ?? "",
-                GetFeatureDescription(e),
-                e.Source ?? "",
-                e.Prerequisite ?? "",
-                SourceReleaseDate: TryGetElementSortMetadata(e)?.SourceReleaseDate,
-                SourceFileModifiedUtc: TryGetElementSortMetadata(e)?.SourceFileModifiedUtc))
-            .ToList();
-
-        return DeduplicateOptions(OrderElementOptions(options, isSpellRule: false).ToList());
-    }
-
-    public static async Task<string?> AddMulticlassLevelAsync(CharacterTab tab, string multiclassElementId)
-    {
-        using var scope = await CharacterContext.EnterAsync(tab);
-        return await Task.Run(() =>
-        {
-            var levelBefore = 0;
-            var startedNewMulticlass = false;
-            var mutationCompleted = false;
-
-            try
-            {
-                var cm = CharacterManager.Current;
-                levelBefore = cm.Character.Level;
-
-                var element = DataManager.Current.ElementsCollection
-                    .FirstOrDefault(e => e.Id == multiclassElementId && e.Type == "Multiclass");
-                if (element == null)
-                    return "Multiclass element not found.";
-
-                if (!cm.Status.HasMainClass)
-                    return "Choose a class before multiclassing.";
-
-                if (!cm.Status.CanLevelUp)
-                    return "This character cannot gain another level.";
-
-                if (!IsMulticlassingEnabled(cm))
-                    return "Multiclassing is not enabled for this character.";
-
-                if (!CanCurrentBuildMulticlass(cm))
-                    return "This character doesn't meet the ability-score prerequisite to multiclass "
-                         + "(you need the minimum ability scores for both your current class and the new one).";
-
-                var existingProgression = FindMulticlassProgression(cm, multiclassElementId);
-                if (existingProgression != null)
-                {
-                    var progressionBefore = existingProgression.ProgressionLevel;
-
-                    dynamic d = element;
-                    cm.LevelUpMulti(d);
-
-                    if (cm.Character.Level != levelBefore + 1 ||
-                        existingProgression.ProgressionLevel != progressionBefore + 1)
-                    {
-                        RollBackToLevel(cm, levelBefore);
-                        return $"Couldn't add a level of {element.Name}. No change was made.";
-                    }
-                }
-                else
-                {
-                    if (!MeetsMulticlassElementRequirements(element, cm, out var requirementError))
-                        return requirementError
-                            ?? $"This character doesn't meet the multiclass prerequisite for {element.Name}.";
-
-                    var existingRuleIds = GetMulticlassRules(cm)
-                        .Select(r => r.UniqueIdentifier ?? "")
-                        .ToHashSet(StringComparer.Ordinal);
-
-                    cm.NewMulticlass();
-                    startedNewMulticlass = true;
-
-                    if (cm.Character.Level != levelBefore + 1)
-                        return RollBackNewMulticlass(cm, levelBefore, "Couldn't gain a new multiclass level. No change was made.");
-
-                    var mcRule = FindNewMulticlassRule(cm, existingRuleIds, cm.Character.Level);
-                    if (mcRule == null)
-                        return RollBackNewMulticlass(cm, levelBefore, "Couldn't open a multiclass selection for this level. No change was made.");
-
-                    var expander = SelectionRuleExpanderContext.Current;
-                    if (expander == null)
-                        return RollBackNewMulticlass(cm, levelBefore, "Couldn't register the multiclass selection. No change was made.");
-
-                    expander.SetRegisteredElement(mcRule, element.Id);
-
-                    if (FindMulticlassProgression(cm, multiclassElementId) == null)
-                        return RollBackNewMulticlass(cm, levelBefore, $"Couldn't add {element.Name} as a multiclass. No change was made.");
-                }
-
-                mutationCompleted = true;
-                ResnapTab(tab);
-                SaveCharacterFile(tab);
-                return (string?)null;
-            }
-            catch (Exception ex)
-            {
-                if (startedNewMulticlass && !mutationCompleted)
-                    RollBackToLevel(CharacterManager.Current, levelBefore);
-
-                return DebugLogService.Catch(ex, "BuildService.AddMulticlassLevelAsync");
-            }
-        });
-    }
-
-    private static bool IsMulticlassingEnabled(CharacterManager cm)
-    {
-        try { return cm.ContainsOption(MulticlassOptionId); }
-        catch { return false; }
-    }
-
-    private static bool CanCurrentBuildMulticlass(CharacterManager cm) =>
-        cm.Status.CanMulticlass || cm.GetElements().Any(e => e.Id == MulticlassPrereqGrantId);
-
-    private static bool MeetsMulticlassElementRequirements(ElementBase element, CharacterManager cm, out string? error)
-    {
-        error = null;
-        if (!element.HasRequirements)
-            return true;
-
-        try
-        {
-            var interpreter = new ExpressionInterpreter();
-            var currentIds = cm.GetElements().Select(e => e.Id).ToList();
-            return interpreter.EvaluateElementRequirementsExpression(element.Requirements, currentIds);
-        }
-        catch (Exception ex)
-        {
-            error = DebugLogService.Catch(ex, "BuildService.MeetsMulticlassElementRequirements");
-            return false;
-        }
-    }
-
-    private static ClassProgressionManager? FindMulticlassProgression(CharacterManager cm, string multiclassElementId) =>
-        cm.ClassProgressionManagers
-            .FirstOrDefault(m => m.IsMulticlass && m.ClassElement?.Id == multiclassElementId);
-
-    private static IReadOnlyList<SelectRule> GetMulticlassRules(CharacterManager cm) =>
-        cm.SelectionRules
-            .Where(r => string.Equals(r.Attributes.Type, "Multiclass", StringComparison.OrdinalIgnoreCase))
-            .ToList();
-
-    private static SelectRule? FindNewMulticlassRule(
-        CharacterManager cm,
-        HashSet<string> existingRuleIds,
-        int newCharacterLevel)
-    {
-        var rules = GetMulticlassRules(cm);
-        var newRules = rules
-            .Where(r => !existingRuleIds.Contains(r.UniqueIdentifier ?? ""))
-            .ToList();
-
-        return newRules.FirstOrDefault(r => r.Attributes.RequiredLevel == newCharacterLevel)
-            ?? newRules.OrderByDescending(r => r.Attributes.RequiredLevel).FirstOrDefault()
-            ?? rules.FirstOrDefault(r =>
-                r.Attributes.RequiredLevel == newCharacterLevel &&
-                (r.Attributes.Requirements ?? "").Contains(
-                    $"ID_INTERNAL_MULTICLASS_LEVEL_{newCharacterLevel}",
-                    StringComparison.OrdinalIgnoreCase));
-    }
-
-    private static string RollBackNewMulticlass(CharacterManager cm, int levelBefore, string message)
-    {
-        RollBackToLevel(cm, levelBefore);
-        return message;
-    }
-
-    private static void RollBackToLevel(CharacterManager cm, int levelBefore)
-    {
-        try
-        {
-            while (cm.Character.Level > levelBefore && cm.Status.CanLevelDown)
-                cm.LevelDown();
-        }
-        catch (Exception ex)
-        {
-            DebugLogService.Instance.LogException(ex, "BuildService.RollBackToLevel");
-        }
-    }
-
-    /// <summary>
-    /// Starts a new multiclass or adds a level to an existing one.
-    /// <paramref name="multiclassElementId"/> is the element ID of the Multiclass element.
-    /// Saves and re-snaps. Returns any error string.
-    /// </summary>
-    private static async Task<string?> AddMulticlassLevelLegacyAsync(CharacterTab tab, string multiclassElementId)
-    {
-        using var scope = await CharacterContext.EnterAsync(tab);
-        return await Task.Run(() =>
-        {
-            try
-            {
-                var cm = CharacterManager.Current;
-                var element = DataManager.Current.ElementsCollection
-                    .FirstOrDefault(e => e.Id == multiclassElementId && e.Type == "Multiclass");
-                if (element == null) return "Multiclass element not found.";
-
-                // Check if this multiclass already exists on the character
-                bool alreadyHasThisMulticlass = cm.ClassProgressionManagers
-                    .Any(m => m.IsMulticlass && m.ClassElement?.Id == multiclassElementId);
-
-                if (alreadyHasThisMulticlass)
-                {
-                    // Add a level to the existing multiclass via dynamic dispatch
-                    dynamic d = element;
-                    cm.LevelUpMulti(d);
-                }
-                else
-                {
-                    // Starting a NEW multiclass is, in 5e and in the engine, spending a new level on a
-                    // different class. The order matters:
-                    //   1. NewMulticlass() levels the character up and adds ID_INTERNAL_MULTICLASS_LEVEL_N,
-                    //      which is what *activates* the matching <select type="Multiclass"> rule.
-                    //   2. The chosen class is then acquired THROUGH that rule — RegisterElement's
-                    //      Multiclass case reads element.Aquisition.SelectRule, so registering a raw
-                    //      element (no SelectRule) throws a NullReferenceException.
-                    // The ability-score prerequisite (ID_INTERNAL_GRANTS_MULTICLASSING_PREREQUISITE) is
-                    // granted by the current class only when met; gate on it first so we never level the
-                    // character up into a dead end. (Multiclassing itself is a default-on, locked option.)
-                    bool meetsPrereq = cm.GetElements()
-                        .Any(e => e.Id == "ID_INTERNAL_GRANTS_MULTICLASSING_PREREQUISITE");
-                    if (!meetsPrereq)
-                        return "This character doesn't meet the ability-score prerequisite to multiclass "
-                             + "(you need the minimum ability scores for both your current class and the new one).";
-
-                    cm.NewMulticlass();
-
-                    var mcRule = cm.SelectionRules
-                        .Where(r => r.Attributes.Type == "Multiclass")
-                        .OrderByDescending(r => r.Attributes.RequiredLevel)
-                        .FirstOrDefault();
-                    if (mcRule == null)
-                    {
-                        // Shouldn't happen once the prerequisite is met, but don't strand a leveled-up
-                        // character with no class assigned — undo the level NewMulticlass just added.
-                        if (cm.Status.CanLevelDown) cm.LevelDown();
-                        return "Couldn't open a multiclass selection for this level. No change was made.";
-                    }
-
-                    element.Aquisition.SelectedBy(mcRule);
-                    cm.RegisterElement(element);
-                }
-
-                ResnapTab(tab);
-                SaveCharacterFile(tab);
-                return (string?)null;
-            }
-            catch (Exception ex) { return DebugLogService.Catch(ex, "BuildService.AddMulticlassLevelAsync"); }
-        });
-    }
-
-    // ── Tab-based build structure ─────────────────────────────────────────────────
-
-    /// <summary>
-    /// Classifies all active SelectionRules into tab groups for the Build page.
-    /// Always returns Race, Class, and Background tabs (may be empty of rules if none
-    /// apply yet). Additional overflow tabs are added for any other rule types.
-    /// </summary>
-    /// <summary>
-    /// Returns build tabs, ASI entries, and the next required step in a single scan of
-    /// <see cref="CharacterManager.SelectionRules"/>. Prefer this over calling
-    /// <see cref="GetBuildTabs"/>, <see cref="GetAsiEntries"/>, and
-    /// <see cref="GetNextRequiredStep"/> separately.
-    /// </summary>
-    public static (IReadOnlyList<BuildTabGroup> Tabs,
-                   IReadOnlyList<SelectionRuleEntry> AsiEntries,
-                   BuildGuidanceTarget? NextStep)
-        GetBuildData(bool preferClassFirst)
-    {
-        var tabs = GetBuildTabs(preferClassFirst);
-        var asi  = GetAsiEntries();
-
-        BuildGuidanceTarget? next = null;
-        // Race comes first in the guided flow even when an older or reopened tab keeps
-        // the class-first visual tab ordering. Race rules establish movement, languages,
-        // and origin ASI choices that the remaining build depends on.
-        var coreOrder = new[] { "Race", "Class" };
-
-        foreach (var label in coreOrder)
-        {
-            var tab = tabs.FirstOrDefault(t => t.Label == label);
-            if (tab == null) continue;
-            foreach (var group in tab.RuleGroups)
-            {
-                foreach (var rule in group.Rules)
-                {
-                    if (rule.CurrentName == null && !rule.IsOptional)
-                    {
-                        next = new BuildGuidanceTarget(
-                            BuildGuidanceActionKind.Selection,
-                            tab.Label,
-                            rule.Label,
-                            rule.EntryKey,
-                            TargetLabel: $"{tab.Label} tab");
-                        goto done;
-                    }
-                }
-            }
-        }
-
-        if (NeedsInitialAbilityScores())
-        {
-            next = new BuildGuidanceTarget(
-                BuildGuidanceActionKind.AbilityScores,
-                "Ability Scores",
-                "Assign your starting ability scores",
-                EntryKey: null,
-                TargetLabel: "Ability Scores tab");
-            goto done;
-        }
-
-        foreach (var label in new[] { "Background", "Languages", "Proficiencies" })
-        {
-            var tab = tabs.FirstOrDefault(t => t.Label == label);
-            if (tab == null) continue;
-            foreach (var group in tab.RuleGroups)
-            {
-                foreach (var rule in group.Rules)
-                {
-                    if (rule.CurrentName == null && !rule.IsOptional)
-                    {
-                        next = new BuildGuidanceTarget(
-                            BuildGuidanceActionKind.Selection,
-                            tab.Label,
-                            rule.Label,
-                            rule.EntryKey,
-                            TargetLabel: $"{tab.Label} tab");
-                        goto done;
-                    }
-                }
-            }
-        }
-
-        foreach (var tab in tabs.Where(t =>
-                     t.Label is not "Race" and not "Class" and not "Background" and not "Languages" and not "Proficiencies"))
-        {
-            foreach (var group in tab.RuleGroups)
-            {
-                foreach (var rule in group.Rules)
-                {
-                    if (rule.CurrentName == null)
-                    {
-                        next = new BuildGuidanceTarget(
-                            BuildGuidanceActionKind.Selection,
-                            tab.Label,
-                            rule.Label,
-                            rule.EntryKey,
-                            TargetLabel: $"{tab.Label} tab");
-                        goto done;
-                    }
-                }
-            }
-        }
-
-        foreach (var entry in asi)
-        {
-            if (entry.CurrentName == null)
-            {
-                next = new BuildGuidanceTarget(
-                    BuildGuidanceActionKind.Selection,
-                    "Ability Scores",
-                    entry.Label,
-                    entry.EntryKey,
-                    TargetLabel: "Ability Scores tab");
-                break;
-            }
-        }
-        done:
-        return (tabs, asi, next);
-    }
-
-    public static IReadOnlyList<BuildTabGroup> GetBuildTabs(bool preferClassFirst)
-    {
-        var cm       = CharacterManager.Current;
-        var classMgrs = cm.ClassProgressionManagers;
-
-        var raceEntries        = new List<SelectionRuleEntry>();
-        var classMainEntries   = new List<SelectionRuleEntry>(); // "Class" type before PM exists
-        var bgEntries          = new List<SelectionRuleEntry>();
-        var languageEntries    = new List<SelectionRuleEntry>();
-        var proficiencyEntries = new List<SelectionRuleEntry>();
-        var companionEntries   = new List<SelectionRuleEntry>();
-        var featEntries        = new Dictionary<string, List<SelectionRuleEntry>>(StringComparer.OrdinalIgnoreCase);
-        var overflowEntries    = new Dictionary<string, List<SelectionRuleEntry>>(StringComparer.OrdinalIgnoreCase);
-        var classGroupEntries  = new Dictionary<ClassProgressionManager, List<SelectionRuleEntry>>();
-
-        foreach (var rule in cm.SelectionRules)
-        {
-            if (rule.Attributes.Type == "Spell") continue;
-
-            var pm       = cm.GetProgressManager(rule);
-            var classMgr = classMgrs.FirstOrDefault(m => ReferenceEquals(m, pm));
-
-            for (int n = 1; n <= rule.Attributes.Number; n++)
-            {
-                string? currentName = ResolveCurrentSelectionName(rule, n);
-                string ruleType  = rule.Attributes.Type  ?? "Other";
-                string ruleName  = rule.Attributes.Name  ?? ruleType;
-                if (string.Equals(ruleType, "Multiclass", StringComparison.OrdinalIgnoreCase) &&
-                    currentName != null)
-                    continue;
-
-                string label = rule.Attributes.Number > 1
-                    ? $"{ruleName} ({n})"
-                    : ruleName;
-
-                var entry = new SelectionRuleEntry(
-                    rule, n, label, currentName, rule.Attributes.RequiredLevel,
-                    BuildEntryKey(rule, n, ruleType, ruleName));
-
-                switch (ClassifyBuildRule(rule, classMgr))
-                {
-                    case BuildRuleBucket.Class:
-                        if (classMgr != null)
-                        {
-                            if (!classGroupEntries.ContainsKey(classMgr))
-                                classGroupEntries[classMgr] = [];
-                            classGroupEntries[classMgr].Add(entry);
-                        }
-                        else
-                        {
-                            classMainEntries.Add(entry);
-                        }
-                        break;
-                    case BuildRuleBucket.Race:
-                        raceEntries.Add(entry);
-                        break;
-                    case BuildRuleBucket.Background:
-                        bgEntries.Add(entry);
-                        break;
-                    case BuildRuleBucket.Language:
-                        languageEntries.Add(entry);
-                        break;
-                    case BuildRuleBucket.Proficiency:
-                        proficiencyEntries.Add(entry);
-                        break;
-                    case BuildRuleBucket.Feat:
-                        string featGroup = GetFeatGroupLabel(rule);
-                        if (!featEntries.ContainsKey(featGroup))
-                            featEntries[featGroup] = [];
-                        featEntries[featGroup].Add(entry);
-                        break;
-                    case BuildRuleBucket.Companion:
-                        companionEntries.Add(entry);
-                        break;
-                    case BuildRuleBucket.AbilityScores:
-                        break;
-                    default:
-                        string typeName = ruleType;
-                        if (!overflowEntries.ContainsKey(typeName))
-                            overflowEntries[typeName] = [];
-                        overflowEntries[typeName].Add(entry);
-                        break;
-                }
-                // AsiTypes are excluded from all tabs — exposed via GetAsiEntries()
-            }
-        }
-
-        static List<SelectionRuleEntry> Sort(List<SelectionRuleEntry> l) =>
-            l.OrderBy(e => e.RequiredLevel).ThenBy(e => e.Label).ToList();
-
-        var tabs = new List<BuildTabGroup>();
-
-        // Class tab — always present; initial Class rule first, then per-PM groups.
-        var classGroups = new List<SelectionRuleGroup>();
-        if (classMainEntries.Count > 0)
-            classGroups.Add(new SelectionRuleGroup("", Sort(classMainEntries)));
-        foreach (var m in classMgrs)
-        {
-            if (!classGroupEntries.TryGetValue(m, out var entries) || entries.Count == 0) continue;
-            classGroups.Add(new SelectionRuleGroup(
-                m.ClassElement?.Name ?? "Class",
-                Sort(entries)));
-        }
-        var classTab = new BuildTabGroup("Class", classGroups, CountUnresolved(classGroups));
-
-        // Race tab
-        var raceGroups = raceEntries.Count > 0
-            ? new List<SelectionRuleGroup> { new("", Sort(raceEntries)) }
-            : new List<SelectionRuleGroup>();
-        var raceTab = new BuildTabGroup("Race", raceGroups, CountUnresolved(raceGroups));
-
-        if (preferClassFirst)
-        {
-            tabs.Add(classTab);
-            tabs.Add(raceTab);
-        }
-        else
-        {
-            tabs.Add(raceTab);
-            tabs.Add(classTab);
-        }
-
-        // Background tab — always present
-        var bgGroups = bgEntries.Count > 0
-            ? new List<SelectionRuleGroup> { new("", Sort(bgEntries)) }
-            : new List<SelectionRuleGroup>();
-        tabs.Add(new BuildTabGroup("Background", bgGroups, CountUnresolved(bgGroups)));
-
-        // Language tab — always present
-        var langGroups = languageEntries.Count > 0
-            ? new List<SelectionRuleGroup> { new("", Sort(languageEntries)) }
-            : new List<SelectionRuleGroup>();
-        tabs.Add(new BuildTabGroup("Languages", langGroups, CountUnresolved(langGroups)));
-
-        // Proficiency tab — always present
-        var profGroups = proficiencyEntries.Count > 0
-            ? new List<SelectionRuleGroup> { new("", Sort(proficiencyEntries)) }
-            : new List<SelectionRuleGroup>();
-        tabs.Add(new BuildTabGroup("Proficiencies", profGroups, CountUnresolved(profGroups)));
-
-        // Feats tab — always present
-        var featGroups = featEntries.Count > 0
-            ? featEntries
-                .OrderBy(kv => kv.Key)
-                .Select(kv => new SelectionRuleGroup(kv.Key, Sort(kv.Value)))
-                .ToList()
-            : new List<SelectionRuleGroup>();
-        tabs.Add(new BuildTabGroup("Feats", featGroups, CountUnresolved(featGroups)));
-
-        // Companions tab — only shown when companion rules are present
-        if (companionEntries.Count > 0)
-        {
-            var companionGroups = new List<SelectionRuleGroup> { new("", Sort(companionEntries)) };
-            tabs.Add(new BuildTabGroup("Companions", companionGroups, CountUnresolved(companionGroups)));
-        }
-
-        // Overflow tabs — one per unrecognised type, alphabetical
-        foreach (var (typeName, entries) in overflowEntries.OrderBy(kv => kv.Key))
-            tabs.Add(new BuildTabGroup(typeName, [new SelectionRuleGroup("", Sort(entries))], entries.Count(e => e.CurrentName == null)));
-
-        return tabs;
-    }
-
-    /// <summary>
-    /// Returns SelectionRule entries for Ability Score Improvement and Feat rules that are
-    /// not tied to a class progression manager. These are shown on the Ability Scores tab
-    /// rather than as separate overflow tabs.
-    /// </summary>
-    public static IReadOnlyList<SelectionRuleEntry> GetAsiEntries()
-    {
-        var cm      = CharacterManager.Current;
-        var classMgrs = cm.ClassProgressionManagers;
-        var result  = new List<SelectionRuleEntry>();
-        OriginAbilityScoreSource activeOriginAsiSource = GetActiveOriginAbilityScoreSource();
-
-        foreach (var rule in cm.SelectionRules)
-        {
-            var pm       = cm.GetProgressManager(rule);
-            var classMgr = classMgrs.FirstOrDefault(m => ReferenceEquals(m, pm));
-            if (classMgr != null) continue; // class-PM rules stay in Class tab
-
-            string ruleType = rule.Attributes.Type ?? "Other";
-            if (ClassifyBuildRule(rule, classMgr) != BuildRuleBucket.AbilityScores) continue;
-            OriginAbilityScoreSource originAsiSource = GetOriginAbilityScoreSource(rule);
-
-            for (int n = 1; n <= rule.Attributes.Number; n++)
-            {
-                string? currentName = ResolveCurrentSelectionName(rule, n);
-                if (activeOriginAsiSource != OriginAbilityScoreSource.None &&
-                    originAsiSource != OriginAbilityScoreSource.None &&
-                    originAsiSource != activeOriginAsiSource &&
-                    currentName == null)
-                {
-                    continue;
-                }
-
-                string ruleName = rule.Attributes.Name ?? ruleType;
-                string label    = rule.Attributes.Number > 1 ? $"{ruleName} ({n})" : ruleName;
-                result.Add(new SelectionRuleEntry(
-                    rule, n, label, currentName, rule.Attributes.RequiredLevel,
-                    BuildEntryKey(rule, n, ruleType, ruleName)));
-            }
-        }
-
-        return result.OrderBy(e => e.RequiredLevel).ThenBy(e => e.Label).ToList();
-    }
-
-    private static OriginAbilityScoreSource GetOriginAbilityScoreSource(SelectRule rule)
-    {
-        var cm = CharacterManager.Current;
-        var pm = cm.GetProgressManager(rule);
-        bool hasClassManager = cm.ClassProgressionManagers.Any(m => ReferenceEquals(m, pm));
-        var ownerElement = ResolveOwnerElement(rule);
-
-        return BuildRuleClassifier.ClassifyOriginAbilityScoreSource(
-            ruleType: rule.Attributes.Type ?? "Other",
-            ruleName: rule.Attributes.Name ?? rule.Attributes.Type ?? "Other",
-            ownerType: ownerElement?.Type ?? rule.ElementHeader?.Type ?? string.Empty,
-            ownerName: ownerElement?.Name ?? rule.ElementHeader?.Name ?? string.Empty,
-            hasClassManager: hasClassManager);
-    }
-
-    private static OriginAbilityScoreSource GetActiveOriginAbilityScoreSource()
-    {
-        bool hasRace = HasRegisteredOriginAbilityScoreSelection(OriginAbilityScoreSource.Race);
-        bool hasBackground = HasRegisteredOriginAbilityScoreSelection(OriginAbilityScoreSource.Background);
-
-        // If a character somehow already has both, prefer the 2024-style background source
-        // until the validator can clear the older racial selections.
-        if (hasBackground)
-            return OriginAbilityScoreSource.Background;
-        return hasRace ? OriginAbilityScoreSource.Race : OriginAbilityScoreSource.None;
-    }
-
-    private static bool HasRegisteredOriginAbilityScoreSelection(OriginAbilityScoreSource source)
-    {
-        if (source == OriginAbilityScoreSource.None)
-            return false;
-
-        foreach (var rule in CharacterManager.Current.SelectionRules)
-        {
-            if (GetOriginAbilityScoreSource(rule) != source)
-                continue;
-
-            for (int n = 1; n <= rule.Attributes.Number; n++)
-            {
-                if (SelectionRuleExpanderContext.Current?.GetRegisteredElement(rule, n) is ElementBase)
-                    return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static void ClearConflictingOriginAbilityScoreSelections(
-        SelectRule selectedRule,
-        List<string> invalidated)
-    {
-        OriginAbilityScoreSource selectedSource = GetOriginAbilityScoreSource(selectedRule);
-        if (selectedSource == OriginAbilityScoreSource.None)
-            return;
-
-        OriginAbilityScoreSource conflictingSource = selectedSource == OriginAbilityScoreSource.Race
-            ? OriginAbilityScoreSource.Background
-            : OriginAbilityScoreSource.Race;
-
-        ClearOriginAbilityScoreSelections(conflictingSource, selectedRule, invalidated);
-    }
-
-    private static void ClearExistingOriginAbilityScoreCollisions(List<string> invalidated)
-    {
-        if (!HasRegisteredOriginAbilityScoreSelection(OriginAbilityScoreSource.Race) ||
-            !HasRegisteredOriginAbilityScoreSelection(OriginAbilityScoreSource.Background))
-        {
-            return;
-        }
-
-        // Existing mixed-rule characters are normalized toward 2024 background ASIs.
-        ClearOriginAbilityScoreSelections(OriginAbilityScoreSource.Race, exceptRule: null, invalidated);
-    }
-
-    private static void ClearOriginAbilityScoreSelections(
-        OriginAbilityScoreSource source,
-        SelectRule? exceptRule,
-        List<string> invalidated)
-    {
-        if (source == OriginAbilityScoreSource.None)
-            return;
-
-        var cm = CharacterManager.Current;
-        foreach (var rule in cm.SelectionRules.ToList())
-        {
-            if (exceptRule != null && ReferenceEquals(rule, exceptRule))
-                continue;
-            if (GetOriginAbilityScoreSource(rule) != source)
-                continue;
-
-            for (int n = 1; n <= rule.Attributes.Number; n++)
-            {
-                var registered = SelectionRuleExpanderContext.Current?.GetRegisteredElement(rule, n) as ElementBase;
-                if (registered == null)
-                    continue;
-
-                bool cleared = false;
-                try
-                {
-                    cm.UnregisterElement(registered);
-                    SelectionRuleExpanderContext.Current?.ClearRegisteredElement(rule, n);
-                    cleared = true;
-                }
-                catch (Exception ex)
-                {
-                    DebugLogService.Instance.LogException(
-                        ex,
-                        "BuildService.ClearOriginAbilityScoreSelections");
-                }
-
-                if (cleared)
-                    invalidated.Add(BuildSelectionLabel(rule, n));
-            }
-        }
-    }
-
-    private static void ClearStaleSelectedAbilityScoreElements(List<string> invalidated)
-    {
-        var cm = CharacterManager.Current;
-        var activeRuleIds = cm.SelectionRules
-            .Select(rule => rule.UniqueIdentifier)
-            .Where(id => !string.IsNullOrWhiteSpace(id))
-            .ToHashSet(StringComparer.Ordinal);
-
-        foreach (var element in cm.GetElements().ToList())
-        {
-            if (!element.Type.Equals("Ability Score Improvement", StringComparison.OrdinalIgnoreCase))
-                continue;
-            if (!element.Aquisition.WasSelected)
-                continue;
-
-            var selectedRule = element.Aquisition.SelectRule;
-            if (selectedRule == null)
-                continue;
-
-            var selectedRuleId = selectedRule.UniqueIdentifier;
-            if (!string.IsNullOrWhiteSpace(selectedRuleId) && activeRuleIds.Contains(selectedRuleId))
-                continue;
-
-            int slot = FindRegisteredSelectionSlot(selectedRule, element);
-            bool cleared = false;
-            try
-            {
-                cm.UnregisterElement(element);
-                if (slot > 0)
-                    SelectionRuleExpanderContext.Current?.ClearRegisteredElement(selectedRule, slot);
-                cleared = true;
-            }
-            catch (Exception ex)
-            {
-                DebugLogService.Instance.LogException(
-                    ex,
-                    "BuildService.ClearStaleSelectedAbilityScoreElements");
-            }
-
-            if (cleared)
-            {
-                invalidated.Add(slot > 0
-                    ? BuildSelectionLabel(selectedRule, slot)
-                    : (selectedRule.Attributes.Name ?? selectedRule.Attributes.Type ?? "Ability Score Improvement"));
-            }
-        }
-    }
-
-    private static int FindRegisteredSelectionSlot(SelectRule rule, ElementBase element)
-    {
-        int count = Math.Max(1, rule.Attributes.Number);
-        for (int n = 1; n <= count; n++)
-        {
-            try
-            {
-                var current = SelectionRuleExpanderContext.Current?.GetRegisteredElement(rule, n) as ElementBase;
-                if (current == null)
-                    continue;
-
-                if (ReferenceEquals(current, element) ||
-                    current.Id.Equals(element.Id, StringComparison.OrdinalIgnoreCase))
-                {
-                    return n;
-                }
-            }
-            catch (Exception ex)
-            {
-                DebugLogService.Instance.LogException(
-                    ex,
-                    "BuildService.FindRegisteredSelectionSlot");
-            }
-        }
-
-        return 0;
-    }
-
-    private static string BuildSelectionLabel(SelectRule rule, int number)
-    {
-        string ruleName = rule.Attributes.Name ?? rule.Attributes.Type ?? "Selection";
-        return rule.Attributes.Number > 1 ? $"{ruleName} ({number})" : ruleName;
-    }
-
-    /// <summary>
-    /// Returns the tab label and rule label of the first unfilled required SelectionRule,
-    /// or null when everything is complete for the current level.
-    /// </summary>
-    public static BuildGuidanceTarget? GetNextRequiredStep()
-    {
-        var (tabs, asi, next) = GetBuildData(preferClassFirst: false);
-        if (next != null)
-            return next;
-
-        foreach (var tab in tabs)
-        {
-            foreach (var group in tab.RuleGroups)
-            {
-                foreach (var rule in group.Rules)
-                {
-                    if (rule.CurrentName == null)
-                        return new BuildGuidanceTarget(
-                            BuildGuidanceActionKind.Selection,
-                            tab.Label,
-                            rule.Label,
-                            rule.EntryKey,
-                            TargetLabel: $"{tab.Label} tab");
-                }
-            }
-        }
-        // Check ASI entries last
-        foreach (var entry in asi)
-        {
-            if (entry.CurrentName == null)
-                return new BuildGuidanceTarget(
-                    BuildGuidanceActionKind.Selection,
-                    "Ability Scores",
-                    entry.Label,
-                    entry.EntryKey,
-                    TargetLabel: "Ability Scores tab");
-        }
-        return null;
-    }
-
-    private static int CountUnresolved(IEnumerable<SelectionRuleGroup> groups) =>
-        groups.SelectMany(g => g.Rules).Count(r => r.CurrentName == null && !r.IsOptional);
-
-    private static string BuildEntryKey(SelectRule rule, int number, string ruleType, string ruleName)
-    {
-        if (!string.IsNullOrWhiteSpace(rule.UniqueIdentifier))
-            return $"rule:{rule.UniqueIdentifier}|slot:{number}";
-
-        try
-        {
-            return $"crc:{rule.GetCrC(number)}";
-        }
-        catch
-        {
-            return $"legacy:{ruleType}|{ruleName}|slot:{number}";
-        }
-    }
-
-    private static BuildRuleBucket ClassifyBuildRule(SelectRule rule, ClassProgressionManager? classMgr)
-    {
-        var ownerElement = ResolveOwnerElement(rule);
-        return BuildRuleClassifier.Classify(
-            ruleType:       rule.Attributes.Type ?? "Other",
-            ruleName:       rule.Attributes.Name ?? rule.Attributes.Type ?? "Other",
-            ownerType:      ownerElement?.Type ?? rule.ElementHeader?.Type ?? string.Empty,
-            ownerName:      ownerElement?.Name ?? rule.ElementHeader?.Name ?? string.Empty,
-            hasClassManager: classMgr != null);
-    }
-
-    private static ElementBase? ResolveOwnerElement(SelectRule rule)
-    {
-        var ownerId = rule.ElementHeader?.Id;
-        if (string.IsNullOrWhiteSpace(ownerId))
-            return null;
-
-        return DataManager.Current.ElementsCollection
-            .FirstOrDefault(element => element.Id.Equals(ownerId, StringComparison.Ordinal));
-    }
-
-    private static string GetFeatGroupLabel(SelectRule rule)
-    {
-        var ownerElement = ResolveOwnerElement(rule);
-        string ownerType = ownerElement?.Type ?? rule.ElementHeader?.Type ?? string.Empty;
-        return BuildRuleClassifier.GetFeatGroupLabel(ownerType);
-    }
-
-    private static HashSet<string> GetValidSelectionIds(
-        SelectRule rule,
-        string? registeredId,
-        IReadOnlyCollection<string> currentIds)
-    {
-        var interpreter = new ExpressionInterpreter();
-        interpreter.InitializeWithSelectionRule(rule);
-
-        var baseCollection = new ElementBaseCollection(
-            DataManager.Current.ElementsCollection.Where(element => element.Type.Equals(rule.Attributes.Type)));
-
-        ElementBaseCollection supported;
-        if (rule.Attributes.ContainsSupports())
-        {
-            supported = new ElementBaseCollection(
-                interpreter.EvaluateSupportsExpression<ElementBase>(
-                    rule.Attributes.Supports,
-                    baseCollection,
-                    rule.Attributes.SupportsElementIdRange()));
-        }
-        else
-        {
-            supported = new ElementBaseCollection(baseCollection);
-        }
-
-        var sourcesManager = CharacterManager.Current.SourcesManager;
-        var restrictedSourceNames = sourcesManager.GetUndefinedRestrictedSourceNames().ToHashSet(StringComparer.Ordinal);
-        var restrictedElementIds = sourcesManager.GetRestrictedElementIds().ToHashSet(StringComparer.Ordinal);
-
-        foreach (var restricted in supported
-                     .Where(element => restrictedElementIds.Contains(element.Id) || restrictedSourceNames.Contains(element.Source))
-                     .ToList())
-        {
-            supported.RemoveElement(restricted.Id);
-        }
-
-        foreach (var existing in CharacterManager.Current.GetElements().Where(e => e.Type.Equals(rule.Attributes.Type)))
-        {
-            if (supported.Any(e => e.Id.Equals(existing.Id, StringComparison.Ordinal)) &&
-                !existing.AllowDuplicate &&
-                !existing.Id.Equals(registeredId, StringComparison.Ordinal))
-            {
-                supported.RemoveElement(existing.Id);
-            }
-        }
-
-        var validIds = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var candidate in supported)
-        {
-            if (!candidate.HasRequirements ||
-                interpreter.EvaluateElementRequirementsExpression(candidate.Requirements, currentIds))
-            {
-                validIds.Add(candidate.Id);
-            }
-        }
-
-        return validIds;
-    }
-
-    private static bool NeedsInitialAbilityScores()
-    {
-        try
-        {
-            var abilities = CharacterManager.Current?.Character?.Abilities;
-            if (abilities == null) return false;
-
-            return abilities.Strength.BaseScore == 10 &&
-                   abilities.Dexterity.BaseScore == 10 &&
-                   abilities.Constitution.BaseScore == 10 &&
-                   abilities.Intelligence.BaseScore == 10 &&
-                   abilities.Wisdom.BaseScore == 10 &&
-                   abilities.Charisma.BaseScore == 10;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    /// <summary>
-    /// Returns the Name of the element currently registered for <paramref name="rule"/> slot
-    /// <paramref name="n"/>, or null if the slot is empty or the lookup fails.
-    /// </summary>
-    private static string? ResolveCurrentSelectionName(SelectRule rule, int n)
-    {
-        try
-        {
-            var current = SelectionRuleExpanderContext.Current?.GetRegisteredElement(rule, n);
-            if (current is null) return null;
-            if (current is SelectionRuleListItem listItem) return listItem.Text;
-            return (current as ElementBase)?.Name;
-        }
-        catch { return null; }
-    }
-
 }
 
 // ── Build tab group ───────────────────────────────────────────────────────────
@@ -2654,7 +1530,9 @@ public sealed record ElementOption(
     bool IsRitual = false,
     bool IsConcentration = false,
     DateTimeOffset? SourceReleaseDate = null,
-    DateTimeOffset? SourceFileModifiedUtc = null);
+    DateTimeOffset? SourceFileModifiedUtc = null,
+    bool IsDisabled = false,
+    bool IsCurrentSelection = false);
 
 /// <summary>A class the character can level up: its element id (Class or Multiclass), display name,
 /// current level in that class, and whether it's the main class.</summary>

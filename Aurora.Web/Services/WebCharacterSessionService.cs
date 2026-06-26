@@ -1,5 +1,5 @@
-using System.Xml.Linq;
 using Aurora.Components.Models;
+using Builder.Presentation.Models;
 
 namespace Aurora.Web.Services;
 
@@ -11,6 +11,11 @@ public sealed class WebCharacterSessionService
     private string? _currentCharacterPath;
     private WebCharacterRuntimeState? _currentRuntimeState;
     private WebCharacterMagicState? _currentMagicState;
+
+    public event Action? CurrentCharacterChanged;
+
+    public bool HasCurrentCharacter =>
+        _currentRuntimeState is not null && !string.IsNullOrWhiteSpace(_currentCharacterPath);
 
     public WebCharacterSessionService(
         PhaseZeroSessionWorkspaceService workspaceService,
@@ -74,6 +79,7 @@ public sealed class WebCharacterSessionService
         _currentRuntimeState = await _engine.OpenCharacterAsync(workspace, absolutePath, character.RelativePath);
         _currentCharacterPath = _currentRuntimeState.Summary.RelativePath;
         _currentMagicState = null;
+        NotifyCurrentCharacterChanged();
         return true;
     }
 
@@ -88,11 +94,59 @@ public sealed class WebCharacterSessionService
         return deleted;
     }
 
+    public async Task<bool> UpdateCharacterGroupAsync(string relativePath, string groupName)
+    {
+        ImportedCharacterSummary? character = await GetCharacterAsync(relativePath);
+        if (character is null)
+        {
+            return false;
+        }
+
+        string resolvedGroupName = ResolveGroupName(groupName);
+        string absolutePath = await _workspaceService.ResolveWorkspacePathAsync(relativePath);
+        CharacterFile file = new(absolutePath);
+        file.UpdateGroupName(resolvedGroupName);
+        UpdateCurrentRuntimeGroup(relativePath, resolvedGroupName);
+        NotifyCurrentCharacterChanged();
+        return true;
+    }
+
+    public async Task<int> RenameCharacterGroupAsync(string currentGroupName, string newGroupName)
+    {
+        string current = ResolveGroupName(currentGroupName);
+        string resolved = ResolveGroupName(newGroupName);
+        if (string.Equals(current, resolved, StringComparison.OrdinalIgnoreCase))
+        {
+            return 0;
+        }
+
+        IReadOnlyList<ImportedCharacterSummary> characters = await GetImportedCharactersAsync();
+        List<ImportedCharacterSummary> matchingCharacters = characters
+            .Where(character => string.Equals(ResolveGroupName(character.GroupName), current, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        foreach (ImportedCharacterSummary character in matchingCharacters)
+        {
+            string absolutePath = await _workspaceService.ResolveWorkspacePathAsync(character.RelativePath);
+            CharacterFile file = new(absolutePath);
+            file.UpdateGroupName(resolved);
+            UpdateCurrentRuntimeGroup(character.RelativePath, resolved);
+        }
+
+        if (matchingCharacters.Count > 0)
+        {
+            NotifyCurrentCharacterChanged();
+        }
+
+        return matchingCharacters.Count;
+    }
+
     public void ClearCurrentCharacter()
     {
         _currentCharacterPath = null;
         _currentRuntimeState = null;
         _currentMagicState = null;
+        NotifyCurrentCharacterChanged();
     }
 
     public async Task<WebCharacterRuntimeState> CreateCharacterAsync(string name, string playerName, string group)
@@ -107,6 +161,7 @@ public sealed class WebCharacterSessionService
             Summary = runtimeState.Summary with { RelativePath = relativePath }
         };
         _currentMagicState = null;
+        NotifyCurrentCharacterChanged();
         return _currentRuntimeState;
     }
 
@@ -154,6 +209,7 @@ public sealed class WebCharacterSessionService
         };
         _currentCharacterPath = state.Summary.RelativePath;
         await PersistMagicIfAvailableAsync();
+        NotifyCurrentCharacterChanged();
         return state;
     }
 
@@ -387,6 +443,66 @@ public sealed class WebCharacterSessionService
         return state;
     }
 
+    public async Task<WebAbilityScoreState?> GetCurrentAbilityScoreStateAsync()
+    {
+        if (_currentRuntimeState is null || string.IsNullOrWhiteSpace(_currentCharacterPath))
+            return null;
+
+        PhaseZeroSessionWorkspace workspace = await _workspaceService.GetWorkspaceAsync();
+        return await _engine.GetCurrentAbilityScoreStateAsync(workspace, _currentCharacterPath, _currentRuntimeState.StatusMessage);
+    }
+
+    public async Task<WebAbilityScoreState> SetCurrentAbilityScoresAsync(Dictionary<string, int> baseScores)
+    {
+        EnsureActiveCharacter();
+        PhaseZeroSessionWorkspace workspace = await _workspaceService.GetWorkspaceAsync();
+        WebAbilityScoreState state = await _engine.SetAbilityScoresAsync(workspace, _currentCharacterPath!, baseScores);
+        SyncRuntimeSummary(state.Summary, state.StatusMessage);
+        _currentMagicState = null;
+        return state;
+    }
+
+    public async Task<WebAbilityScoreState> RollCurrentAbilityScoresAsync(bool use4d6, string? singleStat = null)
+    {
+        EnsureActiveCharacter();
+        PhaseZeroSessionWorkspace workspace = await _workspaceService.GetWorkspaceAsync();
+        WebAbilityScoreState state = await _engine.RollAbilityScoresAsync(workspace, _currentCharacterPath!, use4d6, singleStat);
+        SyncRuntimeSummary(state.Summary, state.StatusMessage);
+        _currentMagicState = null;
+        return state;
+    }
+
+    public async Task<WebAbilityScoreState> SetCurrentHpMethodAsync(bool useAverage)
+    {
+        EnsureActiveCharacter();
+        PhaseZeroSessionWorkspace workspace = await _workspaceService.GetWorkspaceAsync();
+        WebAbilityScoreState state = await _engine.SetHpMethodAsync(workspace, _currentCharacterPath!, useAverage);
+        SyncRuntimeSummary(state.Summary, state.StatusMessage);
+        return state;
+    }
+
+    public async Task<WebAbilityScoreState> LevelUpCurrentCharacterAsync()
+    {
+        EnsureActiveCharacter();
+        PhaseZeroSessionWorkspace workspace = await _workspaceService.GetWorkspaceAsync();
+        WebAbilityScoreState state = await _engine.LevelUpAsync(workspace, _currentCharacterPath!);
+        SyncRuntimeSummary(state.Summary, state.StatusMessage);
+        _currentMagicState = null;
+        NotifyCurrentCharacterChanged();
+        return state;
+    }
+
+    public async Task<WebAbilityScoreState> LevelDownCurrentCharacterAsync()
+    {
+        EnsureActiveCharacter();
+        PhaseZeroSessionWorkspace workspace = await _workspaceService.GetWorkspaceAsync();
+        WebAbilityScoreState state = await _engine.LevelDownAsync(workspace, _currentCharacterPath!);
+        SyncRuntimeSummary(state.Summary, state.StatusMessage);
+        _currentMagicState = null;
+        NotifyCurrentCharacterChanged();
+        return state;
+    }
+
     private void EnsureActiveCharacter()
     {
         if (_currentRuntimeState is null || string.IsNullOrWhiteSpace(_currentCharacterPath))
@@ -417,6 +533,32 @@ public sealed class WebCharacterSessionService
         }
     }
 
+    private void NotifyCurrentCharacterChanged() => CurrentCharacterChanged?.Invoke();
+
+    private void UpdateCurrentRuntimeGroup(string relativePath, string groupName)
+    {
+        if (_currentRuntimeState is null ||
+            !string.Equals(_currentRuntimeState.Summary.RelativePath, relativePath, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        _currentRuntimeState = _currentRuntimeState with
+        {
+            Summary = _currentRuntimeState.Summary with { GroupName = groupName }
+        };
+        if (_currentMagicState is not null)
+        {
+            _currentMagicState = _currentMagicState with
+            {
+                Summary = _currentRuntimeState.Summary
+            };
+        }
+    }
+
+    private static string ResolveGroupName(string? groupName) =>
+        string.IsNullOrWhiteSpace(groupName) ? "Characters" : groupName.Trim();
+
     private async Task<WebCharacterMagicState> EnsureMagicStateAsync()
     {
         WebCharacterMagicState? state = await GetCurrentMagicStateAsync();
@@ -439,30 +581,6 @@ public sealed class WebCharacterSessionService
         await _engine.PersistCurrentMagicStateAsync(workspace, _currentCharacterPath, _currentMagicState.Magic);
     }
 
-    private static ImportedCharacterSummary ReadSummary(string absolutePath, ImportedSessionFile file)
-    {
-        XDocument document = XDocument.Load(absolutePath, LoadOptions.None);
-        XElement? root = document.Root;
-        XElement? display = root?.Element("display-properties");
-        XElement? build = root?.Element("build");
-        XElement? input = build?.Element("input");
-        XElement? info = root?.Element("information");
-
-        string displayName = display?.Element("name")?.Value
-                             ?? input?.Element("name")?.Value
-                             ?? Path.GetFileNameWithoutExtension(file.FileName);
-
-        return new ImportedCharacterSummary(
-            file.RelativePath,
-            file.FileName,
-            displayName,
-            input?.Element("player-name")?.Value ?? string.Empty,
-            display?.Element("level")?.Value ?? "1",
-            display?.Element("race")?.Value ?? string.Empty,
-            display?.Element("class")?.Value ?? string.Empty,
-            display?.Element("background")?.Value ?? string.Empty,
-            info?.Element("group")?.Value ?? string.Empty,
-            root?.Attribute("version")?.Value ?? string.Empty,
-            file.SizeBytes);
-    }
+    private static ImportedCharacterSummary ReadSummary(string absolutePath, ImportedSessionFile file) =>
+        ImportedCharacterSummary.FromSavedFile(absolutePath, file.RelativePath, file.FileName, file.SizeBytes);
 }

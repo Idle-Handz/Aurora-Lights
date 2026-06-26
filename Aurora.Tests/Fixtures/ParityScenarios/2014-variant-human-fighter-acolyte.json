@@ -32,6 +32,7 @@
       "bucket": "AbilityScores",
       "requiredLevel": 1,
       "minOptions": 1,
+      "expectedSelectedCount": 0,
       "expectedOptionIds": [
         "ID_RACE_VARIANT_HUMAN_VARIANT_STRENGTH",
         "ID_RACE_VARIANT_HUMAN_VARIANT_DEXTERITY"

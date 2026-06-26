@@ -1,6 +1,6 @@
 # Aurora Client Feature Comparison
 
-Last reviewed: June 1, 2026
+Last reviewed: June 17, 2026
 
 This is a living comparison of the three Aurora clients in this repository. It is
 intended to help players choose the right client and help contributors understand
@@ -70,7 +70,8 @@ usable, but it should not be read as a claim of complete desktop parity.
 | Feature | Aurora.Lights | Aurora: Reflections | Aurora.Web |
 | --- | --- | --- | --- |
 | Race, class, background, and other build selections | Established. | Available: unresolved build choices can be reviewed and changed. | Partial: browser build pages expose unresolved selection groups, search, picks, and changes. |
-| Level advancement | Established. | Available: level up, level down, and multiclass addition are available from the session workspace. | Partial: core build selections are editable, but the desktop advancement experience is not yet reproduced in full. |
+| Level advancement | Established. | Available: level up, level down, and multiclass addition are available from the session workspace. | Partial: level up and level down are available from the browser Build page, including the HP method toggle (average or rolled). Multiclass level-up class selection and the guided creation banner are not yet reproduced. |
+| Ability score assignment | Established. | Available: Manual, Roll 4d6, Roll 3d6, Standard Array, and Point Buy methods with ASI bonus display and modifier row. | Available: all five methods are in the browser Build page with the same row-based table layout as the desktop client. ASI/feat selections below the table are not yet surfaced. |
 | Multiclassing | Established. | Available. | Partial: underlying character engine support is present; browser workflow depth still needs parity work. |
 | Optional rules | Established. | Available: feats, multiclassing, custom origin, languages, and proficiencies can be configured. | Partial: source and narrative editing exist, but the full modern desktop options panel is not reproduced. |
 | Narrative and identity details | Established. | Available. | Partial: focused narrative and identity fields are editable in the browser workspace. |

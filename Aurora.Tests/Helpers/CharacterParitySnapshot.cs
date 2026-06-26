@@ -44,7 +44,8 @@ public sealed record SelectionRuleSnapshot(
     int Number,
     int RequiredLevel,
     int OptionCount,
-    IReadOnlyList<string> OptionIds);
+    IReadOnlyList<string> OptionIds,
+    IReadOnlyList<string> SelectedIds);
 
 public sealed record SpellcastingSnapshot(
     string Name,
@@ -196,8 +197,27 @@ public static class CharacterParitySnapshotter
             rule.Attributes.Number,
             rule.Attributes.RequiredLevel,
             optionIds.Count,
-            optionIds);
+            optionIds,
+            ResolveSelectedIds(rule));
     }
+
+    private static IReadOnlyList<string> ResolveSelectedIds(SelectRule rule)
+    {
+        int slots = Math.Max(1, rule.Attributes.Number);
+        var expander = SelectionRuleExpanderContext.Current;
+
+        return Enumerable.Range(1, slots)
+            .Select(number => ResolveSelectedId(expander?.GetRegisteredElement(rule, number)))
+            .ToList();
+    }
+
+    private static string ResolveSelectedId(object? selected) => selected switch
+    {
+        ElementBase element => element.Id ?? string.Empty,
+        SelectionRuleListItem listItem => listItem.ID.ToString(),
+        string id => id,
+        _ => string.Empty,
+    };
 
     private static ElementBase? ResolveOwner(SelectRule rule)
     {

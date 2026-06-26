@@ -68,8 +68,8 @@ public sealed class PhaseZeroSessionWorkspaceService
 
                 case ".dnd5e":
                     {
-                        RegisterNonIndexedFile(workspace, file.Name, ImportedContentKind.CharacterFile, file.Size);
-                        await SaveBrowserFileAsync(file, importsRoot, cancellationToken);
+                        string stored = await SaveBrowserFileAsync(file, importsRoot, cancellationToken);
+                        RegisterNonIndexedFile(workspace, stored, ImportedContentKind.CharacterFile);
                         importedFiles++;
                         break;
                     }
@@ -77,7 +77,7 @@ public sealed class PhaseZeroSessionWorkspaceService
                 case ".zip":
                     {
                         string storedArchive = await SaveBrowserFileAsync(file, importsRoot, cancellationToken);
-                        RegisterNonIndexedFile(workspace, file.Name, ImportedContentKind.Archive, file.Size);
+                        RegisterNonIndexedFile(workspace, storedArchive, ImportedContentKind.Archive);
                         discoveredElements += ExtractArchive(workspace, storedArchive, warnings);
                         importedFiles++;
                         break;
@@ -248,9 +248,15 @@ public sealed class PhaseZeroSessionWorkspaceService
         return elements.Count;
     }
 
-    private void RegisterNonIndexedFile(PhaseZeroSessionWorkspace workspace, string fileName, ImportedContentKind kind, long sizeBytes)
+    private void RegisterNonIndexedFile(PhaseZeroSessionWorkspace workspace, string path, ImportedContentKind kind)
     {
-        workspace.ImportedFiles.Add(new ImportedSessionFile(fileName, fileName, kind, sizeBytes, 0));
+        FileInfo info = new(path);
+        workspace.ImportedFiles.Add(new ImportedSessionFile(
+            info.Name,
+            Path.GetRelativePath(workspace.WorkspacePath, path),
+            kind,
+            info.Length,
+            0));
     }
 
     private int ExtractArchive(PhaseZeroSessionWorkspace workspace, string archivePath, List<string> warnings)

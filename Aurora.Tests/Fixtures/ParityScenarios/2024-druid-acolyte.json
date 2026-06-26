@@ -34,7 +34,8 @@
       "type": "Ability Score Improvement",
       "bucket": "AbilityScores",
       "requiredLevel": 1,
-      "minOptions": 2
+      "minOptions": 2,
+      "expectedSelectedCount": 0
     }
   ]
 }

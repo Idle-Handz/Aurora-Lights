@@ -1,3 +1,6 @@
+@implements IDisposable
+@inject WebCharacterSessionService CharacterSession
+
 <MudNavMenu>
     <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.People">
         Characters
@@ -12,21 +15,60 @@
         Overview
     </MudNavLink>
 
-    <MudDivider Class="my-2" />
+    @if (_hasCurrentCharacter)
+    {
+        <MudDivider Class="my-2" />
 
-    <MudNavLink Href="/workspace" Icon="@Icons.Material.Filled.Dashboard">
-        Workspace
-    </MudNavLink>
-    <MudNavLink Href="/build" Icon="@Icons.Material.Filled.Construction">
-        Build
-    </MudNavLink>
-    <MudNavLink Href="/manage" Icon="@Icons.Material.Filled.ManageAccounts">
-        Manage
-    </MudNavLink>
-    <MudNavLink Href="/equipment" Icon="@Icons.Material.Filled.Shield">
-        Equipment
-    </MudNavLink>
-    <MudNavLink Href="/magic" Icon="@Icons.Material.Filled.AutoAwesome">
-        Magic
-    </MudNavLink>
+        <MudNavLink Href="/workspace" Icon="@Icons.Material.Filled.Dashboard">
+            Workspace
+        </MudNavLink>
+        <MudNavLink Href="/build" Icon="@Icons.Material.Filled.Construction">
+            Build
+        </MudNavLink>
+        <MudNavLink Href="/manage" Icon="@Icons.Material.Filled.ManageAccounts">
+            Manage
+        </MudNavLink>
+        <MudNavLink Href="/equipment" Icon="@Icons.Material.Filled.Shield">
+            Equipment
+        </MudNavLink>
+        <MudNavLink Href="/magic" Icon="@Icons.Material.Filled.AutoAwesome">
+            Magic
+        </MudNavLink>
+    }
 </MudNavMenu>
+
+@code {
+    private bool _disposed;
+    private bool _hasCurrentCharacter;
+
+    protected override void OnInitialized()
+    {
+        _hasCurrentCharacter = CharacterSession.HasCurrentCharacter;
+        CharacterSession.CurrentCharacterChanged += OnCurrentCharacterChanged;
+    }
+
+    private void OnCurrentCharacterChanged()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _ = InvokeAsync(() =>
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _hasCurrentCharacter = CharacterSession.HasCurrentCharacter;
+            StateHasChanged();
+        });
+    }
+
+    public void Dispose()
+    {
+        _disposed = true;
+        CharacterSession.CurrentCharacterChanged -= OnCurrentCharacterChanged;
+    }
+}

@@ -79,12 +79,15 @@ public sealed class CharacterFixtureParityTests : IAsyncLifetime
         cleric.AlwaysPreparedIds.Should().Contain("ID_PHB_SPELL_FAERIE_FIRE");
     }
 
-    [Fact]
-    public async Task PreparedDomainCleric_ParitySnapshotSurvivesSaveReload()
+    [Theory]
+    [InlineData("multiclass-prepared-caster.dnd5e")]
+    [InlineData("prepared-paladin.dnd5e")]
+    [InlineData("prepared-domain-cleric.dnd5e")]
+    public async Task CharacterFixture_CoreStateAndSelectedChoicesSurviveSaveReload(string fileName)
     {
         if (!ContentFixture.SkipIfUnavailable(_output)) return;
 
-        await LoadFixture("prepared-domain-cleric.dnd5e");
+        await LoadFixture(fileName);
         var original = CharacterParitySnapshotter.Capture();
         var bytes = CharacterManager.Current.File.SerializeCharacter(CharacterManager.Current.Character);
         string tempPath = Path.Combine(Path.GetTempPath(), $"aurora_fixture_parity_{Guid.NewGuid():N}.dnd5e");
@@ -102,6 +105,7 @@ public sealed class CharacterFixtureParityTests : IAsyncLifetime
             reloaded.Combat.Should().Be(original.Combat);
             reloaded.AbilityScores.Should().BeEquivalentTo(original.AbilityScores);
             reloaded.Spellcasting.Should().BeEquivalentTo(original.Spellcasting);
+            SelectedChoiceSlots(reloaded).Should().Equal(SelectedChoiceSlots(original));
         }
         finally
         {
@@ -125,6 +129,66 @@ public sealed class CharacterFixtureParityTests : IAsyncLifetime
         TextAt(document, "/character/build/input/player-name").Should().BeEmpty();
         TextAt(document, "/character/build/input/backstory").Should().BeEmpty();
         File.ReadAllText(path).Should().NotContain(@"C:\Users\");
+    }
+
+    [Fact]
+    public async Task LegacyEditedFixture_LoadsGroupDisplayAndAbilityEdits()
+    {
+        if (!ContentFixture.SkipIfUnavailable(_output)) return;
+
+        string sourcePath = ContentFixture.GetCharacterFixturePath("prepared-paladin.dnd5e");
+        string tempPath = Path.Combine(Path.GetTempPath(), $"aurora_legacy_fixture_{Guid.NewGuid():N}.dnd5e");
+
+        try
+        {
+            File.Copy(sourcePath, tempPath);
+
+            var document = new XmlDocument();
+            document.Load(tempPath);
+            SetText(document, "/character/information/group", "Legacy Edited Fixtures");
+            SetText(document, "/character/display-properties/name", "Fixture Legacy Edited Paladin");
+            SetText(document, "/character/build/input/name", "Fixture Legacy Edited Paladin");
+            SetText(document, "/character/build/abilities/strength", "16");
+            document.Save(tempPath);
+
+            var handler = new TestSpellHandler();
+            SpellcastingSectionContext.Current = handler;
+            CharacterLoadCompatibilityService.PrepareForCharacterLoad();
+
+            var file = new CharacterFile(tempPath);
+            await file.Load();
+
+            file.CollectionGroupName.Should().Be("Legacy Edited Fixtures");
+            file.DisplayName.Should().Be("Fixture Legacy Edited Paladin");
+            CharacterManager.Current.Character.Name.Should().Be("Fixture Legacy Edited Paladin");
+            CharacterManager.Current.Character.Abilities.Strength.BaseScore.Should().Be(16);
+        }
+        finally
+        {
+            if (File.Exists(tempPath)) File.Delete(tempPath);
+        }
+    }
+
+    private static IReadOnlyList<string> SelectedChoiceSlots(CharacterParitySnapshot snapshot) =>
+        snapshot.SelectionRules
+            .Where(rule => rule.SelectedIds.Any(id => !string.IsNullOrWhiteSpace(id)))
+            .Select(rule => string.Join("|", new[]
+            {
+                rule.OwnerId,
+                rule.Type,
+                rule.Name,
+                rule.RequiredLevel.ToString(),
+                rule.Number.ToString(),
+                string.Join(",", rule.SelectedIds),
+            }))
+            .OrderBy(value => value, StringComparer.Ordinal)
+            .ToList();
+
+    private static void SetText(XmlDocument document, string xpath, string value)
+    {
+        XmlNode? node = document.SelectSingleNode(xpath);
+        node.Should().NotBeNull($"fixture should contain {xpath}");
+        node!.InnerText = value;
     }
 
     private static async Task<TestSpellHandler> LoadFixture(string fileName)

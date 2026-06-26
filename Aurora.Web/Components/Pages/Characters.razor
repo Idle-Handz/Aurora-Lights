@@ -1,6 +1,5 @@
 @page "/characters"
 @page "/"
-@rendermode InteractiveServer
 @inject WebCharacterSessionService CharacterSession
 @inject NavigationManager Nav
 @inject IJSRuntime JS
@@ -32,7 +31,9 @@
                           ShowCreateButton="false"
                           SelectedId="@_selectedCharacter?.RelativePath"
                           OnSelected="OnBrowserSelected"
-                          OnDelete="DeleteCharacterAsync" />
+                          OnDelete="DeleteCharacterAsync"
+                          OnEditGroup="EditCharacterGroupAsync"
+                          OnRenameGroup="RenameGroupAsync" />
     </BrowserContent>
 
     <DetailContent>
@@ -234,8 +235,84 @@
         }
     }
 
+    private async Task EditCharacterGroupAsync(CharacterBrowserEntry entry)
+    {
+        string? requestedGroup = await JS.InvokeAsync<string?>(
+            "prompt",
+            $"Move \"{entry.DisplayName}\" to which group?",
+            string.IsNullOrWhiteSpace(entry.GroupName) ? "Characters" : entry.GroupName);
+        if (requestedGroup is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        _failed = false;
+        _message = null;
+
+        try
+        {
+            bool updated = await CharacterSession.UpdateCharacterGroupAsync(entry.Id, requestedGroup);
+            if (!updated)
+            {
+                _failed = true;
+                _message = "That character is no longer available in the current session.";
+                return;
+            }
+
+            await LoadAsync();
+            _message = $"{entry.DisplayName} was moved to {ResolveGroupName(requestedGroup)}.";
+        }
+        catch (Exception ex)
+        {
+            _failed = true;
+            _message = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task RenameGroupAsync(string currentGroup)
+    {
+        string? requestedGroup = await JS.InvokeAsync<string?>(
+            "prompt",
+            $"Rename group \"{currentGroup}\" to:",
+            currentGroup);
+        if (requestedGroup is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        _failed = false;
+        _message = null;
+
+        try
+        {
+            int updated = await CharacterSession.RenameCharacterGroupAsync(currentGroup, requestedGroup);
+            await LoadAsync();
+            _message = updated == 0
+                ? "No character groups were changed."
+                : $"Renamed {updated} character{(updated == 1 ? string.Empty : "s")} to {ResolveGroupName(requestedGroup)}.";
+        }
+        catch (Exception ex)
+        {
+            _failed = true;
+            _message = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
     private static string ValueOrDash(string? value) =>
         string.IsNullOrWhiteSpace(value) ? "-" : value;
+
+    private static string ResolveGroupName(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? "Characters" : value.Trim();
 
     private static CharacterBrowserEntry ToBrowserEntry(ImportedCharacterSummary character) =>
         new(
