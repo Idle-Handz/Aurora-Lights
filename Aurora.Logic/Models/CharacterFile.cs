@@ -1769,12 +1769,10 @@ public class CharacterFile : ObservableObject
                             if (hasNumber)
                             {
                                 string existingChecksum = childNode.GetAttributeValue("checksum");
-                                List<SelectRule> list = element.GetSelectRules().Where<SelectRule>((Func<SelectRule, bool>)(x => x.Attributes.Type == type && x.Attributes.Number > 1 && x.Attributes.Name == name && x.GetCrC(number) == existingChecksum)).ToList<SelectRule>();
-                                if (list.Any<SelectRule>())
+                                List<SelectRule> list = element.GetSelectRules().Where<SelectRule>((Func<SelectRule, bool>)(x => x.Attributes.Type == type && x.Attributes.Number > 1 && x.Attributes.Name == name)).ToList<SelectRule>();
+                                listRule = ResolveSavedSelectRule(list, existingChecksum, registeredElementId, number);
+                                if (listRule != null)
                                 {
-                                    if (list.Count > 1 && Debugger.IsAttached)
-                                        Debugger.Break();
-                                    listRule = list.First<SelectRule>();
                                     if (await CharacterFile.AwaitExpanderCreationAsync(listRule, number))
                                     {
                                         if (isRetrained)
@@ -1795,7 +1793,9 @@ public class CharacterFile : ObservableObject
                                 if (list.Count != 1 && childNode.ContainsAttribute("checksum"))
                                 {
                                     string existingChecksum = childNode.GetAttributeValue("checksum");
-                                    listRule = list.Single<SelectRule>((Func<SelectRule, bool>)(x => x.GetCrC(1) == existingChecksum));
+                                    listRule = ResolveSavedSelectRule(list, existingChecksum, registeredElementId, 1);
+                                    if (listRule == null)
+                                        continue;
                                     if (!await CharacterFile.AwaitExpanderCreationAsync(listRule))
                                         break;
                                     if (isRetrained)
@@ -1852,6 +1852,45 @@ public class CharacterFile : ObservableObject
                     Logger.Warning("unable to get element from character elements: {0}", (object)id);
             }
         }
+    }
+
+    internal static SelectRule ResolveSavedSelectRule(
+        IEnumerable<SelectRule> candidates,
+        string existingChecksum,
+        string registeredElementId,
+        int number)
+    {
+        List<SelectRule> candidateList = candidates.ToList();
+        if (candidateList.Count == 0)
+            return null;
+
+        List<SelectRule> checksumMatches = string.IsNullOrWhiteSpace(existingChecksum)
+            ? candidateList
+            : candidateList
+                .Where((Func<SelectRule, bool>)(x => x.GetCrC(number) == existingChecksum))
+                .ToList();
+
+        List<SelectRule> scopedMatches = checksumMatches.Count > 0
+            ? checksumMatches
+            : candidateList;
+
+        SelectRule defaultMatch = !string.IsNullOrWhiteSpace(registeredElementId)
+            ? scopedMatches.FirstOrDefault((Func<SelectRule, bool>)(x =>
+                x.Attributes.ContainsDefaultSelection() &&
+                x.Attributes.Default.Equals(registeredElementId, StringComparison.OrdinalIgnoreCase)))
+            : null;
+
+        if (defaultMatch != null)
+            return defaultMatch;
+
+        if (scopedMatches.Count == 1)
+            return scopedMatches[0];
+
+        Logger.Warning(
+            "ambiguous saved selection row for registered element {0}; falling back to first of {1} matching select rule(s)",
+            registeredElementId,
+            scopedMatches.Count);
+        return scopedMatches.FirstOrDefault();
     }
 
     private void ParseAttacksSection(XmlNode attacksNode, Character character)
