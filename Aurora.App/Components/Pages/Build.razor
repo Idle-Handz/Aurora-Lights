@@ -6,6 +6,7 @@
 @inject ISnackbar Snackbar
 @inject UserPreferencesService Prefs
 @inject NavigationManager Nav
+@inject AppPageStateService PageState
 @using Builder.Presentation
 @using Builder.Presentation.Models
 @using Builder.Presentation.Models.Collections
@@ -166,7 +167,7 @@ else if (_workflowSuggestion != null)
 
 @* ── Build tabs ── *@
 <MudTabs @ref="_tabs"
-         @bind-ActivePanelIndex="_activePanelIndex"
+         @bind-ActivePanelIndex="ActivePanelIndex"
          Elevation="0"
          Rounded="false"
          ApplyEffectsToContainer="false"
@@ -630,7 +631,12 @@ else if (_workflowSuggestion != null)
 
     // ── Tab navigation ────────────────────────────────────────────────────────────
     private MudTabs?  _tabs;
-    private int       _activePanelIndex;
+
+    private int ActivePanelIndex
+    {
+        get => PageState.Build.ActivePanelIndex;
+        set => PageState.Build.ActivePanelIndex = value;
+    }
 
     // ── Ability score state ──────────────────────────────────────────────────────
     private sealed record AbilityRow(string Name, string Abbrev, AbilityItem Item);
@@ -706,6 +712,17 @@ else if (_workflowSuggestion != null)
             LoadAbilityRows();
             _workflowSuggestion = null;
         }
+
+        ClampActivePanelIndex();
+    }
+
+    private void ClampActivePanelIndex()
+    {
+        int maxIndex = _buildTabs.Count + 1; // build tabs + Ability Scores + Extras
+        if (ActivePanelIndex < 0)
+            ActivePanelIndex = 0;
+        else if (ActivePanelIndex > maxIndex)
+            ActivePanelIndex = maxIndex;
     }
 
     private void LoadAbilityRows()
@@ -769,7 +786,7 @@ else if (_workflowSuggestion != null)
         if (_nextStep == null) return;
         var idx = GetPanelIndexForLabel(_nextStep.TabLabel);
         if (idx >= 0)
-            _activePanelIndex = idx;
+            ActivePanelIndex = idx;
         _highlightedEntryKey = _nextStep.EntryKey;
     }
 
@@ -787,7 +804,7 @@ else if (_workflowSuggestion != null)
         {
             var idx = GetPanelIndexForLabel(_workflowSuggestion.Value.TabLabel!);
             if (idx >= 0)
-                _activePanelIndex = idx;
+                ActivePanelIndex = idx;
         }
     }
 

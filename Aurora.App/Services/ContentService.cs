@@ -23,15 +23,21 @@ public sealed class ContentService
     private readonly CharacterService _characters;
     private readonly CharacterTabService _tabs;
     private readonly ContentDatabaseService _contentDb;
+    private readonly CompendiumService _compendium;
     private readonly SemaphoreSlim _startupRefreshLock = new(1, 1);
     private readonly SemaphoreSlim _contentUpdateLock = new(1, 1);
     private bool _startupRefreshAttempted;
 
-    public ContentService(CharacterService characters, CharacterTabService tabs, ContentDatabaseService contentDb)
+    public ContentService(
+        CharacterService characters,
+        CharacterTabService tabs,
+        ContentDatabaseService contentDb,
+        CompendiumService compendium)
     {
         _characters = characters;
         _tabs = tabs;
         _contentDb = contentDb;
+        _compendium = compendium;
     }
 
     // ── Additional custom directories ─────────────────────────────────────────
@@ -276,6 +282,7 @@ public sealed class ContentService
 
             _tabs.CloseAllTabs();
             await _characters.ReloadElementsAsync();
+            _compendium.InvalidateCache(rebuildInBackground: true);
             ClearContentReloadPending();
             return null;
         }

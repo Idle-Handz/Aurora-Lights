@@ -2,6 +2,7 @@
 @implements IDisposable
 @inject CompendiumService CompendiumData
 @inject CharacterTabService Tabs
+@inject AppPageStateService PageState
 @using Builder.Presentation
 @using Microsoft.AspNetCore.Components
 
@@ -449,6 +450,7 @@
     protected override void OnInitialized()
     {
         Tabs.TabsChanged += OnTabsChanged;
+        RestoreState();
     }
 
     protected override async Task OnParametersSetAsync()
@@ -457,6 +459,14 @@
             !string.Equals(RequestedQuery, _query, StringComparison.Ordinal))
         {
             _query = RequestedQuery;
+            _hasSearched = true;
+            SaveState();
+        }
+
+        if (!string.IsNullOrWhiteSpace(RequestedId))
+        {
+            PageState.Compendium.SelectedEntryId = RequestedId;
+            _hasSearched = true;
         }
 
         if (_catalog.Count == 0 || _isLoadingCatalog)
@@ -481,7 +491,8 @@
         _creatureSizes = CompendiumData.GetCreatureSizes(_catalog);
         _creatureChallenges = CompendiumData.GetCreatureChallenges(_catalog);
         _isLoadingCatalog = false;
-        if (!string.IsNullOrWhiteSpace(RequestedQuery) || !string.IsNullOrWhiteSpace(RequestedId))
+
+        if (_hasSearched || !string.IsNullOrWhiteSpace(RequestedQuery) || !string.IsNullOrWhiteSpace(RequestedId))
             await ExecuteSearchAsync(selectRequestedId: true);
         await InvokeAsync(StateHasChanged);
     }
@@ -489,66 +500,77 @@
     private Task OnQueryChanged(string value)
     {
         _query = value;
+        SaveState();
         return _hasSearched ? RefreshAsync() : Task.CompletedTask;
     }
 
     private Task OnTypeChanged(string value)
     {
         _selectedType = value;
+        SaveState();
         return _hasSearched ? RefreshAsync() : Task.CompletedTask;
     }
 
     private Task OnSourceChanged(string value)
     {
         _selectedSource = value;
+        SaveState();
         return _hasSearched ? RefreshAsync() : Task.CompletedTask;
     }
 
     private Task OnSpellLevelChanged(string value)
     {
         _selectedSpellLevel = value;
+        SaveState();
         return _hasSearched ? RefreshAsync() : Task.CompletedTask;
     }
 
     private Task OnSpellSchoolChanged(string value)
     {
         _selectedSpellSchool = value;
+        SaveState();
         return _hasSearched ? RefreshAsync() : Task.CompletedTask;
     }
 
     private Task OnSpellClassChanged(string value)
     {
         _selectedSpellClass = value;
+        SaveState();
         return _hasSearched ? RefreshAsync() : Task.CompletedTask;
     }
 
     private Task OnItemRarityChanged(string value)
     {
         _selectedItemRarity = value;
+        SaveState();
         return _hasSearched ? RefreshAsync() : Task.CompletedTask;
     }
 
     private Task OnItemAttunementChanged(string value)
     {
         _selectedItemAttunement = value;
+        SaveState();
         return _hasSearched ? RefreshAsync() : Task.CompletedTask;
     }
 
     private Task OnCreatureTypeChanged(string value)
     {
         _selectedCreatureType = value;
+        SaveState();
         return _hasSearched ? RefreshAsync() : Task.CompletedTask;
     }
 
     private Task OnCreatureSizeChanged(string value)
     {
         _selectedCreatureSize = value;
+        SaveState();
         return _hasSearched ? RefreshAsync() : Task.CompletedTask;
     }
 
     private Task OnCreatureChallengeChanged(string value)
     {
         _selectedCreatureChallenge = value;
+        SaveState();
         return _hasSearched ? RefreshAsync() : Task.CompletedTask;
     }
 
@@ -560,6 +582,7 @@
         else
             _restrictedSources.Clear();
 
+        SaveState();
         if (_hasSearched)
             await RefreshAsync();
     }
@@ -573,6 +596,7 @@
     private async Task ExecuteSearchAsync(bool selectRequestedId = false)
     {
         _hasSearched = true;
+        SaveState();
         await RefreshAsync(selectRequestedId);
     }
 
@@ -612,10 +636,14 @@
                 creatureType, creatureSize, creatureChallenge,
                 restrictedSources).ToList());
 
-            if (selectRequestedId && !string.IsNullOrWhiteSpace(RequestedId))
+            string? selectionId = !string.IsNullOrWhiteSpace(RequestedId)
+                ? RequestedId
+                : PageState.Compendium.SelectedEntryId;
+
+            if (selectRequestedId && !string.IsNullOrWhiteSpace(selectionId))
             {
-                _selectedEntry = _filteredEntries.FirstOrDefault(e => string.Equals(e.Id, RequestedId, StringComparison.Ordinal))
-                    ?? _catalog.FirstOrDefault(e => string.Equals(e.Id, RequestedId, StringComparison.Ordinal));
+                _selectedEntry = _filteredEntries.FirstOrDefault(e => string.Equals(e.Id, selectionId, StringComparison.Ordinal))
+                    ?? _catalog.FirstOrDefault(e => string.Equals(e.Id, selectionId, StringComparison.Ordinal));
             }
 
             if (_selectedEntry is not null && !_filteredEntries.Any(entry => string.Equals(entry.Id, _selectedEntry.Id, StringComparison.Ordinal)))
@@ -623,6 +651,8 @@
 
             if (_selectedEntry is not null)
                 _selectedEntry = await CompendiumData.EnrichEntryAsync(_selectedEntry);
+
+            SaveState();
         }
         finally
         {
@@ -656,6 +686,7 @@
             {
                 _currentCharacterSourcesOnly = false;
                 _restrictedSources.Clear();
+                SaveState();
             }
             else if (_currentCharacterSourcesOnly)
             {
@@ -671,6 +702,7 @@
     private async Task SelectEntryAsync(CompendiumEntryModel entry)
     {
         _selectedEntry = await CompendiumData.EnrichEntryAsync(entry);
+        SaveState();
         await InvokeAsync(StateHasChanged);
     }
 
@@ -692,7 +724,45 @@
         _hasSearched = false;
         _filteredEntries.Clear();
         _selectedEntry = null;
+        PageState.Compendium.Reset();
         return Task.CompletedTask;
+    }
+
+    private void RestoreState()
+    {
+        var state = PageState.Compendium;
+        _query = state.Query;
+        _selectedType = state.SelectedType;
+        _selectedSource = state.SelectedSource;
+        _selectedSpellLevel = state.SelectedSpellLevel;
+        _selectedSpellSchool = state.SelectedSpellSchool;
+        _selectedSpellClass = state.SelectedSpellClass;
+        _selectedItemRarity = state.SelectedItemRarity;
+        _selectedItemAttunement = state.SelectedItemAttunement;
+        _selectedCreatureType = state.SelectedCreatureType;
+        _selectedCreatureSize = state.SelectedCreatureSize;
+        _selectedCreatureChallenge = state.SelectedCreatureChallenge;
+        _currentCharacterSourcesOnly = state.CurrentCharacterSourcesOnly;
+        _hasSearched = state.HasSearched;
+    }
+
+    private void SaveState()
+    {
+        var state = PageState.Compendium;
+        state.Query = _query;
+        state.SelectedType = _selectedType;
+        state.SelectedSource = _selectedSource;
+        state.SelectedSpellLevel = _selectedSpellLevel;
+        state.SelectedSpellSchool = _selectedSpellSchool;
+        state.SelectedSpellClass = _selectedSpellClass;
+        state.SelectedItemRarity = _selectedItemRarity;
+        state.SelectedItemAttunement = _selectedItemAttunement;
+        state.SelectedCreatureType = _selectedCreatureType;
+        state.SelectedCreatureSize = _selectedCreatureSize;
+        state.SelectedCreatureChallenge = _selectedCreatureChallenge;
+        state.CurrentCharacterSourcesOnly = _currentCharacterSourcesOnly;
+        state.HasSearched = _hasSearched;
+        state.SelectedEntryId = _selectedEntry?.Id;
     }
 
     public void Dispose()

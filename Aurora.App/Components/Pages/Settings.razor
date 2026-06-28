@@ -12,6 +12,7 @@
 @inject IJSRuntime JS
 @inject UserPreferencesService Prefs
 @inject DebugLogService DebugLog
+@inject AppPageStateService PageState
 @inject Aurora.App.Services.AppIdentityService Brand
 @inject Aurora.App.Services.Updates.AppUpdateService AppUpdates
 
@@ -21,7 +22,7 @@
          Rounded="false"
          ApplyEffectsToContainer="true"
          PanelClass="pt-4"
-         @bind-ActivePanelIndex="_activeSettingsTabIndex">
+         @bind-ActivePanelIndex="ActiveSettingsTabIndex">
 
     <!-- ── General ─────────────────────────────────────────────────────────── -->
     <MudTabPanel Text="General">
@@ -285,7 +286,7 @@
     <!-- ── Content ──────────────────────────────────────────────────────────── -->
     <MudTabPanel Text="Content">
 
-        <MudTabs Elevation="0" Rounded="false" ApplyEffectsToContainer="true" PanelClass="pt-3">
+        <MudTabs Elevation="0" Rounded="false" ApplyEffectsToContainer="true" PanelClass="pt-3" @bind-ActivePanelIndex="ActiveContentTabIndex">
 
             <!-- ── Data sub-tab ───────────────────────────────────────────────── -->
             <MudTabPanel Text="Data">
@@ -397,12 +398,12 @@
                     </div>
                     @{
                         var packages = ContentDb.GetPackages();
-                        IReadOnlyList<ContentPackageInfo> filteredPackages = string.IsNullOrWhiteSpace(_packageSearch)
+                        IReadOnlyList<ContentPackageInfo> filteredPackages = string.IsNullOrWhiteSpace(PackageSearch)
                             ? packages
                             : packages.Where(p =>
-                                p.PackageName.Contains(_packageSearch, StringComparison.OrdinalIgnoreCase) ||
-                                p.PackageKey.Contains(_packageSearch, StringComparison.OrdinalIgnoreCase) ||
-                                p.PackageKind.Contains(_packageSearch, StringComparison.OrdinalIgnoreCase)).ToList();
+                                p.PackageName.Contains(PackageSearch, StringComparison.OrdinalIgnoreCase) ||
+                                p.PackageKey.Contains(PackageSearch, StringComparison.OrdinalIgnoreCase) ||
+                                p.PackageKind.Contains(PackageSearch, StringComparison.OrdinalIgnoreCase)).ToList();
                     }
                     @if (packages.Count == 0)
                     {
@@ -412,7 +413,7 @@
                     }
                     else
                     {
-                        <MudTextField @bind-Value="_packageSearch"
+                        <MudTextField @bind-Value="PackageSearch"
                                       Placeholder="Search sources…"
                                       Adornment="Adornment.Start"
                                       AdornmentIcon="@Icons.Material.Filled.Search"
@@ -1150,7 +1151,6 @@
     private bool _disposed;
     private string _indexUrl = "";
     private string _newDirPath = "";
-    private string _packageSearch = "";
     private string? _contentStatus;
     private Severity _contentStatusSeverity = Severity.Success;
     private bool _contentWorking;
@@ -1165,14 +1165,39 @@
     private ContentDatabaseParityReport? _dbParity;
     private bool _dirBusy;
     private string? _dirError;
-    private int _activeSettingsTabIndex;
+
+    private int ActiveSettingsTabIndex
+    {
+        get => PageState.Settings.ActiveSettingsTabIndex;
+        set => PageState.Settings.ActiveSettingsTabIndex = value;
+    }
+
+    private int ActiveContentTabIndex
+    {
+        get => PageState.Settings.ActiveContentTabIndex;
+        set => PageState.Settings.ActiveContentTabIndex = value;
+    }
+
+    private string PackageSearch
+    {
+        get => PageState.Settings.PackageSearch;
+        set => PageState.Settings.PackageSearch = value ?? string.Empty;
+    }
 
     protected override void OnParametersSet()
     {
-        _activeSettingsTabIndex = RequestedTab?.ToLowerInvariant() switch
+        if (string.IsNullOrWhiteSpace(RequestedTab))
         {
+            return;
+        }
+
+        ActiveSettingsTabIndex = RequestedTab.ToLowerInvariant() switch
+        {
+            "general" => 0,
+            "character-sheet" or "sheet" => 1,
             "content" => 2,
             "updates" => 3,
+            "advanced" => 4,
             _ => 0
         };
     }

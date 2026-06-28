@@ -7,6 +7,7 @@
 @inject ISnackbar Snackbar
 @inject UserPreferencesService Prefs
 @inject PdfImportService PdfImport
+@inject AppPageStateService PageState
 @using Builder.Presentation
 @using Aurora.PdfImport
 
@@ -42,6 +43,9 @@ else
                               AutoFocusSearch="true"
                               CreateButtonText="New Character"
                               DisableCreateButton="@_preloading"
+                              SearchText="@PageState.Characters.SearchText"
+                              SearchTextChanged="OnBrowserSearchChanged"
+                              SelectedId="@(Tabs.ActiveTab?.File.FilePath)"
                               OnCreate="OnNewCharacter"
                               OnSelected="OnBrowserSelected"
                               OnDelete="OnDeleteCharacter"
@@ -445,6 +449,12 @@ else
         {
             _ = OnCharacterSelected(character);
         }
+    }
+
+    private Task OnBrowserSearchChanged(string searchText)
+    {
+        PageState.Characters.SearchText = searchText;
+        return Task.CompletedTask;
     }
 
     private async Task OnDeleteCharacter(CharacterBrowserEntry entry)

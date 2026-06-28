@@ -49,10 +49,14 @@ public sealed class CompendiumService
     ];
 
     private readonly object _catalogLock = new();
+    private readonly object _warmupLock = new();
+    private readonly SemaphoreSlim _catalogBuildLock = new(1, 1);
     private readonly ContentDatabaseService _contentDb;
     private readonly CharacterService _characterService;
     private IReadOnlyList<CompendiumEntryModel>? _catalogCache;
     private readonly ConcurrentDictionary<string, CompendiumEntryModel> _detailCache = new(StringComparer.Ordinal);
+    private int _cacheGeneration;
+    private Task? _warmupTask;
 
     public CompendiumService(ContentDatabaseService contentDb, CharacterService characterService)
     {
@@ -62,21 +66,80 @@ public sealed class CompendiumService
 
     public async Task<IReadOnlyList<CompendiumEntryModel>> BuildCatalogAsync()
     {
-        // Ensure all Aurora content elements are loaded before building the catalog.
-        // PreloadAsync is idempotent — fast no-op after the first call.
-        await _characterService.PreloadAsync();
+        // Build from the current initialized element collection. PreloadAsync is
+        // idempotent after the element collection is initialized.
+        while (true)
+        {
+            lock (_catalogLock)
+            {
+                if (_catalogCache is not null)
+                    return _catalogCache;
+            }
 
+            await _catalogBuildLock.WaitAsync();
+            try
+            {
+                int generation;
+                lock (_catalogLock)
+                {
+                    if (_catalogCache is not null)
+                        return _catalogCache;
+
+                    generation = _cacheGeneration;
+                }
+
+                await _characterService.PreloadAsync();
+
+                IReadOnlyList<CompendiumEntryModel> built = await Task.Run(BuildCatalogCore);
+                lock (_catalogLock)
+                {
+                    if (generation != _cacheGeneration)
+                        continue;
+
+                    _catalogCache = built;
+                    return _catalogCache;
+                }
+            }
+            finally
+            {
+                _catalogBuildLock.Release();
+            }
+        }
+    }
+
+    public void InvalidateCache(bool rebuildInBackground = true)
+    {
         lock (_catalogLock)
         {
-            if (_catalogCache is not null)
-                return _catalogCache;
+            _cacheGeneration++;
+            _catalogCache = null;
+            _detailCache.Clear();
         }
 
-        IReadOnlyList<CompendiumEntryModel> built = await Task.Run(BuildCatalogCore);
-        lock (_catalogLock)
+        if (rebuildInBackground)
+            StartBackgroundCatalogRebuild();
+    }
+
+    public void StartBackgroundCatalogRebuild()
+    {
+        lock (_warmupLock)
         {
-            _catalogCache ??= built;
-            return _catalogCache;
+            if (_warmupTask is { IsCompleted: false })
+                return;
+
+            _warmupTask = Task.Run(WarmCatalogAsync);
+        }
+    }
+
+    private async Task WarmCatalogAsync()
+    {
+        try
+        {
+            await BuildCatalogAsync();
+        }
+        catch (Exception ex)
+        {
+            DebugLogService.Catch(ex, "CompendiumService.WarmCatalogAsync");
         }
     }
 
@@ -85,11 +148,20 @@ public sealed class CompendiumService
         if (entry.HasComputedDetail)
             return entry;
 
+        int generation;
+        lock (_catalogLock)
+            generation = _cacheGeneration;
+
         if (_detailCache.TryGetValue(entry.Id, out CompendiumEntryModel? cached))
             return cached;
 
         CompendiumEntryModel enriched = await Task.Run(() => EnrichEntryCore(entry));
-        _detailCache[entry.Id] = enriched;
+        lock (_catalogLock)
+        {
+            if (generation == _cacheGeneration)
+                _detailCache[entry.Id] = enriched;
+        }
+
         return enriched;
     }
 
