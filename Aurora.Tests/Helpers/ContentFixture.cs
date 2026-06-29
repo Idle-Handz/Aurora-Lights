@@ -68,4 +68,7 @@ public static class ContentFixture
 
     public static string GetCharacterFixturePath(string fileName) =>
         Path.Combine(AppContext.BaseDirectory, "Fixtures", "Characters", fileName);
+
+    public static string GetChoiceIdentityFixturePath(string fileName) =>
+        Path.Combine(AppContext.BaseDirectory, "Fixtures", "ChoiceIdentity", fileName);
 }

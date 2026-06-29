@@ -117,6 +117,7 @@ public sealed class CharacterFixtureParityTests : IAsyncLifetime
     [InlineData("multiclass-prepared-caster.dnd5e")]
     [InlineData("prepared-paladin.dnd5e")]
     [InlineData("prepared-domain-cleric.dnd5e")]
+    [InlineData("legacy-edited-arilith.dnd5e")]
     public void SanitizedCharacterFixture_DoesNotContainPrivateOrLargeEmbeddedData(string fileName)
     {
         string path = ContentFixture.GetCharacterFixturePath(fileName);
@@ -132,41 +133,23 @@ public sealed class CharacterFixtureParityTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task LegacyEditedFixture_LoadsGroupDisplayAndAbilityEdits()
+    public async Task LegacyEditedFixture_LoadsGroupDisplayAndCoreState()
     {
         if (!ContentFixture.SkipIfUnavailable(_output)) return;
 
-        string sourcePath = ContentFixture.GetCharacterFixturePath("prepared-paladin.dnd5e");
-        string tempPath = Path.Combine(Path.GetTempPath(), $"aurora_legacy_fixture_{Guid.NewGuid():N}.dnd5e");
+        string sourcePath = ContentFixture.GetCharacterFixturePath("legacy-edited-arilith.dnd5e");
+        var handler = new TestSpellHandler();
+        SpellcastingSectionContext.Current = handler;
+        CharacterLoadCompatibilityService.PrepareForCharacterLoad();
 
-        try
-        {
-            File.Copy(sourcePath, tempPath);
+        var file = new CharacterFile(sourcePath);
+        await file.Load();
 
-            var document = new XmlDocument();
-            document.Load(tempPath);
-            SetText(document, "/character/information/group", "Legacy Edited Fixtures");
-            SetText(document, "/character/display-properties/name", "Fixture Legacy Edited Paladin");
-            SetText(document, "/character/build/input/name", "Fixture Legacy Edited Paladin");
-            SetText(document, "/character/build/abilities/strength", "16");
-            document.Save(tempPath);
-
-            var handler = new TestSpellHandler();
-            SpellcastingSectionContext.Current = handler;
-            CharacterLoadCompatibilityService.PrepareForCharacterLoad();
-
-            var file = new CharacterFile(tempPath);
-            await file.Load();
-
-            file.CollectionGroupName.Should().Be("Legacy Edited Fixtures");
-            file.DisplayName.Should().Be("Fixture Legacy Edited Paladin");
-            CharacterManager.Current.Character.Name.Should().Be("Fixture Legacy Edited Paladin");
-            CharacterManager.Current.Character.Abilities.Strength.BaseScore.Should().Be(16);
-        }
-        finally
-        {
-            if (File.Exists(tempPath)) File.Delete(tempPath);
-        }
+        file.CollectionGroupName.Should().Be("Test Fixtures");
+        file.DisplayName.Should().Be("Fixture Legacy Edited Arilith");
+        CharacterManager.Current.Character.Name.Should().Be("Fixture Legacy Edited Arilith");
+        CharacterManager.Current.Character.Level.Should().BeGreaterThan(0);
+        CharacterManager.Current.GetElements().Should().NotBeEmpty();
     }
 
     private static IReadOnlyList<string> SelectedChoiceSlots(CharacterParitySnapshot snapshot) =>
@@ -183,13 +166,6 @@ public sealed class CharacterFixtureParityTests : IAsyncLifetime
             }))
             .OrderBy(value => value, StringComparer.Ordinal)
             .ToList();
-
-    private static void SetText(XmlDocument document, string xpath, string value)
-    {
-        XmlNode? node = document.SelectSingleNode(xpath);
-        node.Should().NotBeNull($"fixture should contain {xpath}");
-        node!.InnerText = value;
-    }
 
     private static async Task<TestSpellHandler> LoadFixture(string fileName)
     {

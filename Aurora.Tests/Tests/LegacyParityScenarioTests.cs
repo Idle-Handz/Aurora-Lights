@@ -184,6 +184,13 @@ public sealed class LegacyParityScenarioTests : IAsyncLifetime
             reloaded.RegisteredElements.Select(e => e.Id)
                 .Should().Contain(original.RegisteredElements.Select(e => e.Id),
                     because: $"{scenario.Name} should preserve registered elements after save/load");
+
+            reloaded.Spellcasting.Select(s => s.Name)
+                .Should().Contain(scenario.ExpectedSpellcastingNames,
+                    because: $"{scenario.Name} should preserve expected spellcasting profiles after save/load");
+
+            foreach (var expectation in scenario.ExpectedSelectionRules)
+                AssertRuleExpectation(scenario, reloaded, expectation);
         }
         finally
         {

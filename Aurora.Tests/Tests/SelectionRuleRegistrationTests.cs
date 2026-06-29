@@ -19,6 +19,7 @@ public sealed class SelectionRuleRegistrationTests : IAsyncLifetime
     private const string HumanRaceId = "ID_RACE_HUMAN";
     private const string CustomizedLanguageOptionId = "ID_WOTC_TCOE_OPTION_CUSTOMIZED_LANGUAGE";
     private const string AcolyteBackgroundId = "ID_BACKGROUND_ACOLYTE";
+    private const string Acolyte2024BackgroundId = "ID_WOTC_PHB24_BACKGROUND_ACOLYTE";
     private const string DruidClassId = "ID_WOTC_PHB24_CLASS_DRUID";
     private const string FighterClassId = "ID_PHB_CLASS_FIGHTER";
     private const string WarlockClassId = "ID_WOTC_PHB24_CLASS_WARLOCK";
@@ -26,6 +27,10 @@ public sealed class SelectionRuleRegistrationTests : IAsyncLifetime
     private const string AgonizingBlastId = "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_AGONIZING_BLAST";
     private const string ElvishLanguageId = "ID_LANGUAGE_ELVISH";
     private const string DwarvishLanguageId = "ID_LANGUAGE_DWARVISH";
+    private const string DexterityAsi1Id = "ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_DEXTERITY_INCREASE_1";
+    private const string ConstitutionAsi1Id = "ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_CONSTITUTION_INCREASE_1";
+    private const string WisdomAsi2Id = "ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_WISDOM_INCREASE_2";
+    private const string IntelligenceAsi2Id = "ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_INTELLIGENCE_INCREASE_2";
 
     private readonly ITestOutputHelper _output;
 
@@ -289,6 +294,71 @@ public sealed class SelectionRuleRegistrationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task AbilityScoreSelection_Replacement_SaveReload_RemovesOldChoices()
+    {
+        if (!ContentFixture.SkipIfUnavailable(_output)) return;
+
+        var handler = await Create2024AcolyteAbilityScoreCharacterAsync();
+        if (handler is null) return;
+
+        var plusOneRule = FindAbilityScoreRule("Custom Ability Score Increase 1");
+        var plusTwoRule = FindAbilityScoreRule("Custom Ability Score Increase 2");
+
+        handler.SetRegisteredElement(plusOneRule, DexterityAsi1Id);
+        handler.SetRegisteredElement(plusTwoRule, WisdomAsi2Id);
+        CharacterManager.Current.ReprocessCharacter();
+
+        CharacterManager.Current.GetElements().Should().Contain(element => element.Id == DexterityAsi1Id);
+        CharacterManager.Current.GetElements().Should().Contain(element => element.Id == WisdomAsi2Id);
+        CharacterManager.Current.Character.Abilities.Dexterity.AdditionalScore.Should().Be(1);
+        CharacterManager.Current.Character.Abilities.Wisdom.AdditionalScore.Should().Be(2);
+
+        handler.SetRegisteredElement(plusOneRule, ConstitutionAsi1Id);
+        handler.SetRegisteredElement(plusTwoRule, IntelligenceAsi2Id);
+        CharacterManager.Current.ReprocessCharacter();
+
+        CharacterManager.Current.GetElements().Should().NotContain(element => element.Id == DexterityAsi1Id);
+        CharacterManager.Current.GetElements().Should().NotContain(element => element.Id == WisdomAsi2Id);
+        CharacterManager.Current.GetElements().Should().Contain(element => element.Id == ConstitutionAsi1Id);
+        CharacterManager.Current.GetElements().Should().Contain(element => element.Id == IntelligenceAsi2Id);
+        CharacterManager.Current.Character.Abilities.Dexterity.AdditionalScore.Should().Be(0);
+        CharacterManager.Current.Character.Abilities.Wisdom.AdditionalScore.Should().Be(0);
+        CharacterManager.Current.Character.Abilities.Constitution.AdditionalScore.Should().Be(1);
+        CharacterManager.Current.Character.Abilities.Intelligence.AdditionalScore.Should().Be(2);
+
+        byte[] bytes = CharacterManager.Current.File.SerializeCharacter(CharacterManager.Current.Character);
+        string tempPath = Path.Combine(Path.GetTempPath(), $"aurora_asi_replacement_{Guid.NewGuid():N}.dnd5e");
+        try
+        {
+            await File.WriteAllBytesAsync(tempPath, bytes);
+
+            var reloadedHandler = new TestSelectionRuleExpanderHandler();
+            SelectionRuleExpanderContext.Current = reloadedHandler;
+            SpellcastingSectionContext.Current = new TestSpellHandler();
+            CharacterLoadCompatibilityService.PrepareForCharacterLoad();
+            await new CharacterFile(tempPath).Load();
+
+            var reloadedPlusOneRule = FindAbilityScoreRule("Custom Ability Score Increase 1");
+            var reloadedPlusTwoRule = FindAbilityScoreRule("Custom Ability Score Increase 2");
+            var reloadedPlusOne = reloadedHandler.GetRegisteredElement(reloadedPlusOneRule) as ElementBase;
+            var reloadedPlusTwo = reloadedHandler.GetRegisteredElement(reloadedPlusTwoRule) as ElementBase;
+
+            reloadedPlusOne.Should().NotBeNull();
+            reloadedPlusTwo.Should().NotBeNull();
+            reloadedPlusOne!.Id.Should().Be(ConstitutionAsi1Id);
+            reloadedPlusTwo!.Id.Should().Be(IntelligenceAsi2Id);
+            CharacterManager.Current.GetElements().Should().NotContain(element => element.Id == DexterityAsi1Id);
+            CharacterManager.Current.GetElements().Should().NotContain(element => element.Id == WisdomAsi2Id);
+            CharacterManager.Current.Character.Abilities.Constitution.AdditionalScore.Should().Be(1);
+            CharacterManager.Current.Character.Abilities.Intelligence.AdditionalScore.Should().Be(2);
+        }
+        finally
+        {
+            if (File.Exists(tempPath)) File.Delete(tempPath);
+        }
+    }
+
+    [Fact]
     public async Task RepeatableInvocation_UsesDistinctInstancesAndSurvivesSaveReload()
     {
         if (!ContentFixture.SkipIfUnavailable(_output)) return;
@@ -395,11 +465,73 @@ public sealed class SelectionRuleRegistrationTests : IAsyncLifetime
         return handler;
     }
 
+    private async Task<TestSelectionRuleExpanderHandler?> Create2024AcolyteAbilityScoreCharacterAsync()
+    {
+        var handler = new TestSelectionRuleExpanderHandler();
+        SelectionRuleExpanderContext.Current = handler;
+        SpellcastingSectionContext.Current = new TestSpellHandler();
+        CharacterLoadCompatibilityService.PrepareForCharacterLoad();
+
+        await CharacterManager.Current.New(initializeFirstLevel: true);
+
+        var acolyte = DataManager.Current.ElementsCollection.GetElement(Acolyte2024BackgroundId);
+        if (acolyte is null)
+        {
+            _output.WriteLine("[SKIP] 2024 Acolyte background is not available in the loaded content.");
+            return null;
+        }
+
+        string[] requiredOptions =
+        [
+            DexterityAsi1Id,
+            ConstitutionAsi1Id,
+            WisdomAsi2Id,
+            IntelligenceAsi2Id
+        ];
+
+        var missingOptions = requiredOptions
+            .Where(id => DataManager.Current.ElementsCollection.GetElement(id) is null)
+            .ToList();
+        if (missingOptions.Count > 0)
+        {
+            _output.WriteLine($"[SKIP] Required ASI option(s) missing: {string.Join(", ", missingOptions)}");
+            return null;
+        }
+
+        CharacterManager.Current.RegisterElement(acolyte);
+        CharacterManager.Current.ReprocessCharacter();
+
+        if (!HasAbilityScoreRule("Custom Ability Score Increase 1") ||
+            !HasAbilityScoreRule("Custom Ability Score Increase 2"))
+        {
+            _output.WriteLine("[SKIP] 2024 Acolyte did not expose the expected ability-score selection rules.");
+            return null;
+        }
+
+        return handler;
+    }
+
     private static SelectRule FindHumanLanguageRule() =>
         CharacterManager.Current.SelectionRules.Should().ContainSingle(rule =>
             rule.Attributes.Type == "Language" &&
             rule.ElementHeader != null &&
             rule.ElementHeader.Id == HumanRaceId).Subject;
+
+    private static bool HasAbilityScoreRule(string supportsToken) =>
+        CharacterManager.Current.SelectionRules.Any(rule =>
+            rule.Attributes.Type.Equals("Ability Score Improvement", StringComparison.OrdinalIgnoreCase) &&
+            (rule.Attributes.Supports?.Contains(supportsToken, StringComparison.OrdinalIgnoreCase) ?? false));
+
+    private static SelectRule FindAbilityScoreRule(string supportsToken)
+    {
+        var matches = CharacterManager.Current.SelectionRules.Where(rule =>
+            rule.Attributes.Type.Equals("Ability Score Improvement", StringComparison.OrdinalIgnoreCase) &&
+            (rule.Attributes.Supports?.Contains(supportsToken, StringComparison.OrdinalIgnoreCase) ?? false))
+            .ToList();
+
+        matches.Should().ContainSingle($"the character should expose one {supportsToken} ability-score selection rule");
+        return matches[0];
+    }
 
     private static (SelectRule Rule, ElementBase Element)? FindSupportedElementSelection(string type)
     {

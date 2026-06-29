@@ -37,6 +37,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Fixtures\*.dnd5e" />
     <Content Include="Fixtures\Characters\*.dnd5e" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Fixtures\ChoiceIdentity\*.json" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Fixtures\ParityScenarios\*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
