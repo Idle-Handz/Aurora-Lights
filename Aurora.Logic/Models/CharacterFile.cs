@@ -1761,7 +1761,11 @@ public class CharacterFile : ObservableObject
                             SelectRule listRule;
                             if (flag)
                             {
-                                listRule = element.GetSelectRules().Single<SelectRule>((Func<SelectRule, bool>)(x => x.Attributes.IsList && x.Attributes.Name.Equals(name)));
+                                string existingChecksum = childNode.GetAttributeValue("checksum");
+                                List<SelectRule> list = element.GetSelectRules().Where<SelectRule>((Func<SelectRule, bool>)(x => x.Attributes.IsList && x.Attributes.Name.Equals(name))).ToList<SelectRule>();
+                                listRule = ResolveSavedSelectRule(list, existingChecksum, registeredElementId, hasNumber ? number : 1);
+                                if (listRule == null)
+                                    continue;
                                 int num2 = await CharacterFile.AwaitExpanderCreationAsync(listRule, hasNumber ? number : 1) ? 1 : 0;
                                 SelectionRuleExpanderContext.Current.SetRegisteredElement(listRule, registeredElementId, hasNumber ? number : 1);
                                 continue;
