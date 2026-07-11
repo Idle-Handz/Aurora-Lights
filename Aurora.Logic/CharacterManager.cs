@@ -618,6 +618,45 @@ public sealed class CharacterManager
     this.GenerateCharacterSheet();
   }
 
+  public int NormalizeDuplicateProgressionState(bool reprocess = true)
+  {
+    int removed = this._progressionManager.NormalizeDuplicateProgressionState();
+    foreach (ClassProgressionManager progressionManager in (Collection<ClassProgressionManager>) this.ClassProgressionManagers)
+    {
+      removed += progressionManager.NormalizeDuplicateProgressionState();
+      removed += CharacterManager.NormalizeDuplicateLevelElements(progressionManager);
+    }
+
+    if (removed > 0)
+    {
+      Logger.Warning("normalized {0} duplicate progression element(s)", (object) removed);
+      _elementsCacheDirty = true;
+      if (reprocess)
+        this.ReprocessCharacter();
+    }
+
+    return removed;
+  }
+
+  private static int NormalizeDuplicateLevelElements(ClassProgressionManager progressionManager)
+  {
+    int removed = 0;
+    HashSet<string> seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    foreach (ElementBase element in progressionManager.LevelElements.ToList<ElementBase>())
+    {
+      if (element == null || string.IsNullOrWhiteSpace(element.Id))
+        continue;
+
+      if (seen.Add(element.Id))
+        continue;
+
+      progressionManager.LevelElements.Remove(element);
+      ++removed;
+    }
+
+    return removed;
+  }
+
   public FileInfo GenerateCharacterSheetPreview()
   {
     int num = this.Status.HasChanges ? 1 : 0;

@@ -65,6 +65,21 @@
                     <MudText Color="Color.Secondary" Style="padding: 12px 0; font-size: 13px;">
                         No options found.
                     </MudText>
+                    @if (Options.Count == 0 && Diagnostics.Count > 0)
+                    {
+                        <div class="picker-diagnostics">
+                            @foreach (var diagnostic in Diagnostics)
+                            {
+                                <div class="picker-diagnostic picker-diagnostic-@diagnostic.Severity.ToString().ToLowerInvariant()">
+                                    <div class="picker-diagnostic-title">@diagnostic.Severity: @diagnostic.Message</div>
+                                    @if (!string.IsNullOrWhiteSpace(diagnostic.SuggestedFix))
+                                    {
+                                        <div class="picker-diagnostic-fix">@diagnostic.SuggestedFix</div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
                 }
                 else
                 {
@@ -137,6 +152,7 @@
 
     [Parameter] public SelectionRuleEntry Entry    { get; set; } = null!;
     [Parameter] public IReadOnlyList<ElementOption> Options { get; set; } = [];
+    [Parameter] public IReadOnlyList<SelectionRuleDiagnostic> Diagnostics { get; set; } = [];
 
     private string _search
     {

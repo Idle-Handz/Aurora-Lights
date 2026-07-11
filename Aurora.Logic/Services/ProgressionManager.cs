@@ -96,6 +96,108 @@ public class ProgressionManager
       this.ProcessElement(element, this.ProgressionLevel);
   }
 
+  public int NormalizeDuplicateProgressionState()
+  {
+    int removed = 0;
+    HashSet<string> topLevelKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    foreach (ElementBase element in this.Elements.ToList<ElementBase>())
+    {
+      if (ShouldDeduplicateElement(element))
+      {
+        string duplicateKey = GetDuplicateElementKey(element);
+        if (!topLevelKeys.Add(duplicateKey))
+        {
+          this.CleanElement(element);
+          this.Elements.Remove(element);
+          ++removed;
+          continue;
+        }
+      }
+
+      removed += this.RemoveDuplicateRuleElements(element);
+    }
+
+    return removed;
+  }
+
+  private int RemoveDuplicateRuleElements(ElementBase parent)
+  {
+    int removed = 0;
+    HashSet<string> childKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    foreach (ElementBase child in parent.RuleElements.ToList<ElementBase>())
+    {
+      removed += this.RemoveDuplicateRuleElements(child);
+      if (!ShouldDeduplicateElement(child))
+        continue;
+
+      string duplicateKey = GetDuplicateElementKey(child);
+      if (childKeys.Add(duplicateKey))
+        continue;
+
+      this.CleanElement(child);
+      parent.RuleElements.Remove(child);
+      ++removed;
+    }
+
+    return removed;
+  }
+
+  private static bool ShouldDeduplicateElement(ElementBase element)
+  {
+    if (element == null)
+      return false;
+
+    return !element.AllowDuplicate && !string.IsNullOrWhiteSpace(element.Id);
+  }
+
+  private static string GetDuplicateElementKey(ElementBase element)
+  {
+    string id = Normalize(element.Id);
+    string type = Normalize(element.Type);
+    if (element.Aquisition.WasGranted && element.Aquisition.GrantRule != null)
+    {
+      GrantRule grant = element.Aquisition.GrantRule;
+      return string.Join("|", new string[]
+      {
+        "grant",
+        id,
+        type,
+        Normalize(grant.ElementHeader?.Id),
+        Normalize(grant.Attributes?.Name),
+        Normalize(grant.Attributes?.Type),
+        (grant.Attributes?.RequiredLevel ?? 1).ToString()
+      });
+    }
+
+    if (element.Aquisition.WasSelected && element.Aquisition.SelectRule != null)
+    {
+      SelectRule select = element.Aquisition.SelectRule;
+      return string.Join("|", new string[]
+      {
+        "select",
+        id,
+        type,
+        Normalize(select.ElementHeader?.Id),
+        Normalize(select.Attributes?.Name),
+        Normalize(select.Attributes?.Type),
+        (select.Attributes?.RequiredLevel ?? 1).ToString(),
+        Normalize(select.UniqueIdentifier)
+      });
+    }
+
+    return string.Join("|", new string[]
+    {
+      "element",
+      id,
+      type
+    });
+  }
+
+  private static string Normalize(string value)
+  {
+    return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim().ToLowerInvariant();
+  }
+
   private void ProcessElement(ElementBase element, int currentLevel)
   {
     foreach (ElementBase ruleElement in (Collection<ElementBase>) element.RuleElements)

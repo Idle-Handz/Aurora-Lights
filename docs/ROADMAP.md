@@ -16,6 +16,31 @@ Current focus:
 - make shared content loading and file-path behavior safe across Windows and macOS
 - add tests around save/load, build choices, equipment state, and generated output over time
 
+## Content / Builder Trust
+
+Current focus:
+
+- make SQLite-backed content reconstruction explainable enough to trust in the
+  builder
+- connect content health findings to concrete build symptoms, such as empty
+  picker rows, missing grants, ambiguous selection rows, and broken starting
+  equipment
+- prefer small fixture-backed parity checks for high-impact element families
+  before broad loader rewrites
+- preserve stable choice identity across builder rows and `.dnd5e` save/load
+  so same-label choices do not drift between app sessions
+
+Next slice:
+
+- add builder-facing diagnostics when a selection row cannot produce options
+- classify common broken XML shapes and surface repair-oriented hints, starting
+  with missing target element types, unmatched support tags, and malformed
+  list-style selections
+- add focused parity checks for class/race/background choices, spellcasting
+  selects, grants, and starting equipment reconstruction
+- begin a "content repair suggestion" layer that can propose Aurora element XML
+  fixes without mutating user content automatically
+
 ## MAUI
 
 Current focus:

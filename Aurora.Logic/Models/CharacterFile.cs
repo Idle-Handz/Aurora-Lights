@@ -684,17 +684,38 @@ public class CharacterFile : ObservableObject
         ++currentProgress;
         await this.SendCharacterLoadingScreenProgressUpdate(currentProgress.IsPercetageOf(progressMax));
         await this.SendCharacterLoadingScreenStatusUpdate("performing validation");
-        int elementSaveCount = Convert.ToInt32(((XmlNode)buildNode["sum"] ?? throw new NullReferenceException("sumNode not found on " + this._filepath)).GetAttributeValue("element-count"));
-        int count1 = CharacterManager.Current.GetElements().Count;
-        if (elementSaveCount != count1)
+        int elementCountBeforeDuplicateNormalization = CharacterManager.Current.GetElements().Count;
+        int duplicateElementCountDelta = 0;
+        int duplicateProgressionStateRemoved = CharacterManager.Current.NormalizeDuplicateProgressionState();
+        if (duplicateProgressionStateRemoved > 0)
         {
-            int difference = elementSaveCount - count1;
-            Logger.Warning($"the sum of the saved elements ({elementSaveCount}) differs from the sum that is loaded ({count1})");
+            int elementCountAfterDuplicateNormalization = CharacterManager.Current.GetElements().Count;
+            duplicateElementCountDelta = Math.Max(0, elementCountBeforeDuplicateNormalization - elementCountAfterDuplicateNormalization);
+            Logger.Warning(
+                "normalized {0} duplicate progression element(s) while loading {1}",
+                (object)duplicateProgressionStateRemoved,
+                (object)this.FileName);
+        }
+        int elementSaveCount = Convert.ToInt32(((XmlNode)buildNode["sum"] ?? throw new NullReferenceException("sumNode not found on " + this._filepath)).GetAttributeValue("element-count"));
+        int expectedElementSaveCount = elementSaveCount;
+        if (duplicateElementCountDelta > 0 && elementCountBeforeDuplicateNormalization == elementSaveCount)
+        {
+            expectedElementSaveCount = Math.Max(0, elementSaveCount - duplicateElementCountDelta);
+            Logger.Warning(
+                "adjusted saved element count from {0} to {1} after duplicate progression normalization",
+                (object)elementSaveCount,
+                (object)expectedElementSaveCount);
+        }
+        int count1 = CharacterManager.Current.GetElements().Count;
+        if (expectedElementSaveCount != count1)
+        {
+            int difference = expectedElementSaveCount - count1;
+            Logger.Warning($"the sum of the saved elements ({expectedElementSaveCount}) differs from the sum that is loaded ({count1})");
             bool validCount = false;
             for (int count = 0; count < 10; ++count)
             {
                 await Task.Delay(250);
-                if (elementSaveCount == CharacterManager.Current.GetElements().Count)
+                if (expectedElementSaveCount == CharacterManager.Current.GetElements().Count)
                 {
                     validCount = true;
                     break;

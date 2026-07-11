@@ -1216,6 +1216,39 @@ html, body {
     font-size: 11px;
     color: var(--mud-palette-text-secondary, #a6adc8);
 }
+.picker-diagnostics {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 10px;
+}
+.picker-diagnostic {
+    border: 1px solid rgba(249, 226, 175, 0.45);
+    background: rgba(249, 226, 175, 0.08);
+    border-radius: 8px;
+    padding: 9px 10px;
+    font-size: 12px;
+    line-height: 1.45;
+}
+.picker-diagnostic-error {
+    border-color: rgba(243, 139, 168, 0.55);
+    background: rgba(243, 139, 168, 0.08);
+}
+.picker-diagnostic-info {
+    border-color: rgba(137, 180, 250, 0.45);
+    background: rgba(137, 180, 250, 0.08);
+}
+.picker-diagnostic-title {
+    color: var(--mud-palette-text-primary, #cdd6f4);
+    font-weight: 600;
+}
+.picker-diagnostic-fix {
+    margin-top: 5px;
+    color: var(--mud-palette-text-secondary, #a6adc8);
+    font-family: var(--app-mono-font, Consolas, monospace);
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
 /* Detail panel */
 .picker-detail {
     flex: 1;

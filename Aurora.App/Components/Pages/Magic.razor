@@ -324,11 +324,16 @@
         }
 
         var options = await Task.Run(() => BuildService.GetOptions(entry.Rule, entry.Number));
+        var diagnostics = SelectionRuleDiagnosticService.ExplainEmptyOptions(
+            entry.Rule,
+            entry.Number,
+            options.Count);
 
         var parameters = new DialogParameters
         {
             [nameof(SelectionPickerDialog.Entry)] = entry,
             [nameof(SelectionPickerDialog.Options)] = options,
+            [nameof(SelectionPickerDialog.Diagnostics)] = diagnostics,
         };
         var dialogOptions = new DialogOptions
         {

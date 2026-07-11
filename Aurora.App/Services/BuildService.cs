@@ -1050,8 +1050,9 @@ public static partial class BuildService
     private static void NormalizeSelectionState(List<string> invalidated)
     {
         int countBefore = invalidated.Count;
+        int duplicateCount = CharacterManager.Current.NormalizeDuplicateProgressionState(reprocess: false);
         ClearStaleSelectedAbilityScoreElements(invalidated);
-        if (invalidated.Count > countBefore)
+        if (invalidated.Count > countBefore || duplicateCount > 0)
             CharacterManager.Current.ReprocessCharacter();
     }
 

@@ -930,6 +930,10 @@ else if (_workflowSuggestion != null)
         _saving = true;
         StateHasChanged();
         var options = await Task.Run(() => BuildService.GetOptions(entry.Rule, entry.Number));
+        var diagnostics = SelectionRuleDiagnosticService.ExplainEmptyOptions(
+            entry.Rule,
+            entry.Number,
+            options.Count);
         _saving = false;
         StateHasChanged();
 
@@ -937,6 +941,7 @@ else if (_workflowSuggestion != null)
         {
             [nameof(SelectionPickerDialog.Entry)]   = entry,
             [nameof(SelectionPickerDialog.Options)] = options,
+            [nameof(SelectionPickerDialog.Diagnostics)] = diagnostics,
         };
         var dialogOptions = new DialogOptions
         {
