@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Xml;
 using Builder.Data;
 using Builder.Data.Rules;
 using Builder.Presentation.Models;
@@ -70,6 +71,24 @@ public sealed class CharacterFileSelectionRestoreTests
             selectId: null);
 
         resolved.Should().BeSameAs(second);
+    }
+
+    [Fact]
+    public void ReadSavedChoiceIdentity_TreatsLegacyMissingAttributesAsEmpty()
+    {
+        var document = new XmlDocument();
+        document.LoadXml("""
+            <element type="Race" name="Race" requiredLevel="1" checksum="1597ef76" registered="ID_RACE_TEST" />
+            """);
+
+        var method = typeof(CharacterFile).GetMethod(
+            "ReadSavedChoiceIdentity",
+            BindingFlags.Static | BindingFlags.NonPublic);
+
+        method.Should().NotBeNull();
+        var identity = method!.Invoke(null, [document.DocumentElement!]);
+
+        identity.Should().BeEquivalentTo((ChoiceRowKey: "", ChoiceKey: "", SelectId: ""));
     }
 
     [Fact]

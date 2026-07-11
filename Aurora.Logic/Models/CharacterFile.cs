@@ -1784,9 +1784,8 @@ public class CharacterFile : ObservableObject
                     {
                         try
                         {
-                            string savedChoiceRowKey = childNode.GetAttributeValue("choiceRowKey");
-                            string savedChoiceKey = childNode.GetAttributeValue("choiceKey");
-                            string savedSelectId = childNode.GetAttributeValue("selectId");
+                            (string savedChoiceRowKey, string savedChoiceKey, string savedSelectId) =
+                                ReadSavedChoiceIdentity(childNode);
                             SelectRule listRule;
                             if (flag)
                             {
@@ -1952,6 +1951,21 @@ public class CharacterFile : ObservableObject
             registeredElementId,
             scopedMatches.Count);
         return scopedMatches.FirstOrDefault();
+    }
+
+    private static (string ChoiceRowKey, string ChoiceKey, string SelectId) ReadSavedChoiceIdentity(XmlNode node)
+    {
+        return (
+            ReadOptionalAttribute(node, "choiceRowKey"),
+            ReadOptionalAttribute(node, "choiceKey"),
+            ReadOptionalAttribute(node, "selectId"));
+    }
+
+    private static string ReadOptionalAttribute(XmlNode node, string attributeName)
+    {
+        return node.ContainsAttribute(attributeName)
+            ? node.GetAttributeValue(attributeName)
+            : string.Empty;
     }
 
     private void ParseAttacksSection(XmlNode attacksNode, Character character)
