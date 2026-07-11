@@ -45,9 +45,9 @@ Current parity scenarios:
 | `2024-druid-acolyte.json` | 2024 class/background flow with cantrip, feat, and background ability-score choices |
 
 `ChoiceIdentity/` contains translator character-state fixtures that document
-the intended stable choice identity behavior. These fixtures are not full
-Aurora-Lights app-contract round trips yet; they protect the matcher priority
-for the known ambiguous Paladin/Ranger Weapon Mastery case:
+the intended stable choice identity behavior. They protect the matcher priority
+for the known ambiguous Paladin/Ranger Weapon Mastery case and complement the
+runtime `.dnd5e` save/restore coverage in `CharacterFileSelectionRestoreTests`:
 
 1. `choiceRowKey`
 2. `choiceKey`
@@ -59,9 +59,9 @@ Remaining gaps before this coverage should be considered complete:
 - Optional: add a dedicated committed level-1 race/background ASI `.dnd5e`
   fixture if we want a static file for that case. The behavior is currently
   covered by a seed scenario that is serialized/reloaded during the test run.
-- Add full app-contract save/restore coverage once Aurora-Lights models
-  `choiceRowKey`/`choiceKey` on real choice rows instead of only testing the
-  translator character-state fixture shape.
+- Add full external app-contract import/export coverage if Aurora-Lights later
+  consumes translator character-state JSON directly instead of reconstructed
+  Aurora rules and `.dnd5e` files.
 - Add a fixture with portrait/group metadata if a sanitized portrait case is
   needed; current sanitization intentionally removes embedded/local portrait data.
 - Add more naturally Legacy-edited `.dnd5e` fixtures if we need wider coverage

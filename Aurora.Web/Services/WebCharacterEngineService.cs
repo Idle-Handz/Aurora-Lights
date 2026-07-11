@@ -50,6 +50,9 @@ public sealed class WebCharacterEngineService
 
     private sealed record BuildRuleSelection(
         string Key,
+        string ChoiceRowKey,
+        string ChoiceKey,
+        string SelectId,
         string GroupId,
         string GroupLabel,
         SelectRule Rule,
@@ -1013,6 +1016,9 @@ public sealed class WebCharacterEngineService
                 group.Key.GroupLabel,
                 group.Select(selection => new WebBuildSelectionEntry(
                         selection.Key,
+                        selection.ChoiceRowKey,
+                        selection.ChoiceKey,
+                        selection.SelectId,
                         selection.Label,
                         selection.Type,
                         selection.CurrentName,
@@ -1053,16 +1059,23 @@ public sealed class WebCharacterEngineService
             .ThenBy(entry => entry.GroupLabel)
             .ThenBy(entry => entry.RequiredLevel)
             .ThenBy(entry => entry.Label)
-            .Select((entry, index) => new BuildRuleSelection(
-                index.ToString(),
-                entry.GroupId,
-                entry.GroupLabel,
-                entry.Rule,
-                entry.Number,
-                entry.Label,
-                entry.Type,
-                entry.CurrentName,
-                entry.RequiredLevel))
+            .Select(entry =>
+            {
+                SelectionRuleIdentity identity = SelectionRuleIdentityService.Create(entry.Rule, entry.Number);
+                return new BuildRuleSelection(
+                    identity.ChoiceRowKey,
+                    identity.ChoiceRowKey,
+                    identity.ChoiceKey,
+                    identity.SelectId,
+                    entry.GroupId,
+                    entry.GroupLabel,
+                    entry.Rule,
+                    entry.Number,
+                    entry.Label,
+                    entry.Type,
+                    entry.CurrentName,
+                    entry.RequiredLevel);
+            })
             .ToList();
     }
 

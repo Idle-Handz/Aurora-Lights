@@ -14,6 +14,9 @@ public sealed record WebBuildSelectionGroup(
 
 public sealed record WebBuildSelectionEntry(
     string Key,
+    string ChoiceRowKey,
+    string ChoiceKey,
+    string SelectId,
     string Label,
     string Type,
     string? CurrentName,

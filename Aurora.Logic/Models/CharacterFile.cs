@@ -1217,6 +1217,11 @@ public class CharacterFile : ObservableObject
                     if (selectRule.Attributes.MultipleNumberCount)
                         attributesDictionary.Add("number", index.ToString());
                     attributesDictionary.Add("checksum", CharacterFileVerification.GenerateCrC(selectRule, index));
+                    SelectionRuleIdentity identity = SelectionRuleIdentityService.Create(selectRule, index);
+                    attributesDictionary.Add("choiceRowKey", identity.ChoiceRowKey);
+                    attributesDictionary.Add("choiceKey", identity.ChoiceKey);
+                    if (!string.IsNullOrWhiteSpace(identity.SelectId))
+                        attributesDictionary.Add("selectId", identity.SelectId);
                     if (selectRule.Attributes.IsList)
                     {
                         attributesDictionary.Add("isList", "true");
@@ -1758,12 +1763,15 @@ public class CharacterFile : ObservableObject
                     {
                         try
                         {
+                            string savedChoiceRowKey = childNode.GetAttributeValue("choiceRowKey");
+                            string savedChoiceKey = childNode.GetAttributeValue("choiceKey");
+                            string savedSelectId = childNode.GetAttributeValue("selectId");
                             SelectRule listRule;
                             if (flag)
                             {
                                 string existingChecksum = childNode.GetAttributeValue("checksum");
                                 List<SelectRule> list = element.GetSelectRules().Where<SelectRule>((Func<SelectRule, bool>)(x => x.Attributes.IsList && x.Attributes.Name.Equals(name))).ToList<SelectRule>();
-                                listRule = ResolveSavedSelectRule(list, existingChecksum, registeredElementId, hasNumber ? number : 1);
+                                listRule = ResolveSavedSelectRule(list, existingChecksum, registeredElementId, hasNumber ? number : 1, savedChoiceRowKey, savedChoiceKey, savedSelectId);
                                 if (listRule == null)
                                     continue;
                                 int num2 = await CharacterFile.AwaitExpanderCreationAsync(listRule, hasNumber ? number : 1) ? 1 : 0;
@@ -1774,7 +1782,7 @@ public class CharacterFile : ObservableObject
                             {
                                 string existingChecksum = childNode.GetAttributeValue("checksum");
                                 List<SelectRule> list = element.GetSelectRules().Where<SelectRule>((Func<SelectRule, bool>)(x => x.Attributes.Type == type && x.Attributes.Number > 1 && x.Attributes.Name == name)).ToList<SelectRule>();
-                                listRule = ResolveSavedSelectRule(list, existingChecksum, registeredElementId, number);
+                                listRule = ResolveSavedSelectRule(list, existingChecksum, registeredElementId, number, savedChoiceRowKey, savedChoiceKey, savedSelectId);
                                 if (listRule != null)
                                 {
                                     if (await CharacterFile.AwaitExpanderCreationAsync(listRule, number))
@@ -1797,7 +1805,7 @@ public class CharacterFile : ObservableObject
                                 if (list.Count != 1 && childNode.ContainsAttribute("checksum"))
                                 {
                                     string existingChecksum = childNode.GetAttributeValue("checksum");
-                                    listRule = ResolveSavedSelectRule(list, existingChecksum, registeredElementId, 1);
+                                    listRule = ResolveSavedSelectRule(list, existingChecksum, registeredElementId, 1, savedChoiceRowKey, savedChoiceKey, savedSelectId);
                                     if (listRule == null)
                                         continue;
                                     if (!await CharacterFile.AwaitExpanderCreationAsync(listRule))
@@ -1864,9 +1872,37 @@ public class CharacterFile : ObservableObject
         string registeredElementId,
         int number)
     {
+        return ResolveSavedSelectRule(
+            candidates,
+            existingChecksum,
+            registeredElementId,
+            number,
+            choiceRowKey: null,
+            choiceKey: null,
+            selectId: null);
+    }
+
+    internal static SelectRule ResolveSavedSelectRule(
+        IEnumerable<SelectRule> candidates,
+        string existingChecksum,
+        string registeredElementId,
+        int number,
+        string choiceRowKey,
+        string choiceKey,
+        string selectId)
+    {
         List<SelectRule> candidateList = candidates.ToList();
         if (candidateList.Count == 0)
             return null;
+
+        SelectRule identityMatch = SelectionRuleIdentityService.FindBestMatch(
+            candidateList,
+            number,
+            choiceRowKey,
+            choiceKey,
+            selectId);
+        if (identityMatch != null)
+            return identityMatch;
 
         List<SelectRule> checksumMatches = string.IsNullOrWhiteSpace(existingChecksum)
             ? candidateList

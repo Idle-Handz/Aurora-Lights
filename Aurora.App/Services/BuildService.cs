@@ -54,7 +54,7 @@ public static partial class BuildService
 
                 var entry = new SelectionRuleEntry(
                     rule, n, label, currentName, rule.Attributes.RequiredLevel,
-                    BuildEntryKey(rule, n, ruleType, ruleName));
+                    BuildEntryKey(rule, n));
 
                 if (classMgr != null)
                 {
@@ -138,7 +138,7 @@ public static partial class BuildService
                     byClass[groupName] = [];
                 byClass[groupName].Add(new SelectionRuleEntry(
                     rule, n, label, currentName, rule.Attributes.RequiredLevel,
-                    BuildEntryKey(rule, n, ruleType, ruleName), spellLevel, spellId));
+                    BuildEntryKey(rule, n), spellLevel, spellId));
             }
         }
 
@@ -1501,6 +1501,11 @@ public sealed record SelectionRuleEntry(
     int        SpellLevel = 0,
     string?    SpellId = null)
 {
+    public SelectionRuleIdentity Identity => SelectionRuleIdentityService.Create(Rule, Number);
+    public string ChoiceRowKey => Identity.ChoiceRowKey;
+    public string ChoiceKey => Identity.ChoiceKey;
+    public string SelectId => Identity.SelectId;
+
     public bool IsOptional =>
         Rule?.Attributes?.Optional == true ||
         BuildRuleClassifier.IsOptionalFlavorSelection(Label);

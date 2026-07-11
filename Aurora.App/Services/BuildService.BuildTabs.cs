@@ -166,7 +166,7 @@ public static partial class BuildService
 
                 var entry = new SelectionRuleEntry(
                     rule, n, label, currentName, rule.Attributes.RequiredLevel,
-                    BuildEntryKey(rule, n, ruleType, ruleName));
+                    BuildEntryKey(rule, n));
 
                 switch (ClassifyBuildRule(rule, classMgr))
                 {
@@ -329,7 +329,7 @@ public static partial class BuildService
                 string label    = rule.Attributes.Number > 1 ? $"{ruleName} ({n})" : ruleName;
                 result.Add(new SelectionRuleEntry(
                     rule, n, label, currentName, rule.Attributes.RequiredLevel,
-                    BuildEntryKey(rule, n, ruleType, ruleName)));
+                    BuildEntryKey(rule, n)));
             }
         }
 
@@ -577,19 +577,9 @@ public static partial class BuildService
     private static int CountUnresolved(IEnumerable<SelectionRuleGroup> groups) =>
         groups.SelectMany(g => g.Rules).Count(r => r.CurrentName == null && !r.IsOptional);
 
-    private static string BuildEntryKey(SelectRule rule, int number, string ruleType, string ruleName)
+    private static string BuildEntryKey(SelectRule rule, int number)
     {
-        if (!string.IsNullOrWhiteSpace(rule.UniqueIdentifier))
-            return $"rule:{rule.UniqueIdentifier}|slot:{number}";
-
-        try
-        {
-            return $"crc:{rule.GetCrC(number)}";
-        }
-        catch
-        {
-            return $"legacy:{ruleType}|{ruleName}|slot:{number}";
-        }
+        return SelectionRuleIdentityService.Create(rule, number).ChoiceRowKey;
     }
 
     private static BuildRuleBucket ClassifyBuildRule(SelectRule rule, ClassProgressionManager? classMgr)
