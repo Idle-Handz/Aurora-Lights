@@ -646,13 +646,16 @@ public static partial class BuildService
             supported.RemoveElement(restricted.Id);
         }
 
-        foreach (var existing in CharacterManager.Current.GetElements().Where(e => e.Type.Equals(rule.Attributes.Type)))
+        if (!BuildRuleClassifier.AllowsStackedSelections(rule.Attributes.Type ?? string.Empty))
         {
-            if (supported.Any(e => e.Id.Equals(existing.Id, StringComparison.Ordinal)) &&
-                !existing.AllowDuplicate &&
-                !existing.Id.Equals(registeredId, StringComparison.Ordinal))
+            foreach (var existing in CharacterManager.Current.GetElements().Where(e => e.Type.Equals(rule.Attributes.Type)))
             {
-                supported.RemoveElement(existing.Id);
+                if (supported.Any(e => e.Id.Equals(existing.Id, StringComparison.Ordinal)) &&
+                    !existing.AllowDuplicate &&
+                    !existing.Id.Equals(registeredId, StringComparison.Ordinal))
+                {
+                    supported.RemoveElement(existing.Id);
+                }
             }
         }
 

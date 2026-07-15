@@ -42,9 +42,17 @@
             <div class="magic-view-tabs">
                 <button type="button"
                         class="magic-view-tab @(OnKnownTab ? "selected" : string.Empty)"
-                        @onclick='() => SelectTab("known")'>
+                        @onclick="() => SelectTab(KnownTabId)">
                     Known
                 </button>
+                @if (HasCastableSpells)
+                {
+                    <button type="button"
+                            class="magic-view-tab @(OnCastableTab ? "selected" : string.Empty)"
+                            @onclick="() => SelectTab(CastableTabId)">
+                        Castable
+                    </button>
+                }
                 @foreach (var sec in PreparedSections)
                 {
                     var secId = sec.Id;
@@ -61,7 +69,7 @@
              just the selected class (with its prepared count) on a Prepared tab. ── *@
         @if (Model.Sections.Count > 0)
         {
-            var statSections = OnKnownTab
+            var statSections = OnKnownTab || OnCastableTab
                 ? Model.Sections
                 : (IReadOnlyList<MagicSpellcastingSectionModel>)new[] { activeMagicSection };
             @foreach (var sec in statSections)
@@ -234,8 +242,204 @@
         }
 
         @* ── Prepared tab: the selected class's preparable spells with checkboxes. Cantrips aren't
-             preparable, so they don't appear here — they live on the Known tab. ── *@
-        @if (!OnKnownTab && Model.Sections.Count > 0)
+             preparable, so they appear on Known/Castable instead. ── *@
+        @if (OnCastableTab && Model.Sections.Count > 0)
+        {
+            <section class="magic-section">
+                <div class="magic-browse-controls">
+                    <input class="magic-filter-input"
+                           type="text"
+                           placeholder="Search castable spells..."
+                           @bind="_castableSearchText"
+                           @bind:event="oninput" />
+                    <select class="magic-filter-select" @bind="_castableLevelFilter">
+                        <option value="">All levels</option>
+                        <option value="0">Cantrips</option>
+                        @for (int i = 1; i <= 9; i++)
+                        {
+                            <option value="@i">@Ordinal(i) level</option>
+                        }
+                    </select>
+                    <select class="magic-filter-select" @bind="_castableSourceFilter">
+                        <option value="">All sources</option>
+                        @foreach (string source in _availableSources)
+                        {
+                            <option value="@source">@source</option>
+                        }
+                    </select>
+                    <select class="magic-filter-select" @bind="_castableSchoolFilter">
+                        <option value="">All schools</option>
+                        @foreach (string school in _availableSchools)
+                        {
+                            <option value="@school">@school</option>
+                        }
+                    </select>
+                    <div class="magic-filter-checks">
+                        <label class="magic-filter-check">
+                            <input type="checkbox" @bind="_castableRitualOnly" />
+                            <span>Rituals</span>
+                        </label>
+                        <label class="magic-filter-check">
+                            <input type="checkbox" @bind="_castableConcentrationOnly" />
+                            <span>Concentration</span>
+                        </label>
+                    </div>
+                </div>
+            </section>
+
+            <div class="magic-layout">
+                <section class="magic-list">
+                    @foreach (MagicSpellcastingSectionModel section in FilteredCastableSections)
+                    {
+                        var cantrips = GetCastableCantrips(section);
+                        var spellLevels = GetCastableSpellLevels(section);
+
+                        @if (Model.Sections.Count > 1)
+                        {
+                            <div class="magic-level-header">
+                                <span class="magic-section-label">@section.Label</span>
+                            </div>
+                        }
+
+                        @if (cantrips.Count > 0)
+                        {
+                            <div class="magic-level-header">
+                                <span class="magic-section-label">Cantrips</span>
+                            </div>
+                            @foreach (MagicSpellListEntryModel spell in cantrips)
+                            {
+                                <div class="magic-spell-row @(SelectedSpellId == spell.Id ? "selected" : string.Empty)">
+                                    <button type="button"
+                                            class="magic-spell-select"
+                                            @onclick="() => OnSelectSpell.InvokeAsync(spell.Id)">
+                                        <span class="magic-spell-text">
+                                            <span class="magic-spell-name prepared">@spell.Name</span>
+                                            <span class="magic-spell-meta">
+                                                @if (!string.IsNullOrWhiteSpace(spell.Source))
+                                                {
+                                                    <span>@spell.Source</span>
+                                                }
+                                                @if (!string.IsNullOrWhiteSpace(spell.School))
+                                                {
+                                                    <span>@spell.School</span>
+                                                }
+                                                <span class="magic-spell-badge @GetBadgeClass(MagicSpellDisplayState.Known)">Known</span>
+                                                @if (spell.IsRitual)
+                                                {
+                                                    <span class="magic-spell-badge">Ritual</span>
+                                                }
+                                                @if (spell.IsConcentration)
+                                                {
+                                                    <span class="magic-spell-badge">Concentration</span>
+                                                }
+                                            </span>
+                                        </span>
+                                    </button>
+                                </div>
+                            }
+                        }
+
+                        @foreach (MagicSpellLevelModel level in spellLevels)
+                        {
+                            <div class="magic-level-header">
+                                <span class="magic-section-label">@Ordinal(level.Level) Level Spells</span>
+                            </div>
+
+                            @foreach (MagicSpellListEntryModel spell in level.Spells)
+                            {
+                                <div class="magic-spell-row @(SelectedSpellId == spell.Id ? "selected" : string.Empty)">
+                                    <button type="button"
+                                            class="magic-spell-select"
+                                            @onclick="() => OnSelectSpell.InvokeAsync(spell.Id)">
+                                        <span class="magic-spell-text">
+                                            <span class="magic-spell-name prepared">@spell.Name</span>
+                                            <span class="magic-spell-meta">
+                                                @if (!string.IsNullOrWhiteSpace(spell.Source))
+                                                {
+                                                    <span>@spell.Source</span>
+                                                }
+                                                @if (!string.IsNullOrWhiteSpace(spell.School))
+                                                {
+                                                    <span>@spell.School</span>
+                                                }
+                                                <span class="magic-spell-badge @GetBadgeClass(spell.DisplayState)">@GetDisplayStateLabel(spell.DisplayState)</span>
+                                                @if (spell.IsRitual)
+                                                {
+                                                    <span class="magic-spell-badge">Ritual</span>
+                                                }
+                                                @if (spell.IsConcentration)
+                                                {
+                                                    <span class="magic-spell-badge">Concentration</span>
+                                                }
+                                            </span>
+                                        </span>
+                                    </button>
+                                </div>
+                            }
+                        }
+                    }
+
+                    @if (FilteredCastableSections.Count == 0)
+                    {
+                        <p class="magic-empty">No castable spells match the current filters.</p>
+                    }
+                </section>
+
+                <section class="magic-detail">
+                    @if (SelectedSpell is null)
+                    {
+                        <p class="magic-empty">Select a spell to see details.</p>
+                    }
+                    else
+                    {
+                        var spellDetail = SelectedSpell!;
+                        <div class="magic-detail-name">@spellDetail.Name</div>
+                        <div class="magic-detail-meta">
+                            @if (!string.IsNullOrWhiteSpace(spellDetail.Subtitle))
+                            {
+                                <span>@spellDetail.Subtitle</span>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(spellDetail.School))
+                            {
+                                <span>@spellDetail.School</span>
+                            }
+                            @if (spellDetail.Ritual)
+                            {
+                                <span>Ritual</span>
+                            }
+                            @if (spellDetail.Concentration)
+                            {
+                                <span>Concentration</span>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(spellDetail.Source))
+                            {
+                                <span>@spellDetail.Source</span>
+                            }
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(spellDetail.CastingTime) ||
+                             !string.IsNullOrWhiteSpace(spellDetail.Range) ||
+                             !string.IsNullOrWhiteSpace(spellDetail.Components) ||
+                             !string.IsNullOrWhiteSpace(spellDetail.Duration))
+                        {
+                            <div class="magic-detail-props">
+                                @SpellPropRow("Casting Time", spellDetail.CastingTime)
+                                @SpellPropRow("Range", spellDetail.Range)
+                                @SpellPropRow("Components", spellDetail.Components)
+                                @SpellPropRow("Duration", spellDetail.Duration)
+                            </div>
+                        }
+
+                        @if (!string.IsNullOrWhiteSpace(spellDetail.Description))
+                        {
+                            <div class="magic-detail-description">@spellDetail.Description</div>
+                        }
+                    }
+                </section>
+            </div>
+        }
+
+        @if (!OnKnownTab && !OnCastableTab && Model.Sections.Count > 0)
         {
             <section class="magic-section">
                 <div class="magic-browse-controls">
@@ -428,12 +632,21 @@
     [Parameter]
     public EventCallback<MagicSlotToggleModel> OnToggleSlot { get; set; }
 
+    private const string KnownTabId = "known";
+    private const string CastableTabId = "castable";
+
     private string _knownSearchText = string.Empty;
     private string _knownLevelFilter = string.Empty;
     private string _knownSourceFilter = string.Empty;
     private string _knownSchoolFilter = string.Empty;
     private bool _knownRitualOnly;
     private bool _knownConcentrationOnly;
+    private string _castableSearchText = string.Empty;
+    private string _castableLevelFilter = string.Empty;
+    private string _castableSourceFilter = string.Empty;
+    private string _castableSchoolFilter = string.Empty;
+    private bool _castableRitualOnly;
+    private bool _castableConcentrationOnly;
     private string _preparedSearchText = string.Empty;
     private string _preparedLevelFilter = string.Empty;
     private string _preparedSourceFilter = string.Empty;
@@ -443,7 +656,7 @@
     private bool _preparedConcentrationOnly;
     // Selected tab: "known" (always present) or a prepared-caster section id. Each prepared-casting
     // class gets its own "Prepared — <class>" tab.
-    private string _selectedTab = "known";
+    private string _selectedTab = KnownTabId;
     private readonly HashSet<string> _collapsedGroups = new(StringComparer.Ordinal);
     private readonly HashSet<int> _collapsedLevels = new();
 
@@ -458,8 +671,16 @@
         ?? Model.Sections.FirstOrDefault()
         ?? new MagicSpellcastingSectionModel();
 
-    private bool OnKnownTab => _selectedTab == "known" || Model.Sections.Count == 0
-        || !Model.Sections.Any(s => s.Id == _selectedTab);
+    private bool OnKnownTab => _selectedTab == KnownTabId || Model.Sections.Count == 0
+        || (_selectedTab != CastableTabId && !Model.Sections.Any(s => s.Id == _selectedTab));
+
+    private bool OnCastableTab => _selectedTab == CastableTabId && HasCastableSpells;
+
+    private bool HasCastableSpells =>
+        Model.Sections.Any(section =>
+            section.Cantrips.Count > 0
+            || section.SpellLevels.SelectMany(level => level.Spells)
+                .Any(spell => spell.IsPrepared || spell.IsAlwaysPrepared));
 
     // Spell slots are a single shared pool across all of a character's casting classes (multiclass
     // caster table), so aggregate every section's per-level slots into one combined bar.
@@ -513,6 +734,28 @@
             .Where(level => level.Spells.Count > 0 || LevelShouldRemainVisible(level.Level))
             .ToList();
 
+    private IReadOnlyList<MagicSpellcastingSectionModel> FilteredCastableSections =>
+        Model.Sections
+            .Where(section => GetCastableCantrips(section).Count > 0 || GetCastableSpellLevels(section).Count > 0)
+            .ToList();
+
+    private IReadOnlyList<MagicSpellListEntryModel> GetCastableCantrips(MagicSpellcastingSectionModel section) =>
+        section.Cantrips
+            .Where(MatchesCastableSpellFilter)
+            .ToList();
+
+    private IReadOnlyList<MagicSpellLevelModel> GetCastableSpellLevels(MagicSpellcastingSectionModel section) =>
+        section.SpellLevels
+            .Select(level => new MagicSpellLevelModel(
+                level.Level,
+                level.Spells
+                    .Where(spell => (spell.IsPrepared || spell.IsAlwaysPrepared) && MatchesCastableSpellFilter(spell))
+                    .ToList(),
+                level.TotalSlots,
+                level.UsedSlots))
+            .Where(level => level.Spells.Count > 0)
+            .ToList();
+
     // Editable spell-selection groups (cantrips + chosen known spells). The Known tab is unified
     // across all the character's casting classes, so all non-read-only groups show (grouped by class
     // via their own labels). Read-only granted groups are surfaced separately.
@@ -554,8 +797,10 @@
     protected override void OnParametersSet()
     {
         // Reset to the Known tab if the selected Prepared section is gone (or never existed).
-        if (_selectedTab != "known" && !Model.Sections.Any(section => section.Id == _selectedTab))
-            _selectedTab = "known";
+        if (_selectedTab != KnownTabId && _selectedTab != CastableTabId && !Model.Sections.Any(section => section.Id == _selectedTab))
+            _selectedTab = KnownTabId;
+        if (_selectedTab == CastableTabId && !HasCastableSpells)
+            _selectedTab = KnownTabId;
 
         RefreshFilterLists();
     }
@@ -614,6 +859,42 @@
             return false;
 
         if (_preparedConcentrationOnly && !spell.IsConcentration)
+            return false;
+
+        return true;
+    }
+
+    private bool MatchesCastableSpellFilter(MagicSpellListEntryModel spell)
+    {
+        if (!string.IsNullOrWhiteSpace(_castableSearchText))
+        {
+            bool matchesText =
+                spell.Name.Contains(_castableSearchText, StringComparison.OrdinalIgnoreCase) ||
+                (!string.IsNullOrWhiteSpace(spell.Source) &&
+                 spell.Source.Contains(_castableSearchText, StringComparison.OrdinalIgnoreCase));
+
+            if (!matchesText) return false;
+        }
+
+        if (!string.IsNullOrWhiteSpace(_castableLevelFilter) &&
+            int.TryParse(_castableLevelFilter, out int levelFilter) &&
+            spell.Level != levelFilter)
+        {
+            return false;
+        }
+
+        if (!string.IsNullOrWhiteSpace(_castableSourceFilter)
+            && !string.Equals(spell.Source, _castableSourceFilter, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        if (!string.IsNullOrWhiteSpace(_castableSchoolFilter)
+            && !string.Equals(spell.School, _castableSchoolFilter, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        if (_castableRitualOnly && !spell.IsRitual)
+            return false;
+
+        if (_castableConcentrationOnly && !spell.IsConcentration)
             return false;
 
         return true;

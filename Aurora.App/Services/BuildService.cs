@@ -434,6 +434,9 @@ public static partial class BuildService
     {
         try
         {
+            if (BuildRuleClassifier.AllowsStackedSelections(rule.Attributes.Type ?? string.Empty))
+                return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
             return CharacterManager.Current.GetElements()
                 .Where(element =>
                     element.Type.Equals(rule.Attributes.Type, StringComparison.Ordinal) &&

@@ -161,6 +161,9 @@ public static class BuildRuleClassifier
         return OriginAbilityScoreSource.None;
     }
 
+    public static bool AllowsStackedSelections(string ruleType) =>
+        AsiTypes.Contains(ruleType);
+
     public static bool IsOptionalFlavorSelection(string label) =>
         OptionalFlavorLabels.Contains(label) ||
         OptionalFlavorLabels.Any(f => label.StartsWith(f + " (", StringComparison.OrdinalIgnoreCase));

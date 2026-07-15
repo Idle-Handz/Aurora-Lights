@@ -211,6 +211,19 @@ public sealed class BuildRuleClassifierTests
             .Should().Be(OriginAbilityScoreSource.None);
 
     [Fact]
+    public void AbilityScoreImprovement_AllowsStackedSelections()
+        => BuildRuleClassifier.AllowsStackedSelections("Ability Score Improvement")
+            .Should().BeTrue();
+
+    [Theory]
+    [InlineData("Language")]
+    [InlineData("Proficiency")]
+    [InlineData("Feat")]
+    public void NonAbilityScoreImprovement_DoesNotAllowStackedSelections(string ruleType)
+        => BuildRuleClassifier.AllowsStackedSelections(ruleType)
+            .Should().BeFalse();
+
+    [Fact]
     public void BackgroundFeat_IsNotOriginAsi()
         => ClassifyOriginAsi(
                 "Feat",
