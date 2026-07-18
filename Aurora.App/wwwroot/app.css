@@ -572,6 +572,115 @@ html, body {
     line-height: 1.35;
 }
 
+.compendium-companion-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin: 0 0 14px;
+}
+
+.compendium-companion-stat,
+.compendium-information-card {
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    background: rgba(255,255,255,0.03);
+}
+
+.compendium-companion-stat-label,
+.compendium-companion-detail-label {
+    color: var(--mud-palette-text-disabled, #6c7086);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.compendium-companion-stat-value {
+    margin-top: 4px;
+    color: var(--mud-palette-text-primary, #cdd6f4);
+    font-weight: 700;
+    line-height: 1.35;
+}
+
+.compendium-companion-abilities {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 8px;
+    margin: 0 0 14px;
+}
+
+.compendium-companion-ability {
+    padding: 10px 8px;
+    border: 1px solid rgba(137,180,250,0.22);
+    border-radius: 8px;
+    background: rgba(137,180,250,0.06);
+    text-align: center;
+}
+
+.compendium-companion-ability-label {
+    display: block;
+    color: var(--mud-palette-primary, #89b4fa);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+}
+
+.compendium-companion-ability-value {
+    display: block;
+    margin-top: 2px;
+    color: var(--mud-palette-text-primary, #cdd6f4);
+    font-weight: 700;
+}
+
+.compendium-companion-detail-rows {
+    display: grid;
+    gap: 6px;
+    margin: 0 0 16px;
+}
+
+.compendium-companion-detail-row {
+    display: grid;
+    grid-template-columns: 150px minmax(0, 1fr);
+    gap: 10px;
+    align-items: baseline;
+}
+
+.compendium-companion-detail-value {
+    min-width: 0;
+    color: var(--mud-palette-text-primary, #cdd6f4);
+    line-height: 1.35;
+}
+
+.compendium-companion-linked-section,
+.compendium-information-details {
+    margin: 16px 0;
+}
+
+.compendium-companion-linked-card {
+    margin: 8px 0;
+    padding: 10px 12px;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    background: rgba(255,255,255,0.03);
+}
+
+.compendium-companion-linked-name {
+    color: var(--mud-palette-primary, #89b4fa);
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.compendium-companion-linked-description,
+.compendium-information-description {
+    margin-top: 8px;
+}
+
+.compendium-information-title {
+    color: var(--mud-palette-primary, #89b4fa);
+}
+
 .compendium-description {
     line-height: 1.55;
 }

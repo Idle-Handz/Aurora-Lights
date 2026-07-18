@@ -347,26 +347,99 @@
                     </MudStack>
                 }
 
-                @if (_selectedEntry.IsCompanionLike && (!string.IsNullOrWhiteSpace(_selectedEntry.CreatureType) || !string.IsNullOrWhiteSpace(_selectedEntry.CreatureSize) || !string.IsNullOrWhiteSpace(_selectedEntry.ChallengeText)))
+                @if (_selectedEntry.IsCompanionLike && _selectedEntry.HasCompanionDetails)
                 {
                     <MudText Typo="Typo.subtitle2" Class="mb-1">Companion Details</MudText>
-                    <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="1" Class="mb-3">
-                        @if (!string.IsNullOrWhiteSpace(_selectedEntry.CreatureType))
+                    @if (_selectedEntry.HasCompanionStatDetails)
+                    {
+                        <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="1" Class="mb-3">
+                            @if (!string.IsNullOrWhiteSpace(_selectedEntry.CreatureType))
+                            {
+                                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@_selectedEntry.CreatureType</MudChip>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(_selectedEntry.CreatureSize))
+                            {
+                                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@_selectedEntry.CreatureSize</MudChip>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(_selectedEntry.CompanionAlignment))
+                            {
+                                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@_selectedEntry.CompanionAlignment</MudChip>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(_selectedEntry.ChallengeText))
+                            {
+                                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">CR @_selectedEntry.ChallengeText</MudChip>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(_selectedEntry.CompanionProficiencyBonus))
+                            {
+                                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">PB +@_selectedEntry.CompanionProficiencyBonus</MudChip>
+                            }
+                        </MudStack>
+
+                        <div class="compendium-companion-stat-grid">
+                            @if (!string.IsNullOrWhiteSpace(_selectedEntry.CompanionArmorClass))
+                            {
+                                <div class="compendium-companion-stat">
+                                    <div class="compendium-companion-stat-label">Armor Class</div>
+                                    <div class="compendium-companion-stat-value">@_selectedEntry.CompanionArmorClass</div>
+                                </div>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(_selectedEntry.CompanionHitPoints))
+                            {
+                                <div class="compendium-companion-stat">
+                                    <div class="compendium-companion-stat-label">Hit Points</div>
+                                    <div class="compendium-companion-stat-value">@_selectedEntry.CompanionHitPoints</div>
+                                </div>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(_selectedEntry.CompanionSpeed))
+                            {
+                                <div class="compendium-companion-stat">
+                                    <div class="compendium-companion-stat-label">Speed</div>
+                                    <div class="compendium-companion-stat-value">@_selectedEntry.CompanionSpeed</div>
+                                </div>
+                            }
+                        </div>
+
+                        @if (_selectedEntry.HasCompanionAbilityDetails)
                         {
-                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@_selectedEntry.CreatureType</MudChip>
+                            <div class="compendium-companion-abilities">
+                                @CompanionAbility("STR", _selectedEntry.CompanionStrength)
+                                @CompanionAbility("DEX", _selectedEntry.CompanionDexterity)
+                                @CompanionAbility("CON", _selectedEntry.CompanionConstitution)
+                                @CompanionAbility("INT", _selectedEntry.CompanionIntelligence)
+                                @CompanionAbility("WIS", _selectedEntry.CompanionWisdom)
+                                @CompanionAbility("CHA", _selectedEntry.CompanionCharisma)
+                            </div>
                         }
-                        @if (!string.IsNullOrWhiteSpace(_selectedEntry.CreatureSize))
-                        {
-                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@_selectedEntry.CreatureSize</MudChip>
-                        }
-                        @if (!string.IsNullOrWhiteSpace(_selectedEntry.ChallengeText))
-                        {
-                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">CR @_selectedEntry.ChallengeText</MudChip>
-                        }
-                    </MudStack>
+
+                        <div class="compendium-companion-detail-rows">
+                            @CompanionDetailRow("Skills", _selectedEntry.CompanionSkills)
+                            @CompanionDetailRow("Resistances", _selectedEntry.CompanionResistances)
+                            @CompanionDetailRow("Immunities", _selectedEntry.CompanionImmunities)
+                            @CompanionDetailRow("Condition Immunities", _selectedEntry.CompanionConditionImmunities)
+                            @CompanionDetailRow("Senses", _selectedEntry.CompanionSenses)
+                            @CompanionDetailRow("Languages", _selectedEntry.CompanionLanguages)
+                        </div>
+                    }
+
+                    @if (_selectedEntry.CompanionTraits.Count > 0)
+                    {
+                        @CompanionLinkedSection("Traits", _selectedEntry.CompanionTraits)
+                    }
+                    @if (_selectedEntry.CompanionActions.Count > 0)
+                    {
+                        @CompanionLinkedSection("Actions", _selectedEntry.CompanionActions)
+                    }
+                    @if (_selectedEntry.CompanionReactions.Count > 0)
+                    {
+                        @CompanionLinkedSection("Reactions", _selectedEntry.CompanionReactions)
+                    }
                 }
 
-                @if (string.IsNullOrWhiteSpace(_selectedEntry.DescriptionHtml))
+                @if (!string.IsNullOrWhiteSpace(_selectedEntry.DescriptionHtml))
+                {
+                    <div class="compendium-description">@((MarkupString)_selectedEntry.DescriptionHtml)</div>
+                }
+                else if (_selectedEntry.InformationDetails.Count == 0)
                 {
                     @if (!string.IsNullOrWhiteSpace(_selectedEntry.Summary))
                     {
@@ -377,9 +450,29 @@
                         <MudText Color="Color.Secondary">No description is available for this entry.</MudText>
                     }
                 }
-                else
+
+                @if (_selectedEntry.InformationDetails.Count > 0)
                 {
-                    <div class="compendium-description">@((MarkupString)_selectedEntry.DescriptionHtml)</div>
+                    <div class="compendium-information-details">
+                        <MudText Typo="Typo.subtitle2" Class="mb-1">Information</MudText>
+                        @foreach (var information in _selectedEntry.InformationDetails)
+                        {
+                            <div class="compendium-information-card">
+                                @if (!string.Equals(information.Name, _selectedEntry.Name, StringComparison.Ordinal))
+                                {
+                                    <MudText Typo="Typo.subtitle2" Class="compendium-information-title">@information.Name</MudText>
+                                }
+                                @if (string.IsNullOrWhiteSpace(information.DescriptionHtml))
+                                {
+                                    <MudText Color="Color.Secondary">No description is available for this information entry.</MudText>
+                                }
+                                else
+                                {
+                                    <div class="compendium-description compendium-information-description">@((MarkupString)information.DescriptionHtml)</div>
+                                }
+                            </div>
+                        }
+                    </div>
                 }
             }
         </MudPaper>
@@ -390,6 +483,39 @@
     public string? RequestedId { get; set; }
     [SupplyParameterFromQuery(Name = "q")]
     public string? RequestedQuery { get; set; }
+
+    private static RenderFragment CompanionAbility(string label, string value) => @<div class="compendium-companion-ability">
+        <span class="compendium-companion-ability-label">@label</span>
+        <span class="compendium-companion-ability-value">@DisplayCompanionValue(value)</span>
+    </div>;
+
+    private static RenderFragment CompanionDetailRow(string label, string value) => string.IsNullOrWhiteSpace(value)
+        ? builder => { }
+        : @<div class="compendium-companion-detail-row">
+            <span class="compendium-companion-detail-label">@label</span>
+            <span class="compendium-companion-detail-value">@value</span>
+        </div>;
+
+    private static RenderFragment CompanionLinkedSection(string title, IReadOnlyList<CompendiumLinkedEntryModel> entries) => @<div class="compendium-companion-linked-section">
+        <MudText Typo="Typo.subtitle2" Class="mb-1">@title</MudText>
+        @foreach (var entry in entries)
+        {
+            <details class="compendium-companion-linked-card" open>
+                <summary class="compendium-companion-linked-name">@entry.Name</summary>
+                @if (string.IsNullOrWhiteSpace(entry.DescriptionHtml))
+                {
+                    <MudText Color="Color.Secondary">No description is available for this entry.</MudText>
+                }
+                else
+                {
+                    <div class="compendium-description compendium-companion-linked-description">@((MarkupString)entry.DescriptionHtml)</div>
+                }
+            </details>
+        }
+    </div>;
+
+    private static string DisplayCompanionValue(string value) =>
+        string.IsNullOrWhiteSpace(value) ? "-" : value;
 
     private readonly HashSet<string> _restrictedSources = new(StringComparer.OrdinalIgnoreCase);
     private List<CompendiumEntryModel> _catalog = [];

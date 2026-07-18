@@ -609,6 +609,11 @@ ORDER BY e.name COLLATE NOCASE;
         using var cmd = conn.CreateCommand();
         cmd.CommandText = """
 SELECT
+    e.element_id,
+    e.name,
+    e.aurora_id,
+    e.source_book_id,
+    et.type_name,
     COALESCE(markup.raw_xml, ''),
     COALESCE(description.body, ''),
     COALESCE(sp.casting_time_text, ''),
@@ -619,10 +624,29 @@ SELECT
     COALESCE(sp.has_material, 0),
     COALESCE(sp.material_text, ''),
     COALESCE(sp.is_concentration, 0),
-    COALESCE(sp.is_ritual, 0)
+    COALESCE(sp.is_ritual, 0),
+    COALESCE(comp.alignment, ''),
+    COALESCE(comp.ac_text, ''),
+    COALESCE(comp.hp_text, ''),
+    COALESCE(comp.speed_text, ''),
+    comp.str_score,
+    comp.dex_score,
+    comp.con_score,
+    comp.int_score,
+    comp.wis_score,
+    comp.cha_score,
+    COALESCE(comp.skills_text, ''),
+    COALESCE(comp.resistances_text, ''),
+    COALESCE(comp.immunities_text, ''),
+    COALESCE(comp.condition_immunities_text, ''),
+    COALESCE(comp.senses_text, ''),
+    COALESCE(comp.languages_text, ''),
+    comp.proficiency_bonus
 FROM resolved_elements_cache AS rec
 JOIN elements AS e
     ON e.element_id = rec.winning_element_id
+JOIN element_types AS et
+    ON et.element_type_id = e.element_type_id
 LEFT JOIN element_texts AS description
     ON description.element_id = e.element_id
    AND description.text_kind = 'description'
@@ -631,41 +655,133 @@ LEFT JOIN element_text_markup AS markup
     ON markup.element_text_id = description.element_text_id
 LEFT JOIN spells AS sp
     ON sp.element_id = e.element_id
+LEFT JOIN companions AS comp
+    ON comp.element_id = e.element_id
 WHERE e.aurora_id = $auroraId
 LIMIT 1;
 """;
         cmd.Parameters.AddWithValue("$auroraId", auroraId);
 
-        using var reader = cmd.ExecuteReader();
-        if (!reader.Read())
-            return null;
+        long elementId;
+        string elementName;
+        string elementAuroraId;
+        long? sourceBookId;
+        string elementType;
+        string descriptionHtml;
+        string spellCastingTime;
+        string spellRange;
+        string spellDuration;
+        string spellComponents;
+        bool spellConcentration;
+        bool spellRitual;
+        string companionAlignment;
+        string companionArmorClass;
+        string companionHitPoints;
+        string companionSpeed;
+        string companionStrength;
+        string companionDexterity;
+        string companionConstitution;
+        string companionIntelligence;
+        string companionWisdom;
+        string companionCharisma;
+        string companionSkills;
+        string companionResistances;
+        string companionImmunities;
+        string companionConditionImmunities;
+        string companionSenses;
+        string companionLanguages;
+        string companionProficiencyBonus;
 
-        string descriptionHtml = reader.IsDBNull(0) ? string.Empty : reader.GetString(0);
-        if (string.IsNullOrWhiteSpace(descriptionHtml))
+        using (var reader = cmd.ExecuteReader())
         {
-            string body = reader.IsDBNull(1) ? string.Empty : reader.GetString(1);
-            descriptionHtml = string.IsNullOrWhiteSpace(body) ? string.Empty : $"<p>{WebUtility.HtmlEncode(body)}</p>";
+            if (!reader.Read())
+                return null;
+
+            elementId = reader.GetInt64(0);
+            elementName = reader.IsDBNull(1) ? fallback.Name : reader.GetString(1);
+            elementAuroraId = reader.IsDBNull(2) ? auroraId : reader.GetString(2);
+            sourceBookId = reader.IsDBNull(3) ? null : reader.GetInt64(3);
+            elementType = reader.IsDBNull(4) ? fallback.Type : reader.GetString(4);
+
+            descriptionHtml = reader.IsDBNull(5) ? string.Empty : reader.GetString(5);
+            if (string.IsNullOrWhiteSpace(descriptionHtml))
+            {
+                string body = reader.IsDBNull(6) ? string.Empty : reader.GetString(6);
+                descriptionHtml = ToDescriptionHtml(body);
+            }
+
+            spellCastingTime = reader.IsDBNull(7) ? string.Empty : reader.GetString(7);
+            spellRange = reader.IsDBNull(8) ? string.Empty : reader.GetString(8);
+            spellDuration = reader.IsDBNull(9) ? string.Empty : reader.GetString(9);
+            spellComponents = FormatSpellComponents(
+                !reader.IsDBNull(10) && reader.GetInt64(10) != 0,
+                !reader.IsDBNull(11) && reader.GetInt64(11) != 0,
+                !reader.IsDBNull(12) && reader.GetInt64(12) != 0,
+                reader.IsDBNull(13) ? string.Empty : reader.GetString(13));
+            spellConcentration = !reader.IsDBNull(14) && reader.GetInt64(14) != 0;
+            spellRitual = !reader.IsDBNull(15) && reader.GetInt64(15) != 0;
+            companionAlignment = reader.IsDBNull(16) ? string.Empty : reader.GetString(16);
+            companionArmorClass = reader.IsDBNull(17) ? string.Empty : reader.GetString(17);
+            companionHitPoints = reader.IsDBNull(18) ? string.Empty : reader.GetString(18);
+            companionSpeed = reader.IsDBNull(19) ? string.Empty : reader.GetString(19);
+            companionStrength = GetNullableIntString(reader, 20);
+            companionDexterity = GetNullableIntString(reader, 21);
+            companionConstitution = GetNullableIntString(reader, 22);
+            companionIntelligence = GetNullableIntString(reader, 23);
+            companionWisdom = GetNullableIntString(reader, 24);
+            companionCharisma = GetNullableIntString(reader, 25);
+            companionSkills = reader.IsDBNull(26) ? string.Empty : reader.GetString(26);
+            companionResistances = reader.IsDBNull(27) ? string.Empty : reader.GetString(27);
+            companionImmunities = reader.IsDBNull(28) ? string.Empty : reader.GetString(28);
+            companionConditionImmunities = reader.IsDBNull(29) ? string.Empty : reader.GetString(29);
+            companionSenses = reader.IsDBNull(30) ? string.Empty : reader.GetString(30);
+            companionLanguages = reader.IsDBNull(31) ? string.Empty : reader.GetString(31);
+            companionProficiencyBonus = GetNullableIntString(reader, 32);
         }
 
+        IReadOnlyList<CompendiumLinkedEntryModel> informationDetails =
+            LoadInformationDetails(conn, elementId, elementAuroraId, elementName, sourceBookId, elementType);
+        IReadOnlyList<CompendiumLinkedEntryModel> companionTraits = fallback.IsCompanionLike
+            ? LoadCompanionLinkedEntries(conn, elementId, "traits", "Companion Trait")
+            : [];
+        IReadOnlyList<CompendiumLinkedEntryModel> companionActions = fallback.IsCompanionLike
+            ? LoadCompanionLinkedEntries(conn, elementId, "actions", "Companion Action")
+            : [];
+        IReadOnlyList<CompendiumLinkedEntryModel> companionReactions = fallback.IsCompanionLike
+            ? LoadCompanionLinkedEntries(conn, elementId, "reactions", "Companion Reaction")
+            : [];
+
         string plain = CreatePlainText(descriptionHtml);
-        string summary = plain.Length > 220
-            ? plain[..217].TrimEnd() + "..."
-            : plain;
+        string informationPlain = CreatePlainText(string.Join(" ", informationDetails.Select(detail => detail.DescriptionHtml)));
+        string linkedPlain = CreatePlainText(string.Join(" ", companionTraits.Concat(companionActions).Concat(companionReactions).Select(detail => detail.DescriptionHtml)));
+        string summary = CreateSummary(string.IsNullOrWhiteSpace(plain) ? informationPlain : plain);
 
-        string searchText = string.IsNullOrWhiteSpace(plain)
-            ? fallback.SearchText
-            : string.Join(" ", fallback.SearchText, plain);
-
-        string spellCastingTime = reader.IsDBNull(2) ? string.Empty : reader.GetString(2);
-        string spellRange = reader.IsDBNull(3) ? string.Empty : reader.GetString(3);
-        string spellDuration = reader.IsDBNull(4) ? string.Empty : reader.GetString(4);
-        string spellComponents = FormatSpellComponents(
-            !reader.IsDBNull(5) && reader.GetInt64(5) != 0,
-            !reader.IsDBNull(6) && reader.GetInt64(6) != 0,
-            !reader.IsDBNull(7) && reader.GetInt64(7) != 0,
-            reader.IsDBNull(8) ? string.Empty : reader.GetString(8));
-        bool spellConcentration = !reader.IsDBNull(9) && reader.GetInt64(9) != 0;
-        bool spellRitual = !reader.IsDBNull(10) && reader.GetInt64(10) != 0;
+        string searchText = string.Join(" ",
+            fallback.SearchText,
+            plain,
+            informationPlain,
+            linkedPlain,
+            spellCastingTime,
+            spellRange,
+            spellDuration,
+            spellComponents,
+            companionAlignment,
+            companionArmorClass,
+            companionHitPoints,
+            companionSpeed,
+            companionStrength,
+            companionDexterity,
+            companionConstitution,
+            companionIntelligence,
+            companionWisdom,
+            companionCharisma,
+            companionSkills,
+            companionResistances,
+            companionImmunities,
+            companionConditionImmunities,
+            companionSenses,
+            companionLanguages,
+            companionProficiencyBonus);
 
         return fallback with
         {
@@ -677,10 +793,244 @@ LIMIT 1;
             SpellDuration = string.IsNullOrWhiteSpace(spellDuration) ? fallback.SpellDuration : spellDuration,
             SpellIsConcentration = spellConcentration || fallback.SpellIsConcentration,
             SpellIsRitual = spellRitual || fallback.SpellIsRitual,
-            SearchText = string.Join(" ", searchText, spellCastingTime, spellRange, spellDuration, spellComponents),
-            SearchKey = string.Join(" ", searchText, spellCastingTime, spellRange, spellDuration, spellComponents).ToUpperInvariant(),
+            CompanionAlignment = companionAlignment,
+            CompanionArmorClass = companionArmorClass,
+            CompanionHitPoints = companionHitPoints,
+            CompanionSpeed = companionSpeed,
+            CompanionStrength = companionStrength,
+            CompanionDexterity = companionDexterity,
+            CompanionConstitution = companionConstitution,
+            CompanionIntelligence = companionIntelligence,
+            CompanionWisdom = companionWisdom,
+            CompanionCharisma = companionCharisma,
+            CompanionSkills = companionSkills,
+            CompanionResistances = companionResistances,
+            CompanionImmunities = companionImmunities,
+            CompanionConditionImmunities = companionConditionImmunities,
+            CompanionSenses = companionSenses,
+            CompanionLanguages = companionLanguages,
+            CompanionProficiencyBonus = companionProficiencyBonus,
+            CompanionTraits = companionTraits,
+            CompanionActions = companionActions,
+            CompanionReactions = companionReactions,
+            InformationDetails = informationDetails,
+            SearchText = searchText,
+            SearchKey = searchText.ToUpperInvariant(),
             HasComputedDetail = true
         };
+    }
+
+    private static IReadOnlyList<CompendiumLinkedEntryModel> LoadInformationDetails(
+        SqliteConnection conn,
+        long ownerElementId,
+        string auroraId,
+        string name,
+        long? sourceBookId,
+        string elementType)
+    {
+        if (string.Equals(elementType, "Information", StringComparison.OrdinalIgnoreCase))
+            return [];
+
+        var entries = new List<CompendiumLinkedEntryModel>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (string informationId in GetInformationIdCandidates(auroraId))
+        {
+            CompendiumLinkedEntryModel? entry = LoadLinkedEntryByAuroraId(conn, informationId, "Information");
+            if (entry is not null && seen.Add(entry.Id))
+                entries.Add(entry);
+        }
+
+        if (entries.Count == 0)
+        {
+            foreach (CompendiumLinkedEntryModel entry in LoadInformationDetailsByName(conn, ownerElementId, name, sourceBookId))
+            {
+                if (seen.Add(entry.Id))
+                    entries.Add(entry);
+            }
+        }
+
+        return entries;
+    }
+
+    private static IEnumerable<string> GetInformationIdCandidates(string auroraId)
+    {
+        if (string.IsNullOrWhiteSpace(auroraId))
+            yield break;
+
+        string[] typeTokens =
+        [
+            "_COMPANION_",
+            "_SPELL_",
+            "_MAGIC_ITEM_",
+            "_ITEM_",
+            "_WEAPON_",
+            "_ARMOR_",
+            "_FEAT_",
+            "_RACE_",
+            "_CLASS_FEATURE_",
+            "_CLASSFEATURE_",
+            "_CLASS_",
+            "_ARCHETYPE_",
+            "_BACKGROUND_",
+            "_RACIAL_TRAIT_",
+            "_PROFICIENCY_",
+            "_LANGUAGE_"
+        ];
+
+        foreach (string token in typeTokens)
+        {
+            if (auroraId.Contains(token, StringComparison.OrdinalIgnoreCase))
+            {
+                yield return ReplaceOrdinalIgnoreCase(auroraId, token, "_INFORMATION_");
+                yield break;
+            }
+        }
+    }
+
+    private static IReadOnlyList<CompendiumLinkedEntryModel> LoadInformationDetailsByName(
+        SqliteConnection conn,
+        long ownerElementId,
+        string name,
+        long? sourceBookId)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return [];
+
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = """
+SELECT
+    e.aurora_id,
+    e.name,
+    et.type_name,
+    COALESCE(markup.raw_xml, ''),
+    COALESCE(description.body, '')
+FROM resolved_elements_cache AS rec
+JOIN elements AS e
+    ON e.element_id = rec.winning_element_id
+JOIN element_types AS et
+    ON et.element_type_id = e.element_type_id
+LEFT JOIN element_texts AS description
+    ON description.element_id = e.element_id
+   AND description.text_kind = 'description'
+   AND description.ordinal = 1
+LEFT JOIN element_text_markup AS markup
+    ON markup.element_text_id = description.element_text_id
+WHERE et.type_name = 'Information'
+  AND e.element_id <> $ownerElementId
+  AND e.name = $name
+  AND (($sourceBookId IS NULL AND e.source_book_id IS NULL) OR e.source_book_id = $sourceBookId)
+ORDER BY e.aurora_id
+LIMIT 2;
+""";
+        cmd.Parameters.AddWithValue("$ownerElementId", ownerElementId);
+        cmd.Parameters.AddWithValue("$name", name);
+        cmd.Parameters.AddWithValue("$sourceBookId", sourceBookId is null ? DBNull.Value : sourceBookId.Value);
+
+        var entries = new List<CompendiumLinkedEntryModel>();
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read())
+        {
+            CompendiumLinkedEntryModel? entry = ReadLinkedEntry(reader);
+            if (entry is not null)
+                entries.Add(entry);
+        }
+
+        return entries.Count == 1 ? entries : [];
+    }
+
+    private static IReadOnlyList<CompendiumLinkedEntryModel> LoadCompanionLinkedEntries(
+        SqliteConnection conn,
+        long ownerElementId,
+        string setterName,
+        string expectedType)
+    {
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = """
+SELECT COALESCE(se.setter_value, '')
+FROM setter_scopes AS ss
+JOIN setter_entries AS se
+    ON se.setter_scope_id = ss.setter_scope_id
+WHERE ss.owner_kind = 'element'
+  AND ss.owner_element_id = $ownerElementId
+  AND LOWER(se.setter_name) = $setterName
+ORDER BY se.ordinal;
+""";
+        cmd.Parameters.AddWithValue("$ownerElementId", ownerElementId);
+        cmd.Parameters.AddWithValue("$setterName", setterName.ToLowerInvariant());
+
+        var ids = new List<string>();
+        using (var reader = cmd.ExecuteReader())
+        {
+            while (reader.Read())
+                ids.AddRange(SplitCommaList(reader.IsDBNull(0) ? string.Empty : reader.GetString(0)));
+        }
+
+        var entries = new List<CompendiumLinkedEntryModel>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (string id in ids)
+        {
+            if (!seen.Add(id))
+                continue;
+
+            CompendiumLinkedEntryModel? entry = LoadLinkedEntryByAuroraId(conn, id, expectedType);
+            if (entry is not null)
+                entries.Add(entry);
+        }
+
+        return entries;
+    }
+
+    private static CompendiumLinkedEntryModel? LoadLinkedEntryByAuroraId(
+        SqliteConnection conn,
+        string auroraId,
+        string? expectedType)
+    {
+        if (string.IsNullOrWhiteSpace(auroraId))
+            return null;
+
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = """
+SELECT
+    e.aurora_id,
+    e.name,
+    et.type_name,
+    COALESCE(markup.raw_xml, ''),
+    COALESCE(description.body, '')
+FROM resolved_elements_cache AS rec
+JOIN elements AS e
+    ON e.element_id = rec.winning_element_id
+JOIN element_types AS et
+    ON et.element_type_id = e.element_type_id
+LEFT JOIN element_texts AS description
+    ON description.element_id = e.element_id
+   AND description.text_kind = 'description'
+   AND description.ordinal = 1
+LEFT JOIN element_text_markup AS markup
+    ON markup.element_text_id = description.element_text_id
+WHERE e.aurora_id = $auroraId
+  AND ($expectedType IS NULL OR et.type_name = $expectedType)
+LIMIT 1;
+""";
+        cmd.Parameters.AddWithValue("$auroraId", auroraId);
+        cmd.Parameters.AddWithValue("$expectedType", string.IsNullOrWhiteSpace(expectedType) ? DBNull.Value : expectedType);
+
+        using var reader = cmd.ExecuteReader();
+        return reader.Read() ? ReadLinkedEntry(reader) : null;
+    }
+
+    private static CompendiumLinkedEntryModel? ReadLinkedEntry(SqliteDataReader reader)
+    {
+        string id = reader.IsDBNull(0) ? string.Empty : reader.GetString(0);
+        string name = reader.IsDBNull(1) ? id : reader.GetString(1);
+        string type = reader.IsDBNull(2) ? string.Empty : reader.GetString(2);
+        string descriptionHtml = reader.IsDBNull(3) ? string.Empty : reader.GetString(3);
+        if (string.IsNullOrWhiteSpace(descriptionHtml))
+            descriptionHtml = ToDescriptionHtml(reader.IsDBNull(4) ? string.Empty : reader.GetString(4));
+
+        return string.IsNullOrWhiteSpace(id)
+            ? null
+            : new CompendiumLinkedEntryModel(id, name, type, descriptionHtml);
     }
 
     private static IReadOnlyList<CompendiumEntryModel> BuildCatalogFromLoadedElements()
@@ -716,15 +1066,182 @@ LIMIT 1;
         string searchText = string.IsNullOrWhiteSpace(plain)
             ? entry.SearchText
             : string.Join(" ", entry.SearchText, plain);
+        IReadOnlyList<CompendiumLinkedEntryModel> informationDetails = LoadInformationDetailsFromLoadedElements(element);
+        IReadOnlyList<CompendiumLinkedEntryModel> companionTraits = entry.IsCompanionLike
+            ? LoadCompanionLinkedEntriesFromLoadedElements(element, "Traits", "traits", "Companion Trait")
+            : [];
+        IReadOnlyList<CompendiumLinkedEntryModel> companionActions = entry.IsCompanionLike
+            ? LoadCompanionLinkedEntriesFromLoadedElements(element, "Actions", "actions", "Companion Action")
+            : [];
+        IReadOnlyList<CompendiumLinkedEntryModel> companionReactions = entry.IsCompanionLike
+            ? LoadCompanionLinkedEntriesFromLoadedElements(element, "Reactions", "reactions", "Companion Reaction")
+            : [];
+        string informationPlain = CreatePlainText(string.Join(" ", informationDetails.Select(detail => detail.DescriptionHtml)));
+        if (string.IsNullOrWhiteSpace(summary))
+            summary = CreateSummary(informationPlain);
+        string linkedPlain = CreatePlainText(string.Join(" ", companionTraits.Concat(companionActions).Concat(companionReactions).Select(detail => detail.DescriptionHtml)));
+        string companionAlignment = entry.IsCompanionLike ? GetStringOrSetter(element, "Alignment", "alignment") : string.Empty;
+        string companionArmorClass = entry.IsCompanionLike ? GetStringOrSetter(element, "ArmorClass", "ac") : string.Empty;
+        string companionHitPoints = entry.IsCompanionLike ? GetStringOrSetter(element, "HitPoints", "hp") : string.Empty;
+        string companionSpeed = entry.IsCompanionLike ? GetStringOrSetter(element, "Speed", "speed") : string.Empty;
+        string companionStrength = entry.IsCompanionLike ? GetStringOrSetter(element, "Strength", "strength") : string.Empty;
+        string companionDexterity = entry.IsCompanionLike ? GetStringOrSetter(element, "Dexterity", "dexterity") : string.Empty;
+        string companionConstitution = entry.IsCompanionLike ? GetStringOrSetter(element, "Constitution", "constitution") : string.Empty;
+        string companionIntelligence = entry.IsCompanionLike ? GetStringOrSetter(element, "Intelligence", "intelligence") : string.Empty;
+        string companionWisdom = entry.IsCompanionLike ? GetStringOrSetter(element, "Wisdom", "wisdom") : string.Empty;
+        string companionCharisma = entry.IsCompanionLike ? GetStringOrSetter(element, "Charisma", "charisma") : string.Empty;
+        string companionSkills = entry.IsCompanionLike ? GetStringOrSetter(element, "Skills", "skills") : string.Empty;
+        string companionResistances = entry.IsCompanionLike ? GetStringOrSetter(element, "Resistances", "resistances") : string.Empty;
+        string companionImmunities = entry.IsCompanionLike ? GetStringOrSetter(element, "Immunities", "immunities") : string.Empty;
+        string companionConditionImmunities = entry.IsCompanionLike ? GetStringOrSetter(element, "ConditionImmunities", "condition-immunities") : string.Empty;
+        string companionSenses = entry.IsCompanionLike ? GetStringOrSetter(element, "Senses", "senses") : string.Empty;
+        string companionLanguages = entry.IsCompanionLike ? GetStringOrSetter(element, "Languages", "languages") : string.Empty;
+        string companionProficiencyBonus = entry.IsCompanionLike ? GetStringOrSetter(element, "Proficiency", "proficiency") : string.Empty;
+        string enrichedSearchText = string.Join(" ",
+            searchText,
+            informationPlain,
+            linkedPlain,
+            companionAlignment,
+            companionArmorClass,
+            companionHitPoints,
+            companionSpeed,
+            companionStrength,
+            companionDexterity,
+            companionConstitution,
+            companionIntelligence,
+            companionWisdom,
+            companionCharisma,
+            companionSkills,
+            companionResistances,
+            companionImmunities,
+            companionConditionImmunities,
+            companionSenses,
+            companionLanguages,
+            companionProficiencyBonus);
 
         return entry with
         {
             Summary = string.IsNullOrWhiteSpace(summary) ? entry.Summary : summary,
             DescriptionHtml = descriptionHtml,
-            SearchText = searchText,
-            SearchKey = searchText.ToUpperInvariant(),
+            CompanionAlignment = companionAlignment,
+            CompanionArmorClass = companionArmorClass,
+            CompanionHitPoints = companionHitPoints,
+            CompanionSpeed = companionSpeed,
+            CompanionStrength = companionStrength,
+            CompanionDexterity = companionDexterity,
+            CompanionConstitution = companionConstitution,
+            CompanionIntelligence = companionIntelligence,
+            CompanionWisdom = companionWisdom,
+            CompanionCharisma = companionCharisma,
+            CompanionSkills = companionSkills,
+            CompanionResistances = companionResistances,
+            CompanionImmunities = companionImmunities,
+            CompanionConditionImmunities = companionConditionImmunities,
+            CompanionSenses = companionSenses,
+            CompanionLanguages = companionLanguages,
+            CompanionProficiencyBonus = companionProficiencyBonus,
+            CompanionTraits = companionTraits,
+            CompanionActions = companionActions,
+            CompanionReactions = companionReactions,
+            InformationDetails = informationDetails,
+            SearchText = enrichedSearchText,
+            SearchKey = enrichedSearchText.ToUpperInvariant(),
             HasComputedDetail = true
         };
+    }
+
+    private static IReadOnlyList<CompendiumLinkedEntryModel> LoadInformationDetailsFromLoadedElements(object element)
+    {
+        string elementType = GetString(element, "Type");
+        if (string.Equals(elementType, "Information", StringComparison.OrdinalIgnoreCase))
+            return [];
+
+        string id = GetString(element, "Id");
+        string name = GetString(element, "Name");
+        string source = GetString(element, "Source");
+        var entries = new List<CompendiumLinkedEntryModel>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (string informationId in GetInformationIdCandidates(id))
+        {
+            object? informationElement = FindLoadedElement(informationId, "Information");
+            CompendiumLinkedEntryModel? entry = informationElement is null ? null : ToLinkedEntry(informationElement);
+            if (entry is not null && seen.Add(entry.Id))
+                entries.Add(entry);
+        }
+
+        if (entries.Count == 0)
+        {
+            List<object> matches = DataManager.Current.ElementsCollection
+                .Cast<object>()
+                .Where(candidate =>
+                    !ReferenceEquals(candidate, element) &&
+                    string.Equals(GetString(candidate, "Type"), "Information", StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(GetString(candidate, "Name"), name, StringComparison.Ordinal) &&
+                    string.Equals(GetString(candidate, "Source"), source, StringComparison.Ordinal))
+                .Take(2)
+                .ToList();
+
+            if (matches.Count == 1)
+            {
+                CompendiumLinkedEntryModel? entry = ToLinkedEntry(matches[0]);
+                if (entry is not null && seen.Add(entry.Id))
+                    entries.Add(entry);
+            }
+        }
+
+        return entries;
+    }
+
+    private static IReadOnlyList<CompendiumLinkedEntryModel> LoadCompanionLinkedEntriesFromLoadedElements(
+        object element,
+        string propertyName,
+        string setterName,
+        string expectedType)
+    {
+        IReadOnlyList<string> ids = GetStringList(element, propertyName);
+        if (ids.Count == 0)
+            ids = SplitCommaList(GetSetterValue(element, setterName));
+
+        var entries = new List<CompendiumLinkedEntryModel>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (string id in ids)
+        {
+            if (!seen.Add(id))
+                continue;
+
+            object? linkedElement = FindLoadedElement(id, expectedType);
+            CompendiumLinkedEntryModel? entry = linkedElement is null ? null : ToLinkedEntry(linkedElement);
+            if (entry is not null)
+                entries.Add(entry);
+        }
+
+        return entries;
+    }
+
+    private static object? FindLoadedElement(string id, string expectedType)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+            return null;
+
+        return DataManager.Current.ElementsCollection
+            .Cast<object>()
+            .FirstOrDefault(candidate =>
+                string.Equals(GetString(candidate, "Id"), id, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(GetString(candidate, "Type"), expectedType, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static CompendiumLinkedEntryModel? ToLinkedEntry(object element)
+    {
+        string id = GetString(element, "Id");
+        if (string.IsNullOrWhiteSpace(id))
+            return null;
+
+        return new CompendiumLinkedEntryModel(
+            id,
+            GetString(element, "Name"),
+            GetString(element, "Type"),
+            GetString(element, "Description"));
     }
 
     private static int LevelOrder(string? label)
@@ -971,9 +1488,25 @@ LIMIT 1;
     private static string CreatePreviewText(string content)
     {
         string plain = CreatePlainText(content);
+        return CreateSummary(plain);
+    }
+
+    private static string CreateSummary(string plain)
+    {
+        if (string.IsNullOrWhiteSpace(plain))
+            return string.Empty;
+
+        plain = plain.Trim();
         return plain.Length > 220
             ? plain[..217].TrimEnd() + "..."
             : plain;
+    }
+
+    private static string ToDescriptionHtml(string body)
+    {
+        return string.IsNullOrWhiteSpace(body)
+            ? string.Empty
+            : $"<p>{WebUtility.HtmlEncode(body)}</p>";
     }
 
     private static string CreatePlainText(string content)
@@ -993,6 +1526,27 @@ LIMIT 1;
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(value => value)
             .ToList();
+
+    private static IReadOnlyList<string> SplitCommaList(string raw) =>
+        raw.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .ToList();
+
+    private static string GetNullableIntString(SqliteDataReader reader, int ordinal)
+    {
+        if (reader.IsDBNull(ordinal))
+            return string.Empty;
+
+        return reader.GetInt64(ordinal).ToString(CultureInfo.InvariantCulture);
+    }
+
+    private static string ReplaceOrdinalIgnoreCase(string text, string oldValue, string newValue)
+    {
+        int index = text.IndexOf(oldValue, StringComparison.OrdinalIgnoreCase);
+        return index < 0
+            ? text
+            : string.Concat(text.AsSpan(0, index), newValue, text.AsSpan(index + oldValue.Length));
+    }
 
     private static string FormatSpellComponents(bool verbal, bool somatic, bool material, string materialText)
     {
@@ -1017,6 +1571,14 @@ LIMIT 1;
     {
         PropertyInfo? property = GetProperty(target, propertyName);
         return property?.GetValue(target)?.ToString() ?? string.Empty;
+    }
+
+    private static string GetStringOrSetter(object target, string propertyName, string setterName)
+    {
+        string value = GetString(target, propertyName);
+        return string.IsNullOrWhiteSpace(value)
+            ? GetSetterValue(target, setterName)
+            : value;
     }
 
     private static bool? GetBool(object target, string propertyName)
@@ -1141,6 +1703,55 @@ public sealed record CompendiumEntryModel(
         !string.IsNullOrWhiteSpace(ItemRange) ||
         !string.IsNullOrWhiteSpace(ItemProperties);
     public bool IsCompanionLike => Type.StartsWith("Companion", StringComparison.OrdinalIgnoreCase);
+    public string CompanionAlignment { get; init; } = string.Empty;
+    public string CompanionArmorClass { get; init; } = string.Empty;
+    public string CompanionHitPoints { get; init; } = string.Empty;
+    public string CompanionSpeed { get; init; } = string.Empty;
+    public string CompanionStrength { get; init; } = string.Empty;
+    public string CompanionDexterity { get; init; } = string.Empty;
+    public string CompanionConstitution { get; init; } = string.Empty;
+    public string CompanionIntelligence { get; init; } = string.Empty;
+    public string CompanionWisdom { get; init; } = string.Empty;
+    public string CompanionCharisma { get; init; } = string.Empty;
+    public string CompanionSkills { get; init; } = string.Empty;
+    public string CompanionResistances { get; init; } = string.Empty;
+    public string CompanionImmunities { get; init; } = string.Empty;
+    public string CompanionConditionImmunities { get; init; } = string.Empty;
+    public string CompanionSenses { get; init; } = string.Empty;
+    public string CompanionLanguages { get; init; } = string.Empty;
+    public string CompanionProficiencyBonus { get; init; } = string.Empty;
+    public IReadOnlyList<CompendiumLinkedEntryModel> CompanionTraits { get; init; } = [];
+    public IReadOnlyList<CompendiumLinkedEntryModel> CompanionActions { get; init; } = [];
+    public IReadOnlyList<CompendiumLinkedEntryModel> CompanionReactions { get; init; } = [];
+    public IReadOnlyList<CompendiumLinkedEntryModel> InformationDetails { get; init; } = [];
+    public bool HasCompanionStatDetails =>
+        !string.IsNullOrWhiteSpace(CreatureType) ||
+        !string.IsNullOrWhiteSpace(CreatureSize) ||
+        !string.IsNullOrWhiteSpace(ChallengeText) ||
+        !string.IsNullOrWhiteSpace(CompanionAlignment) ||
+        !string.IsNullOrWhiteSpace(CompanionArmorClass) ||
+        !string.IsNullOrWhiteSpace(CompanionHitPoints) ||
+        !string.IsNullOrWhiteSpace(CompanionSpeed) ||
+        !string.IsNullOrWhiteSpace(CompanionSkills) ||
+        !string.IsNullOrWhiteSpace(CompanionResistances) ||
+        !string.IsNullOrWhiteSpace(CompanionImmunities) ||
+        !string.IsNullOrWhiteSpace(CompanionConditionImmunities) ||
+        !string.IsNullOrWhiteSpace(CompanionSenses) ||
+        !string.IsNullOrWhiteSpace(CompanionLanguages) ||
+        !string.IsNullOrWhiteSpace(CompanionProficiencyBonus) ||
+        HasCompanionAbilityDetails;
+    public bool HasCompanionAbilityDetails =>
+        !string.IsNullOrWhiteSpace(CompanionStrength) ||
+        !string.IsNullOrWhiteSpace(CompanionDexterity) ||
+        !string.IsNullOrWhiteSpace(CompanionConstitution) ||
+        !string.IsNullOrWhiteSpace(CompanionIntelligence) ||
+        !string.IsNullOrWhiteSpace(CompanionWisdom) ||
+        !string.IsNullOrWhiteSpace(CompanionCharisma);
+    public bool HasCompanionLinkedDetails =>
+        CompanionTraits.Count > 0 ||
+        CompanionActions.Count > 0 ||
+        CompanionReactions.Count > 0;
+    public bool HasCompanionDetails => HasCompanionStatDetails || HasCompanionLinkedDetails;
     public bool HasSpellPropertyDetails =>
         !string.IsNullOrWhiteSpace(SpellCastingTime) ||
         !string.IsNullOrWhiteSpace(SpellRange) ||
@@ -1149,3 +1760,9 @@ public sealed record CompendiumEntryModel(
     public bool HasSpellDetails => HasSpellPropertyDetails || SpellIsConcentration || SpellIsRitual;
     public string SearchKey { get; init; } = SearchText.ToUpperInvariant();
 }
+
+public sealed record CompendiumLinkedEntryModel(
+    string Id,
+    string Name,
+    string Type,
+    string DescriptionHtml);
