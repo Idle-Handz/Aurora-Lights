@@ -276,7 +276,7 @@ public static partial class BuildService
                 .Select(kv => new SelectionRuleGroup(kv.Key, Sort(kv.Value)))
                 .ToList()
             : new List<SelectionRuleGroup>();
-        tabs.Add(new BuildTabGroup("Feats", featGroups, CountUnresolved(featGroups)));
+        tabs.Add(new BuildTabGroup("Feats", featGroups, CountUnresolved(featGroups), GetGrantedFeatEntries()));
 
         // Companions tab — only shown when companion rules are present
         if (companionEntries.Count > 0)
@@ -603,6 +603,36 @@ public static partial class BuildService
             .FirstOrDefault(element => element.Id.Equals(ownerId, StringComparison.Ordinal));
     }
 
+    private static IReadOnlyList<GrantedFeatEntry> GetGrantedFeatEntries()
+    {
+        var result = new List<GrantedFeatEntry>();
+
+        foreach (var element in CharacterManager.Current.GetElements())
+        {
+            if (!string.Equals(element.Type, "Feat", StringComparison.OrdinalIgnoreCase))
+                continue;
+            if (!element.Aquisition.WasGranted)
+                continue;
+
+            var parent = element.Aquisition.GetParentHeader();
+            string sourceLabel = parent != null && !string.IsNullOrWhiteSpace(parent.Name)
+                ? $"Granted by {parent.Name}"
+                : "Granted";
+
+            result.Add(new GrantedFeatEntry(
+                element.Id ?? string.Empty,
+                element.Name ?? "Feat",
+                sourceLabel,
+                GetFeatureDescription(element)));
+        }
+
+        return result
+            .GroupBy(entry => $"{entry.Id}|{entry.SourceLabel}", StringComparer.OrdinalIgnoreCase)
+            .Select(group => group.First())
+            .OrderBy(entry => entry.SourceLabel)
+            .ThenBy(entry => entry.Name)
+            .ToList();
+    }
     private static string GetFeatGroupLabel(SelectRule rule)
     {
         var ownerElement = ResolveOwnerElement(rule);

@@ -608,7 +608,6 @@
 
         _catalog = (await CompendiumData.BuildCatalogAsync()).ToList();
         _types = CompendiumData.GetTypes(_catalog);
-        _sources = CompendiumData.GetSources(_catalog);
         _spellLevels = CompendiumData.GetSpellLevels(_catalog);
         _spellSchools = CompendiumData.GetSpellSchools(_catalog);
         _spellClasses = CompendiumData.GetSpellClasses(_catalog);
@@ -616,6 +615,7 @@
         _creatureTypes = CompendiumData.GetCreatureTypes(_catalog);
         _creatureSizes = CompendiumData.GetCreatureSizes(_catalog);
         _creatureChallenges = CompendiumData.GetCreatureChallenges(_catalog);
+        RefreshSourceOptions();
         _isLoadingCatalog = false;
 
         if (_hasSearched || !string.IsNullOrWhiteSpace(RequestedQuery) || !string.IsNullOrWhiteSpace(RequestedId))
@@ -626,6 +626,7 @@
     private Task OnQueryChanged(string value)
     {
         _query = value;
+        RefreshSourceOptions();
         SaveState();
         return _hasSearched ? RefreshAsync() : Task.CompletedTask;
     }
@@ -633,6 +634,7 @@
     private Task OnTypeChanged(string value)
     {
         _selectedType = value;
+        RefreshSourceOptions();
         SaveState();
         return _hasSearched ? RefreshAsync() : Task.CompletedTask;
     }
@@ -647,6 +649,7 @@
     private Task OnSpellLevelChanged(string value)
     {
         _selectedSpellLevel = value;
+        RefreshSourceOptions();
         SaveState();
         return _hasSearched ? RefreshAsync() : Task.CompletedTask;
     }
@@ -654,6 +657,7 @@
     private Task OnSpellSchoolChanged(string value)
     {
         _selectedSpellSchool = value;
+        RefreshSourceOptions();
         SaveState();
         return _hasSearched ? RefreshAsync() : Task.CompletedTask;
     }
@@ -661,6 +665,7 @@
     private Task OnSpellClassChanged(string value)
     {
         _selectedSpellClass = value;
+        RefreshSourceOptions();
         SaveState();
         return _hasSearched ? RefreshAsync() : Task.CompletedTask;
     }
@@ -668,6 +673,7 @@
     private Task OnItemRarityChanged(string value)
     {
         _selectedItemRarity = value;
+        RefreshSourceOptions();
         SaveState();
         return _hasSearched ? RefreshAsync() : Task.CompletedTask;
     }
@@ -675,6 +681,7 @@
     private Task OnItemAttunementChanged(string value)
     {
         _selectedItemAttunement = value;
+        RefreshSourceOptions();
         SaveState();
         return _hasSearched ? RefreshAsync() : Task.CompletedTask;
     }
@@ -682,6 +689,7 @@
     private Task OnCreatureTypeChanged(string value)
     {
         _selectedCreatureType = value;
+        RefreshSourceOptions();
         SaveState();
         return _hasSearched ? RefreshAsync() : Task.CompletedTask;
     }
@@ -689,6 +697,7 @@
     private Task OnCreatureSizeChanged(string value)
     {
         _selectedCreatureSize = value;
+        RefreshSourceOptions();
         SaveState();
         return _hasSearched ? RefreshAsync() : Task.CompletedTask;
     }
@@ -696,6 +705,7 @@
     private Task OnCreatureChallengeChanged(string value)
     {
         _selectedCreatureChallenge = value;
+        RefreshSourceOptions();
         SaveState();
         return _hasSearched ? RefreshAsync() : Task.CompletedTask;
     }
@@ -708,9 +718,46 @@
         else
             _restrictedSources.Clear();
 
+        RefreshSourceOptions();
         SaveState();
         if (_hasSearched)
             await RefreshAsync();
+    }
+
+    private void RefreshSourceOptions()
+    {
+        if (_catalog.Count == 0)
+            return;
+
+        string selectedSourceKey = CompendiumService.NormalizeSourceFilterKey(_selectedSource);
+        ISet<string>? restrictedSources = _currentCharacterSourcesOnly && _restrictedSources.Count > 0
+            ? new HashSet<string>(_restrictedSources, StringComparer.OrdinalIgnoreCase)
+            : null;
+
+        IReadOnlyList<CompendiumEntryModel> sourceScope = CompendiumData.Filter(
+            _catalog,
+            _query,
+            _selectedType,
+            "All",
+            ShowSpellFilters ? _selectedSpellLevel : "All",
+            ShowSpellFilters ? _selectedSpellSchool : "All",
+            ShowSpellFilters ? _selectedSpellClass : "All",
+            ShowItemFilters ? _selectedItemRarity : "All",
+            ShowItemFilters ? _selectedItemAttunement : "All",
+            ShowCompanionFilters ? _selectedCreatureType : "All",
+            ShowCompanionFilters ? _selectedCreatureSize : "All",
+            ShowCompanionFilters ? _selectedCreatureChallenge : "All",
+            restrictedSources);
+
+        _sources = CompendiumData.GetSources(sourceScope);
+        if (string.Equals(_selectedSource, "All", StringComparison.OrdinalIgnoreCase))
+            return;
+
+        string? matchedSource = _sources.FirstOrDefault(source => string.Equals(
+            CompendiumService.NormalizeSourceFilterKey(source),
+            selectedSourceKey,
+            StringComparison.Ordinal));
+        _selectedSource = matchedSource ?? "All";
     }
 
     private async Task HandleSearchKeyDown(KeyboardEventArgs args)
@@ -819,6 +866,7 @@
                 await LoadRestrictedSourcesAsync();
             }
 
+            RefreshSourceOptions();
             if (_hasSearched)
                 await RefreshAsync(selectRequestedId: true);
             StateHasChanged();
@@ -847,6 +895,7 @@
         _selectedCreatureChallenge = "All";
         _currentCharacterSourcesOnly = false;
         _restrictedSources.Clear();
+        RefreshSourceOptions();
         _hasSearched = false;
         _filteredEntries.Clear();
         _selectedEntry = null;

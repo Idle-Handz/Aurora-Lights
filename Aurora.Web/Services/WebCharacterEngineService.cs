@@ -383,7 +383,7 @@ public sealed class WebCharacterEngineService
         try
         {
             BuildRuleSelection selection = FindBuildRuleSelection(entryKey);
-            IEnumerable<SelectionOption> options = GetSelectionOptions(selection.Rule);
+            IEnumerable<SelectionOption> options = GetSelectionOptions(selection.Rule, selection.Number);
 
             if (!string.IsNullOrWhiteSpace(query))
             {
@@ -550,7 +550,7 @@ public sealed class WebCharacterEngineService
         try
         {
             MagicRuleSelectionEntry selection = FindMagicRuleSelection(entryKey);
-            IEnumerable<SelectionOption> options = GetSelectionOptions(selection.Rule);
+            IEnumerable<SelectionOption> options = GetSelectionOptions(selection.Rule, selection.Number);
 
             if (!string.IsNullOrWhiteSpace(query))
             {
@@ -1277,205 +1277,15 @@ public sealed class WebCharacterEngineService
             .FirstOrDefault(entry => string.Equals(entry.Key, entryKey, StringComparison.Ordinal))
         ?? throw new InvalidOperationException("The requested spell selection could not be found.");
 
-    private static IReadOnlyList<SelectionOption> GetSelectionOptions(SelectRule rule)
-    {
-        try
-        {
-            if (rule.Attributes.IsList)
-            {
-                return (rule.Attributes.ListItems ?? [])
-                    .Select(item => new SelectionOption(
-                        item.ID.ToString(),
-                        item.Text,
-                        item.Text,
-                        string.Empty,
-                        string.Empty))
-                    .ToList();
-            }
-
-            var interpreter = new ExpressionInterpreter();
-            interpreter.InitializeWithSelectionRule(rule);
-
-            IEnumerable<ElementBase> baseCollection = DataManager.Current.ElementsCollection
-                .Where(element => element.Type.Equals(rule.Attributes.Type));
-
-            IEnumerable<ElementBase> elements;
-            if (!rule.Attributes.ContainsSupports())
-            {
-                elements = baseCollection;
-            }
-            else
-            {
-                try
-                {
-                    elements = interpreter.EvaluateSupportsExpression<ElementBase>(
-                        rule.Attributes.Supports,
-                        baseCollection,
-                        rule.Attributes.SupportsElementIdRange());
-                }
-                catch
-                {
-                    elements = SpellFallbackOptions(rule, baseCollection);
-                }
-            }
-
-            List<SelectionOption> options = elements
-                .Where(element => !string.IsNullOrWhiteSpace(element.Name))
-                .OrderBy(element => element.Name)
-                .Select(element => new SelectionOption(
-                    element.Id,
-                    element.Name!,
-                    GetFeatureDescription(element),
-                    element.Source ?? string.Empty,
-                    element.HasRequirements ? FormatRequirements(element.Requirements) : string.Empty))
-                .ToList();
-
-            if (options.Count == 0 && rule.Attributes.Type == "Spell")
-            {
-                options = SpellFallbackOptions(rule, baseCollection)
-                    .Where(element => !string.IsNullOrWhiteSpace(element.Name))
-                    .OrderBy(element => element.Name)
-                    .Select(element => new SelectionOption(
-                        element.Id,
-                        element.Name!,
-                        GetFeatureDescription(element),
-                        element.Source ?? string.Empty,
-                        element.HasRequirements ? FormatRequirements(element.Requirements) : string.Empty))
-                    .ToList();
-            }
-
-            return DeduplicateOptions(options);
-        }
-        catch
-        {
-            return [];
-        }
-    }
-
-    private static List<SelectionOption> DeduplicateOptions(List<SelectionOption> options)
-    {
-        List<SelectionOption> result = new(options.Count);
-        foreach (IGrouping<(string Name, string Description), SelectionOption> group in options.GroupBy(option => (option.Name, option.Description)))
-        {
-            if (group.Count() == 1)
-            {
-                result.Add(group.First());
-                continue;
-            }
-
-            string combinedSources = string.Join(", ",
-                group.Select(option => option.Source)
-                    .Where(source => !string.IsNullOrEmpty(source))
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .OrderBy(source => source));
-
-            result.Add(group.First() with { Source = combinedSources });
-        }
-
-        return result;
-    }
-
-    private static string FormatRequirements(string requirements)
-    {
-        if (string.IsNullOrWhiteSpace(requirements))
-        {
-            return string.Empty;
-        }
-
-        IEnumerable<string> tokens = System.Text.RegularExpressions.Regex
-            .Split(requirements, @"[,;]+|&&|\|\|")
-            .Select(part => part.Trim(' ', '!', '(', ')'));
-
-        List<string> parts = [];
-        foreach (string token in tokens)
-        {
-            if (string.IsNullOrEmpty(token))
-            {
-                continue;
-            }
-
-            var match = System.Text.RegularExpressions.Regex.Match(token, @"^\[(\w+):(\d+)\]$");
-            if (match.Success)
-            {
-                string key = match.Groups[1].Value.ToLowerInvariant();
-                string value = match.Groups[2].Value;
-                parts.Add(key switch
-                {
-                    "str" => $"STR {value}+",
-                    "dex" => $"DEX {value}+",
-                    "con" => $"CON {value}+",
-                    "int" => $"INT {value}+",
-                    "wis" => $"WIS {value}+",
-                    "cha" => $"CHA {value}+",
-                    "level" => $"Level {value}",
-                    _ => $"{key.ToUpperInvariant()} {value}",
-                });
-                continue;
-            }
-
-            if (token.StartsWith("ID_", StringComparison.OrdinalIgnoreCase))
-            {
-                ElementBase? element = DataManager.Current.ElementsCollection
-                    .FirstOrDefault(candidate => string.Equals(candidate.Id, token, StringComparison.OrdinalIgnoreCase));
-                if (element is not null && !string.IsNullOrWhiteSpace(element.Name))
-                {
-                    parts.Add(element.Name!);
-                }
-
-                continue;
-            }
-
-            if (token.Contains('[') || token.Contains(':'))
-            {
-                continue;
-            }
-
-            parts.Add(token);
-        }
-
-        return parts.Count > 0 ? string.Join(", ", parts) : string.Empty;
-    }
-
-    private static IEnumerable<ElementBase> SpellFallbackOptions(SelectRule rule, IEnumerable<ElementBase> spellBase)
-    {
-        bool isCantrip = rule.Attributes.ContainsSupports()
-                         && rule.Attributes.Supports.Contains("Cantrip", StringComparison.OrdinalIgnoreCase);
-
-        string? className = null;
-        if (rule.Attributes.ContainsSpellcastingName())
-        {
-            className = rule.Attributes.SpellcastingName;
-        }
-
-        if (className is null && rule.Attributes.ContainsSupports())
-        {
-            string firstWord = System.Text.RegularExpressions.Regex
-                .Match(rule.Attributes.Supports, @"(?<!\$\()[A-Za-z][A-Za-z0-9 ]+")
-                .Value
-                .Trim();
-            if (!string.IsNullOrEmpty(firstWord))
-            {
-                className = firstWord;
-            }
-        }
-
-        if (className is null)
-        {
-            return [];
-        }
-
-        return spellBase.Where(element =>
-        {
-            if (element.Supports is null || !element.Supports.Contains(className))
-            {
-                return false;
-            }
-
-            int level = 0;
-            try { level = (int)((dynamic)element).Level; } catch { }
-            return isCantrip ? level == 0 : level > 0;
-        });
-    }
+    private static IReadOnlyList<SelectionOption> GetSelectionOptions(SelectRule rule, int number) =>
+        BuildSelectionOptionResolver.ResolveOptions(rule, number)
+            .Select(option => new SelectionOption(
+                option.Id,
+                option.Name,
+                option.Description,
+                option.Source,
+                option.Requirements))
+            .ToList();
 
     private static bool IsSearchableInventoryElement(ElementBase element) =>
         ItemTypes.Contains(element.Type)
@@ -1612,31 +1422,6 @@ public sealed class WebCharacterEngineService
         }
     }
 
-    private static string GetFeatureDescription(object element)
-    {
-        try
-        {
-            dynamic dynamicElement = element;
-            var sheetDescription = dynamicElement.SheetDescription as System.Collections.IList;
-            if (sheetDescription is not null && sheetDescription.Count > 0)
-            {
-                dynamic first = sheetDescription[0]!;
-                return (string)(first.Description ?? string.Empty);
-            }
-
-            string raw = (string)(dynamicElement.Description ?? string.Empty);
-            if (!string.IsNullOrWhiteSpace(raw))
-            {
-                return ElementDescriptionGenerator.GeneratePlainDescription(raw).Trim();
-            }
-        }
-        catch
-        {
-        }
-
-        return string.Empty;
-    }
-
     private static string GetDescription(ElementBase element)
     {
         try
@@ -1702,20 +1487,47 @@ public sealed class WebCharacterEngineService
             isSpellbookCaster: preparedCaster
                 && cm.SelectionRules.Any(rule => rule.Attributes.Type == "Spell")
                 && string.IsNullOrEmpty(spellInfo?.InitialSupportedSpellsExpression?.Supports));
+        List<MagicSpellListEntryModel> cantripEntries = cantrips
+            .Select(cantrip => new MagicSpellListEntryModel(
+                cantrip.Id,
+                cantrip.Name,
+                0,
+                string.Empty,
+                string.Empty,
+                isRitual: false,
+                isConcentration: false,
+                isPrepared: true,
+                isAlwaysPrepared: true,
+                isCantrip: true,
+                MagicSpellDisplayState.Known))
+            .ToList();
+        int preparedCount = spellLevels
+            .SelectMany(level => level.Spells)
+            .Count(spell => spell.IsPrepared && !spell.IsAlwaysPrepared);
+        var sections = cm.Status.HasSpellcasting || cantripEntries.Count > 0 || spellLevels.Count > 0
+            ? new[]
+            {
+                new MagicSpellcastingSectionModel
+                {
+                    Id = string.IsNullOrWhiteSpace(spellInfo?.Name) ? "spellcasting" : spellInfo.Name,
+                    Label = string.IsNullOrWhiteSpace(spellInfo?.Name) ? "Spellcasting" : spellInfo.Name,
+                    IsPreparedCaster = preparedCaster,
+                    SpellcastingAbility = spellInfo?.AbilityName ?? string.Empty,
+                    SpellcastingDc = spellDc,
+                    SpellcastingAttack = spellAttack,
+                    PreparedCount = preparedCount,
+                    MaxPrepared = maxPrepared,
+                    Cantrips = cantripEntries,
+                    SpellLevels = spellLevels
+                }
+            }
+            : [];
 
         return new MagicOverviewModel
         {
             HasSpellcasting = cm.Status.HasSpellcasting,
-            IsPreparedCaster = preparedCaster,
-            SpellcastingClass = spellInfo?.Name ?? string.Empty,
-            SpellcastingAbility = spellInfo?.AbilityName ?? string.Empty,
-            SpellcastingDc = spellDc,
-            SpellcastingAttack = spellAttack,
-            PreparedCount = spellLevels.SelectMany(level => level.Spells).Count(spell => spell.IsPrepared && !spell.IsAlwaysPrepared),
-            MaxPrepared = maxPrepared,
             KnownSpellGroups = BuildMagicRuleGroups(),
-            Cantrips = cantrips.Select(cantrip => new MagicSpellListEntryModel(cantrip.Id, cantrip.Name, true, true)).ToList(),
-            SpellLevels = spellLevels
+            Sections = sections
         };
     }
 
@@ -1821,9 +1633,7 @@ public sealed class WebCharacterEngineService
                 }
             }
 
-            magic.PreparedCount = magic.SpellLevels
-                .SelectMany(level => level.Spells)
-                .Count(spell => spell.IsPrepared && !spell.IsAlwaysPrepared);
+            RefreshPreparedCounts(magic);
         }
         catch
         {
@@ -1868,9 +1678,20 @@ public sealed class WebCharacterEngineService
             }
         }
 
-        target.PreparedCount = target.SpellLevels
-            .SelectMany(level => level.Spells)
-            .Count(spell => spell.IsPrepared && !spell.IsAlwaysPrepared);
+        RefreshPreparedCounts(target);
+    }
+
+    private static void RefreshPreparedCounts(MagicOverviewModel magic)
+    {
+        foreach (MagicSpellcastingSectionModel section in magic.Sections)
+        {
+            section.PreparedCount = section.SpellLevels
+                .SelectMany(level => level.Spells)
+                .Count(spell => spell.IsPrepared && !spell.IsAlwaysPrepared);
+        }
+
+        magic.PreparedCount = magic.Sections.FirstOrDefault()?.PreparedCount
+            ?? magic.SpellLevels.SelectMany(level => level.Spells).Count(spell => spell.IsPrepared && !spell.IsAlwaysPrepared);
     }
 
     private static void PersistMagicState(string absolutePath, MagicOverviewModel magic)

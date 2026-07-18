@@ -1,3 +1,5 @@
+using Builder.Presentation.Services;
+
 namespace Aurora.Components.Models;
 
 public enum BuildRuleBucket
@@ -162,7 +164,7 @@ public static class BuildRuleClassifier
     }
 
     public static bool AllowsStackedSelections(string ruleType) =>
-        AsiTypes.Contains(ruleType);
+        SelectionRuleTypePolicy.AllowsStackedSelections(ruleType);
 
     public static bool IsOptionalFlavorSelection(string label) =>
         OptionalFlavorLabels.Contains(label) ||

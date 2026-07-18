@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Globalization;
 using System.Net;
 using System.Reflection;
+using System.Text;
 using System.Text.RegularExpressions;
 using Aurora.Importer;
 using Builder.Presentation.Services.Data;
@@ -181,12 +182,51 @@ public sealed class CompendiumService
     {
         var sources = entries.Select(e => e.Source)
             .Where(s => !string.IsNullOrWhiteSpace(s))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .GroupBy(NormalizeSourceFilterKey, StringComparer.Ordinal)
+            .Where(group => !string.IsNullOrWhiteSpace(group.Key))
+            .Select(ChooseSourceDisplayName)
             .OrderBy(s => s)
             .ToList();
 
         sources.Insert(0, "All");
         return sources;
+    }
+
+    public static string NormalizeSourceFilterKey(string? source)
+    {
+        return NormalizeSearchKey(source);
+    }
+
+    public static string NormalizeSearchKey(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return string.Empty;
+
+        return text.Trim()
+            .Normalize(NormalizationForm.FormKC)
+            .Replace("\u00E2\u20AC\u2122", "'", StringComparison.Ordinal)
+            .Replace("\u2019", "'", StringComparison.Ordinal)
+            .Replace("\u2018", "'", StringComparison.Ordinal)
+            .Replace("\u02BC", "'", StringComparison.Ordinal)
+            .ToUpperInvariant();
+    }
+
+    private static string ChooseSourceDisplayName(IGrouping<string, string> group) =>
+        group.GroupBy(source => source, StringComparer.Ordinal)
+            .OrderByDescending(sourceGroup => sourceGroup.Count())
+            .ThenByDescending(sourceGroup => SourceDisplayPreference(sourceGroup.Key))
+            .ThenBy(sourceGroup => sourceGroup.Key, StringComparer.OrdinalIgnoreCase)
+            .Select(sourceGroup => sourceGroup.Key)
+            .First();
+
+    private static int SourceDisplayPreference(string source)
+    {
+        if (source.Contains("\u00E2\u20AC\u2122", StringComparison.Ordinal))
+            return 0;
+
+        return source.Contains('\u2019') || source.Contains('\u2018') || source.Contains('\u02BC')
+            ? 2
+            : 1;
     }
 
     public IReadOnlyList<string> GetSpellLevels(IEnumerable<CompendiumEntryModel> entries)
@@ -307,13 +347,26 @@ public sealed class CompendiumService
         IEnumerable<CompendiumEntryModel> filtered = entries;
 
         if (restrictedSources is { Count: > 0 })
-            filtered = filtered.Where(entry => !restrictedSources.Contains(entry.Source));
+        {
+            var restrictedSourceKeys = restrictedSources
+                .Select(NormalizeSourceFilterKey)
+                .Where(key => !string.IsNullOrWhiteSpace(key))
+                .ToHashSet(StringComparer.Ordinal);
+
+            filtered = filtered.Where(entry => !restrictedSourceKeys.Contains(NormalizeSourceFilterKey(entry.Source)));
+        }
 
         if (!string.IsNullOrWhiteSpace(type) && !string.Equals(type, "All", StringComparison.OrdinalIgnoreCase))
             filtered = filtered.Where(entry => string.Equals(entry.Type, type, StringComparison.OrdinalIgnoreCase));
 
         if (!string.IsNullOrWhiteSpace(source) && !string.Equals(source, "All", StringComparison.OrdinalIgnoreCase))
-            filtered = filtered.Where(entry => string.Equals(entry.Source, source, StringComparison.OrdinalIgnoreCase));
+        {
+            string sourceKey = NormalizeSourceFilterKey(source);
+            filtered = filtered.Where(entry => string.Equals(
+                NormalizeSourceFilterKey(entry.Source),
+                sourceKey,
+                StringComparison.Ordinal));
+        }
 
         if (!string.IsNullOrWhiteSpace(spellLevel) && !string.Equals(spellLevel, "All", StringComparison.OrdinalIgnoreCase))
         {
@@ -374,7 +427,7 @@ public sealed class CompendiumService
 
         if (!string.IsNullOrWhiteSpace(query))
         {
-            string normalizedQuery = query.Trim().ToUpperInvariant();
+            string normalizedQuery = NormalizeSearchKey(query);
             filtered = filtered.Where(entry => entry.SearchKey.Contains(normalizedQuery, StringComparison.Ordinal));
         }
 
@@ -1758,7 +1811,7 @@ public sealed record CompendiumEntryModel(
         !string.IsNullOrWhiteSpace(SpellComponents) ||
         !string.IsNullOrWhiteSpace(SpellDuration);
     public bool HasSpellDetails => HasSpellPropertyDetails || SpellIsConcentration || SpellIsRitual;
-    public string SearchKey { get; init; } = SearchText.ToUpperInvariant();
+    public string SearchKey { get; init; } = CompendiumService.NormalizeSearchKey(SearchText);
 }
 
 public sealed record CompendiumLinkedEntryModel(

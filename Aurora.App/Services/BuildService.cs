@@ -182,6 +182,9 @@ public static partial class BuildService
                     : MarkCurrentSelection(XmlContentFallbackService.GetListFallbackOptions(rule), currentSelectionId);
             }
 
+            if (TryResolveOptionsWithSharedResolver(rule, number, out var sharedOptions))
+                return sharedOptions;
+
             var ownedNonRepeatableElementIds = GetOwnedNonRepeatableElementIds(rule);
 
             // Use the same approach as SelectionRuleCollectionService / SelectionRuleComboBoxViewModel:
@@ -264,6 +267,57 @@ public static partial class BuildService
         }
         catch { return []; }
     }
+
+    private static bool TryResolveOptionsWithSharedResolver(
+        SelectRule rule,
+        int number,
+        out IReadOnlyList<ElementOption> options)
+    {
+        try
+        {
+            var resolved = BuildSelectionOptionResolver.ResolveOptions(
+                rule,
+                number,
+                new BuildSelectionOptionResolverSettings
+                {
+                    SpellAccessMap = DbElementLoader.SpellAccessMap,
+                    SortMetadataSelector = element =>
+                    {
+                        var metadata = TryGetElementSortMetadata(element);
+                        return metadata is null
+                            ? null
+                            : new BuildSelectionOptionSortMetadata(
+                                metadata.SourceReleaseDate,
+                                metadata.SourceFileModifiedUtc);
+                    },
+                    ElementFallbackProvider = XmlContentFallbackService.GetElementFallbacks
+                });
+
+            options = resolved.Select(ToElementOption).ToList();
+            return options.Count > 0;
+        }
+        catch
+        {
+            options = [];
+            return false;
+        }
+    }
+
+    private static ElementOption ToElementOption(BuildSelectionOption option) =>
+        new(
+            option.Id,
+            option.Name,
+            option.Description,
+            option.Source,
+            option.Requirements,
+            option.SpellLevel,
+            option.School,
+            option.IsRitual,
+            option.IsConcentration,
+            option.SourceReleaseDate,
+            option.SourceFileModifiedUtc,
+            option.IsDisabled,
+            option.IsCurrentSelection);
 
     // Fallback for list-type rules when Attributes.ListItems is empty: walks the owner element's
     // XmlNode to find the matching <select type="List" name="…"> and reads its <item> children.
@@ -1489,7 +1543,31 @@ public static partial class BuildService
 
 // ── Build tab group ───────────────────────────────────────────────────────────
 
-public sealed record BuildTabGroup(string Label, IReadOnlyList<SelectionRuleGroup> RuleGroups, int UnresolvedCount = 0);
+public sealed record BuildTabGroup
+{
+    public BuildTabGroup(
+        string label,
+        IReadOnlyList<SelectionRuleGroup> ruleGroups,
+        int unresolvedCount = 0,
+        IReadOnlyList<GrantedFeatEntry>? grantedFeats = null)
+    {
+        Label = label;
+        RuleGroups = ruleGroups;
+        UnresolvedCount = unresolvedCount;
+        GrantedFeats = grantedFeats ?? [];
+    }
+
+    public string Label { get; init; }
+    public IReadOnlyList<SelectionRuleGroup> RuleGroups { get; init; }
+    public int UnresolvedCount { get; init; }
+    public IReadOnlyList<GrantedFeatEntry> GrantedFeats { get; init; }
+}
+
+public sealed record GrantedFeatEntry(
+    string Id,
+    string Name,
+    string SourceLabel,
+    string Description);
 
 // ── Value types ───────────────────────────────────────────────────────────────
 

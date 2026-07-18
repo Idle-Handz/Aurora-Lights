@@ -177,7 +177,14 @@ else if (_workflowSuggestion != null)
     @foreach (var tab in _buildTabs)
     {
         <MudTabPanel Text="@GetBuildTabLabel(tab)">
-            @if (tab.RuleGroups.Count == 0)
+            @{
+                IReadOnlyList<GrantedFeatEntry> grantedFeats =
+                    tab.Label.Equals("Feats", StringComparison.OrdinalIgnoreCase)
+                        ? tab.GrantedFeats
+                        : Array.Empty<GrantedFeatEntry>();
+            }
+
+            @if (tab.RuleGroups.Count == 0 && grantedFeats.Count == 0)
             {
                 <div style="margin-top: 16px; padding: 12px; background: var(--mud-palette-background-grey); border-radius: 6px; border: 1px solid var(--mud-palette-lines-default);">
                     <MudText Color="Color.Secondary" Typo="Typo.body2">
@@ -190,6 +197,25 @@ else if (_workflowSuggestion != null)
             }
             else
             {
+                @if (grantedFeats.Count > 0)
+                {
+                    <div class="build-section">
+                        <div class="section-label">Granted</div>
+                        <div class="build-rule-list">
+                            @foreach (var feat in grantedFeats)
+                            {
+                                <div class="build-rule-row build-rule-row-readonly">
+                                    <div class="build-rule-label">
+                                        @feat.SourceLabel
+                                        <span class="build-rule-optional-badge">granted</span>
+                                    </div>
+                                    <div class="build-rule-value">@feat.Name</div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+
                 @foreach (var group in tab.RuleGroups)
                 {
                     <div class="build-section">
@@ -220,7 +246,6 @@ else if (_workflowSuggestion != null)
                     </div>
                 }
             }
-
             @* Class tab extras: class features *@
             @if (tab.Label == "Class" && _progressions is { Count: > 0 })
             {

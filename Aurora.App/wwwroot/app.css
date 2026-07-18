@@ -1127,6 +1127,12 @@ html, body {
     min-width: 0;
 }
 .build-rule-row:hover { background: var(--mud-palette-surface, #2a2a3e); }
+.build-rule-row-readonly {
+    cursor: default;
+}
+.build-rule-row-readonly:hover {
+    background: var(--mud-palette-background, #1e1e2e);
+}
 .build-rule-row-unresolved {
     border: 1px solid rgba(249, 226, 175, 0.22);
 }
