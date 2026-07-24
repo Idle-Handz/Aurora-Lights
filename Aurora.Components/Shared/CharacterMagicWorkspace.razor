@@ -40,19 +40,19 @@
         @if (Model.Sections.Count > 0)
         {
             <div class="magic-view-tabs">
-                <button type="button"
-                        class="magic-view-tab @(OnKnownTab ? "selected" : string.Empty)"
-                        @onclick="() => SelectTab(KnownTabId)">
-                    Known
-                </button>
                 @if (HasCastableSpells)
                 {
                     <button type="button"
                             class="magic-view-tab @(OnCastableTab ? "selected" : string.Empty)"
                             @onclick="() => SelectTab(CastableTabId)">
-                        Castable
+                        All
                     </button>
                 }
+                <button type="button"
+                        class="magic-view-tab @(OnKnownTab ? "selected" : string.Empty)"
+                        @onclick="() => SelectTab(KnownTabId)">
+                    Known
+                </button>
                 @foreach (var sec in PreparedSections)
                 {
                     var secId = sec.Id;
@@ -654,9 +654,9 @@
     private bool _preparedOnly;
     private bool _preparedRitualOnly;
     private bool _preparedConcentrationOnly;
-    // Selected tab: "known" (always present) or a prepared-caster section id. Each prepared-casting
-    // class gets its own "Prepared — <class>" tab.
-    private string _selectedTab = KnownTabId;
+    // Selected tab: all castable spells, known spells, or a prepared-caster section id. Each
+    // prepared-casting class gets its own "Prepared — <class>" tab.
+    private string _selectedTab = CastableTabId;
     private readonly HashSet<string> _collapsedGroups = new(StringComparer.Ordinal);
     private readonly HashSet<int> _collapsedLevels = new();
 

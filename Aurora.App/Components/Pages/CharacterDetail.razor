@@ -289,7 +289,7 @@
 @if (!string.IsNullOrWhiteSpace(_snap.Organisation) || !string.IsNullOrWhiteSpace(_snap.Allies))
 {
     <div class="section-label">Affiliations</div>
-    <div class="appearance-grid mb-section">
+    <div class="appearance-grid affiliation-grid mb-section">
         @AppearanceRow("Organisation", _snap.Organisation)
         @AppearanceRow("Allies",       _snap.Allies)
     </div>

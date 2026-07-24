@@ -889,6 +889,14 @@ html, body {
 }
 .appearance-value {
     color: var(--mud-palette-text-primary, #cdd6f4);
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.affiliation-grid {
+    grid-template-columns: minmax(0, 1fr);
+}
+.affiliation-grid .appearance-label {
+    width: 92px;
 }
 
 /* ── Character tab bar ── */

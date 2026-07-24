@@ -7,14 +7,16 @@ namespace Aurora.Tests.Tests;
 public sealed class CharacterMagicWorkspaceTests : BunitContext
 {
     [Fact]
-    public void CastableTabShowsCantripsAndPreparedSpellsOnly()
+    public void AllTabShowsCantripsAndPreparedSpellsOnly()
     {
         var cut = Render<CharacterMagicWorkspace>(parameters => parameters
             .Add(p => p.Model, BuildDruidMagicModel()));
 
-        cut.FindAll("button.magic-view-tab")
-            .First(button => button.TextContent.Trim() == "Castable")
-            .Click();
+        var tabs = cut.FindAll("button.magic-view-tab");
+        tabs.Select(button => button.TextContent.Trim())
+            .Should()
+            .ContainInOrder("All", "Known");
+        tabs[0].ClassList.Should().Contain("selected");
 
         cut.Markup.Should().Contain("Message");
         cut.Markup.Should().Contain("Cure Wounds");
