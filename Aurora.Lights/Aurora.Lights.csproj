@@ -62,14 +62,12 @@
 
   <!-- Aurora.Logic: all platform-independent logic -->
   <ItemGroup>
+    <ProjectReference Include="..\Builder.Core\Builder.Core.csproj" />
     <ProjectReference Include="..\Aurora.Logic\Aurora.Logic.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Core logic DLLs also referenced directly so the XAML temp project can find them -->
-    <Reference Include="Builder.Core">
-      <HintPath>..\lib\Builder.Core.dll</HintPath>
-    </Reference>
+    <!-- Remaining core logic DLLs also referenced directly so the XAML temp project can find them -->
     <Reference Include="Builder.Data">
       <HintPath>..\lib\Builder.Data.dll</HintPath>
     </Reference>

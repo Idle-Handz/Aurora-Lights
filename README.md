@@ -149,6 +149,10 @@ include:
 - `Aurora.Logic`
   Shared rules, models, content handling, and compatibility behavior.
 
+- `Builder.Core`
+  Source-restored legacy foundation for events, logging, observable objects,
+  and commands.
+
 - `Aurora.Importer`
   SQLite content importer used by the modern content pipeline.
 
@@ -165,6 +169,7 @@ include:
 The repository uses .NET 10. Useful project-level build commands:
 
 ```powershell
+dotnet build .\Builder.Core\Builder.Core.csproj -v minimal
 dotnet build .\Aurora.Logic\Aurora.Logic.csproj -v minimal
 dotnet build .\Aurora.App\Aurora.App.csproj -v minimal -f net10.0-windows10.0.19041.0
 dotnet build .\Aurora.Web\Aurora.Web.csproj -v minimal
@@ -181,6 +186,7 @@ Additional technical documentation:
 - [Client feature comparison](docs/CLIENT_FEATURE_COMPARISON.md)
 - [Aurora.App README](Aurora.App/README.md)
 - [Aurora.Logic README](Aurora.Logic/README.md)
+- [Full legacy source restoration](docs/LEGACY_RESTORATION.md)
 - [Project roadmap](docs/ROADMAP.md)
 
 ## Support Aurora Lights

@@ -37,10 +37,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Core business logic (local /lib DLLs, shared with WPF project) -->
-    <Reference Include="Builder.Core">
-      <HintPath>..\lib\Builder.Core.dll</HintPath>
-    </Reference>
+    <ProjectReference Include="..\Builder.Core\Builder.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Remaining core business logic DLLs, shared with the WPF project -->
     <Reference Include="Builder.Data">
       <HintPath>..\lib\Builder.Data.dll</HintPath>
     </Reference>

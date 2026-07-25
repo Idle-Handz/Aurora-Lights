@@ -12,14 +12,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Builder.Core\Builder.Core.csproj" />
     <ProjectReference Include="..\Aurora.Components\Aurora.Components.csproj" />
     <ProjectReference Include="..\Aurora.Logic\Aurora.Logic.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="Builder.Core">
-      <HintPath>..\lib\Builder.Core.dll</HintPath>
-    </Reference>
     <Reference Include="Builder.Data">
       <HintPath>..\lib\Builder.Data.dll</HintPath>
     </Reference>

@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "scope": "Production first-party binary baseline. Aurora Studio is intentionally excluded.",
+  "binaries": [
+    {
+      "path": "lib/Builder.Core.dll",
+      "sha256": "e36e83c81137208c8cf0311d7416de62aba66f28a4437a5cd45ab7e976fae6ce",
+      "size": 13312,
+      "assemblyName": "Builder.Core",
+      "assemblyVersion": "1.0.83.7407",
+      "fileVersion": "1.0.83.7407",
+      "targetFramework": ".NETFramework,Version=v4.5.1",
+      "moduleVersionId": "082a1bbc-4406-49e1-8ce7-3348e0e51660",
+      "publicTypeCount": 12,
+      "resources": []
+    },
+    {
+      "path": "lib/Builder.Data.dll",
+      "sha256": "e585d95a57fdf8b20a0c01d5d5e0eb2a6cdb722a40bde592f61f5de2644ad9a7",
+      "size": 198144,
+      "assemblyName": "Builder.Data",
+      "assemblyVersion": "1.0.110.7407",
+      "fileVersion": "1.0.110.7407",
+      "targetFramework": ".NETFramework,Version=v4.5.1",
+      "moduleVersionId": "76053d71-e202-437c-8613-7434d8cf09a7",
+      "publicTypeCount": 140,
+      "resources": []
+    },
+    {
+      "path": "lib/Aurora.Documents.dll",
+      "sha256": "e57ae28449334bbae701f152d601ad34963d7cfe15c938ffcca4bfb7c7901f11",
+      "size": 4451328,
+      "assemblyName": "Aurora.Documents",
+      "assemblyVersion": "1.0.94.7407",
+      "fileVersion": "1.0.94.7407",
+      "targetFramework": ".NETFramework,Version=v4.5.1",
+      "moduleVersionId": "8828a591-c503-461d-9ea3-d6ba6bf9e447",
+      "publicTypeCount": 25,
+      "resources": [
+        {
+          "name": "Aurora.Documents.Resources.Aurora.Pages.equipment.pdf",
+          "size": 2607011,
+          "sha256": "289af8ba634af85595fe6614e796bfdd8cbaa16cb76cb0910bb89cb0a30785f9"
+        },
+        {
+          "name": "Aurora.Documents.Resources.Aurora.Pages.equipment_page.pdf",
+          "size": 908646,
+          "sha256": "9f2bc8a8e1c0e2714ab620991445afca30a3c340c8c5218e2af83cdaeb543345"
+        },
+        {
+          "name": "Aurora.Documents.Resources.Aurora.Pages.notes_page.pdf",
+          "size": 901285,
+          "sha256": "4a1a6ec88b6dc32d8307a3063d54b1ae68fc65b6601d53ba5b1d51535bb3344c"
+        }
+      ]
+    },
+    {
+      "path": "lib/Aurora.Presentation.dll",
+      "sha256": "fa76396ab3220295c0a8ffd81a5faf8576e3eca71771ab23249379f22bd08f8e",
+      "size": 96256,
+      "assemblyName": "Aurora.Presentation",
+      "assemblyVersion": "1.0.82.7407",
+      "fileVersion": "1.0.82.7407",
+      "targetFramework": ".NETFramework,Version=v4.5",
+      "moduleVersionId": "2de582f2-6af1-41e2-abc4-92f35d015d99",
+      "publicTypeCount": 4,
+      "resources": [
+        {
+          "name": "Aurora.Presentation.g.resources",
+          "size": 87830,
+          "sha256": "7a3b2d027c911620f40240e2b9e7679db7bb0dc6da4e8778790e8e3023f8b5ec"
+        },
+        {
+          "name": "Aurora.Presentation.Properties.Resources.resources",
+          "size": 180,
+          "sha256": "e13ed2c59366d0eea74863fd71a81f0cb977cce1edfde304fc538690a4f6ac89"
+        }
+      ]
+    }
+  ]
+}
