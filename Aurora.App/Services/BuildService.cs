@@ -1,3 +1,4 @@
+using Aurora.Components.Formatting;
 using Aurora.Components.Models;
 using Builder.Data;
 using Builder.Data.Elements;
@@ -1291,11 +1292,16 @@ public static partial class BuildService
 
             // Body description — use the plain-text generator on the raw XML description.
             string body = "";
+            string rawDescription = "";
+            string descriptionHtml = "";
             try
             {
-                string raw = sp.Description ?? "";
-                if (!string.IsNullOrWhiteSpace(raw))
-                    body = ElementDescriptionGenerator.GeneratePlainDescription(raw).Trim();
+                rawDescription = sp.Description ?? "";
+                if (!string.IsNullOrWhiteSpace(rawDescription))
+                {
+                    body = ElementDescriptionGenerator.GeneratePlainDescription(rawDescription).Trim();
+                    descriptionHtml = MagicDescriptionFormatter.FromAuroraHtml(rawDescription);
+                }
             }
             catch { }
 
@@ -1314,7 +1320,11 @@ public static partial class BuildService
                     bodyLeft.Add(line);
                 }
                 body = string.Join("\n", bodyLeft).Trim();
+                descriptionHtml = MagicDescriptionFormatter.FromPlainText(body);
             }
+
+            if (string.IsNullOrWhiteSpace(descriptionHtml) && !string.IsNullOrWhiteSpace(body))
+                descriptionHtml = MagicDescriptionFormatter.FromPlainText(body);
 
             return new SpellDetail(
                 Id:          e.Id,
@@ -1329,7 +1339,8 @@ public static partial class BuildService
                 Range:       range,
                 Components:  components,
                 Duration:    duration,
-                Description: body);
+                Description: body,
+                DescriptionHtml: descriptionHtml);
         }
         catch { return null; }
     }
@@ -1638,7 +1649,8 @@ public sealed record SpellDetail(
     string Range,
     string Components,
     string Duration,
-    string Description);
+    string Description,
+    string DescriptionHtml);
 
 // ── Advancement timeline ──────────────────────────────────────────────────────
 

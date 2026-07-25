@@ -37,7 +37,7 @@
 
         @* ── Tabs: a Known tab is always present; each prepared-caster class gets its own
              "Prepared — <class>" tab. ── *@
-        @if (Model.Sections.Count > 0)
+        @if (HasCastableSpells || Model.KnownSpellGroups.Count > 0)
         {
             <div class="magic-view-tabs">
                 @if (HasCastableSpells)
@@ -148,6 +148,13 @@
                             <option value="@school">@school</option>
                         }
                     </select>
+                    <select class="magic-filter-select magic-casting-time-filter" @bind="_knownCastingTimeFilter">
+                        <option value="">All casting times</option>
+                        <option value="action">Action</option>
+                        <option value="bonus-action">Bonus action</option>
+                        <option value="reaction">Reaction</option>
+                        <option value="longer">Longer / special</option>
+                    </select>
                     <div class="magic-filter-checks">
                         <label class="magic-filter-check">
                             <input type="checkbox" @bind="_knownRitualOnly" />
@@ -185,6 +192,10 @@
                                         @if (ent.SpellLevel > 0 && !string.IsNullOrWhiteSpace(ent.CurrentName))
                                         {
                                             <span class="magic-spell-level-badge">Lv@(ent.SpellLevel)</span>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(ent.GrantedBy))
+                                        {
+                                            <span class="magic-granted-by">Granted by @ent.GrantedBy</span>
                                         }
                                     </div>
                                 </div>
@@ -274,6 +285,13 @@
                             <option value="@school">@school</option>
                         }
                     </select>
+                    <select class="magic-filter-select magic-casting-time-filter" @bind="_castableCastingTimeFilter">
+                        <option value="">All casting times</option>
+                        <option value="action">Action</option>
+                        <option value="bonus-action">Bonus action</option>
+                        <option value="reaction">Reaction</option>
+                        <option value="longer">Longer / special</option>
+                    </select>
                     <div class="magic-filter-checks">
                         <label class="magic-filter-check">
                             <input type="checkbox" @bind="_castableRitualOnly" />
@@ -294,7 +312,7 @@
                         var cantrips = GetCastableCantrips(section);
                         var spellLevels = GetCastableSpellLevels(section);
 
-                        @if (Model.Sections.Count > 1)
+                        @if (_castableSections.Count > 1)
                         {
                             <div class="magic-level-header">
                                 <span class="magic-section-label">@section.Label</span>
@@ -323,7 +341,15 @@
                                                 {
                                                     <span>@spell.School</span>
                                                 }
-                                                <span class="magic-spell-badge @GetBadgeClass(MagicSpellDisplayState.Known)">Known</span>
+                                                @if (!string.IsNullOrWhiteSpace(spell.CastingTime))
+                                                {
+                                                    <span>@spell.CastingTime</span>
+                                                }
+                                                <span class="magic-spell-badge @GetBadgeClass(spell.DisplayState)">@GetDisplayStateLabel(spell.DisplayState)</span>
+                                                @if (!string.IsNullOrWhiteSpace(spell.GrantedBy))
+                                                {
+                                                    <span>Granted by @spell.GrantedBy</span>
+                                                }
                                                 @if (spell.IsRitual)
                                                 {
                                                     <span class="magic-spell-badge">Ritual</span>
@@ -362,7 +388,15 @@
                                                 {
                                                     <span>@spell.School</span>
                                                 }
+                                                @if (!string.IsNullOrWhiteSpace(spell.CastingTime))
+                                                {
+                                                    <span>@spell.CastingTime</span>
+                                                }
                                                 <span class="magic-spell-badge @GetBadgeClass(spell.DisplayState)">@GetDisplayStateLabel(spell.DisplayState)</span>
+                                                @if (!string.IsNullOrWhiteSpace(spell.GrantedBy))
+                                                {
+                                                    <span>Granted by @spell.GrantedBy</span>
+                                                }
                                                 @if (spell.IsRitual)
                                                 {
                                                     <span class="magic-spell-badge">Ritual</span>
@@ -423,16 +457,19 @@
                              !string.IsNullOrWhiteSpace(spellDetail.Duration))
                         {
                             <div class="magic-detail-props">
-                                @SpellPropRow("Casting Time", spellDetail.CastingTime)
-                                @SpellPropRow("Range", spellDetail.Range)
-                                @SpellPropRow("Components", spellDetail.Components)
-                                @SpellPropRow("Duration", spellDetail.Duration)
+                                @foreach (var property in GetSpellProperties(spellDetail))
+                                {
+                                    <div class="magic-prop-row">
+                                        <span class="magic-prop-label">@property.Label</span>
+                                        <span class="magic-prop-value">@property.Value</span>
+                                    </div>
+                                }
                             </div>
                         }
 
-                        @if (!string.IsNullOrWhiteSpace(spellDetail.Description))
+                        @if (!string.IsNullOrWhiteSpace(spellDetail.DescriptionHtml))
                         {
-                            <div class="magic-detail-description">@spellDetail.Description</div>
+                            <div class="magic-detail-description">@((MarkupString)spellDetail.DescriptionHtml)</div>
                         }
                     }
                 </section>
@@ -468,6 +505,13 @@
                         {
                             <option value="@school">@school</option>
                         }
+                    </select>
+                    <select class="magic-filter-select magic-casting-time-filter" @bind="_preparedCastingTimeFilter">
+                        <option value="">All casting times</option>
+                        <option value="action">Action</option>
+                        <option value="bonus-action">Bonus action</option>
+                        <option value="reaction">Reaction</option>
+                        <option value="longer">Longer / special</option>
                     </select>
                     <div class="magic-filter-checks">
                         @if (ActiveSection.IsPreparedCaster)
@@ -527,6 +571,10 @@
                                                 @if (!string.IsNullOrWhiteSpace(spell.School))
                                                 {
                                                     <span>@spell.School</span>
+                                                }
+                                                @if (!string.IsNullOrWhiteSpace(spell.CastingTime))
+                                                {
+                                                    <span>@spell.CastingTime</span>
                                                 }
                                                 <span class="magic-spell-badge @GetBadgeClass(spell.DisplayState)">@GetDisplayStateLabel(spell.DisplayState)</span>
                                                 @if (spell.IsRitual)
@@ -589,16 +637,19 @@
                              !string.IsNullOrWhiteSpace(spellDetail.Duration))
                         {
                             <div class="magic-detail-props">
-                                @SpellPropRow("Casting Time", spellDetail.CastingTime)
-                                @SpellPropRow("Range", spellDetail.Range)
-                                @SpellPropRow("Components", spellDetail.Components)
-                                @SpellPropRow("Duration", spellDetail.Duration)
+                                @foreach (var property in GetSpellProperties(spellDetail))
+                                {
+                                    <div class="magic-prop-row">
+                                        <span class="magic-prop-label">@property.Label</span>
+                                        <span class="magic-prop-value">@property.Value</span>
+                                    </div>
+                                }
                             </div>
                         }
 
-                        @if (!string.IsNullOrWhiteSpace(spellDetail.Description))
+                        @if (!string.IsNullOrWhiteSpace(spellDetail.DescriptionHtml))
                         {
-                            <div class="magic-detail-description">@spellDetail.Description</div>
+                            <div class="magic-detail-description">@((MarkupString)spellDetail.DescriptionHtml)</div>
                         }
                     }
                 </section>
@@ -639,18 +690,21 @@
     private string _knownLevelFilter = string.Empty;
     private string _knownSourceFilter = string.Empty;
     private string _knownSchoolFilter = string.Empty;
+    private string _knownCastingTimeFilter = string.Empty;
     private bool _knownRitualOnly;
     private bool _knownConcentrationOnly;
     private string _castableSearchText = string.Empty;
     private string _castableLevelFilter = string.Empty;
     private string _castableSourceFilter = string.Empty;
     private string _castableSchoolFilter = string.Empty;
+    private string _castableCastingTimeFilter = string.Empty;
     private bool _castableRitualOnly;
     private bool _castableConcentrationOnly;
     private string _preparedSearchText = string.Empty;
     private string _preparedLevelFilter = string.Empty;
     private string _preparedSourceFilter = string.Empty;
     private string _preparedSchoolFilter = string.Empty;
+    private string _preparedCastingTimeFilter = string.Empty;
     private bool _preparedOnly;
     private bool _preparedRitualOnly;
     private bool _preparedConcentrationOnly;
@@ -659,6 +713,7 @@
     private string _selectedTab = CastableTabId;
     private readonly HashSet<string> _collapsedGroups = new(StringComparer.Ordinal);
     private readonly HashSet<int> _collapsedLevels = new();
+    private IReadOnlyList<MagicSpellcastingSectionModel> _castableSections = [];
 
     // Prepared-caster sections, each of which gets a Prepared tab.
     private IReadOnlyList<MagicSpellcastingSectionModel> PreparedSections =>
@@ -671,13 +726,13 @@
         ?? Model.Sections.FirstOrDefault()
         ?? new MagicSpellcastingSectionModel();
 
-    private bool OnKnownTab => _selectedTab == KnownTabId || Model.Sections.Count == 0
+    private bool OnKnownTab => _selectedTab == KnownTabId
         || (_selectedTab != CastableTabId && !Model.Sections.Any(s => s.Id == _selectedTab));
 
     private bool OnCastableTab => _selectedTab == CastableTabId && HasCastableSpells;
 
     private bool HasCastableSpells =>
-        Model.Sections.Any(section =>
+        _castableSections.Any(section =>
             section.Cantrips.Count > 0
             || section.SpellLevels.SelectMany(level => level.Spells)
                 .Any(spell => spell.IsPrepared || spell.IsAlwaysPrepared));
@@ -711,6 +766,8 @@
         if (!string.IsNullOrWhiteSpace(_knownSchoolFilter)
             && !string.Equals(ent.School, _knownSchoolFilter, StringComparison.OrdinalIgnoreCase))
             return false;
+        if (!MatchesCastingTimeFilter(ent.CastingTime, _knownCastingTimeFilter))
+            return false;
         if (_knownRitualOnly && !ent.IsRitual)
             return false;
         if (_knownConcentrationOnly && !ent.IsConcentration)
@@ -735,7 +792,7 @@
             .ToList();
 
     private IReadOnlyList<MagicSpellcastingSectionModel> FilteredCastableSections =>
-        Model.Sections
+        _castableSections
             .Where(section => GetCastableCantrips(section).Count > 0 || GetCastableSpellLevels(section).Count > 0)
             .ToList();
 
@@ -756,6 +813,67 @@
             .Where(level => level.Spells.Count > 0)
             .ToList();
 
+    private IReadOnlyList<MagicSpellcastingSectionModel> BuildCastableSections()
+    {
+        List<MagicSpellcastingSectionModel> sections = Model.Sections.ToList();
+        HashSet<string> existingSpellKeys = Model.Sections
+            .SelectMany(section => section.Cantrips.Concat(section.SpellLevels.SelectMany(level => level.Spells)))
+            .Select(spell => GetSpellKey(spell.Id, spell.Name, spell.Level))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        List<MagicSpellListEntryModel> grantedSpells = Model.KnownSpellGroups
+            .Where(group => group.ReadOnlyGroup)
+            .SelectMany(group => group.Entries)
+            .Where(entry => !string.IsNullOrWhiteSpace(entry.CurrentName))
+            .Where(entry => !existingSpellKeys.Contains(GetSpellKey(entry.SpellId, entry.CurrentName!, entry.SpellLevel)))
+            .GroupBy(
+                entry => GetSpellKey(entry.SpellId, entry.CurrentName!, entry.SpellLevel),
+                StringComparer.OrdinalIgnoreCase)
+            .Select(group => group.First())
+            .Select(entry => new MagicSpellListEntryModel(
+                entry.SpellId ?? entry.Id,
+                entry.CurrentName!,
+                entry.SpellLevel,
+                entry.Source,
+                entry.School,
+                entry.IsRitual,
+                entry.IsConcentration,
+                isPrepared: true,
+                isAlwaysPrepared: true,
+                isCantrip: entry.SpellLevel == 0,
+                displayState: MagicSpellDisplayState.Granted,
+                castingTime: entry.CastingTime,
+                grantedBy: entry.GrantedBy))
+            .OrderBy(spell => spell.Level)
+            .ThenBy(spell => spell.Name)
+            .ToList();
+
+        if (grantedSpells.Count == 0)
+        {
+            return sections;
+        }
+
+        sections.Add(new MagicSpellcastingSectionModel
+        {
+            Id = "granted-features",
+            Label = "Granted by Features",
+            Cantrips = grantedSpells.Where(spell => spell.Level == 0).ToList(),
+            SpellLevels = grantedSpells
+                .Where(spell => spell.Level > 0)
+                .GroupBy(spell => spell.Level)
+                .OrderBy(group => group.Key)
+                .Select(group => new MagicSpellLevelModel(group.Key, group.ToList(), 0, 0))
+                .ToList()
+        });
+
+        return sections;
+    }
+
+    private static string GetSpellKey(string? id, string name, int level) =>
+        string.IsNullOrWhiteSpace(id)
+            ? $"name:{level}:{name}"
+            : $"id:{id}";
+
     // Editable spell-selection groups (cantrips + chosen known spells). The Known tab is unified
     // across all the character's casting classes, so all non-read-only groups show (grouped by class
     // via their own labels). Read-only granted groups are surfaced separately.
@@ -764,8 +882,8 @@
             .Where(group => !group.ReadOnlyGroup)
             .ToList();
 
-    // Read-only spells granted by feats/items/species (e.g. dragonmark spells, always-prepared
-    // grants). Always visible regardless of caster type — these count as Known, never prepared.
+    // Read-only spells granted by feats/items/species (e.g. dragonmark spells). They stay in Known
+    // for provenance and are also projected into the All view as castable Granted spells.
     private IReadOnlyList<MagicKnownSpellGroupModel> ReadOnlyKnownGroups =>
         Model.KnownSpellGroups.Where(group => group.ReadOnlyGroup).ToList();
 
@@ -776,7 +894,7 @@
     {
         // Cover every caster section's spells AND the known/granted entries, so the source/school
         // dropdowns are meaningful on both the combined Known tab and each Prepared tab.
-        var sectionSpells = Model.Sections
+        var sectionSpells = _castableSections
             .SelectMany(s => s.Cantrips.Concat(s.SpellLevels.SelectMany(l => l.Spells)));
         var knownEntries = Model.KnownSpellGroups.SelectMany(g => g.Entries);
 
@@ -796,6 +914,8 @@
 
     protected override void OnParametersSet()
     {
+        _castableSections = BuildCastableSections();
+
         // Reset to the Known tab if the selected Prepared section is gone (or never existed).
         if (_selectedTab != KnownTabId && _selectedTab != CastableTabId && !Model.Sections.Any(section => section.Id == _selectedTab))
             _selectedTab = KnownTabId;
@@ -854,6 +974,8 @@
         if (!string.IsNullOrWhiteSpace(_preparedSchoolFilter)
             && !string.Equals(spell.School, _preparedSchoolFilter, StringComparison.OrdinalIgnoreCase))
             return false;
+        if (!MatchesCastingTimeFilter(spell.CastingTime, _preparedCastingTimeFilter))
+            return false;
 
         if (_preparedRitualOnly && !spell.IsRitual)
             return false;
@@ -890,6 +1012,8 @@
         if (!string.IsNullOrWhiteSpace(_castableSchoolFilter)
             && !string.Equals(spell.School, _castableSchoolFilter, StringComparison.OrdinalIgnoreCase))
             return false;
+        if (!MatchesCastingTimeFilter(spell.CastingTime, _castableCastingTimeFilter))
+            return false;
 
         if (_castableRitualOnly && !spell.IsRitual)
             return false;
@@ -898,6 +1022,32 @@
             return false;
 
         return true;
+    }
+
+    private static bool MatchesCastingTimeFilter(string castingTime, string filter)
+    {
+        if (string.IsNullOrWhiteSpace(filter))
+        {
+            return true;
+        }
+
+        if (string.IsNullOrWhiteSpace(castingTime))
+        {
+            return false;
+        }
+
+        string normalized = castingTime.Trim().ToLowerInvariant();
+        string category = normalized switch
+        {
+            _ when normalized.Contains("bonus action", StringComparison.Ordinal) => "bonus-action",
+            _ when normalized.Contains("reaction", StringComparison.Ordinal) => "reaction",
+            "action" => "action",
+            _ when normalized.StartsWith("1 action", StringComparison.Ordinal) => "action",
+            _ when normalized.StartsWith("an action", StringComparison.Ordinal) => "action",
+            _ => "longer",
+        };
+
+        return string.Equals(category, filter, StringComparison.Ordinal);
     }
 
     private bool LevelShouldRemainVisible(int level)
@@ -926,25 +1076,17 @@
             new MagicPreparedChangeModel(spellId, value, ActiveSection.Id, ActiveSection.Label));
     }
 
-    private RenderFragment SpellPropRow(string label, string value) => builder =>
+    private static IEnumerable<(string Label, string Value)> GetSpellProperties(MagicSpellDetailModel spell)
     {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return;
-        }
-
-        builder.OpenElement(0, "div");
-        builder.AddAttribute(1, "class", "magic-prop-row");
-        builder.OpenElement(2, "span");
-        builder.AddAttribute(3, "class", "magic-prop-label");
-        builder.AddContent(4, label);
-        builder.CloseElement();
-        builder.OpenElement(5, "span");
-        builder.AddAttribute(6, "class", "magic-prop-value");
-        builder.AddContent(7, value);
-        builder.CloseElement();
-        builder.CloseElement();
-    };
+        if (!string.IsNullOrWhiteSpace(spell.CastingTime))
+            yield return ("Casting Time", spell.CastingTime);
+        if (!string.IsNullOrWhiteSpace(spell.Range))
+            yield return ("Range", spell.Range);
+        if (!string.IsNullOrWhiteSpace(spell.Components))
+            yield return ("Components", spell.Components);
+        if (!string.IsNullOrWhiteSpace(spell.Duration))
+            yield return ("Duration", spell.Duration);
+    }
 
     private static string Ordinal(int level) => level switch
     {
@@ -957,6 +1099,7 @@
     private static string GetDisplayStateLabel(MagicSpellDisplayState state) => state switch
     {
         MagicSpellDisplayState.AlwaysPrepared => "Always Prepared",
+        MagicSpellDisplayState.Granted => "Granted",
         MagicSpellDisplayState.Known => "Known",
         MagicSpellDisplayState.Available => "Available",
         _ => "Prepared",
@@ -965,6 +1108,7 @@
     private static string GetBadgeClass(MagicSpellDisplayState state) => state switch
     {
         MagicSpellDisplayState.AlwaysPrepared => "magic-spell-badge-always",
+        MagicSpellDisplayState.Granted => "magic-spell-badge-granted",
         MagicSpellDisplayState.Known => "magic-spell-badge-known",
         MagicSpellDisplayState.Available => "magic-spell-badge-available",
         _ => "magic-spell-badge-prepared",

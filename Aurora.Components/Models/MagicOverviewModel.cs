@@ -106,7 +106,9 @@ public sealed record MagicKnownSpellEntryModel(
     string Source = "",
     string School = "",
     bool IsRitual = false,
-    bool IsConcentration = false);
+    bool IsConcentration = false,
+    string CastingTime = "",
+    string GrantedBy = "");
 
 public sealed class MagicSpellListEntryModel
 {
@@ -121,6 +123,8 @@ public sealed class MagicSpellListEntryModel
     public bool IsAlwaysPrepared { get; set; }
     public bool IsCantrip { get; set; }
     public MagicSpellDisplayState DisplayState { get; set; }
+    public string CastingTime { get; set; } = string.Empty;
+    public string GrantedBy { get; set; } = string.Empty;
 
     public MagicSpellListEntryModel()
     {
@@ -185,7 +189,9 @@ public sealed class MagicSpellListEntryModel
         bool isPrepared,
         bool isAlwaysPrepared,
         bool isCantrip = false,
-        MagicSpellDisplayState displayState = MagicSpellDisplayState.Prepared)
+        MagicSpellDisplayState displayState = MagicSpellDisplayState.Prepared,
+        string castingTime = "",
+        string grantedBy = "")
     {
         Id = id;
         Name = name;
@@ -198,6 +204,8 @@ public sealed class MagicSpellListEntryModel
         IsAlwaysPrepared = isAlwaysPrepared;
         IsCantrip = isCantrip;
         DisplayState = displayState;
+        CastingTime = castingTime;
+        GrantedBy = grantedBy;
     }
 }
 
@@ -207,6 +215,7 @@ public enum MagicSpellDisplayState
     Available,
     Prepared,
     AlwaysPrepared,
+    Granted,
 }
 
 public sealed class MagicSpellLevelModel
@@ -242,7 +251,7 @@ public sealed record MagicSpellDetailModel(
     string Range,
     string Components,
     string Duration,
-    string Description)
+    string DescriptionHtml)
 {
     public MagicSpellDetailModel(
         string Id,
@@ -254,8 +263,8 @@ public sealed record MagicSpellDetailModel(
         string Range,
         string Components,
         string Duration,
-        string Description)
-        : this(Id, Name, Source, Level, Subtitle, string.Empty, false, false, CastingTime, Range, Components, Duration, Description)
+        string DescriptionHtml)
+        : this(Id, Name, Source, Level, Subtitle, string.Empty, false, false, CastingTime, Range, Components, Duration, DescriptionHtml)
     {
     }
 }

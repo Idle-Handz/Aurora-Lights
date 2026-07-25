@@ -37,6 +37,142 @@ public sealed class CharacterMagicWorkspaceTests : BunitContext
         cut.Markup.Should().Contain("Detect Magic");
     }
 
+    [Fact]
+    public void CastingTimeFilterShowsOnlyTheSelectedActionEconomy()
+    {
+        var model = BuildDruidMagicModel();
+        model.Sections[0].SpellLevels[0].Spells =
+        [
+            .. model.Sections[0].SpellLevels[0].Spells,
+            Spell("ID_SPELL_HEALING_WORD", "Healing Word", 1, isPrepared: true, castingTime: "1 bonus action")
+        ];
+
+        var cut = Render<CharacterMagicWorkspace>(parameters => parameters
+            .Add(p => p.Model, model));
+
+        cut.Find("select.magic-casting-time-filter").Change("bonus-action");
+
+        cut.Markup.Should().Contain("Healing Word");
+        cut.Markup.Should().NotContain("Bless");
+        cut.Markup.Should().NotContain("Detect Magic");
+    }
+
+    [Fact]
+    public void CastingTimeFilterGroupsConditionalReactionsTogether()
+    {
+        var model = BuildDruidMagicModel();
+        model.Sections[0].SpellLevels[0].Spells =
+        [
+            .. model.Sections[0].SpellLevels[0].Spells,
+            Spell(
+                "ID_SPELL_SHIELD",
+                "Shield",
+                1,
+                isPrepared: true,
+                castingTime: "1 reaction, which you take when you are hit by an attack")
+        ];
+
+        var cut = Render<CharacterMagicWorkspace>(parameters => parameters
+            .Add(p => p.Model, model));
+
+        cut.Find("select.magic-casting-time-filter").Change("reaction");
+
+        cut.Markup.Should().Contain("Shield");
+        cut.Markup.Should().NotContain("Bless");
+    }
+
+    [Fact]
+    public void GrantedFeatureSpellsAppearInAllAsGranted()
+    {
+        var model = BuildDruidMagicModel();
+        model.KnownSpellGroups =
+        [
+            new MagicKnownSpellGroupModel(
+                "Granted by Features",
+                [
+                    new MagicKnownSpellEntryModel(
+                        "granted:0",
+                        "Level 2",
+                        "Misty Step",
+                        SpellLevel: 2,
+                        IsReadOnly: true,
+                        SpellId: "ID_SPELL_MISTY_STEP",
+                        Source: "Player's Handbook",
+                        School: "Conjuration",
+                        CastingTime: "1 bonus action",
+                        GrantedBy: "Fey Touched")
+                ],
+                ReadOnlyGroup: true)
+        ];
+
+        var cut = Render<CharacterMagicWorkspace>(parameters => parameters
+            .Add(p => p.Model, model));
+
+        cut.Markup.Should().Contain("Misty Step");
+        cut.Markup.Should().Contain("Granted by Fey Touched");
+        cut.Find(".magic-spell-badge-granted").TextContent.Trim().Should().Be("Granted");
+    }
+
+    [Fact]
+    public void GrantedSpellAlreadyInAClassSectionIsNotDuplicatedInAll()
+    {
+        var model = BuildDruidMagicModel();
+        model.KnownSpellGroups =
+        [
+            new MagicKnownSpellGroupModel(
+                "Granted by Features",
+                [
+                    new MagicKnownSpellEntryModel(
+                        "granted:0",
+                        "Level 1",
+                        "Cure Wounds",
+                        SpellLevel: 1,
+                        IsReadOnly: true,
+                        SpellId: "ID_SPELL_CURE_WOUNDS",
+                        GrantedBy: "Life Domain")
+                ],
+                ReadOnlyGroup: true)
+        ];
+
+        var cut = Render<CharacterMagicWorkspace>(parameters => parameters
+            .Add(p => p.Model, model));
+
+        cut.FindAll(".magic-spell-name")
+            .Count(name => name.TextContent.Trim() == "Cure Wounds")
+            .Should()
+            .Be(1);
+    }
+
+    [Fact]
+    public void SpellDetailRendersStructuredDescriptionAndSeparatePropertyCells()
+    {
+        var detail = new MagicSpellDetailModel(
+            "ID_SPELL_HYPNOTIC_PATTERN",
+            "Hypnotic Pattern",
+            "Player's Handbook",
+            3,
+            "3rd-level illusion",
+            "Illusion",
+            Ritual: false,
+            Concentration: true,
+            "Action",
+            "120 feet",
+            "S, M",
+            "Concentration, up to 1 minute",
+            "<p>First paragraph.</p><ul><li>One effect</li></ul>");
+
+        var cut = Render<CharacterMagicWorkspace>(parameters => parameters
+            .Add(p => p.Model, BuildDruidMagicModel())
+            .Add(p => p.SelectedSpell, detail));
+
+        var propertyRows = cut.FindAll(".magic-prop-row");
+        propertyRows.Should().HaveCount(4);
+        propertyRows[0].QuerySelector(".magic-prop-label")!.TextContent.Should().Be("Casting Time");
+        propertyRows[0].QuerySelector(".magic-prop-value")!.TextContent.Should().Be("Action");
+        cut.Find(".magic-detail-description p").TextContent.Should().Be("First paragraph.");
+        cut.Find(".magic-detail-description li").TextContent.Should().Be("One effect");
+    }
+
     private static MagicOverviewModel BuildDruidMagicModel() => new()
     {
         HasSpellcasting = true,
@@ -78,7 +214,8 @@ public sealed class CharacterMagicWorkspaceTests : BunitContext
         int level,
         bool isPrepared,
         bool isAlwaysPrepared = false,
-        bool isCantrip = false) =>
+        bool isCantrip = false,
+        string castingTime = "Action") =>
         new(
             id,
             name,
@@ -96,5 +233,6 @@ public sealed class CharacterMagicWorkspaceTests : BunitContext
                     ? MagicSpellDisplayState.AlwaysPrepared
                     : isPrepared
                         ? MagicSpellDisplayState.Prepared
-                        : MagicSpellDisplayState.Available);
+                        : MagicSpellDisplayState.Available,
+            castingTime);
 }

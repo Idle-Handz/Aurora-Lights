@@ -1,4 +1,5 @@
 using Builder.Data;
+using Builder.Data.Elements;
 using Builder.Data.Rules;
 using Builder.Presentation;
 using Builder.Presentation.Models.Sources;
@@ -8,6 +9,7 @@ using Builder.Presentation.Services;
 using Builder.Presentation.Services.Data;
 using Builder.Presentation.Utilities;
 using Builder.Presentation.ViewModels.Shell.Items;
+using Aurora.Components.Formatting;
 using Aurora.Components.Models;
 using System.Text;
 using System.Xml;
@@ -38,8 +40,17 @@ public sealed class WebCharacterEngineService
         SelectRule Rule,
         int Number,
         string Label,
+        string? CurrentId,
         string? CurrentName,
         int RequiredLevel);
+
+    private sealed record MagicSpellMetadata(
+        int Level,
+        string Source,
+        string School,
+        bool IsRitual,
+        bool IsConcentration,
+        string CastingTime);
 
     private sealed record SelectionOption(
         string Id,
@@ -1198,7 +1209,21 @@ public sealed class WebCharacterEngineService
             .Select(group => new MagicKnownSpellGroupModel(
                 group.Label,
                 group.Entries
-                    .Select(entry => new MagicKnownSpellEntryModel(entry.Key, entry.Label, entry.CurrentName))
+                    .Select(entry =>
+                    {
+                        MagicSpellMetadata? metadata = GetMagicSpellMetadata(entry.CurrentId);
+                        return new MagicKnownSpellEntryModel(
+                            entry.Key,
+                            entry.Label,
+                            entry.CurrentName,
+                            SpellLevel: metadata?.Level ?? 0,
+                            SpellId: entry.CurrentId,
+                            Source: metadata?.Source ?? string.Empty,
+                            School: metadata?.School ?? string.Empty,
+                            IsRitual: metadata?.IsRitual ?? false,
+                            IsConcentration: metadata?.IsConcentration ?? false,
+                            CastingTime: metadata?.CastingTime ?? string.Empty);
+                    })
                     .ToList()))
             .ToList();
 
@@ -1227,12 +1252,14 @@ public sealed class WebCharacterEngineService
 
             for (int number = 1; number <= rule.Attributes.Number; number++)
             {
+                string? currentId = null;
                 string? currentName = null;
                 try
                 {
                     var current = handler?.GetRegisteredElement(rule, number);
                     if (current is not null)
                     {
+                        currentId = (string?)((dynamic)current).Id;
                         currentName = (string?)((dynamic)current).Name;
                     }
                 }
@@ -1249,6 +1276,7 @@ public sealed class WebCharacterEngineService
                     rule,
                     number,
                     label,
+                    currentId,
                     currentName,
                     rule.Attributes.RequiredLevel));
             }
@@ -1501,6 +1529,8 @@ public sealed class WebCharacterEngineService
                 isCantrip: true,
                 MagicSpellDisplayState.Known))
             .ToList();
+        PopulateMagicSpellMetadata(
+            cantripEntries.Concat(spellLevels.SelectMany(level => level.Spells)));
         int preparedCount = spellLevels
             .SelectMany(level => level.Spells)
             .Count(spell => spell.IsPrepared && !spell.IsAlwaysPrepared);
@@ -1824,6 +1854,56 @@ public sealed class WebCharacterEngineService
         return false;
     }
 
+    private static MagicSpellMetadata? GetMagicSpellMetadata(string? id)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            return null;
+        }
+
+        return DataManager.Current.ElementsCollection
+            .OfType<Spell>()
+            .Where(spell => string.Equals(spell.Id, id, StringComparison.OrdinalIgnoreCase))
+            .Select(CreateMagicSpellMetadata)
+            .FirstOrDefault();
+    }
+
+    private static void PopulateMagicSpellMetadata(IEnumerable<MagicSpellListEntryModel> entries)
+    {
+        Dictionary<string, MagicSpellMetadata> metadataById = DataManager.Current.ElementsCollection
+            .OfType<Spell>()
+            .Where(spell => !string.IsNullOrWhiteSpace(spell.Id))
+            .GroupBy(spell => spell.Id, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(
+                group => group.Key,
+                group => CreateMagicSpellMetadata(group.First()),
+                StringComparer.OrdinalIgnoreCase);
+
+        foreach (MagicSpellListEntryModel entry in entries)
+        {
+            if (!metadataById.TryGetValue(entry.Id, out MagicSpellMetadata? metadata))
+            {
+                continue;
+            }
+
+            entry.Level = metadata.Level;
+            entry.Source = metadata.Source;
+            entry.School = metadata.School;
+            entry.IsRitual = metadata.IsRitual;
+            entry.IsConcentration = metadata.IsConcentration;
+            entry.CastingTime = metadata.CastingTime;
+        }
+    }
+
+    private static MagicSpellMetadata CreateMagicSpellMetadata(Spell spell) =>
+        new(
+            spell.Level,
+            spell.Source ?? string.Empty,
+            spell.MagicSchool ?? string.Empty,
+            spell.IsRitual,
+            spell.IsConcentration,
+            spell.CastingTime ?? string.Empty);
+
     private static MagicSpellDetailModel? BuildMagicSpellDetail(string id)
     {
         try
@@ -1853,12 +1933,15 @@ public sealed class WebCharacterEngineService
             try { components = (string)spell.GetComponentsString(); } catch { }
 
             string body = string.Empty;
+            string rawDescription = string.Empty;
+            string descriptionHtml = string.Empty;
             try
             {
-                string raw = (string)(spell.Description ?? string.Empty);
-                if (!string.IsNullOrWhiteSpace(raw))
+                rawDescription = (string)(spell.Description ?? string.Empty);
+                if (!string.IsNullOrWhiteSpace(rawDescription))
                 {
-                    body = ElementDescriptionGenerator.GeneratePlainDescription(raw).Trim();
+                    body = ElementDescriptionGenerator.GeneratePlainDescription(rawDescription).Trim();
+                    descriptionHtml = MagicDescriptionFormatter.FromAuroraHtml(rawDescription);
                 }
             }
             catch
@@ -1878,6 +1961,12 @@ public sealed class WebCharacterEngineService
                 }
 
                 body = string.Join("\n", bodyLines).Trim();
+                descriptionHtml = MagicDescriptionFormatter.FromPlainText(body);
+            }
+
+            if (string.IsNullOrWhiteSpace(descriptionHtml) && !string.IsNullOrWhiteSpace(body))
+            {
+                descriptionHtml = MagicDescriptionFormatter.FromPlainText(body);
             }
 
             return new MagicSpellDetailModel(
@@ -1890,7 +1979,7 @@ public sealed class WebCharacterEngineService
                 range,
                 components,
                 duration,
-                body);
+                descriptionHtml);
         }
         catch
         {

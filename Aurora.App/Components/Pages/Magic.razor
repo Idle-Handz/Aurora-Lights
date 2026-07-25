@@ -128,7 +128,8 @@
                         Source: d?.Source ?? string.Empty,
                         School: d?.School ?? string.Empty,
                         IsRitual: d?.Ritual ?? false,
-                        IsConcentration: d?.Concentration ?? false);
+                        IsConcentration: d?.Concentration ?? false,
+                        CastingTime: d?.CastingTime ?? string.Empty);
                 }).ToList()))
             .ToList();
 
@@ -142,14 +143,16 @@
                 return new MagicKnownSpellEntryModel(
                     Id: $"granted:{i}",
                     Label: g.Level == 0 ? "Cantrip" : $"Level {g.Level}",
-                    CurrentName: string.IsNullOrWhiteSpace(g.Source) ? g.Name : $"{g.Name} — {g.Source}",
+                    CurrentName: g.Name,
                     SpellLevel: g.Level,
                     IsReadOnly: true,
                     SpellId: g.Id,
-                    Source: d?.Source ?? g.Source,
+                    Source: d?.Source ?? string.Empty,
                     School: d?.School ?? string.Empty,
                     IsRitual: d?.Ritual ?? false,
-                    IsConcentration: d?.Concentration ?? false);
+                    IsConcentration: d?.Concentration ?? false,
+                    CastingTime: d?.CastingTime ?? string.Empty,
+                    GrantedBy: g.Source);
             }).ToList();
             groups.Add(new MagicKnownSpellGroupModel("Granted by Features", grantedEntries, ReadOnlyGroup: true));
         }
@@ -228,7 +231,7 @@
                 _spellDetail.Range,
                 _spellDetail.Components,
                 _spellDetail.Duration,
-                _spellDetail.Description);
+                _spellDetail.DescriptionHtml);
         return Task.CompletedTask;
     }
 
@@ -262,7 +265,8 @@
             spell.IsPrepared,
             spell.IsAlwaysPrepared,
             isCantrip,
-            state);
+            state,
+            castingTime: detail?.CastingTime ?? string.Empty);
     }
 
     private string? ResolveKnownSpellSectionId(string label) =>
