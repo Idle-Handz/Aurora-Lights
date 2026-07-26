@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="bunit" Version="2.7.2" />
+    <PackageReference Include="AngleSharp" Version="1.5.0" />
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="xunit" Version="2.9.3" />
@@ -20,6 +21,7 @@
     <ProjectReference Include="..\Aurora.Logic\Aurora.Logic.csproj" />
     <ProjectReference Include="..\Aurora.Components\Aurora.Components.csproj" />
     <ProjectReference Include="..\Aurora.Importer\Aurora.Importer.csproj" />
+    <ProjectReference Include="..\Aurora.Web\Aurora.Web.csproj" />
     <Reference Include="Builder.Core">
       <HintPath>..\lib\Builder.Core.dll</HintPath>
     </Reference>

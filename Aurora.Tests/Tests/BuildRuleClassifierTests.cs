@@ -164,6 +164,18 @@ public sealed class BuildRuleClassifierTests
         => Classify("Ability Score Improvement").Should().Be(BuildRuleBucket.AbilityScores);
 
     [Fact]
+    public void ClassASI_RemainsInDedicatedAbilityScoresView()
+    {
+        BuildRuleBucket bucket = Classify(
+            "Ability Score Improvement",
+            ownerType: "Class Feature",
+            hasClassManager: true);
+
+        bucket.Should().Be(BuildRuleBucket.AbilityScores);
+        BuildRuleClassifier.ShouldSurfaceInAbilityScores(bucket).Should().BeTrue();
+    }
+
+    [Fact]
     public void RacialTrait_NamedAbilityScore_RoutesToAbilityScores()
         => Classify("Racial Trait", ownerType: "Race", ruleName: "Ability Score Increase")
                .Should().Be(BuildRuleBucket.AbilityScores);

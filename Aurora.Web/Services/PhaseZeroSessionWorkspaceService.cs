@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using System.Xml.Linq;
+using Builder.Presentation.Utilities;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.Extensions.Options;
 
@@ -118,7 +119,7 @@ public sealed class PhaseZeroSessionWorkspaceService
         string fullPath = Path.GetFullPath(Path.Combine(workspace.WorkspacePath, relativePath));
         string rootPath = Path.GetFullPath(workspace.WorkspacePath);
 
-        if (!fullPath.StartsWith(rootPath, StringComparison.OrdinalIgnoreCase))
+        if (!PathContainment.IsPathWithinDirectory(rootPath, fullPath))
             throw new InvalidOperationException("Requested workspace file is outside the current session workspace.");
 
         return Task.FromResult(fullPath);
@@ -130,7 +131,7 @@ public sealed class PhaseZeroSessionWorkspaceService
         string fullPath = Path.GetFullPath(absolutePath);
         string rootPath = Path.GetFullPath(workspace.WorkspacePath);
 
-        if (!fullPath.StartsWith(rootPath, StringComparison.OrdinalIgnoreCase))
+        if (!PathContainment.IsPathWithinDirectory(rootPath, fullPath))
             throw new InvalidOperationException("Generated character file must remain inside the current session workspace.");
 
         string relativePath = Path.GetRelativePath(workspace.WorkspacePath, fullPath);
@@ -164,7 +165,7 @@ public sealed class PhaseZeroSessionWorkspaceService
 
         string fullPath = Path.GetFullPath(Path.Combine(workspace.WorkspacePath, file.RelativePath));
         string rootPath = Path.GetFullPath(workspace.WorkspacePath);
-        if (!fullPath.StartsWith(rootPath, StringComparison.OrdinalIgnoreCase))
+        if (!PathContainment.IsPathWithinDirectory(rootPath, fullPath))
         {
             throw new InvalidOperationException("Requested workspace file is outside the current session workspace.");
         }
@@ -265,19 +266,47 @@ public sealed class PhaseZeroSessionWorkspaceService
         Directory.CreateDirectory(extractRoot);
 
         int discoveredElements = 0;
+        int archiveEntryCount = 0;
+        long expandedBytes = 0;
         using var archive = ZipFile.OpenRead(archivePath);
         foreach (var entry in archive.Entries)
         {
             if (string.IsNullOrWhiteSpace(entry.Name))
                 continue;
 
+            archiveEntryCount++;
+            if (archiveEntryCount > _options.MaxArchiveEntryCount)
+            {
+                warnings.Add(
+                    $"Archive extraction stopped after {_options.MaxArchiveEntryCount} files because it exceeds the entry-count limit.");
+                break;
+            }
+
             string extension = Path.GetExtension(entry.FullName).ToLowerInvariant();
             if (extension is not ".xml" and not ".dnd5e")
                 continue;
 
-            string relativePath = SanitizeRelativePath(entry.FullName);
+            if (entry.Length > _options.MaxSingleFileBytes)
+            {
+                warnings.Add($"Skipped archive entry because it exceeds the single-file limit: {entry.FullName}");
+                continue;
+            }
+
+            if (entry.Length > _options.MaxArchiveExpandedBytes - expandedBytes)
+            {
+                warnings.Add(
+                    $"Archive extraction stopped because expanded content exceeds the {_options.MaxArchiveExpandedBytes}-byte limit.");
+                break;
+            }
+
+            if (!TrySanitizeRelativePath(entry.FullName, out string relativePath))
+            {
+                warnings.Add($"Skipped suspicious archive entry: {entry.FullName}");
+                continue;
+            }
+
             string destination = Path.GetFullPath(Path.Combine(extractRoot, relativePath));
-            if (!destination.StartsWith(Path.GetFullPath(extractRoot), StringComparison.OrdinalIgnoreCase))
+            if (!PathContainment.IsPathWithinDirectory(extractRoot, destination))
             {
                 warnings.Add($"Skipped suspicious archive entry: {entry.FullName}");
                 continue;
@@ -285,6 +314,7 @@ public sealed class PhaseZeroSessionWorkspaceService
 
             Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
             entry.ExtractToFile(destination, overwrite: true);
+            expandedBytes += entry.Length;
 
             if (extension == ".xml")
                 discoveredElements += RegisterImportedFile(workspace, destination, ImportedContentKind.Xml);
@@ -339,9 +369,16 @@ public sealed class PhaseZeroSessionWorkspaceService
         return string.Concat(name.Select(ch => invalid.Contains(ch) ? '_' : ch));
     }
 
-    private static string SanitizeRelativePath(string path)
+    private static bool TrySanitizeRelativePath(string path, out string relativePath)
     {
         string[] parts = path.Split(['/', '\\'], StringSplitOptions.RemoveEmptyEntries);
-        return Path.Combine(parts.Select(SanitizeFileName).ToArray());
+        if (parts.Length == 0 || parts.Any(part => part is "." or ".."))
+        {
+            relativePath = string.Empty;
+            return false;
+        }
+
+        relativePath = Path.Combine(parts.Select(SanitizeFileName).ToArray());
+        return true;
     }
 }

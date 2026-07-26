@@ -45,9 +45,12 @@ public sealed class LegacyParityScenarioTests : IAsyncLifetime
             .Should().Contain(scenario.ExpectedRegisteredElementIds,
                 because: $"{scenario.Name} should preserve its seed selections");
 
-        snapshot.Spellcasting.Select(s => s.Name)
-            .Should().Contain(scenario.ExpectedSpellcastingNames,
-                because: $"{scenario.Name} should expose the expected spellcasting profiles");
+        if (scenario.ExpectedSpellcastingNames.Length > 0)
+        {
+            snapshot.Spellcasting.Select(s => s.Name)
+                .Should().Contain(scenario.ExpectedSpellcastingNames,
+                    because: $"{scenario.Name} should expose the expected spellcasting profiles");
+        }
 
         foreach (var expectation in scenario.ExpectedSelectionRules)
             AssertRuleExpectation(scenario, snapshot, expectation);

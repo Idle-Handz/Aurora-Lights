@@ -10,7 +10,8 @@ namespace Aurora.Tests.Tests;
 /// <summary>
 /// Tests the supports-expression evaluation and language-selection validation logic that
 /// sits behind the "Customized Language" invalidation bug.  The first group are pure-unit
-/// (no database); the second group require Aurora content and skip gracefully when absent.
+/// (no database); the second group require Aurora content and fail with a useful
+/// initialization diagnostic when it is unavailable.
 /// </summary>
 public sealed class LanguageSelectionValidationTests : IAsyncLifetime
 {

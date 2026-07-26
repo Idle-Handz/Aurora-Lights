@@ -293,9 +293,9 @@ public static partial class BuildService
     }
 
     /// <summary>
-    /// Returns SelectionRule entries for Ability Score Improvement and Feat rules that are
-    /// not tied to a class progression manager. These are shown on the Ability Scores tab
-    /// rather than as separate overflow tabs.
+    /// Returns SelectionRule entries for Ability Score Improvement rules. These are shown
+    /// on the Ability Scores tab regardless of whether they come from class progression,
+    /// race, background, or another source.
     /// </summary>
     public static IReadOnlyList<SelectionRuleEntry> GetAsiEntries()
     {
@@ -308,10 +308,9 @@ public static partial class BuildService
         {
             var pm       = cm.GetProgressManager(rule);
             var classMgr = classMgrs.FirstOrDefault(m => ReferenceEquals(m, pm));
-            if (classMgr != null) continue; // class-PM rules stay in Class tab
 
             string ruleType = rule.Attributes.Type ?? "Other";
-            if (ClassifyBuildRule(rule, classMgr) != BuildRuleBucket.AbilityScores) continue;
+            if (!BuildRuleClassifier.ShouldSurfaceInAbilityScores(ClassifyBuildRule(rule, classMgr))) continue;
             OriginAbilityScoreSource originAsiSource = GetOriginAbilityScoreSource(rule);
 
             for (int n = 1; n <= rule.Attributes.Number; n++)

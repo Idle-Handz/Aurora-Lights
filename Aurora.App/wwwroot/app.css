@@ -1400,6 +1400,68 @@ html, body {
     overflow-wrap: anywhere;
     word-break: break-word;
 }
+.picker-detail-richtext {
+    white-space: normal;
+    overflow-x: auto;
+}
+.picker-detail-richtext > :first-child {
+    margin-top: 0;
+}
+.picker-detail-richtext > :last-child {
+    margin-bottom: 0;
+}
+.picker-detail-richtext p,
+.picker-detail-richtext blockquote,
+.picker-detail-richtext ul,
+.picker-detail-richtext ol,
+.picker-detail-richtext pre,
+.picker-detail-richtext table {
+    margin: 0 0 0.8rem;
+}
+.picker-detail-richtext ul,
+.picker-detail-richtext ol {
+    padding-left: 1.35rem;
+}
+.picker-detail-richtext li + li {
+    margin-top: 0.3rem;
+}
+.picker-detail-richtext strong,
+.picker-detail-richtext b,
+.picker-detail-richtext h1,
+.picker-detail-richtext h2,
+.picker-detail-richtext h3,
+.picker-detail-richtext h4,
+.picker-detail-richtext h5,
+.picker-detail-richtext h6 {
+    color: var(--mud-palette-text-primary, #cdd6f4);
+}
+.picker-detail-richtext h1,
+.picker-detail-richtext h2,
+.picker-detail-richtext h3,
+.picker-detail-richtext h4,
+.picker-detail-richtext h5,
+.picker-detail-richtext h6 {
+    margin: 0.9rem 0 0.4rem;
+    font-size: 0.95rem;
+}
+.picker-detail-richtext table {
+    width: max-content;
+    min-width: 100%;
+    border-collapse: collapse;
+}
+.picker-detail-richtext th,
+.picker-detail-richtext td {
+    padding: 0.35rem 0.5rem;
+    border: 1px solid var(--mud-palette-lines-inputs, #45475a);
+    text-align: left;
+    vertical-align: top;
+}
+.picker-detail-richtext th,
+.picker-detail-richtext thead td {
+    font-weight: 700;
+    white-space: nowrap;
+    background: color-mix(in srgb, var(--mud-palette-primary, #89b4fa) 10%, transparent);
+}
 .picker-detail-empty {
     font-size: 12px;
     color: #585b70;

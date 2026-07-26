@@ -63,7 +63,7 @@ public sealed class SelectionRuleRegistrationTests : IAsyncLifetime
         using (var stream = new MemoryStream(bytes))
             document.Load(stream);
         XmlNodeList? persistedSelections = document.SelectNodes(
-            $"//select[@type='Language'][@registered='{DwarvishLanguageId}']");
+            $"//element[@type='Language'][@registered='{DwarvishLanguageId}']");
         persistedSelections.Should().NotBeNull();
         persistedSelections!.Count.Should().BeGreaterThan(0);
 
@@ -129,7 +129,10 @@ public sealed class SelectionRuleRegistrationTests : IAsyncLifetime
             return;
         }
 
-        CharacterManager.Current.RegisterElement(background);
+        var backgroundRule = CharacterManager.Current.SelectionRules.First(candidate =>
+            candidate.Attributes.Type.Equals("Background", StringComparison.OrdinalIgnoreCase));
+        handler.SetRegisteredElement(backgroundRule, background.Id);
+        CharacterManager.Current.ReprocessCharacter();
         var rule = CharacterManager.Current.SelectionRules.FirstOrDefault(candidate =>
             candidate.ElementHeader?.Id == AcolyteBackgroundId &&
             candidate.Attributes.IsList &&
@@ -461,7 +464,10 @@ public sealed class SelectionRuleRegistrationTests : IAsyncLifetime
         }
 
         CharacterManager.Current.RegisterElement(customLanguageOption);
-        CharacterManager.Current.RegisterElement(human);
+        var raceRule = CharacterManager.Current.SelectionRules.First(rule =>
+            rule.Attributes.Type.Equals("Race", StringComparison.OrdinalIgnoreCase));
+        handler.SetRegisteredElement(raceRule, human.Id);
+        CharacterManager.Current.ReprocessCharacter();
         return handler;
     }
 

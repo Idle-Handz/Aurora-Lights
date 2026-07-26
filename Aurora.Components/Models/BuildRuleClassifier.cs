@@ -166,6 +166,13 @@ public static class BuildRuleClassifier
     public static bool AllowsStackedSelections(string ruleType) =>
         SelectionRuleTypePolicy.AllowsStackedSelections(ruleType);
 
+    /// <summary>
+    /// Returns true when a classified rule belongs in the dedicated Ability Scores view.
+    /// Class progression ownership does not change that destination.
+    /// </summary>
+    public static bool ShouldSurfaceInAbilityScores(BuildRuleBucket bucket) =>
+        bucket == BuildRuleBucket.AbilityScores;
+
     public static bool IsOptionalFlavorSelection(string label) =>
         OptionalFlavorLabels.Contains(label) ||
         OptionalFlavorLabels.Any(f => label.StartsWith(f + " (", StringComparison.OrdinalIgnoreCase));

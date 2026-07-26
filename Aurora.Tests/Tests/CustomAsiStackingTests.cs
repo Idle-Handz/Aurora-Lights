@@ -9,15 +9,11 @@ using Xunit.Abstractions;
 namespace Aurora.Tests.Tests;
 
 /// <summary>
-/// Validates the engine-level mechanism behind the "Add Custom Feature → Additional Ability Score
-/// Improvement" fix (BuildService.MakeStackableCopy). Ability-score elements such as
-/// ID_INTERNAL_ASI_DEXTERITY are shared singletons that races / Tasha's origins / level-up ASIs also
-/// register; each instance has a single Aquisition record. Registering the same instance a second
-/// time clobbers the other source's bookkeeping (the two increases cancel). The fix registers a
-/// shallow copy with fresh, blank acquisition so the bonuses stack — and the blank acquisition lets
-/// removal tell the copy apart from the owned original.
+/// Validates the legacy engine mechanism behind "Add Custom Feature → Additional Ability Score
+/// Improvement." Ability-score elements are shared singletons, and the engine counts repeated
+/// registration of that singleton. Its GetFresh path does not produce a stackable second increase.
 ///
-/// Skipped (pass-without-assert) when the Aurora content database is unavailable.
+/// Fails with an initialization diagnostic when the Aurora content database is unavailable.
 /// </summary>
 public sealed class CustomAsiStackingTests : IAsyncLifetime
 {
@@ -55,38 +51,32 @@ public sealed class CustomAsiStackingTests : IAsyncLifetime
         // 1) Register the singleton once (stands in for a racial / Tasha's-origin Dex increase) and
         //    mark it owned-by-select, exactly as the real selection machinery would.
         cm.RegisterElement(asiDex);
-        asiDex.Aquisition.WasSelected = true;
+        asiDex.Aquisition.SelectedBy(new SelectRule(asiDex.ElementHeader));
         cm.ReprocessCharacter();
 
         int afterOwned = character.Abilities.Dexterity.AdditionalScore;
         afterOwned.Should().Be(baseDexAdditional + 1,
             because: "an owned Dexterity ASI grants +1 to the additional score");
 
-        // 2) The fix: a custom "Additional ASI, Dexterity" registers a fresh engine instance
-        //    (ElementBaseCollection.GetFresh), NOT the owned singleton again — so the two +1s stack
-        //    instead of cancelling. This is the same mechanism the legacy app uses to stack ASIs.
-        var copy = DataManager.Current.ElementsCollection.GetFresh(DexAsiId)!;
-        copy.Aquisition.WasSelected.Should().BeFalse("a fresh instance starts with blank acquisition");
-        copy.Aquisition.WasGranted.Should().BeFalse();
-
-        cm.RegisterElement(copy);
+        // 2) The legacy engine counts a second registration of the shared ASI instance.
+        cm.RegisterElement(asiDex);
         cm.ReprocessCharacter();
 
         int afterCustom = character.Abilities.Dexterity.AdditionalScore;
         afterCustom.Should().Be(baseDexAdditional + 2,
             because: "the custom Dexterity increase must stack on top of the owned one");
 
-        // The owned original must still be present and still owned (its bookkeeping wasn't clobbered).
+        // The owned acquisition remains intact while the manager holds two registrations.
         var matches = cm.GetElements().Where(e => e.Id == DexAsiId).ToList();
-        matches.Should().HaveCountGreaterThanOrEqualTo(2, "both the owned ASI and the custom copy are registered");
+        matches.Should().HaveCountGreaterThanOrEqualTo(2, "both the owned ASI and the custom increase are registered");
         matches.Should().Contain(e => e.Aquisition.WasSelected, "the owned increase keeps its selection bookkeeping");
-        matches.Should().Contain(e => !e.Aquisition.WasSelected && !e.Aquisition.WasGranted, "the custom copy has blank bookkeeping");
 
-        // 3) Removal targets the blank-acquisition copy (RemoveCustomFeatureAsync's disambiguation),
-        //    leaving the owned racial/origin increase intact.
-        var toRemove = matches.FirstOrDefault(e => !e.Aquisition.WasGranted && !e.Aquisition.WasSelected)
-                       ?? matches.First();
+        // 3) Removal drops the last registration and leaves the first owned increase intact.
+        var toRemove = matches.Last();
+        var selectRule = toRemove.Aquisition.SelectRule;
         cm.UnregisterElement(toRemove);
+        if (selectRule != null)
+            toRemove.Aquisition.SelectedBy(selectRule);
         cm.ReprocessCharacter();
 
         int afterRemove = character.Abilities.Dexterity.AdditionalScore;
@@ -95,7 +85,7 @@ public sealed class CustomAsiStackingTests : IAsyncLifetime
 
         cm.GetElements().Where(e => e.Id == DexAsiId)
             .Should().Contain(e => e.Aquisition.WasSelected,
-                because: "the owned increase survives removal of the custom copy");
+                because: "the owned increase survives removal of the custom registration");
     }
 
     /// <summary>Mirror of EquipmentService.ResolveCustomFeatureTarget.</summary>
@@ -145,7 +135,7 @@ public sealed class CustomAsiStackingTests : IAsyncLifetime
     }
 
     [Fact]
-    public void GetFresh_ReturnsADistinctInstance_WithBlankAcquisition()
+    public void GetFresh_InheritsAcquisition_AndCannotRepresentASeparateAsi()
     {
         if (!ContentFixture.SkipIfUnavailable(_output)) return;
 
@@ -162,13 +152,13 @@ public sealed class CustomAsiStackingTests : IAsyncLifetime
         ReferenceEquals(fresh, singleton).Should().BeFalse("GetFresh must return a distinct instance, not the singleton");
         fresh!.Id.Should().Be(DexAsiId, "the fresh instance keeps the element id");
         fresh.Type.Should().Be("Ability Score Improvement");
-        fresh.Aquisition.WasSelected.Should().BeFalse("a fresh instance must not inherit the singleton's acquisition bookkeeping");
-        fresh.Aquisition.WasGranted.Should().BeFalse();
-        _output.WriteLine("GetFresh returns a distinct instance with blank acquisition.");
+        fresh.Aquisition.WasSelected.Should().BeTrue(
+            "the legacy GetFresh implementation copies acquisition bookkeeping");
+        _output.WriteLine("GetFresh is distinct but inherits acquisition bookkeeping.");
     }
 
     [Fact]
-    public async Task GetFreshCopy_StacksWithOwnedIncrease()
+    public async Task GetFreshCopy_DoesNotStackWithOwnedIncrease()
     {
         if (!ContentFixture.SkipIfUnavailable(_output)) return;
 
@@ -191,19 +181,19 @@ public sealed class CustomAsiStackingTests : IAsyncLifetime
         int afterOwned = character.Abilities.Dexterity.AdditionalScore;
         afterOwned.Should().Be(baseDexAdditional + 1);
 
-        // The engine-native instancing path: a fresh instance stacks on top of the owned one.
+        // GetFresh is not the engine path used for stackable ASIs.
         var fresh = DataManager.Current.ElementsCollection.GetFresh(DexAsiId);
         cm.RegisterElement(fresh);
         cm.ReprocessCharacter();
         int afterFresh = character.Abilities.Dexterity.AdditionalScore;
 
-        afterFresh.Should().Be(baseDexAdditional + 2,
-            because: "an engine-fresh ASI instance must stack with the owned increase");
-        _output.WriteLine($"GetFresh stacking: owned=+{afterOwned - baseDexAdditional}, +fresh=+{afterFresh - baseDexAdditional}");
+        afterFresh.Should().Be(baseDexAdditional + 1,
+            because: "the engine does not count a distinct GetFresh ASI as a second increase");
+        _output.WriteLine($"GetFresh behavior: owned=+{afterOwned - baseDexAdditional}, +fresh=+{afterFresh - baseDexAdditional}");
     }
 
     [Fact]
-    public async Task RegisteringSharedSingletonTwice_DoesNotStack_DemonstratingTheBug()
+    public async Task RegisteringSharedSingletonTwice_StacksForCustomAsi()
     {
         if (!ContentFixture.SkipIfUnavailable(_output)) return;
 
@@ -226,15 +216,13 @@ public sealed class CustomAsiStackingTests : IAsyncLifetime
         cm.ReprocessCharacter();
         int afterOwned = character.Abilities.Dexterity.AdditionalScore;
 
-        // Re-registering the SAME instance (the old, broken behaviour) must NOT produce +2 — the
-        // shared instance can't represent two independent increases. This guards the premise that the
-        // copy-based fix is necessary (if this ever starts stacking, the fix can be simplified away).
+        // Re-registering the same instance is the legacy engine path that produces +2.
         cm.RegisterElement(asiDex);
         cm.ReprocessCharacter();
         int afterDoubleRegister = character.Abilities.Dexterity.AdditionalScore;
 
-        afterDoubleRegister.Should().NotBe(baseDexAdditional + 2,
-            because: "re-registering the shared singleton can't stack — proving MakeStackableCopy is required");
+        afterDoubleRegister.Should().Be(baseDexAdditional + 2,
+            because: "custom ASIs must use repeated registration rather than GetFresh");
         _output.WriteLine($"base+{baseDexAdditional - baseDexAdditional}, owned=+{afterOwned - baseDexAdditional}, double-register=+{afterDoubleRegister - baseDexAdditional}");
     }
 }

@@ -98,6 +98,9 @@ jobs:
           echo "Suggested next minor: $SUGGESTED_TAG"
           echo "Publishing: $RESOLVED_TAG (semver=$RAW assembly=$ASM)"
 
+  test:
+    uses: ./.github/workflows/test.yml
+
   build-windows-x64:
     needs: prep_version
     runs-on: windows-latest
@@ -511,6 +514,7 @@ jobs:
   release:
     needs:
       - prep_version
+      - test
       - build-windows-x64
       - build-windows-arm64
       - build-android

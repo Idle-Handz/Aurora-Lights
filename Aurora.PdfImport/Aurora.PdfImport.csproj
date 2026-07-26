@@ -11,6 +11,7 @@
   <ItemGroup>
     <PackageReference Include="PdfPig" Version="0.1.14" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="9.*" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.12" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,14 +1,18 @@
+using Builder.Presentation;
+using Builder.Presentation.Models;
+using Builder.Presentation.Services;
 using Builder.Presentation.Services.Data;
+using Xunit.Sdk;
 
 namespace Aurora.Tests.Helpers;
 
 /// <summary>
 /// One-time fixture that initialises Aurora.Logic's DataManager and element database.
 /// Integration tests that need the full element collection call <see cref="EnsureAvailableAsync"/>
-/// and skip via <see cref="SkipIfUnavailable"/> when the database is not present.
+/// and fail with a useful diagnostic when the database cannot be loaded.
 ///
-/// The initialisation is performed lazily and only once per process; subsequent calls
-/// return immediately.
+/// The expensive initialisation is performed lazily and only once per process. Each
+/// subsequent call resets the singleton-backed test state for the next integration test.
 /// </summary>
 public static class ContentFixture
 {
@@ -25,45 +29,60 @@ public static class ContentFixture
     /// </summary>
     public static async Task EnsureAvailableAsync()
     {
-        if (_available.HasValue) return;
-
-        await _lock.WaitAsync();
-        try
+        if (!_available.HasValue)
         {
-            if (_available.HasValue) return;
+            await _lock.WaitAsync();
             try
             {
-                DataManager.Current.InitializeDirectories();
-                DataManager.Current.InitializeFileLogger();
-                await DataManager.Current.InitializeElementDataAsync();
+                if (!_available.HasValue)
+                {
+                    try
+                    {
+                        TestApplicationContextInstaller.EnsureInstalled();
+                        SelectionRuleExpanderContext.Current ??= new TestSelectionRuleExpanderHandler();
+                        SpellcastingSectionContext.Current ??= new TestSpellHandler();
+                        DataManager.Current.InitializeDirectories();
+                        DataManager.Current.InitializeFileLogger();
+                        await DataManager.Current.InitializeElementDataAsync();
 
-                _available = DataManager.Current.ElementsCollection.Count > 0;
-                if (_available == false)
-                    _failReason = "ElementsCollection is empty after initialisation.";
+                        _available = DataManager.Current.ElementsCollection.Count > 0;
+                        if (_available == false)
+                            _failReason = "ElementsCollection is empty after initialisation.";
+                    }
+                    catch (Exception ex)
+                    {
+                        _available = false;
+                        _failReason = $"{ex.GetType().Name}: {ex.Message}";
+                    }
+                }
             }
-            catch (Exception ex)
+            finally
             {
-                _available = false;
-                _failReason = $"{ex.GetType().Name}: {ex.Message}";
+                _lock.Release();
             }
         }
-        finally
+
+        if (_available == true)
         {
-            _lock.Release();
+            SelectionRuleExpanderContext.Current = new TestSelectionRuleExpanderHandler();
+            SpellcastingSectionContext.Current = new TestSpellHandler();
+            CharacterLoadCompatibilityService.PrepareForCharacterLoad();
+            CharacterManager.Current.File = new CharacterFile(
+                Path.Combine(Path.GetTempPath(), $"aurora-test-{Guid.NewGuid():N}.dnd5e"));
         }
     }
 
     /// <summary>
-    /// Returns false if the content database is not available.
-    /// Integration tests should guard with: <c>if (!ContentFixture.SkipIfUnavailable(output)) return;</c>
-    /// A test that returns without asserting is counted as passed by xUnit, which is the
-    /// correct behaviour for "nothing to verify in this environment."
+    /// Returns true when the content database is available; otherwise fails the test with
+    /// the captured initialization reason. Existing callers retain their guard shape while
+    /// no longer turning missing content into a false-green pass.
     /// </summary>
     public static bool SkipIfUnavailable(Xunit.Abstractions.ITestOutputHelper? output = null)
     {
         if (IsAvailable) return true;
-        output?.WriteLine($"[SKIP] Aurora content database unavailable — {_failReason ?? "not initialised"}.");
-        return false;
+        output?.WriteLine($"[FAIL] Aurora content database unavailable — {_failReason ?? "not initialised"}.");
+        throw new XunitException(
+            $"Aurora content database unavailable: {_failReason ?? "not initialised"}.");
     }
 
     public static string GetCharacterFixturePath(string fileName) =>

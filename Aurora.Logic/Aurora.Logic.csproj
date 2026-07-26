@@ -63,6 +63,9 @@
     <PackageReference Include="Microsoft.AppCenter" Version="5.0.7" />
     <PackageReference Include="Microsoft.AppCenter.Analytics" Version="5.0.7" />
     <PackageReference Include="Microsoft.AppCenter.Crashes" Version="5.0.7" />
+    <!-- AppCenter still references the older bundle_green package; override its vulnerable
+         native SQLite payload while preserving AppCenter's platform-specific provider policy. -->
+    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="2.1.12" />
     <PackageReference Include="System.ServiceModel.Syndication" Version="10.0.0" />
   </ItemGroup>
 

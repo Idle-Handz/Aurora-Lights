@@ -29,4 +29,18 @@ public sealed class MagicDescriptionFormatterTests
 
         html.Should().Be("<p>First line<br />second line</p><p>Next paragraph</p>");
     }
+
+    [Fact]
+    public void FromAuroraHtmlPreservesTableStructureButDropsTableAttributes()
+    {
+        const string source =
+            "<table class=\"class-features\" style=\"width: 100%\"><thead><tr><th>Level</th><th>Feature</th></tr></thead><tbody><tr><td>1</td><td>Spellcasting</td></tr></tbody></table>";
+
+        string html = MagicDescriptionFormatter.FromAuroraHtml(source);
+
+        html.Should().Be(
+            "<table><thead><tr><th>Level</th><th>Feature</th></tr></thead><tbody><tr><td>1</td><td>Spellcasting</td></tr></tbody></table>");
+        html.Should().NotContain("class=");
+        html.Should().NotContain("style=");
+    }
 }

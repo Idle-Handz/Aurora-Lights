@@ -1,4 +1,6 @@
 using Aurora.Tests.Helpers;
+using Aurora.Components.Models;
+using Builder.Data.Elements;
 using Builder.Presentation;
 using Builder.Presentation.Models;
 using Builder.Presentation.Services;
@@ -9,8 +11,7 @@ namespace Aurora.Tests.Tests;
 
 /// <summary>
 /// Integration tests for the character building flow. These tests require the Aurora
-/// content database to be present and will be automatically skipped (pass-without-assert)
-/// if it is not — they never fail on a machine that lacks the database.
+/// content database and fail with an initialization diagnostic when it is unavailable.
 ///
 /// They exercise the full pipeline: DataManager initialisation → CharacterFile.Load →
 /// character state inspection → SerializeCharacter → reload → state comparison.
@@ -81,6 +82,40 @@ public sealed class CharacterBuildingFlowTests : IAsyncLifetime
         var character = CharacterManager.Current.Character!;
         character.Name.Should().NotBeNullOrEmpty("every character must have a name");
         character.Level.Should().BeGreaterThan(0, "every character must have at least level 1");
+    }
+
+    [Fact]
+    public async Task PreparedPaladin_ClassAbilityScoreRules_TargetAbilityScoresView()
+    {
+        if (!ContentFixture.SkipIfUnavailable(_output)) return;
+
+        var file = new CharacterFile(ContentFixture.GetCharacterFixturePath("prepared-paladin.dnd5e"));
+        CharacterLoadCompatibilityService.PrepareForCharacterLoad();
+        await file.Load();
+
+        var manager = CharacterManager.Current;
+        var classManagers = manager.ClassProgressionManagers;
+        var classAsiRules = manager.SelectionRules
+            .Where(rule =>
+            {
+                bool hasClassManager = classManagers.Any(candidate =>
+                    ReferenceEquals(candidate, manager.GetProgressManager(rule)));
+                if (!hasClassManager)
+                    return false;
+
+                string ruleType = rule.Attributes.Type ?? "Other";
+                BuildRuleBucket bucket = BuildRuleClassifier.Classify(
+                    ruleType,
+                    rule.Attributes.Name ?? ruleType,
+                    rule.ElementHeader?.Type ?? string.Empty,
+                    rule.ElementHeader?.Name ?? string.Empty,
+                    hasClassManager: true);
+                return BuildRuleClassifier.ShouldSurfaceInAbilityScores(bucket);
+            })
+            .ToList();
+
+        classAsiRules.Should().NotBeEmpty(
+            because: "the level-4 paladin fixture contains class-owned Ability Score Improvement choices");
     }
 
     [Fact]
@@ -165,7 +200,9 @@ public sealed class CharacterBuildingFlowTests : IAsyncLifetime
         var originalPrepared = spellcastingInfos
             .ToDictionary(
                 i => i.Name,
-                i => handler.GetPreparedIds(i.Name).ToHashSet(StringComparer.OrdinalIgnoreCase));
+                i => handler.GetPreparedIds(i.Name)
+                    .Where(id => DataManager.Current.ElementsCollection.GetElement(id) is Spell)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase));
 
         originalPrepared.Values.Should().Contain(ids => ids.Count > 0,
             because: "at least one class should have manually prepared spells");
@@ -222,12 +259,21 @@ public sealed class CharacterBuildingFlowTests : IAsyncLifetime
         var currentlyPrepared = handler.GetPreparedIds(preparedInfo.Name)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        var unpreparedSpell = CharacterManager.Current
-            .GetElements()
-            .ToList()
-            .Where(e => e.Type == "Spell")
-            .Select(e => e.Id)
-            .FirstOrDefault(id => !currentlyPrepared.Contains(id));
+        var allSpells = DataManager.Current.ElementsCollection
+            .Where(element => element.Type == "Spell")
+            .ToList();
+        string supports = preparedInfo.InitialSupportedSpellsExpression?.Supports ?? string.Empty;
+        var unpreparedSpell = string.IsNullOrWhiteSpace(supports)
+            ? null
+            : new ExpressionInterpreter()
+                .EvaluateSupportsExpression<Builder.Data.ElementBase>(
+                    supports,
+                    allSpells,
+                    containsElementIDs: false)
+                .OfType<Spell>()
+                .Where(spell => spell.Level > 0)
+                .Select(spell => spell.Id)
+                .FirstOrDefault(id => !currentlyPrepared.Contains(id));
 
         if (unpreparedSpell is null) { _output.WriteLine("[SKIP] No unprepared spell available."); return; }
 

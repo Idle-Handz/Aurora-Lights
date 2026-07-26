@@ -32,7 +32,8 @@ public static partial class BuildService
                 // surfaced in the picker's detail pane as "Requires: …".
                 e.Prerequisite ?? "",
                 SourceReleaseDate: TryGetElementSortMetadata(e)?.SourceReleaseDate,
-                SourceFileModifiedUtc: TryGetElementSortMetadata(e)?.SourceFileModifiedUtc))
+                SourceFileModifiedUtc: TryGetElementSortMetadata(e)?.SourceFileModifiedUtc,
+                DescriptionHtml: GetFeatureDescriptionHtml(e, GetFeatureDescription(e))))
             .ToList();
 
         return OrderElementOptions(options, isSpellRule: false).ToList();
@@ -129,7 +130,8 @@ public static partial class BuildService
                 e.Source ?? "",
                 e.Prerequisite ?? "",
                 SourceReleaseDate: TryGetElementSortMetadata(e)?.SourceReleaseDate,
-                SourceFileModifiedUtc: TryGetElementSortMetadata(e)?.SourceFileModifiedUtc))
+                SourceFileModifiedUtc: TryGetElementSortMetadata(e)?.SourceFileModifiedUtc,
+                DescriptionHtml: GetFeatureDescriptionHtml(e, GetFeatureDescription(e))))
             .ToList();
 
         return DeduplicateOptions(OrderElementOptions(options, isSpellRule: false).ToList());

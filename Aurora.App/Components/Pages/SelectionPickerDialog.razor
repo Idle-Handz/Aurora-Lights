@@ -1,4 +1,4 @@
-<MudDialog Style="max-height: 90vh; width: min(700px, 95vw);">
+<MudDialog Style="max-height: 90vh; width: min(960px, 95vw);">
     <TitleContent>
         <MudText Typo="Typo.h6" Style="font-size: 15px; font-weight: 600;">@Entry.Label</MudText>
     </TitleContent>
@@ -120,7 +120,13 @@
                     {
                         <div class="picker-detail-req">Requires: @_selectedOpt.Requirements</div>
                     }
-                    @if (!string.IsNullOrWhiteSpace(_selectedOpt.Description))
+                    @if (!string.IsNullOrWhiteSpace(_selectedOpt.DescriptionHtml))
+                    {
+                        <div class="picker-detail-desc picker-detail-richtext">
+                            @((MarkupString)_selectedOpt.DescriptionHtml)
+                        </div>
+                    }
+                    else if (!string.IsNullOrWhiteSpace(_selectedOpt.Description))
                     {
                         <div class="picker-detail-desc">@_selectedOpt.Description</div>
                     }

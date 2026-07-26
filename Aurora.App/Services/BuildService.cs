@@ -318,7 +318,8 @@ public static partial class BuildService
             option.SourceReleaseDate,
             option.SourceFileModifiedUtc,
             option.IsDisabled,
-            option.IsCurrentSelection);
+            option.IsCurrentSelection,
+            GetPickerDescriptionHtml(option.DescriptionMarkup, option.Description));
 
     // Fallback for list-type rules when Attributes.ListItems is empty: walks the owner element's
     // XmlNode to find the matching <select type="List" name="…"> and reads its <item> children.
@@ -464,11 +465,14 @@ public static partial class BuildService
             element.Id,
             currentSelectionId,
             StringComparison.OrdinalIgnoreCase);
+        string description = isSpellRule
+            ? GetSpellPickerDescription(element)
+            : GetFeatureDescription(element);
 
         return new ElementOption(
             element.Id,
             element.Name ?? "",
-            isSpellRule ? GetSpellPickerDescription(element) : GetFeatureDescription(element),
+            description,
             element.Source ?? "",
             element.HasRequirements ? FormatRequirements(element.Requirements) : "",
             SpellLevel: isSpellRule ? GetElementSpellLevel(element) : 0,
@@ -482,7 +486,10 @@ public static partial class BuildService
                 element.AllowDuplicate,
                 currentSelectionId,
                 ownedNonRepeatableElementIds),
-            IsCurrentSelection: isCurrentSelection);
+            IsCurrentSelection: isCurrentSelection,
+            DescriptionHtml: isSpellRule
+                ? MagicDescriptionFormatter.FromPlainText(description)
+                : GetFeatureDescriptionHtml(element, description));
     }
 
     private static HashSet<string> GetOwnedNonRepeatableElementIds(SelectRule rule)
@@ -1190,6 +1197,25 @@ public static partial class BuildService
         return "";
     }
 
+    private static string GetFeatureDescriptionHtml(object element, string fallbackPlainText = "")
+    {
+        try
+        {
+            dynamic dynamicElement = element;
+            string raw = (string)(dynamicElement.Description ?? "");
+            return GetPickerDescriptionHtml(raw, fallbackPlainText);
+        }
+        catch
+        {
+            return MagicDescriptionFormatter.FromPlainText(fallbackPlainText);
+        }
+    }
+
+    private static string GetPickerDescriptionHtml(string descriptionMarkup, string fallbackPlainText) =>
+        !string.IsNullOrWhiteSpace(descriptionMarkup)
+            ? MagicDescriptionFormatter.FromAuroraHtml(descriptionMarkup)
+            : MagicDescriptionFormatter.FromPlainText(fallbackPlainText);
+
     private static string GetSpellPickerDescription(ElementBase e)
     {
         if (e is not Spell sp) return GetFeatureDescription(e);
@@ -1630,7 +1656,8 @@ public sealed record ElementOption(
     DateTimeOffset? SourceReleaseDate = null,
     DateTimeOffset? SourceFileModifiedUtc = null,
     bool IsDisabled = false,
-    bool IsCurrentSelection = false);
+    bool IsCurrentSelection = false,
+    string DescriptionHtml = "");
 
 /// <summary>A class the character can level up: its element id (Class or Multiclass), display name,
 /// current level in that class, and whether it's the main class.</summary>

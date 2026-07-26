@@ -4,7 +4,6 @@ using Builder.Presentation.Services.Data;
 using Builder.Presentation.Utilities;
 using Aurora.Importer;
 using Microsoft.Data.Sqlite;
-using System.Globalization;
 using System.Xml;
 
 namespace Aurora.App.Services;
@@ -846,6 +845,7 @@ internal static class DbElementLoader
     private static List<ElementRow> QueryElements(SqliteConnection conn)
     {
         var rows = new List<ElementRow>();
+        IReadOnlyDictionary<string, string> sourceReleases = QuerySourceReleases(conn);
         using var cmd = conn.CreateCommand();
         cmd.CommandText = @"
             SELECT
@@ -854,30 +854,49 @@ internal static class DbElementLoader
                 e.name,
                 et.type_name,
                 COALESCE(sb.name, ''),
-                COALESCE(sf.relative_path, ''),
-                source_meta.release_text
+                COALESCE(sf.relative_path, '')
             FROM resolved_elements_cache rec
             JOIN elements e ON e.element_id = rec.winning_element_id
             JOIN element_types et ON et.element_type_id = e.element_type_id
             LEFT JOIN source_books sb ON sb.source_book_id = e.source_book_id
             LEFT JOIN source_files sf ON sf.source_file_id = e.source_file_id
-            LEFT JOIN
-            (
-                SELECT src.name AS source_name, MAX(se.release_text) AS release_text
-                FROM source_elements se
-                JOIN elements src ON src.element_id = se.element_id
-                JOIN element_types src_type ON src_type.element_type_id = src.element_type_id
-                WHERE src_type.type_name = 'Source'
-                  AND COALESCE(trim(se.release_text), '') <> ''
-                GROUP BY src.name
-            ) source_meta ON source_meta.source_name = sb.name
             ORDER BY rec.resolution_rank, e.loader_priority, e.element_id;";
         using var r = cmd.ExecuteReader();
         while (r.Read())
+        {
+            string source = r.GetString(4);
             rows.Add(new ElementRow(r.GetInt64(0), r.GetString(1), r.GetString(2),
-                                    r.GetString(3), r.GetString(4), r.GetString(5),
-                                    r.IsDBNull(6) ? null : r.GetString(6)));
+                                    r.GetString(3), source, r.GetString(5),
+                                    sourceReleases.GetValueOrDefault(source)));
+        }
         return rows;
+    }
+
+    private static IReadOnlyDictionary<string, string> QuerySourceReleases(SqliteConnection conn)
+    {
+        var releasesBySource = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            SELECT src.name, se.release_text
+            FROM source_elements se
+            JOIN elements src ON src.element_id = se.element_id
+            JOIN element_types src_type ON src_type.element_type_id = src.element_type_id
+            WHERE src_type.type_name = 'Source'
+              AND COALESCE(trim(se.release_text), '') <> ''
+            ORDER BY se.element_id;";
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read())
+        {
+            string source = reader.GetString(0);
+            if (!releasesBySource.TryGetValue(source, out List<string>? releases))
+                releasesBySource[source] = releases = [];
+            releases.Add(reader.GetString(1));
+        }
+
+        return releasesBySource.ToDictionary(
+            pair => pair.Key,
+            pair => SourceReleaseTextSelector.SelectLatest(pair.Value)!,
+            StringComparer.OrdinalIgnoreCase);
     }
 
     private static IReadOnlyDictionary<string, ElementSortMetadata> BuildElementSortMetadataMap(
@@ -917,18 +936,7 @@ internal static class DbElementLoader
     }
 
     private static DateTimeOffset? TryParseSourceReleaseDate(string? releaseText)
-    {
-        if (string.IsNullOrWhiteSpace(releaseText))
-            return null;
-
-        return DateTimeOffset.TryParse(
-            releaseText,
-            CultureInfo.InvariantCulture,
-            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
-            out var parsed)
-            ? parsed
-            : null;
-    }
+        => SourceReleaseTextSelector.TryParseDate(releaseText);
 
     private static Dictionary<long, string> QuerySupports(SqliteConnection conn)
     {

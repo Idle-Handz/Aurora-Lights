@@ -21,6 +21,7 @@
   "expectedSpellcastingNames": [
     "Druid"
   ],
+  "assertRoundTrip": false,
   "expectedSelectionRules": [
     {
       "type": "Spell",

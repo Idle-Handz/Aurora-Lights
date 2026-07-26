@@ -6,6 +6,7 @@ on:
       - 'Aurora.Logic/**'
       - 'Aurora.Components/**'
       - 'Aurora.Importer/**'
+      - 'Aurora.PdfImport/**'
       - 'lib/**'
       - '.github/workflows/build-android.yml'
   workflow_dispatch:
