@@ -92,6 +92,10 @@
                       SkipGetTargetFrameworkProperties="true"
                       GlobalPropertiesToRemove="RuntimeIdentifier;RuntimeIdentifiers"
                       SetTargetFramework="TargetFramework=net10.0" />
+    <ProjectReference Include="..\Builder.Data\Builder.Data.csproj"
+                      SkipGetTargetFrameworkProperties="true"
+                      GlobalPropertiesToRemove="RuntimeIdentifier;RuntimeIdentifiers"
+                      SetTargetFramework="TargetFramework=net10.0" />
     <ProjectReference Include="..\Aurora.Components\Aurora.Components.csproj"
                       SkipGetTargetFrameworkProperties="true"
                       GlobalPropertiesToRemove="RuntimeIdentifier;RuntimeIdentifiers"
@@ -111,9 +115,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="Builder.Data">
-      <HintPath>..\lib\Builder.Data.dll</HintPath>
-    </Reference>
     <Reference Include="Aurora.Documents">
       <HintPath>..\lib\Aurora.Documents.dll</HintPath>
     </Reference>

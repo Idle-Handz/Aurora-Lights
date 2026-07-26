@@ -38,13 +38,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Builder.Core\Builder.Core.csproj" />
+    <ProjectReference Include="..\Builder.Data\Builder.Data.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Remaining core business logic DLLs, shared with the WPF project -->
-    <Reference Include="Builder.Data">
-      <HintPath>..\lib\Builder.Data.dll</HintPath>
-    </Reference>
+    <!-- Remaining business logic DLLs, shared with the WPF project -->
     <Reference Include="Aurora.Documents">
       <HintPath>..\lib\Aurora.Documents.dll</HintPath>
     </Reference>

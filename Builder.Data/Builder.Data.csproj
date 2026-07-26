@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>Builder.Data</AssemblyName>
+    <RootNamespace>Builder.Data</RootNamespace>
+    <AssemblyVersion>1.0.110.7407</AssemblyVersion>
+    <FileVersion>1.0.110.7407</FileVersion>
+    <Version>1.0.110.7407</Version>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Builder.Core\Builder.Core.csproj" />
+    <Reference Include="DynamicExpresso.Core">
+      <HintPath>..\lib\DynamicExpresso.Core.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>

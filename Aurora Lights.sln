@@ -27,6 +27,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AssemblyApi", "tools\Assemb
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aurora.PdfImport", "Aurora.PdfImport\Aurora.PdfImport.csproj", "{99F9E41A-82EF-433C-82B4-19DA5D893408}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Builder.Data", "Builder.Data\Builder.Data.csproj", "{DDDDA629-BD62-40E8-B539-A8B8E70DBCCC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -169,6 +171,18 @@ Global
 		{99F9E41A-82EF-433C-82B4-19DA5D893408}.Release|x64.Build.0 = Release|Any CPU
 		{99F9E41A-82EF-433C-82B4-19DA5D893408}.Release|x86.ActiveCfg = Release|Any CPU
 		{99F9E41A-82EF-433C-82B4-19DA5D893408}.Release|x86.Build.0 = Release|Any CPU
+		{DDDDA629-BD62-40E8-B539-A8B8E70DBCCC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DDDDA629-BD62-40E8-B539-A8B8E70DBCCC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DDDDA629-BD62-40E8-B539-A8B8E70DBCCC}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{DDDDA629-BD62-40E8-B539-A8B8E70DBCCC}.Debug|x64.Build.0 = Debug|Any CPU
+		{DDDDA629-BD62-40E8-B539-A8B8E70DBCCC}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{DDDDA629-BD62-40E8-B539-A8B8E70DBCCC}.Debug|x86.Build.0 = Debug|Any CPU
+		{DDDDA629-BD62-40E8-B539-A8B8E70DBCCC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DDDDA629-BD62-40E8-B539-A8B8E70DBCCC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DDDDA629-BD62-40E8-B539-A8B8E70DBCCC}.Release|x64.ActiveCfg = Release|Any CPU
+		{DDDDA629-BD62-40E8-B539-A8B8E70DBCCC}.Release|x64.Build.0 = Release|Any CPU
+		{DDDDA629-BD62-40E8-B539-A8B8E70DBCCC}.Release|x86.ActiveCfg = Release|Any CPU
+		{DDDDA629-BD62-40E8-B539-A8B8E70DBCCC}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

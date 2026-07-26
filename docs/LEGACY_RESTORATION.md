@@ -75,7 +75,7 @@ the result.
 | --- | --- |
 | Record production binary baseline | Complete |
 | Restore `Builder.Core` | Source-owned; API and focused compatibility checks pass |
-| Restore `Builder.Data` | Not started |
+| Restore `Builder.Data` | Source-owned; API, differential behavior, corpus, and consumer checks pass |
 | Restore `Aurora.Documents` | Not started |
 | Restore `Aurora.Presentation` | Not started |
 | Remove first-party oracle binaries from production paths | Not started |
@@ -88,6 +88,9 @@ the result.
   assembly.
 - `tools/legacy-restoration/Compare-RestoredAssemblyApi.ps1` compares an oracle
   binary with a restored assembly in separate processes.
+- `tools/legacy-restoration/Compare-BuilderDataBehavior.ps1` runs the focused
+  Builder.Data compatibility suite once with the restored assembly and once
+  with the production oracle in an isolated temporary test output.
 
 Example:
 
@@ -95,4 +98,20 @@ Example:
 .\tools\legacy-restoration\Compare-RestoredAssemblyApi.ps1 `
   -OracleAssembly .\lib\Builder.Core.dll `
   -RestoredAssembly .\Builder.Core\bin\Debug\net10.0\Builder.Core.dll
+```
+
+`Builder.Data` API parity is compared from a Release build because modern
+Roslyn Debug builds add `DebuggerStepThrough` to async methods. Those five
+compiler-generated debugger attributes are absent from the production Release
+binary; the Release surfaces match across all normalized API lines.
+
+```powershell
+dotnet build .\Builder.Data\Builder.Data.csproj -c Release
+
+.\tools\legacy-restoration\Compare-RestoredAssemblyApi.ps1 `
+  -Configuration Release `
+  -OracleAssembly .\lib\Builder.Data.dll `
+  -RestoredAssembly .\Builder.Data\bin\Release\net10.0\Builder.Data.dll
+
+.\tools\legacy-restoration\Compare-BuilderDataBehavior.ps1
 ```
