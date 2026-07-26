@@ -1144,7 +1144,11 @@ public static partial class BuildService
                 object rule     = d.Aquisition.SelectRule;
                 string ruleName = (string)(d.Aquisition.SelectRule.Attributes.Name ?? "");
                 string label    = string.IsNullOrEmpty(ruleName) ? e.Name ?? "" : $"{ruleName}: {e.Name}";
-                featByRule[rule] = new FeatureEntry(label, GetFeatureDescription(e));
+                string description = GetFeatureDescription(e);
+                featByRule[rule] = new FeatureEntry(
+                    label,
+                    description,
+                    GetFeatureDescriptionHtml(e, description));
             }
             catch { }
         }
@@ -1160,7 +1164,14 @@ public static partial class BuildService
                                 !e.Name.Equals("Feat", StringComparison.OrdinalIgnoreCase))
                     .GroupBy(e => e.Id)
                     .Select(g => g.First())
-                    .Select(e => new FeatureEntry(e.Name!, GetFeatureDescription(e)))
+                    .Select(e =>
+                    {
+                        string description = GetFeatureDescription(e);
+                        return new FeatureEntry(
+                            e.Name!,
+                            description,
+                            GetFeatureDescriptionHtml(e, description));
+                    })
                     .ToList();
 
                 foreach (var rule in m.SelectionRules)
@@ -1203,6 +1214,8 @@ public static partial class BuildService
         {
             dynamic dynamicElement = element;
             string raw = (string)(dynamicElement.Description ?? "");
+            if (element is ElementBase elementBase)
+                raw = SelectionDescriptionMarkup.WithFeatureProgression(elementBase, raw);
             return GetPickerDescriptionHtml(raw, fallbackPlainText);
         }
         catch
@@ -1283,7 +1296,13 @@ public static partial class BuildService
                         level.Level,
                         level.AverageHp,
                         level.Features.Select(feature =>
-                                new FeatureEntry(feature.Name!, GetFeatureDescription(feature)))
+                            {
+                                string description = GetFeatureDescription(feature);
+                                return new FeatureEntry(
+                                    feature.Name!,
+                                    description,
+                                    GetFeatureDescriptionHtml(feature, description));
+                            })
                             .ToList()))
                     .ToList()))
             .ToList();

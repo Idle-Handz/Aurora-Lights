@@ -1,4 +1,5 @@
 using Builder.Data.Rules;
+using Aurora.Components.Formatting;
 using Builder.Presentation;
 using Builder.Presentation.Models;
 using Builder.Presentation.Services.Data;
@@ -55,7 +56,13 @@ public static class EquipmentService
         return source
             .OrderBy(e => e.Name)
             .Take(200)
-            .Select(e => new ItemSearchResult(e.Id, e.Name, e.Type, GetDescription(e), e.Source ?? ""))
+            .Select(e => new ItemSearchResult(
+                e.Id,
+                e.Name,
+                e.Type,
+                GetDescription(e),
+                e.Source ?? "",
+                GetDescriptionHtml(e)))
             .ToList();
     }
 
@@ -198,7 +205,13 @@ public static class EquipmentService
         return source
             .OrderBy(e => e.Name)
             .Take(200)
-            .Select(e => new ItemSearchResult(e.Id, e.Name, e.Type, GetDescription(e), e.Source ?? ""))
+            .Select(e => new ItemSearchResult(
+                e.Id,
+                e.Name,
+                e.Type,
+                GetDescription(e),
+                e.Source ?? "",
+                GetDescriptionHtml(e)))
             .ToList();
     }
 
@@ -225,7 +238,13 @@ public static class EquipmentService
         return source
             .OrderBy(e => e.Name)
             .Take(200)
-            .Select(e => new ItemSearchResult(e.Id, e.Name, e.Type, GetDescription(e), e.Source ?? ""))
+            .Select(e => new ItemSearchResult(
+                e.Id,
+                e.Name,
+                e.Type,
+                GetDescription(e),
+                e.Source ?? "",
+                GetDescriptionHtml(e)))
             .ToList();
     }
 
@@ -484,7 +503,8 @@ public static class EquipmentService
             item.DisplayWeight ?? GetElementString(element, "DisplayWeight"),
             item.DisplayPrice ?? GetElementString(element, "DisplayPrice"),
             item.IsEquipped,
-            item.EquippedLocation ?? "");
+            item.EquippedLocation ?? "",
+            GetDescriptionHtml(element));
     }
 
     public static string FormatItemDamage(Builder.Data.ElementBase element)
@@ -602,7 +622,8 @@ public static class EquipmentService
                     CleanCustomFeatureName(e.Name ?? "", category),
                     e.Type,
                     GetDescription(underlying),
-                    e.Source ?? "");
+                    e.Source ?? "",
+                    GetDescriptionHtml(underlying));
             })
             .ToList();
     }
@@ -817,9 +838,23 @@ public static class EquipmentService
         catch { }
         return "";
     }
+
+    public static string GetDescriptionHtml(Builder.Data.ElementBase element)
+    {
+        string raw = element.Description ?? "";
+        return !string.IsNullOrWhiteSpace(raw)
+            ? MagicDescriptionFormatter.FromAuroraHtml(raw)
+            : MagicDescriptionFormatter.FromPlainText(GetDescription(element));
+    }
 }
 
-public sealed record ItemSearchResult(string Id, string Name, string Type, string Description, string Source);
+public sealed record ItemSearchResult(
+    string Id,
+    string Name,
+    string Type,
+    string Description,
+    string Source,
+    string DescriptionHtml = "");
 public sealed record ItemPickerResult(string ElementId, int Amount);
 public sealed record InventoryItemOption(string Identifier, string Name);
 public sealed record GearPickerResult(string? Identifier, string? ElementId, bool IsNew);
@@ -842,4 +877,5 @@ public sealed record EquipmentItemDetail(
     string DisplayWeight,
     string DisplayPrice,
     bool IsEquipped,
-    string EquippedLocation);
+    string EquippedLocation,
+    string DescriptionHtml = "");

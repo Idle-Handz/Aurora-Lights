@@ -57,7 +57,8 @@ public sealed class WebCharacterEngineService
         string Name,
         string Description,
         string Source,
-        string Requirements);
+        string Requirements,
+        string DescriptionHtml);
 
     private sealed record BuildRuleSelection(
         string Key,
@@ -411,7 +412,8 @@ public sealed class WebCharacterEngineService
                     option.Name,
                     option.Description,
                     option.Source,
-                    option.Requirements))
+                    option.Requirements,
+                    option.DescriptionHtml))
                 .ToList();
         }
         finally
@@ -477,7 +479,8 @@ public sealed class WebCharacterEngineService
                     element.Name ?? string.Empty,
                     element.Type,
                     element.Source ?? string.Empty,
-                    GetDescription(element)))
+                    GetDescription(element),
+                    GetDescriptionHtml(element)))
                 .ToList();
         }
         finally
@@ -577,7 +580,8 @@ public sealed class WebCharacterEngineService
                     option.Name,
                     option.Source,
                     option.Description,
-                    option.Requirements))
+                    option.Requirements,
+                    option.DescriptionHtml))
                 .ToList();
         }
         finally
@@ -1339,7 +1343,10 @@ public sealed class WebCharacterEngineService
                 option.Name,
                 option.Description,
                 option.Source,
-                option.Requirements))
+                option.Requirements,
+                !string.IsNullOrWhiteSpace(option.DescriptionMarkup)
+                    ? MagicDescriptionFormatter.FromAuroraHtml(option.DescriptionMarkup)
+                    : MagicDescriptionFormatter.FromPlainText(option.Description)))
             .ToList();
 
     private static bool IsSearchableInventoryElement(ElementBase element) =>
@@ -1506,6 +1513,14 @@ public sealed class WebCharacterEngineService
         }
 
         return string.Empty;
+    }
+
+    private static string GetDescriptionHtml(ElementBase element)
+    {
+        string raw = element.Description ?? string.Empty;
+        return !string.IsNullOrWhiteSpace(raw)
+            ? MagicDescriptionFormatter.FromAuroraHtml(raw)
+            : MagicDescriptionFormatter.FromPlainText(GetDescription(element));
     }
 
     private static MagicOverviewModel BuildMagicModel(Character character)

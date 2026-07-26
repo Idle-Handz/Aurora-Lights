@@ -477,7 +477,8 @@
 
                         @if (!string.IsNullOrWhiteSpace(spellDetail.DescriptionHtml))
                         {
-                            <div class="magic-detail-description">@((MarkupString)spellDetail.DescriptionHtml)</div>
+                            <RichDescription Html="@spellDetail.DescriptionHtml"
+                                             Class="magic-detail-description" />
                         }
                     }
                 </section>
@@ -660,7 +661,8 @@
 
                         @if (!string.IsNullOrWhiteSpace(spellDetail.DescriptionHtml))
                         {
-                            <div class="magic-detail-description">@((MarkupString)spellDetail.DescriptionHtml)</div>
+                            <RichDescription Html="@spellDetail.DescriptionHtml"
+                                             Class="magic-detail-description" />
                         }
                     }
                 </section>

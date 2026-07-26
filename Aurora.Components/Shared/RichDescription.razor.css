@@ -1,0 +1,83 @@
+.rich-description {
+    min-width: 0;
+    overflow-x: auto;
+    line-height: 1.6;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.rich-description ::deep > :first-child {
+    margin-top: 0;
+}
+
+.rich-description ::deep > :last-child {
+    margin-bottom: 0;
+}
+
+.rich-description ::deep p,
+.rich-description ::deep blockquote,
+.rich-description ::deep ul,
+.rich-description ::deep ol,
+.rich-description ::deep pre,
+.rich-description ::deep table {
+    margin: 0 0 0.8rem;
+}
+
+.rich-description ::deep ul,
+.rich-description ::deep ol {
+    padding-left: 1.35rem;
+}
+
+.rich-description ::deep li + li {
+    margin-top: 0.3rem;
+}
+
+.rich-description ::deep center {
+    text-align: center;
+}
+
+.rich-description ::deep strong,
+.rich-description ::deep b,
+.rich-description ::deep h1,
+.rich-description ::deep h2,
+.rich-description ::deep h3,
+.rich-description ::deep h4,
+.rich-description ::deep h5,
+.rich-description ::deep h6 {
+    color: var(--mud-palette-text-primary, var(--aurora-ink, #cdd6f4));
+}
+
+.rich-description ::deep h1,
+.rich-description ::deep h2,
+.rich-description ::deep h3,
+.rich-description ::deep h4,
+.rich-description ::deep h5,
+.rich-description ::deep h6 {
+    margin: 0.9rem 0 0.4rem;
+    font-size: 0.95rem;
+}
+
+.rich-description ::deep table {
+    width: max-content;
+    min-width: 100%;
+    border-collapse: collapse;
+}
+
+.rich-description ::deep th,
+.rich-description ::deep td {
+    padding: 0.35rem 0.5rem;
+    border: 1px solid var(--mud-palette-lines-inputs, var(--aurora-border, #45475a));
+    text-align: left;
+    vertical-align: top;
+}
+
+.rich-description ::deep th,
+.rich-description ::deep thead td {
+    font-weight: 700;
+    white-space: nowrap;
+    background: color-mix(
+        in srgb,
+        var(--mud-palette-primary, var(--aurora-accent, #89b4fa)) 10%,
+        transparent);
+}

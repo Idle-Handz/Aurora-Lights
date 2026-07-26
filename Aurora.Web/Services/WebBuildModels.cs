@@ -27,7 +27,8 @@ public sealed record WebBuildSelectionOption(
     string Name,
     string Description,
     string Source,
-    string Requirements);
+    string Requirements,
+    string DescriptionHtml = "");
 
 public sealed record WebAbilityScoreState(
     ImportedCharacterSummary Summary,

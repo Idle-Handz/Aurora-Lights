@@ -1,0 +1,25 @@
+@using Aurora.Components.Formatting
+
+@if (!string.IsNullOrWhiteSpace(_renderedHtml))
+{
+    <div class="@CssClass" style="@Style">@((MarkupString)_renderedHtml)</div>
+}
+
+@code {
+    [Parameter] public string? Html { get; set; }
+    [Parameter] public string? PlainText { get; set; }
+    [Parameter] public string? Class { get; set; }
+    [Parameter] public string? Style { get; set; }
+
+    private string _renderedHtml = string.Empty;
+    private string CssClass => string.IsNullOrWhiteSpace(Class)
+        ? "rich-description"
+        : $"rich-description {Class}";
+
+    protected override void OnParametersSet()
+    {
+        _renderedHtml = !string.IsNullOrWhiteSpace(Html)
+            ? MagicDescriptionFormatter.FromAuroraHtml(Html)
+            : MagicDescriptionFormatter.FromPlainText(PlainText);
+    }
+}

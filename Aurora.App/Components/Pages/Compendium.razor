@@ -437,7 +437,8 @@
 
                 @if (!string.IsNullOrWhiteSpace(_selectedEntry.DescriptionHtml))
                 {
-                    <div class="compendium-description">@((MarkupString)_selectedEntry.DescriptionHtml)</div>
+                    <RichDescription Html="@_selectedEntry.DescriptionHtml"
+                                     Class="compendium-description" />
                 }
                 else if (_selectedEntry.InformationDetails.Count == 0)
                 {
@@ -468,7 +469,8 @@
                                 }
                                 else
                                 {
-                                    <div class="compendium-description compendium-information-description">@((MarkupString)information.DescriptionHtml)</div>
+                                    <RichDescription Html="@information.DescriptionHtml"
+                                                     Class="compendium-description compendium-information-description" />
                                 }
                             </div>
                         }
@@ -508,7 +510,8 @@
                 }
                 else
                 {
-                    <div class="compendium-description compendium-companion-linked-description">@((MarkupString)entry.DescriptionHtml)</div>
+                    <RichDescription Html="@entry.DescriptionHtml"
+                                     Class="compendium-description compendium-companion-linked-description" />
                 }
             </details>
         }

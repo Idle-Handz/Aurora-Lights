@@ -514,7 +514,10 @@ public static class BuildSelectionOptionResolver
         try
         {
             dynamic dynamicElement = element;
-            return (string)(dynamicElement.Description ?? string.Empty);
+            string raw = (string)(dynamicElement.Description ?? string.Empty);
+            return element is ElementBase elementBase
+                ? SelectionDescriptionMarkup.WithFeatureProgression(elementBase, raw)
+                : raw;
         }
         catch
         {

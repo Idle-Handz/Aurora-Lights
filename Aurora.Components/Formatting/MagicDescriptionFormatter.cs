@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -13,7 +14,7 @@ public static partial class MagicDescriptionFormatter
 {
     private static readonly HashSet<string> AllowedTags = new(StringComparer.OrdinalIgnoreCase)
     {
-        "p", "div", "span", "br", "hr",
+        "p", "div", "span", "center", "br", "hr",
         "ul", "ol", "li",
         "strong", "b", "em", "i", "u", "s",
         "blockquote", "code", "pre", "sub", "sup",
@@ -34,13 +35,14 @@ public static partial class MagicDescriptionFormatter
         }
 
         string withoutUnsafeBlocks = UnsafeBlockRegex().Replace(source, string.Empty);
-        var builder = new StringBuilder(withoutUnsafeBlocks.Length);
+        string withoutElementReferences = ElementReferenceRegex().Replace(withoutUnsafeBlocks, string.Empty);
+        var builder = new StringBuilder(withoutElementReferences.Length);
         int position = 0;
         bool foundAllowedMarkup = false;
 
-        foreach (Match token in TagTokenRegex().Matches(withoutUnsafeBlocks))
+        foreach (Match token in TagTokenRegex().Matches(withoutElementReferences))
         {
-            AppendEncodedText(builder, withoutUnsafeBlocks[position..token.Index]);
+            AppendEncodedText(builder, withoutElementReferences[position..token.Index]);
             position = token.Index + token.Length;
 
             Match tag = ParsedTagRegex().Match(token.Value);
@@ -57,6 +59,7 @@ public static partial class MagicDescriptionFormatter
 
             foundAllowedMarkup = true;
             bool closing = tag.Groups["closing"].Success;
+            bool selfClosing = tag.Groups["selfclosing"].Success;
             if (VoidTags.Contains(name))
             {
                 builder.Append('<').Append(name).Append(" />");
@@ -65,17 +68,22 @@ public static partial class MagicDescriptionFormatter
             {
                 builder.Append("</").Append(name).Append('>');
             }
+            else if (selfClosing)
+            {
+                AppendOpeningTag(builder, name, token.Value);
+                builder.Append("</").Append(name).Append('>');
+            }
             else
             {
-                builder.Append('<').Append(name).Append('>');
+                AppendOpeningTag(builder, name, token.Value);
             }
         }
 
-        AppendEncodedText(builder, withoutUnsafeBlocks[position..]);
+        AppendEncodedText(builder, withoutElementReferences[position..]);
 
         return foundAllowedMarkup
             ? builder.ToString().Trim()
-            : FromPlainText(WebUtility.HtmlDecode(withoutUnsafeBlocks));
+            : FromPlainText(WebUtility.HtmlDecode(withoutElementReferences));
     }
 
     public static string FromPlainText(string? source)
@@ -105,18 +113,65 @@ public static partial class MagicDescriptionFormatter
         builder.Append(WebUtility.HtmlEncode(WebUtility.HtmlDecode(text)));
     }
 
+    private static void AppendOpeningTag(StringBuilder builder, string name, string sourceToken)
+    {
+        builder.Append('<').Append(name);
+        if (name is "td" or "th")
+        {
+            var appended = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (Match attribute in TableCellSpanAttributeRegex().Matches(sourceToken))
+            {
+                string attributeName = attribute.Groups["name"].Value.ToLowerInvariant();
+                string rawValue = attribute.Groups["double"].Success
+                    ? attribute.Groups["double"].Value
+                    : attribute.Groups["single"].Success
+                        ? attribute.Groups["single"].Value
+                        : attribute.Groups["bare"].Value;
+
+                if (!appended.Add(attributeName)
+                    || !int.TryParse(
+                        rawValue,
+                        NumberStyles.None,
+                        CultureInfo.InvariantCulture,
+                        out int value)
+                    || value is < 1 or > 1000)
+                {
+                    continue;
+                }
+
+                builder.Append(' ')
+                    .Append(attributeName)
+                    .Append("=\"")
+                    .Append(value.ToString(CultureInfo.InvariantCulture))
+                    .Append('"');
+            }
+        }
+
+        builder.Append('>');
+    }
+
     [GeneratedRegex(
         @"<\s*(script|style|iframe|object|embed)\b[^>]*>.*?<\s*/\s*\1\s*>",
         RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.CultureInvariant)]
     private static partial Regex UnsafeBlockRegex();
 
+    [GeneratedRegex(
+        @"<\s*div\b[^>]*\belement\s*=\s*(?:""[^""]*""|'[^']*'|[^\s>]+)[^>]*/\s*>",
+        RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.CultureInvariant)]
+    private static partial Regex ElementReferenceRegex();
+
     [GeneratedRegex(@"<!--.*?-->|<[^>]*>", RegexOptions.Singleline | RegexOptions.CultureInvariant)]
     private static partial Regex TagTokenRegex();
 
     [GeneratedRegex(
-        @"^<\s*(?<closing>/)?\s*(?<name>[A-Za-z][A-Za-z0-9]*)\b[^>]*>$",
+        @"^<\s*(?<closing>/)?\s*(?<name>[A-Za-z][A-Za-z0-9]*)\b[^>]*?(?<selfclosing>/)?\s*>$",
         RegexOptions.CultureInvariant)]
     private static partial Regex ParsedTagRegex();
+
+    [GeneratedRegex(
+        @"\s+(?<name>colspan|rowspan)\s*=\s*(?:""(?<double>\d+)""|'(?<single>\d+)'|(?<bare>\d+)(?=\s|/?>))",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex TableCellSpanAttributeRegex();
 
     [GeneratedRegex(@"\n\s*\n", RegexOptions.CultureInvariant)]
     private static partial Regex ParagraphBreakRegex();

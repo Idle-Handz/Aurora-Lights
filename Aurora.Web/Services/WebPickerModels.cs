@@ -5,7 +5,8 @@ public sealed record WebEquipmentSearchResult(
     string Name,
     string Type,
     string Source,
-    string Description);
+    string Description,
+    string DescriptionHtml = "");
 
 public sealed record WebEquipmentInventoryOption(
     string Identifier,
@@ -16,4 +17,5 @@ public sealed record WebMagicSelectionOption(
     string Name,
     string Source,
     string Description,
-    string Requirements);
+    string Requirements,
+    string DescriptionHtml = "");

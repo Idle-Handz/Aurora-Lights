@@ -31,16 +31,45 @@ public sealed class MagicDescriptionFormatterTests
     }
 
     [Fact]
-    public void FromAuroraHtmlPreservesTableStructureButDropsTableAttributes()
+    public void FromAuroraHtmlPreservesSafeTableSpansButDropsOtherTableAttributes()
     {
         const string source =
-            "<table class=\"class-features\" style=\"width: 100%\"><thead><tr><th>Level</th><th>Feature</th></tr></thead><tbody><tr><td>1</td><td>Spellcasting</td></tr></tbody></table>";
+            "<table class=\"class-features\" style=\"width: 100%\"><thead><tr><th rowspan=\"2\">Level</th><th colspan='9'>Feature</th></tr></thead><tbody><tr><td onclick=\"alert('nope')\">1</td><td>Spellcasting</td><td title=\"colspan=7\" data-rowspan=\"4\">Safe</td></tr></tbody></table>";
 
         string html = MagicDescriptionFormatter.FromAuroraHtml(source);
 
         html.Should().Be(
-            "<table><thead><tr><th>Level</th><th>Feature</th></tr></thead><tbody><tr><td>1</td><td>Spellcasting</td></tr></tbody></table>");
+            "<table><thead><tr><th rowspan=\"2\">Level</th><th colspan=\"9\">Feature</th></tr></thead><tbody><tr><td>1</td><td>Spellcasting</td><td>Safe</td></tr></tbody></table>");
         html.Should().NotContain("class=");
         html.Should().NotContain("style=");
+        html.Should().NotContain("onclick=");
+        MagicDescriptionFormatter.FromAuroraHtml(html).Should().Be(html);
+    }
+
+    [Fact]
+    public void FromAuroraHtmlPreservesLegacyCenteringWithoutItsAttributes()
+    {
+        const string source =
+            "<center style=\"color: red\" onclick=\"alert('nope')\"><p>Spell save DC</p></center>";
+
+        string html = MagicDescriptionFormatter.FromAuroraHtml(source);
+
+        html.Should().Be("<center><p>Spell save DC</p></center>");
+        html.Should().NotContain("style=");
+        html.Should().NotContain("onclick=");
+        MagicDescriptionFormatter.FromAuroraHtml(html).Should().Be(html);
+    }
+
+    [Fact]
+    public void FromAuroraHtmlDropsLegacyElementReferencePlaceholders()
+    {
+        const string source =
+            "<p>Subclass overview.</p><div element=\"ID_TEST_FEATURE\" /><h5>Features by Level</h5>";
+
+        string html = MagicDescriptionFormatter.FromAuroraHtml(source);
+
+        html.Should().Be("<p>Subclass overview.</p><h5>Features by Level</h5>");
+        html.Should().NotContain("ID_TEST_FEATURE");
+        html.Should().NotContain("<div>");
     }
 }

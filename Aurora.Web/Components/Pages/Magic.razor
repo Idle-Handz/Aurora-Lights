@@ -77,9 +77,12 @@
                                         {
                                             <div class="picker-result-requirements">Requires: @option.Requirements</div>
                                         }
-                                        @if (!string.IsNullOrWhiteSpace(option.Description))
+                                        @if (!string.IsNullOrWhiteSpace(option.DescriptionHtml) ||
+                                             !string.IsNullOrWhiteSpace(option.Description))
                                         {
-                                            <div class="picker-result-description">@option.Description</div>
+                                            <RichDescription Html="@option.DescriptionHtml"
+                                                             PlainText="@option.Description"
+                                                             Class="picker-result-description" />
                                         }
                                     </div>
                                     <button type="button"

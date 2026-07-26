@@ -1,3 +1,4 @@
+using Aurora.Components.Formatting;
 using Aurora.Components.Models;
 using Builder.Data;
 using Builder.Data.Elements;
@@ -353,9 +354,25 @@ public sealed class CharacterSnapshot
                 .ToDictionary(x => x.Id ?? "", x => x);
 
             return ids
-                .Select(id => lookup.TryGetValue(id, out var e)
-                    ? new FeatureEntry(e.Name ?? id, e.Description ?? "")
-                    : new FeatureEntry(id, ""))
+                .Select(id =>
+                {
+                    if (!lookup.TryGetValue(id, out var element))
+                        return new FeatureEntry(id, "");
+
+                    string raw = element.Description ?? "";
+                    string plain = "";
+                    try
+                    {
+                        if (!string.IsNullOrWhiteSpace(raw))
+                            plain = ElementDescriptionGenerator.GeneratePlainDescription(raw).Trim();
+                    }
+                    catch { }
+
+                    return new FeatureEntry(
+                        element.Name ?? id,
+                        plain,
+                        MagicDescriptionFormatter.FromAuroraHtml(raw));
+                })
                 .Where(f => !string.IsNullOrWhiteSpace(f.Name))
                 .ToList();
         }
@@ -539,7 +556,10 @@ public sealed class CharacterSnapshot
                         desc = ElementDescriptionGenerator.GeneratePlainDescription(e.Description).Trim();
                 }
                 catch { }
-                return new FeatureEntry(e.Name!, desc);
+                return new FeatureEntry(
+                    e.Name!,
+                    desc,
+                    MagicDescriptionFormatter.FromAuroraHtml(e.Description));
             })
             .ToList();
     }
@@ -1156,7 +1176,10 @@ public sealed record AbilityEntry(
 /// <summary>A spell granted by a feat/item/species (read-only on the Magic page).</summary>
 public sealed record GrantedSpellEntry(string Name, int Level, string Source, string Id = "");
 
-public sealed record FeatureEntry(string Name, string Description);
+public sealed record FeatureEntry(
+    string Name,
+    string Description,
+    string DescriptionHtml = "");
 
 public sealed record SavingThrowEntry(string AbilityAbbreviation, string BonusString, bool IsProficient);
 

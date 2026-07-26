@@ -52,9 +52,12 @@
                         <div style="font-size: 10px; color: var(--mud-palette-text-disabled); margin-bottom: 8px;">@_selected.Source</div>
                     }
 
-                    @if (!string.IsNullOrWhiteSpace(_selected.Description))
+                    @if (!string.IsNullOrWhiteSpace(_selected.DescriptionHtml) ||
+                         !string.IsNullOrWhiteSpace(_selected.Description))
                     {
-                        <div class="picker-detail-desc">@_selected.Description</div>
+                        <RichDescription Html="@_selected.DescriptionHtml"
+                                         PlainText="@_selected.Description"
+                                         Class="picker-detail-desc" />
                     }
                     else
                     {

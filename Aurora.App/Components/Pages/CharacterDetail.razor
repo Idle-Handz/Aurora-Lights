@@ -338,9 +338,12 @@
             {
                 <div class="feature-block">
                     <div class="feature-name">@feat.Name</div>
-                    @if (!string.IsNullOrWhiteSpace(feat.Description))
+                    @if (!string.IsNullOrWhiteSpace(feat.DescriptionHtml) ||
+                         !string.IsNullOrWhiteSpace(feat.Description))
                     {
-                        <div class="feature-desc">@feat.Description</div>
+                        <RichDescription Html="@feat.DescriptionHtml"
+                                         PlainText="@feat.Description"
+                                         Class="feature-desc" />
                     }
                 </div>
             }
@@ -379,9 +382,12 @@
                         {
                             <div class="feature-block">
                                 <div class="feature-name">@f.Name</div>
-                                @if (!string.IsNullOrWhiteSpace(f.Description))
+                                @if (!string.IsNullOrWhiteSpace(f.DescriptionHtml) ||
+                                     !string.IsNullOrWhiteSpace(f.Description))
                                 {
-                                    <div class="feature-desc">@f.Description</div>
+                                    <RichDescription Html="@f.DescriptionHtml"
+                                                     PlainText="@f.Description"
+                                                     Class="feature-desc" />
                                 }
                             </div>
                         }
@@ -514,11 +520,14 @@
                 <div class="section-label" style="margin-top: 16px; margin-bottom: 8px;">Traits</div>
                 @foreach (var t in comp.Traits)
                 {
-                    @if (!string.IsNullOrWhiteSpace(t.Description))
+                    @if (!string.IsNullOrWhiteSpace(t.DescriptionHtml) ||
+                         !string.IsNullOrWhiteSpace(t.Description))
                     {
                         <details class="build-feature-item build-feature-expandable">
                             <summary>@t.Name</summary>
-                            <div class="build-feature-desc">@t.Description</div>
+                            <RichDescription Html="@t.DescriptionHtml"
+                                             PlainText="@t.Description"
+                                             Class="build-feature-desc" />
                         </details>
                     }
                     else
@@ -534,11 +543,14 @@
                 <div class="section-label" style="margin-top: 16px; margin-bottom: 8px;">Actions</div>
                 @foreach (var a in comp.Actions)
                 {
-                    @if (!string.IsNullOrWhiteSpace(a.Description))
+                    @if (!string.IsNullOrWhiteSpace(a.DescriptionHtml) ||
+                         !string.IsNullOrWhiteSpace(a.Description))
                     {
                         <details class="build-feature-item build-feature-expandable">
                             <summary>@a.Name</summary>
-                            <div class="build-feature-desc">@a.Description</div>
+                            <RichDescription Html="@a.DescriptionHtml"
+                                             PlainText="@a.Description"
+                                             Class="build-feature-desc" />
                         </details>
                     }
                     else
@@ -554,11 +566,14 @@
                 <div class="section-label" style="margin-top: 16px; margin-bottom: 8px;">Reactions</div>
                 @foreach (var r in comp.Reactions)
                 {
-                    @if (!string.IsNullOrWhiteSpace(r.Description))
+                    @if (!string.IsNullOrWhiteSpace(r.DescriptionHtml) ||
+                         !string.IsNullOrWhiteSpace(r.Description))
                     {
                         <details class="build-feature-item build-feature-expandable">
                             <summary>@r.Name</summary>
-                            <div class="build-feature-desc">@r.Description</div>
+                            <RichDescription Html="@r.DescriptionHtml"
+                                             PlainText="@r.Description"
+                                             Class="build-feature-desc" />
                         </details>
                     }
                     else
@@ -675,9 +690,12 @@
                                 @SpellPropRow("Duration",     _spellDetail.Duration)
                             </div>
                         }
-                        @if (!string.IsNullOrWhiteSpace(_spellDetail.Description))
+                        @if (!string.IsNullOrWhiteSpace(_spellDetail.DescriptionHtml) ||
+                             !string.IsNullOrWhiteSpace(_spellDetail.Description))
                         {
-                            <div class="spell-detail-desc">@_spellDetail.Description</div>
+                            <RichDescription Html="@_spellDetail.DescriptionHtml"
+                                             PlainText="@_spellDetail.Description"
+                                             Class="spell-detail-desc" />
                         }
                     }
                     else

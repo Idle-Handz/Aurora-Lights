@@ -76,9 +76,12 @@
                         <div style="font-size: 10px; color: var(--mud-palette-text-disabled); margin-bottom: 8px;">@_detailSource</div>
                     }
 
-                    @if (!string.IsNullOrWhiteSpace(_detailDesc))
+                    @if (!string.IsNullOrWhiteSpace(_detailDescHtml) ||
+                         !string.IsNullOrWhiteSpace(_detailDesc))
                     {
-                        <div class="picker-detail-desc">@_detailDesc</div>
+                        <RichDescription Html="@_detailDescHtml"
+                                         PlainText="@_detailDesc"
+                                         Class="picker-detail-desc" />
                     }
                     else if (_mode != SelectMode.Inventory)
                     {
@@ -130,6 +133,7 @@
     private string? _detailType;
     private string? _detailSource;
     private string? _detailDesc;
+    private string? _detailDescHtml;
 
     private void SelectInventory(InventoryItemOption opt)
     {
@@ -140,6 +144,7 @@
         _detailType        = "Already in inventory";
         _detailSource      = null;
         _detailDesc        = null;
+        _detailDescHtml    = null;
     }
 
     private void SelectNew(ItemSearchResult r)
@@ -151,6 +156,7 @@
         _detailType        = r.Type;
         _detailSource      = r.Source;
         _detailDesc        = r.Description;
+        _detailDescHtml    = r.DescriptionHtml;
     }
 
     private void RunSearch()

@@ -272,11 +272,14 @@ else if (_workflowSuggestion != null)
                             <div class="build-feature-list">
                                 @foreach (var f in cls.Features)
                                 {
-                                    @if (!string.IsNullOrWhiteSpace(f.Description))
+                                    @if (!string.IsNullOrWhiteSpace(f.DescriptionHtml) ||
+                                         !string.IsNullOrWhiteSpace(f.Description))
                                     {
                                         <details class="build-feature-item build-feature-expandable">
                                             <summary>@f.Name</summary>
-                                            <div class="build-feature-desc">@f.Description</div>
+                                            <RichDescription Html="@f.DescriptionHtml"
+                                                             PlainText="@f.Description"
+                                                             Class="build-feature-desc" />
                                         </details>
                                     }
                                     else
