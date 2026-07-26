@@ -1092,30 +1092,7 @@
     }
 
     private static bool MatchesCastingTimeFilter(string castingTime, string filter)
-    {
-        if (string.IsNullOrWhiteSpace(filter))
-        {
-            return true;
-        }
-
-        if (string.IsNullOrWhiteSpace(castingTime))
-        {
-            return false;
-        }
-
-        string normalized = castingTime.Trim().ToLowerInvariant();
-        string category = normalized switch
-        {
-            _ when normalized.Contains("bonus action", StringComparison.Ordinal) => "bonus-action",
-            _ when normalized.Contains("reaction", StringComparison.Ordinal) => "reaction",
-            "action" => "action",
-            _ when normalized.StartsWith("1 action", StringComparison.Ordinal) => "action",
-            _ when normalized.StartsWith("an action", StringComparison.Ordinal) => "action",
-            _ => "longer",
-        };
-
-        return string.Equals(category, filter, StringComparison.Ordinal);
-    }
+        => MagicCastingTimeClassifier.Matches(castingTime, filter);
 
     private bool LevelShouldRemainVisible(int level)
         => !string.IsNullOrWhiteSpace(_preparedLevelFilter)

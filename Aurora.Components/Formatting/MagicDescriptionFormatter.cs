@@ -7,8 +7,8 @@ namespace Aurora.Components.Formatting;
 
 /// <summary>
 /// Converts Aurora's HTML-like element descriptions into a small, safe subset of HTML that can be
-/// rendered by the shared clients. Attributes are intentionally discarded because content packs
-/// are user-supplied and must not be able to inject event handlers or styles.
+/// rendered by the shared clients. Attributes are discarded unless they belong to a narrowly
+/// validated structural or presentational allowlist because content packs are user-supplied.
 /// </summary>
 public static partial class MagicDescriptionFormatter
 {
@@ -25,6 +25,11 @@ public static partial class MagicDescriptionFormatter
     private static readonly HashSet<string> VoidTags = new(StringComparer.OrdinalIgnoreCase)
     {
         "br", "hr",
+    };
+
+    private static readonly HashSet<string> AllowedTextAlignments = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "left", "right", "center", "justify", "start", "end",
     };
 
     public static string FromAuroraHtml(string? source)
@@ -116,19 +121,21 @@ public static partial class MagicDescriptionFormatter
     private static void AppendOpeningTag(StringBuilder builder, string name, string sourceToken)
     {
         builder.Append('<').Append(name);
+        IReadOnlyDictionary<string, string> attributes = ParseAttributes(sourceToken);
+
+        string alignment = GetSafeTextAlignment(attributes);
+        if (!string.IsNullOrEmpty(alignment))
+        {
+            builder.Append(" data-rich-align=\"")
+                .Append(alignment)
+                .Append('"');
+        }
+
         if (name is "td" or "th")
         {
-            var appended = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (Match attribute in TableCellSpanAttributeRegex().Matches(sourceToken))
+            foreach (string attributeName in new[] { "colspan", "rowspan" })
             {
-                string attributeName = attribute.Groups["name"].Value.ToLowerInvariant();
-                string rawValue = attribute.Groups["double"].Success
-                    ? attribute.Groups["double"].Value
-                    : attribute.Groups["single"].Success
-                        ? attribute.Groups["single"].Value
-                        : attribute.Groups["bare"].Value;
-
-                if (!appended.Add(attributeName)
+                if (!attributes.TryGetValue(attributeName, out string? rawValue)
                     || !int.TryParse(
                         rawValue,
                         NumberStyles.None,
@@ -150,6 +157,125 @@ public static partial class MagicDescriptionFormatter
         builder.Append('>');
     }
 
+    private static string GetSafeTextAlignment(IReadOnlyDictionary<string, string> attributes)
+    {
+        foreach (string attributeName in new[] { "data-rich-align", "align" })
+        {
+            if (attributes.TryGetValue(attributeName, out string? value)
+                && AllowedTextAlignments.Contains(value.Trim()))
+            {
+                return value.Trim().ToLowerInvariant();
+            }
+        }
+
+        if (!attributes.TryGetValue("style", out string? style))
+            return string.Empty;
+
+        foreach (string declaration in style.Split(';', StringSplitOptions.RemoveEmptyEntries))
+        {
+            int separator = declaration.IndexOf(':');
+            if (separator <= 0
+                || !declaration[..separator].Trim().Equals(
+                    "text-align",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            string value = declaration[(separator + 1)..].Trim();
+            return AllowedTextAlignments.Contains(value)
+                ? value.ToLowerInvariant()
+                : string.Empty;
+        }
+
+        return string.Empty;
+    }
+
+    private static IReadOnlyDictionary<string, string> ParseAttributes(string sourceToken)
+    {
+        var attributes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        int position = 0;
+
+        if (position < sourceToken.Length && sourceToken[position] == '<')
+            position++;
+        SkipWhitespace(sourceToken, ref position);
+        if (position < sourceToken.Length && sourceToken[position] == '/')
+            position++;
+        SkipWhitespace(sourceToken, ref position);
+
+        while (position < sourceToken.Length
+               && !char.IsWhiteSpace(sourceToken[position])
+               && sourceToken[position] is not '>' and not '/')
+        {
+            position++;
+        }
+
+        while (position < sourceToken.Length)
+        {
+            SkipWhitespace(sourceToken, ref position);
+            if (position >= sourceToken.Length || sourceToken[position] is '>' or '/')
+                break;
+
+            int nameStart = position;
+            while (position < sourceToken.Length
+                   && !char.IsWhiteSpace(sourceToken[position])
+                   && sourceToken[position] is not '=' and not '>' and not '/')
+            {
+                position++;
+            }
+
+            if (position == nameStart)
+            {
+                position++;
+                continue;
+            }
+
+            string name = sourceToken[nameStart..position];
+            SkipWhitespace(sourceToken, ref position);
+            string value = string.Empty;
+
+            if (position < sourceToken.Length && sourceToken[position] == '=')
+            {
+                position++;
+                SkipWhitespace(sourceToken, ref position);
+                if (position < sourceToken.Length
+                    && sourceToken[position] is '"' or '\'')
+                {
+                    char quote = sourceToken[position];
+                    position++;
+                    int valueStart = position;
+                    while (position < sourceToken.Length && sourceToken[position] != quote)
+                        position++;
+                    value = sourceToken[valueStart..position];
+                    if (position < sourceToken.Length)
+                        position++;
+                }
+                else
+                {
+                    int valueStart = position;
+                    while (position < sourceToken.Length
+                           && !char.IsWhiteSpace(sourceToken[position])
+                           && sourceToken[position] is not '>' and not '/')
+                    {
+                        position++;
+                    }
+
+                    value = sourceToken[valueStart..position];
+                }
+            }
+
+            attributes.TryAdd(name, value);
+        }
+
+        return attributes;
+    }
+
+    private static void SkipWhitespace(string value, ref int position)
+    {
+        while (position < value.Length && char.IsWhiteSpace(value[position]))
+            position++;
+    }
+
     [GeneratedRegex(
         @"<\s*(script|style|iframe|object|embed)\b[^>]*>.*?<\s*/\s*\1\s*>",
         RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.CultureInvariant)]
@@ -167,11 +293,6 @@ public static partial class MagicDescriptionFormatter
         @"^<\s*(?<closing>/)?\s*(?<name>[A-Za-z][A-Za-z0-9]*)\b[^>]*?(?<selfclosing>/)?\s*>$",
         RegexOptions.CultureInvariant)]
     private static partial Regex ParsedTagRegex();
-
-    [GeneratedRegex(
-        @"\s+(?<name>colspan|rowspan)\s*=\s*(?:""(?<double>\d+)""|'(?<single>\d+)'|(?<bare>\d+)(?=\s|/?>))",
-        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
-    private static partial Regex TableCellSpanAttributeRegex();
 
     [GeneratedRegex(@"\n\s*\n", RegexOptions.CultureInvariant)]
     private static partial Regex ParagraphBreakRegex();

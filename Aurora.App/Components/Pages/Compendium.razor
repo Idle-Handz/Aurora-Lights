@@ -94,6 +94,13 @@
                 <MudSelect T="string" Label="Class" Value="_selectedSpellClass" ValueChanged="OnSpellClassChanged" Disabled="_isLoadingCatalog" Margin="Margin.Dense" Variant="Variant.Outlined" Class="compendium-filter-select">
                     @foreach (var spellClass in _spellClasses) { <MudSelectItem Value="@spellClass">@spellClass</MudSelectItem> }
                 </MudSelect>
+                <MudSelect T="string" Label="Casting Time" Value="_selectedSpellCastingTime" ValueChanged="OnSpellCastingTimeChanged" Disabled="_isLoadingCatalog" Margin="Margin.Dense" Variant="Variant.Outlined" Class="compendium-filter-select">
+                    <MudSelectItem T="string" Value="@("All")">All</MudSelectItem>
+                    <MudSelectItem T="string" Value="@("action")">Action</MudSelectItem>
+                    <MudSelectItem T="string" Value="@("bonus-action")">Bonus action</MudSelectItem>
+                    <MudSelectItem T="string" Value="@("reaction")">Reaction</MudSelectItem>
+                    <MudSelectItem T="string" Value="@("longer")">Longer / special</MudSelectItem>
+                </MudSelect>
             }
             @if (ShowItemFilters)
             {
@@ -539,6 +546,7 @@
     private string _selectedSpellLevel = "All";
     private string _selectedSpellSchool = "All";
     private string _selectedSpellClass = "All";
+    private string _selectedSpellCastingTime = "All";
     private string _selectedItemRarity = "All";
     private string _selectedItemAttunement = "All";
     private string _selectedCreatureType = "All";
@@ -673,6 +681,14 @@
         return _hasSearched ? RefreshAsync() : Task.CompletedTask;
     }
 
+    private Task OnSpellCastingTimeChanged(string value)
+    {
+        _selectedSpellCastingTime = value;
+        RefreshSourceOptions();
+        SaveState();
+        return _hasSearched ? RefreshAsync() : Task.CompletedTask;
+    }
+
     private Task OnItemRarityChanged(string value)
     {
         _selectedItemRarity = value;
@@ -745,6 +761,7 @@
             ShowSpellFilters ? _selectedSpellLevel : "All",
             ShowSpellFilters ? _selectedSpellSchool : "All",
             ShowSpellFilters ? _selectedSpellClass : "All",
+            ShowSpellFilters ? _selectedSpellCastingTime : "All",
             ShowItemFilters ? _selectedItemRarity : "All",
             ShowItemFilters ? _selectedItemAttunement : "All",
             ShowCompanionFilters ? _selectedCreatureType : "All",
@@ -796,6 +813,7 @@
             var spellLevel = ShowSpellFilters ? _selectedSpellLevel : "All";
             var spellSchool = ShowSpellFilters ? _selectedSpellSchool : "All";
             var spellClass = ShowSpellFilters ? _selectedSpellClass : "All";
+            var spellCastingTime = ShowSpellFilters ? _selectedSpellCastingTime : "All";
             var itemRarity = ShowItemFilters ? _selectedItemRarity : "All";
             var itemAttunement = ShowItemFilters ? _selectedItemAttunement : "All";
             var creatureType = ShowCompanionFilters ? _selectedCreatureType : "All";
@@ -807,7 +825,7 @@
 
             _filteredEntries = await Task.Run(() => CompendiumData.Filter(
                 catalog, query, selectedType, selectedSource,
-                spellLevel, spellSchool, spellClass,
+                spellLevel, spellSchool, spellClass, spellCastingTime,
                 itemRarity, itemAttunement,
                 creatureType, creatureSize, creatureChallenge,
                 restrictedSources).ToList());
@@ -891,6 +909,7 @@
         _selectedSpellLevel = "All";
         _selectedSpellSchool = "All";
         _selectedSpellClass = "All";
+        _selectedSpellCastingTime = "All";
         _selectedItemRarity = "All";
         _selectedItemAttunement = "All";
         _selectedCreatureType = "All";
@@ -915,6 +934,7 @@
         _selectedSpellLevel = state.SelectedSpellLevel;
         _selectedSpellSchool = state.SelectedSpellSchool;
         _selectedSpellClass = state.SelectedSpellClass;
+        _selectedSpellCastingTime = state.SelectedSpellCastingTime;
         _selectedItemRarity = state.SelectedItemRarity;
         _selectedItemAttunement = state.SelectedItemAttunement;
         _selectedCreatureType = state.SelectedCreatureType;
@@ -933,6 +953,7 @@
         state.SelectedSpellLevel = _selectedSpellLevel;
         state.SelectedSpellSchool = _selectedSpellSchool;
         state.SelectedSpellClass = _selectedSpellClass;
+        state.SelectedSpellCastingTime = _selectedSpellCastingTime;
         state.SelectedItemRarity = _selectedItemRarity;
         state.SelectedItemAttunement = _selectedItemAttunement;
         state.SelectedCreatureType = _selectedCreatureType;
