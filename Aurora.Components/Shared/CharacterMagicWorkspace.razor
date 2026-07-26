@@ -83,7 +83,7 @@
                     {
                         <div class="magic-stat">
                             <span class="magic-stat-value">Extended</span>
-                            <span class="magic-stat-label">Granted Spells Included</span>
+                            <span class="magic-stat-label">Spell List</span>
                         </div>
                     }
                     <div class="magic-stat">
@@ -197,6 +197,11 @@
                                         {
                                             <span class="magic-granted-by">Granted by @ent.GrantedBy</span>
                                         }
+                                        @if (!string.IsNullOrWhiteSpace(ent.CurrentName))
+                                        {
+                                            var accessBadge = GetKnownEntryAccessBadge(grp, ent);
+                                            <span class="magic-spell-badge @accessBadge.CssClass">@accessBadge.Label</span>
+                                        }
                                     </div>
                                 </div>
                             }
@@ -231,6 +236,11 @@
                                         @if (ent.SpellLevel > 0 && !string.IsNullOrWhiteSpace(ent.CurrentName))
                                         {
                                             <span class="magic-spell-level-badge">Lv@(ent.SpellLevel)</span>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(ent.CurrentName))
+                                        {
+                                            var accessBadge = GetKnownEntryAccessBadge(grp, ent);
+                                            <span class="magic-spell-badge @accessBadge.CssClass">@accessBadge.Label</span>
                                         }
                                     </div>
                                     @if (OnChangeKnownSpell.HasDelegate && !ent.IsReadOnly)
@@ -345,14 +355,13 @@
                                                 {
                                                     <span>@spell.CastingTime</span>
                                                 }
-                                                <span class="magic-spell-badge @GetBadgeClass(spell.DisplayState)">@GetDisplayStateLabel(spell.DisplayState)</span>
-                                                @if (!string.IsNullOrWhiteSpace(spell.GrantedBy))
+                                                @foreach (var badge in GetCastableAccessBadges(spell, section.Id))
                                                 {
-                                                    <span>Granted by @spell.GrantedBy</span>
+                                                    <span class="magic-spell-badge @badge.CssClass">@badge.Label</span>
                                                 }
-                                                @if (spell.IsRitual)
+                                                @foreach (var badge in GetRitualBadges(spell))
                                                 {
-                                                    <span class="magic-spell-badge">Ritual</span>
+                                                    <span class="magic-spell-badge @badge.CssClass">@badge.Label</span>
                                                 }
                                                 @if (spell.IsConcentration)
                                                 {
@@ -392,14 +401,13 @@
                                                 {
                                                     <span>@spell.CastingTime</span>
                                                 }
-                                                <span class="magic-spell-badge @GetBadgeClass(spell.DisplayState)">@GetDisplayStateLabel(spell.DisplayState)</span>
-                                                @if (!string.IsNullOrWhiteSpace(spell.GrantedBy))
+                                                @foreach (var badge in GetCastableAccessBadges(spell, section.Id))
                                                 {
-                                                    <span>Granted by @spell.GrantedBy</span>
+                                                    <span class="magic-spell-badge @badge.CssClass">@badge.Label</span>
                                                 }
-                                                @if (spell.IsRitual)
+                                                @foreach (var badge in GetRitualBadges(spell))
                                                 {
-                                                    <span class="magic-spell-badge">Ritual</span>
+                                                    <span class="magic-spell-badge @badge.CssClass">@badge.Label</span>
                                                 }
                                                 @if (spell.IsConcentration)
                                                 {
@@ -576,10 +584,13 @@
                                                 {
                                                     <span>@spell.CastingTime</span>
                                                 }
-                                                <span class="magic-spell-badge @GetBadgeClass(spell.DisplayState)">@GetDisplayStateLabel(spell.DisplayState)</span>
-                                                @if (spell.IsRitual)
+                                                @foreach (var badge in GetPreparedAccessBadges(spell, activeMagicSection))
                                                 {
-                                                    <span class="magic-spell-badge">Ritual</span>
+                                                    <span class="magic-spell-badge @badge.CssClass">@badge.Label</span>
+                                                }
+                                                @foreach (var badge in GetRitualBadges(spell))
+                                                {
+                                                    <span class="magic-spell-badge @badge.CssClass">@badge.Label</span>
                                                 }
                                                 @if (spell.IsConcentration)
                                                 {
@@ -735,7 +746,7 @@
         _castableSections.Any(section =>
             section.Cantrips.Count > 0
             || section.SpellLevels.SelectMany(level => level.Spells)
-                .Any(spell => spell.IsPrepared || spell.IsAlwaysPrepared));
+                .Any(CanCastNow));
 
     // Spell slots are a single shared pool across all of a character's casting classes (multiclass
     // caster table), so aggregate every section's per-level slots into one combined bar.
@@ -806,7 +817,7 @@
             .Select(level => new MagicSpellLevelModel(
                 level.Level,
                 level.Spells
-                    .Where(spell => (spell.IsPrepared || spell.IsAlwaysPrepared) && MatchesCastableSpellFilter(spell))
+                    .Where(spell => CanCastNow(spell) && MatchesCastableSpellFilter(spell))
                     .ToList(),
                 level.TotalSlots,
                 level.UsedSlots))
@@ -821,44 +832,70 @@
             .Select(spell => GetSpellKey(spell.Id, spell.Name, spell.Level))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        List<MagicSpellListEntryModel> grantedSpells = Model.KnownSpellGroups
-            .Where(group => group.ReadOnlyGroup)
-            .SelectMany(group => group.Entries)
-            .Where(entry => !string.IsNullOrWhiteSpace(entry.CurrentName))
-            .Where(entry => !existingSpellKeys.Contains(GetSpellKey(entry.SpellId, entry.CurrentName!, entry.SpellLevel)))
+        List<MagicSpellListEntryModel> projectedSpells = Model.KnownSpellGroups
+            .SelectMany(group => group.Entries.Select(entry => (
+                Group: group,
+                Entry: entry,
+                Access: group.ReadOnlyGroup ? MagicSpellSelectionAccess.Granted : entry.SelectionAccess)))
+            .Where(pair => !string.IsNullOrWhiteSpace(pair.Entry.CurrentName))
+            .Where(pair => pair.Access is MagicSpellSelectionAccess.Known
+                or MagicSpellSelectionAccess.AlwaysPrepared
+                or MagicSpellSelectionAccess.Granted
+                or MagicSpellSelectionAccess.RitualBook)
+            .Where(pair => pair.Access != MagicSpellSelectionAccess.RitualBook || pair.Entry.IsRitual)
+            .Where(pair => !existingSpellKeys.Contains(GetSpellKey(
+                pair.Entry.SpellId,
+                pair.Entry.CurrentName!,
+                pair.Entry.SpellLevel)))
             .GroupBy(
-                entry => GetSpellKey(entry.SpellId, entry.CurrentName!, entry.SpellLevel),
+                pair => GetSpellKey(pair.Entry.SpellId, pair.Entry.CurrentName!, pair.Entry.SpellLevel),
                 StringComparer.OrdinalIgnoreCase)
-            .Select(group => group.First())
-            .Select(entry => new MagicSpellListEntryModel(
-                entry.SpellId ?? entry.Id,
-                entry.CurrentName!,
-                entry.SpellLevel,
-                entry.Source,
-                entry.School,
-                entry.IsRitual,
-                entry.IsConcentration,
-                isPrepared: true,
-                isAlwaysPrepared: true,
-                isCantrip: entry.SpellLevel == 0,
-                displayState: MagicSpellDisplayState.Granted,
-                castingTime: entry.CastingTime,
-                grantedBy: entry.GrantedBy))
+            .Select(group =>
+            {
+                var first = group.First();
+                IReadOnlyList<MagicSpellAccessPathModel> paths = group
+                    .Select(pair => CreateProjectedAccessPath(pair.Group, pair.Entry, pair.Access))
+                    .Distinct()
+                    .ToList();
+                MagicSpellDisplayState state = paths.Any(path => path.Kind == MagicSpellAccessKind.AlwaysPrepared)
+                    ? MagicSpellDisplayState.AlwaysPrepared
+                    : paths.Any(path => path.Kind == MagicSpellAccessKind.Granted)
+                        ? MagicSpellDisplayState.Granted
+                        : paths.Any(path => path.Kind == MagicSpellAccessKind.Known)
+                            ? MagicSpellDisplayState.Known
+                            : MagicSpellDisplayState.Available;
+
+                return new MagicSpellListEntryModel(
+                    first.Entry.SpellId ?? first.Entry.Id,
+                    first.Entry.CurrentName!,
+                    first.Entry.SpellLevel,
+                    first.Entry.Source,
+                    first.Entry.School,
+                    first.Entry.IsRitual,
+                    first.Entry.IsConcentration,
+                    isPrepared: false,
+                    isAlwaysPrepared: false,
+                    isCantrip: first.Entry.SpellLevel == 0,
+                    displayState: state,
+                    castingTime: first.Entry.CastingTime,
+                    grantedBy: first.Entry.GrantedBy,
+                    accessPaths: paths);
+            })
             .OrderBy(spell => spell.Level)
             .ThenBy(spell => spell.Name)
             .ToList();
 
-        if (grantedSpells.Count == 0)
+        if (projectedSpells.Count == 0)
         {
             return sections;
         }
 
         sections.Add(new MagicSpellcastingSectionModel
         {
-            Id = "granted-features",
-            Label = "Granted by Features",
-            Cantrips = grantedSpells.Where(spell => spell.Level == 0).ToList(),
-            SpellLevels = grantedSpells
+            Id = "other-magic-sources",
+            Label = "Other Magic Sources",
+            Cantrips = projectedSpells.Where(spell => spell.Level == 0).ToList(),
+            SpellLevels = projectedSpells
                 .Where(spell => spell.Level > 0)
                 .GroupBy(spell => spell.Level)
                 .OrderBy(group => group.Key)
@@ -868,6 +905,34 @@
 
         return sections;
     }
+
+    private static MagicSpellAccessPathModel CreateProjectedAccessPath(
+        MagicKnownSpellGroupModel group,
+        MagicKnownSpellEntryModel entry,
+        MagicSpellSelectionAccess access)
+    {
+        string source = FirstNonEmpty(entry.AccessSource, entry.GrantedBy, group.Label, "Feature");
+        MagicSpellAccessKind kind = access switch
+        {
+            MagicSpellSelectionAccess.Known => MagicSpellAccessKind.Known,
+            MagicSpellSelectionAccess.AlwaysPrepared => MagicSpellAccessKind.AlwaysPrepared,
+            MagicSpellSelectionAccess.RitualBook => MagicSpellAccessKind.RitualBook,
+            _ => MagicSpellAccessKind.Granted,
+        };
+
+        return new MagicSpellAccessPathModel(
+            kind,
+            group.SectionId ?? string.Empty,
+            source,
+            CanCastNormally: kind != MagicSpellAccessKind.RitualBook,
+            CanCastAsRitual: kind == MagicSpellAccessKind.RitualBook);
+    }
+
+    private static bool CanCastNow(MagicSpellListEntryModel spell) =>
+        spell.IsCantrip
+        || spell.IsPrepared
+        || spell.IsAlwaysPrepared
+        || spell.AccessPaths.Any(path => path.CanCastNormally || path.CanCastAsRitual);
 
     private static string GetSpellKey(string? id, string name, int level) =>
         string.IsNullOrWhiteSpace(id)
@@ -1096,21 +1161,192 @@
         _ => $"{level}th",
     };
 
-    private static string GetDisplayStateLabel(MagicSpellDisplayState state) => state switch
+    private static IReadOnlyList<(string Label, string CssClass)> GetPreparedAccessBadges(
+        MagicSpellListEntryModel spell,
+        MagicSpellcastingSectionModel section)
     {
-        MagicSpellDisplayState.AlwaysPrepared => "Always Prepared",
-        MagicSpellDisplayState.Granted => "Granted",
-        MagicSpellDisplayState.Known => "Known",
-        MagicSpellDisplayState.Available => "Available",
-        _ => "Prepared",
+        var badges = new List<(string Label, string CssClass)>();
+
+        if (spell.IsAlwaysPrepared)
+        {
+            MagicSpellAccessPathModel? localAlways = spell.AccessPaths.FirstOrDefault(path =>
+                path.Kind == MagicSpellAccessKind.AlwaysPrepared
+                && string.Equals(path.CastingSectionId, section.Id, StringComparison.OrdinalIgnoreCase));
+            string source = FirstNonEmpty(localAlways?.SourceLabel, spell.GrantedBy);
+            badges.Add((AppendSource("Always Prepared", source), "magic-spell-badge-always"));
+        }
+        else
+        {
+            badges.Add(spell.IsPrepared
+                ? ("Prepared", "magic-spell-badge-prepared")
+                : ("Available", "magic-spell-badge-available"));
+        }
+
+        IEnumerable<MagicSpellAccessPathModel> supplementalPaths = spell.AccessPaths
+            .Where(path => path.CanCastNormally)
+            .Where(path => !IsSupersededAccessPath(spell, path))
+            .Where(path => !IsRepresentedByLocalPreparation(path, spell, section.Id))
+            .DistinctBy(path => $"{path.Kind}|{path.CastingSectionId}|{path.SourceLabel}",
+                StringComparer.OrdinalIgnoreCase);
+
+        badges.AddRange(supplementalPaths.Select(path => (
+            GetAccessPathLabel(path, section.Id, preparedContext: true),
+            GetAccessPathBadgeClass(path.Kind))));
+
+        return badges
+            .DistinctBy(badge => badge.Label, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private static (string Label, string CssClass) GetKnownEntryAccessBadge(
+        MagicKnownSpellGroupModel group,
+        MagicKnownSpellEntryModel entry)
+    {
+        MagicSpellSelectionAccess access = group.ReadOnlyGroup
+            ? MagicSpellSelectionAccess.Granted
+            : entry.SelectionAccess;
+        string source = FirstNonEmpty(entry.AccessSource, entry.GrantedBy, group.Label);
+
+        return access switch
+        {
+            MagicSpellSelectionAccess.Known =>
+                (AppendSource("Known", source), "magic-spell-badge-known"),
+            MagicSpellSelectionAccess.AlwaysPrepared =>
+                (AppendSource("Always Prepared", source), "magic-spell-badge-always"),
+            MagicSpellSelectionAccess.Granted =>
+                (AppendSource("Granted", source), "magic-spell-badge-granted"),
+            MagicSpellSelectionAccess.Spellbook =>
+                (AppendSource("Spellbook", source), "magic-spell-badge-available"),
+            MagicSpellSelectionAccess.RitualBook =>
+                (AppendSource("Ritual Only", source), "magic-spell-badge-ritual"),
+            _ =>
+                (AppendSource("Preparable", source), "magic-spell-badge-available"),
+        };
+    }
+
+    private static IReadOnlyList<(string Label, string CssClass)> GetCastableAccessBadges(
+        MagicSpellListEntryModel spell,
+        string sectionId)
+    {
+        List<(string Label, string CssClass)> badges = spell.AccessPaths
+            .Where(path => path.CanCastNormally)
+            .Where(path => !IsSupersededAccessPath(spell, path))
+            .DistinctBy(path => $"{path.Kind}|{path.CastingSectionId}|{path.SourceLabel}",
+                StringComparer.OrdinalIgnoreCase)
+            .Select(path => (
+                GetAccessPathLabel(path, sectionId, preparedContext: false),
+                GetAccessPathBadgeClass(path.Kind)))
+            .ToList();
+
+        if (badges.Count == 0)
+        {
+            if (spell.IsAlwaysPrepared)
+            {
+                badges.Add((
+                    AppendSource("Always Prepared", spell.GrantedBy),
+                    "magic-spell-badge-always"));
+            }
+            else if (spell.IsPrepared)
+            {
+                badges.Add(("Prepared", "magic-spell-badge-prepared"));
+            }
+            else if (spell.IsCantrip)
+            {
+                badges.Add(("Known", "magic-spell-badge-known"));
+            }
+        }
+
+        return badges
+            .DistinctBy(badge => badge.Label, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private static IReadOnlyList<(string Label, string CssClass)> GetRitualBadges(
+        MagicSpellListEntryModel spell)
+    {
+        if (!spell.IsRitual)
+        {
+            return [];
+        }
+
+        List<MagicSpellAccessPathModel> ritualPaths = spell.AccessPaths
+            .Where(path => path.CanCastAsRitual)
+            .DistinctBy(path => path.SourceLabel, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (ritualPaths.Count == 0)
+        {
+            return [("Ritual", string.Empty)];
+        }
+
+        bool canCastNormally = spell.IsPrepared
+            || spell.IsAlwaysPrepared
+            || spell.AccessPaths.Any(path => path.CanCastNormally);
+        string prefix = canCastNormally ? "Ritual Available" : "Ritual Only";
+
+        return ritualPaths
+            .Select(path => (
+                AppendSource(prefix, path.SourceLabel),
+                "magic-spell-badge-ritual"))
+            .DistinctBy(badge => badge.Item1, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private static bool IsRepresentedByLocalPreparation(
+        MagicSpellAccessPathModel path,
+        MagicSpellListEntryModel spell,
+        string sectionId) =>
+        string.Equals(path.CastingSectionId, sectionId, StringComparison.OrdinalIgnoreCase)
+        && ((spell.IsAlwaysPrepared && path.Kind == MagicSpellAccessKind.AlwaysPrepared)
+            || (spell.IsPrepared && path.Kind == MagicSpellAccessKind.Prepared));
+
+    private static bool IsSupersededAccessPath(
+        MagicSpellListEntryModel spell,
+        MagicSpellAccessPathModel path) =>
+        path.Kind == MagicSpellAccessKind.Granted
+        && spell.AccessPaths.Any(candidate =>
+            candidate.Kind == MagicSpellAccessKind.AlwaysPrepared
+            && string.Equals(
+                candidate.SourceLabel,
+                path.SourceLabel,
+                StringComparison.OrdinalIgnoreCase));
+
+    private static string GetAccessPathLabel(
+        MagicSpellAccessPathModel path,
+        string currentSectionId,
+        bool preparedContext)
+    {
+        bool isCurrentSection = string.Equals(
+            path.CastingSectionId,
+            currentSectionId,
+            StringComparison.OrdinalIgnoreCase);
+
+        string label = path.Kind switch
+        {
+            MagicSpellAccessKind.Known when preparedContext => "Already Known",
+            MagicSpellAccessKind.Known => "Known",
+            MagicSpellAccessKind.Prepared when preparedContext && !isCurrentSection => "Already Prepared",
+            MagicSpellAccessKind.Prepared => "Prepared",
+            MagicSpellAccessKind.AlwaysPrepared => "Always Prepared",
+            MagicSpellAccessKind.Granted => "Granted",
+            _ => "Available",
+        };
+
+        return AppendSource(label, path.SourceLabel);
+    }
+
+    private static string GetAccessPathBadgeClass(MagicSpellAccessKind kind) => kind switch
+    {
+        MagicSpellAccessKind.AlwaysPrepared => "magic-spell-badge-always",
+        MagicSpellAccessKind.Granted => "magic-spell-badge-granted",
+        MagicSpellAccessKind.Known => "magic-spell-badge-known",
+        MagicSpellAccessKind.Prepared => "magic-spell-badge-prepared",
+        _ => "magic-spell-badge-available",
     };
 
-    private static string GetBadgeClass(MagicSpellDisplayState state) => state switch
-    {
-        MagicSpellDisplayState.AlwaysPrepared => "magic-spell-badge-always",
-        MagicSpellDisplayState.Granted => "magic-spell-badge-granted",
-        MagicSpellDisplayState.Known => "magic-spell-badge-known",
-        MagicSpellDisplayState.Available => "magic-spell-badge-available",
-        _ => "magic-spell-badge-prepared",
-    };
+    private static string AppendSource(string label, string? source) =>
+        string.IsNullOrWhiteSpace(source) ? label : $"{label} — {source}";
+
+    private static string FirstNonEmpty(params string?[] values) =>
+        values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)) ?? string.Empty;
+
 }

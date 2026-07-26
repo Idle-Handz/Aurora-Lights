@@ -491,6 +491,12 @@
     color: #94e2d5;
 }
 
+.magic-spell-badge-ritual {
+    border-color: rgba(203, 166, 247, 0.65);
+    background: rgba(203, 166, 247, 0.12);
+    color: #cba6f7;
+}
+
 .magic-detail {
     padding: 1rem;
 }

@@ -1,3 +1,4 @@
+using Aurora.Components.Models;
 using Builder.Data;
 using Builder.Data.Elements;
 using Builder.Presentation;
@@ -571,6 +572,11 @@ public sealed class CharacterSnapshot
                 parentName = parent.Name ?? "";
             }
 
+            // The Extras proxy is how a found or transcribed Wizard spell is added to the
+            // character. It expands the spellbook; it does not grant a separately castable spell.
+            if (parentName.StartsWith("Additional Wizard Spell,", StringComparison.OrdinalIgnoreCase))
+                continue;
+
             if (nonClassGrant)
                 result.Add(new GrantedSpellEntry(e.Name!, GetSpellLevel(e), parentName, e.Id ?? ""));
         }
@@ -607,6 +613,7 @@ public sealed class CharacterSnapshot
             bool isSpellbookCaster = isPreparedCaster
                 && cm.SelectionRules.Any(r => r.Attributes.Type == "Spell")
                 && string.IsNullOrEmpty(info.InitialSupportedSpellsExpression?.Supports);
+            bool supportsRitualCasting = SupportsRitualCasting(info);
             var extensionSupports = allSpellInfos
                 .Where(candidate => candidate.IsExtension
                     && string.Equals(candidate.Name, info.Name, StringComparison.OrdinalIgnoreCase))
@@ -636,8 +643,16 @@ public sealed class CharacterSnapshot
                 SpellcastingDc = spellDC,
                 SpellcastingAttack = spellAttack,
                 IsPreparedCaster = isPreparedCaster,
+                IsSpellbookCaster = isSpellbookCaster,
+                RitualCastingMode = !supportsRitualCasting
+                    ? MagicRitualCastingMode.None
+                    : isSpellbookCaster
+                        ? MagicRitualCastingMode.Spellbook
+                        : isPreparedCaster
+                            ? MagicRitualCastingMode.PreparedSpells
+                            : MagicRitualCastingMode.KnownSpells,
                 MaxPrepared = maxPrepared,
-                Cantrips = CollectCantrips(info, filterKnownBySupports, isSpellbookCaster, extensionSupports),
+                Cantrips = CollectCantrips(info, filterKnownBySupports, isSpellbookCaster),
                 SpellLevels = CollectSpellLevels(
                     isPreparedCaster,
                     info.Name ?? "",
@@ -663,8 +678,7 @@ public sealed class CharacterSnapshot
     private static IReadOnlyList<SpellEntry> CollectCantrips(
         SpellcastingInformation info,
         bool filterBySupports,
-        bool isSpellbookCaster,
-        IReadOnlyList<(string Supports, bool IsId)> extensionSupports)
+        bool isSpellbookCaster)
     {
         var cantrips = CharacterManager.Current.GetElements()
             .Where(e => e.Type == "Spell" && GetSpellLevel(e) == 0);
@@ -693,22 +707,6 @@ public sealed class CharacterSnapshot
             .Select(g => g.First())
             .OrderBy(s => s.Name)
             .ToList();
-
-        foreach (var extra in ResolveExtendedSpells(extensionSupports, maxLevel: 0))
-        {
-            if (entries.All(entry => !entry.Id.Equals(extra.Id, StringComparison.OrdinalIgnoreCase)))
-            {
-                entries.Add(new SpellEntry
-                {
-                    Name = extra.Name,
-                    Id = extra.Id,
-                    IsPrepared = true,
-                    IsAlwaysPrepared = true,
-                });
-            }
-        }
-
-        entries = entries.OrderBy(s => s.Name).ToList();
 
         if (entries.Count == 0 && filterBySupports && !isSpellbookCaster)
         {
@@ -797,8 +795,6 @@ public sealed class CharacterSnapshot
             .Where(s => s.Level > 0 && !string.IsNullOrEmpty(s.Name))
             .ToList();
 
-        knownSpellList.AddRange(ResolveExtendedSpells(extensionSupports, maxLevel: 9));
-
         var spellsByLevel = knownSpellList
             .GroupBy(s => s.Level)
             .ToDictionary(g => g.Key, g =>
@@ -835,10 +831,16 @@ public sealed class CharacterSnapshot
         // Track registered spells that are always-prepared. These can come from grant rules
         // (domain/subclass spells) or select rules (feature/race/background spell choices).
         var alwaysPreparedIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var alwaysPreparedSources = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (var e in CharacterManager.Current.GetElements().Where(e => e.Type == "Spell"))
         {
             if (IsAlwaysPreparedSpell(e) && !string.IsNullOrWhiteSpace(e.Id))
+            {
                 alwaysPreparedIds.Add(e.Id);
+                string source = e.Aquisition.GetParentHeader()?.Name ?? string.Empty;
+                if (!string.IsNullOrWhiteSpace(source))
+                    alwaysPreparedSources[e.Id] = source;
+            }
         }
 
         // Build source restriction sets — mirror the WPF SpellcasterSelectionControlViewModel logic.
@@ -951,6 +953,7 @@ public sealed class CharacterSnapshot
                     Id               = s.Id,
                     IsAlwaysPrepared = alwaysPreparedIds.Contains(s.Id),
                     IsPrepared       = alwaysPreparedIds.Contains(s.Id) || preparedIds.Contains(s.Id),
+                    GrantedBy        = alwaysPreparedSources.GetValueOrDefault(s.Id, string.Empty),
                 })
                 .ToList();
             if (entries.Count > 0 || totalSlots[level] > 0)
@@ -1016,6 +1019,22 @@ public sealed class CharacterSnapshot
     // Spell-typed elements are always Builder.Data.Elements.Spell (verified by SpellTypeInvariantTests),
     // so read Level via a static cast instead of dynamic — no silent binder failure → wrong level.
     private static int GetSpellLevel(object e) => e is Spell sp ? sp.Level : 0;
+
+    private static bool SupportsRitualCasting(SpellcastingInformation information)
+    {
+        try
+        {
+            ElementBase? owner = DataManager.Current.ElementsCollection.GetElement(information.ElementHeader.Id);
+#pragma warning disable CS0618
+            return owner?.GetGrantRules().Any(rule =>
+                string.Equals(rule.Attributes.Name, "ID_INTERNAL_RITUAL_CASTING", StringComparison.OrdinalIgnoreCase)) == true;
+#pragma warning restore CS0618
+        }
+        catch
+        {
+            return false;
+        }
+    }
 
     private static bool IsAlwaysPreparedSpell(ElementBase spell)
     {
@@ -1188,6 +1207,7 @@ public sealed class SpellEntry
     /// disabled for these entries.
     /// </summary>
     public bool   IsAlwaysPrepared { get; init; }
+    public string GrantedBy { get; init; } = "";
 }
 
 public sealed class SpellcastingSectionEntry
@@ -1200,6 +1220,8 @@ public sealed class SpellcastingSectionEntry
     public string SpellcastingDc { get; init; } = "";
     public string SpellcastingAttack { get; init; } = "";
     public bool IsPreparedCaster { get; init; }
+    public bool IsSpellbookCaster { get; init; }
+    public MagicRitualCastingMode RitualCastingMode { get; init; }
     public int MaxPrepared { get; init; }
     public int PreparedCount => SpellLevels.SelectMany(l => l.Spells).Count(s => s.IsPrepared && !s.IsAlwaysPrepared);
     public IReadOnlyList<SpellEntry> Cantrips { get; init; } = [];
