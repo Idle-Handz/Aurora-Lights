@@ -1,13 +1,25 @@
 @page "/console"
 @implements IDisposable
+@using System.Text
 @inject DebugLogService Log
 @inject UserPreferencesService Prefs
 @inject IJSRuntime JS
+@inject ISnackbar Snackbar
 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
     <MudText Typo="Typo.h5">Console</MudText>
-    <MudButton Variant="Variant.Outlined" Color="Color.Default" Size="Size.Small" OnClick="() => Log.Clear()">
-        Clear
-    </MudButton>
+    <MudStack Row="true" Spacing="1">
+        <MudButton Variant="Variant.Outlined"
+                   Color="Color.Default"
+                   Size="Size.Small"
+                   StartIcon="@Icons.Material.Filled.ContentCopy"
+                   Disabled="@(_entries.Count == 0)"
+                   OnClick="CopyLogAsync">
+            Copy
+        </MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Default" Size="Size.Small" OnClick="() => Log.Clear()">
+            Clear
+        </MudButton>
+    </MudStack>
 </div>
 
 @if (_entries.Count == 0)
@@ -77,6 +89,41 @@ else
         _displayed = entries.Count <= DisplayLimit
             ? entries.AsEnumerable().Reverse().ToList()
             : entries.Skip(entries.Count - DisplayLimit).Reverse().ToList();
+    }
+
+    private async Task CopyLogAsync()
+    {
+        if (_entries.Count == 0)
+            return;
+
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", BuildLogText());
+            Snackbar.Add($"Copied {_entries.Count} console entries.", Severity.Success);
+        }
+        catch
+        {
+            Snackbar.Add("Could not copy console entries.", Severity.Error);
+        }
+    }
+
+    private string BuildLogText()
+    {
+        var sb = new StringBuilder();
+        foreach (var entry in _entries)
+        {
+            sb.Append('[')
+              .Append(entry.Timestamp.ToString("yyyy-MM-dd HH:mm:ss.fff zzz"))
+              .Append("] ")
+              .Append(entry.Level.ToString().ToUpperInvariant())
+              .Append(": ")
+              .AppendLine(entry.Message);
+
+            if (!string.IsNullOrWhiteSpace(entry.Details))
+                sb.AppendLine(entry.Details.TrimEnd());
+        }
+
+        return sb.ToString().TrimEnd();
     }
 
     public void Dispose() => Log.Changed -= OnLogChanged;

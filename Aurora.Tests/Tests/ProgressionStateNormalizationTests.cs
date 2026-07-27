@@ -20,7 +20,7 @@ public sealed class ProgressionStateNormalizationTests : IAsyncLifetime
     public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact]
-    public async Task DuplicateGrantedFeature_NormalizationRemovesDuplicateSelectionRows()
+    public async Task DuplicateGrantedFeature_WithMissingAcquisition_NormalizationPrefersAcquiredCopy()
     {
         if (!ContentFixture.SkipIfUnavailable(_output)) return;
 
@@ -75,10 +75,9 @@ public sealed class ProgressionStateNormalizationTests : IAsyncLifetime
             return;
         }
 
-        if (owner.Aquisition.WasGranted && owner.Aquisition.GrantRule is not null)
-            duplicate.Aquisition.GrantedBy(owner.Aquisition.GrantRule);
-
+        parent.RuleElements.Remove(owner);
         parent.RuleElements.Add(duplicate);
+        parent.RuleElements.Add(owner);
         druidManager.ProcessExistingElements();
 
         CountMatchingSelectionRows(manager, subclassRule).Should().BeGreaterThan(1);
@@ -89,6 +88,27 @@ public sealed class ProgressionStateNormalizationTests : IAsyncLifetime
         removed.Should().BeGreaterThan(0);
         CountMatchingSelectionRows(manager, subclassRule).Should().Be(1);
         manager.GetElements().Count(element => element.Id == owner.Id).Should().Be(1);
+        FindElement(druidManager.Elements, owner.Id).Should().BeSameAs(owner);
+    }
+
+    [Fact]
+    public void DuplicateElement_NormalizationPrefersCopyWithSelectedDescendant()
+    {
+        var progression = new ProgressionManager();
+        var empty = new ElementBase("Feature", "Class Feature", "Test", "ID_TEST_FEATURE");
+        var populated = new ElementBase("Feature", "Class Feature", "Test", "ID_TEST_FEATURE");
+        var selected = new ElementBase("Chosen Feat", "Feat", "Test", "ID_TEST_CHOSEN_FEAT");
+        selected.Aquisition.WasSelected = true;
+        selected.Aquisition.SelectRule = new SelectRule(populated.ElementHeader);
+        populated.RuleElements.Add(selected);
+
+        progression.Elements.Add(empty);
+        progression.Elements.Add(populated);
+
+        int removed = progression.NormalizeDuplicateProgressionState();
+
+        removed.Should().Be(1);
+        progression.Elements.Should().ContainSingle().Which.Should().BeSameAs(populated);
     }
 
     private static int CountMatchingSelectionRows(CharacterManager manager, SelectRule rule) =>
