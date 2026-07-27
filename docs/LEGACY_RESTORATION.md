@@ -77,7 +77,7 @@ the result.
 | Restore `Builder.Core` | Source-owned; API and focused compatibility checks pass |
 | Restore `Builder.Data` | Source-owned; API, differential behavior, corpus, and consumer checks pass |
 | Restore `Aurora.Documents` | Source-owned; API, differential behavior, embedded-resource, and consumer checks pass |
-| Restore `Aurora.Presentation` | Not started |
+| Restore `Aurora.Presentation` | Source-owned; API, differential WPF behavior, resource-path, and consumer checks pass |
 | Remove first-party oracle binaries from production paths | Not started |
 
 ## Restoration Tools
@@ -94,6 +94,14 @@ the result.
 - `tools/legacy-restoration/Compare-AuroraDocumentsBehavior.ps1` runs the
   focused Aurora.Documents compatibility suite against both implementations,
   including the embedded PDF templates and live form-field writing.
+- `tools/WpfAssemblyApi` hosts the normalized API formatter in a Windows
+  Desktop runtime so legacy and restored WPF assemblies can be inspected.
+- `tools/legacy-restoration/Compare-RestoredWpfAssemblyApi.ps1` compares WPF
+  API surfaces in separate processes.
+- `tools/legacy-restoration/Compare-AuroraPresentationBehavior.ps1` runs the
+  focused Aurora.Presentation suite against the restored assembly and the
+  production oracle, including dependency properties, triggers, BAML paths,
+  and live resource-dictionary loading.
 
 Example:
 
@@ -130,4 +138,17 @@ field mappings.
   -RestoredAssembly .\Aurora.Documents\bin\Debug\net10.0\Aurora.Documents.dll
 
 .\tools\legacy-restoration\Compare-AuroraDocumentsBehavior.ps1
+```
+
+`Aurora.Presentation` retains all 25 legacy BAML resource paths while keeping
+their recovered XAML as contributor-editable source. The modern WPF compiler
+regenerates the BAML bytes, so parity is checked through resource names, paths,
+representative values, merged dictionaries, and successful pack-URI loading.
+
+```powershell
+.\tools\legacy-restoration\Compare-RestoredWpfAssemblyApi.ps1 `
+  -OracleAssembly .\lib\Aurora.Presentation.dll `
+  -RestoredAssembly .\Aurora.Presentation\bin\Debug\net10.0-windows\Aurora.Presentation.dll
+
+.\tools\legacy-restoration\Compare-AuroraPresentationBehavior.ps1
 ```

@@ -1,0 +1,250 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:options="http://schemas.microsoft.com/winfx/2006/xaml/presentation/options" xmlns:system="clr-namespace:System;assembly=mscorlib" xmlns:controls="clr-namespace:Aurora.Presentation.Controls">
+  <ResourceDictionary.MergedDictionaries>
+    <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/controls.buttons.xaml" />
+    <ResourceDictionary Source="pack://application:,,,/Aurora.Presentation;component/Styles/Colors.xaml" />
+    <ResourceDictionary Source="pack://application:,,,/Aurora.Presentation;component/Themes/CommandButton.xaml" />
+  </ResourceDictionary.MergedDictionaries>
+  <CornerRadius x:Key="AuroraButtonCorderRadius">2</CornerRadius>
+  <Style x:Key="AuroraButton" TargetType="{x:Type Button}" BasedOn="{StaticResource MetroFlatButton}">
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style x:Key="AuroraIconButton" TargetType="{x:Type Button}" BasedOn="{StaticResource AuroraButton}">
+    <Setter Property="Height" Value="26" />
+    <Setter Property="MinWidth" Value="26" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="{x:Type Button}">
+          <Border Background="{TemplateBinding Control.Background}" BorderBrush="{TemplateBinding Control.BorderBrush}" BorderThickness="{TemplateBinding Control.BorderThickness}" Padding="{TemplateBinding Control.Padding}" SnapsToDevicePixels="True" CornerRadius="{StaticResource AuroraButtonCorderRadius}">
+            <Grid>
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Grid>
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="UIElement.IsMouseOver" Value="True">
+              <Setter Value="{DynamicResource BackgroundHighlighted}" Property="Background" />
+              <Setter Value="{DynamicResource BorderBrushHighlighted}" Property="BorderBrush" />
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+              <Setter Value="{DynamicResource BackgroundSelected}" Property="Background" />
+              <Setter Value="{DynamicResource BorderBrushSelected}" Property="BorderBrush" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False" />
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+  <Style x:Key="AuroraCommandButton" TargetType="{x:Type Button}" BasedOn="{StaticResource AuroraButton}">
+    <Setter Property="Height" Value="26" />
+    <Setter Property="MinWidth" Value="26" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="{x:Type Button}">
+          <Border Background="{TemplateBinding Control.Background}" BorderBrush="{TemplateBinding Control.BorderBrush}" BorderThickness="{TemplateBinding Control.BorderThickness}" Padding="{TemplateBinding Control.Padding}" SnapsToDevicePixels="True" CornerRadius="{StaticResource AuroraButtonCorderRadius}">
+            <Grid>
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Grid>
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="UIElement.IsMouseOver" Value="True">
+              <Setter Value="{DynamicResource BackgroundHighlighted}" Property="Background" />
+              <Setter Value="{DynamicResource BorderBrushHighlighted}" Property="BorderBrush" />
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+              <Setter Value="{DynamicResource BackgroundSelected}" Property="Background" />
+              <Setter Value="{DynamicResource BorderBrushSelected}" Property="BorderBrush" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False" />
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+  <Style x:Key="SuccessCommandButtonStyle" BasedOn="{StaticResource CommandButtonDefaultStyle}" TargetType="{x:Type controls:CommandButton}">
+    <Style.Triggers>
+      <Trigger Property="UIElement.IsMouseOver" Value="True">
+        <Setter Property="Background" Value="{DynamicResource SuccessColorBrush}" />
+        <Setter Property="Foreground" Value="#FFE6E6E6" />
+      </Trigger>
+      <Trigger Property="IsPressed" Value="True">
+        <Setter Property="Background" Value="{DynamicResource DarkColor4Brush}" />
+        <Setter Property="Foreground" Value="{DynamicResource LightColor1Brush}" />
+      </Trigger>
+    </Style.Triggers>
+  </Style>
+  <Style x:Key="WarningCommandButtonStyle" BasedOn="{StaticResource CommandButtonDefaultStyle}" TargetType="{x:Type controls:CommandButton}">
+    <Style.Triggers>
+      <Trigger Property="UIElement.IsMouseOver" Value="True">
+        <Setter Property="Background" Value="{DynamicResource WarningColorBrush}" />
+        <Setter Property="Foreground" Value="#FFE6E6E6" />
+      </Trigger>
+      <Trigger Property="IsPressed" Value="True">
+        <Setter Property="Background" Value="{DynamicResource DarkColor4Brush}" />
+        <Setter Property="Foreground" Value="{DynamicResource LightColor1Brush}" />
+      </Trigger>
+    </Style.Triggers>
+  </Style>
+  <Style x:Key="DangerCommandButtonStyle" BasedOn="{StaticResource CommandButtonDefaultStyle}" TargetType="{x:Type controls:CommandButton}">
+    <Style.Triggers>
+      <Trigger Property="UIElement.IsMouseOver" Value="True">
+        <Setter Property="Background" Value="{DynamicResource DangerColorBrush}" />
+        <Setter Property="Foreground" Value="#FFE6E6E6" />
+      </Trigger>
+      <Trigger Property="IsPressed" Value="True">
+        <Setter Property="Background" Value="{DynamicResource DarkColor4Brush}" />
+        <Setter Property="Foreground" Value="{DynamicResource LightColor1Brush}" />
+      </Trigger>
+    </Style.Triggers>
+  </Style>
+  <Style x:Key="ClearCommandButtonStyle" BasedOn="{StaticResource CommandButtonDefaultStyle}" TargetType="{x:Type controls:CommandButton}">
+    <Setter Property="Background" Value="{DynamicResource TransparentWhiteBrush}" />
+  </Style>
+  <Style x:Key="SuccessClearCommandButtonStyle" BasedOn="{StaticResource ClearCommandButtonStyle}" TargetType="{x:Type controls:CommandButton}">
+    <Style.Triggers>
+      <Trigger Property="UIElement.IsMouseOver" Value="True">
+        <Setter Property="Background" Value="{DynamicResource SuccessColorBrush}" />
+        <Setter Property="Foreground" Value="#FFE6E6E6" />
+      </Trigger>
+      <Trigger Property="IsPressed" Value="True">
+        <Setter Property="Background" Value="{DynamicResource DarkColor4Brush}" />
+        <Setter Property="Foreground" Value="{DynamicResource LightColor1Brush}" />
+      </Trigger>
+    </Style.Triggers>
+  </Style>
+  <Style x:Key="WarningClearCommandButtonStyle" BasedOn="{StaticResource ClearCommandButtonStyle}" TargetType="{x:Type controls:CommandButton}">
+    <Style.Triggers>
+      <Trigger Property="UIElement.IsMouseOver" Value="True">
+        <Setter Property="Background" Value="{DynamicResource WarningColorBrush}" />
+        <Setter Property="Foreground" Value="#FFE6E6E6" />
+      </Trigger>
+      <Trigger Property="IsPressed" Value="True">
+        <Setter Property="Background" Value="{DynamicResource DarkColor4Brush}" />
+        <Setter Property="Foreground" Value="{DynamicResource LightColor1Brush}" />
+      </Trigger>
+    </Style.Triggers>
+  </Style>
+  <Style x:Key="DangerClearCommandButtonStyle" BasedOn="{StaticResource ClearCommandButtonStyle}" TargetType="{x:Type controls:CommandButton}">
+    <Style.Triggers>
+      <Trigger Property="UIElement.IsMouseOver" Value="True">
+        <Setter Property="Background" Value="{DynamicResource DangerColorBrush}" />
+        <Setter Property="Foreground" Value="#FFE6E6E6" />
+      </Trigger>
+      <Trigger Property="IsPressed" Value="True">
+        <Setter Property="Background" Value="{DynamicResource DarkColor4Brush}" />
+        <Setter Property="Foreground" Value="{DynamicResource LightColor1Brush}" />
+      </Trigger>
+    </Style.Triggers>
+  </Style>
+  <Style x:Key="IconSeparatorStyle" TargetType="{x:Type Separator}">
+    <Setter Property="UIElement.Opacity" Value=".5" />
+    <Setter Property="Height" Value="12" />
+    <Setter Property="Margin" Value="5,0" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="UIElement.SnapsToDevicePixels" Value="True" />
+    <Setter Property="Background" Value="{DynamicResource DarkColor1Brush}" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="{x:Type Separator}">
+          <Border Width="1" Background="{TemplateBinding Control.Background}" SnapsToDevicePixels="{TemplateBinding UIElement.SnapsToDevicePixels}" />
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+  <Style x:Key="IconSeperatorStyle" TargetType="{x:Type Separator}" BasedOn="{StaticResource IconSeparatorStyle}" />
+  <Style x:Key="IconCommandButtonStyle" BasedOn="{StaticResource ClearCommandButtonStyle}" TargetType="{x:Type controls:CommandButton}">
+    <Setter Property="FontSize" Value="10" />
+    <Setter Property="MinWidth" Value="20" />
+    <Setter Property="Height" Value="20" />
+    <Setter Property="Padding" Value="1" />
+    <Style.Triggers>
+      <Trigger Property="UIElement.IsMouseOver" Value="True">
+        <Setter Property="Background" Value="{DynamicResource LightColor1Brush}" />
+      </Trigger>
+      <Trigger Property="IsPressed" Value="True">
+        <Setter Property="Background" Value="{DynamicResource DarkColor3Brush}" />
+      </Trigger>
+    </Style.Triggers>
+  </Style>
+  <Style x:Key="SuccessIconCommandButtonStyle" BasedOn="{StaticResource IconCommandButtonStyle}" TargetType="{x:Type controls:CommandButton}">
+    <Style.Triggers>
+      <Trigger Property="UIElement.IsMouseOver" Value="True">
+        <Setter Property="Background" Value="{DynamicResource SuccessColorBrush}" />
+        <Setter Property="Foreground" Value="#FFE6E6E6" />
+      </Trigger>
+      <Trigger Property="IsPressed" Value="True">
+        <Setter Property="Background" Value="{DynamicResource DarkColor3Brush}" />
+        <Setter Property="Foreground" Value="{DynamicResource LightColor1Brush}" />
+      </Trigger>
+    </Style.Triggers>
+  </Style>
+  <Style x:Key="WarningIconCommandButtonStyle" BasedOn="{StaticResource IconCommandButtonStyle}" TargetType="{x:Type controls:CommandButton}">
+    <Style.Triggers>
+      <Trigger Property="UIElement.IsMouseOver" Value="True">
+        <Setter Property="Background" Value="{DynamicResource WarningColorBrush}" />
+        <Setter Property="Foreground" Value="#FFE6E6E6" />
+      </Trigger>
+      <Trigger Property="IsPressed" Value="True">
+        <Setter Property="Background" Value="{DynamicResource DarkColor3Brush}" />
+        <Setter Property="Foreground" Value="{DynamicResource LightColor1Brush}" />
+      </Trigger>
+    </Style.Triggers>
+  </Style>
+  <Style x:Key="DangerIconCommandButtonStyle" BasedOn="{StaticResource IconCommandButtonStyle}" TargetType="{x:Type controls:CommandButton}">
+    <Style.Triggers>
+      <Trigger Property="UIElement.IsMouseOver" Value="True">
+        <Setter Property="Background" Value="{DynamicResource DangerColorBrush}" />
+        <Setter Property="Foreground" Value="#FFE6E6E6" />
+      </Trigger>
+      <Trigger Property="IsPressed" Value="True">
+        <Setter Property="Background" Value="{DynamicResource DarkColor3Brush}" />
+        <Setter Property="Foreground" Value="{DynamicResource LightColor1Brush}" />
+      </Trigger>
+    </Style.Triggers>
+  </Style>
+  <Style x:Key="HighlightIconCommandButtonStyle" BasedOn="{StaticResource IconCommandButtonStyle}" TargetType="{x:Type controls:CommandButton}">
+    <Style.Triggers>
+      <Trigger Property="UIElement.IsMouseOver" Value="True">
+        <Setter Property="Background" Value="{DynamicResource AuroraDarkBrush}" />
+        <Setter Property="Foreground" Value="#FFE6E6E6" />
+      </Trigger>
+      <Trigger Property="IsPressed" Value="True">
+        <Setter Property="Background" Value="#FF151515" />
+        <Setter Property="Foreground" Value="{DynamicResource AuroraGoldBrush}" />
+      </Trigger>
+    </Style.Triggers>
+  </Style>
+  <Style x:Key="TextIconCommandButtonStyle" BasedOn="{StaticResource IconCommandButtonStyle}" TargetType="{x:Type controls:CommandButton}">
+    <Setter Property="Padding" Value="5,1" />
+  </Style>
+  <Style x:Key="SuccessTextIconCommandButtonStyle" BasedOn="{StaticResource SuccessIconCommandButtonStyle}" TargetType="{x:Type controls:CommandButton}">
+    <Setter Property="Padding" Value="5,1" />
+  </Style>
+  <Style x:Key="WarningTextIconCommandButtonStyle" BasedOn="{StaticResource WarningIconCommandButtonStyle}" TargetType="{x:Type controls:CommandButton}">
+    <Setter Property="Padding" Value="5,1" />
+  </Style>
+  <Style x:Key="DangerTextIconCommandButtonStyle" BasedOn="{StaticResource DangerIconCommandButtonStyle}" TargetType="{x:Type controls:CommandButton}">
+    <Setter Property="Padding" Value="5,1" />
+  </Style>
+  <Style x:Key="HighlightTextIconCommandButtonStyle" BasedOn="{StaticResource HighlightIconCommandButtonStyle}" TargetType="{x:Type controls:CommandButton}">
+    <Setter Property="Padding" Value="5,1" />
+  </Style>
+  <Style x:Key="Aurora.Styles.Separator.Flyout" TargetType="{x:Type Separator}">
+    <Setter Property="Margin" Value="0,25" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="UIElement.SnapsToDevicePixels" Value="True" />
+    <Setter Property="Background">
+      <Setter.Value>
+        <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
+          <GradientStop Color="#151515" Offset="0" />
+          <GradientStop Color="{DynamicResource Aurora.Colors.Light3}" Offset="0.25" />
+          <GradientStop Color="{DynamicResource Aurora.Colors.Light3}" Offset="0.75" />
+          <GradientStop Color="#151515" Offset="1" />
+        </LinearGradientBrush>
+      </Setter.Value>
+    </Setter>
+  </Style>
+</ResourceDictionary>

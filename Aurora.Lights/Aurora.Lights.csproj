@@ -65,6 +65,7 @@
     <ProjectReference Include="..\Builder.Core\Builder.Core.csproj" />
     <ProjectReference Include="..\Builder.Data\Builder.Data.csproj" />
     <ProjectReference Include="..\Aurora.Documents\Aurora.Documents.csproj" />
+    <ProjectReference Include="..\Aurora.Presentation\Aurora.Presentation.csproj" />
     <ProjectReference Include="..\Aurora.Logic\Aurora.Logic.csproj" />
   </ItemGroup>
 
@@ -74,9 +75,6 @@
       <HintPath>..\lib\itextsharp.dll</HintPath>
     </Reference>
     <!-- WPF-only UI stack (all replaced in Phase 3 / Aurora.App) -->
-    <Reference Include="Aurora.Presentation">
-      <HintPath>..\lib\Aurora.Presentation.dll</HintPath>
-    </Reference>
     <Reference Include="System.Windows.Interactivity">
       <HintPath>..\lib\System.Windows.Interactivity.dll</HintPath>
     </Reference>
