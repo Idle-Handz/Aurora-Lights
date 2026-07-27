@@ -19,9 +19,16 @@
   <ItemGroup>
     <ProjectReference Include="..\Builder.Core\Builder.Core.csproj" />
     <ProjectReference Include="..\Builder.Data\Builder.Data.csproj" />
+    <ProjectReference Include="..\Aurora.Documents\Aurora.Documents.csproj" />
     <ProjectReference Include="..\Aurora.Logic\Aurora.Logic.csproj" />
     <ProjectReference Include="..\Aurora.Components\Aurora.Components.csproj" />
     <ProjectReference Include="..\Aurora.Importer\Aurora.Importer.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="itextsharp">
+      <HintPath>..\lib\itextsharp.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>

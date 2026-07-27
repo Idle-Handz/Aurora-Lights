@@ -76,7 +76,7 @@ the result.
 | Record production binary baseline | Complete |
 | Restore `Builder.Core` | Source-owned; API and focused compatibility checks pass |
 | Restore `Builder.Data` | Source-owned; API, differential behavior, corpus, and consumer checks pass |
-| Restore `Aurora.Documents` | Not started |
+| Restore `Aurora.Documents` | Source-owned; API, differential behavior, embedded-resource, and consumer checks pass |
 | Restore `Aurora.Presentation` | Not started |
 | Remove first-party oracle binaries from production paths | Not started |
 
@@ -91,6 +91,9 @@ the result.
 - `tools/legacy-restoration/Compare-BuilderDataBehavior.ps1` runs the focused
   Builder.Data compatibility suite once with the restored assembly and once
   with the production oracle in an isolated temporary test output.
+- `tools/legacy-restoration/Compare-AuroraDocumentsBehavior.ps1` runs the
+  focused Aurora.Documents compatibility suite against both implementations,
+  including the embedded PDF templates and live form-field writing.
 
 Example:
 
@@ -114,4 +117,17 @@ dotnet build .\Builder.Data\Builder.Data.csproj -c Release
   -RestoredAssembly .\Builder.Data\bin\Release\net10.0\Builder.Data.dll
 
 .\tools\legacy-restoration\Compare-BuilderDataBehavior.ps1
+```
+
+`Aurora.Documents` has the same normalized API surface in both Debug and
+Release builds. Its differential suite also verifies the original resource
+names, sizes, hashes, model defaults, export routing, notes conversion, and PDF
+field mappings.
+
+```powershell
+.\tools\legacy-restoration\Compare-RestoredAssemblyApi.ps1 `
+  -OracleAssembly .\lib\Aurora.Documents.dll `
+  -RestoredAssembly .\Aurora.Documents\bin\Debug\net10.0\Aurora.Documents.dll
+
+.\tools\legacy-restoration\Compare-AuroraDocumentsBehavior.ps1
 ```
