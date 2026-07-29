@@ -842,7 +842,7 @@ public static partial class BuildService
                 int count = r.Attributes.Number;
                 for (int n = 1; n <= count; n++)
                 {
-                    if (ReferenceEquals(r, rule) && n == number)
+                    if (!SelectionRuleValidation.ShouldValidateRegisteredSlot(r, n, rule, number))
                         continue;
 
                     var registered = SelectionRuleExpanderContext.Current?.GetRegisteredElement(r, n)
