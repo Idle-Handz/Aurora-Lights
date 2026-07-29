@@ -13,7 +13,7 @@ $repositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $testProject = Join-Path $repositoryRoot 'Aurora.Tests\Aurora.Tests.csproj'
 $testOutput = Join-Path $repositoryRoot "Aurora.Tests\bin\$Configuration\net10.0"
 $restoredAssembly = Join-Path $repositoryRoot "Builder.Data\bin\$Configuration\net10.0\Builder.Data.dll"
-$oracleAssembly = Join-Path $repositoryRoot 'lib\Builder.Data.dll'
+$oracleAssembly = Join-Path $repositoryRoot 'tests\LegacyOracles\Builder.Data.dll'
 
 & dotnet test $testProject `
     --configuration $Configuration `

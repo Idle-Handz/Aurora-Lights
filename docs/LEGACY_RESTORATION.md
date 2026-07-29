@@ -78,12 +78,25 @@ the result.
 | Restore `Builder.Data` | Source-owned; API, differential behavior, corpus, and consumer checks pass |
 | Restore `Aurora.Documents` | Source-owned; API, differential behavior, embedded-resource, and consumer checks pass |
 | Restore `Aurora.Presentation` | Source-owned; API, differential WPF behavior, resource-path, and consumer checks pass |
-| Remove first-party oracle binaries from production paths | Not started |
+| Remove first-party oracle binaries from production paths | Complete; retained only under `tests/LegacyOracles` |
+
+## Test-Only Oracle Isolation
+
+The original first-party production assemblies now live in
+`tests/LegacyOracles`. They are immutable compatibility fixtures used only by
+the inventory and differential parity tools. Production projects reference the
+restored source projects and must never reference, copy, or load files from the
+oracle directory.
+
+The remaining binaries under `lib` are third-party dependencies, not hidden
+first-party Aurora implementations.
 
 ## Restoration Tools
 
 - `tools/legacy-restoration/Get-ProductionBinaryManifest.ps1` regenerates the
   production binary inventory written to `production-binaries.json`.
+- `tests/LegacyOracles` contains the original first-party assemblies used by
+  the inventory and differential checks.
 - `tools/AssemblyApi` emits a deterministic normalized API surface for an
   assembly.
 - `tools/legacy-restoration/Compare-RestoredAssemblyApi.ps1` compares an oracle
@@ -107,7 +120,7 @@ Example:
 
 ```powershell
 .\tools\legacy-restoration\Compare-RestoredAssemblyApi.ps1 `
-  -OracleAssembly .\lib\Builder.Core.dll `
+  -OracleAssembly .\tests\LegacyOracles\Builder.Core.dll `
   -RestoredAssembly .\Builder.Core\bin\Debug\net10.0\Builder.Core.dll
 ```
 
@@ -121,7 +134,7 @@ dotnet build .\Builder.Data\Builder.Data.csproj -c Release
 
 .\tools\legacy-restoration\Compare-RestoredAssemblyApi.ps1 `
   -Configuration Release `
-  -OracleAssembly .\lib\Builder.Data.dll `
+  -OracleAssembly .\tests\LegacyOracles\Builder.Data.dll `
   -RestoredAssembly .\Builder.Data\bin\Release\net10.0\Builder.Data.dll
 
 .\tools\legacy-restoration\Compare-BuilderDataBehavior.ps1
@@ -134,7 +147,7 @@ field mappings.
 
 ```powershell
 .\tools\legacy-restoration\Compare-RestoredAssemblyApi.ps1 `
-  -OracleAssembly .\lib\Aurora.Documents.dll `
+  -OracleAssembly .\tests\LegacyOracles\Aurora.Documents.dll `
   -RestoredAssembly .\Aurora.Documents\bin\Debug\net10.0\Aurora.Documents.dll
 
 .\tools\legacy-restoration\Compare-AuroraDocumentsBehavior.ps1
@@ -147,7 +160,7 @@ representative values, merged dictionaries, and successful pack-URI loading.
 
 ```powershell
 .\tools\legacy-restoration\Compare-RestoredWpfAssemblyApi.ps1 `
-  -OracleAssembly .\lib\Aurora.Presentation.dll `
+  -OracleAssembly .\tests\LegacyOracles\Aurora.Presentation.dll `
   -RestoredAssembly .\Aurora.Presentation\bin\Debug\net10.0-windows\Aurora.Presentation.dll
 
 .\tools\legacy-restoration\Compare-AuroraPresentationBehavior.ps1

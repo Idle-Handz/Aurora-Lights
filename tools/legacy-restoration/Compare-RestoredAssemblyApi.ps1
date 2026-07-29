@@ -22,15 +22,16 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 $toolAssembly = Join-Path $repositoryRoot "tools\AssemblyApi\bin\$Configuration\net10.0\AssemblyApi.dll"
+$dependencyDirectory = Join-Path $repositoryRoot 'lib'
 $oraclePath = (Resolve-Path $OracleAssembly).Path
 $restoredPath = (Resolve-Path $RestoredAssembly).Path
 
-$oracleApi = @(& dotnet $toolAssembly $oraclePath)
+$oracleApi = @(& dotnet $toolAssembly $oraclePath $dependencyDirectory)
 if ($LASTEXITCODE -ne 0) {
     throw "Unable to inspect oracle assembly '$oraclePath'."
 }
 
-$restoredApi = @(& dotnet $toolAssembly $restoredPath)
+$restoredApi = @(& dotnet $toolAssembly $restoredPath $dependencyDirectory)
 if ($LASTEXITCODE -ne 0) {
     throw "Unable to inspect restored assembly '$restoredPath'."
 }

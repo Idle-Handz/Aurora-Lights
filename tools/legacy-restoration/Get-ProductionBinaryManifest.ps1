@@ -6,20 +6,22 @@ $ErrorActionPreference = 'Stop'
 
 $repositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $libraryRoot = Join-Path $repositoryRoot 'lib'
+$oracleRoot = Join-Path $repositoryRoot 'tests\LegacyOracles'
 
-$loadOrder = @(
-    'Builder.Core.dll',
-    'DynamicExpresso.Core.dll',
-    'itextsharp.dll',
-    'Builder.Data.dll',
-    'Aurora.Documents.dll',
-    'Aurora.Presentation.dll'
+$loadPaths = @(
+    (Join-Path $oracleRoot 'Builder.Core.dll'),
+    (Join-Path $libraryRoot 'DynamicExpresso.Core.dll'),
+    (Join-Path $libraryRoot 'itextsharp.dll'),
+    (Join-Path $libraryRoot 'System.Windows.Interactivity.dll'),
+    (Join-Path $oracleRoot 'Builder.Data.dll'),
+    (Join-Path $oracleRoot 'Aurora.Documents.dll'),
+    (Join-Path $oracleRoot 'Aurora.Presentation.dll')
 )
 
 $loadedAssemblies = @{}
-foreach ($fileName in $loadOrder) {
-    $path = Join-Path $libraryRoot $fileName
+foreach ($path in $loadPaths) {
     if (Test-Path -LiteralPath $path) {
+        $fileName = Split-Path -Leaf $path
         $loadedAssemblies[$fileName] = [System.Reflection.Assembly]::LoadFrom($path)
     }
 }
@@ -32,7 +34,7 @@ $firstPartyBinaries = @(
 )
 
 $records = foreach ($fileName in $firstPartyBinaries) {
-    $path = Join-Path $libraryRoot $fileName
+    $path = Join-Path $oracleRoot $fileName
     $assembly = $loadedAssemblies[$fileName]
     $exportedTypes = @($assembly.GetExportedTypes())
 
@@ -65,7 +67,7 @@ $records = foreach ($fileName in $firstPartyBinaries) {
         Select-Object -First 1
 
     [ordered]@{
-        path = "lib/$fileName"
+        path = "tests/LegacyOracles/$fileName"
         sha256 = (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant()
         size = (Get-Item -LiteralPath $path).Length
         assemblyName = $assembly.GetName().Name
@@ -80,6 +82,6 @@ $records = foreach ($fileName in $firstPartyBinaries) {
 
 [ordered]@{
     schemaVersion = 1
-    scope = 'Production first-party binary baseline. Aurora Studio is intentionally excluded.'
+    scope = 'Test-only production first-party oracle baseline. Aurora Studio is intentionally excluded.'
     binaries = @($records)
 } | ConvertTo-Json -Depth 8

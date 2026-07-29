@@ -2,9 +2,9 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
 
-if (args.Length != 1)
+if (args.Length < 1)
 {
-    Console.Error.WriteLine("Usage: AssemblyApi <assembly-path>");
+    Console.Error.WriteLine("Usage: AssemblyApi <assembly-path> [dependency-directory...]");
     return 2;
 }
 
@@ -15,7 +15,11 @@ if (!File.Exists(assemblyPath))
     return 2;
 }
 
-var loadContext = new InspectionLoadContext(Path.GetDirectoryName(assemblyPath)!);
+var dependencyDirectories = new[]
+{
+    Path.GetDirectoryName(assemblyPath)!
+}.Concat(args.Skip(1).Select(Path.GetFullPath));
+var loadContext = new InspectionLoadContext(dependencyDirectories);
 Assembly assembly = loadContext.LoadFromAssemblyPath(assemblyPath);
 
 foreach (string line in ApiSurfaceFormatter.Format(assembly))
@@ -25,13 +29,28 @@ foreach (string line in ApiSurfaceFormatter.Format(assembly))
 
 return 0;
 
-internal sealed class InspectionLoadContext(string assemblyDirectory)
-    : AssemblyLoadContext(isCollectible: true)
+internal sealed class InspectionLoadContext : AssemblyLoadContext
 {
+    private readonly string[] _dependencyDirectories;
+
+    public InspectionLoadContext(IEnumerable<string> dependencyDirectories)
+        : base(isCollectible: true)
+    {
+        _dependencyDirectories = dependencyDirectories.Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+    }
+
     protected override Assembly? Load(AssemblyName assemblyName)
     {
-        string candidate = Path.Combine(assemblyDirectory, $"{assemblyName.Name}.dll");
-        return File.Exists(candidate) ? LoadFromAssemblyPath(candidate) : null;
+        foreach (string directory in _dependencyDirectories)
+        {
+            string candidate = Path.Combine(directory, $"{assemblyName.Name}.dll");
+            if (File.Exists(candidate))
+            {
+                return LoadFromAssemblyPath(candidate);
+            }
+        }
+
+        return null;
     }
 }
 

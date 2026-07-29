@@ -61,45 +61,29 @@ They intentionally preserve older naming, namespaces, and structure where that
 helps maintain compatibility. Prefer focused changes over broad rewrites unless
 a larger refactor is necessary and well tested.
 
-## Known Binary Boundaries
+## Restored Legacy Source
 
-The repository is not yet a completely source-transparent reconstruction.
-Several legacy assemblies remain checked into `lib` and are referenced by the
-editable projects.
+The repository is source-transparent for the four first-party assemblies that
+were formerly production binary boundaries:
 
-### `Builder.Data.dll`
+- `Builder.Core` contains shared events, logging, commands, and observable
+  infrastructure.
+- `Builder.Data` contains the foundational Aurora element model, XML parsing,
+  grants, selections, statistics, content files, and update primitives.
+- `Aurora.Documents` contains the PDF and character-sheet writing
+  infrastructure.
+- `Aurora.Presentation` contains the remaining WPF controls, event triggers,
+  styles, themes, and control templates.
 
-This is the most significant remaining boundary. It provides foundational
-Aurora data types and behaviors, including:
+Production projects reference these editable source projects. The original
+production assemblies are retained only under `tests/LegacyOracles` so the
+restored implementations can be checked for API and behavior parity. They must
+not be referenced or copied by production builds. The `lib` directory contains
+third-party dependencies still used by the applications.
 
-- element models for spells, races, classes, items, feats, and related content
-- XML element parsers
-- grant, selection, and statistic rule primitives
-- element collections, setters, and helper types
-- legacy content-file and update primitives
-
-Ordinary feature work can often be completed in the source projects around
-this boundary. Changes to parser semantics, the deepest rule representation, or
-fundamentally new element types may require additional reconstruction work.
-
-### Other First-Party Assemblies
-
-- `Builder.Core.dll`
-  Provides compact shared infrastructure such as events, logging, relay
-  commands, and observable-object support.
-
-- `Aurora.Documents.dll`
-  Provides legacy PDF and character-sheet writing infrastructure.
-
-- `Aurora.Presentation.dll`
-  Provides a small remaining set of WPF controls and keyboard event triggers.
-
-The `lib` directory also contains third-party dependencies used by the legacy
-desktop application.
-
-These binary boundaries are known technical debt, not a signal that
-legacy-oriented contributions are unwelcome. Reconstructing or replacing them
-incrementally is itself a useful contribution when done carefully.
+Contributions should change the restored source and add source-native tests.
+The differential oracle checks remain useful regression gates where exact
+legacy compatibility matters.
 
 ## Where Should A Change Go?
 
