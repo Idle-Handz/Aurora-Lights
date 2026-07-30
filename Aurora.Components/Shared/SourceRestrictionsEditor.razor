@@ -17,6 +17,32 @@
         </div>
     }
 
+    <section class="source-restrictions-categories" aria-label="Broad source toggles">
+        <div class="source-restrictions-categories-header">
+            <strong>Broad source toggles</strong>
+            <span>Enable or disable whole source families. Required core sources stay enabled.</span>
+        </div>
+
+        <div class="source-restrictions-category-grid">
+            @foreach (BroadToggleModel toggle in BroadToggles)
+            {
+                <button type="button"
+                        class="source-restrictions-category"
+                        aria-checked="@GetAriaChecked(toggle.IsChecked)"
+                        role="checkbox"
+                        @onclick="() => ToggleCategoryAsync(toggle)"
+                        disabled="@(Busy || toggle.TotalCount == 0)">
+                    <span class="source-restrictions-checkbox @GetCheckClass(toggle.IsChecked, allowUnchecking: true)"></span>
+                    <span class="source-restrictions-category-copy">
+                        <strong>@toggle.Label</strong>
+                        <small>@toggle.Description</small>
+                    </span>
+                    <span class="source-restrictions-count">@toggle.EnabledCount / @toggle.TotalCount</span>
+                </button>
+            }
+        </div>
+    </section>
+
     @* Search filter *@
     <div style="margin-bottom: 10px;">
         <input class="source-restrictions-search"
@@ -82,6 +108,9 @@
     public bool ShowDefaultActions { get; set; }
 
     [Parameter]
+    public EventCallback<SourceRestrictionCategoryToggle> OnToggleCategory { get; set; }
+
+    [Parameter]
     public EventCallback<string> OnToggleGroup { get; set; }
 
     [Parameter]
@@ -95,6 +124,29 @@
 
     private string _search = "";
 
+    private IReadOnlyList<BroadToggleModel> BroadToggles =>
+        CategoryDefinitions.Select(definition =>
+        {
+            List<SourceRestrictionItemModel> items = Groups
+                .SelectMany(group => group.Sources)
+                .Where(item => item.AllowUnchecking && item.Category == definition.Category)
+                .ToList();
+            int enabledCount = items.Count(item => item.IsChecked == true);
+            bool? isChecked = enabledCount == 0
+                ? false
+                : enabledCount == items.Count
+                    ? true
+                    : null;
+
+            return new BroadToggleModel(
+                definition.Category,
+                definition.Label,
+                definition.Description,
+                isChecked,
+                enabledCount,
+                items.Count);
+        }).ToList();
+
     private IReadOnlyList<SourceRestrictionGroupModel> FilteredGroups =>
         string.IsNullOrWhiteSpace(_search) ? Groups :
         Groups.Where(g => g.Name.Contains(_search, StringComparison.OrdinalIgnoreCase)
@@ -107,10 +159,39 @@
                               || group.Name.Contains(_search, StringComparison.OrdinalIgnoreCase))
              .ToList();
 
+    private Task ToggleCategoryAsync(BroadToggleModel toggle) =>
+        OnToggleCategory.InvokeAsync(new SourceRestrictionCategoryToggle(
+            toggle.Category,
+            toggle.IsChecked != true));
+
+    private static string GetAriaChecked(bool? value) =>
+        value?.ToString().ToLowerInvariant() ?? "mixed";
+
     private static string GetCheckClass(bool? value, bool allowUnchecking)
     {
         if (!allowUnchecking) return "checked locked";
         if (!value.HasValue)  return "mixed";
         return value.Value ? "checked" : "unchecked";
     }
+
+    private static readonly CategoryDefinition[] CategoryDefinitions =
+    [
+        new(SourceRestrictionCategory.ThirdParty, "3rd party", "Published third-party material"),
+        new(SourceRestrictionCategory.Homebrew, "Homebrew", "Personal and community content"),
+        new(SourceRestrictionCategory.Official5E, "5e official", "Official 2014-rules material"),
+        new(SourceRestrictionCategory.Official55E, "5.5e official", "Official 2024-rules material")
+    ];
+
+    private sealed record CategoryDefinition(
+        SourceRestrictionCategory Category,
+        string Label,
+        string Description);
+
+    private sealed record BroadToggleModel(
+        SourceRestrictionCategory Category,
+        string Label,
+        string Description,
+        bool? IsChecked,
+        int EnabledCount,
+        int TotalCount);
 }

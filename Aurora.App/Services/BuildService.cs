@@ -276,6 +276,7 @@ public static partial class BuildService
     {
         try
         {
+            var sourceRestrictions = CaptureSourceRestrictions();
             var resolved = BuildSelectionOptionResolver.ResolveOptions(
                 rule,
                 number,
@@ -291,7 +292,9 @@ public static partial class BuildService
                                 metadata.SourceReleaseDate,
                                 metadata.SourceFileModifiedUtc);
                     },
-                    ElementFallbackProvider = XmlContentFallbackService.GetElementFallbacks
+                    ElementFallbackProvider = XmlContentFallbackService.GetElementFallbacks,
+                    RestrictedElementIds = sourceRestrictions.ElementIds,
+                    RestrictedSourceNames = sourceRestrictions.SourceNames
                 });
 
             options = resolved.Select(ToElementOption).ToList();
@@ -302,6 +305,36 @@ public static partial class BuildService
             options = [];
             return false;
         }
+    }
+
+    private static SourceRestrictionSnapshot CaptureSourceRestrictions()
+    {
+        try
+        {
+            var sourcesManager = CharacterManager.Current.SourcesManager;
+            return new SourceRestrictionSnapshot(
+                sourcesManager.GetRestrictedElementIds()
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase),
+                sourcesManager.GetRestrictedSources()
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase));
+        }
+        catch
+        {
+            return SourceRestrictionSnapshot.Empty;
+        }
+    }
+
+    private sealed record SourceRestrictionSnapshot(
+        IReadOnlySet<string> ElementIds,
+        IReadOnlySet<string> SourceNames)
+    {
+        public static SourceRestrictionSnapshot Empty { get; } = new(
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase),
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+
+        public bool Allows(ElementBase element) =>
+            !ElementIds.Contains(element.Id) &&
+            !SourceNames.Contains(element.Source ?? string.Empty);
     }
 
     private static ElementOption ToElementOption(BuildSelectionOption option) =>

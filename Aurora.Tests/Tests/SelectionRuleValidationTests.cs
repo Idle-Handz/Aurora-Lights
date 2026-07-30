@@ -1,6 +1,7 @@
 using Builder.Data;
 using Builder.Data.Rules;
 using Builder.Presentation.Services;
+using System.Reflection;
 
 namespace Aurora.Tests.Tests;
 
@@ -32,6 +33,19 @@ public sealed class SelectionRuleValidationTests
 
         SelectionRuleValidation.ShouldValidateRegisteredSlot(candidate, 1, applied, 1)
             .Should().BeTrue();
+    }
+
+    [Fact]
+    public void ShouldValidateRegisteredSlot_SkipsRecreatedInstanceOfAppliedRule()
+    {
+        var applied = CreateSelectRule("ID_TEST_SELECTION_OWNER");
+        var recreated = (SelectRule)typeof(object)
+            .GetMethod("MemberwiseClone", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .Invoke(applied, null)!;
+
+        SelectionRuleValidation.ShouldValidateRegisteredSlot(recreated, 1, applied, 1)
+            .Should().BeFalse(
+                "reprocessing can recreate a logically identical rule before post-selection validation");
     }
 
     private static SelectRule CreateSelectRule(string ownerId)

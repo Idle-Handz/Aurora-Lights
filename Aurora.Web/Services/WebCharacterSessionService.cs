@@ -263,6 +263,23 @@ public sealed class WebCharacterSessionService
         return state;
     }
 
+    public async Task<WebCharacterSourceState> ToggleCurrentSourceCategoryAsync(
+        SourceRestrictionCategoryToggle toggle)
+    {
+        if (_currentRuntimeState is null || string.IsNullOrWhiteSpace(_currentCharacterPath))
+        {
+            throw new InvalidOperationException("No character is active in the current web session.");
+        }
+
+        PhaseZeroSessionWorkspace workspace = await _workspaceService.GetWorkspaceAsync();
+        WebCharacterSourceState state = await _engine.ToggleSourceCategoryAsync(
+            workspace,
+            _currentCharacterPath,
+            toggle);
+        await PersistMagicIfAvailableAsync(workspace);
+        return state;
+    }
+
     public async Task<WebCharacterSourceState> ToggleCurrentSourceItemAsync(string sourceId)
     {
         if (_currentRuntimeState is null || string.IsNullOrWhiteSpace(_currentCharacterPath))

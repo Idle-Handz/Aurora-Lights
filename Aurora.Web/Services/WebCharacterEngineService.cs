@@ -278,6 +278,35 @@ public sealed class WebCharacterEngineService
         }
     }
 
+    public async Task<WebCharacterSourceState> ToggleSourceCategoryAsync(
+        PhaseZeroSessionWorkspace workspace,
+        string relativePath,
+        SourceRestrictionCategoryToggle toggle)
+    {
+        await _operationLock.WaitAsync();
+        try
+        {
+            List<SourceItem> matchingSources = CharacterManager.Current.SourcesManager.SourceGroups
+                .SelectMany(group => group.Sources)
+                .Where(item => item.AllowUnchecking && ClassifySource(item) == toggle.Category)
+                .ToList();
+
+            foreach (SourceItem item in matchingSources)
+                item.SetIsChecked(toggle.IsEnabled, updateChildren: true, updateParent: true);
+
+            if (matchingSources.Count > 0)
+                ApplyAndPersistSourceRestrictions(workspace, relativePath);
+
+            return new WebCharacterSourceState(
+                BuildSourceGroups(),
+                "Source restrictions updated for the current browser session.");
+        }
+        finally
+        {
+            _operationLock.Release();
+        }
+    }
+
     public async Task<WebCharacterSourceState> ToggleSourceItemAsync(
         PhaseZeroSessionWorkspace workspace,
         string relativePath,
@@ -1336,8 +1365,18 @@ public sealed class WebCharacterEngineService
             .FirstOrDefault(entry => string.Equals(entry.Key, entryKey, StringComparison.Ordinal))
         ?? throw new InvalidOperationException("The requested spell selection could not be found.");
 
-    private static IReadOnlyList<SelectionOption> GetSelectionOptions(SelectRule rule, int number) =>
-        BuildSelectionOptionResolver.ResolveOptions(rule, number)
+    private static IReadOnlyList<SelectionOption> GetSelectionOptions(SelectRule rule, int number)
+    {
+        var sourcesManager = CharacterManager.Current.SourcesManager;
+        var settings = new BuildSelectionOptionResolverSettings
+        {
+            RestrictedElementIds = sourcesManager.GetRestrictedElementIds()
+                .ToHashSet(StringComparer.OrdinalIgnoreCase),
+            RestrictedSourceNames = sourcesManager.GetRestrictedSources()
+                .ToHashSet(StringComparer.OrdinalIgnoreCase)
+        };
+
+        return BuildSelectionOptionResolver.ResolveOptions(rule, number, settings)
             .Select(option => new SelectionOption(
                 option.Id,
                 option.Name,
@@ -1348,6 +1387,7 @@ public sealed class WebCharacterEngineService
                     ? MagicDescriptionFormatter.FromAuroraHtml(option.DescriptionMarkup)
                     : MagicDescriptionFormatter.FromPlainText(option.Description)))
             .ToList();
+    }
 
     private static bool IsSearchableInventoryElement(ElementBase element) =>
         ItemTypes.Contains(element.Type)
@@ -2056,8 +2096,18 @@ public sealed class WebCharacterEngineService
                     item.Source.Name ?? string.Empty,
                     item.IsChecked,
                     item.AllowUnchecking,
-                    !item.AllowUnchecking)).ToList()))
+                    !item.AllowUnchecking,
+                    ClassifySource(item))).ToList()))
             .ToList();
+
+    private static SourceRestrictionCategory? ClassifySource(SourceItem item) =>
+        SourceRestrictionCategoryClassifier.Classify(
+            item.Source.IsOfficialContent,
+            item.Source.IsThirdPartyContent,
+            item.Source.IsHomebrewContent,
+            item.Source.Author,
+            item.Source.Name,
+            item.Source.ReleaseDate);
 
     private static EditableCharacterInfoModel BuildInfoModel(Character character) =>
         new()
@@ -2282,7 +2332,7 @@ public sealed class WebCharacterEngineService
 
         var sourcesManager = CharacterManager.Current.SourcesManager;
         HashSet<string> restrictedIds = new(sourcesManager.GetRestrictedElementIds(), StringComparer.OrdinalIgnoreCase);
-        HashSet<string> restrictedSources = new(sourcesManager.GetUndefinedRestrictedSourceNames(), StringComparer.OrdinalIgnoreCase);
+        HashSet<string> restrictedSources = new(sourcesManager.GetRestrictedSources(), StringComparer.OrdinalIgnoreCase);
 
         bool IsRestricted(string id, string source) =>
             restrictedIds.Contains(id) || restrictedSources.Contains(source);

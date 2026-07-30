@@ -32,6 +32,8 @@ public sealed class BuildSelectionOptionResolverSettings
     public IReadOnlyDictionary<string, IReadOnlySet<string>>? SpellAccessMap { get; init; }
     public Func<ElementBase, BuildSelectionOptionSortMetadata?>? SortMetadataSelector { get; init; }
     public Func<SelectRule, IEnumerable<ElementBase>>? ElementFallbackProvider { get; init; }
+    public IReadOnlySet<string>? RestrictedElementIds { get; init; }
+    public IReadOnlySet<string>? RestrictedSourceNames { get; init; }
 }
 
 public static class BuildSelectionOptionResolver
@@ -169,6 +171,7 @@ public static class BuildSelectionOptionResolver
         return OrderElementOptions(
                 elements
                     .Where(element => !string.IsNullOrWhiteSpace(element.Name))
+                    .Where(element => !IsSourceRestricted(element, settings))
                     .Select(element => CreateElementOption(
                         element,
                         isSpellRule,
@@ -177,6 +180,14 @@ public static class BuildSelectionOptionResolver
                         settings)),
                 isSpellRule)
             .ToList();
+    }
+
+    private static bool IsSourceRestricted(
+        ElementBase element,
+        BuildSelectionOptionResolverSettings settings)
+    {
+        return settings.RestrictedElementIds?.Contains(element.Id) == true ||
+               settings.RestrictedSourceNames?.Contains(element.Source ?? string.Empty) == true;
     }
 
     private static BuildSelectionOption CreateElementOption(

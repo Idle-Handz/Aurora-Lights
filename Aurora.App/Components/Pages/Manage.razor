@@ -27,6 +27,7 @@
                                   InfoModel="@null"
                                   SourceGroups="@SourceGroups"
                                   ShowDefaultActions="true"
+                                  OnToggleCategory="ToggleCategoryAsync"
                                   OnToggleGroup="ToggleGroupAsync"
                                   OnToggleItem="ToggleSourceAsync"
                                   OnLoadDefaults="LoadDefaultAsync"
@@ -248,6 +249,28 @@
         }
     }
 
+    private async Task ToggleCategoryAsync(SourceRestrictionCategoryToggle toggle)
+    {
+        List<SourceItem> matchingSources = CharacterManager.Current.SourcesManager.SourceGroups
+            .SelectMany(group => group.Sources)
+            .Where(item => item.AllowUnchecking && ClassifySource(item) == toggle.Category)
+            .ToList();
+
+        if (matchingSources.Count == 0)
+        {
+            Snackbar.Add(
+                "No optional sources are available in that category.",
+                Severity.Info,
+                cfg => cfg.VisibleStateDuration = 2500);
+            return;
+        }
+
+        foreach (SourceItem item in matchingSources)
+            item.SetIsChecked(toggle.IsEnabled, updateChildren: true, updateParent: true);
+
+        await ApplyAndPersistRestrictions();
+    }
+
     private async Task LoadDefaultAsync()
     {
         if (_tab is not { } tab)
@@ -327,7 +350,17 @@
                 item.Source.Name ?? string.Empty,
                 item.IsChecked,
                 item.AllowUnchecking,
-                !item.AllowUnchecking)).ToList());
+                !item.AllowUnchecking,
+                ClassifySource(item))).ToList());
+
+    private static SourceRestrictionCategory? ClassifySource(SourceItem item) =>
+        SourceRestrictionCategoryClassifier.Classify(
+            item.Source.IsOfficialContent,
+            item.Source.IsThirdPartyContent,
+            item.Source.IsHomebrewContent,
+            item.Source.Author,
+            item.Source.Name,
+            item.Source.ReleaseDate);
 
     private async Task<bool> PersistSourceRestrictionsAsync(CharacterTab tab)
     {

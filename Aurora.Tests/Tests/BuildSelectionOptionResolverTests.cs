@@ -18,6 +18,7 @@ public sealed class BuildSelectionOptionResolverTests : IAsyncLifetime
     private const string HumanRaceId = "ID_RACE_HUMAN";
     private const string ResolverSortType = "Resolver Test Sort Option";
     private const string ResolverFallbackType = "Resolver Test Fallback Option";
+    private const string ResolverSourceType = "Resolver Test Source Option";
 
     private readonly ITestOutputHelper _output;
 
@@ -239,6 +240,38 @@ public sealed class BuildSelectionOptionResolverTests : IAsyncLifetime
 
         options.Should().ContainSingle(option => option.Id == matchingId);
         options.Should().NotContain(option => option.Id == distractorId);
+    }
+
+    [Fact]
+    public async Task ResolveOptions_ExcludesRestrictedElementsAndSources()
+    {
+        if (!ContentFixture.SkipIfUnavailable(_output)) return;
+
+        await CreateEmptyCharacterAsync();
+        const string allowedId = "ID_TEST_RESOLVER_SOURCE_ALLOWED";
+        const string restrictedId = "ID_TEST_RESOLVER_SOURCE_RESTRICTED_ID";
+        const string restrictedSourceId = "ID_TEST_RESOLVER_SOURCE_RESTRICTED_NAME";
+        ResetSyntheticElements(allowedId, restrictedId, restrictedSourceId);
+
+        AddSyntheticElement(allowedId, "Allowed Option", ResolverSourceType, "Allowed Source");
+        AddSyntheticElement(restrictedId, "Restricted by ID", ResolverSourceType, "Allowed Source");
+        AddSyntheticElement(restrictedSourceId, "Restricted by Source", ResolverSourceType, "Blocked Source");
+
+        var options = BuildSelectionOptionResolver.ResolveOptions(
+            CreateSelectRule(ResolverSourceType, "Source Restrictions"),
+            settings: new BuildSelectionOptionResolverSettings
+            {
+                RestrictedElementIds = new HashSet<string>(
+                    [restrictedId],
+                    StringComparer.OrdinalIgnoreCase),
+                RestrictedSourceNames = new HashSet<string>(
+                    ["Blocked Source"],
+                    StringComparer.OrdinalIgnoreCase)
+            });
+
+        options.Should().ContainSingle(option => option.Id == allowedId);
+        options.Should().NotContain(option => option.Id == restrictedId);
+        options.Should().NotContain(option => option.Id == restrictedSourceId);
     }
 
     private static async Task<TestSelectionRuleExpanderHandler> CreateEmptyCharacterAsync()
