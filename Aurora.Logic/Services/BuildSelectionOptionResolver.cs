@@ -32,6 +32,7 @@ public sealed class BuildSelectionOptionResolverSettings
     public IReadOnlyDictionary<string, IReadOnlySet<string>>? SpellAccessMap { get; init; }
     public Func<ElementBase, BuildSelectionOptionSortMetadata?>? SortMetadataSelector { get; init; }
     public Func<SelectRule, IEnumerable<ElementBase>>? ElementFallbackProvider { get; init; }
+    public Func<SelectRule, IEnumerable<BuildSelectionOption>>? ListFallbackProvider { get; init; }
     public IReadOnlySet<string>? RestrictedElementIds { get; init; }
     public IReadOnlySet<string>? RestrictedSourceNames { get; init; }
 }
@@ -51,15 +52,30 @@ public static class BuildSelectionOptionResolver
 
             if (rule.Attributes.IsList || string.Equals(rule.Attributes.Type, "List", StringComparison.OrdinalIgnoreCase))
             {
-                return MarkCurrentSelection(
-                    (rule.Attributes.ListItems ?? [])
+                List<BuildSelectionOption> listOptions = (rule.Attributes.ListItems ?? [])
                     .Select(item => new BuildSelectionOption(
                         item.ID.ToString(),
                         item.Text,
                         item.Text,
-                        IsCurrentSelection: string.Equals(item.ID.ToString(), currentSelectionId, StringComparison.OrdinalIgnoreCase)))
-                    .ToList(),
-                    currentSelectionId);
+                        IsCurrentSelection: string.Equals(
+                            item.ID.ToString(),
+                            currentSelectionId,
+                            StringComparison.OrdinalIgnoreCase)))
+                    .ToList();
+
+                if (listOptions.Count == 0 && settings.ListFallbackProvider is not null)
+                {
+                    try
+                    {
+                        listOptions = settings.ListFallbackProvider(rule).ToList();
+                    }
+                    catch
+                    {
+                        listOptions = [];
+                    }
+                }
+
+                return MarkCurrentSelection(listOptions, currentSelectionId);
             }
 
             var interpreter = new ExpressionInterpreter();

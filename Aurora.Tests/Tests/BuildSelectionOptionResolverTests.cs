@@ -274,6 +274,156 @@ public sealed class BuildSelectionOptionResolverTests : IAsyncLifetime
         options.Should().NotContain(option => option.Id == restrictedSourceId);
     }
 
+    [Fact]
+    public async Task Query_MergesHostAndCharacterSourceRestrictions()
+    {
+        if (!ContentFixture.SkipIfUnavailable(_output)) return;
+
+        await CreateEmptyCharacterAsync();
+        const string allowedId = "ID_TEST_QUERY_SOURCE_ALLOWED";
+        const string hostRestrictedId = "ID_TEST_QUERY_SOURCE_HOST_RESTRICTED";
+        const string characterRestrictedId = "ID_TEST_QUERY_SOURCE_CHARACTER_RESTRICTED";
+        const string optionType = "Query Test Source Option";
+        ResetSyntheticElements(allowedId, hostRestrictedId, characterRestrictedId);
+
+        AddSyntheticElement(allowedId, "Allowed Query Option", optionType, "Allowed Source");
+        AddSyntheticElement(hostRestrictedId, "Host Restricted", optionType, "Allowed Source");
+        AddSyntheticElement(characterRestrictedId, "Character Restricted", optionType, "Blocked Source");
+
+        var options = BuildSelectionOptionQueryService.Query(
+            CreateSelectRule(optionType, "Shared Source Restrictions"),
+            hostSettings: new BuildSelectionOptionResolverSettings
+            {
+                RestrictedElementIds = new HashSet<string>(
+                    [hostRestrictedId.ToLowerInvariant()])
+            },
+            sourceRestrictions: new BuildSourceRestrictionSnapshot(
+                new HashSet<string>(StringComparer.OrdinalIgnoreCase),
+                new HashSet<string>(["blocked source"])));
+
+        options.Should().ContainSingle(option => option.Id == allowedId);
+        options.Should().NotContain(option => option.Id == hostRestrictedId);
+        options.Should().NotContain(option => option.Id == characterRestrictedId);
+    }
+
+    [Fact]
+    public async Task Query_DoesNotReintroduceRestrictedFallbackOptions()
+    {
+        if (!ContentFixture.SkipIfUnavailable(_output)) return;
+
+        await CreateEmptyCharacterAsync();
+        const string restrictedId = "ID_TEST_QUERY_RESTRICTED_FALLBACK";
+        const string optionType = "Query Test Restricted Fallback";
+        var restrictedFallback = new ElementBase(
+            "Restricted Fallback",
+            optionType,
+            "Blocked Source",
+            restrictedId);
+
+        var options = BuildSelectionOptionQueryService.Query(
+            CreateSelectRule(optionType, "Restricted Fallback"),
+            hostSettings: new BuildSelectionOptionResolverSettings
+            {
+                ElementFallbackProvider = _ => [restrictedFallback]
+            },
+            sourceRestrictions: new BuildSourceRestrictionSnapshot(
+                new HashSet<string>(StringComparer.OrdinalIgnoreCase),
+                new HashSet<string>(["Blocked Source"], StringComparer.OrdinalIgnoreCase)));
+
+        options.Should().BeEmpty(
+            "an empty shared result is authoritative when every host fallback is source-restricted");
+    }
+
+    [Fact]
+    public async Task Query_ReturnsAllowedXmlFallbackOptionsAfterFiltering()
+    {
+        if (!ContentFixture.SkipIfUnavailable(_output)) return;
+
+        await CreateEmptyCharacterAsync();
+        const string allowedId = "ID_TEST_QUERY_ALLOWED_FALLBACK";
+        const string restrictedId = "ID_TEST_QUERY_FILTERED_FALLBACK";
+        const string optionType = "Query Test Filtered Fallback";
+        var allowedFallback = new ElementBase(
+            "Allowed Fallback",
+            optionType,
+            "Allowed Source",
+            allowedId);
+        var restrictedFallback = new ElementBase(
+            "Restricted Fallback",
+            optionType,
+            "Blocked Source",
+            restrictedId);
+
+        var options = BuildSelectionOptionQueryService.Query(
+            CreateSelectRule(optionType, "Filtered Fallback"),
+            hostSettings: new BuildSelectionOptionResolverSettings
+            {
+                ElementFallbackProvider = _ => [restrictedFallback, allowedFallback]
+            },
+            sourceRestrictions: new BuildSourceRestrictionSnapshot(
+                new HashSet<string>(StringComparer.OrdinalIgnoreCase),
+                new HashSet<string>(["Blocked Source"], StringComparer.OrdinalIgnoreCase)));
+
+        options.Should().ContainSingle(option => option.Id == allowedId);
+        options.Should().NotContain(option => option.Id == restrictedId);
+    }
+
+    [Fact]
+    public async Task Query_UsesHostListFallbackWhenInlineItemsAreUnavailable()
+    {
+        if (!ContentFixture.SkipIfUnavailable(_output)) return;
+
+        await CreateEmptyCharacterAsync();
+        var rule = CreateSelectRule("List", "Fallback List");
+
+        var options = BuildSelectionOptionQueryService.Query(
+            rule,
+            hostSettings: new BuildSelectionOptionResolverSettings
+            {
+                ListFallbackProvider = _ =>
+                [
+                    new BuildSelectionOption("1", "Recovered Item", "Recovered Item")
+                ]
+            },
+            sourceRestrictions: BuildSourceRestrictionSnapshot.Empty);
+
+        options.Should().ContainSingle()
+            .Which.Name.Should().Be("Recovered Item");
+    }
+
+    [Fact]
+    public async Task Query_MarksHostListFallbackCurrentSelection()
+    {
+        if (!ContentFixture.SkipIfUnavailable(_output)) return;
+
+        var handler = await CreateEmptyCharacterAsync();
+        var rule = CreateSelectRule("List", "Fallback List");
+        rule.Attributes.ListItems =
+        [
+            new SelectionRuleListItem(1, "Recovered First"),
+            new SelectionRuleListItem(2, "Recovered Current")
+        ];
+        handler.SetRegisteredElement(rule, "2");
+        rule.Attributes.ListItems = [];
+
+        var options = BuildSelectionOptionQueryService.Query(
+            rule,
+            hostSettings: new BuildSelectionOptionResolverSettings
+            {
+                ListFallbackProvider = _ =>
+                [
+                    new BuildSelectionOption("1", "Recovered First", "Recovered First"),
+                    new BuildSelectionOption("2", "Recovered Current", "Recovered Current")
+                ]
+            },
+            sourceRestrictions: BuildSourceRestrictionSnapshot.Empty);
+
+        options.Should().ContainSingle(option => option.Id == "1")
+            .Which.IsCurrentSelection.Should().BeFalse();
+        options.Should().ContainSingle(option => option.Id == "2")
+            .Which.IsCurrentSelection.Should().BeTrue();
+    }
+
     private static async Task<TestSelectionRuleExpanderHandler> CreateEmptyCharacterAsync()
     {
         var handler = new TestSelectionRuleExpanderHandler();

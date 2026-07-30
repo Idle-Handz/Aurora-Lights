@@ -21,7 +21,7 @@ public static partial class BuildService
     /// </summary>
     public static IReadOnlyList<ElementOption> GetMulticlassOptions()
     {
-        var sourceRestrictions = CaptureSourceRestrictions();
+        var sourceRestrictions = BuildSourceRestrictionSnapshot.CaptureCurrent();
         var options = DataManager.Current.ElementsCollection
             .Where(e => e.Type == "Multiclass")
             .Where(sourceRestrictions.Allows)
@@ -100,7 +100,7 @@ public static partial class BuildService
                     .Select(m => m.ClassElement?.Name)
                     .Where(n => !string.IsNullOrWhiteSpace(n))
                     .ToHashSet(StringComparer.OrdinalIgnoreCase);
-                var sourceRestrictions = CaptureSourceRestrictions();
+                var sourceRestrictions = BuildSourceRestrictionSnapshot.CaptureCurrent();
 
                 var elements = DataManager.Current.ElementsCollection
                     .Where(e => e.Type == "Multiclass")

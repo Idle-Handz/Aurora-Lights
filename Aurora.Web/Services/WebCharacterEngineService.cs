@@ -58,7 +58,9 @@ public sealed class WebCharacterEngineService
         string Description,
         string Source,
         string Requirements,
-        string DescriptionHtml);
+        string DescriptionHtml,
+        bool IsDisabled,
+        bool IsCurrentSelection);
 
     private sealed record BuildRuleSelection(
         string Key,
@@ -442,7 +444,9 @@ public sealed class WebCharacterEngineService
                     option.Description,
                     option.Source,
                     option.Requirements,
-                    option.DescriptionHtml))
+                    option.DescriptionHtml,
+                    option.IsDisabled,
+                    option.IsCurrentSelection))
                 .ToList();
         }
         finally
@@ -610,7 +614,9 @@ public sealed class WebCharacterEngineService
                     option.Source,
                     option.Description,
                     option.Requirements,
-                    option.DescriptionHtml))
+                    option.DescriptionHtml,
+                    option.IsDisabled,
+                    option.IsCurrentSelection))
                 .ToList();
         }
         finally
@@ -1367,16 +1373,7 @@ public sealed class WebCharacterEngineService
 
     private static IReadOnlyList<SelectionOption> GetSelectionOptions(SelectRule rule, int number)
     {
-        var sourcesManager = CharacterManager.Current.SourcesManager;
-        var settings = new BuildSelectionOptionResolverSettings
-        {
-            RestrictedElementIds = sourcesManager.GetRestrictedElementIds()
-                .ToHashSet(StringComparer.OrdinalIgnoreCase),
-            RestrictedSourceNames = sourcesManager.GetRestrictedSources()
-                .ToHashSet(StringComparer.OrdinalIgnoreCase)
-        };
-
-        return BuildSelectionOptionResolver.ResolveOptions(rule, number, settings)
+        return BuildSelectionOptionQueryService.Query(rule, number)
             .Select(option => new SelectionOption(
                 option.Id,
                 option.Name,
@@ -1385,7 +1382,9 @@ public sealed class WebCharacterEngineService
                 option.Requirements,
                 !string.IsNullOrWhiteSpace(option.DescriptionMarkup)
                     ? MagicDescriptionFormatter.FromAuroraHtml(option.DescriptionMarkup)
-                    : MagicDescriptionFormatter.FromPlainText(option.Description)))
+                    : MagicDescriptionFormatter.FromPlainText(option.Description),
+                option.IsDisabled,
+                option.IsCurrentSelection))
             .ToList();
     }
 

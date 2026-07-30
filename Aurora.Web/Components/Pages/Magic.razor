@@ -87,9 +87,9 @@
                                     </div>
                                     <button type="button"
                                             class="equipment-action-button primary"
-                                            disabled="@_busy"
+                                            disabled="@(_busy || option.IsDisabled)"
                                             @onclick="() => ApplyKnownSpellAsync(option.Id)">
-                                        Choose
+                                        @(option.IsCurrentSelection ? "Selected" : option.IsDisabled ? "Unavailable" : "Choose")
                                     </button>
                                 </div>
                             }

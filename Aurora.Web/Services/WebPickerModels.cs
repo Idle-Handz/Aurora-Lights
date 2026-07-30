@@ -18,4 +18,6 @@ public sealed record WebMagicSelectionOption(
     string Source,
     string Description,
     string Requirements,
-    string DescriptionHtml = "");
+    string DescriptionHtml = "",
+    bool IsDisabled = false,
+    bool IsCurrentSelection = false);

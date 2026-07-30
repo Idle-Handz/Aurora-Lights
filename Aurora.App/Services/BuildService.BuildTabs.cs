@@ -664,7 +664,7 @@ public static partial class BuildService
             supported = new ElementBaseCollection(baseCollection);
         }
 
-        var sourceRestrictions = CaptureSourceRestrictions();
+        var sourceRestrictions = BuildSourceRestrictionSnapshot.CaptureCurrent();
         IReadOnlySet<string> requirementIds =
             SelectionRequirementCompatibility.ExpandForSelectionValidation(currentIds);
 
