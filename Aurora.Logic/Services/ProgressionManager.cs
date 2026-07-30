@@ -99,22 +99,31 @@ public class ProgressionManager
   public int NormalizeDuplicateProgressionState()
   {
     int removed = 0;
-    HashSet<string> topLevelKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    Dictionary<string, ElementBase> topLevelElements = new Dictionary<string, ElementBase>(StringComparer.OrdinalIgnoreCase);
     foreach (ElementBase element in this.Elements.ToList<ElementBase>())
     {
+      removed += this.RemoveDuplicateRuleElements(element);
       if (ShouldDeduplicateElement(element))
       {
         string duplicateKey = GetDuplicateElementKey(element);
-        if (!topLevelKeys.Add(duplicateKey))
+        if (topLevelElements.TryGetValue(duplicateKey, out ElementBase existing))
         {
-          this.CleanElement(element);
-          this.Elements.Remove(element);
+          if (ShouldPreferDuplicate(element, existing))
+          {
+            this.CleanElement(existing);
+            this.Elements.Remove(existing);
+            topLevelElements[duplicateKey] = element;
+          }
+          else
+          {
+            this.CleanElement(element);
+            this.Elements.Remove(element);
+          }
           ++removed;
           continue;
         }
+        topLevelElements.Add(duplicateKey, element);
       }
-
-      removed += this.RemoveDuplicateRuleElements(element);
     }
 
     return removed;
@@ -123,7 +132,7 @@ public class ProgressionManager
   private int RemoveDuplicateRuleElements(ElementBase parent)
   {
     int removed = 0;
-    HashSet<string> childKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    Dictionary<string, ElementBase> childElements = new Dictionary<string, ElementBase>(StringComparer.OrdinalIgnoreCase);
     foreach (ElementBase child in parent.RuleElements.ToList<ElementBase>())
     {
       removed += this.RemoveDuplicateRuleElements(child);
@@ -131,11 +140,23 @@ public class ProgressionManager
         continue;
 
       string duplicateKey = GetDuplicateElementKey(child);
-      if (childKeys.Add(duplicateKey))
+      if (!childElements.TryGetValue(duplicateKey, out ElementBase existing))
+      {
+        childElements.Add(duplicateKey, child);
         continue;
+      }
 
-      this.CleanElement(child);
-      parent.RuleElements.Remove(child);
+      if (ShouldPreferDuplicate(child, existing))
+      {
+        this.CleanElement(existing);
+        parent.RuleElements.Remove(existing);
+        childElements[duplicateKey] = child;
+      }
+      else
+      {
+        this.CleanElement(child);
+        parent.RuleElements.Remove(child);
+      }
       ++removed;
     }
 
@@ -154,43 +175,38 @@ public class ProgressionManager
   {
     string id = Normalize(element.Id);
     string type = Normalize(element.Type);
-    if (element.Aquisition.WasGranted && element.Aquisition.GrantRule != null)
-    {
-      GrantRule grant = element.Aquisition.GrantRule;
-      return string.Join("|", new string[]
-      {
-        "grant",
-        id,
-        type,
-        Normalize(grant.ElementHeader?.Id),
-        Normalize(grant.Attributes?.Name),
-        Normalize(grant.Attributes?.Type),
-        (grant.Attributes?.RequiredLevel ?? 1).ToString()
-      });
-    }
-
-    if (element.Aquisition.WasSelected && element.Aquisition.SelectRule != null)
-    {
-      SelectRule select = element.Aquisition.SelectRule;
-      return string.Join("|", new string[]
-      {
-        "select",
-        id,
-        type,
-        Normalize(select.ElementHeader?.Id),
-        Normalize(select.Attributes?.Name),
-        Normalize(select.Attributes?.Type),
-        (select.Attributes?.RequiredLevel ?? 1).ToString(),
-        Normalize(select.UniqueIdentifier)
-      });
-    }
-
     return string.Join("|", new string[]
     {
       "element",
       id,
       type
     });
+  }
+
+  private static bool ShouldPreferDuplicate(ElementBase candidate, ElementBase existing)
+  {
+    (int Selected, int Acquired, int Descendants) candidateScore = GetDuplicateRetentionScore(candidate);
+    (int Selected, int Acquired, int Descendants) existingScore = GetDuplicateRetentionScore(existing);
+    if (candidateScore.Selected != existingScore.Selected)
+      return candidateScore.Selected > existingScore.Selected;
+    if (candidateScore.Acquired != existingScore.Acquired)
+      return candidateScore.Acquired > existingScore.Acquired;
+    return candidateScore.Descendants > existingScore.Descendants;
+  }
+
+  private static (int Selected, int Acquired, int Descendants) GetDuplicateRetentionScore(ElementBase element)
+  {
+    int selected = (element.Aquisition.WasSelected ? 1 : 0) + element.SelectionRuleListItems.Count;
+    int acquired = element.Aquisition.WasSelected || element.Aquisition.WasGranted ? 1 : 0;
+    int descendants = element.RuleElements.Count;
+    foreach (ElementBase child in element.RuleElements)
+    {
+      (int Selected, int Acquired, int Descendants) childScore = GetDuplicateRetentionScore(child);
+      selected += childScore.Selected;
+      acquired += childScore.Acquired;
+      descendants += childScore.Descendants;
+    }
+    return (selected, acquired, descendants);
   }
 
   private static string Normalize(string value)

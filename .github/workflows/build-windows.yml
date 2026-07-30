@@ -6,6 +6,7 @@ on:
       - 'Aurora.Logic/**'
       - 'Aurora.Components/**'
       - 'Aurora.Importer/**'
+      - 'Aurora.PdfImport/**'
       - 'Builder.Core/**'
       - 'Builder.Data/**'
       - 'Aurora.Documents/**'

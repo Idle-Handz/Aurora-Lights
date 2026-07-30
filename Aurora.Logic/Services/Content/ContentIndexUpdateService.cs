@@ -5,6 +5,7 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using System.Xml;
 using System.Xml.Linq;
+using Builder.Presentation.Utilities;
 
 namespace Builder.Presentation.Services.Content;
 
@@ -415,12 +416,8 @@ public sealed class ContentIndexUpdateService
         string normalizedChild = childName.Replace('/', Path.DirectorySeparatorChar)
                                          .Replace('\\', Path.DirectorySeparatorChar);
         string combined = Path.GetFullPath(Path.Combine(root, normalizedChild));
-        string rootWithSeparator = root.EndsWith(Path.DirectorySeparatorChar)
-            ? root
-            : root + Path.DirectorySeparatorChar;
 
-        if (!combined.StartsWith(rootWithSeparator, StringComparison.OrdinalIgnoreCase) &&
-            !combined.Equals(root, StringComparison.OrdinalIgnoreCase))
+        if (!PathContainment.IsPathWithinDirectory(root, combined))
         {
             throw new InvalidDataException($"Index entry path escapes its content directory: {childName}");
         }

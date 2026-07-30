@@ -1,4 +1,5 @@
 using Builder.Data;
+using Builder.Data.Elements;
 using Builder.Data.Rules;
 using Builder.Presentation;
 using Builder.Presentation.Models.Sources;
@@ -8,6 +9,7 @@ using Builder.Presentation.Services;
 using Builder.Presentation.Services.Data;
 using Builder.Presentation.Utilities;
 using Builder.Presentation.ViewModels.Shell.Items;
+using Aurora.Components.Formatting;
 using Aurora.Components.Models;
 using System.Text;
 using System.Xml;
@@ -38,15 +40,25 @@ public sealed class WebCharacterEngineService
         SelectRule Rule,
         int Number,
         string Label,
+        string? CurrentId,
         string? CurrentName,
         int RequiredLevel);
+
+    private sealed record MagicSpellMetadata(
+        int Level,
+        string Source,
+        string School,
+        bool IsRitual,
+        bool IsConcentration,
+        string CastingTime);
 
     private sealed record SelectionOption(
         string Id,
         string Name,
         string Description,
         string Source,
-        string Requirements);
+        string Requirements,
+        string DescriptionHtml);
 
     private sealed record BuildRuleSelection(
         string Key,
@@ -400,7 +412,8 @@ public sealed class WebCharacterEngineService
                     option.Name,
                     option.Description,
                     option.Source,
-                    option.Requirements))
+                    option.Requirements,
+                    option.DescriptionHtml))
                 .ToList();
         }
         finally
@@ -466,7 +479,8 @@ public sealed class WebCharacterEngineService
                     element.Name ?? string.Empty,
                     element.Type,
                     element.Source ?? string.Empty,
-                    GetDescription(element)))
+                    GetDescription(element),
+                    GetDescriptionHtml(element)))
                 .ToList();
         }
         finally
@@ -566,7 +580,8 @@ public sealed class WebCharacterEngineService
                     option.Name,
                     option.Source,
                     option.Description,
-                    option.Requirements))
+                    option.Requirements,
+                    option.DescriptionHtml))
                 .ToList();
         }
         finally
@@ -850,6 +865,7 @@ public sealed class WebCharacterEngineService
             magic.PreparedCount = magic.SpellLevels
                 .SelectMany(level => level.Spells)
                 .Count(candidate => candidate.IsPrepared && !candidate.IsAlwaysPrepared);
+            MagicSpellAccessClassifier.Apply(magic);
 
             PersistMagicState(absolutePath, magic);
 
@@ -1193,12 +1209,52 @@ public sealed class WebCharacterEngineService
         "Proficiency", "Skill", "Tool Proficiency", "Armor Proficiency", "Weapon Proficiency", "Expertise"
     };
 
-    private static IReadOnlyList<MagicKnownSpellGroupModel> BuildMagicRuleGroups() =>
+    private static IReadOnlyList<MagicKnownSpellGroupModel> BuildMagicRuleGroups(
+        IReadOnlyList<MagicSpellcastingSectionModel> sections) =>
         BuildMagicRuleSelectionGroups()
             .Select(group => new MagicKnownSpellGroupModel(
                 group.Label,
+                sections.FirstOrDefault(section =>
+                    string.Equals(section.Label, group.Label, StringComparison.OrdinalIgnoreCase))?.Id,
                 group.Entries
-                    .Select(entry => new MagicKnownSpellEntryModel(entry.Key, entry.Label, entry.CurrentName))
+                    .Select(entry =>
+                    {
+                        MagicSpellMetadata? metadata = GetMagicSpellMetadata(entry.CurrentId);
+                        MagicSpellcastingSectionModel? section = sections.FirstOrDefault(candidate =>
+                            string.Equals(candidate.Label, group.Label, StringComparison.OrdinalIgnoreCase));
+                        string ruleName = entry.Rule.Attributes.Name
+                            ?? entry.Rule.Attributes.Type
+                            ?? entry.Label;
+                        MagicSpellSelectionAccess selectionAccess =
+                            MagicSpellAccessClassifier.InferSelectionAccess(
+                                ruleName,
+                                entry.Rule.Attributes.Supports ?? string.Empty,
+                                metadata?.Level ?? 0,
+                                entry.Rule.IsAlwaysPrepared(),
+                                section is not null,
+                                section?.IsPreparedCaster ?? false,
+                                section?.IsSpellbookCaster ?? false);
+                        string accessSource = selectionAccess switch
+                        {
+                            MagicSpellSelectionAccess.Spellbook => $"{section?.Label ?? group.Label} Spellbook",
+                            MagicSpellSelectionAccess.RitualBook => ruleName,
+                            MagicSpellSelectionAccess.Known => section?.Label ?? group.Label,
+                            _ => entry.Rule.ElementHeader?.Name ?? ruleName,
+                        };
+                        return new MagicKnownSpellEntryModel(
+                            entry.Key,
+                            entry.Label,
+                            entry.CurrentName,
+                            SpellLevel: metadata?.Level ?? 0,
+                            SpellId: entry.CurrentId,
+                            Source: metadata?.Source ?? string.Empty,
+                            School: metadata?.School ?? string.Empty,
+                            IsRitual: metadata?.IsRitual ?? false,
+                            IsConcentration: metadata?.IsConcentration ?? false,
+                            CastingTime: metadata?.CastingTime ?? string.Empty,
+                            SelectionAccess: selectionAccess,
+                            AccessSource: accessSource);
+                    })
                     .ToList()))
             .ToList();
 
@@ -1227,12 +1283,14 @@ public sealed class WebCharacterEngineService
 
             for (int number = 1; number <= rule.Attributes.Number; number++)
             {
+                string? currentId = null;
                 string? currentName = null;
                 try
                 {
                     var current = handler?.GetRegisteredElement(rule, number);
                     if (current is not null)
                     {
+                        currentId = (string?)((dynamic)current).Id;
                         currentName = (string?)((dynamic)current).Name;
                     }
                 }
@@ -1249,6 +1307,7 @@ public sealed class WebCharacterEngineService
                     rule,
                     number,
                     label,
+                    currentId,
                     currentName,
                     rule.Attributes.RequiredLevel));
             }
@@ -1284,7 +1343,10 @@ public sealed class WebCharacterEngineService
                 option.Name,
                 option.Description,
                 option.Source,
-                option.Requirements))
+                option.Requirements,
+                !string.IsNullOrWhiteSpace(option.DescriptionMarkup)
+                    ? MagicDescriptionFormatter.FromAuroraHtml(option.DescriptionMarkup)
+                    : MagicDescriptionFormatter.FromPlainText(option.Description)))
             .ToList();
 
     private static bool IsSearchableInventoryElement(ElementBase element) =>
@@ -1453,6 +1515,14 @@ public sealed class WebCharacterEngineService
         return string.Empty;
     }
 
+    private static string GetDescriptionHtml(ElementBase element)
+    {
+        string raw = element.Description ?? string.Empty;
+        return !string.IsNullOrWhiteSpace(raw)
+            ? MagicDescriptionFormatter.FromAuroraHtml(raw)
+            : MagicDescriptionFormatter.FromPlainText(GetDescription(element));
+    }
+
     private static MagicOverviewModel BuildMagicModel(Character character)
     {
         var cm = CharacterManager.Current;
@@ -1475,6 +1545,10 @@ public sealed class WebCharacterEngineService
         }
 
         bool preparedCaster = spellInfo?.Prepare ?? false;
+        bool isSpellbookCaster = preparedCaster
+            && cm.SelectionRules.Any(rule => rule.Attributes.Type == "Spell")
+            && string.IsNullOrEmpty(spellInfo?.InitialSupportedSpellsExpression?.Supports);
+        bool supportsRitualCasting = spellInfo is not null && SupportsRitualCasting(spellInfo);
         int maxPrepared = preparedCaster
             ? cm.StatisticsCalculator.StatisticValues.GetValue(spellInfo!.GetPrepareAmountStatisticName())
             : 0;
@@ -1484,9 +1558,7 @@ public sealed class WebCharacterEngineService
             preparedCaster,
             spellInfo?.InitialSupportedSpellsExpression?.Supports ?? string.Empty,
             GetPreparedIds(spellInfo?.Name ?? string.Empty),
-            isSpellbookCaster: preparedCaster
-                && cm.SelectionRules.Any(rule => rule.Attributes.Type == "Spell")
-                && string.IsNullOrEmpty(spellInfo?.InitialSupportedSpellsExpression?.Supports));
+            isSpellbookCaster);
         List<MagicSpellListEntryModel> cantripEntries = cantrips
             .Select(cantrip => new MagicSpellListEntryModel(
                 cantrip.Id,
@@ -1501,6 +1573,8 @@ public sealed class WebCharacterEngineService
                 isCantrip: true,
                 MagicSpellDisplayState.Known))
             .ToList();
+        PopulateMagicSpellMetadata(
+            cantripEntries.Concat(spellLevels.SelectMany(level => level.Spells)));
         int preparedCount = spellLevels
             .SelectMany(level => level.Spells)
             .Count(spell => spell.IsPrepared && !spell.IsAlwaysPrepared);
@@ -1512,6 +1586,14 @@ public sealed class WebCharacterEngineService
                     Id = string.IsNullOrWhiteSpace(spellInfo?.Name) ? "spellcasting" : spellInfo.Name,
                     Label = string.IsNullOrWhiteSpace(spellInfo?.Name) ? "Spellcasting" : spellInfo.Name,
                     IsPreparedCaster = preparedCaster,
+                    IsSpellbookCaster = isSpellbookCaster,
+                    RitualCastingMode = !supportsRitualCasting
+                        ? MagicRitualCastingMode.None
+                        : isSpellbookCaster
+                            ? MagicRitualCastingMode.Spellbook
+                            : preparedCaster
+                                ? MagicRitualCastingMode.PreparedSpells
+                                : MagicRitualCastingMode.KnownSpells,
                     SpellcastingAbility = spellInfo?.AbilityName ?? string.Empty,
                     SpellcastingDc = spellDc,
                     SpellcastingAttack = spellAttack,
@@ -1523,12 +1605,14 @@ public sealed class WebCharacterEngineService
             }
             : [];
 
-        return new MagicOverviewModel
+        var magic = new MagicOverviewModel
         {
             HasSpellcasting = cm.Status.HasSpellcasting,
-            KnownSpellGroups = BuildMagicRuleGroups(),
+            KnownSpellGroups = BuildMagicRuleGroups(sections),
             Sections = sections
         };
+        MagicSpellAccessClassifier.Apply(magic);
+        return magic;
     }
 
     private static void ApplyPersistedMagicState(string absolutePath, MagicOverviewModel magic)
@@ -1634,6 +1718,7 @@ public sealed class WebCharacterEngineService
             }
 
             RefreshPreparedCounts(magic);
+            MagicSpellAccessClassifier.Apply(magic);
         }
         catch
         {
@@ -1679,6 +1764,7 @@ public sealed class WebCharacterEngineService
         }
 
         RefreshPreparedCounts(target);
+        MagicSpellAccessClassifier.Apply(target);
     }
 
     private static void RefreshPreparedCounts(MagicOverviewModel magic)
@@ -1824,6 +1910,56 @@ public sealed class WebCharacterEngineService
         return false;
     }
 
+    private static MagicSpellMetadata? GetMagicSpellMetadata(string? id)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            return null;
+        }
+
+        return DataManager.Current.ElementsCollection
+            .OfType<Spell>()
+            .Where(spell => string.Equals(spell.Id, id, StringComparison.OrdinalIgnoreCase))
+            .Select(CreateMagicSpellMetadata)
+            .FirstOrDefault();
+    }
+
+    private static void PopulateMagicSpellMetadata(IEnumerable<MagicSpellListEntryModel> entries)
+    {
+        Dictionary<string, MagicSpellMetadata> metadataById = DataManager.Current.ElementsCollection
+            .OfType<Spell>()
+            .Where(spell => !string.IsNullOrWhiteSpace(spell.Id))
+            .GroupBy(spell => spell.Id, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(
+                group => group.Key,
+                group => CreateMagicSpellMetadata(group.First()),
+                StringComparer.OrdinalIgnoreCase);
+
+        foreach (MagicSpellListEntryModel entry in entries)
+        {
+            if (!metadataById.TryGetValue(entry.Id, out MagicSpellMetadata? metadata))
+            {
+                continue;
+            }
+
+            entry.Level = metadata.Level;
+            entry.Source = metadata.Source;
+            entry.School = metadata.School;
+            entry.IsRitual = metadata.IsRitual;
+            entry.IsConcentration = metadata.IsConcentration;
+            entry.CastingTime = metadata.CastingTime;
+        }
+    }
+
+    private static MagicSpellMetadata CreateMagicSpellMetadata(Spell spell) =>
+        new(
+            spell.Level,
+            spell.Source ?? string.Empty,
+            spell.MagicSchool ?? string.Empty,
+            spell.IsRitual,
+            spell.IsConcentration,
+            spell.CastingTime ?? string.Empty);
+
     private static MagicSpellDetailModel? BuildMagicSpellDetail(string id)
     {
         try
@@ -1853,12 +1989,15 @@ public sealed class WebCharacterEngineService
             try { components = (string)spell.GetComponentsString(); } catch { }
 
             string body = string.Empty;
+            string rawDescription = string.Empty;
+            string descriptionHtml = string.Empty;
             try
             {
-                string raw = (string)(spell.Description ?? string.Empty);
-                if (!string.IsNullOrWhiteSpace(raw))
+                rawDescription = (string)(spell.Description ?? string.Empty);
+                if (!string.IsNullOrWhiteSpace(rawDescription))
                 {
-                    body = ElementDescriptionGenerator.GeneratePlainDescription(raw).Trim();
+                    body = ElementDescriptionGenerator.GeneratePlainDescription(rawDescription).Trim();
+                    descriptionHtml = MagicDescriptionFormatter.FromAuroraHtml(rawDescription);
                 }
             }
             catch
@@ -1878,6 +2017,12 @@ public sealed class WebCharacterEngineService
                 }
 
                 body = string.Join("\n", bodyLines).Trim();
+                descriptionHtml = MagicDescriptionFormatter.FromPlainText(body);
+            }
+
+            if (string.IsNullOrWhiteSpace(descriptionHtml) && !string.IsNullOrWhiteSpace(body))
+            {
+                descriptionHtml = MagicDescriptionFormatter.FromPlainText(body);
             }
 
             return new MagicSpellDetailModel(
@@ -1890,7 +2035,7 @@ public sealed class WebCharacterEngineService
                 range,
                 components,
                 duration,
-                body);
+                descriptionHtml);
         }
         catch
         {
@@ -2113,6 +2258,7 @@ public sealed class WebCharacterEngineService
     {
         int effectiveMax = maxSlot > 0 ? maxSlot : 9;
         HashSet<string> alwaysPreparedIds = new(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, string> alwaysPreparedSources = new(StringComparer.OrdinalIgnoreCase);
         foreach (var element in CharacterManager.Current.GetElements().Where(element => element.Type == "Spell"))
         {
             try
@@ -2120,7 +2266,13 @@ public sealed class WebCharacterEngineService
                 dynamic dynamicElement = element;
                 if ((bool)dynamicElement.Aquisition.WasGranted && (bool)dynamicElement.Aquisition.GrantRule.IsAlwaysPrepared())
                 {
-                    alwaysPreparedIds.Add((string)dynamicElement.Id);
+                    string id = (string)dynamicElement.Id;
+                    alwaysPreparedIds.Add(id);
+                    string source = element.Aquisition.GetParentHeader()?.Name ?? string.Empty;
+                    if (!string.IsNullOrWhiteSpace(source))
+                    {
+                        alwaysPreparedSources[id] = source;
+                    }
                 }
             }
             catch
@@ -2215,7 +2367,10 @@ public sealed class WebCharacterEngineService
                     spell.Id,
                     spell.Name,
                     alwaysPreparedIds.Contains(spell.Id) || preparedIds.Contains(spell.Id),
-                    alwaysPreparedIds.Contains(spell.Id)))
+                    alwaysPreparedIds.Contains(spell.Id))
+                {
+                    GrantedBy = alwaysPreparedSources.GetValueOrDefault(spell.Id, string.Empty)
+                })
                 .ToList();
             if (entries.Count > 0 || totalSlots[level] > 0)
             {
@@ -2243,6 +2398,22 @@ public sealed class WebCharacterEngineService
     {
         try { return (int)((dynamic)element).Level; }
         catch { return 0; }
+    }
+
+    private static bool SupportsRitualCasting(SpellcastingInformation information)
+    {
+        try
+        {
+            ElementBase? owner = DataManager.Current.ElementsCollection.GetElement(information.ElementHeader.Id);
+#pragma warning disable CS0618
+            return owner?.GetGrantRules().Any(rule =>
+                string.Equals(rule.Attributes.Name, "ID_INTERNAL_RITUAL_CASTING", StringComparison.OrdinalIgnoreCase)) == true;
+#pragma warning restore CS0618
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private static string ResolveWorkspaceFile(PhaseZeroSessionWorkspace workspace, string relativePath)

@@ -1,3 +1,4 @@
+using Aurora.Components.Formatting;
 using Aurora.Components.Models;
 using Builder.Data;
 using Builder.Data.Elements;
@@ -317,7 +318,8 @@ public static partial class BuildService
             option.SourceReleaseDate,
             option.SourceFileModifiedUtc,
             option.IsDisabled,
-            option.IsCurrentSelection);
+            option.IsCurrentSelection,
+            GetPickerDescriptionHtml(option.DescriptionMarkup, option.Description));
 
     // Fallback for list-type rules when Attributes.ListItems is empty: walks the owner element's
     // XmlNode to find the matching <select type="List" name="…"> and reads its <item> children.
@@ -463,11 +465,14 @@ public static partial class BuildService
             element.Id,
             currentSelectionId,
             StringComparison.OrdinalIgnoreCase);
+        string description = isSpellRule
+            ? GetSpellPickerDescription(element)
+            : GetFeatureDescription(element);
 
         return new ElementOption(
             element.Id,
             element.Name ?? "",
-            isSpellRule ? GetSpellPickerDescription(element) : GetFeatureDescription(element),
+            description,
             element.Source ?? "",
             element.HasRequirements ? FormatRequirements(element.Requirements) : "",
             SpellLevel: isSpellRule ? GetElementSpellLevel(element) : 0,
@@ -481,7 +486,10 @@ public static partial class BuildService
                 element.AllowDuplicate,
                 currentSelectionId,
                 ownedNonRepeatableElementIds),
-            IsCurrentSelection: isCurrentSelection);
+            IsCurrentSelection: isCurrentSelection,
+            DescriptionHtml: isSpellRule
+                ? MagicDescriptionFormatter.FromPlainText(description)
+                : GetFeatureDescriptionHtml(element, description));
     }
 
     private static HashSet<string> GetOwnedNonRepeatableElementIds(SelectRule rule)
@@ -834,6 +842,9 @@ public static partial class BuildService
                 int count = r.Attributes.Number;
                 for (int n = 1; n <= count; n++)
                 {
+                    if (!SelectionRuleValidation.ShouldValidateRegisteredSlot(r, n, rule, number))
+                        continue;
+
                     var registered = SelectionRuleExpanderContext.Current?.GetRegisteredElement(r, n)
                         as Builder.Data.ElementBase;
                     if (registered == null) continue;
@@ -1136,7 +1147,11 @@ public static partial class BuildService
                 object rule     = d.Aquisition.SelectRule;
                 string ruleName = (string)(d.Aquisition.SelectRule.Attributes.Name ?? "");
                 string label    = string.IsNullOrEmpty(ruleName) ? e.Name ?? "" : $"{ruleName}: {e.Name}";
-                featByRule[rule] = new FeatureEntry(label, GetFeatureDescription(e));
+                string description = GetFeatureDescription(e);
+                featByRule[rule] = new FeatureEntry(
+                    label,
+                    description,
+                    GetFeatureDescriptionHtml(e, description));
             }
             catch { }
         }
@@ -1152,7 +1167,14 @@ public static partial class BuildService
                                 !e.Name.Equals("Feat", StringComparison.OrdinalIgnoreCase))
                     .GroupBy(e => e.Id)
                     .Select(g => g.First())
-                    .Select(e => new FeatureEntry(e.Name!, GetFeatureDescription(e)))
+                    .Select(e =>
+                    {
+                        string description = GetFeatureDescription(e);
+                        return new FeatureEntry(
+                            e.Name!,
+                            description,
+                            GetFeatureDescriptionHtml(e, description));
+                    })
                     .ToList();
 
                 foreach (var rule in m.SelectionRules)
@@ -1188,6 +1210,27 @@ public static partial class BuildService
         catch { }
         return "";
     }
+
+    private static string GetFeatureDescriptionHtml(object element, string fallbackPlainText = "")
+    {
+        try
+        {
+            dynamic dynamicElement = element;
+            string raw = (string)(dynamicElement.Description ?? "");
+            if (element is ElementBase elementBase)
+                raw = SelectionDescriptionMarkup.WithFeatureProgression(elementBase, raw);
+            return GetPickerDescriptionHtml(raw, fallbackPlainText);
+        }
+        catch
+        {
+            return MagicDescriptionFormatter.FromPlainText(fallbackPlainText);
+        }
+    }
+
+    private static string GetPickerDescriptionHtml(string descriptionMarkup, string fallbackPlainText) =>
+        !string.IsNullOrWhiteSpace(descriptionMarkup)
+            ? MagicDescriptionFormatter.FromAuroraHtml(descriptionMarkup)
+            : MagicDescriptionFormatter.FromPlainText(fallbackPlainText);
 
     private static string GetSpellPickerDescription(ElementBase e)
     {
@@ -1256,7 +1299,13 @@ public static partial class BuildService
                         level.Level,
                         level.AverageHp,
                         level.Features.Select(feature =>
-                                new FeatureEntry(feature.Name!, GetFeatureDescription(feature)))
+                            {
+                                string description = GetFeatureDescription(feature);
+                                return new FeatureEntry(
+                                    feature.Name!,
+                                    description,
+                                    GetFeatureDescriptionHtml(feature, description));
+                            })
                             .ToList()))
                     .ToList()))
             .ToList();
@@ -1291,11 +1340,16 @@ public static partial class BuildService
 
             // Body description — use the plain-text generator on the raw XML description.
             string body = "";
+            string rawDescription = "";
+            string descriptionHtml = "";
             try
             {
-                string raw = sp.Description ?? "";
-                if (!string.IsNullOrWhiteSpace(raw))
-                    body = ElementDescriptionGenerator.GeneratePlainDescription(raw).Trim();
+                rawDescription = sp.Description ?? "";
+                if (!string.IsNullOrWhiteSpace(rawDescription))
+                {
+                    body = ElementDescriptionGenerator.GeneratePlainDescription(rawDescription).Trim();
+                    descriptionHtml = MagicDescriptionFormatter.FromAuroraHtml(rawDescription);
+                }
             }
             catch { }
 
@@ -1314,7 +1368,11 @@ public static partial class BuildService
                     bodyLeft.Add(line);
                 }
                 body = string.Join("\n", bodyLeft).Trim();
+                descriptionHtml = MagicDescriptionFormatter.FromPlainText(body);
             }
+
+            if (string.IsNullOrWhiteSpace(descriptionHtml) && !string.IsNullOrWhiteSpace(body))
+                descriptionHtml = MagicDescriptionFormatter.FromPlainText(body);
 
             return new SpellDetail(
                 Id:          e.Id,
@@ -1329,7 +1387,8 @@ public static partial class BuildService
                 Range:       range,
                 Components:  components,
                 Duration:    duration,
-                Description: body);
+                Description: body,
+                DescriptionHtml: descriptionHtml);
         }
         catch { return null; }
     }
@@ -1619,7 +1678,8 @@ public sealed record ElementOption(
     DateTimeOffset? SourceReleaseDate = null,
     DateTimeOffset? SourceFileModifiedUtc = null,
     bool IsDisabled = false,
-    bool IsCurrentSelection = false);
+    bool IsCurrentSelection = false,
+    string DescriptionHtml = "");
 
 /// <summary>A class the character can level up: its element id (Class or Multiclass), display name,
 /// current level in that class, and whether it's the main class.</summary>
@@ -1638,7 +1698,8 @@ public sealed record SpellDetail(
     string Range,
     string Components,
     string Duration,
-    string Description);
+    string Description,
+    string DescriptionHtml);
 
 // ── Advancement timeline ──────────────────────────────────────────────────────
 

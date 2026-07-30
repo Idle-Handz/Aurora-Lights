@@ -79,6 +79,8 @@ public sealed class MagicSpellcastingSectionModel
     public string Label { get; set; } = string.Empty;
     public bool HasExtensions { get; set; }
     public bool IsPreparedCaster { get; set; }
+    public bool IsSpellbookCaster { get; set; }
+    public MagicRitualCastingMode RitualCastingMode { get; set; }
     public string SpellcastingAbility { get; set; } = string.Empty;
     public string SpellcastingDc { get; set; } = string.Empty;
     public string SpellcastingAttack { get; set; } = string.Empty;
@@ -106,7 +108,11 @@ public sealed record MagicKnownSpellEntryModel(
     string Source = "",
     string School = "",
     bool IsRitual = false,
-    bool IsConcentration = false);
+    bool IsConcentration = false,
+    string CastingTime = "",
+    string GrantedBy = "",
+    MagicSpellSelectionAccess SelectionAccess = MagicSpellSelectionAccess.Unknown,
+    string AccessSource = "");
 
 public sealed class MagicSpellListEntryModel
 {
@@ -121,6 +127,9 @@ public sealed class MagicSpellListEntryModel
     public bool IsAlwaysPrepared { get; set; }
     public bool IsCantrip { get; set; }
     public MagicSpellDisplayState DisplayState { get; set; }
+    public IReadOnlyList<MagicSpellAccessPathModel> AccessPaths { get; set; } = [];
+    public string CastingTime { get; set; } = string.Empty;
+    public string GrantedBy { get; set; } = string.Empty;
 
     public MagicSpellListEntryModel()
     {
@@ -185,7 +194,10 @@ public sealed class MagicSpellListEntryModel
         bool isPrepared,
         bool isAlwaysPrepared,
         bool isCantrip = false,
-        MagicSpellDisplayState displayState = MagicSpellDisplayState.Prepared)
+        MagicSpellDisplayState displayState = MagicSpellDisplayState.Prepared,
+        string castingTime = "",
+        string grantedBy = "",
+        IReadOnlyList<MagicSpellAccessPathModel>? accessPaths = null)
     {
         Id = id;
         Name = name;
@@ -198,6 +210,9 @@ public sealed class MagicSpellListEntryModel
         IsAlwaysPrepared = isAlwaysPrepared;
         IsCantrip = isCantrip;
         DisplayState = displayState;
+        AccessPaths = accessPaths ?? [];
+        CastingTime = castingTime;
+        GrantedBy = grantedBy;
     }
 }
 
@@ -207,7 +222,43 @@ public enum MagicSpellDisplayState
     Available,
     Prepared,
     AlwaysPrepared,
+    Granted,
 }
+
+public enum MagicSpellSelectionAccess
+{
+    Unknown,
+    Known,
+    AlwaysPrepared,
+    Granted,
+    Spellbook,
+    RitualBook,
+}
+
+public enum MagicSpellAccessKind
+{
+    Known,
+    Prepared,
+    AlwaysPrepared,
+    Granted,
+    Spellbook,
+    RitualBook,
+}
+
+public enum MagicRitualCastingMode
+{
+    None,
+    PreparedSpells,
+    KnownSpells,
+    Spellbook,
+}
+
+public sealed record MagicSpellAccessPathModel(
+    MagicSpellAccessKind Kind,
+    string CastingSectionId,
+    string SourceLabel,
+    bool CanCastNormally,
+    bool CanCastAsRitual);
 
 public sealed class MagicSpellLevelModel
 {
@@ -242,7 +293,7 @@ public sealed record MagicSpellDetailModel(
     string Range,
     string Components,
     string Duration,
-    string Description)
+    string DescriptionHtml)
 {
     public MagicSpellDetailModel(
         string Id,
@@ -254,8 +305,8 @@ public sealed record MagicSpellDetailModel(
         string Range,
         string Components,
         string Duration,
-        string Description)
-        : this(Id, Name, Source, Level, Subtitle, string.Empty, false, false, CastingTime, Range, Components, Duration, Description)
+        string DescriptionHtml)
+        : this(Id, Name, Source, Level, Subtitle, string.Empty, false, false, CastingTime, Range, Components, Duration, DescriptionHtml)
     {
     }
 }

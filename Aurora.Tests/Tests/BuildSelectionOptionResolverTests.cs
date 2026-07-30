@@ -199,6 +199,27 @@ public sealed class BuildSelectionOptionResolverTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ResolveOptions_PreservesDescriptionMarkupForRichPickerRendering()
+    {
+        if (!ContentFixture.SkipIfUnavailable(_output)) return;
+
+        await CreateEmptyCharacterAsync();
+        const string optionId = "ID_TEST_RESOLVER_RICH_DESCRIPTION";
+        const string optionType = "Resolver Test Rich Description";
+        const string markup =
+            "<p>Choose your path.</p><table class=\"class-features\"><tr><th>Level</th><th>Feature</th></tr><tr><td>1</td><td>Spellcasting</td></tr></table>";
+        ResetSyntheticElements(optionId);
+        AddSyntheticElement(optionId, "Rich Option", optionType, description: markup);
+
+        var options = BuildSelectionOptionResolver.ResolveOptions(
+            CreateSelectRule(optionType, "Rich Description"));
+
+        var option = options.Should().ContainSingle(candidate => candidate.Id == optionId).Subject;
+        option.Description.Should().Contain("Choose your path.");
+        option.DescriptionMarkup.Should().Be(markup);
+    }
+
+    [Fact]
     public async Task ResolveOptions_FallsBackToCaseInsensitiveSupportsForMalformedNonSpellRules()
     {
         if (!ContentFixture.SkipIfUnavailable(_output)) return;

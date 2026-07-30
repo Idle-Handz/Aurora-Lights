@@ -42,16 +42,15 @@ public static partial class BuildService
                 if (!repeatable && list.Contains(targetId, StringComparer.OrdinalIgnoreCase))
                     return (string?)null;
 
-                // Ability-score elements (e.g. ID_INTERNAL_ASI_DEXTERITY) are shared singletons that
-                // races / Tasha's origins / level-up ASIs also register. Each instance carries a single
-                // Aquisition record, so re-registering the same instance clobbers the other source's
-                // bookkeeping and the two increases cancel out. The engine's own answer to "register
-                // another copy of this element" is ElementBaseCollection.GetFresh, which mints a fresh
-                // instance with blank acquisition — the same mechanism the legacy app uses to let an
-                // ASI stack. Its blank acquisition also lets RemoveCustomFeatureAsync tell our copy
-                // apart from an owned original of the same id.
+                // Ability-score elements are the exception to the normal fresh-copy rule. The legacy
+                // engine counts repeated registration of the shared ASI instance, while GetFresh()
+                // creates a distinct instance that does not contribute a second increase.
                 var toRegister = target;
-                if (repeatable || string.Equals(target.Type, "Ability Score Improvement", StringComparison.OrdinalIgnoreCase))
+                bool isAbilityScoreIncrease = string.Equals(
+                    target.Type,
+                    "Ability Score Improvement",
+                    StringComparison.OrdinalIgnoreCase);
+                if (repeatable && !isAbilityScoreIncrease)
                 {
                     toRegister = DataManager.Current.ElementsCollection.GetFresh(targetId) ?? target;
                 }
@@ -128,21 +127,27 @@ public static partial class BuildService
             bool repeatable = EquipmentService.IsRepeatableCustomFeature(target)
                               || EquipmentService.IsRepeatableCustomFeature(proxy);
 
-            // Skip if already re-applied: our copies carry blank acquisition, whereas a same-id
-            // instance owned by the race/class/level-up build carries GrantedBy/SelectedBy.
-            int existingBlankCount = cm.GetElements().Count(e => e.Id == targetId
-                && !e.Aquisition.WasGranted && !e.Aquisition.WasSelected);
+            bool isAbilityScoreIncrease = string.Equals(
+                target.Type,
+                "Ability Score Improvement",
+                StringComparison.OrdinalIgnoreCase);
+            var existingMatches = cm.GetElements().Where(e => e.Id == targetId).ToList();
+            int ownedBaseline = existingMatches.Any(e =>
+                e.Aquisition.WasGranted || e.Aquisition.WasSelected) ? 1 : 0;
+            int existingCustomCount = isAbilityScoreIncrease
+                ? Math.Max(0, existingMatches.Count - ownedBaseline)
+                : existingMatches.Count(e => !e.Aquisition.WasGranted && !e.Aquisition.WasSelected);
             int desiredCount = repeatable ? group.Count() : 1;
-            int toAddCount = Math.Max(0, desiredCount - existingBlankCount);
+            int toAddCount = Math.Max(0, desiredCount - existingCustomCount);
             if (toAddCount == 0)
                 continue;
 
             for (int i = 0; i < toAddCount; i++)
             {
-                // Ability-score and repeatable elements should be fresh engine instances so they stack
-                // instead of reusing one singleton/acquisition record.
+                // Repeatable elements normally need separate acquisition records. ASIs instead use
+                // repeated registration of the shared instance because that is what the engine counts.
                 var toRegister = target;
-                if (repeatable || string.Equals(target.Type, "Ability Score Improvement", StringComparison.OrdinalIgnoreCase))
+                if (repeatable && !isAbilityScoreIncrease)
                     toRegister = DataManager.Current.ElementsCollection.GetFresh(targetId) ?? target;
 
                 cm.RegisterElement(toRegister);
@@ -169,13 +174,28 @@ public static partial class BuildService
                 var target = proxy == null ? null : EquipmentService.ResolveCustomFeatureTarget(proxy);
                 string targetId = target?.Id ?? elementId;
 
-                // Prefer an instance with blank acquisition — that's the copy we registered for this
-                // custom feature (see MakeStackableCopy), not an identically-id'd instance owned by a
-                // race / level-up ASI. Falls back to any match for ordinary (uniquely-owned) features.
+                // Repeated ASIs share one engine instance, so remove the last registration and leave
+                // the first (owned) occurrence intact. Other custom copies retain blank acquisition.
                 var matches = cm.GetElements().Where(e => e.Id == targetId).ToList();
-                var el = matches.FirstOrDefault(e => !e.Aquisition.WasGranted && !e.Aquisition.WasSelected)
+                var el = matches.Count > 1
+                    ? matches.Last()
+                    : matches.FirstOrDefault(e => !e.Aquisition.WasGranted && !e.Aquisition.WasSelected)
                          ?? matches.FirstOrDefault();
-                if (el != null) cm.UnregisterElement(el);
+                if (el != null)
+                {
+                    bool preserveAcquisition = matches.Count > 1;
+                    bool wasSelected = el.Aquisition.WasSelected;
+                    bool wasGranted = el.Aquisition.WasGranted;
+                    var selectRule = el.Aquisition.SelectRule;
+                    var grantRule = el.Aquisition.GrantRule;
+
+                    cm.UnregisterElement(el);
+
+                    if (preserveAcquisition && wasSelected && selectRule != null)
+                        el.Aquisition.SelectedBy(selectRule);
+                    else if (preserveAcquisition && wasGranted && grantRule != null)
+                        el.Aquisition.GrantedBy(grantRule);
+                }
                 cm.ReprocessCharacter();
                 ResnapTab(tab);
                 SaveCharacterFile(tab);

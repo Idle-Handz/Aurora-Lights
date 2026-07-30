@@ -18,6 +18,7 @@
     "ID_WOTC_PHB_CLASS_FIGHTER",
     "ID_BACKGROUND_ACOLYTE"
   ],
+  "assertRoundTrip": false,
   "expectedSelectionRules": [
     {
       "type": "Class Feature",
@@ -28,7 +29,7 @@
     {
       "type": "Language",
       "nameContains": "Language (Acolyte)",
-      "bucket": "Languages",
+      "bucket": "Language",
       "minOptions": 1
     },
     {

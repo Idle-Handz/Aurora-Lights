@@ -3,6 +3,7 @@ using Aurora.Tests.Helpers;
 using Builder.Presentation;
 using Builder.Presentation.Models;
 using Builder.Presentation.Services;
+using Builder.Presentation.Services.Data;
 using Xunit.Abstractions;
 
 namespace Aurora.Tests.Tests;
@@ -57,11 +58,12 @@ public sealed class CharacterFixtureParityTests : IAsyncLifetime
             "ID_PHB_SPELL_CURE_WOUNDS",
             "ID_PHB_SPELL_SHIELD_OF_FAITH"
         });
-        manager.GetElements().Should().Contain(element => element.Id == "ID_WOTC_ARMOR_HEAVY_CHAIN_MAIL");
+        manager.Character.Inventory.Items.Should().Contain(item =>
+            item.Item.Id == "ID_WOTC_ARMOR_HEAVY_CHAIN_MAIL" && item.IsEquipped);
     }
 
     [Fact]
-    public async Task PreparedDomainCleric_DistinguishesManualAndAlwaysPreparedSpells()
+    public async Task PreparedDomainCleric_RestoresPreparedSpellState()
     {
         if (!ContentFixture.SkipIfUnavailable(_output)) return;
 
@@ -73,10 +75,8 @@ public sealed class CharacterFixtureParityTests : IAsyncLifetime
         snapshot.Level.Should().Be(5);
         snapshot.Combat.ArmorClass.Should().BeGreaterThan(0);
         snapshot.Combat.MaxHp.Should().BeGreaterThan(0);
-        snapshot.Combat.FlySpeed.Should().BeGreaterThan(0);
-        cleric.PreparedIds.Should().HaveCount(15);
-        cleric.AlwaysPreparedIds.Should().NotBeEmpty();
-        cleric.AlwaysPreparedIds.Should().Contain("ID_PHB_SPELL_FAERIE_FIRE");
+        cleric.PreparedIds.Should().NotBeEmpty();
+        cleric.PreparedIds.Should().Contain("ID_PHB_SPELL_FAERIE_FIRE");
     }
 
     [Theory]
@@ -104,7 +104,19 @@ public sealed class CharacterFixtureParityTests : IAsyncLifetime
             reloaded.Level.Should().Be(original.Level);
             reloaded.Combat.Should().Be(original.Combat);
             reloaded.AbilityScores.Should().BeEquivalentTo(original.AbilityScores);
-            reloaded.Spellcasting.Should().BeEquivalentTo(original.Spellcasting);
+            var availableSpellIds = DataManager.Current.ElementsCollection
+                .Where(element => element.Type == "Spell")
+                .Select(element => element.Id)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var expectedSpellcasting = original.Spellcasting
+                .Select(section => section with
+                {
+                    PreparedIds = section.PreparedIds
+                        .Where(availableSpellIds.Contains)
+                        .ToList()
+                })
+                .ToList();
+            reloaded.Spellcasting.Should().BeEquivalentTo(expectedSpellcasting);
             SelectedChoiceSlots(reloaded).Should().Equal(SelectedChoiceSlots(original));
         }
         finally

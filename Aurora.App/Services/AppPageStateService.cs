@@ -27,6 +27,7 @@ public sealed class CompendiumPageState
     public string SelectedSpellLevel { get; set; } = "All";
     public string SelectedSpellSchool { get; set; } = "All";
     public string SelectedSpellClass { get; set; } = "All";
+    public string SelectedSpellCastingTime { get; set; } = "All";
     public string SelectedItemRarity { get; set; } = "All";
     public string SelectedItemAttunement { get; set; } = "All";
     public string SelectedCreatureType { get; set; } = "All";
@@ -44,6 +45,7 @@ public sealed class CompendiumPageState
         SelectedSpellLevel = "All";
         SelectedSpellSchool = "All";
         SelectedSpellClass = "All";
+        SelectedSpellCastingTime = "All";
         SelectedItemRarity = "All";
         SelectedItemAttunement = "All";
         SelectedCreatureType = "All";

@@ -9,4 +9,6 @@ public sealed class PhaseZeroSessionOptions
     public int CleanupIntervalMinutes { get; set; } = 30;
     public int MaxFileCount { get; set; } = 64;
     public long MaxSingleFileBytes { get; set; } = 64L * 1024L * 1024L;
+    public int MaxArchiveEntryCount { get; set; } = 512;
+    public long MaxArchiveExpandedBytes { get; set; } = 256L * 1024L * 1024L;
 }

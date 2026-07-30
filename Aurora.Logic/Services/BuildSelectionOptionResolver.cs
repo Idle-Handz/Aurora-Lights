@@ -20,7 +20,8 @@ public sealed record BuildSelectionOption(
     DateTimeOffset? SourceReleaseDate = null,
     DateTimeOffset? SourceFileModifiedUtc = null,
     bool IsDisabled = false,
-    bool IsCurrentSelection = false);
+    bool IsCurrentSelection = false,
+    string DescriptionMarkup = "");
 
 public sealed record BuildSelectionOptionSortMetadata(
     DateTimeOffset? SourceReleaseDate,
@@ -205,7 +206,8 @@ public static class BuildSelectionOptionResolver
                 element.AllowDuplicate,
                 currentSelectionId,
                 ownedNonRepeatableElementIds),
-            IsCurrentSelection: isCurrentSelection);
+            IsCurrentSelection: isCurrentSelection,
+            DescriptionMarkup: isSpellRule ? string.Empty : GetRawDescription(element));
     }
 
     private static IOrderedEnumerable<BuildSelectionOption> OrderElementOptions(
@@ -505,6 +507,22 @@ public static class BuildSelectionOptionResolver
         }
 
         return string.Empty;
+    }
+
+    private static string GetRawDescription(object element)
+    {
+        try
+        {
+            dynamic dynamicElement = element;
+            string raw = (string)(dynamicElement.Description ?? string.Empty);
+            return element is ElementBase elementBase
+                ? SelectionDescriptionMarkup.WithFeatureProgression(elementBase, raw)
+                : raw;
+        }
+        catch
+        {
+            return string.Empty;
+        }
     }
 
     private static string GetSpellPickerDescription(ElementBase element)

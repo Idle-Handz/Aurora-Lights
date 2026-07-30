@@ -4,6 +4,7 @@ using System.Net;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
+using Aurora.Components.Models;
 using Aurora.Importer;
 using Builder.Presentation.Services.Data;
 using Microsoft.Data.Sqlite;
@@ -337,6 +338,7 @@ public sealed class CompendiumService
         string? spellLevel,
         string? spellSchool,
         string? spellClass,
+        string? spellCastingTime,
         string? itemRarity,
         string? itemAttunement,
         string? creatureType,
@@ -387,6 +389,14 @@ public sealed class CompendiumService
             filtered = filtered.Where(entry =>
                 string.Equals(entry.Type, "Spell", StringComparison.OrdinalIgnoreCase) &&
                 entry.SpellClasses.Contains(spellClass, StringComparer.OrdinalIgnoreCase));
+        }
+
+        if (!string.IsNullOrWhiteSpace(spellCastingTime)
+            && !string.Equals(spellCastingTime, "All", StringComparison.OrdinalIgnoreCase))
+        {
+            filtered = filtered.Where(entry =>
+                string.Equals(entry.Type, "Spell", StringComparison.OrdinalIgnoreCase) &&
+                MagicCastingTimeClassifier.Matches(entry.SpellCastingTime, spellCastingTime));
         }
 
         if (!string.IsNullOrWhiteSpace(itemRarity) && !string.Equals(itemRarity, "All", StringComparison.OrdinalIgnoreCase))
