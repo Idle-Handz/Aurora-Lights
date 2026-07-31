@@ -1,0 +1,1 @@
+Adding a magic armor or weapon template now prompts for a compatible base item before creating the composed inventory entry, restoring inherited equipment properties and equip controls. Standalone entries saved by earlier clients are also repaired on load when their base is unambiguous.

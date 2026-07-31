@@ -354,11 +354,25 @@ public sealed class WebCharacterSessionService
         return await _engine.GetEquipmentInventoryOptionsAsync(slotId);
     }
 
-    public async Task<WebCharacterEquipmentState> AddCurrentEquipmentItemAsync(string elementId, int amount)
+    public async Task<WebEquipmentTemplateOptions?> GetCurrentEquipmentTemplateOptionsAsync(string elementId)
+    {
+        EnsureActiveCharacter();
+        return await _engine.GetEquipmentTemplateOptionsAsync(elementId);
+    }
+
+    public async Task<WebCharacterEquipmentState> AddCurrentEquipmentItemAsync(
+        string elementId,
+        int amount,
+        string? baseElementId = null)
     {
         EnsureActiveCharacter();
         PhaseZeroSessionWorkspace workspace = await _workspaceService.GetWorkspaceAsync();
-        WebCharacterEquipmentState state = await _engine.AddCurrentEquipmentItemAsync(workspace, _currentCharacterPath!, elementId, amount);
+        WebCharacterEquipmentState state = await _engine.AddCurrentEquipmentItemAsync(
+            workspace,
+            _currentCharacterPath!,
+            elementId,
+            amount,
+            baseElementId);
         SyncRuntimeSummary(state.Summary, state.StatusMessage);
         await PersistMagicIfAvailableAsync(workspace);
         return state;

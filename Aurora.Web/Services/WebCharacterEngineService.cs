@@ -540,19 +540,59 @@ public sealed class WebCharacterEngineService
         }
     }
 
-    public async Task<WebCharacterEquipmentState> AddCurrentEquipmentItemAsync(
-        PhaseZeroSessionWorkspace workspace,
-        string relativePath,
-        string elementId,
-        int amount)
+    public async Task<WebEquipmentTemplateOptions?> GetEquipmentTemplateOptionsAsync(
+        string templateElementId)
     {
         await _operationLock.WaitAsync();
         try
         {
             Character character = RequireCurrentCharacter();
-            if (!AddItem(character, elementId, amount))
+            ElementBase? template = DataManager.Current.ElementsCollection.GetElement(templateElementId);
+            if (template is null || InventoryItemFactory.GetTemplateKind(template) is null)
             {
-                throw new InvalidOperationException("The requested item could not be added.");
+                return null;
+            }
+
+            BuildSourceRestrictionSnapshot sourceRestrictions =
+                BuildSourceRestrictionSnapshot.CaptureCurrent();
+            IReadOnlyList<WebEquipmentSearchResult> baseOptions =
+                InventoryItemFactory.GetCompatibleBaseItems(character.Inventory, template)
+                    .Where(sourceRestrictions.Allows)
+                    .Select(item => new WebEquipmentSearchResult(
+                        item.Id,
+                        item.Name,
+                        item.Type,
+                        item.Source ?? string.Empty,
+                        GetDescription(item),
+                        GetDescriptionHtml(item)))
+                    .ToList();
+
+            return new WebEquipmentTemplateOptions(
+                template.Id,
+                template.Name,
+                baseOptions);
+        }
+        finally
+        {
+            _operationLock.Release();
+        }
+    }
+
+    public async Task<WebCharacterEquipmentState> AddCurrentEquipmentItemAsync(
+        PhaseZeroSessionWorkspace workspace,
+        string relativePath,
+        string elementId,
+        int amount,
+        string? baseElementId = null)
+    {
+        await _operationLock.WaitAsync();
+        try
+        {
+            Character character = RequireCurrentCharacter();
+            if (!AddItem(character, elementId, amount, baseElementId))
+            {
+                throw new InvalidOperationException(
+                    "The requested item could not be added with the selected base.");
             }
 
             return SaveCurrentEquipmentState(workspace, relativePath, character, "Item added to inventory in the current web session.");
@@ -1393,7 +1433,11 @@ public sealed class WebCharacterEngineService
         && !string.IsNullOrWhiteSpace(element.Name)
         && !element.Name.StartsWith("Additional ", StringComparison.OrdinalIgnoreCase);
 
-    private static bool AddItem(Character character, string elementId, int amount = 1)
+    private static bool AddItem(
+        Character character,
+        string elementId,
+        int amount = 1,
+        string? baseElementId = null)
     {
         ElementBase? element = DataManager.Current.ElementsCollection.GetElement(elementId);
         if (element is null)
@@ -1403,27 +1447,15 @@ public sealed class WebCharacterEngineService
 
         try
         {
-            Type elementType = element.GetType();
-            var ctor = typeof(RefactoredEquipmentItem)
-                .GetConstructors()
-                .FirstOrDefault(constructor =>
-                {
-                    var parameters = constructor.GetParameters();
-                    return parameters.Length >= 1
-                           && parameters[0].ParameterType.IsAssignableFrom(elementType)
-                           && parameters.Skip(1).All(parameter => parameter.HasDefaultValue);
-                });
-
-            if (ctor is null)
+            var item = InventoryItemFactory.Create(
+                character.Inventory,
+                element,
+                baseElementId);
+            if (item is null)
             {
                 return false;
             }
 
-            object?[] args = ctor.GetParameters()
-                .Select((parameter, index) => index == 0 ? (object?)element : parameter.DefaultValue)
-                .ToArray();
-
-            var item = (RefactoredEquipmentItem)ctor.Invoke(args);
             item.Amount = Math.Max(1, amount);
             character.Inventory.Items.Add(item);
             return true;

@@ -42,7 +42,7 @@
                                 class="equipment-action-button secondary"
                                 disabled="@_busy"
                                 @onclick="CloseEquipmentPicker">
-                            Done
+                            @(_pickerMode == EquipmentPickerMode.TemplateBase ? "Cancel" : "Done")
                         </button>
                     </div>
 
@@ -101,9 +101,7 @@
                     }
 
                     <div class="picker-section">
-                        <div class="picker-section-title">
-                            @(_pickerMode == EquipmentPickerMode.AddItem ? "Add New Item" : "Add and Equip New Item")
-                        </div>
+                        <div class="picker-section-title">@PickerSectionTitle</div>
 
                         @if (_pickerResults.Count == 0)
                         {
@@ -130,7 +128,7 @@
                                                 class="equipment-action-button primary"
                                                 disabled="@_busy"
                                                 @onclick="() => ChooseEquipmentResultAsync(result.ElementId)">
-                                            @(_pickerMode == EquipmentPickerMode.AddItem ? "Add" : "Add & Equip")
+                                            @PickerActionLabel
                                         </button>
                                     </div>
                                 }
@@ -164,12 +162,30 @@
     private int _pickerAmount = 1;
     private IReadOnlyList<WebEquipmentSearchResult> _pickerResults = [];
     private IReadOnlyList<WebEquipmentInventoryOption> _slotInventoryOptions = [];
+    private IReadOnlyList<WebEquipmentSearchResult> _templateBaseOptions = [];
+    private string? _pendingTemplateElementId;
+    private int _pendingTemplateAmount = 1;
 
     private enum EquipmentPickerMode
     {
         AddItem,
-        GearSlot
+        GearSlot,
+        TemplateBase
     }
+
+    private string PickerSectionTitle => _pickerMode switch
+    {
+        EquipmentPickerMode.AddItem => "Add New Item",
+        EquipmentPickerMode.TemplateBase => "Choose Compatible Base Item",
+        _ => "Add and Equip New Item"
+    };
+
+    private string PickerActionLabel => _pickerMode switch
+    {
+        EquipmentPickerMode.AddItem => "Add",
+        EquipmentPickerMode.TemplateBase => "Apply & Add",
+        _ => "Add & Equip"
+    };
 
     private IReadOnlyList<CharacterDetailField> DetailFields =>
         _state is null
@@ -247,6 +263,9 @@
         _pickerAmount = 1;
         _pickerResults = [];
         _slotInventoryOptions = [];
+        _templateBaseOptions = [];
+        _pendingTemplateElementId = null;
+        _pendingTemplateAmount = 1;
     }
 
     private async Task SearchEquipmentPickerAsync()
@@ -258,6 +277,21 @@
 
         try
         {
+            if (_pickerMode == EquipmentPickerMode.TemplateBase)
+            {
+                IEnumerable<WebEquipmentSearchResult> options = _templateBaseOptions;
+                if (!string.IsNullOrWhiteSpace(_pickerQuery))
+                {
+                    options = options.Where(option =>
+                        option.Name.Contains(_pickerQuery, StringComparison.OrdinalIgnoreCase) ||
+                        option.Type.Contains(_pickerQuery, StringComparison.OrdinalIgnoreCase) ||
+                        option.Source.Contains(_pickerQuery, StringComparison.OrdinalIgnoreCase));
+                }
+
+                _pickerResults = options.OrderBy(option => option.Name).ToList();
+                return;
+            }
+
             _pickerResults = await CharacterSession.SearchCurrentEquipmentItemsAsync(
                 _pickerQuery,
                 _pickerMode == EquipmentPickerMode.GearSlot ? _pickerSlotId : null);
@@ -273,8 +307,18 @@
     {
         if (_pickerMode == EquipmentPickerMode.AddItem)
         {
+            await ChooseInventoryItemAsync(elementId);
+        }
+        else if (_pickerMode == EquipmentPickerMode.TemplateBase &&
+                 _pendingTemplateElementId is not null)
+        {
+            string templateElementId = _pendingTemplateElementId;
+            int amount = _pendingTemplateAmount;
             await RunEquipmentActionAsync(
-                () => CharacterSession.AddCurrentEquipmentItemAsync(elementId, _pickerAmount),
+                () => CharacterSession.AddCurrentEquipmentItemAsync(
+                    templateElementId,
+                    amount,
+                    elementId),
                 closePickerOnSuccess: true);
         }
         else if (_pickerSlotId is not null)
@@ -282,6 +326,53 @@
             await RunEquipmentActionAsync(
                 () => CharacterSession.EquipCurrentEquipmentSlotAsync(_pickerSlotId, identifier: null, elementId),
                 closePickerOnSuccess: true);
+        }
+    }
+
+    private async Task ChooseInventoryItemAsync(string elementId)
+    {
+        _busy = true;
+        _failed = false;
+        try
+        {
+            WebEquipmentTemplateOptions? template =
+                await CharacterSession.GetCurrentEquipmentTemplateOptionsAsync(elementId);
+            if (template is null)
+            {
+                _state = await CharacterSession.AddCurrentEquipmentItemAsync(
+                    elementId,
+                    _pickerAmount);
+                _statusMessage = _state.StatusMessage;
+                CloseEquipmentPicker();
+                return;
+            }
+
+            if (template.BaseOptions.Count == 0)
+            {
+                throw new InvalidOperationException(
+                    $"No compatible base items are available for {template.TemplateName}.");
+            }
+
+            _pendingTemplateElementId = template.TemplateElementId;
+            _pendingTemplateAmount = Math.Max(1, _pickerAmount);
+            _templateBaseOptions = template.BaseOptions;
+            _pickerMode = EquipmentPickerMode.TemplateBase;
+            _pickerSlotId = null;
+            _pickerTitle = $"Choose a base for {template.TemplateName}";
+            _pickerSubtitle =
+                "This item is a template. Choose the compatible armor or weapon it modifies.";
+            _pickerQuery = string.Empty;
+            _pickerResults = template.BaseOptions;
+            _slotInventoryOptions = [];
+        }
+        catch (Exception ex)
+        {
+            _failed = true;
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
         }
     }
 

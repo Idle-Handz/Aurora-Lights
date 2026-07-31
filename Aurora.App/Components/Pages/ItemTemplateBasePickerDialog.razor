@@ -1,0 +1,143 @@
+<MudDialog Style="max-height: 90vh; width: min(700px, 95vw);">
+    <TitleContent>
+        <MudText Typo="Typo.h6" Style="font-size: 15px; font-weight: 600;">
+            Choose a base for @TemplateName
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudText Color="Color.Secondary" Style="font-size: 12px; margin-bottom: 12px;">
+            This item is a template. Choose the compatible armor or weapon it modifies.
+        </MudText>
+
+        <div class="picker-layout">
+            <div class="picker-left">
+                <MudTextField @bind-Value="_search"
+                              @bind-Value:after="RunSearch"
+                              Placeholder="Search compatible items…"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              Clearable="true"
+                              Immediate="true"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense" />
+
+                @if (_results.Count == 0)
+                {
+                    <MudText Color="Color.Secondary" Style="padding: 12px 0; font-size: 13px;">
+                        No compatible base items found.
+                    </MudText>
+                }
+                else
+                {
+                    <div class="picker-list">
+                        @foreach (var option in _results)
+                        {
+                            var isSelected = option.Id == _selectedId;
+                            <div class="picker-item @(isSelected ? "picker-item-selected" : "")"
+                                 @onclick="() => SelectResult(option)"
+                                 @ondblclick="() => ConfirmItem(option)">
+                                <div class="picker-item-name">@option.Name</div>
+                                <div style="font-size: 10px; color: var(--mud-palette-text-disabled); margin-top: 1px;">
+                                    @option.Type
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+
+            <div class="picker-detail">
+                @if (_selected != null)
+                {
+                    <div class="picker-detail-name">@_selected.Name</div>
+                    <div style="font-size: 11px; color: var(--mud-palette-primary); margin-bottom: 4px;">
+                        @_selected.Type
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(_selected.Source))
+                    {
+                        <div style="font-size: 10px; color: var(--mud-palette-text-disabled); margin-bottom: 8px;">
+                            @_selected.Source
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(_selected.DescriptionHtml) ||
+                         !string.IsNullOrWhiteSpace(_selected.Description))
+                    {
+                        <RichDescription Html="@_selected.DescriptionHtml"
+                                         PlainText="@_selected.Description"
+                                         Class="picker-detail-desc" />
+                    }
+                    else
+                    {
+                        <div class="picker-detail-empty">No description available.</div>
+                    }
+                }
+                else
+                {
+                    <div class="picker-detail-empty">Select a base item to see details.</div>
+                }
+            </div>
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Variant="Variant.Text">Cancel</MudButton>
+        <MudButton Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   OnClick="Confirm"
+                   Disabled="@(_selectedId == null)">
+            Apply &amp; Add
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter, EditorRequired] public string TemplateName { get; set; } = "";
+    [Parameter, EditorRequired] public IReadOnlyList<ItemSearchResult> Options { get; set; } = [];
+
+    private string _search = "";
+    private string? _selectedId;
+    private ItemSearchResult? _selected;
+    private List<ItemSearchResult> _results = [];
+
+    protected override void OnInitialized() => RunSearch();
+
+    private void RunSearch()
+    {
+        IEnumerable<ItemSearchResult> options = Options;
+        if (!string.IsNullOrWhiteSpace(_search))
+        {
+            options = options.Where(option =>
+                option.Name.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
+                option.Type.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
+                option.Source.Contains(_search, StringComparison.OrdinalIgnoreCase));
+        }
+
+        _results = options.OrderBy(option => option.Name).ToList();
+        if (_selected != null && _results.All(option => option.Id != _selected.Id))
+        {
+            _selected = null;
+            _selectedId = null;
+        }
+    }
+
+    private void SelectResult(ItemSearchResult option)
+    {
+        _selected = option;
+        _selectedId = option.Id;
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private void Confirm()
+    {
+        if (_selectedId != null)
+            MudDialog.Close(new ItemTemplateBasePickerResult(_selectedId));
+    }
+
+    private void ConfirmItem(ItemSearchResult option)
+    {
+        SelectResult(option);
+        Confirm();
+    }
+}

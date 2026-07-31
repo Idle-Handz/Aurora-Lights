@@ -2,6 +2,7 @@ using Builder.Data.Rules;
 using Aurora.Components.Formatting;
 using Builder.Presentation;
 using Builder.Presentation.Models;
+using Builder.Presentation.Services;
 using Builder.Presentation.Services.Data;
 using Builder.Presentation.ViewModels.Shell.Items;
 using System.Reflection;
@@ -64,6 +65,33 @@ public static class EquipmentService
                 e.Source ?? "",
                 GetDescriptionHtml(e)))
             .ToList();
+    }
+
+    /// <summary>
+    /// Returns the source-allowed base items to which a magic armor or weapon
+    /// template can be applied. Returns null when the selected item is not a template.
+    /// </summary>
+    public static ItemTemplateOptions? GetItemTemplateOptions(
+        Character character,
+        string templateElementId)
+    {
+        var template = DataManager.Current.ElementsCollection.GetElement(templateElementId);
+        if (template == null || InventoryItemFactory.GetTemplateKind(template) is null)
+            return null;
+
+        var sourceRestrictions = BuildSourceRestrictionSnapshot.CaptureCurrent();
+        var baseOptions = InventoryItemFactory.GetCompatibleBaseItems(character.Inventory, template)
+            .Where(sourceRestrictions.Allows)
+            .Select(item => new ItemSearchResult(
+                item.Id,
+                item.Name,
+                item.Type,
+                GetDescription(item),
+                item.Source ?? "",
+                GetDescriptionHtml(item)))
+            .ToList();
+
+        return new ItemTemplateOptions(template.Id, template.Name, baseOptions);
     }
 
     /// <summary>
@@ -261,17 +289,25 @@ public static class EquipmentService
     // ── Add / remove ─────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Adds an item to inventory by element ID. Uses reflection because
-    /// Builder.Data.Elements.Item cannot be named from Aurora.App.
+    /// Adds an item to inventory by element ID. Magic armor and weapon templates
+    /// require the ID of a compatible base item.
     /// </summary>
-    public static bool AddItem(Character character, string elementId, int amount = 1)
+    public static bool AddItem(
+        Character character,
+        string elementId,
+        int amount = 1,
+        string? baseElementId = null)
     {
         var element = DataManager.Current.ElementsCollection.GetElement(elementId);
         if (element == null) return false;
 
         try
         {
-            var item = CreateInventoryItem(element, amount);
+            var item = CreateInventoryItem(
+                character,
+                element,
+                amount,
+                baseElementId: baseElementId);
             if (item == null) return false;
 
             character.Inventory.Items.Add(item);
@@ -343,7 +379,7 @@ public static class EquipmentService
 
             if (existingStack == null)
             {
-                newItem = CreateInventoryItem(element, entry.Amount, entry.AlternativeName);
+                newItem = CreateInventoryItem(character, element, entry.Amount, entry.AlternativeName);
             }
 
             if (existingStack == null && newItem == null)
@@ -421,31 +457,15 @@ public static class EquipmentService
         GetExtractionRecipe(item).Count > 0;
 
     private static RefactoredEquipmentItem? CreateInventoryItem(
+        Character character,
         Builder.Data.ElementBase element,
         int amount,
-        string? alternativeName = null)
+        string? alternativeName = null,
+        string? baseElementId = null)
     {
-        var elementType = element.GetType();
+        var item = InventoryItemFactory.Create(character.Inventory, element, baseElementId);
+        if (item == null) return null;
 
-        // Find the constructor whose first parameter accepts this element type,
-        // with all remaining parameters optional (has default values).
-        var ctor = typeof(RefactoredEquipmentItem)
-            .GetConstructors()
-            .FirstOrDefault(c =>
-            {
-                var ps = c.GetParameters();
-                return ps.Length >= 1
-                    && ps[0].ParameterType.IsAssignableFrom(elementType)
-                    && ps.Skip(1).All(p => p.HasDefaultValue);
-            });
-
-        if (ctor == null) return null;
-
-        // Build the argument list: first arg is the element, rest use their defaults.
-        var ps = ctor.GetParameters();
-        var args = ps.Select((p, i) => i == 0 ? (object?)element : p.DefaultValue).ToArray();
-
-        var item = (RefactoredEquipmentItem)ctor.Invoke(args);
         item.Amount = Math.Max(1, amount);
         if (!string.IsNullOrWhiteSpace(alternativeName))
             item.AlternativeName = alternativeName;
@@ -856,6 +876,11 @@ public sealed record ItemSearchResult(
     string Source,
     string DescriptionHtml = "");
 public sealed record ItemPickerResult(string ElementId, int Amount);
+public sealed record ItemTemplateOptions(
+    string TemplateElementId,
+    string TemplateName,
+    IReadOnlyList<ItemSearchResult> BaseOptions);
+public sealed record ItemTemplateBasePickerResult(string BaseElementId);
 public sealed record InventoryItemOption(string Identifier, string Name);
 public sealed record GearPickerResult(string? Identifier, string? ElementId, bool IsNew);
 public sealed record EquipmentPackComponent(string ElementId, int Amount, string Name);

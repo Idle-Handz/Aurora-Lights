@@ -12,6 +12,11 @@ public sealed record WebEquipmentInventoryOption(
     string Identifier,
     string Name);
 
+public sealed record WebEquipmentTemplateOptions(
+    string TemplateElementId,
+    string TemplateName,
+    IReadOnlyList<WebEquipmentSearchResult> BaseOptions);
+
 public sealed record WebMagicSelectionOption(
     string Id,
     string Name,
