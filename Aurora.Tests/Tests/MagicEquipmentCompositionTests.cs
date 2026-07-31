@@ -57,6 +57,29 @@ public sealed class MagicEquipmentCompositionTests : IAsyncLifetime
     }
 
     [Fact]
+    public void AllLoadedEquipmentTemplates_HaveAtLeastOneCompatibleBase()
+    {
+        if (!ContentFixture.SkipIfUnavailable(_output)) return;
+
+        var character = new Character();
+        var templates = DataManager.Current.ElementsCollection
+            .Where(element => InventoryItemFactory.GetTemplateKind(element) is not null)
+            .ToList();
+
+        templates.Should().NotBeEmpty();
+
+        var unresolved = templates
+            .Where(template =>
+                InventoryItemFactory.GetCompatibleBaseItems(character.Inventory, template).Count == 0)
+            .Select(template => $"{template.Name} ({template.Id})")
+            .OrderBy(name => name)
+            .ToList();
+
+        unresolved.Should().BeEmpty(
+            "every armor or weapon template exposed by the item picker must have a selectable base");
+    }
+
+    [Fact]
     public void AddItem_TemplateRequiresAnExplicitCompatibleBase()
     {
         if (!ContentFixture.SkipIfUnavailable(_output)) return;
