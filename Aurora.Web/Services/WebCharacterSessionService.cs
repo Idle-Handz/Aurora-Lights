@@ -1,5 +1,6 @@
 using Aurora.Components.Models;
 using Builder.Presentation.Models;
+using Builder.Presentation.Services;
 
 namespace Aurora.Web.Services;
 
@@ -352,6 +353,12 @@ public sealed class WebCharacterSessionService
     {
         EnsureActiveCharacter();
         return await _engine.GetEquipmentInventoryOptionsAsync(slotId);
+    }
+
+    public async Task<EquipmentItemDetailModel?> GetCurrentEquipmentItemDetailAsync(string identifier)
+    {
+        EnsureActiveCharacter();
+        return await _engine.GetEquipmentItemDetailAsync(identifier);
     }
 
     public async Task<WebEquipmentTemplateOptions?> GetCurrentEquipmentTemplateOptionsAsync(string elementId)

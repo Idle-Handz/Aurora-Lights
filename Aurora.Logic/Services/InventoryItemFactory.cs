@@ -2,6 +2,7 @@ using Builder.Data;
 using Builder.Data.Elements;
 using Builder.Presentation.Models.Equipment;
 using Builder.Presentation.ViewModels.Shell.Items;
+using System.Text;
 
 namespace Builder.Presentation.Services;
 
@@ -58,6 +59,48 @@ public static class InventoryItemFactory
         catch
         {
             return [];
+        }
+    }
+
+    /// <summary>
+    /// Matches inventory-picker searches against both an element's stored name and
+    /// the display names produced by applying a magic template to compatible bases.
+    /// Punctuation is treated as spacing so queries such as "Shield +1" match the
+    /// stored template name "Shield, +1".
+    /// </summary>
+    public static bool MatchesSearch(
+        CharacterInventory inventory,
+        ElementBase element,
+        string query,
+        Func<ElementBase, bool>? allowsBaseItem = null)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+            return true;
+
+        var normalizedQuery = NormalizeSearchText(query);
+        if (string.IsNullOrWhiteSpace(normalizedQuery))
+        {
+            return element.Name.Contains(query, StringComparison.OrdinalIgnoreCase);
+        }
+
+        var terms = normalizedQuery.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (MatchesSearchTerms(element.Name, terms))
+            return true;
+
+        if (element is not Item template || GetTemplateKind(template) is null)
+            return false;
+
+        try
+        {
+            return GetCompatibleBaseItems(inventory, template)
+                .Where(baseItem => allowsBaseItem?.Invoke(baseItem) ?? true)
+                .Any(baseItem => MatchesSearchTerms(
+                    new RefactoredEquipmentItem(baseItem, template).DisplayName,
+                    terms));
+        }
+        catch
+        {
+            return false;
         }
     }
 
@@ -121,4 +164,38 @@ public static class InventoryItemFactory
         item.ElementSetters.ContainsSetter(setterName)
             ? item.ElementSetters.GetSetter(setterName)?.Value
             : null;
+
+    private static bool MatchesSearchTerms(string? candidate, IReadOnlyList<string> terms)
+    {
+        if (string.IsNullOrWhiteSpace(candidate))
+            return false;
+
+        var normalizedCandidate = NormalizeSearchText(candidate);
+        return terms.All(term =>
+            normalizedCandidate.Contains(term, StringComparison.Ordinal));
+    }
+
+    private static string NormalizeSearchText(string value)
+    {
+        var normalized = new StringBuilder(value.Length);
+        var needsSpace = false;
+
+        foreach (var character in value)
+        {
+            if (char.IsLetterOrDigit(character))
+            {
+                if (needsSpace && normalized.Length > 0)
+                    normalized.Append(' ');
+
+                normalized.Append(char.ToLowerInvariant(character));
+                needsSpace = false;
+            }
+            else
+            {
+                needsSpace = true;
+            }
+        }
+
+        return normalized.ToString();
+    }
 }

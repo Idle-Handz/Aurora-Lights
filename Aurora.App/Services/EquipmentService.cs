@@ -41,18 +41,30 @@ public static class EquipmentService
     /// Searches all loaded elements for those that can be added to inventory.
     /// Returns at most 200 results ordered by name.
     /// </summary>
-    public static IReadOnlyList<ItemSearchResult> SearchItems(string query)
+    public static IReadOnlyList<ItemSearchResult> SearchItems(
+        Character character,
+        string query,
+        BuildSourceRestrictionSnapshot? sourceRestrictions = null)
     {
+        sourceRestrictions ??= BuildSourceRestrictionSnapshot.CaptureCurrent();
         IEnumerable<Builder.Data.ElementBase> source =
             DataManager.Current.ElementsCollection.Where(e =>
                 ItemTypes.Contains(e.Type)
                 // Exclude Aurora's internal ability-enabling pseudo-items (e.g. "Additional Arcane
                 // Dilettante Spell, Fire Shield"). These are named "Additional …" and are designed
                 // to stay hidden from the character sheet — they are not real inventory items.
-                && !e.Name.StartsWith("Additional ", StringComparison.OrdinalIgnoreCase));
+                && !e.Name.StartsWith("Additional ", StringComparison.OrdinalIgnoreCase)
+                && sourceRestrictions.Allows(e));
 
         if (!string.IsNullOrWhiteSpace(query))
-            source = source.Where(e => e.Name.Contains(query, StringComparison.OrdinalIgnoreCase));
+        {
+            source = source.Where(e =>
+                InventoryItemFactory.MatchesSearch(
+                    character.Inventory,
+                    e,
+                    query,
+                    sourceRestrictions.Allows));
+        }
 
         return source
             .OrderBy(e => e.Name)
@@ -283,7 +295,10 @@ public static class EquipmentService
         character.Inventory.Items
             .Where(i => IsItemCompatibleWithSlot(i, slot))
             .OrderBy(i => i.DisplayName ?? i.Name ?? "")
-            .Select(i => new InventoryItemOption(i.Identifier, i.DisplayName ?? i.Name ?? ""))
+            .Select(i => new InventoryItemOption(
+                i.Identifier,
+                i.DisplayName ?? i.Name ?? "",
+                EquipmentItemDetailBuilder.Build(i)))
             .ToList();
 
     // ── Add / remove ─────────────────────────────────────────────────────────────
@@ -503,28 +518,12 @@ public static class EquipmentService
         }
     }
 
-    public static EquipmentItemDetail? GetItemDetail(Character character, string identifier)
+    public static EquipmentItemDetailModel? GetItemDetail(Character character, string identifier)
     {
         var item = FindInventoryItem(character, identifier);
-        if (item?.Item is null)
-            return null;
-
-        var element = item.Item;
-        return new EquipmentItemDetail(
-            item.DisplayName ?? item.Name ?? element.Name ?? identifier,
-            item.Name ?? element.Name ?? identifier,
-            element.Type ?? "",
-            element.Source ?? "",
-            GetDescription(element),
-            item.Notes ?? "",
-            FormatItemDamage(element),
-            GetElementString(element, "Range"),
-            GetElementString(element, "DisplayWeaponProperties"),
-            item.DisplayWeight ?? GetElementString(element, "DisplayWeight"),
-            item.DisplayPrice ?? GetElementString(element, "DisplayPrice"),
-            item.IsEquipped,
-            item.EquippedLocation ?? "",
-            GetDescriptionHtml(element));
+        return item?.Item is null
+            ? null
+            : EquipmentItemDetailBuilder.Build(item);
     }
 
     public static string FormatItemDamage(Builder.Data.ElementBase element)
@@ -881,7 +880,10 @@ public sealed record ItemTemplateOptions(
     string TemplateName,
     IReadOnlyList<ItemSearchResult> BaseOptions);
 public sealed record ItemTemplateBasePickerResult(string BaseElementId);
-public sealed record InventoryItemOption(string Identifier, string Name);
+public sealed record InventoryItemOption(
+    string Identifier,
+    string Name,
+    EquipmentItemDetailModel Detail);
 public sealed record GearPickerResult(string? Identifier, string? ElementId, bool IsNew);
 public sealed record EquipmentPackComponent(string ElementId, int Amount, string Name);
 public sealed record EquipmentPackExtractionResult(
@@ -889,18 +891,3 @@ public sealed record EquipmentPackExtractionResult(
     string PackName,
     IReadOnlyList<EquipmentPackComponent> Added,
     IReadOnlyList<string> MissingElementIds);
-public sealed record EquipmentItemDetail(
-    string Name,
-    string BaseName,
-    string Type,
-    string Source,
-    string Description,
-    string Notes,
-    string Damage,
-    string Range,
-    string Properties,
-    string DisplayWeight,
-    string DisplayPrice,
-    bool IsEquipped,
-    string EquippedLocation,
-    string DescriptionHtml = "");

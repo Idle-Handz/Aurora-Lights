@@ -57,6 +57,38 @@ public sealed class MagicEquipmentCompositionTests : IAsyncLifetime
     }
 
     [Fact]
+    public void ItemSearch_MatchesComposedTemplateNames()
+    {
+        if (!ContentFixture.SkipIfUnavailable(_output)) return;
+        if (!EnsureElementsAvailable(
+                ShieldPlusOneId,
+                WeaponPlusOneId,
+                LongswordId))
+        {
+            return;
+        }
+
+        var character = new Character();
+
+        EquipmentService.SearchItems(character, "Shield +1")
+            .Should().Contain(option => option.Id == ShieldPlusOneId);
+        EquipmentService.SearchItems(character, "Longsword +1")
+            .Should().Contain(option => option.Id == WeaponPlusOneId);
+
+        var restrictedTemplate = new BuildSourceRestrictionSnapshot(
+            new HashSet<string>([ShieldPlusOneId], StringComparer.OrdinalIgnoreCase),
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+        EquipmentService.SearchItems(character, "Shield +1", restrictedTemplate)
+            .Should().NotContain(option => option.Id == ShieldPlusOneId);
+
+        var restrictedBase = new BuildSourceRestrictionSnapshot(
+            new HashSet<string>([LongswordId], StringComparer.OrdinalIgnoreCase),
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+        EquipmentService.SearchItems(character, "Longsword +1", restrictedBase)
+            .Should().NotContain(option => option.Id == WeaponPlusOneId);
+    }
+
+    [Fact]
     public void AllLoadedEquipmentTemplates_HaveAtLeastOneCompatibleBase()
     {
         if (!ContentFixture.SkipIfUnavailable(_output)) return;
@@ -114,6 +146,26 @@ public sealed class MagicEquipmentCompositionTests : IAsyncLifetime
         shield.AdornerItem.Id.Should().Be(ShieldPlusOneId);
         shield.DisplayName.Should().Be("Shield +1");
         shield.IsEquippable.Should().BeTrue();
+
+        var detail = EquipmentService.GetItemDetail(character, shield.Identifier);
+        detail.Should().NotBeNull();
+        detail!.Sections.Should().HaveCount(2);
+        detail.Sections[0].Label.Should().Be("Magic properties");
+        detail.Sections[0].Name.Should().Be("Shield, +1");
+        detail.Sections[0].DescriptionHtml.Should().NotBeNullOrWhiteSpace();
+        detail.Sections[1].Label.Should().Be("Base item");
+        detail.Sections[1].Name.Should().Be("Shield");
+        detail.Sections[1].DescriptionHtml.Should().NotBeNullOrWhiteSpace();
+
+        EquipmentService.GetInventoryItemsForSlot(character, GearSlot.OffHand)
+            .Should().ContainSingle(option =>
+                option.Identifier == shield.Identifier &&
+                option.Detail.Sections.Count == 2);
+
+        shield.AdornerItem.Description = "<p>Inventory-specific magic details.</p>";
+        EquipmentService.GetItemDetail(character, shield.Identifier)!
+            .Sections[0].DescriptionHtml
+            .Should().Be("<p>Inventory-specific magic details.</p>");
     }
 
     [Fact]

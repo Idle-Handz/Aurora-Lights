@@ -492,15 +492,23 @@ public sealed class WebCharacterEngineService
         await _operationLock.WaitAsync();
         try
         {
+            Character character = RequireCurrentCharacter();
+            BuildSourceRestrictionSnapshot sourceRestrictions =
+                BuildSourceRestrictionSnapshot.CaptureCurrent();
             IEnumerable<ElementBase> source = DataManager.Current.ElementsCollection.Where(element =>
-                string.IsNullOrWhiteSpace(slotId)
+                (string.IsNullOrWhiteSpace(slotId)
                     ? IsSearchableInventoryElement(element)
-                    : IsElementCompatibleWithSlot(element, slotId));
+                    : IsElementCompatibleWithSlot(element, slotId))
+                && sourceRestrictions.Allows(element));
 
             if (!string.IsNullOrWhiteSpace(query))
             {
-                source = source.Where(element => !string.IsNullOrWhiteSpace(element.Name)
-                    && element.Name.Contains(query, StringComparison.OrdinalIgnoreCase));
+                source = source.Where(element =>
+                    InventoryItemFactory.MatchesSearch(
+                        character.Inventory,
+                        element,
+                        query,
+                        sourceRestrictions.Allows));
             }
 
             return source
@@ -531,8 +539,29 @@ public sealed class WebCharacterEngineService
             return character.Inventory.Items
                 .Where(item => IsItemCompatibleWithSlot(item, slotId))
                 .OrderBy(item => item.DisplayName ?? item.Name ?? string.Empty)
-                .Select(item => new WebEquipmentInventoryOption(item.Identifier, item.DisplayName ?? item.Name ?? string.Empty))
+                .Select(item => new WebEquipmentInventoryOption(
+                    item.Identifier,
+                    item.DisplayName ?? item.Name ?? string.Empty,
+                    EquipmentItemDetailBuilder.Build(item)))
                 .ToList();
+        }
+        finally
+        {
+            _operationLock.Release();
+        }
+    }
+
+    public async Task<EquipmentItemDetailModel?> GetEquipmentItemDetailAsync(string identifier)
+    {
+        await _operationLock.WaitAsync();
+        try
+        {
+            Character character = RequireCurrentCharacter();
+            RefactoredEquipmentItem? item = character.Inventory.Items.FirstOrDefault(candidate =>
+                candidate.Identifier.Equals(identifier, StringComparison.OrdinalIgnoreCase));
+            return item?.Item is null
+                ? null
+                : EquipmentItemDetailBuilder.Build(item);
         }
         finally
         {

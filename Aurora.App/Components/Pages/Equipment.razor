@@ -264,18 +264,22 @@
 
     private async Task OpenAddItemDialog()
     {
-        var dialog = await DialogService.ShowAsync<ItemPickerDialog>("Add Item");
+        var tab = Tabs.ActiveTab;
+        if (tab is not { Character: { } character, File: { }, Snapshot: { } })
+        {
+            WarnUnavailable("Items cannot be added because there is no active character.");
+            return;
+        }
+
+        var pickerParameters = new DialogParameters<ItemPickerDialog>
+        {
+            { dialog => dialog.Character, character },
+        };
+        var dialog = await DialogService.ShowAsync<ItemPickerDialog>("Add Item", pickerParameters);
         var result = await dialog.Result;
 
         if (result is { Canceled: false, Data: ItemPickerResult pick })
         {
-            var tab = Tabs.ActiveTab;
-            if (tab is not { Character: { } character, File: { } file, Snapshot: { } snap })
-            {
-                WarnUnavailable("Items cannot be added because there is no active character.");
-                return;
-            }
-
             ItemTemplateOptions? templateOptions;
             using (var queryScope = await CharacterContext.EnterAsync(tab))
             {

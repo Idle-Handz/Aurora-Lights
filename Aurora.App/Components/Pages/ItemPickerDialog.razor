@@ -94,6 +94,9 @@
 @code {
     [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
 
+    [Parameter]
+    public Builder.Presentation.Models.Character? Character { get; set; }
+
     /// <summary>
     /// Optional category filter (e.g. "Martial Weapon"). When set, search is scoped to that
     /// category rather than all item types, and the dialog title reflects the category.
@@ -120,7 +123,8 @@
         if (string.IsNullOrWhiteSpace(Category))
         {
             if (_search.Length < 2) { _results = []; return; }
-            _results = EquipmentService.SearchItems(_search).ToList();
+            if (Character is null) { _results = []; return; }
+            _results = EquipmentService.SearchItems(Character, _search).ToList();
         }
         else
         {

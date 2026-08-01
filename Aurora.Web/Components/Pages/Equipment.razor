@@ -22,6 +22,7 @@
                                          Busy="_busy"
                                          OnAddItem="OpenAddItemPickerAsync"
                                          OnOpenGearSlot="OpenGearSlotPickerAsync"
+                                         OnOpenItemDetails="OpenItemDetailsAsync"
                                          OnUnequipGearSlot="UnequipSlotAsync"
                                          OnRemoveItem="RemoveItemAsync"
                                          OnToggleEquipped="ToggleEquippedAsync"
@@ -29,6 +30,24 @@
                                          OnChangeAmount="ChangeAmountAsync"
                                          OnCoinChanged="ChangeCoinAsync"
                                          OnNoteChanged="ChangeNoteAsync" />
+
+            @if (_itemDetail is not null)
+            {
+                <section class="picker-panel">
+                    <div class="picker-header">
+                        <div>
+                            <div class="picker-title">Item Details</div>
+                            <div class="picker-subtitle">Base equipment and applied magic properties.</div>
+                        </div>
+                        <button type="button"
+                                class="equipment-action-button secondary"
+                                @onclick="CloseItemDetails">
+                            Close
+                        </button>
+                    </div>
+                    <EquipmentItemDetailContent Detail="@_itemDetail" ShowTitle="true" />
+                </section>
+            }
 
             @if (_pickerMode is not null)
             {
@@ -88,12 +107,20 @@
                                             <div class="picker-result-title">@option.Name</div>
                                             <div class="picker-result-meta">Already in inventory</div>
                                         </div>
-                                        <button type="button"
-                                                class="equipment-action-button"
-                                                disabled="@_busy"
-                                                @onclick="() => EquipExistingItemAsync(option.Identifier)">
-                                            Equip
-                                        </button>
+                                        <div class="picker-toolbar-actions">
+                                            <button type="button"
+                                                    class="equipment-action-button secondary"
+                                                    disabled="@_busy"
+                                                    @onclick="() => ShowInventoryOptionDetails(option)">
+                                                Details
+                                            </button>
+                                            <button type="button"
+                                                    class="equipment-action-button"
+                                                    disabled="@_busy"
+                                                    @onclick="() => EquipExistingItemAsync(option.Identifier)">
+                                                Equip
+                                            </button>
+                                        </div>
                                     </div>
                                 }
                             </div>
@@ -153,6 +180,8 @@
     private bool _busy;
     private bool _failed;
     private string? _statusMessage;
+    private EquipmentItemDetailModel? _itemDetail;
+    private string? _itemDetailIdentifier;
 
     private EquipmentPickerMode? _pickerMode;
     private string? _pickerSlotId;
@@ -251,6 +280,37 @@
         _pickerAmount = 1;
         _slotInventoryOptions = await CharacterSession.GetCurrentEquipmentInventoryOptionsAsync(slotId);
         await SearchEquipmentPickerAsync();
+    }
+
+    private async Task OpenItemDetailsAsync(string identifier)
+    {
+        try
+        {
+            _itemDetail = await CharacterSession.GetCurrentEquipmentItemDetailAsync(identifier);
+            _itemDetailIdentifier = _itemDetail is null ? null : identifier;
+            if (_itemDetail is null)
+            {
+                _failed = true;
+                _statusMessage = "That inventory item could not be found.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _failed = true;
+            _statusMessage = ex.Message;
+        }
+    }
+
+    private void ShowInventoryOptionDetails(WebEquipmentInventoryOption option)
+    {
+        _itemDetail = option.Detail;
+        _itemDetailIdentifier = option.Identifier;
+    }
+
+    private void CloseItemDetails()
+    {
+        _itemDetail = null;
+        _itemDetailIdentifier = null;
     }
 
     private void CloseEquipmentPicker()
@@ -415,6 +475,11 @@
 
     private async Task RemoveItemAsync(string identifier)
     {
+        if (string.Equals(_itemDetailIdentifier, identifier, StringComparison.OrdinalIgnoreCase))
+        {
+            CloseItemDetails();
+        }
+
         await RunEquipmentActionAsync(() => CharacterSession.RemoveCurrentEquipmentItemAsync(identifier), closePickerOnSuccess: false);
     }
 

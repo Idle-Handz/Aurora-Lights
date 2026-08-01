@@ -1,3 +1,5 @@
+using Builder.Presentation.Services;
+
 namespace Aurora.Web.Services;
 
 public sealed record WebEquipmentSearchResult(
@@ -10,7 +12,8 @@ public sealed record WebEquipmentSearchResult(
 
 public sealed record WebEquipmentInventoryOption(
     string Identifier,
-    string Name);
+    string Name,
+    EquipmentItemDetailModel Detail);
 
 public sealed record WebEquipmentTemplateOptions(
     string TemplateElementId,
