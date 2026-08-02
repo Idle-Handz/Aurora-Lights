@@ -715,6 +715,16 @@
 
             @if (AppUpdates.Latest is { IsNewer: true } avail)
             {
+                @if (!string.IsNullOrWhiteSpace(avail.ReleaseNotes))
+                {
+                    <MudPaper Outlined="true" Class="pa-4 mt-4" aria-label="@($"Release notes for {avail.LatestTag}")">
+                        <MudText Typo="Typo.overline" Color="Color.Primary">
+                            Release notes for @avail.LatestTag
+                        </MudText>
+                        <ReleaseNotesContent Markdown="@avail.ReleaseNotes" />
+                    </MudPaper>
+                }
+
 #if WINDOWS
                 @* On a Velopack install the user gets a one-click "Install and restart" path.
                    On a plain ZIP extract IsVelopackInstall is false, so we fall back to the

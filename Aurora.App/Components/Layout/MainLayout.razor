@@ -213,6 +213,7 @@
     private AppErrorBoundary? _errorBoundary;
     private DotNetObjectReference<MainLayout>? _selfRef;
     private string _compendiumQuickQuery = string.Empty;
+    private string? _notifiedAppUpdateTag;
 
     private string ContentStyle => Tabs.Tabs.Count > 0
         ? "height: calc(100dvh - 64px - 34px - 28px); overflow-y: auto; overflow-x: hidden;"
@@ -293,7 +294,29 @@
     private void OnUpdatesChanged()
     {
         if (_disposed) return;
-        _ = InvokeAsync(() => { if (!_disposed) StateHasChanged(); });
+        _ = InvokeAsync(() =>
+        {
+            if (_disposed) return;
+            NotifyAppUpdateIfAvailable();
+            StateHasChanged();
+        });
+    }
+
+    private void NotifyAppUpdateIfAvailable()
+    {
+        if (AppUpdates.Latest is not { IsNewer: true } update
+            || string.Equals(_notifiedAppUpdateTag, update.LatestTag, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        _notifiedAppUpdateTag = update.LatestTag;
+        string summary = Aurora.Components.Formatting.ReleaseNotesMarkdownFormatter.GetSummary(update.ReleaseNotes);
+        string message = string.IsNullOrWhiteSpace(summary)
+            ? $"{update.LatestTag} is available. Open Updates for details."
+            : $"{update.LatestTag} is available: {summary} Open Updates for the full release notes.";
+
+        Snackbar.Add(message, Severity.Info, cfg => cfg.VisibleStateDuration = 12000);
     }
 
     private void OpenUpdatesPage() =>
@@ -309,6 +332,7 @@
         {
             _selfRef = DotNetObjectReference.Create(this);
             try { await JS.InvokeVoidAsync("AuroraShortcuts.register", _selfRef); } catch { }
+            NotifyAppUpdateIfAvailable();
             if (Prefs.AutoDownloadContentOnStartup)
                 _ = Task.Run(Content.RunStartupContentRefreshAsync);
         }

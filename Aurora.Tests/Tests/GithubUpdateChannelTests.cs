@@ -58,12 +58,13 @@ public class GithubUpdateChannelTests
     private static GithubRelease Release(
         string tag,
         bool preRelease = false,
-        bool draft = false)
+        bool draft = false,
+        string? body = null)
         => new(
             TagName:     tag,
             Name:        null,
             HtmlUrl:     $"https://github.com/example/repo/releases/tag/{tag}",
-            Body:        null,
+            Body:        body,
             PreRelease:  preRelease,
             Draft:       draft,
             PublishedAt: DateTimeOffset.UtcNow,
@@ -89,6 +90,17 @@ public class GithubUpdateChannelTests
 
         result.Should().NotBeNull();
         result!.LatestTag.Should().Be("v1.2.3");
+    }
+
+    [Fact]
+    public async Task AppChannel_preserves_release_notes_for_the_update_notification()
+    {
+        const string notes = "## What’s new\n\n- A visible improvement.";
+        var ch = new AppChannel(MakeClient(Release("v1.2.3", body: notes)));
+
+        var result = await ch.CheckAsync(includePreReleases: true);
+
+        result!.ReleaseNotes.Should().Be(notes);
     }
 
     // ── Draft / pre-release exclusion ────────────────────────────────────────

@@ -89,6 +89,35 @@ public sealed class MagicEquipmentCompositionTests : IAsyncLifetime
     }
 
     [Fact]
+    public void GetItemDetail_IncludesBaseWeaponRulesForSingleItems()
+    {
+        if (!ContentFixture.SkipIfUnavailable(_output)) return;
+        if (!EnsureElementsAvailable(LongswordId)) return;
+
+        var character = new Character();
+
+        EquipmentService.AddItem(character, LongswordId).Should().BeTrue();
+
+        var longsword = character.Inventory.Items.Should().ContainSingle().Subject;
+        var detail = EquipmentService.GetItemDetail(character, longsword.Identifier);
+
+        detail.Should().NotBeNull();
+        detail!.Name.Should().Be("Longsword");
+        detail.BaseName.Should().Be("Longsword");
+        detail.Type.Should().Be("Weapon");
+        detail.Source.Should().Be("System Reference Document");
+        detail.Damage.Should().Be("1d8 slashing");
+        detail.Properties.Should().Contain("Versatile");
+        detail.DisplayWeight.Should().Be("3 lb.");
+        detail.DisplayPrice.Should().Be("15 gp");
+        detail.Sections.Should().ContainSingle()
+            .Which.Should().Match<EquipmentItemDetailSectionModel>(section =>
+                section.Label == "Item details" &&
+                section.Name == "Longsword" &&
+                section.Type == "Weapon");
+    }
+
+    [Fact]
     public void AllLoadedEquipmentTemplates_HaveAtLeastOneCompatibleBase()
     {
         if (!ContentFixture.SkipIfUnavailable(_output)) return;
