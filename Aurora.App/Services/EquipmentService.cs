@@ -44,38 +44,52 @@ public static class EquipmentService
     public static IReadOnlyList<ItemSearchResult> SearchItems(
         Character character,
         string query,
-        BuildSourceRestrictionSnapshot? sourceRestrictions = null)
+        BuildSourceRestrictionSnapshot? sourceRestrictions = null,
+        CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         sourceRestrictions ??= BuildSourceRestrictionSnapshot.CaptureCurrent();
+        Func<Builder.Data.ElementBase, bool> matchesSearch =
+            InventoryItemFactory.CreateSearchPredicate(
+                character.Inventory,
+                query,
+                sourceRestrictions.Allows);
+
         IEnumerable<Builder.Data.ElementBase> source =
             DataManager.Current.ElementsCollection.Where(e =>
-                ItemTypes.Contains(e.Type)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return ItemTypes.Contains(e.Type)
                 // Exclude Aurora's internal ability-enabling pseudo-items (e.g. "Additional Arcane
                 // Dilettante Spell, Fire Shield"). These are named "Additional …" and are designed
                 // to stay hidden from the character sheet — they are not real inventory items.
                 && !e.Name.StartsWith("Additional ", StringComparison.OrdinalIgnoreCase)
-                && sourceRestrictions.Allows(e));
+                && sourceRestrictions.Allows(e);
+            });
 
         if (!string.IsNullOrWhiteSpace(query))
         {
             source = source.Where(e =>
-                InventoryItemFactory.MatchesSearch(
-                    character.Inventory,
-                    e,
-                    query,
-                    sourceRestrictions.Allows));
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return matchesSearch(e);
+            });
         }
 
         return source
             .OrderBy(e => e.Name)
             .Take(200)
-            .Select(e => new ItemSearchResult(
-                e.Id,
-                e.Name,
-                e.Type,
-                GetDescription(e),
-                e.Source ?? "",
-                GetDescriptionHtml(e)))
+            .Select(e =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return new ItemSearchResult(
+                    e.Id,
+                    e.Name,
+                    e.Type,
+                    GetDescription(e),
+                    e.Source ?? "",
+                    GetDescriptionHtml(e));
+            })
             .ToList();
     }
 
@@ -267,10 +281,16 @@ public static class EquipmentService
     /// <summary>
     /// Searches elements compatible with the given gear slot.
     /// </summary>
-    public static IReadOnlyList<ItemSearchResult> SearchItemsForSlot(GearSlot slot, string query)
+    public static IReadOnlyList<ItemSearchResult> SearchItemsForSlot(
+        GearSlot slot,
+        string query,
+        BuildSourceRestrictionSnapshot? sourceRestrictions = null)
     {
+        sourceRestrictions ??= BuildSourceRestrictionSnapshot.CaptureCurrent();
         IEnumerable<Builder.Data.ElementBase> source =
-            DataManager.Current.ElementsCollection.Where(e => IsElementCompatibleWithSlot(e, slot));
+            DataManager.Current.ElementsCollection.Where(e =>
+                IsElementCompatibleWithSlot(e, slot) &&
+                sourceRestrictions.Allows(e));
 
         if (!string.IsNullOrWhiteSpace(query))
             source = source.Where(e => e.Name.Contains(query, StringComparison.OrdinalIgnoreCase));

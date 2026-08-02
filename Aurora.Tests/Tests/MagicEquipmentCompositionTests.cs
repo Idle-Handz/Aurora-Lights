@@ -57,7 +57,7 @@ public sealed class MagicEquipmentCompositionTests : IAsyncLifetime
     }
 
     [Fact]
-    public void ItemSearch_MatchesComposedTemplateNames()
+    public async Task ItemSearch_MatchesComposedTemplateNames()
     {
         if (!ContentFixture.SkipIfUnavailable(_output)) return;
         if (!EnsureElementsAvailable(
@@ -69,6 +69,8 @@ public sealed class MagicEquipmentCompositionTests : IAsyncLifetime
         }
 
         var character = new Character();
+        InventoryItemFactory.InvalidateSearchIndex();
+        await InventoryItemFactory.PrecomputeSearchIndexAsync();
 
         EquipmentService.SearchItems(character, "Shield +1")
             .Should().Contain(option => option.Id == ShieldPlusOneId);
@@ -86,6 +88,24 @@ public sealed class MagicEquipmentCompositionTests : IAsyncLifetime
             new HashSet<string>(StringComparer.OrdinalIgnoreCase));
         EquipmentService.SearchItems(character, "Longsword +1", restrictedBase)
             .Should().NotContain(option => option.Id == WeaponPlusOneId);
+    }
+
+    [Fact]
+    public void ItemSearch_HonorsCancellationBeforeScanningTheCatalog()
+    {
+        if (!ContentFixture.SkipIfUnavailable(_output)) return;
+
+        var character = new Character();
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+
+        Action search = () => EquipmentService.SearchItems(
+            character,
+            "Longsword",
+            BuildSourceRestrictionSnapshot.Empty,
+            cancellation.Token);
+
+        search.Should().Throw<OperationCanceledException>();
     }
 
     [Fact]
@@ -115,6 +135,23 @@ public sealed class MagicEquipmentCompositionTests : IAsyncLifetime
                 section.Label == "Item details" &&
                 section.Name == "Longsword" &&
                 section.Type == "Weapon");
+    }
+
+    [Fact]
+    public void SlotSearch_AppliesSourceRestrictionsToAllowedResults()
+    {
+        if (!ContentFixture.SkipIfUnavailable(_output)) return;
+        if (!EnsureElementsAvailable(LongswordId)) return;
+
+        EquipmentService.SearchItemsForSlot(GearSlot.MainHand, "Longsword", BuildSourceRestrictionSnapshot.Empty)
+            .Should().Contain(option => option.Id == LongswordId);
+
+        var restricted = new BuildSourceRestrictionSnapshot(
+            new HashSet<string>([LongswordId], StringComparer.OrdinalIgnoreCase),
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+
+        EquipmentService.SearchItemsForSlot(GearSlot.MainHand, "Longsword", restricted)
+            .Should().NotContain(option => option.Id == LongswordId);
     }
 
     [Fact]

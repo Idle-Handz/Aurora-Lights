@@ -3356,6 +3356,10 @@ input.equipment-currency-input::-webkit-inner-spin-button { -webkit-appearance: 
     }
 
     .app-content-container {
+        /* Chrome/WebView versions before dynamic viewport units ignore the dvh
+           declaration. Keep a vh fallback so the inner container still owns
+           vertical scrolling while html/body remain overflow:hidden. */
+        height: calc(100vh - 56px - env(safe-area-inset-top, 0px) - 34px - 58px - env(safe-area-inset-bottom, 0px)) !important;
         height: calc(100dvh - 56px - env(safe-area-inset-top, 0px) - 34px - 58px - env(safe-area-inset-bottom, 0px)) !important;
         padding: 10px !important;
         padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important;

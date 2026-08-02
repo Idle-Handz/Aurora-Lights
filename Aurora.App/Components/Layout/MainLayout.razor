@@ -216,8 +216,8 @@
     private string? _notifiedAppUpdateTag;
 
     private string ContentStyle => Tabs.Tabs.Count > 0
-        ? "height: calc(100dvh - 64px - 34px - 28px); overflow-y: auto; overflow-x: hidden;"
-        : "height: calc(100dvh - 64px - 28px); overflow-y: auto; overflow-x: hidden;";
+        ? "height: calc(100vh - 64px - 34px - 28px) !important; overflow-y: auto; overflow-x: hidden;"
+        : "height: calc(100vh - 64px - 28px) !important; overflow-y: auto; overflow-x: hidden;";
 
     protected override void OnInitialized()
     {

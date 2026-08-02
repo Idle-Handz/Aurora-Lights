@@ -503,12 +503,12 @@ public sealed class WebCharacterEngineService
 
             if (!string.IsNullOrWhiteSpace(query))
             {
-                source = source.Where(element =>
-                    InventoryItemFactory.MatchesSearch(
+                Func<ElementBase, bool> matchesSearch =
+                    InventoryItemFactory.CreateSearchPredicate(
                         character.Inventory,
-                        element,
                         query,
-                        sourceRestrictions.Allows));
+                        sourceRestrictions.Allows);
+                source = source.Where(matchesSearch);
             }
 
             return source
@@ -1052,7 +1052,9 @@ public sealed class WebCharacterEngineService
         _selectionHandler.RemoveAllExpanders();
         _spellcastingHandler.ResetPreparedState();
 
+        InventoryItemFactory.InvalidateSearchIndex();
         await DataManager.Current.InitializeElementDataAsync();
+        await InventoryItemFactory.PrecomputeSearchIndexAsync();
     }
 
     private static ImportedCharacterSummary BuildSummary(
