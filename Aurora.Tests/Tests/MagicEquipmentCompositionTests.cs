@@ -1,5 +1,7 @@
 using Aurora.App.Services;
 using Aurora.Tests.Helpers;
+using Builder.Data;
+using Builder.Data.Elements;
 using Builder.Presentation;
 using Builder.Presentation.Models;
 using Builder.Presentation.Services;
@@ -106,6 +108,50 @@ public sealed class MagicEquipmentCompositionTests : IAsyncLifetime
             cancellation.Token);
 
         search.Should().Throw<OperationCanceledException>();
+    }
+
+    [Fact]
+    public async Task ItemSearch_FallsBackForTemplatesAddedAfterSearchIndexBuild()
+    {
+        if (!ContentFixture.SkipIfUnavailable(_output)) return;
+        if (!EnsureElementsAvailable(LongswordId)) return;
+
+        const string lateTemplateId = "ID_TEST_LATE_INDEX_MAGIC_WEAPON";
+        RemoveSyntheticElement(lateTemplateId);
+        InventoryItemFactory.InvalidateSearchIndex();
+        await InventoryItemFactory.PrecomputeSearchIndexAsync();
+
+        var lateTemplate = new Item
+        {
+            ElementHeader = new ElementHeader("Late Weapon, +7", "Magic Item", "Test Source", lateTemplateId),
+            Description = "<p>Late index template.</p>",
+            Enhancement = "7",
+            NameFormat = "{{parent}} +{{enhancement}}",
+        };
+        lateTemplate.ElementSetters.Add(new ElementSetters.Setter(
+            "weapon",
+            "ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_MELEE"));
+        DataManager.Current.ElementsCollection.Add(lateTemplate);
+
+        try
+        {
+            var character = new Character();
+
+            EquipmentService.SearchItems(character, "Longsword +7", BuildSourceRestrictionSnapshot.Empty)
+                .Should().ContainSingle(option => option.Id == lateTemplateId);
+
+            var restrictedBase = new BuildSourceRestrictionSnapshot(
+                new HashSet<string>([LongswordId], StringComparer.OrdinalIgnoreCase),
+                new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+
+            EquipmentService.SearchItems(character, "Longsword +7", restrictedBase)
+                .Should().NotContain(option => option.Id == lateTemplateId);
+        }
+        finally
+        {
+            RemoveSyntheticElement(lateTemplateId);
+            InventoryItemFactory.InvalidateSearchIndex();
+        }
     }
 
     [Fact]
@@ -335,5 +381,12 @@ public sealed class MagicEquipmentCompositionTests : IAsyncLifetime
 
         _output.WriteLine($"[SKIP] Missing equipment element(s): {string.Join(", ", missing)}.");
         return false;
+    }
+
+    private static void RemoveSyntheticElement(string id)
+    {
+        var existing = DataManager.Current.ElementsCollection.GetElement(id);
+        if (existing is not null)
+            DataManager.Current.ElementsCollection.Remove(existing);
     }
 }
