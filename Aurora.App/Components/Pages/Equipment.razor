@@ -264,23 +264,75 @@
 
     private async Task OpenAddItemDialog()
     {
-        var dialog = await DialogService.ShowAsync<ItemPickerDialog>("Add Item");
+        var tab = Tabs.ActiveTab;
+        if (tab is not { Character: { } character, File: { }, Snapshot: { } })
+        {
+            WarnUnavailable("Items cannot be added because there is no active character.");
+            return;
+        }
+
+        var pickerParameters = new DialogParameters<ItemPickerDialog>
+        {
+            { dialog => dialog.Character, character },
+        };
+        var dialog = await DialogService.ShowAsync<ItemPickerDialog>("Add Item", pickerParameters);
         var result = await dialog.Result;
 
         if (result is { Canceled: false, Data: ItemPickerResult pick })
         {
-            var tab = Tabs.ActiveTab;
-            if (tab is not { Character: { } character, File: { } file, Snapshot: { } snap })
+            ItemTemplateOptions? templateOptions;
+            using (var queryScope = await CharacterContext.EnterAsync(tab))
             {
-                WarnUnavailable("Items cannot be added because there is no active character.");
+                templateOptions = EquipmentService.GetItemTemplateOptions(character, pick.ElementId);
+            }
+
+            string? baseElementId = null;
+            if (templateOptions != null)
+            {
+                if (templateOptions.BaseOptions.Count == 0)
+                {
+                    Snackbar.Add(
+                        $"No compatible base items are available for {templateOptions.TemplateName}.",
+                        Severity.Error);
+                    return;
+                }
+
+                var parameters = new DialogParameters<ItemTemplateBasePickerDialog>
+                {
+                    { dialog => dialog.TemplateName, templateOptions.TemplateName },
+                    { dialog => dialog.Options, templateOptions.BaseOptions },
+                };
+                var baseDialog = await DialogService.ShowAsync<ItemTemplateBasePickerDialog>(
+                    $"Choose a base for {templateOptions.TemplateName}",
+                    parameters);
+                var baseResult = await baseDialog.Result;
+                if (baseResult is not
+                    {
+                        Canceled: false,
+                        Data: ItemTemplateBasePickerResult basePick
+                    })
+                {
+                    return;
+                }
+
+                baseElementId = basePick.BaseElementId;
+            }
+
+            if (!ReferenceEquals(Tabs.ActiveTab, tab))
+            {
+                WarnUnavailable("That item could not be added because the active character changed.");
                 return;
             }
-            using var scope = await CharacterContext.EnterAsync(tab);
 
-            var added = EquipmentService.AddItem(character, pick.ElementId, pick.Amount);
+            using var scope = await CharacterContext.EnterAsync(tab);
+            var added = EquipmentService.AddItem(
+                character,
+                pick.ElementId,
+                pick.Amount,
+                baseElementId);
             if (!added)
             {
-                Snackbar.Add("Could not add item - element not found.", Severity.Error);
+                Snackbar.Add("Could not add that item with the selected base.", Severity.Error);
                 return;
             }
 

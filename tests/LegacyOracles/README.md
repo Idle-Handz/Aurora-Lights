@@ -17,5 +17,3 @@ recorded in
 `tools/legacy-restoration/production-binaries.json`. Differential parity tools
 under `tools/legacy-restoration` load these fixtures in isolated processes so
 legacy static state cannot contaminate the source implementation.
-
-Aurora Studio is intentionally excluded from this baseline.

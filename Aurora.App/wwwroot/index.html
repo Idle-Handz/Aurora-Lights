@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Aurora: Reflections</title>
     <base href="/" />
+    <script>
+        try {
+            const savedTheme = window.localStorage.getItem('aurora.theme');
+            if (savedTheme) document.documentElement.dataset.auroraTheme = savedTheme;
+        } catch { }
+    </script>
     <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="app.css" />
     <link rel="stylesheet" href="Aurora.Reflections.styles.css" />
@@ -14,8 +20,8 @@
             margin: 0;
             padding: 0;
             height: 100%;
-            background-color: #1e1e2e;
-            color: #cdd6f4;
+            background-color: var(--aurora-background, #1e1e2e);
+            color: var(--aurora-text-primary, #cdd6f4);
             font-family: 'Segoe UI', sans-serif;
         }
         #app {
@@ -32,23 +38,73 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 24px;
-            background-color: #1e1e2e;
+            box-sizing: border-box;
+            gap: clamp(16px, 3vh, 24px);
+            padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
+            overflow: hidden;
+            isolation: isolate;
+            text-align: center;
+            background:
+                radial-gradient(circle at 50% 42%, rgba(53, 201, 241, 0.14), transparent 30%),
+                radial-gradient(circle at 50% 48%, rgba(124, 92, 252, 0.12), transparent 48%),
+                #020617;
+            color: #eef8ff;
+        }
+
+        #app-loading::before {
+            content: "";
+            position: absolute;
+            z-index: -1;
+            width: min(84vw, 520px);
+            aspect-ratio: 1;
+            border: 1px solid rgba(138, 221, 244, 0.09);
+            border-radius: 50%;
+            box-shadow: 0 0 80px rgba(53, 201, 241, 0.08);
+        }
+
+        .loading-logo {
+            width: clamp(132px, 32vmin, 196px);
+            height: auto;
+            aspect-ratio: 1;
+            border-radius: 24%;
+            object-fit: cover;
+            filter: drop-shadow(0 16px 30px rgba(0, 0, 0, 0.38));
         }
 
         .loading-title {
-            font-size: 28px;
-            font-weight: 300;
-            letter-spacing: 0.12em;
-            color: #cdd6f4;
+            display: grid;
+            justify-items: center;
+            gap: 3px;
+            max-width: min(92vw, 520px);
             text-transform: uppercase;
+        }
+
+        .loading-title-main {
+            font-family: Georgia, 'Times New Roman', serif;
+            font-size: clamp(26px, 7vw, 38px);
+            font-weight: 500;
+            line-height: 1;
+            letter-spacing: 0.08em;
+            color: #e8fbff;
+            text-shadow: 0 0 22px rgba(53, 201, 241, 0.26);
+        }
+
+        .loading-title-sub {
+            font-size: clamp(11px, 3.2vw, 15px);
+            font-weight: 500;
+            line-height: 1.2;
+            letter-spacing: 0.4em;
+            padding-left: 0.4em;
+            color: #9ae8ff;
         }
 
         .loading-spinner {
             width: 36px;
             height: 36px;
-            border: 3px solid #313244;
-            border-top-color: #89b4fa;
+            box-sizing: border-box;
+            border: 3px solid rgba(138, 221, 244, 0.16);
+            border-top-color: #38f2c7;
+            border-right-color: #7c5cfc;
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
         }
@@ -59,15 +115,40 @@
 
         .loading-subtitle {
             font-size: 12px;
-            color: #585b70;
-            letter-spacing: 0.05em;
+            color: #8aa4bd;
+            letter-spacing: 0.08em;
+        }
+
+        @media (max-height: 560px) {
+            #app-loading {
+                gap: 11px;
+            }
+
+            .loading-logo {
+                width: clamp(92px, 25vmin, 132px);
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .loading-spinner {
+                animation: none;
+            }
         }
     </style>
 </head>
 <body>
     <div id="app">
-        <div id="app-loading">
-            <div class="loading-title">Aurora: Reflections</div>
+        <div id="app-loading" role="status" aria-live="polite" aria-label="Aurora: Reflections is loading">
+            <img class="loading-logo"
+                 src="brand/aurora-appicon.png"
+                 width="1024"
+                 height="1024"
+                 alt=""
+                 draggable="false" />
+            <div class="loading-title" aria-hidden="true">
+                <span class="loading-title-main">Aurora</span>
+                <span class="loading-title-sub">Reflections</span>
+            </div>
             <div class="loading-spinner"></div>
             <div class="loading-subtitle">Loading…</div>
         </div>

@@ -8,7 +8,6 @@ using Builder.Presentation.Models;
 using Builder.Presentation.Services;
 using Builder.Presentation.Services.Data;
 using Builder.Presentation.Utilities;
-using System.Text.RegularExpressions;
 using System.Xml;
 
 namespace Aurora.App.Services;
@@ -154,129 +153,13 @@ public static partial class BuildService
 
     /// <summary>
     /// Returns the full list of valid options for a SelectRule, filtered from DataManager.
-    /// Uses ElementsOrganizerRefactored which applies the rule's supports expression.
+    /// Supplies desktop DB/XML enrichment to the shared selection-option query.
     /// </summary>
     public static IReadOnlyList<ElementOption> GetOptions(SelectRule rule, int number = 1)
     {
         try
         {
-            string? currentSelectionId = ResolveCurrentSelectionId(rule, number);
-
-            // List-type rules (Bond, Ideal, Flaw, Personality Trait) store their options as
-            // inline <item> children in the XML, not as elements in the element collection.
-            bool isList = rule.Attributes.Type?.Equals("List") == true;
-            if (isList)
-            {
-                var listItems = rule.Attributes.ListItems;
-                DebugLogService.Instance.Log(LogLevel.Info,
-                    $"[GetOptions] isList=true name={rule.Attributes.Name} " +
-                    $"listItems={(listItems == null ? "null" : listItems.Count.ToString())} " +
-                    $"elemId={rule.ElementHeader?.Id}");
-                if (listItems?.Count > 0)
-                    return MarkCurrentSelection(listItems
-                        .Select(li => new ElementOption(li.ID.ToString(), li.Text, li.Text, "", ""))
-                        .ToList(), currentSelectionId);
-                // ListItems not populated — read directly from the owner element's XML node.
-                var fromElementNode = GetListOptionsFromElementNode(rule);
-                return fromElementNode.Count > 0
-                    ? MarkCurrentSelection(fromElementNode, currentSelectionId)
-                    : MarkCurrentSelection(XmlContentFallbackService.GetListFallbackOptions(rule), currentSelectionId);
-            }
-
-            if (TryResolveOptionsWithSharedResolver(rule, number, out var sharedOptions))
-                return sharedOptions;
-
-            var ownedNonRepeatableElementIds = GetOwnedNonRepeatableElementIds(rule);
-
-            // Use the same approach as SelectionRuleCollectionService / SelectionRuleComboBoxViewModel:
-            // • InitializeWithSelectionRule so level-based expressions can resolve
-            // • Pass SupportsElementIdRange() as the containsElementIDs flag (correct vs ElementsOrganizerRefactored's heuristic)
-            var interpreter = new ExpressionInterpreter();
-            interpreter.InitializeWithSelectionRule(rule);
-
-            var baseCollection = DataManager.Current.ElementsCollection
-                .Where(e => e.Type.Equals(rule.Attributes.Type));
-
-            IEnumerable<ElementBase> elements;
-            if (!rule.Attributes.ContainsSupports())
-            {
-                elements = baseCollection;
-            }
-            else
-            {
-                try
-                {
-                    elements = interpreter.EvaluateSupportsExpression<ElementBase>(
-                        rule.Attributes.Supports,
-                        baseCollection,
-                        rule.Attributes.SupportsElementIdRange());
-                }
-                catch
-                {
-                    // Supports expression may contain unsupported macros (e.g., "$(spellcasting:list)").
-                    // Fall back to a direct DataManager filter using the spellcasting class name.
-                    elements = SpellFallbackOptions(rule, baseCollection);
-                }
-            }
-
-            // If the expression evaluated but returned nothing (can happen with macro expressions),
-            // also try the spell fallback for Spell-type rules.
-            bool isSpellRule = rule.Attributes.Type?.Equals("Spell", StringComparison.OrdinalIgnoreCase) == true;
-            var list = BuildElementOptions(
-                elements,
-                isSpellRule,
-                currentSelectionId,
-                ownedNonRepeatableElementIds);
-
-            if (list.Count == 0 && isSpellRule)
-                list = BuildElementOptions(
-                    SpellFallbackOptions(rule, baseCollection),
-                    isSpellRule: true,
-                    currentSelectionId: currentSelectionId,
-                    ownedNonRepeatableElementIds: ownedNonRepeatableElementIds);
-
-            // Case-insensitive fallback: only used when the main expression returned nothing AND
-            // this is not a Spell rule (Spell rules use SpellFallbackOptions above). Catches
-            // content that uses internal ID aliases like ID_INTERNAL_SUPPORT_LANGUAGE_EXOTIC
-            // whose plain-word token ("Exotic") fails the evaluator's case-sensitive Contains.
-            // Running it as a union (even when the main evaluator found results) risks adding
-            // wrong elements that pass substring-matching but fail proper rule validation on reload.
-            if (list.Count == 0 && rule.Attributes.ContainsSupports()
-                && !string.Equals(rule.Attributes.Type, "Spell", StringComparison.OrdinalIgnoreCase))
-            {
-                list = BuildElementOptions(
-                    FilterBySupportsCaseInsensitive(rule.Attributes.Supports, baseCollection),
-                    isSpellRule: false,
-                    currentSelectionId: currentSelectionId,
-                    ownedNonRepeatableElementIds: ownedNonRepeatableElementIds);
-            }
-
-            var deduplicated = DeduplicateOptions(list);
-            if (deduplicated.Count == 0)
-            {
-                var xmlFallback = BuildElementOptions(
-                    XmlContentFallbackService.GetElementFallbacks(rule),
-                    isSpellRule,
-                    currentSelectionId,
-                    ownedNonRepeatableElementIds);
-
-                if (xmlFallback.Count > 0)
-                    return DeduplicateOptions(xmlFallback);
-            }
-
-            return deduplicated;
-        }
-        catch { return []; }
-    }
-
-    private static bool TryResolveOptionsWithSharedResolver(
-        SelectRule rule,
-        int number,
-        out IReadOnlyList<ElementOption> options)
-    {
-        try
-        {
-            var resolved = BuildSelectionOptionResolver.ResolveOptions(
+            var resolved = BuildSelectionOptionQueryService.Query(
                 rule,
                 number,
                 new BuildSelectionOptionResolverSettings
@@ -291,17 +174,33 @@ public static partial class BuildService
                                 metadata.SourceReleaseDate,
                                 metadata.SourceFileModifiedUtc);
                     },
-                    ElementFallbackProvider = XmlContentFallbackService.GetElementFallbacks
+                    ElementFallbackProvider = XmlContentFallbackService.GetElementFallbacks,
+                    ListFallbackProvider = GetListFallbackOptions
                 });
 
-            options = resolved.Select(ToElementOption).ToList();
-            return options.Count > 0;
+            return resolved.Select(ToElementOption).ToList();
         }
-        catch
-        {
-            options = [];
-            return false;
-        }
+        catch { return []; }
+    }
+
+    private static IEnumerable<BuildSelectionOption> GetListFallbackOptions(SelectRule rule)
+    {
+        DebugLogService.Instance.Log(
+            LogLevel.Info,
+            $"[GetOptions] listItems missing name={rule.Attributes.Name} elemId={rule.ElementHeader?.Id}");
+
+        IReadOnlyList<ElementOption> options = GetListOptionsFromElementNode(rule);
+        if (options.Count == 0)
+            options = XmlContentFallbackService.GetListFallbackOptions(rule);
+
+        return options.Select(option => new BuildSelectionOption(
+            option.Id,
+            option.Name,
+            option.Description,
+            option.Source,
+            option.Requirements,
+            IsDisabled: option.IsDisabled,
+            IsCurrentSelection: option.IsCurrentSelection));
     }
 
     private static ElementOption ToElementOption(BuildSelectionOption option) =>
@@ -382,28 +281,6 @@ public static partial class BuildService
     }
 
     /// <summary>
-    /// Filters elements whose Supports field contains any of the label terms parsed from
-    /// <paramref name="supportsExpression"/>, using case-insensitive matching. This catches
-    /// elements that use internal ID aliases like ID_INTERNAL_SUPPORT_LANGUAGE_EXOTIC which
-    /// contain "exotic" but not the mixed-case literal "Exotic" that the expression uses.
-    /// </summary>
-    private static IEnumerable<ElementBase> FilterBySupportsCaseInsensitive(
-        string supportsExpression, IEnumerable<ElementBase> elements)
-    {
-        var terms = Regex.Matches(supportsExpression, @"[A-Za-z][A-Za-z0-9_]*")
-            .Cast<Match>()
-            .Select(m => m.Value)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
-
-        if (terms.Count == 0) return Enumerable.Empty<ElementBase>();
-
-        return elements.Where(e =>
-            e.Supports != null &&
-            e.Supports.Any(s => terms.Any(t => s.IndexOf(t, StringComparison.OrdinalIgnoreCase) >= 0)));
-    }
-
-    /// <summary>
     /// Collapses options with the same Name+Description (same content from multiple sources)
     /// into a single entry with combined source names. Options with the same name but different
     /// descriptions are kept as separate entries.
@@ -436,118 +313,6 @@ public static partial class BuildService
         return result;
     }
 
-    private static List<ElementOption> BuildElementOptions(
-        IEnumerable<ElementBase> elements,
-        bool isSpellRule,
-        string? currentSelectionId,
-        IReadOnlySet<string> ownedNonRepeatableElementIds)
-    {
-        return OrderElementOptions(
-                elements
-                    .Where(e => !string.IsNullOrWhiteSpace(e.Name))
-                    .Select(e => CreateElementOption(
-                        e,
-                        isSpellRule,
-                        currentSelectionId,
-                        ownedNonRepeatableElementIds)),
-                isSpellRule)
-            .ToList();
-    }
-
-    private static ElementOption CreateElementOption(
-        ElementBase element,
-        bool isSpellRule,
-        string? currentSelectionId,
-        IReadOnlySet<string> ownedNonRepeatableElementIds)
-    {
-        var metadata = TryGetElementSortMetadata(element);
-        bool isCurrentSelection = string.Equals(
-            element.Id,
-            currentSelectionId,
-            StringComparison.OrdinalIgnoreCase);
-        string description = isSpellRule
-            ? GetSpellPickerDescription(element)
-            : GetFeatureDescription(element);
-
-        return new ElementOption(
-            element.Id,
-            element.Name ?? "",
-            description,
-            element.Source ?? "",
-            element.HasRequirements ? FormatRequirements(element.Requirements) : "",
-            SpellLevel: isSpellRule ? GetElementSpellLevel(element) : 0,
-            School: isSpellRule ? GetElementSchool(element) : "",
-            IsRitual: isSpellRule && GetElementIsRitual(element),
-            IsConcentration: isSpellRule && GetElementIsConcentration(element),
-            SourceReleaseDate: metadata?.SourceReleaseDate,
-            SourceFileModifiedUtc: metadata?.SourceFileModifiedUtc,
-            IsDisabled: SelectionOptionAvailability.IsDisabled(
-                element.Id,
-                element.AllowDuplicate,
-                currentSelectionId,
-                ownedNonRepeatableElementIds),
-            IsCurrentSelection: isCurrentSelection,
-            DescriptionHtml: isSpellRule
-                ? MagicDescriptionFormatter.FromPlainText(description)
-                : GetFeatureDescriptionHtml(element, description));
-    }
-
-    private static HashSet<string> GetOwnedNonRepeatableElementIds(SelectRule rule)
-    {
-        try
-        {
-            if (BuildRuleClassifier.AllowsStackedSelections(rule.Attributes.Type ?? string.Empty))
-                return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-            return CharacterManager.Current.GetElements()
-                .Where(element =>
-                    element.Type.Equals(rule.Attributes.Type, StringComparison.Ordinal) &&
-                    !element.AllowDuplicate)
-                .Select(element => element.Id)
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
-        }
-        catch
-        {
-            return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        }
-    }
-
-    private static IReadOnlyList<ElementOption> MarkCurrentSelection(
-        IReadOnlyList<ElementOption> options,
-        string? currentSelectionId)
-    {
-        if (string.IsNullOrWhiteSpace(currentSelectionId))
-            return options;
-
-        return options
-            .Select(option => option with
-            {
-                IsCurrentSelection = string.Equals(
-                    option.Id,
-                    currentSelectionId,
-                    StringComparison.OrdinalIgnoreCase),
-            })
-            .ToList();
-    }
-
-    private static string? ResolveCurrentSelectionId(SelectRule rule, int number)
-    {
-        try
-        {
-            return SelectionRuleExpanderContext.Current?.GetRegisteredElement(rule, number) switch
-            {
-                ElementBase element => element.Id,
-                SelectionRuleListItem listItem => listItem.ID.ToString(),
-                string id => id,
-                _ => null,
-            };
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
     private static IOrderedEnumerable<ElementOption> OrderElementOptions(
         IEnumerable<ElementOption> options,
         bool isSpellRule)
@@ -567,199 +332,6 @@ public static partial class BuildService
             DbElementLoader.MakeElementSortMetadataKey(element.Id, element.Source),
             out var metadata);
         return metadata;
-    }
-
-    /// <summary>
-    /// Converts a raw Aurora requirements expression into a concise human-readable string.
-    /// Handles <c>[ability:value]</c> tokens (e.g., <c>[str:13]</c> → "STR 13+") and
-    /// <c>[level:N]</c> tokens. Internal element IDs and boolean operators are stripped.
-    /// </summary>
-    private static string FormatRequirements(string requirements)
-    {
-        if (string.IsNullOrWhiteSpace(requirements)) return "";
-
-        // Split on comma, &&, ||, then trim whitespace and grouping chars.
-        var tokens = System.Text.RegularExpressions.Regex
-            .Split(requirements, @"[,;]+|&&|\|\|")
-            .Select(p => p.Trim(' ', '!', '(', ')'));
-
-        var parts = new List<string>();
-        foreach (var token in tokens)
-        {
-            if (string.IsNullOrEmpty(token)) continue;
-
-            // [ability:value] or [level:N]
-            var m = System.Text.RegularExpressions.Regex.Match(token, @"^\[(\w+):(\d+)\]$");
-            if (m.Success)
-            {
-                string key = m.Groups[1].Value.ToLowerInvariant();
-                string val = m.Groups[2].Value;
-                parts.Add(key switch
-                {
-                    "str"   => $"STR {val}+",
-                    "dex"   => $"DEX {val}+",
-                    "con"   => $"CON {val}+",
-                    "int"   => $"INT {val}+",
-                    "wis"   => $"WIS {val}+",
-                    "cha"   => $"CHA {val}+",
-                    "level" => $"Level {val}",
-                    _       => $"{key.ToUpperInvariant()} {val}",
-                });
-                continue;
-            }
-
-            // Element IDs — look up the name from DataManager so the user sees something meaningful.
-            // Skip IDs that resolve to nothing (internal flags, generated IDs, etc.).
-            if (token.StartsWith("ID_", StringComparison.OrdinalIgnoreCase))
-            {
-                var element = DataManager.Current.ElementsCollection
-                    .FirstOrDefault(e => e.Id.Equals(token, StringComparison.OrdinalIgnoreCase));
-                if (element != null && !string.IsNullOrWhiteSpace(element.Name))
-                    parts.Add(element.Name!);
-                continue;
-            }
-
-            if (token.Contains('[') || token.Contains(':')) continue;
-
-            // Plain text (e.g., class/feature names embedded directly).
-            parts.Add(token);
-        }
-
-        return parts.Count > 0 ? string.Join(", ", parts) : "";
-    }
-
-    /// <summary>
-    /// Fallback option loader for Spell-type rules whose supports expression uses macros
-    /// (e.g., "$(spellcasting:list)") that the expression parser cannot evaluate.
-    /// Uses SpellcastingInformation or raw supports text to filter DataManager spells directly.
-    /// </summary>
-    private static IEnumerable<ElementBase> SpellFallbackOptions(
-        SelectRule rule, IEnumerable<ElementBase> spellBase)
-    {
-        // Determine cantrip vs levelled spell.
-        // Supports expressions use $(spellcasting:list), 0 for cantrips — the macro text
-        // doesn't contain "Cantrip", so we also check the rule name.
-        bool isCantrip = false;
-        if (rule.Attributes.ContainsSupports())
-            isCantrip = rule.Attributes.Supports.Contains("Cantrip", StringComparison.OrdinalIgnoreCase);
-        if (!isCantrip)
-            isCantrip = rule.Attributes.Name?.Contains("Cantrip", StringComparison.OrdinalIgnoreCase) == true;
-
-        // Prefer the spellcasting class name from the rule attribute; fall back to parsing
-        // the supports expression for the first plain word (strips macros like "$(...)").
-        string? className = ResolveSpellFallbackClassName(rule);
-
-        if (className == null) return [];
-
-        string scName = className;
-
-        // When the rule uses $(spellcasting:slots), restrict to spells the character
-        // can actually cast at their current level (prevents a Sorcerer 1 from seeing
-        // 9th-level spells in the picker).
-        int maxSpellLevel = 9;
-        if (!isCantrip && (rule.Attributes.Supports?.Contains("$(spellcasting:slots)", StringComparison.OrdinalIgnoreCase) ?? false))
-        {
-            maxSpellLevel = ResolveMaxCastableSpellLevel(scName);
-        }
-
-        var spells = spellBase as IReadOnlyList<ElementBase> ?? spellBase.ToList();
-        var matches = new List<ElementBase>();
-
-        // Fast path: use the pre-resolved spell access map from the DB loader. Then union in
-        // the live supports scan so custom/user spells and append-added supports can override
-        // or augment the SQLite projection without being hidden by a non-empty DB map result.
-        if (DbElementLoader.SpellAccessMap.TryGetValue(scName, out var spellIds))
-        {
-            matches.AddRange(spells.Where(e =>
-            {
-                if (!spellIds.Contains(e.Id)) return false;
-                int lvl = GetElementSpellLevel(e);
-                return isCantrip ? lvl == 0 : (lvl > 0 && lvl <= maxSpellLevel);
-            }));
-        }
-
-        // Text-based scan: filter by class name in supports attribute.
-        // Use Any+Contains (substring, case-insensitive) because supports values may be
-        // comma-joined strings like "Ranger, Paladin" rather than individual entries.
-        matches.AddRange(spells.Where(e =>
-        {
-            if (e.Supports == null || !e.Supports.Any(s => s.Contains(scName, StringComparison.OrdinalIgnoreCase)))
-                return false;
-            int lvl = GetElementSpellLevel(e);
-            return isCantrip ? lvl == 0 : (lvl > 0 && lvl <= maxSpellLevel);
-        }));
-
-        return matches
-            .GroupBy(e => e.Id, StringComparer.OrdinalIgnoreCase)
-            .Select(g => g.First());
-    }
-
-    private static string? ResolveSpellFallbackClassName(SelectRule rule)
-    {
-        if (rule.Attributes.ContainsSpellcastingName())
-            return rule.Attributes.SpellcastingName;
-
-        string? ownerSpellcastingName = ResolveOwnerSpellcastingName(rule);
-        if (!string.IsNullOrWhiteSpace(ownerSpellcastingName))
-            return ownerSpellcastingName;
-
-        if (!rule.Attributes.ContainsSupports())
-            return null;
-
-        string supports = Regex.Replace(rule.Attributes.Supports ?? "", @"\$\([^)]*\)", " ");
-        supports = Regex.Replace(supports, @"ID_[A-Za-z0-9_]+", " ");
-        string firstWord = Regex.Match(supports, @"[A-Za-z][A-Za-z0-9 ]*").Value.Trim();
-        return string.IsNullOrWhiteSpace(firstWord) || int.TryParse(firstWord, out _)
-            ? null
-            : firstWord;
-    }
-
-    private static string? ResolveOwnerSpellcastingName(SelectRule rule)
-    {
-        string? ownerId = rule.ElementHeader?.Id;
-        if (string.IsNullOrWhiteSpace(ownerId))
-            return null;
-
-        var owner = DataManager.Current.ElementsCollection
-            .FirstOrDefault(e => e.Id.Equals(ownerId, StringComparison.OrdinalIgnoreCase));
-        return owner?.HasSpellcastingInformation == true
-            ? owner.SpellcastingInformation.Name
-            : null;
-    }
-
-    /// <summary>
-    /// Returns the maximum spell level the character can currently cast for the given
-    /// spellcasting class, based on available spell slots. Returns 9 on any failure so
-    /// the filter degrades gracefully rather than blocking all spell options.
-    /// </summary>
-    private static int ResolveMaxCastableSpellLevel(string spellcastingClassName)
-    {
-        try
-        {
-            var cm = CharacterManager.Current;
-            // Multiclass spell slots are pooled — use the combined table.
-            if (cm.Status.HasMulticlassSpellSlots)
-            {
-                dynamic mss = cm.Character.MulticlassSpellSlots;
-                int[] slots = { 0, (int)mss.Slot1, (int)mss.Slot2, (int)mss.Slot3,
-                                   (int)mss.Slot4, (int)mss.Slot5, (int)mss.Slot6,
-                                   (int)mss.Slot7, (int)mss.Slot8, (int)mss.Slot9 };
-                for (int i = 9; i >= 1; i--)
-                    if (slots[i] > 0) return i;
-            }
-            var stats = cm.StatisticsCalculator.StatisticValues;
-            var info = cm.GetSpellcastingInformations()
-                .FirstOrDefault(i => i.Name.Equals(spellcastingClassName, StringComparison.OrdinalIgnoreCase));
-            if (info == null) return 9;
-            int maxLevel = 0;
-            for (int lvl = 1; lvl <= 9; lvl++)
-            {
-                try { if (stats.GetValue(info.GetSlotStatisticName(lvl)) > 0) maxLevel = lvl; }
-                catch { }
-            }
-            return maxLevel > 0 ? maxLevel : 9;
-        }
-        catch { return 9; }
     }
 
     // ── Apply selection + validate + save ────────────────────────────────────
@@ -1232,55 +804,10 @@ public static partial class BuildService
             ? MagicDescriptionFormatter.FromAuroraHtml(descriptionMarkup)
             : MagicDescriptionFormatter.FromPlainText(fallbackPlainText);
 
-    private static string GetSpellPickerDescription(ElementBase e)
-    {
-        if (e is not Spell sp) return GetFeatureDescription(e);
-        try
-        {
-            int level          = sp.Level;
-            string school      = sp.MagicSchool ?? "";
-            string castingTime = sp.CastingTime ?? "";
-            string range       = sp.Range ?? "";
-            string duration    = sp.Duration ?? "";
-            string components  = sp.GetComponentsString() ?? "";
-            bool ritual        = sp.IsRitual;
-            bool concentration = sp.IsConcentration;
-            bool body_ok       = false;
-            string body        = "";
-
-            string raw = sp.Description ?? "";
-            if (!string.IsNullOrWhiteSpace(raw))
-            { body = ElementDescriptionGenerator.GeneratePlainDescription(raw).Trim(); body_ok = true; }
-
-            var sb = new System.Text.StringBuilder();
-            string levelText = level == 0
-                ? (string.IsNullOrEmpty(school) ? "Cantrip" : $"{school} Cantrip")
-                : (string.IsNullOrEmpty(school) ? $"Level {level}" : $"Level {level} {school}");
-            if (concentration) levelText += " · Concentration";
-            if (ritual)        levelText += " · Ritual";
-            sb.AppendLine(levelText);
-
-            if (!string.IsNullOrEmpty(castingTime)) sb.AppendLine($"Casting Time: {castingTime}");
-            if (!string.IsNullOrEmpty(range))       sb.AppendLine($"Range: {range}");
-            if (!string.IsNullOrEmpty(components))  sb.AppendLine($"Components: {components}");
-            if (!string.IsNullOrEmpty(duration))    sb.AppendLine($"Duration: {duration}");
-            if (body_ok && !string.IsNullOrEmpty(body)) { sb.AppendLine(); sb.Append(body); }
-
-            return sb.ToString().Trim();
-        }
-        catch { return GetFeatureDescription(e); }
-    }
-
     // Spell-typed elements are always Builder.Data.Elements.Spell instances (verified by
     // SpellTypeInvariantTests), so read their properties via a static cast rather than dynamic — a
     // renamed/removed member becomes a compile error instead of a silently-swallowed wrong value.
     private static int GetElementSpellLevel(ElementBase e) => e is Spell sp ? sp.Level : 0;
-
-    private static string GetElementSchool(ElementBase e) => e is Spell sp ? sp.MagicSchool ?? "" : "";
-
-    private static bool GetElementIsRitual(ElementBase e) => e is Spell sp && sp.IsRitual;
-
-    private static bool GetElementIsConcentration(ElementBase e) => e is Spell sp && sp.IsConcentration;
 
     // ── Advancement timeline ─────────────────────────────────────────────────────
 

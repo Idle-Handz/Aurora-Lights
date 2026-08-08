@@ -124,6 +124,12 @@ Items that don't exist on any client yet, or exist only in a very early/partial 
 
 Small but felt. Neither client specific unless noted.
 
+- [ ] **Web: mobile navigation drawer interaction** — the always-open mini drawer
+  leaves its MudBlazor overlay scrim over page content on narrow viewports, so
+  actions such as **Use in Workspace** cannot receive pointer input after
+  navigation. Make the drawer state responsive, provide a working mobile
+  open/close control, and then enable the Build picker interaction test for the
+  mobile Chromium project.
 - [ ] **Web: selection picker as modal overlay** — the picker currently renders inline
   below the rule list, requiring significant scroll to reach it. A slide-up panel
   or modal dialog would keep the build list in context.

@@ -664,12 +664,12 @@ public static partial class BuildService
             supported = new ElementBaseCollection(baseCollection);
         }
 
-        var sourcesManager = CharacterManager.Current.SourcesManager;
-        var restrictedSourceNames = sourcesManager.GetUndefinedRestrictedSourceNames().ToHashSet(StringComparer.Ordinal);
-        var restrictedElementIds = sourcesManager.GetRestrictedElementIds().ToHashSet(StringComparer.Ordinal);
+        var sourceRestrictions = BuildSourceRestrictionSnapshot.CaptureCurrent();
+        IReadOnlySet<string> requirementIds =
+            SelectionRequirementCompatibility.ExpandForSelectionValidation(currentIds);
 
         foreach (var restricted in supported
-                     .Where(element => restrictedElementIds.Contains(element.Id) || restrictedSourceNames.Contains(element.Source))
+                     .Where(element => !sourceRestrictions.Allows(element))
                      .ToList())
         {
             supported.RemoveElement(restricted.Id);
@@ -692,7 +692,7 @@ public static partial class BuildService
         foreach (var candidate in supported)
         {
             if (!candidate.HasRequirements ||
-                interpreter.EvaluateElementRequirementsExpression(candidate.Requirements, currentIds))
+                interpreter.EvaluateElementRequirementsExpression(candidate.Requirements, requirementIds))
             {
                 validIds.Add(candidate.Id);
             }

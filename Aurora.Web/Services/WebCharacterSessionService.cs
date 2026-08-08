@@ -1,5 +1,6 @@
 using Aurora.Components.Models;
 using Builder.Presentation.Models;
+using Builder.Presentation.Services;
 
 namespace Aurora.Web.Services;
 
@@ -263,6 +264,23 @@ public sealed class WebCharacterSessionService
         return state;
     }
 
+    public async Task<WebCharacterSourceState> ToggleCurrentSourceCategoryAsync(
+        SourceRestrictionCategoryToggle toggle)
+    {
+        if (_currentRuntimeState is null || string.IsNullOrWhiteSpace(_currentCharacterPath))
+        {
+            throw new InvalidOperationException("No character is active in the current web session.");
+        }
+
+        PhaseZeroSessionWorkspace workspace = await _workspaceService.GetWorkspaceAsync();
+        WebCharacterSourceState state = await _engine.ToggleSourceCategoryAsync(
+            workspace,
+            _currentCharacterPath,
+            toggle);
+        await PersistMagicIfAvailableAsync(workspace);
+        return state;
+    }
+
     public async Task<WebCharacterSourceState> ToggleCurrentSourceItemAsync(string sourceId)
     {
         if (_currentRuntimeState is null || string.IsNullOrWhiteSpace(_currentCharacterPath))
@@ -337,11 +355,31 @@ public sealed class WebCharacterSessionService
         return await _engine.GetEquipmentInventoryOptionsAsync(slotId);
     }
 
-    public async Task<WebCharacterEquipmentState> AddCurrentEquipmentItemAsync(string elementId, int amount)
+    public async Task<EquipmentItemDetailModel?> GetCurrentEquipmentItemDetailAsync(string identifier)
+    {
+        EnsureActiveCharacter();
+        return await _engine.GetEquipmentItemDetailAsync(identifier);
+    }
+
+    public async Task<WebEquipmentTemplateOptions?> GetCurrentEquipmentTemplateOptionsAsync(string elementId)
+    {
+        EnsureActiveCharacter();
+        return await _engine.GetEquipmentTemplateOptionsAsync(elementId);
+    }
+
+    public async Task<WebCharacterEquipmentState> AddCurrentEquipmentItemAsync(
+        string elementId,
+        int amount,
+        string? baseElementId = null)
     {
         EnsureActiveCharacter();
         PhaseZeroSessionWorkspace workspace = await _workspaceService.GetWorkspaceAsync();
-        WebCharacterEquipmentState state = await _engine.AddCurrentEquipmentItemAsync(workspace, _currentCharacterPath!, elementId, amount);
+        WebCharacterEquipmentState state = await _engine.AddCurrentEquipmentItemAsync(
+            workspace,
+            _currentCharacterPath!,
+            elementId,
+            amount,
+            baseElementId);
         SyncRuntimeSummary(state.Summary, state.StatusMessage);
         await PersistMagicIfAvailableAsync(workspace);
         return state;

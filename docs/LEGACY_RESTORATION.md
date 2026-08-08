@@ -17,10 +17,6 @@ The production restoration covers:
 5. removal of those binaries from normal production builds after their source
    replacements pass compatibility gates
 
-Aurora Studio is intentionally excluded. Its binaries are not an authority for
-runtime behavior and will be revisited only if AuroraXMLHelper develops into a
-content creation and repair suite.
-
 The maintainer has confirmed authorization from the rights holders to reverse
 engineer and modify the legacy Aurora project. Supporting correspondence may be
 retained privately; it does not need to be committed with the source.
@@ -34,8 +30,6 @@ When sources disagree or behavior is unclear, use this order:
 3. restored legacy WPF source
 4. representative Aurora XML and `.dnd5e` fixtures
 5. existing compatibility and parity tests
-
-Aurora Studio is not part of this authority chain.
 
 ## Working Rules
 

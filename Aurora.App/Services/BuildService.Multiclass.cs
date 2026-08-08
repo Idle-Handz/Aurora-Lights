@@ -21,8 +21,10 @@ public static partial class BuildService
     /// </summary>
     public static IReadOnlyList<ElementOption> GetMulticlassOptions()
     {
+        var sourceRestrictions = BuildSourceRestrictionSnapshot.CaptureCurrent();
         var options = DataManager.Current.ElementsCollection
             .Where(e => e.Type == "Multiclass")
+            .Where(sourceRestrictions.Allows)
             .Select(e => new ElementOption(
                 e.Id,
                 e.Name ?? "",
@@ -98,6 +100,7 @@ public static partial class BuildService
                     .Select(m => m.ClassElement?.Name)
                     .Where(n => !string.IsNullOrWhiteSpace(n))
                     .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                var sourceRestrictions = BuildSourceRestrictionSnapshot.CaptureCurrent();
 
                 var elements = DataManager.Current.ElementsCollection
                     .Where(e => e.Type == "Multiclass")
@@ -105,7 +108,8 @@ public static partial class BuildService
                         // Keep an existing multiclass (so it can be leveled), otherwise only offer a
                         // class the character doesn't already have (any source) and meets the prereq for.
                         FindMulticlassProgression(cm, e.Id) != null ||
-                        (!currentClassNames.Contains(e.Name ?? "") &&
+                        (sourceRestrictions.Allows(e) &&
+                         !currentClassNames.Contains(e.Name ?? "") &&
                          MeetsMulticlassElementRequirements(e, cm, out _)))
                     .OrderBy(e => e.Name)
                     .ToList();

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "scope": "Test-only production first-party oracle baseline. Aurora Studio is intentionally excluded.",
+  "scope": "Test-only production first-party oracle baseline.",
   "binaries": [
     {
       "path": "tests/LegacyOracles/Builder.Core.dll",

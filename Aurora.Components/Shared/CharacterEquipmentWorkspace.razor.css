@@ -15,7 +15,7 @@
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--mud-palette-text-secondary, #a6adc8);
+    color: var(--mud-palette-text-secondary, var(--aurora-text-secondary, #a6adc8));
 }
 
 .equipment-attack-table,
@@ -41,7 +41,7 @@
 .equipment-inventory-header-row {
     font-size: 0.75rem;
     font-weight: 700;
-    color: var(--mud-palette-text-disabled, #6c7086);
+    color: var(--mud-palette-text-disabled, var(--aurora-text-disabled, #6c7086));
     text-transform: uppercase;
     letter-spacing: 0.06em;
 }
@@ -50,9 +50,9 @@
 .equipment-inventory-row:not(.equipment-inventory-header-row),
 .equipment-gear-row {
     padding: 0.8rem 0.9rem;
-    border: 1px solid var(--mud-palette-lines-inputs, #45475a);
+    border: 1px solid var(--mud-palette-lines-inputs, var(--aurora-surface-raised, #45475a));
     border-radius: 0.85rem;
-    background: var(--mud-palette-surface, #313244);
+    background: var(--mud-palette-surface, var(--aurora-surface, #313244));
 }
 
 .equipment-gear-row {
@@ -73,13 +73,13 @@
 .equipment-gear-row--clickable:hover,
 .equipment-inventory-row--clickable:hover {
     border-color: var(--mud-palette-primary);
-    background: color-mix(in srgb, var(--mud-palette-primary) 6%, var(--mud-palette-surface, #313244));
+    background: color-mix(in srgb, var(--mud-palette-primary) 6%, var(--mud-palette-surface, var(--aurora-surface, #313244)));
 }
 
 .equipment-gear-label {
     font-size: 0.8rem;
     font-weight: 700;
-    color: var(--mud-palette-text-secondary, #a6adc8);
+    color: var(--mud-palette-text-secondary, var(--aurora-text-secondary, #a6adc8));
     text-transform: uppercase;
     letter-spacing: 0.06em;
 }
@@ -93,7 +93,7 @@
 .equipment-gear-empty,
 .equipment-empty,
 .equipment-static-qty {
-    color: var(--mud-palette-text-disabled, #6c7086);
+    color: var(--mud-palette-text-disabled, var(--aurora-text-disabled, #6c7086));
 }
 
 .equipment-gear-actions,
@@ -123,7 +123,7 @@
 
 .equipment-attuned-summary {
     font-size: 0.76rem;
-    color: var(--mud-palette-text-disabled, #6c7086);
+    color: var(--mud-palette-text-disabled, var(--aurora-text-disabled, #6c7086));
 }
 
 .equipment-item-actions {
@@ -137,9 +137,9 @@
 .equipment-icon-button,
 .equipment-edit-button,
 .equipment-tag {
-    border: 1px solid var(--mud-palette-lines-inputs, #45475a);
-    background: var(--mud-palette-surface, #313244);
-    color: var(--mud-palette-text-primary, #cdd6f4);
+    border: 1px solid var(--mud-palette-lines-inputs, var(--aurora-surface-raised, #45475a));
+    background: var(--mud-palette-surface, var(--aurora-surface, #313244));
+    color: var(--mud-palette-text-primary, var(--aurora-text-primary, #cdd6f4));
     border-radius: 999px;
     cursor: pointer;
     transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
@@ -153,19 +153,19 @@
 
 .equipment-action-button:hover,
 .equipment-tag:hover {
-    background: var(--mud-palette-lines-inputs, #45475a);
-    border-color: var(--mud-palette-lines-inputs, #585b70);
+    background: var(--mud-palette-lines-inputs, var(--aurora-surface-raised, #45475a));
+    border-color: var(--mud-palette-lines-inputs, var(--aurora-border-strong, #585b70));
 }
 
 .equipment-action-button.primary,
 .equipment-tag.active {
-    background: var(--mud-palette-primary, #89b4fa);
-    border-color: var(--mud-palette-primary, #89b4fa);
-    color: #1e1e2e;
+    background: var(--mud-palette-primary, var(--aurora-primary, #89b4fa));
+    border-color: var(--mud-palette-primary, var(--aurora-primary, #89b4fa));
+    color: var(--aurora-background, #1e1e2e);
 }
 
 .equipment-action-button.secondary {
-    color: var(--mud-palette-text-secondary, #a6adc8);
+    color: var(--mud-palette-text-secondary, var(--aurora-text-secondary, #a6adc8));
 }
 
 .equipment-action-button:disabled,
@@ -192,10 +192,10 @@
 .equipment-qty-input,
 .equipment-notes-area {
     width: 100%;
-    border: 1px solid var(--mud-palette-lines-inputs, #45475a);
+    border: 1px solid var(--mud-palette-lines-inputs, var(--aurora-surface-raised, #45475a));
     border-radius: 0.75rem;
-    background: var(--mud-palette-background, #1e1e2e);
-    color: var(--mud-palette-text-primary, #cdd6f4);
+    background: var(--mud-palette-background, var(--aurora-background, #1e1e2e));
+    color: var(--mud-palette-text-primary, var(--aurora-text-primary, #cdd6f4));
     font: inherit;
 }
 
@@ -203,7 +203,7 @@
 .equipment-qty-input:focus,
 .equipment-notes-area:focus {
     outline: none;
-    border-color: var(--mud-palette-primary, #89b4fa);
+    border-color: var(--mud-palette-primary, var(--aurora-primary, #89b4fa));
 }
 
 .equipment-currency-input,
@@ -215,7 +215,7 @@
     text-align: right;
     -webkit-appearance: none;
     appearance: none;
-    color-scheme: dark;
+    color-scheme: var(--aurora-color-scheme, dark);
     -moz-appearance: textfield;
 }
 
@@ -226,8 +226,8 @@
 }
 
 .equipment-currency-input:disabled {
-    background: var(--mud-palette-surface, #313244);
-    color: var(--mud-palette-text-disabled, #6c7086);
+    background: var(--mud-palette-surface, var(--aurora-surface, #313244));
+    color: var(--mud-palette-text-disabled, var(--aurora-text-disabled, #6c7086));
     opacity: 1;
 }
 
@@ -240,7 +240,7 @@
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--mud-palette-text-disabled, #6c7086);
+    color: var(--mud-palette-text-disabled, var(--aurora-text-disabled, #6c7086));
 }
 
 .equipment-inventory-row {
@@ -256,20 +256,20 @@
 }
 
 .equipment-tag.attunement.active {
-    background: var(--mud-palette-secondary, #cba6f7);
-    border-color: var(--mud-palette-secondary, #cba6f7);
-    color: #1e1e2e;
+    background: var(--mud-palette-secondary, var(--aurora-secondary, #cba6f7));
+    border-color: var(--mud-palette-secondary, var(--aurora-secondary, #cba6f7));
+    color: var(--aurora-background, #1e1e2e);
 }
 
 .equipment-tag.extract {
     min-width: 4.25rem;
-    color: var(--mud-palette-info, #89dceb);
-    border-color: color-mix(in srgb, var(--mud-palette-info, #89dceb) 52%, var(--mud-palette-lines-inputs, #45475a));
+    color: var(--mud-palette-info, var(--aurora-info, #89dceb));
+    border-color: color-mix(in srgb, var(--mud-palette-info, var(--aurora-info, #89dceb)) 52%, var(--mud-palette-lines-inputs, var(--aurora-surface-raised, #45475a)));
 }
 
 .equipment-tag.extract:hover {
-    background: color-mix(in srgb, var(--mud-palette-info, #89dceb) 12%, transparent);
-    border-color: var(--mud-palette-info, #89dceb);
+    background: color-mix(in srgb, var(--mud-palette-info, var(--aurora-info, #89dceb)) 12%, transparent);
+    border-color: var(--mud-palette-info, var(--aurora-info, #89dceb));
 }
 
 .equipment-remove-button,
@@ -294,16 +294,16 @@
 }
 
 .equipment-remove-button:hover {
-    color: #f38ba8;
-    border-color: #f38ba8;
-    background: rgba(243, 139, 168, 0.1);
+    color: var(--aurora-danger, #f38ba8);
+    border-color: var(--aurora-danger, #f38ba8);
+    background: var(--aurora-danger-10, rgba(243, 139, 168, 0.1));
 }
 
 .equipment-edit-button:hover,
 .equipment-icon-button:hover {
-    color: var(--mud-palette-primary, #89b4fa);
-    border-color: var(--mud-palette-primary, #89b4fa);
-    background: rgba(137, 180, 250, 0.1);
+    color: var(--mud-palette-primary, var(--aurora-primary, #89b4fa));
+    border-color: var(--mud-palette-primary, var(--aurora-primary, #89b4fa));
+    background: var(--aurora-primary-10, rgba(137, 180, 250, 0.1));
 }
 
 .equipment-notes-area {
@@ -340,7 +340,7 @@
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.04em;
-        color: var(--mud-palette-text-disabled, #6c7086);
+        color: var(--mud-palette-text-disabled, var(--aurora-text-disabled, #6c7086));
     }
 
     .equipment-attack-row:not(.equipment-attack-header) > span:nth-child(1)::before { content: "Name: "; }
@@ -365,7 +365,7 @@
     .equipment-inventory-row:not(.equipment-inventory-header-row) > span:nth-child(4),
     .equipment-inventory-row:not(.equipment-inventory-header-row) > span:nth-child(5) {
         font-size: 0.85rem;
-        color: var(--mud-palette-text-secondary, #a6adc8);
+        color: var(--mud-palette-text-secondary, var(--aurora-text-secondary, #a6adc8));
     }
 
     .equipment-inventory-row:not(.equipment-inventory-header-row) > span:nth-child(3)::before { content: "Qty: "; }

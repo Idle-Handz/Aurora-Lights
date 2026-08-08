@@ -2,6 +2,7 @@ using Builder.Data.Rules;
 using Aurora.Components.Formatting;
 using Builder.Presentation;
 using Builder.Presentation.Models;
+using Builder.Presentation.Services;
 using Builder.Presentation.Services.Data;
 using Builder.Presentation.ViewModels.Shell.Items;
 using System.Reflection;
@@ -40,30 +41,83 @@ public static class EquipmentService
     /// Searches all loaded elements for those that can be added to inventory.
     /// Returns at most 200 results ordered by name.
     /// </summary>
-    public static IReadOnlyList<ItemSearchResult> SearchItems(string query)
+    public static IReadOnlyList<ItemSearchResult> SearchItems(
+        Character character,
+        string query,
+        BuildSourceRestrictionSnapshot? sourceRestrictions = null,
+        CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+        sourceRestrictions ??= BuildSourceRestrictionSnapshot.CaptureCurrent();
+        Func<Builder.Data.ElementBase, bool> matchesSearch =
+            InventoryItemFactory.CreateSearchPredicate(
+                character.Inventory,
+                query,
+                sourceRestrictions.Allows);
+
         IEnumerable<Builder.Data.ElementBase> source =
             DataManager.Current.ElementsCollection.Where(e =>
-                ItemTypes.Contains(e.Type)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return ItemTypes.Contains(e.Type)
                 // Exclude Aurora's internal ability-enabling pseudo-items (e.g. "Additional Arcane
                 // Dilettante Spell, Fire Shield"). These are named "Additional …" and are designed
                 // to stay hidden from the character sheet — they are not real inventory items.
-                && !e.Name.StartsWith("Additional ", StringComparison.OrdinalIgnoreCase));
+                && !e.Name.StartsWith("Additional ", StringComparison.OrdinalIgnoreCase)
+                && sourceRestrictions.Allows(e);
+            });
 
         if (!string.IsNullOrWhiteSpace(query))
-            source = source.Where(e => e.Name.Contains(query, StringComparison.OrdinalIgnoreCase));
+        {
+            source = source.Where(e =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return matchesSearch(e);
+            });
+        }
 
         return source
             .OrderBy(e => e.Name)
             .Take(200)
-            .Select(e => new ItemSearchResult(
-                e.Id,
-                e.Name,
-                e.Type,
-                GetDescription(e),
-                e.Source ?? "",
-                GetDescriptionHtml(e)))
+            .Select(e =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return new ItemSearchResult(
+                    e.Id,
+                    e.Name,
+                    e.Type,
+                    GetDescription(e),
+                    e.Source ?? "",
+                    GetDescriptionHtml(e));
+            })
             .ToList();
+    }
+
+    /// <summary>
+    /// Returns the source-allowed base items to which a magic armor or weapon
+    /// template can be applied. Returns null when the selected item is not a template.
+    /// </summary>
+    public static ItemTemplateOptions? GetItemTemplateOptions(
+        Character character,
+        string templateElementId)
+    {
+        var template = DataManager.Current.ElementsCollection.GetElement(templateElementId);
+        if (template == null || InventoryItemFactory.GetTemplateKind(template) is null)
+            return null;
+
+        var sourceRestrictions = BuildSourceRestrictionSnapshot.CaptureCurrent();
+        var baseOptions = InventoryItemFactory.GetCompatibleBaseItems(character.Inventory, template)
+            .Where(sourceRestrictions.Allows)
+            .Select(item => new ItemSearchResult(
+                item.Id,
+                item.Name,
+                item.Type,
+                GetDescription(item),
+                item.Source ?? "",
+                GetDescriptionHtml(item)))
+            .ToList();
+
+        return new ItemTemplateOptions(template.Id, template.Name, baseOptions);
     }
 
     /// <summary>
@@ -227,10 +281,16 @@ public static class EquipmentService
     /// <summary>
     /// Searches elements compatible with the given gear slot.
     /// </summary>
-    public static IReadOnlyList<ItemSearchResult> SearchItemsForSlot(GearSlot slot, string query)
+    public static IReadOnlyList<ItemSearchResult> SearchItemsForSlot(
+        GearSlot slot,
+        string query,
+        BuildSourceRestrictionSnapshot? sourceRestrictions = null)
     {
+        sourceRestrictions ??= BuildSourceRestrictionSnapshot.CaptureCurrent();
         IEnumerable<Builder.Data.ElementBase> source =
-            DataManager.Current.ElementsCollection.Where(e => IsElementCompatibleWithSlot(e, slot));
+            DataManager.Current.ElementsCollection.Where(e =>
+                IsElementCompatibleWithSlot(e, slot) &&
+                sourceRestrictions.Allows(e));
 
         if (!string.IsNullOrWhiteSpace(query))
             source = source.Where(e => e.Name.Contains(query, StringComparison.OrdinalIgnoreCase));
@@ -255,23 +315,34 @@ public static class EquipmentService
         character.Inventory.Items
             .Where(i => IsItemCompatibleWithSlot(i, slot))
             .OrderBy(i => i.DisplayName ?? i.Name ?? "")
-            .Select(i => new InventoryItemOption(i.Identifier, i.DisplayName ?? i.Name ?? ""))
+            .Select(i => new InventoryItemOption(
+                i.Identifier,
+                i.DisplayName ?? i.Name ?? "",
+                EquipmentItemDetailBuilder.Build(i)))
             .ToList();
 
     // ── Add / remove ─────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Adds an item to inventory by element ID. Uses reflection because
-    /// Builder.Data.Elements.Item cannot be named from Aurora.App.
+    /// Adds an item to inventory by element ID. Magic armor and weapon templates
+    /// require the ID of a compatible base item.
     /// </summary>
-    public static bool AddItem(Character character, string elementId, int amount = 1)
+    public static bool AddItem(
+        Character character,
+        string elementId,
+        int amount = 1,
+        string? baseElementId = null)
     {
         var element = DataManager.Current.ElementsCollection.GetElement(elementId);
         if (element == null) return false;
 
         try
         {
-            var item = CreateInventoryItem(element, amount);
+            var item = CreateInventoryItem(
+                character,
+                element,
+                amount,
+                baseElementId: baseElementId);
             if (item == null) return false;
 
             character.Inventory.Items.Add(item);
@@ -343,7 +414,7 @@ public static class EquipmentService
 
             if (existingStack == null)
             {
-                newItem = CreateInventoryItem(element, entry.Amount, entry.AlternativeName);
+                newItem = CreateInventoryItem(character, element, entry.Amount, entry.AlternativeName);
             }
 
             if (existingStack == null && newItem == null)
@@ -421,31 +492,15 @@ public static class EquipmentService
         GetExtractionRecipe(item).Count > 0;
 
     private static RefactoredEquipmentItem? CreateInventoryItem(
+        Character character,
         Builder.Data.ElementBase element,
         int amount,
-        string? alternativeName = null)
+        string? alternativeName = null,
+        string? baseElementId = null)
     {
-        var elementType = element.GetType();
+        var item = InventoryItemFactory.Create(character.Inventory, element, baseElementId);
+        if (item == null) return null;
 
-        // Find the constructor whose first parameter accepts this element type,
-        // with all remaining parameters optional (has default values).
-        var ctor = typeof(RefactoredEquipmentItem)
-            .GetConstructors()
-            .FirstOrDefault(c =>
-            {
-                var ps = c.GetParameters();
-                return ps.Length >= 1
-                    && ps[0].ParameterType.IsAssignableFrom(elementType)
-                    && ps.Skip(1).All(p => p.HasDefaultValue);
-            });
-
-        if (ctor == null) return null;
-
-        // Build the argument list: first arg is the element, rest use their defaults.
-        var ps = ctor.GetParameters();
-        var args = ps.Select((p, i) => i == 0 ? (object?)element : p.DefaultValue).ToArray();
-
-        var item = (RefactoredEquipmentItem)ctor.Invoke(args);
         item.Amount = Math.Max(1, amount);
         if (!string.IsNullOrWhiteSpace(alternativeName))
             item.AlternativeName = alternativeName;
@@ -483,28 +538,12 @@ public static class EquipmentService
         }
     }
 
-    public static EquipmentItemDetail? GetItemDetail(Character character, string identifier)
+    public static EquipmentItemDetailModel? GetItemDetail(Character character, string identifier)
     {
         var item = FindInventoryItem(character, identifier);
-        if (item?.Item is null)
-            return null;
-
-        var element = item.Item;
-        return new EquipmentItemDetail(
-            item.DisplayName ?? item.Name ?? element.Name ?? identifier,
-            item.Name ?? element.Name ?? identifier,
-            element.Type ?? "",
-            element.Source ?? "",
-            GetDescription(element),
-            item.Notes ?? "",
-            FormatItemDamage(element),
-            GetElementString(element, "Range"),
-            GetElementString(element, "DisplayWeaponProperties"),
-            item.DisplayWeight ?? GetElementString(element, "DisplayWeight"),
-            item.DisplayPrice ?? GetElementString(element, "DisplayPrice"),
-            item.IsEquipped,
-            item.EquippedLocation ?? "",
-            GetDescriptionHtml(element));
+        return item?.Item is null
+            ? null
+            : EquipmentItemDetailBuilder.Build(item);
     }
 
     public static string FormatItemDamage(Builder.Data.ElementBase element)
@@ -856,7 +895,15 @@ public sealed record ItemSearchResult(
     string Source,
     string DescriptionHtml = "");
 public sealed record ItemPickerResult(string ElementId, int Amount);
-public sealed record InventoryItemOption(string Identifier, string Name);
+public sealed record ItemTemplateOptions(
+    string TemplateElementId,
+    string TemplateName,
+    IReadOnlyList<ItemSearchResult> BaseOptions);
+public sealed record ItemTemplateBasePickerResult(string BaseElementId);
+public sealed record InventoryItemOption(
+    string Identifier,
+    string Name,
+    EquipmentItemDetailModel Detail);
 public sealed record GearPickerResult(string? Identifier, string? ElementId, bool IsNew);
 public sealed record EquipmentPackComponent(string ElementId, int Amount, string Name);
 public sealed record EquipmentPackExtractionResult(
@@ -864,18 +911,3 @@ public sealed record EquipmentPackExtractionResult(
     string PackName,
     IReadOnlyList<EquipmentPackComponent> Added,
     IReadOnlyList<string> MissingElementIds);
-public sealed record EquipmentItemDetail(
-    string Name,
-    string BaseName,
-    string Type,
-    string Source,
-    string Description,
-    string Notes,
-    string Damage,
-    string Range,
-    string Properties,
-    string DisplayWeight,
-    string DisplayPrice,
-    bool IsEquipped,
-    string EquippedLocation,
-    string DescriptionHtml = "");

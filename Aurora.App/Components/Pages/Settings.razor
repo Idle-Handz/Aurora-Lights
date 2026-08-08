@@ -30,17 +30,36 @@
         <div class="pref-section">
             <div class="section-label">Appearance</div>
 
-            <div class="pref-row">
+            <div class="pref-row theme-pref-row">
                 <div class="pref-row-text">
-                    <div class="pref-row-title">Light mode</div>
+                    <div class="pref-row-title">Theme</div>
                     <div class="pref-row-desc">
-                        Switch to a light colour palette. Most MudBlazor controls will update immediately;
-                        custom layout areas use the dark palette by design and are unaffected.
+                        Choose a complete visual palette for the app. The selection applies immediately
+                        and is remembered across launches.
+                    </div>
+                    <div class="theme-selected-preview" aria-live="polite">
+                        <span class="theme-preview-swatch theme-preview-@SelectedTheme.Id" aria-hidden="true">
+                            <span></span><span></span><span></span><span></span>
+                        </span>
+                        <span class="theme-selected-copy">
+                            <strong>@SelectedTheme.DisplayName</strong>
+                            <span>@SelectedTheme.Description</span>
+                        </span>
                     </div>
                 </div>
-                <MudSwitch Value="Prefs.LightMode"
-                           ValueChanged="@((bool v) => Prefs.LightMode = v)"
-                           Color="Color.Primary" />
+                <MudSelect T="AppTheme"
+                           Label="Theme"
+                           Value="Prefs.Theme"
+                           ValueChanged="@((AppTheme theme) => Prefs.Theme = theme)"
+                           Variant="Variant.Outlined"
+                           Margin="Margin.Dense"
+                           Class="theme-select"
+                           aria-label="Application theme">
+                    @foreach (var theme in AppThemes.All)
+                    {
+                        <MudSelectItem T="AppTheme" Value="theme.Theme">@theme.DisplayName</MudSelectItem>
+                    }
+                </MudSelect>
             </div>
         </div>
 
@@ -715,6 +734,16 @@
 
             @if (AppUpdates.Latest is { IsNewer: true } avail)
             {
+                @if (!string.IsNullOrWhiteSpace(avail.ReleaseNotes))
+                {
+                    <MudPaper Outlined="true" Class="pa-4 mt-4" aria-label="@($"Release notes for {avail.LatestTag}")">
+                        <MudText Typo="Typo.overline" Color="Color.Primary">
+                            Release notes for @avail.LatestTag
+                        </MudText>
+                        <ReleaseNotesContent Markdown="@avail.ReleaseNotes" />
+                    </MudPaper>
+                }
+
 #if WINDOWS
                 @* On a Velopack install the user gets a one-click "Install and restart" path.
                    On a plain ZIP extract IsVelopackInstall is false, so we fall back to the
@@ -1165,6 +1194,8 @@
     private ContentDatabaseParityReport? _dbParity;
     private bool _dirBusy;
     private string? _dirError;
+
+    private AppThemeDefinition SelectedTheme => AppThemes.Get(Prefs.Theme);
 
     private int ActiveSettingsTabIndex
     {

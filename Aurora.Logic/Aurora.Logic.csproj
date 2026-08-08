@@ -59,9 +59,13 @@
     <PackageReference Include="Microsoft.AppCenter" Version="5.0.7" />
     <PackageReference Include="Microsoft.AppCenter.Analytics" Version="5.0.7" />
     <PackageReference Include="Microsoft.AppCenter.Crashes" Version="5.0.7" />
-    <!-- AppCenter still references the older bundle_green package; override its vulnerable
-         native SQLite payload while preserving AppCenter's platform-specific provider policy. -->
-    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="2.1.12" />
+    <!-- AppCenter's Windows dependency still references vulnerable SQLite 2.1.7.
+         Pin the safe version for resolution, but do not export its platform-neutral
+         native assets: each host supplies its own platform-aware SQLite bundle. -->
+    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3"
+                      Version="2.1.12"
+                      ExcludeAssets="runtime"
+                      PrivateAssets="all" />
     <PackageReference Include="System.ServiceModel.Syndication" Version="10.0.0" />
   </ItemGroup>
 

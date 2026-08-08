@@ -58,7 +58,9 @@ public sealed class WebCharacterEngineService
         string Description,
         string Source,
         string Requirements,
-        string DescriptionHtml);
+        string DescriptionHtml,
+        bool IsDisabled,
+        bool IsCurrentSelection);
 
     private sealed record BuildRuleSelection(
         string Key,
@@ -278,6 +280,35 @@ public sealed class WebCharacterEngineService
         }
     }
 
+    public async Task<WebCharacterSourceState> ToggleSourceCategoryAsync(
+        PhaseZeroSessionWorkspace workspace,
+        string relativePath,
+        SourceRestrictionCategoryToggle toggle)
+    {
+        await _operationLock.WaitAsync();
+        try
+        {
+            List<SourceItem> matchingSources = CharacterManager.Current.SourcesManager.SourceGroups
+                .SelectMany(group => group.Sources)
+                .Where(item => item.AllowUnchecking && ClassifySource(item) == toggle.Category)
+                .ToList();
+
+            foreach (SourceItem item in matchingSources)
+                item.SetIsChecked(toggle.IsEnabled, updateChildren: true, updateParent: true);
+
+            if (matchingSources.Count > 0)
+                ApplyAndPersistSourceRestrictions(workspace, relativePath);
+
+            return new WebCharacterSourceState(
+                BuildSourceGroups(),
+                "Source restrictions updated for the current browser session.");
+        }
+        finally
+        {
+            _operationLock.Release();
+        }
+    }
+
     public async Task<WebCharacterSourceState> ToggleSourceItemAsync(
         PhaseZeroSessionWorkspace workspace,
         string relativePath,
@@ -413,7 +444,9 @@ public sealed class WebCharacterEngineService
                     option.Description,
                     option.Source,
                     option.Requirements,
-                    option.DescriptionHtml))
+                    option.DescriptionHtml,
+                    option.IsDisabled,
+                    option.IsCurrentSelection))
                 .ToList();
         }
         finally
@@ -459,15 +492,23 @@ public sealed class WebCharacterEngineService
         await _operationLock.WaitAsync();
         try
         {
+            Character character = RequireCurrentCharacter();
+            BuildSourceRestrictionSnapshot sourceRestrictions =
+                BuildSourceRestrictionSnapshot.CaptureCurrent();
             IEnumerable<ElementBase> source = DataManager.Current.ElementsCollection.Where(element =>
-                string.IsNullOrWhiteSpace(slotId)
+                (string.IsNullOrWhiteSpace(slotId)
                     ? IsSearchableInventoryElement(element)
-                    : IsElementCompatibleWithSlot(element, slotId));
+                    : IsElementCompatibleWithSlot(element, slotId))
+                && sourceRestrictions.Allows(element));
 
             if (!string.IsNullOrWhiteSpace(query))
             {
-                source = source.Where(element => !string.IsNullOrWhiteSpace(element.Name)
-                    && element.Name.Contains(query, StringComparison.OrdinalIgnoreCase));
+                Func<ElementBase, bool> matchesSearch =
+                    InventoryItemFactory.CreateSearchPredicate(
+                        character.Inventory,
+                        query,
+                        sourceRestrictions.Allows);
+                source = source.Where(matchesSearch);
             }
 
             return source
@@ -498,8 +539,67 @@ public sealed class WebCharacterEngineService
             return character.Inventory.Items
                 .Where(item => IsItemCompatibleWithSlot(item, slotId))
                 .OrderBy(item => item.DisplayName ?? item.Name ?? string.Empty)
-                .Select(item => new WebEquipmentInventoryOption(item.Identifier, item.DisplayName ?? item.Name ?? string.Empty))
+                .Select(item => new WebEquipmentInventoryOption(
+                    item.Identifier,
+                    item.DisplayName ?? item.Name ?? string.Empty,
+                    EquipmentItemDetailBuilder.Build(item)))
                 .ToList();
+        }
+        finally
+        {
+            _operationLock.Release();
+        }
+    }
+
+    public async Task<EquipmentItemDetailModel?> GetEquipmentItemDetailAsync(string identifier)
+    {
+        await _operationLock.WaitAsync();
+        try
+        {
+            Character character = RequireCurrentCharacter();
+            RefactoredEquipmentItem? item = character.Inventory.Items.FirstOrDefault(candidate =>
+                candidate.Identifier.Equals(identifier, StringComparison.OrdinalIgnoreCase));
+            return item?.Item is null
+                ? null
+                : EquipmentItemDetailBuilder.Build(item);
+        }
+        finally
+        {
+            _operationLock.Release();
+        }
+    }
+
+    public async Task<WebEquipmentTemplateOptions?> GetEquipmentTemplateOptionsAsync(
+        string templateElementId)
+    {
+        await _operationLock.WaitAsync();
+        try
+        {
+            Character character = RequireCurrentCharacter();
+            ElementBase? template = DataManager.Current.ElementsCollection.GetElement(templateElementId);
+            if (template is null || InventoryItemFactory.GetTemplateKind(template) is null)
+            {
+                return null;
+            }
+
+            BuildSourceRestrictionSnapshot sourceRestrictions =
+                BuildSourceRestrictionSnapshot.CaptureCurrent();
+            IReadOnlyList<WebEquipmentSearchResult> baseOptions =
+                InventoryItemFactory.GetCompatibleBaseItems(character.Inventory, template)
+                    .Where(sourceRestrictions.Allows)
+                    .Select(item => new WebEquipmentSearchResult(
+                        item.Id,
+                        item.Name,
+                        item.Type,
+                        item.Source ?? string.Empty,
+                        GetDescription(item),
+                        GetDescriptionHtml(item)))
+                    .ToList();
+
+            return new WebEquipmentTemplateOptions(
+                template.Id,
+                template.Name,
+                baseOptions);
         }
         finally
         {
@@ -511,15 +611,17 @@ public sealed class WebCharacterEngineService
         PhaseZeroSessionWorkspace workspace,
         string relativePath,
         string elementId,
-        int amount)
+        int amount,
+        string? baseElementId = null)
     {
         await _operationLock.WaitAsync();
         try
         {
             Character character = RequireCurrentCharacter();
-            if (!AddItem(character, elementId, amount))
+            if (!AddItem(character, elementId, amount, baseElementId))
             {
-                throw new InvalidOperationException("The requested item could not be added.");
+                throw new InvalidOperationException(
+                    "The requested item could not be added with the selected base.");
             }
 
             return SaveCurrentEquipmentState(workspace, relativePath, character, "Item added to inventory in the current web session.");
@@ -581,7 +683,9 @@ public sealed class WebCharacterEngineService
                     option.Source,
                     option.Description,
                     option.Requirements,
-                    option.DescriptionHtml))
+                    option.DescriptionHtml,
+                    option.IsDisabled,
+                    option.IsCurrentSelection))
                 .ToList();
         }
         finally
@@ -948,7 +1052,9 @@ public sealed class WebCharacterEngineService
         _selectionHandler.RemoveAllExpanders();
         _spellcastingHandler.ResetPreparedState();
 
+        InventoryItemFactory.InvalidateSearchIndex();
         await DataManager.Current.InitializeElementDataAsync();
+        await InventoryItemFactory.PrecomputeSearchIndexAsync();
     }
 
     private static ImportedCharacterSummary BuildSummary(
@@ -1336,8 +1442,9 @@ public sealed class WebCharacterEngineService
             .FirstOrDefault(entry => string.Equals(entry.Key, entryKey, StringComparison.Ordinal))
         ?? throw new InvalidOperationException("The requested spell selection could not be found.");
 
-    private static IReadOnlyList<SelectionOption> GetSelectionOptions(SelectRule rule, int number) =>
-        BuildSelectionOptionResolver.ResolveOptions(rule, number)
+    private static IReadOnlyList<SelectionOption> GetSelectionOptions(SelectRule rule, int number)
+    {
+        return BuildSelectionOptionQueryService.Query(rule, number)
             .Select(option => new SelectionOption(
                 option.Id,
                 option.Name,
@@ -1346,15 +1453,22 @@ public sealed class WebCharacterEngineService
                 option.Requirements,
                 !string.IsNullOrWhiteSpace(option.DescriptionMarkup)
                     ? MagicDescriptionFormatter.FromAuroraHtml(option.DescriptionMarkup)
-                    : MagicDescriptionFormatter.FromPlainText(option.Description)))
+                    : MagicDescriptionFormatter.FromPlainText(option.Description),
+                option.IsDisabled,
+                option.IsCurrentSelection))
             .ToList();
+    }
 
     private static bool IsSearchableInventoryElement(ElementBase element) =>
         ItemTypes.Contains(element.Type)
         && !string.IsNullOrWhiteSpace(element.Name)
         && !element.Name.StartsWith("Additional ", StringComparison.OrdinalIgnoreCase);
 
-    private static bool AddItem(Character character, string elementId, int amount = 1)
+    private static bool AddItem(
+        Character character,
+        string elementId,
+        int amount = 1,
+        string? baseElementId = null)
     {
         ElementBase? element = DataManager.Current.ElementsCollection.GetElement(elementId);
         if (element is null)
@@ -1364,27 +1478,15 @@ public sealed class WebCharacterEngineService
 
         try
         {
-            Type elementType = element.GetType();
-            var ctor = typeof(RefactoredEquipmentItem)
-                .GetConstructors()
-                .FirstOrDefault(constructor =>
-                {
-                    var parameters = constructor.GetParameters();
-                    return parameters.Length >= 1
-                           && parameters[0].ParameterType.IsAssignableFrom(elementType)
-                           && parameters.Skip(1).All(parameter => parameter.HasDefaultValue);
-                });
-
-            if (ctor is null)
+            var item = InventoryItemFactory.Create(
+                character.Inventory,
+                element,
+                baseElementId);
+            if (item is null)
             {
                 return false;
             }
 
-            object?[] args = ctor.GetParameters()
-                .Select((parameter, index) => index == 0 ? (object?)element : parameter.DefaultValue)
-                .ToArray();
-
-            var item = (RefactoredEquipmentItem)ctor.Invoke(args);
             item.Amount = Math.Max(1, amount);
             character.Inventory.Items.Add(item);
             return true;
@@ -2056,8 +2158,18 @@ public sealed class WebCharacterEngineService
                     item.Source.Name ?? string.Empty,
                     item.IsChecked,
                     item.AllowUnchecking,
-                    !item.AllowUnchecking)).ToList()))
+                    !item.AllowUnchecking,
+                    ClassifySource(item))).ToList()))
             .ToList();
+
+    private static SourceRestrictionCategory? ClassifySource(SourceItem item) =>
+        SourceRestrictionCategoryClassifier.Classify(
+            item.Source.IsOfficialContent,
+            item.Source.IsThirdPartyContent,
+            item.Source.IsHomebrewContent,
+            item.Source.Author,
+            item.Source.Name,
+            item.Source.ReleaseDate);
 
     private static EditableCharacterInfoModel BuildInfoModel(Character character) =>
         new()
@@ -2282,7 +2394,7 @@ public sealed class WebCharacterEngineService
 
         var sourcesManager = CharacterManager.Current.SourcesManager;
         HashSet<string> restrictedIds = new(sourcesManager.GetRestrictedElementIds(), StringComparer.OrdinalIgnoreCase);
-        HashSet<string> restrictedSources = new(sourcesManager.GetUndefinedRestrictedSourceNames(), StringComparer.OrdinalIgnoreCase);
+        HashSet<string> restrictedSources = new(sourcesManager.GetRestrictedSources(), StringComparer.OrdinalIgnoreCase);
 
         bool IsRestricted(string id, string source) =>
             restrictedIds.Contains(id) || restrictedSources.Contains(source);

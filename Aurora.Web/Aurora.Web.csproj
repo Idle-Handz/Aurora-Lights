@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="MudBlazor" Version="7.*" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.12" />
   </ItemGroup>
 
   <ItemGroup>

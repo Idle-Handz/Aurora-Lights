@@ -1,0 +1,62 @@
+.release-notes-content {
+    max-height: 22rem;
+    margin-top: 0.5rem;
+    padding-right: 0.35rem;
+    overflow-y: auto;
+    color: var(--mud-palette-text-secondary, var(--aurora-text-secondary, #a6adc8));
+    font-size: 0.875rem;
+    line-height: 1.55;
+    overflow-wrap: anywhere;
+}
+
+.release-notes-content ::deep > :first-child {
+    margin-top: 0;
+}
+
+.release-notes-content ::deep > :last-child {
+    margin-bottom: 0;
+}
+
+.release-notes-content ::deep h1,
+.release-notes-content ::deep h2,
+.release-notes-content ::deep h3,
+.release-notes-content ::deep h4,
+.release-notes-content ::deep h5,
+.release-notes-content ::deep h6 {
+    margin: 0.9rem 0 0.35rem;
+    color: var(--mud-palette-text-primary, var(--aurora-text-primary, #cdd6f4));
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.release-notes-content ::deep p,
+.release-notes-content ::deep ul,
+.release-notes-content ::deep ol,
+.release-notes-content ::deep blockquote {
+    margin: 0 0 0.65rem;
+}
+
+.release-notes-content ::deep ul,
+.release-notes-content ::deep ol {
+    padding-left: 1.4rem;
+}
+
+.release-notes-content ::deep li + li {
+    margin-top: 0.3rem;
+}
+
+.release-notes-content ::deep blockquote {
+    padding-left: 0.8rem;
+    border-left: 3px solid var(--mud-palette-primary, var(--aurora-primary, #89b4fa));
+}
+
+.release-notes-content ::deep a {
+    color: var(--mud-palette-primary, var(--aurora-primary, #89b4fa));
+}
+
+.release-notes-content ::deep code {
+    padding: 0.08rem 0.25rem;
+    border-radius: 3px;
+    background: color-mix(in srgb, var(--mud-palette-surface, var(--aurora-surface, #313244)) 75%, transparent);
+    color: var(--mud-palette-text-primary, var(--aurora-text-primary, #cdd6f4));
+}

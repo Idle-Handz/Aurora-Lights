@@ -23,6 +23,7 @@
                                       Busy="_busy"
                                       ShowDefaultActions="false"
                                       OnInfoChanged="MarkDirty"
+                                      OnToggleCategory="ToggleCategoryAsync"
                                       OnToggleGroup="ToggleGroupAsync"
                                       OnToggleItem="ToggleItemAsync">
                 <Actions>
@@ -132,6 +133,27 @@
         try
         {
             WebCharacterSourceState state = await CharacterSession.ToggleCurrentSourceGroupAsync(groupId);
+            _sourceGroups = state.Groups;
+            _statusMessage = state.StatusMessage;
+        }
+        catch (Exception ex)
+        {
+            _failed = true;
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task ToggleCategoryAsync(SourceRestrictionCategoryToggle toggle)
+    {
+        _busy = true;
+        _failed = false;
+        try
+        {
+            WebCharacterSourceState state = await CharacterSession.ToggleCurrentSourceCategoryAsync(toggle);
             _sourceGroups = state.Groups;
             _statusMessage = state.StatusMessage;
         }

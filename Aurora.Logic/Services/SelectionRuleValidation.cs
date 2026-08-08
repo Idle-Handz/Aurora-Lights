@@ -16,6 +16,16 @@ public static class SelectionRuleValidation
         ArgumentNullException.ThrowIfNull(candidateRule);
         ArgumentNullException.ThrowIfNull(appliedRule);
 
-        return !ReferenceEquals(candidateRule, appliedRule) || candidateNumber != appliedNumber;
+        if (candidateNumber != appliedNumber)
+            return true;
+
+        if (ReferenceEquals(candidateRule, appliedRule))
+            return false;
+
+        return string.IsNullOrWhiteSpace(candidateRule.UniqueIdentifier) ||
+               string.IsNullOrWhiteSpace(appliedRule.UniqueIdentifier) ||
+               !candidateRule.UniqueIdentifier.Equals(
+                   appliedRule.UniqueIdentifier,
+                   StringComparison.Ordinal);
     }
 }

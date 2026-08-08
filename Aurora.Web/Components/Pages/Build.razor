@@ -322,9 +322,9 @@
                                     </div>
                                     <button type="button"
                                             class="action-link primary"
-                                            disabled="@_busy"
+                                            disabled="@(_busy || option.IsDisabled)"
                                             @onclick="() => ApplySelectionAsync(option.Id)">
-                                        Choose
+                                        @(option.IsCurrentSelection ? "Selected" : option.IsDisabled ? "Unavailable" : "Choose")
                                     </button>
                                 </div>
                             }

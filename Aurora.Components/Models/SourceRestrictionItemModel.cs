@@ -5,4 +5,5 @@ public sealed record SourceRestrictionItemModel(
     string Name,
     bool? IsChecked,
     bool AllowUnchecking,
-    bool IsCore);
+    bool IsCore,
+    SourceRestrictionCategory? Category = null);

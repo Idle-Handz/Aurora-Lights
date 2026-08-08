@@ -1,0 +1,113 @@
+@using Builder.Presentation.Services
+
+<div class="equipment-item-detail-content @(Compact ? "equipment-item-detail-content--compact" : string.Empty)">
+    @if (ShowTitle)
+    {
+        <div class="equipment-item-detail-title">@Detail.Name</div>
+    }
+
+    <div class="equipment-item-detail-tags">
+        @if (!string.IsNullOrWhiteSpace(Detail.Type))
+        {
+            <span>@Detail.Type</span>
+        }
+        @if (!string.Equals(Detail.Name, Detail.BaseName, StringComparison.Ordinal) &&
+             !string.IsNullOrWhiteSpace(Detail.BaseName))
+        {
+            <span>Base: @Detail.BaseName</span>
+        }
+        @if (!string.IsNullOrWhiteSpace(Detail.Source))
+        {
+            <span>@Detail.Source</span>
+        }
+        @if (Detail.IsEquipped)
+        {
+            <span>Equipped: @Detail.EquippedLocation</span>
+        }
+    </div>
+
+    @if (HasRulesDetails)
+    {
+        <div class="equipment-item-detail-tags equipment-item-detail-rules">
+            @if (!string.IsNullOrWhiteSpace(Detail.Damage))
+            {
+                <span>Damage: @Detail.Damage</span>
+            }
+            @if (!string.IsNullOrWhiteSpace(Detail.Range))
+            {
+                <span>Range: @Detail.Range</span>
+            }
+            @if (!string.IsNullOrWhiteSpace(Detail.Properties))
+            {
+                <span>@Detail.Properties</span>
+            }
+            @if (!string.IsNullOrWhiteSpace(Detail.DisplayWeight))
+            {
+                <span>Weight: @Detail.DisplayWeight</span>
+            }
+            @if (!string.IsNullOrWhiteSpace(Detail.DisplayPrice))
+            {
+                <span>Value: @Detail.DisplayPrice</span>
+            }
+        </div>
+    }
+
+    <div class="equipment-item-detail-sections">
+        @foreach (var section in Detail.Sections)
+        {
+            <section class="equipment-item-detail-section">
+                @if (Detail.Sections.Count > 1)
+                {
+                    <div class="equipment-item-detail-section-label">@section.Label</div>
+                    <div class="equipment-item-detail-section-name">@section.Name</div>
+                    <div class="equipment-item-detail-section-meta">
+                        @section.Type
+                        @if (!string.IsNullOrWhiteSpace(section.Source))
+                        {
+                            <span> · @section.Source</span>
+                        }
+                    </div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(section.DescriptionHtml) ||
+                     !string.IsNullOrWhiteSpace(section.Description))
+                {
+                    <div class="equipment-item-detail-description">
+                        <RichDescription Html="@section.DescriptionHtml"
+                                         PlainText="@section.Description" />
+                    </div>
+                }
+                else
+                {
+                    <div class="equipment-item-detail-empty">No description is available for this item.</div>
+                }
+            </section>
+        }
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Detail.Notes))
+    {
+        <section class="equipment-item-detail-notes">
+            <div class="equipment-item-detail-section-label">Notes</div>
+            <div class="equipment-item-detail-note-text">@Detail.Notes</div>
+        </section>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public EquipmentItemDetailModel Detail { get; set; } = default!;
+
+    [Parameter]
+    public bool ShowTitle { get; set; }
+
+    [Parameter]
+    public bool Compact { get; set; }
+
+    private bool HasRulesDetails =>
+        !string.IsNullOrWhiteSpace(Detail.Damage) ||
+        !string.IsNullOrWhiteSpace(Detail.Range) ||
+        !string.IsNullOrWhiteSpace(Detail.Properties) ||
+        !string.IsNullOrWhiteSpace(Detail.DisplayWeight) ||
+        !string.IsNullOrWhiteSpace(Detail.DisplayPrice);
+}

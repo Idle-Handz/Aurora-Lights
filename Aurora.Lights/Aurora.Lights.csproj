@@ -126,6 +126,9 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Management" Version="10.0.5" />
+    <!-- Aurora.Logic keeps its SQLite security pin private so platform hosts choose
+         the correct native assets. The legacy Windows host supplies the Windows bundle. -->
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.12" />
   </ItemGroup>
 
 </Project>

@@ -607,7 +607,11 @@ public class CharacterFile : ObservableObject
                         if (node7 != null)
                             adorner = DataManager.Current.ElementsCollection.GetElement(node7.GetAttributeValue("id"));
                     }
-                    RefactoredEquipmentItem refactoredEquipmentItem = new RefactoredEquipmentItem(element as Item, adorner as Item);
+                    RefactoredEquipmentItem refactoredEquipmentItem = adorner is Item adornerItem
+                        ? new RefactoredEquipmentItem(element as Item, adornerItem)
+                        : InventoryItemFactory.CreateForLoadCompatibility(
+                            character.Inventory,
+                            (Item)element);
                     if (node6.ContainsAttribute("identifier"))
                         refactoredEquipmentItem.SetIdentifier(node6.GetAttributeValue("identifier"));
                     if (node6.ContainsAttribute("amount"))

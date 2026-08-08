@@ -1,0 +1,17 @@
+@using Aurora.Components.Formatting
+
+@if (!string.IsNullOrWhiteSpace(_safeHtml))
+{
+    <div class="release-notes-content">@((MarkupString)_safeHtml)</div>
+}
+
+@code {
+    [Parameter] public string? Markdown { get; set; }
+
+    private string _safeHtml = string.Empty;
+
+    protected override void OnParametersSet()
+    {
+        _safeHtml = ReleaseNotesMarkdownFormatter.ToSafeHtml(Markdown);
+    }
+}

@@ -82,6 +82,6 @@ $records = foreach ($fileName in $firstPartyBinaries) {
 
 [ordered]@{
     schemaVersion = 1
-    scope = 'Test-only production first-party oracle baseline. Aurora Studio is intentionally excluded.'
+    scope = 'Test-only production first-party oracle baseline.'
     binaries = @($records)
 } | ConvertTo-Json -Depth 8

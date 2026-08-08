@@ -7,7 +7,8 @@
     "e2e": "playwright test",
     "e2e:visual": "playwright test tests/e2e/web-shell.spec.ts",
     "e2e:update": "playwright test tests/e2e/web-shell.spec.ts --update-snapshots",
-    "playwright:install": "playwright install chromium"
+    "playwright:install": "playwright install chromium",
+    "test:release-notes": "node --test tests/release-notes/*.test.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.53.0"

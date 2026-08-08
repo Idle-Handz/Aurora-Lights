@@ -28,7 +28,9 @@ public sealed record WebBuildSelectionOption(
     string Description,
     string Source,
     string Requirements,
-    string DescriptionHtml = "");
+    string DescriptionHtml = "",
+    bool IsDisabled = false,
+    bool IsCurrentSelection = false);
 
 public sealed record WebAbilityScoreState(
     ImportedCharacterSummary Summary,

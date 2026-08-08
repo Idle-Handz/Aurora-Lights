@@ -38,6 +38,7 @@
             <SourceRestrictionsEditor Groups="SourceGroups"
                                       Busy="Busy"
                                       ShowDefaultActions="ShowDefaultActions"
+                                      OnToggleCategory="OnToggleCategory"
                                       OnToggleGroup="OnToggleGroup"
                                       OnToggleItem="OnToggleItem"
                                       OnLoadDefaults="OnLoadDefaults"
@@ -64,6 +65,9 @@
 
     [Parameter]
     public EventCallback OnInfoChanged { get; set; }
+
+    [Parameter]
+    public EventCallback<SourceRestrictionCategoryToggle> OnToggleCategory { get; set; }
 
     [Parameter]
     public EventCallback<string> OnToggleGroup { get; set; }

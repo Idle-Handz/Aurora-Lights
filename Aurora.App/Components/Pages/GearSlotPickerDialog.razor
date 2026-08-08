@@ -67,7 +67,13 @@
 
             @* ── Right: detail ── *@
             <div class="picker-detail">
-                @if (_detailName != null)
+                @if (_mode == SelectMode.Inventory && _inventoryDetail is not null)
+                {
+                    <EquipmentItemDetailContent Detail="@_inventoryDetail"
+                                                ShowTitle="true"
+                                                Compact="true" />
+                }
+                else if (_detailName != null)
                 {
                     <div class="picker-detail-name">@_detailName</div>
                     <div style="font-size: 11px; color: var(--mud-palette-primary); margin-bottom: 4px;">@_detailType</div>
@@ -134,17 +140,20 @@
     private string? _detailSource;
     private string? _detailDesc;
     private string? _detailDescHtml;
+    private EquipmentItemDetailModel? _inventoryDetail;
 
     private void SelectInventory(InventoryItemOption opt)
     {
+        var primarySection = opt.Detail.Sections.FirstOrDefault();
         _mode              = SelectMode.Inventory;
         _selectedInventory = opt.Identifier;
         _selectedNew       = null;
-        _detailName        = opt.Name;
-        _detailType        = "Already in inventory";
-        _detailSource      = null;
-        _detailDesc        = null;
-        _detailDescHtml    = null;
+        _detailName        = opt.Detail.Name;
+        _detailType        = opt.Detail.Type;
+        _detailSource      = opt.Detail.Source;
+        _detailDesc        = primarySection?.Description;
+        _detailDescHtml    = primarySection?.DescriptionHtml;
+        _inventoryDetail   = opt.Detail;
     }
 
     private void SelectNew(ItemSearchResult r)
@@ -157,6 +166,7 @@
         _detailSource      = r.Source;
         _detailDesc        = r.Description;
         _detailDescHtml    = r.DescriptionHtml;
+        _inventoryDetail   = null;
     }
 
     private void RunSearch()

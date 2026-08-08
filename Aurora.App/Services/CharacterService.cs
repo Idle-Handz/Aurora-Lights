@@ -153,7 +153,9 @@ public sealed class CharacterService :
             ElementLoadFailureReason = dbResult.FailureReason;
             ElementLoadSkippedElements = dbResult.SkippedElementCount;
 
+            InventoryItemFactory.InvalidateSearchIndex();
             _elementsInitialized = true;
+            _ = WarmEquipmentSearchIndexAsync();
 
             var testId = "ID_WOTC_MOTM_RACE_GOBLIN";
             var testElement = DataManager.Current.ElementsCollection.GetElement(testId);
@@ -170,6 +172,22 @@ public sealed class CharacterService :
         finally
         {
             _elementLock.Release();
+        }
+    }
+
+    private static async Task WarmEquipmentSearchIndexAsync()
+    {
+        try
+        {
+            await InventoryItemFactory.PrecomputeSearchIndexAsync();
+        }
+        catch (Exception ex)
+        {
+            // A picker query can retry the lazy build. Content loading itself should still
+            // succeed if optional search precomputation encounters malformed custom data.
+            DebugLogService.Instance.LogException(
+                ex,
+                "CharacterService.PrecomputeEquipmentSearchIndex");
         }
     }
 
@@ -196,6 +214,7 @@ public sealed class CharacterService :
             ElementLoadSource = "Not loaded";
             ElementLoadSummary = "Elements have not been initialized yet.";
             ElementLoadDatabasePath = null;
+            InventoryItemFactory.InvalidateSearchIndex();
             StartingEquipmentDataLoader.Invalidate();
             XmlContentFallbackService.Invalidate();
             ElementLoadSchemaVersion = null;

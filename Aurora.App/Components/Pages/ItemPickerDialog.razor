@@ -1,3 +1,6 @@
+@using Builder.Presentation.Services.Data
+@implements IDisposable
+
 <MudDialog Style="max-height: 90vh; width: min(700px, 95vw);">
     <TitleContent>
         <MudText Typo="Typo.h6" Style="font-size: 15px; font-weight: 600;">
@@ -21,7 +24,11 @@
                 @if (_results.Count == 0)
                 {
                     <MudText Color="Color.Secondary" Style="padding: 12px 0; font-size: 13px;">
-                        @(NeedsMinQuery ? "Type at least 2 characters to search." : "No items found.")
+                        @(_searching
+                            ? "Searching items..."
+                            : NeedsMinQuery
+                                ? "Type at least 2 characters to search."
+                                : "No items found.")
                     </MudText>
                 }
                 else
@@ -94,6 +101,9 @@
 @code {
     [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
 
+    [Parameter]
+    public Builder.Presentation.Models.Character? Character { get; set; }
+
     /// <summary>
     /// Optional category filter (e.g. "Martial Weapon"). When set, search is scoped to that
     /// category rather than all item types, and the dialog title reflects the category.
@@ -105,26 +115,89 @@
     private ItemSearchResult? _selected;
     private int _amount = 1;
     private List<ItemSearchResult> _results = [];
+    private CancellationTokenSource? _searchCancellation;
+    private int _searchVersion;
+    private bool _searching;
+    private bool _disposed;
 
     // When filtering by category, show all matching items without a minimum query length.
     private bool NeedsMinQuery => string.IsNullOrWhiteSpace(Category) && _search.Length < 2;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         if (!string.IsNullOrWhiteSpace(Category))
-            RunSearch();
+            await RunSearchAsync(skipDebounce: true);
     }
 
-    private void RunSearch()
+    private Task RunSearch() => RunSearchAsync(skipDebounce: false);
+
+    private async Task RunSearchAsync(bool skipDebounce)
     {
+        _searchCancellation?.Cancel();
+        int searchVersion = ++_searchVersion;
+        string search = _search;
+
+        _selectedId = null;
+        _selected = null;
+        _amount = 1;
+
         if (string.IsNullOrWhiteSpace(Category))
         {
-            if (_search.Length < 2) { _results = []; return; }
-            _results = EquipmentService.SearchItems(_search).ToList();
+            if (search.Length < 2 || Character is null)
+            {
+                _results = [];
+                _searching = false;
+                return;
+            }
         }
-        else
+
+        var cancellation = new CancellationTokenSource();
+        _searchCancellation = cancellation;
+        CancellationToken cancellationToken = cancellation.Token;
+        _searching = true;
+
+        try
         {
-            _results = EquipmentService.SearchItemsByCategory(Category, _search).ToList();
+            if (!skipDebounce)
+                await Task.Delay(TimeSpan.FromMilliseconds(300), cancellationToken);
+
+            Builder.Presentation.Models.Character? character = Character;
+            string? category = Category;
+            BuildSourceRestrictionSnapshot? sourceRestrictions =
+                string.IsNullOrWhiteSpace(category)
+                    ? BuildSourceRestrictionSnapshot.CaptureCurrent()
+                    : null;
+
+            if (string.IsNullOrWhiteSpace(category))
+                await InventoryItemFactory.PrecomputeSearchIndexAsync(cancellationToken);
+
+            List<ItemSearchResult> results = await Task.Run(
+                () => string.IsNullOrWhiteSpace(category)
+                    ? EquipmentService.SearchItems(
+                            character!,
+                            search,
+                            sourceRestrictions!,
+                            cancellationToken)
+                        .ToList()
+                    : EquipmentService.SearchItemsByCategory(category, search).ToList(),
+                cancellationToken);
+
+            if (!_disposed && searchVersion == _searchVersion)
+                _results = results;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // A newer query superseded this one.
+        }
+        finally
+        {
+            if (ReferenceEquals(_searchCancellation, cancellation))
+            {
+                _searchCancellation = null;
+                _searching = false;
+            }
+
+            cancellation.Dispose();
         }
     }
 
@@ -138,4 +211,12 @@
     private void Cancel()  => MudDialog.Cancel();
     private void Confirm() { if (_selectedId != null) MudDialog.Close(new ItemPickerResult(_selectedId, _amount)); }
     private void ConfirmItem(ItemSearchResult r) { SelectResult(r); Confirm(); }
+
+    public void Dispose()
+    {
+        _disposed = true;
+        _searchCancellation?.Cancel();
+        _searchCancellation?.Dispose();
+        _searchCancellation = null;
+    }
 }
