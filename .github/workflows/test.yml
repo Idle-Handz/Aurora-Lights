@@ -8,11 +8,19 @@ on:
       - 'Aurora.Importer/**'
       - 'Aurora.Logic/**'
       - 'Aurora.PdfImport/**'
+      - 'Aurora.Presentation.Tests/**'
       - 'Aurora.Tests/**'
       - 'Aurora.Web/**'
+      - 'Builder.Core/**'
+      - 'Builder.Data/**'
+      - 'Aurora.Documents/**'
+      - 'Aurora.Presentation/**'
       - 'docs/release-notes/**'
       - 'lib/**'
       - 'tests/**'
+      - 'tools/AssemblyApi/**'
+      - 'tools/WpfAssemblyApi/**'
+      - 'tools/legacy-restoration/**'
       - 'tools/build-release-notes.mjs'
       - 'package.json'
       - 'package-lock.json'
@@ -25,11 +33,19 @@ on:
       - 'Aurora.Importer/**'
       - 'Aurora.Logic/**'
       - 'Aurora.PdfImport/**'
+      - 'Aurora.Presentation.Tests/**'
       - 'Aurora.Tests/**'
       - 'Aurora.Web/**'
+      - 'Builder.Core/**'
+      - 'Builder.Data/**'
+      - 'Aurora.Documents/**'
+      - 'Aurora.Presentation/**'
       - 'docs/release-notes/**'
       - 'lib/**'
       - 'tests/**'
+      - 'tools/AssemblyApi/**'
+      - 'tools/WpfAssemblyApi/**'
+      - 'tools/legacy-restoration/**'
       - 'tools/build-release-notes.mjs'
       - 'package.json'
       - 'package-lock.json'
@@ -56,10 +72,29 @@ jobs:
           cache: npm
 
       - name: Restore .NET tests
-        run: dotnet restore Aurora.Tests/Aurora.Tests.csproj
+        run: |
+          dotnet restore Aurora.Tests/Aurora.Tests.csproj
+          dotnet restore Aurora.Presentation.Tests/Aurora.Presentation.Tests.csproj
 
       - name: Run .NET tests
-        run: dotnet test Aurora.Tests/Aurora.Tests.csproj -c Release --no-restore
+        run: |
+          dotnet test Aurora.Tests/Aurora.Tests.csproj -c Release --no-restore
+          dotnet test Aurora.Presentation.Tests/Aurora.Presentation.Tests.csproj -c Release --no-restore
+
+      - name: Verify restored legacy API parity
+        shell: pwsh
+        run: |
+          .\tools\legacy-restoration\Compare-RestoredAssemblyApi.ps1 -Configuration Release -OracleAssembly .\tests\LegacyOracles\Builder.Core.dll -RestoredAssembly .\Builder.Core\bin\Release\net10.0\Builder.Core.dll
+          .\tools\legacy-restoration\Compare-RestoredAssemblyApi.ps1 -Configuration Release -OracleAssembly .\tests\LegacyOracles\Builder.Data.dll -RestoredAssembly .\Builder.Data\bin\Release\net10.0\Builder.Data.dll
+          .\tools\legacy-restoration\Compare-RestoredAssemblyApi.ps1 -Configuration Release -OracleAssembly .\tests\LegacyOracles\Aurora.Documents.dll -RestoredAssembly .\Aurora.Documents\bin\Release\net10.0\Aurora.Documents.dll
+          .\tools\legacy-restoration\Compare-RestoredWpfAssemblyApi.ps1 -Configuration Release -OracleAssembly .\tests\LegacyOracles\Aurora.Presentation.dll -RestoredAssembly .\Aurora.Presentation\bin\Release\net10.0-windows\Aurora.Presentation.dll
+
+      - name: Verify restored legacy behavior parity
+        shell: pwsh
+        run: |
+          .\tools\legacy-restoration\Compare-BuilderDataBehavior.ps1 -Configuration Release
+          .\tools\legacy-restoration\Compare-AuroraDocumentsBehavior.ps1 -Configuration Release
+          .\tools\legacy-restoration\Compare-AuroraPresentationBehavior.ps1 -Configuration Release
 
       - name: Test release-note compiler
         run: npm run test:release-notes

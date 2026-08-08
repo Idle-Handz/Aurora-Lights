@@ -5,6 +5,10 @@ on:
     paths:
       - 'Aurora.Lights/**'
       - 'Aurora.Logic/**'
+      - 'Builder.Core/**'
+      - 'Builder.Data/**'
+      - 'Aurora.Documents/**'
+      - 'Aurora.Presentation/**'
       - 'lib/**'
       - '.github/workflows/build-wpf.yml'
   workflow_dispatch:

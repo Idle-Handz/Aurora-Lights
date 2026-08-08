@@ -13,20 +13,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Builder.Core\Builder.Core.csproj" />
+    <ProjectReference Include="..\Builder.Data\Builder.Data.csproj" />
+    <ProjectReference Include="..\Aurora.Documents\Aurora.Documents.csproj" />
     <ProjectReference Include="..\Aurora.Components\Aurora.Components.csproj" />
     <ProjectReference Include="..\Aurora.Logic\Aurora.Logic.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="Builder.Core">
-      <HintPath>..\lib\Builder.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="Builder.Data">
-      <HintPath>..\lib\Builder.Data.dll</HintPath>
-    </Reference>
-    <Reference Include="Aurora.Documents">
-      <HintPath>..\lib\Aurora.Documents.dll</HintPath>
-    </Reference>
     <Reference Include="DynamicExpresso.Core">
       <HintPath>..\lib\DynamicExpresso.Core.dll</HintPath>
     </Reference>

@@ -37,16 +37,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Core business logic (local /lib DLLs, shared with WPF project) -->
-    <Reference Include="Builder.Core">
-      <HintPath>..\lib\Builder.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="Builder.Data">
-      <HintPath>..\lib\Builder.Data.dll</HintPath>
-    </Reference>
-    <Reference Include="Aurora.Documents">
-      <HintPath>..\lib\Aurora.Documents.dll</HintPath>
-    </Reference>
+    <ProjectReference Include="..\Builder.Core\Builder.Core.csproj" />
+    <ProjectReference Include="..\Builder.Data\Builder.Data.csproj" />
+    <ProjectReference Include="..\Aurora.Documents\Aurora.Documents.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- Expression evaluation -->
     <Reference Include="DynamicExpresso.Core">
       <HintPath>..\lib\DynamicExpresso.Core.dll</HintPath>

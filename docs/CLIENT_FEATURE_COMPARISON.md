@@ -140,7 +140,7 @@ usable, but it should not be read as a claim of complete desktop parity.
 | UI framework | WPF | .NET MAUI Blazor Hybrid | Blazor web application |
 | Shared rule engine | Uses the legacy builder engine and XML model. | Uses the same underlying builder engine through a SQLite-backed reconstruction layer. | Uses the shared engine services inside temporary server-side workspaces. |
 | Best fit for small legacy fixes | Strong fit: the familiar desktop workflow remains visible and editable. | Good fit when the behavior belongs to the modern desktop client or shared reconstruction layer. | Good fit for browser-hosting, temporary workspace, and online-builder work. |
-| Important boundary | Some first-party behavior still lives in referenced assemblies such as `Builder.Data.dll`. | SQLite reconstruction and modern UI integration add another layer that needs parity tests. | Multi-user hosting requires careful isolation around legacy singleton engine state. |
+| Important boundary | Restored legacy code intentionally retains some monolithic and singleton-era assumptions. | SQLite reconstruction and modern UI integration add another layer that needs parity tests. | Multi-user hosting requires careful isolation around legacy singleton engine state. |
 
 ## Reading The Matrix
 

@@ -7,6 +7,9 @@ on:
       - 'Aurora.Components/**'
       - 'Aurora.Importer/**'
       - 'Aurora.PdfImport/**'
+      - 'Builder.Core/**'
+      - 'Builder.Data/**'
+      - 'Aurora.Documents/**'
       - 'lib/**'
       - '.github/workflows/build-android.yml'
   workflow_dispatch:
