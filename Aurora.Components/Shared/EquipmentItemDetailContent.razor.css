@@ -52,7 +52,7 @@
 .equipment-item-detail-section-meta,
 .equipment-item-detail-empty {
     margin-top: 0.12rem;
-    color: var(--mud-palette-text-secondary, #777);
+    color: var(--mud-palette-text-secondary, var(--aurora-text-disabled, #777));
     font-size: 0.75rem;
 }
 

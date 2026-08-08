@@ -13,7 +13,7 @@
     padding: 0;
     border: none;
     border-radius: 50%;
-    background: rgba(30, 58, 138, 0.75);
+    background: color-mix(in srgb, var(--aurora-primary-deep, #0f3d91) 75%, transparent);
     color: #fff;
     font-size: 0.95rem;
     line-height: 1;
@@ -30,7 +30,7 @@
 }
 
 .character-browser-group-btn:hover {
-    background: rgba(30, 58, 138, 1);
+    background: var(--aurora-primary-deep, #0f3d91);
 }
 
 @media (hover: none) {
@@ -48,7 +48,7 @@
     padding: 0;
     border: none;
     border-radius: 50%;
-    background: rgba(185, 28, 28, 0.82);
+    background: color-mix(in srgb, var(--aurora-danger, #b91c1c) 82%, transparent);
     color: #fff;
     font-size: 1.1rem;
     line-height: 1;
@@ -65,7 +65,7 @@
 }
 
 .character-browser-delete-btn:hover {
-    background: rgba(185, 28, 28, 1);
+    background: var(--aurora-danger, #b91c1c);
 }
 
 @media (hover: none) {
@@ -84,14 +84,14 @@
     border-radius: 1rem;
     padding: 0.95rem;
     background: var(--mud-palette-surface, linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(241, 245, 249, 0.92)));
-    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 10px 24px var(--aurora-shadow-color, rgba(0, 0, 0, 0.25));
     cursor: pointer;
     transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
 }
 
 .character-browser-card:hover {
     transform: translateY(-1px);
-    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 14px 30px var(--aurora-shadow-hover-color, rgba(0, 0, 0, 0.4));
 }
 
 .character-browser-card.selected {
@@ -107,8 +107,8 @@
     flex-shrink: 0;
     display: grid;
     place-items: center;
-    background: var(--mud-palette-background-gray, linear-gradient(135deg, #e2e8f0, #cbd5e1));
-    color: var(--mud-palette-text-secondary, #334155);
+    background: var(--mud-palette-background-gray, linear-gradient(135deg, var(--aurora-surface-raised, #e2e8f0), var(--aurora-surface, #cbd5e1)));
+    color: var(--mud-palette-text-secondary, var(--aurora-text-primary, #334155));
     font-size: 1.35rem;
     font-weight: 700;
 }
@@ -134,21 +134,21 @@
 
 .character-browser-name {
     font-weight: 700;
-    color: var(--mud-palette-text-primary, #16202c);
+    color: var(--mud-palette-text-primary, var(--aurora-text-primary, #16202c));
 }
 
 .character-browser-star {
-    color: #c58911;
+    color: var(--aurora-warning, #c58911);
     font-size: 0.95rem;
 }
 
 .character-browser-primary {
-    color: var(--mud-palette-text-primary, #334155);
+    color: var(--mud-palette-text-primary, var(--aurora-text-primary, #334155));
     font-weight: 600;
 }
 
 .character-browser-secondary,
 .character-browser-tertiary {
-    color: var(--mud-palette-text-secondary, #5f6b7a);
+    color: var(--mud-palette-text-secondary, var(--aurora-text-secondary, #5f6b7a));
     font-size: 0.94rem;
 }

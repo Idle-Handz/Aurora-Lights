@@ -54,6 +54,23 @@ h1:focus {
     --aurora-bg: #1e1e2e;
     --aurora-shadow: 0 20px 45px rgba(0, 0, 0, 0.4);
 
+    /* Shared Reflections components use the complete app-theme token names. */
+    --aurora-color-scheme: dark;
+    --aurora-background: var(--aurora-bg);
+    --aurora-chrome: var(--aurora-panel-soft);
+    --aurora-surface: var(--aurora-panel);
+    --aurora-surface-raised: #45475a;
+    --aurora-border-strong: #585b70;
+    --aurora-text-primary: var(--aurora-ink);
+    --aurora-text-secondary: var(--aurora-ink-soft);
+    --aurora-text-disabled: #6c7086;
+    --aurora-primary-deep: #4f78bd;
+    --aurora-secondary: #cba6f7;
+    --aurora-info: #89dceb;
+    --aurora-orange: #fab387;
+    --aurora-shadow-color: rgba(0, 0, 0, 0.25);
+    --aurora-shadow-hover-color: rgba(0, 0, 0, 0.4);
+
     /* Mirror into MudBlazor palette vars so shared components (authored for Aurora.App's MudBlazor dark theme) pick the matching dark values. */
     --mud-palette-text-primary: #cdd6f4;
     --mud-palette-text-secondary: #a6adc8;

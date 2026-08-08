@@ -19,24 +19,40 @@ public sealed class UserPreferencesService
     private const string KeyCustomProficiency  = "build.tce_custom_proficiency";
     private const string KeyDevMode            = "dev.mode";
     private const string KeyMruCharacter       = "app.mru_character";
-    private const string KeyLightMode          = "app.light_mode";
+    private const string KeyTheme              = "app.theme";
+    private const string KeyLightMode          = "app.light_mode"; // Legacy migration only.
 
     public event Action? ThemeChanged;
     public event Action? DeveloperModeChanged;
 
     public UserPreferencesService()
     {
+        if (!Preferences.Default.ContainsKey(KeyTheme))
+        {
+            var migratedTheme = Preferences.Default.Get(KeyLightMode, defaultValue: false)
+                ? AppTheme.ReflectionsLight
+                : AppTheme.ReflectionsDark;
+            Preferences.Default.Set(KeyTheme, AppThemes.Get(migratedTheme).Id);
+        }
+
         SyncDeveloperMode(DevMode);
     }
 
     /// <summary>
-    /// When true, the app uses a light colour palette instead of the default dark theme.
-    /// Default: false.
+    /// The selected application theme. Existing light-mode users are migrated to
+    /// Reflections Light the first time this version starts.
     /// </summary>
-    public bool LightMode
+    public AppTheme Theme
     {
-        get => Preferences.Default.Get(KeyLightMode, defaultValue: false);
-        set { Preferences.Default.Set(KeyLightMode, value); ThemeChanged?.Invoke(); }
+        get => AppThemes.FromId(Preferences.Default.Get(KeyTheme, AppThemes.ReflectionsDark.Id));
+        set
+        {
+            if (Theme == value)
+                return;
+
+            Preferences.Default.Set(KeyTheme, AppThemes.Get(value).Id);
+            ThemeChanged?.Invoke();
+        }
     }
 
     // Character sheet page/card options — read directly by MauiCharacterSheetGenerator as well.

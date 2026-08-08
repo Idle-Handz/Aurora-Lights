@@ -10,13 +10,13 @@
 @inject Aurora.App.Services.Updates.AppUpdateService AppUpdates
 @inject ContentService Content
 
-<MudThemeProvider Theme="_theme" IsDarkMode="@(!Prefs.LightMode)" />
+<MudThemeProvider Theme="ActiveMudTheme" IsDarkMode="SelectedTheme.IsDark" />
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
 
-<MudLayout>
-    <MudAppBar Elevation="1" Color="Color.Dark">
+<MudLayout Class="aurora-theme-shell">
+    <MudAppBar Elevation="1" Color="Color.Default">
         <MudIconButton Icon="@Icons.Material.Filled.Menu"
                        Color="Color.Inherit"
                        Edge="Edge.Start"
@@ -331,6 +331,7 @@
         if (firstRender)
         {
             _selfRef = DotNetObjectReference.Create(this);
+            await ApplyBrowserThemeAsync();
             try { await JS.InvokeVoidAsync("AuroraShortcuts.register", _selfRef); } catch { }
             NotifyAppUpdateIfAvailable();
             if (Prefs.AutoDownloadContentOnStartup)
@@ -380,7 +381,24 @@
     private void OnThemeChanged()
     {
         if (_disposed) return;
-        _ = InvokeAsync(() => { if (!_disposed) StateHasChanged(); });
+        _ = InvokeAsync(async () =>
+        {
+            if (_disposed) return;
+            await ApplyBrowserThemeAsync();
+            StateHasChanged();
+        });
+    }
+
+    private async Task ApplyBrowserThemeAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("AuroraTheme.apply", SelectedTheme.Id, SelectedTheme.IsDark);
+        }
+        catch
+        {
+            // Theme state still applies through MudThemeProvider if the WebView is shutting down.
+        }
     }
 
     private void OnDeveloperModeChanged()
@@ -480,7 +498,16 @@
         }
     }
 
-    private readonly MudTheme _theme = new()
+    private AppThemeDefinition SelectedTheme => AppThemes.Get(Prefs.Theme);
+
+    private MudTheme ActiveMudTheme => Prefs.Theme switch
+    {
+        AppTheme.AuroraClassic  => AuroraClassicTheme,
+        AppTheme.AuroraBorealis => AuroraBorealisTheme,
+        _                       => ReflectionsTheme
+    };
+
+    private static readonly MudTheme ReflectionsTheme = new()
     {
         PaletteDark = new PaletteDark
         {
@@ -498,23 +525,81 @@
             Divider          = "#313244",
             LinesDefault     = "#313244",
             LinesInputs      = "#45475a",
+            Success          = "#a6e3a1",
+            Warning          = "#f9e2af",
+            Error            = "#f38ba8",
+            Info             = "#89dceb",
         },
         PaletteLight = new PaletteLight
         {
             Primary          = "#1e66f5",
             Secondary        = "#8839ef",
-            Background       = "#eff1f5",
+            Background       = "#f3f5fa",
             BackgroundGray   = "#e6e9ef",
-            Surface          = "#ccd0da",
+            Surface          = "#ffffff",
             DrawerBackground = "#dce0e8",
-            AppbarBackground = "#e6e9ef",
+            AppbarBackground = "#ffffff",
             ActionDefault    = "#4c4f69",
             TextPrimary      = "#4c4f69",
-            TextSecondary    = "#5c5f77",
+            TextSecondary    = "#6c6f85",
             TextDisabled     = "#9ca0b0",
             Divider          = "#ccd0da",
             LinesDefault     = "#ccd0da",
             LinesInputs      = "#bcc0cc",
+            Success          = "#40a02b",
+            Warning          = "#df8e1d",
+            Error            = "#d20f39",
+            Info             = "#04a5e5",
+        }
+    };
+
+    private static readonly MudTheme AuroraClassicTheme = new()
+    {
+        PaletteDark = new PaletteDark
+        {
+            Primary          = "#b38000",
+            Secondary        = "#5b9e98",
+            Background       = "#101010",
+            BackgroundGray   = "#151516",
+            Surface          = "#242425",
+            DrawerBackground = "#151516",
+            AppbarBackground = "#151516",
+            ActionDefault    = "#f7f7f7",
+            TextPrimary      = "#f7f7f7",
+            TextSecondary    = "#b9b9b9",
+            TextDisabled     = "#777777",
+            Divider          = "#333334",
+            LinesDefault     = "#333334",
+            LinesInputs      = "#515152",
+            Success          = "#62ad69",
+            Warning          = "#e18855",
+            Error            = "#d36161",
+            Info             = "#6faeaa",
+        }
+    };
+
+    private static readonly MudTheme AuroraBorealisTheme = new()
+    {
+        PaletteDark = new PaletteDark
+        {
+            Primary          = "#68d5c5",
+            Secondary        = "#c69bf4",
+            Background       = "#071416",
+            BackgroundGray   = "#081d20",
+            Surface          = "#10292d",
+            DrawerBackground = "#081d20",
+            AppbarBackground = "#081d20",
+            ActionDefault    = "#e6f6f3",
+            TextPrimary      = "#e6f6f3",
+            TextSecondary    = "#abc9c6",
+            TextDisabled     = "#668783",
+            Divider          = "#1d3a3e",
+            LinesDefault     = "#1d3a3e",
+            LinesInputs      = "#2c5054",
+            Success          = "#83d6a2",
+            Warning          = "#f3c878",
+            Error            = "#f18ca2",
+            Info             = "#77cfe2",
         }
     };
 

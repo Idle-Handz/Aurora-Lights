@@ -76,7 +76,7 @@
 .rich-description ::deep h4,
 .rich-description ::deep h5,
 .rich-description ::deep h6 {
-    color: var(--mud-palette-text-primary, var(--aurora-ink, #cdd6f4));
+    color: var(--mud-palette-text-primary, var(--aurora-ink, var(--aurora-text-primary, #cdd6f4)));
 }
 
 .rich-description ::deep h1,
@@ -98,7 +98,7 @@
 .rich-description ::deep th,
 .rich-description ::deep td {
     padding: 0.35rem 0.5rem;
-    border: 1px solid var(--mud-palette-lines-inputs, var(--aurora-border, #45475a));
+    border: 1px solid var(--mud-palette-lines-inputs, var(--aurora-border, var(--aurora-surface-raised, #45475a)));
     text-align: var(--rich-description-text-align, left);
     vertical-align: top;
 }
@@ -109,6 +109,6 @@
     white-space: nowrap;
     background: color-mix(
         in srgb,
-        var(--mud-palette-primary, var(--aurora-accent, #89b4fa)) 10%,
+        var(--mud-palette-primary, var(--aurora-accent, var(--aurora-primary, #89b4fa))) 10%,
         transparent);
 }

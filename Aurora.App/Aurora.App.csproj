@@ -52,7 +52,10 @@
     <MauiIcon Include="Resources\AppIcon\appicon.png" />
 
     <!-- Splash Screen -->
-    <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#1e1e2e" BaseSize="128,128" />
+    <MauiSplashScreen Include="wwwroot\brand\aurora-appicon.png"
+                      Link="Resources\Splash\reflections_splash.png"
+                      Color="#020617"
+                      BaseSize="256,256" />
 
     <!-- Custom Fonts -->
     <MauiFont Include="Resources\Fonts\*" />
