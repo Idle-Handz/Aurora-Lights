@@ -66,6 +66,21 @@ Current position:
 - preserve cross-compatibility for character/content data
 - avoid large new feature investments unless they are compatibility-critical
 
+## Character Journal / Quest Tracking (Later)
+
+- add structured, date-stamped session-log entries instead of requiring players
+  to maintain chronology inside the two existing free-form note fields
+- add quest records with a title, status, objectives, important NPCs and
+  locations, rewards, and free-form notes
+- allow log entries to be added, edited, removed, searched, and optionally
+  linked to one or more quests while retaining their original session dates
+- keep the existing `<quest>` character-file field reserved for
+  `Inventory.QuestItems`; store journal and quest records in a separate,
+  versioned model
+- design persistence, migration, and export in the shared layer first so
+  Reflections and future Web support round-trip the same data without dropping
+  legacy notes
+
 ## Aurora.Web Phase 0
 
 Target model:
