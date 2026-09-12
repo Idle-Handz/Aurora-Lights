@@ -1,14 +1,33 @@
-# Full Legacy Source Restoration
+# Source Ownership And Legacy Compatibility
 
-## Objective
+## Current Status
 
-Make the repository the authoritative, browsable implementation of Aurora's
-first-party production code. A contributor should be able to understand,
-modify, build, and test Aurora without decompiling its runtime dependencies.
+The first-party source restoration is complete. This repository is the
+authoritative implementation for ongoing Aurora Lights development: contributors
+can modify and build the applications from local source without decompiling or
+loading the original first-party assemblies.
 
-## Scope
+| Former binary dependency | Current production implementation |
+| --- | --- |
+| `Builder.Core.dll` | [`Builder.Core`](../Builder.Core/Builder.Core.csproj) |
+| `Builder.Data.dll` | [`Builder.Data`](../Builder.Data/Builder.Data.csproj) |
+| `Aurora.Documents.dll` | [`Aurora.Documents`](../Aurora.Documents/Aurora.Documents.csproj) |
+| `Aurora.Presentation.dll` | [`Aurora.Presentation`](../Aurora.Presentation/Aurora.Presentation.csproj) (WPF client) |
 
-The production restoration covers:
+Production consumers use `ProjectReference` entries for these implementations.
+The same assembly names are produced by local builds for compatibility; they do
+not imply use of the old binaries. The original assemblies are needed only for
+the explicit inventory and differential parity checks, including the CI parity
+gates in [the test workflow](../.github/workflows/test.yml).
+
+Self-reliance here means ownership and maintenance of the first-party source.
+The solution still depends on the .NET SDK and platform workloads, NuGet
+packages, and third-party libraries in `lib`. The historical provenance and
+authorization of reconstructed source remain documented below.
+
+## Completed Restoration Scope
+
+The production restoration covered:
 
 1. `Builder.Core.dll`
 2. `Builder.Data.dll`
@@ -21,9 +40,12 @@ The maintainer has confirmed authorization from the rights holders to reverse
 engineer and modify the legacy Aurora project. Supporting correspondence may be
 retained privately; it does not need to be committed with the source.
 
-## Restoration Authorities
+## Historical Restoration Authorities
 
-When sources disagree or behavior is unclear, use this order:
+During the initial restoration, the following order established the
+compatibility baseline. For ongoing development, the local source is
+authoritative; the original binaries are comparison fixtures. Intentional fixes
+and new behavior should be documented and covered by source-native tests.
 
 1. production Aurora binaries
 2. observable behavior in the production legacy client
@@ -31,7 +53,10 @@ When sources disagree or behavior is unclear, use this order:
 4. representative Aurora XML and `.dnd5e` fixtures
 5. existing compatibility and parity tests
 
-## Working Rules
+## Initial Restoration Rules
+
+These rules describe the completed port and remain useful when investigating
+compatibility gaps:
 
 - Restore one assembly at a time.
 - Preserve assembly names, namespaces, public type identity, member behavior,
@@ -63,7 +88,7 @@ Legacy and restored assemblies with the same identity should be compared in
 separate processes so static state and singleton services cannot contaminate
 the result.
 
-## Planned Sequence
+## Completed Sequence
 
 | Phase | Status |
 | --- | --- |

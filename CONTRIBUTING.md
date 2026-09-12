@@ -61,10 +61,10 @@ They intentionally preserve older naming, namespaces, and structure where that
 helps maintain compatibility. Prefer focused changes over broad rewrites unless
 a larger refactor is necessary and well tested.
 
-## Restored Legacy Source
+## Project-Owned Source
 
-The repository is source-transparent for the four first-party assemblies that
-were formerly production binary boundaries:
+The four former first-party binary dependencies are now editable, project-owned
+source implementations built within this solution:
 
 - `Builder.Core` contains shared events, logging, commands, and observable
   infrastructure.
@@ -80,6 +80,12 @@ production assemblies are retained only under `tests/LegacyOracles` so the
 restored implementations can be checked for API and behavior parity. They must
 not be referenced or copied by production builds. The `lib` directory contains
 third-party dependencies still used by the applications.
+
+Normal builds and source-native tests use the local implementations. Only the
+explicit legacy inventory and differential parity checks require the original
+oracle binaries. No original Aurora installation or decompilation step is
+needed to develop the applications. See
+[source ownership and legacy compatibility](docs/LEGACY_RESTORATION.md).
 
 Contributions should change the restored source and add source-native tests.
 The differential oracle checks remain useful regression gates where exact
@@ -142,6 +148,6 @@ Before opening a pull request:
    automatically.
 5. Include manual verification notes for UI changes.
 
-If a change runs into one of the remaining binary boundaries, describe the
-limitation clearly. A partial investigation that maps the next reconstruction
-step can still be valuable.
+Make first-party behavior changes in the local source projects. If a change
+depends on a third-party library limitation, identify that dependency and
+describe the limitation in the pull request.

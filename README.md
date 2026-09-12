@@ -15,7 +15,25 @@ Aurora Lights is an open-source project developed and maintained by
 > [!IMPORTANT]
 > Aurora: Reflections is currently a **beta preview**. Back up your character
 > files before relying on it for an important session, and keep the legacy
-> Aurora app available while the modern client continues to mature.
+> Aurora app available as a fallback while the modern client continues to mature.
+> It is not required to build or run Aurora: Reflections.
+
+## Project-Owned Source And Dependencies
+
+Aurora Lights builds its first-party functionality from source maintained in
+this repository. The former binary dependencies `Builder.Core`, `Builder.Data`,
+`Aurora.Documents`, and `Aurora.Presentation` have project-local source
+implementations, consumed through project references. No original Aurora
+installation or prebuilt first-party legacy assembly is required for normal
+application builds or runtime use.
+
+The original assemblies under `tests/LegacyOracles` are retained only as
+compatibility test fixtures. API and behavioral parity checks compare them with
+the local implementations; they are not application dependencies. The project
+still uses .NET, NuGet packages, and third-party libraries under `lib`.
+
+See [source ownership and legacy compatibility](docs/LEGACY_RESTORATION.md) for
+the source-project mapping, completed restoration status, and parity tooling.
 
 ## Install Aurora: Reflections
 
@@ -150,8 +168,17 @@ include:
   Shared rules, models, content handling, and compatibility behavior.
 
 - `Builder.Core`
-  Source-restored legacy foundation for events, logging, observable objects,
+  Project-owned foundation for events, logging, observable objects,
   and commands.
+
+- `Builder.Data`
+  Project-owned element models, XML parsing, rules, and content primitives.
+
+- `Aurora.Documents`
+  Project-owned PDF and character-sheet writing infrastructure.
+
+- `Aurora.Presentation`
+  Project-owned WPF controls, triggers, styles, and themes for Aurora Legacy.
 
 - `Aurora.Importer`
   SQLite content importer used by the modern content pipeline.
@@ -187,7 +214,7 @@ Additional technical documentation:
 - [Client feature comparison](docs/CLIENT_FEATURE_COMPARISON.md)
 - [Aurora.App README](Aurora.App/README.md)
 - [Aurora.Logic README](Aurora.Logic/README.md)
-- [Full legacy source restoration](docs/LEGACY_RESTORATION.md)
+- [Source ownership and legacy compatibility](docs/LEGACY_RESTORATION.md)
 - [Project roadmap](docs/ROADMAP.md)
 
 ## Support Aurora Lights
