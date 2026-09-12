@@ -225,7 +225,7 @@
         long total = equipment.Copper + equipment.Silver + equipment.Electrum + equipment.Gold + equipment.Platinum;
         return total == 0
             ? "None"
-            : $"{equipment.Platinum} pp, {equipment.Gold} gp, {equipment.Silver} sp";
+            : $"{equipment.Platinum} pp, {equipment.Gold} gp, {equipment.Electrum} ep, {equipment.Silver} sp, {equipment.Copper} cp";
     }
 
     private static string ValueOrDash(string? value) =>

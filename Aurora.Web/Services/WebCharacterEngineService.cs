@@ -2531,8 +2531,7 @@ public sealed class WebCharacterEngineService
     private static string ResolveWorkspaceFile(PhaseZeroSessionWorkspace workspace, string relativePath)
     {
         string absolutePath = Path.GetFullPath(Path.Combine(workspace.WorkspacePath, relativePath));
-        string root = Path.GetFullPath(workspace.WorkspacePath);
-        if (!absolutePath.StartsWith(root, StringComparison.OrdinalIgnoreCase))
+        if (!PathContainment.IsPathWithinDirectory(workspace.WorkspacePath, absolutePath))
             throw new InvalidOperationException("Requested file is outside the current session workspace.");
 
         return absolutePath;

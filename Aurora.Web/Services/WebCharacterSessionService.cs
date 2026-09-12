@@ -4,14 +4,17 @@ using Builder.Presentation.Services;
 
 namespace Aurora.Web.Services;
 
-public sealed class WebCharacterSessionService
+public sealed class WebCharacterSessionService : IDisposable
 {
     private readonly PhaseZeroSessionWorkspaceService _workspaceService;
     private readonly WebCharacterEngineService _engine;
+    private readonly WebCharacterEngineSessionGuard _engineSessionGuard;
     private readonly ILogger<WebCharacterSessionService> _logger;
+    private readonly Guid _sessionId = Guid.NewGuid();
     private string? _currentCharacterPath;
     private WebCharacterRuntimeState? _currentRuntimeState;
     private WebCharacterMagicState? _currentMagicState;
+    private bool _ownsEngineSession;
 
     public event Action? CurrentCharacterChanged;
 
@@ -21,10 +24,12 @@ public sealed class WebCharacterSessionService
     public WebCharacterSessionService(
         PhaseZeroSessionWorkspaceService workspaceService,
         WebCharacterEngineService engine,
+        WebCharacterEngineSessionGuard engineSessionGuard,
         ILogger<WebCharacterSessionService> logger)
     {
         _workspaceService = workspaceService;
         _engine = engine;
+        _engineSessionGuard = engineSessionGuard;
         _logger = logger;
     }
 
@@ -77,7 +82,18 @@ public sealed class WebCharacterSessionService
             return false;
 
         string absolutePath = await _workspaceService.ResolveWorkspacePathAsync(character.RelativePath);
-        _currentRuntimeState = await _engine.OpenCharacterAsync(workspace, absolutePath, character.RelativePath);
+        bool acquiredNow = AcquireEngineSession();
+        try
+        {
+            _currentRuntimeState = await _engine.OpenCharacterAsync(workspace, absolutePath, character.RelativePath);
+        }
+        catch
+        {
+            if (acquiredNow)
+                ReleaseEngineSession();
+            throw;
+        }
+
         _currentCharacterPath = _currentRuntimeState.Summary.RelativePath;
         _currentMagicState = null;
         NotifyCurrentCharacterChanged();
@@ -147,23 +163,56 @@ public sealed class WebCharacterSessionService
         _currentCharacterPath = null;
         _currentRuntimeState = null;
         _currentMagicState = null;
+        ReleaseEngineSession();
         NotifyCurrentCharacterChanged();
     }
 
     public async Task<WebCharacterRuntimeState> CreateCharacterAsync(string name, string playerName, string group)
     {
         PhaseZeroSessionWorkspace workspace = await _workspaceService.GetWorkspaceAsync();
-        WebCharacterRuntimeState runtimeState = await _engine.CreateCharacterAsync(workspace, name, playerName, group);
-        string absolutePath = Path.Combine(workspace.WorkspacePath, runtimeState.Summary.RelativePath);
-        string relativePath = await _workspaceService.TrackGeneratedCharacterAsync(absolutePath);
-        _currentCharacterPath = relativePath;
-        _currentRuntimeState = runtimeState with
+        bool acquiredNow = AcquireEngineSession();
+        try
         {
-            Summary = runtimeState.Summary with { RelativePath = relativePath }
-        };
-        _currentMagicState = null;
-        NotifyCurrentCharacterChanged();
-        return _currentRuntimeState;
+            WebCharacterRuntimeState runtimeState = await _engine.CreateCharacterAsync(workspace, name, playerName, group);
+            string absolutePath = Path.Combine(workspace.WorkspacePath, runtimeState.Summary.RelativePath);
+            string relativePath = await _workspaceService.TrackGeneratedCharacterAsync(absolutePath);
+            _currentCharacterPath = relativePath;
+            _currentRuntimeState = runtimeState with
+            {
+                Summary = runtimeState.Summary with { RelativePath = relativePath }
+            };
+            _currentMagicState = null;
+            NotifyCurrentCharacterChanged();
+            return _currentRuntimeState;
+        }
+        catch
+        {
+            if (acquiredNow)
+                ReleaseEngineSession();
+            throw;
+        }
+    }
+
+    public void Dispose()
+    {
+        ReleaseEngineSession();
+        GC.SuppressFinalize(this);
+    }
+
+    private bool AcquireEngineSession()
+    {
+        bool acquiredNow = _engineSessionGuard.Acquire(_sessionId);
+        _ownsEngineSession = true;
+        return acquiredNow;
+    }
+
+    private void ReleaseEngineSession()
+    {
+        if (!_ownsEngineSession)
+            return;
+
+        _engineSessionGuard.Release(_sessionId);
+        _ownsEngineSession = false;
     }
 
     public async Task<byte[]> DownloadCurrentCharacterFileAsync()
