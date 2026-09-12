@@ -685,6 +685,7 @@ public class CharacterFile : ObservableObject
                 items = (List<RefactoredEquipmentItem>)null;
             }
         }
+        CharacterLoadCompatibilityService.RegisterLoadedEquipmentElements(character);
         ++currentProgress;
         await this.SendCharacterLoadingScreenProgressUpdate(currentProgress.IsPercetageOf(progressMax));
         await this.SendCharacterLoadingScreenStatusUpdate("performing validation");

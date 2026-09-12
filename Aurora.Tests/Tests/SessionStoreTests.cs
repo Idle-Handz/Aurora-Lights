@@ -160,6 +160,18 @@ public sealed class SessionStoreTests : IDisposable
     }
 
     [Fact]
+    public void SaveRequired_WhenCharacterFileMissing_ThrowsInsteadOfReportingSuccess()
+    {
+        string characterPath = Path.Combine(_dir, "missing.dnd5e");
+
+        Action save = () => SessionStore.SaveRequired(characterPath, MakePopulatedState());
+
+        save.Should().Throw<InvalidOperationException>()
+            .WithMessage("*session state could not be written*");
+        File.Exists(SessionStore.GetSidecarPath(characterPath)).Should().BeFalse();
+    }
+
+    [Fact]
     public void Delete_RemovesSidecar()
     {
         string characterPath = CreateCharacterFile();

@@ -106,6 +106,16 @@ public static class SessionStore
         }
     }
 
+    /// <summary>
+    /// Writes the sidecar or throws when it cannot be persisted. Use this from character-save
+    /// workflows where reporting success without the matching session state would be misleading.
+    /// </summary>
+    public static void SaveRequired(string characterFilePath, SessionState state)
+    {
+        if (!Save(characterFilePath, state))
+            throw new InvalidOperationException("Character save completed, but session state could not be written.");
+    }
+
     /// <summary>Deletes the sidecar (best effort). Call when the character file is deleted.</summary>
     public static void Delete(string characterFilePath)
     {
