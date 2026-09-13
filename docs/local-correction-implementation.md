@@ -193,3 +193,39 @@ Rejecting an incomplete candidate retains the entire previous working database.
 Protected corrections already survive upstream omission in prepared XML; a
 subsequent missing imported definition indicates incomplete output. Per-element
 carry-forward into a partially refreshed database is not currently implemented.
+
+### September 13 performance follow-up
+
+The provenance fix above is now recorded in Lights commit `02d56c6`. Subsequent
+performance work removes full XML object construction from ordinary change scans:
+`BuildFileCatalog` enumerates the same paths/root prefixes, and the existing hash
+comparison detects edits/additions/deletions. Importing still parses all required
+XML. Correction-aware scans continue to compare the recorded SHA-256 inputs.
+No timestamp-only cache or skipped content-hash validation was introduced.
+
+Correction input records now use one transaction and a reused prepared insert,
+instead of one durable commit per XML file. Integrity/provenance checks, input
+revalidation before activation, and retirement ordering remain in place.
+
+Measured with temporary copies of the same 1,189-file corpus:
+
+| Operation | Before | After |
+| --- | ---: | ---: |
+| Ordinary change scan, frozen DB/root, three runs | 1.44–1.89 s | 35–44 ms |
+| Post-import validation, mirroring, activation and cleanup | 12.35 s | 2.48 s |
+| Direct wrapper/import invocation with all files unchanged | 43.17 s | 33.80 s |
+
+The unchanged bundled Translator still took about 27 seconds inside that direct
+invocation. The app's reload path already skips the importer when the change scan
+returns false; these import timings are not measurements of the full UI reload.
+The earlier full-corpus run rebuilt all 1,189 files while converting the old
+database version; failed candidates left that conversion to repeat on retry.
+
+All 29 focused tests passed (24 correction lifecycle and five change-scan cases).
+The scan regression failed before the fix because malformed changed XML was
+parsed instead of simply identified as changed. Coverage also retains detection
+of same-size/same-timestamp edits, multiple roots, Windows catalog separators,
+additions/deletions/renames, and failed/raced candidate preservation. The temporary
+bundled-Translator result retained 1,189 tracked inputs, six mirrored files, ten
+pinned corrections and valid foreign keys. Performance work did not target the
+live DB or XML and has not been committed or published by this task.

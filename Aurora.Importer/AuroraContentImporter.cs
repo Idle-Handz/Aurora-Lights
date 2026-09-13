@@ -52,7 +52,7 @@ public static class AuroraContentImporter
         IReadOnlyList<string> contentDirectories,
         string sqlitePath) =>
         LocalCorrectionSync.IsStale(contentDirectories, sqlitePath) ??
-        AuroraSqliteImporter.IsStale(AuroraXmlCatalogReader.BuildCatalog(contentDirectories), sqlitePath);
+        AuroraSqliteImporter.IsStale(AuroraXmlCatalogReader.BuildFileCatalog(contentDirectories), sqlitePath);
 
     public static ContentDatabaseMetadata? GetMetadata(string sqlitePath) =>
         AuroraSqliteImporter.GetMetadata(sqlitePath);

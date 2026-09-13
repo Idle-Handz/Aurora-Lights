@@ -132,9 +132,27 @@ public static class LocalCorrectionSync
                 Mirror(connection, managed);
                 // Track the real inputs separately. Source-file hashes continue to describe
                 // staged effective content, so the importer correctly detects the next change.
-                Execute(connection, "CREATE TABLE IF NOT EXISTS local_correction_inputs (path TEXT PRIMARY KEY, sha256 TEXT NOT NULL); DELETE FROM local_correction_inputs;");
-                foreach (var file in files)
-                    Execute(connection, "INSERT INTO local_correction_inputs VALUES ($path,$hash);", ("$path", Path.GetFullPath(file.Path)), ("$hash", file.Hash));
+                // A separate durable commit per XML file makes tracking thousands
+                // of inputs much slower than the hashing itself. Commit the complete
+                // input snapshot together; activation still waits for the race check.
+                using (var transaction = connection.BeginTransaction())
+                {
+                    Execute(connection, "CREATE TABLE IF NOT EXISTS local_correction_inputs (path TEXT PRIMARY KEY, sha256 TEXT NOT NULL); DELETE FROM local_correction_inputs;", transaction);
+                    using var insert = connection.CreateCommand();
+                    insert.Transaction = transaction;
+                    insert.CommandText = "INSERT INTO local_correction_inputs VALUES ($path,$hash);";
+                    var path = insert.Parameters.Add("$path", SqliteType.Text);
+                    var hash = insert.Parameters.Add("$hash", SqliteType.Text);
+                    insert.Prepare();
+                    foreach (var file in files)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        path.Value = Path.GetFullPath(file.Path);
+                        hash.Value = file.Hash;
+                        insert.ExecuteNonQuery();
+                    }
+                    transaction.Commit();
+                }
                 using var remaining = connection.CreateCommand();
                 remaining.CommandText = "SELECT COUNT(*) FROM local_override_files";
                 if (Convert.ToInt64(remaining.ExecuteScalar()) == 0)

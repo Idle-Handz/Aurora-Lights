@@ -35,7 +35,10 @@ internal static class AuroraXmlCatalogReader
         return catalog;
     }
 
-    public static AuroraImportCatalog BuildCatalog(IEnumerable<string> contentDirectories)
+    public static AuroraImportCatalog BuildFileCatalog(IEnumerable<string> contentDirectories)
+        => BuildCatalog(contentDirectories, readContent: false);
+
+    public static AuroraImportCatalog BuildCatalog(IEnumerable<string> contentDirectories, bool readContent = true)
     {
         var catalog = new AuroraImportCatalog();
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -53,7 +56,7 @@ internal static class AuroraXmlCatalogReader
             string prefix = index == 0
                 ? ""
                 : $"additional-{index}-{BuildRootSlug(fullPath)}";
-            AppendCatalog(catalog, fullPath, prefix);
+            AppendCatalog(catalog, fullPath, prefix, readContent);
             index++;
         }
 
@@ -63,7 +66,8 @@ internal static class AuroraXmlCatalogReader
     private static void AppendCatalog(
         AuroraImportCatalog catalog,
         string contentDirectory,
-        string relativePathPrefix)
+        string relativePathPrefix,
+        bool readContent = true)
     {
         string[] files = Directory
             .GetFiles(contentDirectory, "*.xml", SearchOption.AllDirectories)
@@ -75,6 +79,14 @@ internal static class AuroraXmlCatalogReader
             string relativePath = Path.GetRelativePath(contentDirectory, file).Replace('\\', '/');
             if (!string.IsNullOrWhiteSpace(relativePathPrefix))
                 relativePath = $"{relativePathPrefix}/{relativePath}";
+
+            // Change detection needs only paths and byte hashes. Do not parse or
+            // construct every gameplay definition before comparing those hashes.
+            if (!readContent)
+            {
+                catalog.Files.Add(new AuroraFileInfo { RelativePath = relativePath, FullPath = file });
+                continue;
+            }
 
             XDocument xml = XDocument.Load(file);
             var info = xml.Root?.Element("info");

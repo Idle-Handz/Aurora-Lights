@@ -246,7 +246,7 @@ internal static class AuroraSqliteImporter
     /// </summary>
     public static bool IsStale(string contentDirectory, string sqlitePath)
     {
-        return IsStale(AuroraXmlCatalogReader.BuildCatalog(contentDirectory), sqlitePath);
+        return IsStale(AuroraXmlCatalogReader.BuildFileCatalog([contentDirectory]), sqlitePath);
     }
 
     public static bool IsStale(AuroraImportCatalog catalog, string sqlitePath)
