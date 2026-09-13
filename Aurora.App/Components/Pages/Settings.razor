@@ -334,24 +334,17 @@
 
                     <div style="margin-bottom: 16px;">
                         <div class="pref-row-title" style="margin-bottom: 4px;">Status</div>
-                        @if (ContentDb.SyncState == ContentDatabaseSyncState.Syncing)
+                        @if (ContentDb.SyncState == ContentDatabaseSyncState.Syncing || _checkingStale || _reloadingElements)
                         {
-                            <div style="color: var(--mud-palette-primary); font-size: 13px;">
-                                @(ContentDb.Progress?.PhaseLabel ?? "Syncing...")
+                            <div role="status" aria-live="polite" style="color: var(--mud-palette-primary); font-size: 13px;">
+                                @DatabaseProgressLabel
                             </div>
-                            <MudProgressLinear Indeterminate="false"
+                            <MudProgressLinear Indeterminate="@DatabaseProgressIndeterminate"
                                                Value="@SyncPercent"
                                                Min="0" Max="100"
                                                Color="Color.Primary"
+                                               aria-label="Content database progress"
                                                Class="mt-2" />
-                        }
-                        else if (_checkingStale)
-                        {
-                            <div style="color: var(--mud-palette-text-secondary); font-size: 13px;">Checking for changes…</div>
-                        }
-                        else if (_reloadingElements)
-                        {
-                            <div style="color: var(--mud-palette-text-secondary); font-size: 13px;">Refreshing database...</div>
                         }
                         else if (!string.IsNullOrWhiteSpace(ContentDb.LastReadFailure))
                         {
@@ -383,14 +376,14 @@
                         <MudButton Variant="Variant.Outlined"
                                    Color="Color.Default"
                                    Size="Size.Small"
-                                   Disabled="@(ContentDb.SyncState == ContentDatabaseSyncState.Syncing || _checkingStale)"
+                                   Disabled="@(ContentDb.SyncState == ContentDatabaseSyncState.Syncing || _checkingStale || _reloadingElements)"
                                    OnClick="CheckStaleAsync">
                             @(_checkingStale ? "Checking…" : "Check for Changes")
                         </MudButton>
                         <MudButton Variant="Variant.Filled"
                                    Color="Color.Primary"
                                    Size="Size.Small"
-                                   Disabled="@(_reloadingElements || ContentDb.SyncState == ContentDatabaseSyncState.Syncing || string.IsNullOrWhiteSpace(ContentDb.ContentDirectory) || Tabs.Tabs.Count > 0)"
+                                   Disabled="@(_reloadingElements || _checkingStale || ContentDb.SyncState == ContentDatabaseSyncState.Syncing || string.IsNullOrWhiteSpace(ContentDb.ContentDirectory) || Tabs.Tabs.Count > 0)"
                                    OnClick="RefreshDatabaseAsync">
                             @(_reloadingElements ? "Refreshing..." : "Refresh Database")
                         </MudButton>
@@ -1445,6 +1438,17 @@
         StateHasChanged();
     });
     private void OnContentChanged() => InvokeAsync(StateHasChanged);
+
+    private bool DatabaseProgressIndeterminate =>
+        ContentDb.SyncState != ContentDatabaseSyncState.Syncing ||
+        ContentDb.Progress is not { FilesTotal: > 0 } ||
+        ContentDb.Progress.Phase == Aurora.Importer.AuroraImportPhase.Complete;
+
+    private string DatabaseProgressLabel => ContentDb.SyncState == ContentDatabaseSyncState.Syncing
+        ? ContentDb.Progress?.Phase == Aurora.Importer.AuroraImportPhase.Complete
+            ? "Finalizing database…"
+            : ContentDb.Progress?.PhaseLabel ?? "Preparing content…"
+        : _checkingStale ? "Checking for changes…" : "Refreshing and loading content…";
 
     private int SyncPercent
     {

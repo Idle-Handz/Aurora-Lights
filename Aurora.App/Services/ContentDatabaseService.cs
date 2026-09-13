@@ -251,7 +251,9 @@ public sealed class ContentDatabaseService
     private async Task<AuroraImportResult> SyncWithBundledTranslatorAsync(
         string exePath, string contentDirectory, string dbPath, CancellationToken cancellationToken)
     {
-        Progress = new AuroraImportProgress(AuroraImportPhase.Scanning, 0, 0, 0, 0, null);
+        // This executable reports its totals only after exiting. Keep an animated
+        // indicator instead of displaying a determinate bar stuck at zero.
+        Progress = new AuroraImportProgress(AuroraImportPhase.Importing, 0, 0, 0, 0, null);
         StateChanged?.Invoke();
 
         using var process = new Process();

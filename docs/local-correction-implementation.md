@@ -229,3 +229,15 @@ additions/deletions/renames, and failed/raced candidate preservation. The tempor
 bundled-Translator result retained 1,189 tracked inputs, six mirrored files, ten
 pinned corrections and valid foreign keys. Performance work did not target the
 live DB or XML and has not been committed or published by this task.
+
+### Refresh progress display follow-up
+
+Settings now displays a progress bar throughout change checking and content reload,
+including when an unchanged database skips importing. Unknown totals, preparation,
+and post-import finalization use an animated indeterminate bar; existing reported
+progress remains determinate while importing with known totals. The bundled CLI
+reports totals only at exit, so it displays "Importing content" with an animated
+bar instead of a zero-percent bar or a misleading zero changed-file count.
+Concurrent check/refresh button actions are disabled while either operation runs.
+The Windows app build passed with zero warnings/errors; no live UI interaction or
+database refresh was performed for this small presentation change.

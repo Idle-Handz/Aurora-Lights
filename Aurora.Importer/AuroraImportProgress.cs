@@ -19,6 +19,7 @@ public sealed record AuroraImportProgress(
     public string PhaseLabel => Phase switch
     {
         AuroraImportPhase.Scanning  => "Scanning content files…",
+        AuroraImportPhase.Importing when FilesTotal == 0 => "Importing content…",
         AuroraImportPhase.Importing => $"Importing content ({FilesChanged} file{(FilesChanged == 1 ? "" : "s")} changed)…",
         AuroraImportPhase.Resolving => "Resolving relationships…",
         AuroraImportPhase.Complete  => "Content database up to date.",
