@@ -90,14 +90,44 @@ public static class LocalCorrectionSync
                 check.CommandText = "PRAGMA foreign_key_check;";
                 using (var reader = check.ExecuteReader())
                     if (reader.Read()) throw new InvalidDataException("Candidate database contains broken foreign keys.");
-                foreach (string id in managed.SelectMany(m => LocalCorrectionDocument.Parse(m.Evaluation.EffectiveXml)
-                    .Root!.Elements("element").Select(e => (string?)e.Attribute("id"))).OfType<string>().Distinct())
+                var sourceFiles = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
+                check.CommandText = "SELECT source_file_id,relative_path FROM source_files";
+                using (var reader = check.ExecuteReader())
+                    while (reader.Read())
+                        if (AuroraContentImporter.ResolveSourceFilePath(roots, reader.GetString(1)) is string path)
+                            sourceFiles.Add(path, reader.GetInt64(0));
+                foreach (var entry in managed)
                 {
-                    check.CommandText = "SELECT COUNT(*) FROM resolved_elements_cache WHERE aurora_id=$id";
-                    check.Parameters.Clear();
-                    check.Parameters.AddWithValue("$id", id);
-                    if (Convert.ToInt64(check.ExecuteScalar()) != 1)
-                        throw new InvalidDataException($"Corrected element {id} is missing from the candidate database.");
+                    string origin = LocalCorrectionDocument.ResolveSourcePath(entry.File.Root, entry.Evaluation.SourcePath);
+                    if (!sourceFiles.TryGetValue(origin, out long sourceFileId))
+                        throw new InvalidDataException($"Corrected source file {entry.Evaluation.SourcePath} is missing from the candidate database.");
+                    foreach (string id in LocalCorrectionDocument.Parse(entry.Evaluation.EffectiveXml)
+                        .Root!.Elements("element").Select(e => (string?)e.Attribute("id")).OfType<string>().Distinct())
+                    {
+                        // Disabled packages retain imported definitions but intentionally have
+                        // no resolved cache entries. Check storage and provenance independently.
+                        check.CommandText = """
+                            SELECT COUNT(*), COALESCE(MAX(cp.is_enabled),1)
+                            FROM elements e JOIN source_files sf ON sf.source_file_id=e.source_file_id
+                            LEFT JOIN content_packages cp ON cp.content_package_id=sf.content_package_id
+                            WHERE e.aurora_id=$id AND e.source_file_id=$source;
+                            """;
+                        check.Parameters.Clear();
+                        check.Parameters.AddWithValue("$id", id);
+                        check.Parameters.AddWithValue("$source", sourceFileId);
+                        bool enabled;
+                        using (var reader = check.ExecuteReader())
+                        {
+                            reader.Read();
+                            if (reader.GetInt64(0) == 0)
+                                throw new InvalidDataException($"Corrected element {id} from {entry.Evaluation.SourcePath} is missing from the candidate database.");
+                            enabled = reader.GetInt64(1) != 0;
+                        }
+                        if (!enabled) continue;
+                        check.CommandText = "SELECT COUNT(*) FROM resolved_elements_cache WHERE aurora_id=$id";
+                        if (Convert.ToInt64(check.ExecuteScalar()) != 1)
+                            throw new InvalidDataException($"Enabled corrected element {id} is missing from the candidate resolution cache.");
+                    }
                 }
                 Mirror(connection, managed);
                 // Track the real inputs separately. Source-file hashes continue to describe

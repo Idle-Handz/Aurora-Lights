@@ -88,7 +88,13 @@ metadata must not cause fallback to uncorrected XML.
 
 The wrapper copies the current database into a candidate, retaining package
 settings, then validates SQLite integrity, foreign keys, and presence of corrected
-elements. It checks inputs again before activation and refuses a raced/failed
+elements under their authoritative source-file provenance in `elements`. Package
+availability is separate: disabled packages retain those stored definitions;
+only enabled packages require a corresponding `resolved_elements_cache` entry.
+Settings > Content > Sources currently persists the app's availability choices
+in `content_packages.is_enabled` and rebuilds that derived cache. A missing cache
+entry for disabled content must not be reported as a failed import.
+It checks inputs again before activation and refuses a raced/failed
 update. The candidate replaces the working database only after validation. Package
 toggles share the app's sync lock. Failed refreshes stop the reload path before it
 closes character tabs or replaces loaded elements.
@@ -160,3 +166,30 @@ Translator selected through `AURORA_TEST_TRANSLATOR`. The Windows app build pass
 with zero errors; no commit, push, snapshot publication, or production refresh was
 performed. A transient shared build-output lock was resolved by running builds
 sequentially; the final Translator regression also verified the path-separator fix.
+
+### September 13 live-refresh follow-up
+
+The installed Tatsumi definition belonged to a disabled package. The original
+cache-only validation incorrectly rejected it; the disabled-source regression
+failed before the fix. Validation now distinguishes imported source-file presence
+from enabled cache availability. All 24 lifecycle tests passed; the three new
+cases also passed through the bundled Translator, including rejection of missing
+corrected provenance with the package enabled or disabled.
+
+A rehearsal using temporary copies of all 1,189 installed XML files and the
+working database completed the bundled import and correction validation: 20,973
+elements, six mirrored files, ten pinned corrections, SQLite integrity and foreign
+keys valid. Tatsumi remained stored and excluded from the disabled-source cache.
+Existing enable/disable flags were preserved; live DB/XML hashes were unchanged.
+
+A separate assertion of complete precedence preservation failed: the bundled
+Translator changed 51 existing ranks (49 supplement entries 200 to 400, UA 200 to
+500, user 400 to 500). That behavior is outside this validation fix and remains
+recorded in the Translator handoff for reconciliation with its newer writer.
+Do not treat this rehearsal as proof of full package-setting preservation. This
+follow-up has not been committed, published, or activated against the live DB.
+
+Rejecting an incomplete candidate retains the entire previous working database.
+Protected corrections already survive upstream omission in prepared XML; a
+subsequent missing imported definition indicates incomplete output. Per-element
+carry-forward into a partially refreshed database is not currently implemented.

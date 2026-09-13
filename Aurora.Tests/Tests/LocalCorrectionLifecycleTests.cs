@@ -192,6 +192,26 @@ public sealed class LocalCorrectionLifecycleTests : IDisposable
     }
 
     [Fact]
+    public void Sync_PreservesCorrectionsInDisabledPackages_WithoutEnablingThem()
+    {
+        File.WriteAllText(Local, LocalCorrectionDocument.Create(Fixed, Baseline, "core/features.xml", [Replacement()]));
+        RunImport().Success.Should().BeTrue();
+        long packageId = long.Parse(Query("SELECT content_package_id FROM source_files WHERE replace(relative_path,char(92),'/')='core/features.xml'"));
+        AuroraContentImporter.SetPackageEnabled(Database, packageId, false);
+        Query("SELECT COUNT(*) FROM resolved_elements_cache WHERE aurora_id='ID_FIX'").Should().Be("0");
+
+        File.WriteAllText(Origin, Baseline.Replace("old companion", "updated companion"));
+        RunImport().Success.Should().BeTrue();
+
+        Query("SELECT name FROM elements WHERE aurora_id='ID_FIX'").Should().Be("Fixed");
+        Query($"SELECT is_enabled FROM content_packages WHERE content_package_id={packageId}").Should().Be("0");
+        Query("SELECT COUNT(*) FROM resolved_elements_cache WHERE aurora_id IN ('ID_FIX','ID_COMPANION')").Should().Be("0");
+        Query("SELECT state FROM local_corrections").Should().Be("review-pending");
+        File.Exists(Local).Should().BeTrue();
+        AuroraContentImporter.IsStale(root, Database).Should().BeFalse();
+    }
+
+    [Fact]
     public void Sync_RetiresOnlyAfterReviewAndSuccessfulImport_AndDoesNotReimportArchive()
     {
         File.WriteAllText(Origin, Fixed);
@@ -207,6 +227,35 @@ public sealed class LocalCorrectionLifecycleTests : IDisposable
         RunImport().Success.Should().BeTrue();
         Query("SELECT COUNT(*) FROM elements WHERE aurora_id='ID_FIX'").Should().Be("1");
         Query("SELECT COUNT(*) FROM local_corrections").Should().Be("1");
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Sync_RejectsMissingCorrectedProvenance_EvenWhenAnotherFileSuppliesTheId(bool enabled)
+    {
+        File.WriteAllText(Local, LocalCorrectionDocument.Create(Fixed, Baseline, "core/features.xml", [Replacement()]));
+        File.WriteAllText(Path.Combine(root, "core", "other.xml"),
+            "<elements><element id='ID_OTHER' name='Other' type='Item' source='Test'/></elements>");
+        RunImport().Success.Should().BeTrue();
+        long packageId = long.Parse(Query("SELECT content_package_id FROM source_files WHERE replace(relative_path,char(92),'/')='core/features.xml'"));
+        AuroraContentImporter.SetPackageEnabled(Database, packageId, enabled);
+        SqliteConnection.ClearAllPools();
+        string before = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(Database)));
+
+        Func<Task> invalid = async () => await LocalCorrectionSync.ImportAsync([root], Database, (_, candidate, _) =>
+        {
+            using var connection = new SqliteConnection($"Data Source={candidate};Pooling=False");
+            connection.Open();
+            using var command = connection.CreateCommand();
+            command.CommandText = "UPDATE elements SET source_file_id=(SELECT source_file_id FROM source_files WHERE replace(relative_path,char(92),'/')='core/other.xml') WHERE aurora_id='ID_FIX'";
+            command.ExecuteNonQuery();
+            return Task.FromResult(AuroraImportResult.Succeeded(0, 0, 0));
+        });
+
+        await invalid.Should().ThrowAsync<InvalidDataException>().WithMessage("*ID_FIX*core/features.xml*missing*");
+        Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(Database))).Should().Be(before);
+        File.Exists(Local).Should().BeTrue();
     }
 
     [Fact]
