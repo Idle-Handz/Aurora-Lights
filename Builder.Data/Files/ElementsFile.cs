@@ -39,6 +39,10 @@ public class ElementsFile
 
 	public void SaveContent(FileInfo file)
 	{
+		if (file.Exists && file.Extension.Equals(".xml", StringComparison.OrdinalIgnoreCase) &&
+			LocalCorrectionDocument.HasMetadata(File.ReadAllText(file.FullName)) &&
+			!string.Equals(File.ReadAllText(file.FullName), Content, StringComparison.Ordinal))
+			throw new InvalidDataException("Use explicit correction review to replace a file containing correction metadata.");
 		FileInfo = file;
 		if (!Directory.Exists(file.DirectoryName) && file.DirectoryName != null)
 		{

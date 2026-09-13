@@ -7,6 +7,27 @@ namespace Aurora.Importer;
 
 internal static class AuroraXmlCatalogReader
 {
+    internal static string? ResolveSourceFilePath(IEnumerable<string> roots, string relativePath)
+    {
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        string relative = relativePath.Replace('\\', '/');
+        int index = 0;
+        foreach (string root in roots)
+        {
+            if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root)) continue;
+            string full = Path.GetFullPath(root);
+            if (!seen.Add(full)) continue;
+            string prefix = index == 0 ? "" : $"additional-{index}-{BuildRootSlug(full)}/";
+            index++;
+            if (prefix.Length > 0 && !relative.StartsWith(prefix, StringComparison.Ordinal)) continue;
+            string path = Path.GetFullPath(Path.Combine(full, relative[prefix.Length..]));
+            string within = Path.GetRelativePath(full, path).Replace('\\', '/');
+            if (within == ".." || within.StartsWith("../", StringComparison.Ordinal) || Path.IsPathRooted(within)) continue;
+            if (File.Exists(path)) return path;
+        }
+        return null;
+    }
+
     public static AuroraImportCatalog BuildCatalog(string contentDirectory)
     {
         var catalog = new AuroraImportCatalog();

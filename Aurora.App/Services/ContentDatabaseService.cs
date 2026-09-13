@@ -22,6 +22,10 @@ public sealed class ContentDatabaseService
     public bool IsStale { get; private set; }
     public string? LastReadFailure { get; private set; }
 
+    public IReadOnlyList<LocalCorrectionStatus> GetLocalCorrections() => TryRead(
+        "read local corrections", () => DatabasePath is { } path
+            ? LocalCorrectionSync.ReadStatuses(path) : [], []);
+
     /// <summary>Fires on the calling (background) thread whenever state changes.</summary>
     public event Action? StateChanged;
 
@@ -88,6 +92,7 @@ public sealed class ContentDatabaseService
     /// </summary>
     public async Task<string?> SetPackageEnabledAsync(long packageId, bool enabled)
     {
+        await _lock.WaitAsync();
         try
         {
             if (DatabasePath is not { } p)
@@ -104,6 +109,7 @@ public sealed class ContentDatabaseService
         }
         finally
         {
+            _lock.Release();
             StateChanged?.Invoke();
         }
     }
@@ -197,7 +203,9 @@ public sealed class ContentDatabaseService
 
             if (contentDirectories.Count == 1 && BundledTranslatorPath is { } exePath && File.Exists(exePath))
             {
-                result = await SyncWithBundledTranslatorAsync(exePath, contentDirectories[0], dbPath, cancellationToken);
+                result = await Task.Run(() => LocalCorrectionSync.ImportAsync(contentDirectories, dbPath,
+                    (prepared, candidate, token) => SyncWithBundledTranslatorAsync(exePath, prepared[0], candidate, token),
+                    cancellationToken), cancellationToken);
             }
             else
             {
@@ -212,7 +220,8 @@ public sealed class ContentDatabaseService
             }
 
             LastResult = result;
-            IsStale    = false;
+            IsStale    = !result.Success;
+            if (result.Success) DbElementLoader.ResetCaches();
             SyncState  = result.Success
                 ? ContentDatabaseSyncState.Done
                 : ContentDatabaseSyncState.Failed;

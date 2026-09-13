@@ -270,7 +270,9 @@ internal static class AuroraSqliteImporter
                 cmd.CommandText = "SELECT relative_path, file_hash FROM source_files;";
                 using var r = cmd.ExecuteReader();
                 while (r.Read())
-                    stored[r.GetString(0)] = r.IsDBNull(1) ? "" : r.GetString(1);
+                    // The bundled Windows Translator preserves backslashes; the
+                    // in-process catalog uses forward slashes for the same paths.
+                    stored[r.GetString(0).Replace('\\', '/')] = r.IsDBNull(1) ? "" : r.GetString(1);
             }
 
             var seenPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

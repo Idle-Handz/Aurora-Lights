@@ -43,7 +43,24 @@ internal static class RawUserXmlOverlayService
                 if (elementsFile.Ignore)
                     continue;
 
-                XmlDocument xmlDocument = CreateXmlDocument(file.FullName);
+                var cached = ContentDatabaseService.GetDatabasePath() is { } database
+                    ? Aurora.Importer.LocalCorrectionSync.ReadRuntimeContent(file.FullName, database) : null;
+                var correction = cached == null ? LocalCorrectionDocument.ForRuntime(file.FullName) : null;
+                string? effectiveXml = cached?.EffectiveXml ?? correction?.EffectiveXml;
+                string originPath = cached?.SourcePath ?? (correction == null ? file.FullName :
+                    LocalCorrectionDocument.ResolveSourcePath(LocalCorrectionDocument.FindContentRoot(file.FullName)!, correction.SourcePath));
+                XmlDocument xmlDocument;
+                if (effectiveXml != null)
+                {
+                    xmlDocument = new XmlDocument();
+                    xmlDocument.LoadXml(effectiveXml);
+                    elementsFile = new ElementsFile(effectiveXml);
+                    elementsFile.Load(effectiveXml);
+                    foreach (var obsolete in target.Where(e => LocalCorrectionDocument.IsSuppressedFromFile(
+                        e.Id, e.ContentFilePath, originPath, cached?.SuppressedIds ?? correction!.SuppressedIds)).ToList())
+                        target.Remove(obsolete);
+                }
+                else xmlDocument = CreateXmlDocument(file.FullName);
                 AuroraXmlCompatibilityRepair.RepairDocument(xmlDocument);
                 if (xmlDocument.DocumentElement == null)
                     continue;
@@ -62,11 +79,13 @@ internal static class RawUserXmlOverlayService
                                 currentParser = parsers.FirstOrDefault(p => p.ParserType == header.Type) ?? defaultParser;
 
                             ElementBase element = currentParser.ParseElement(node);
+                            element.ContentFilePath = originPath;
                             UpsertElement(target, element);
                             parsedElements++;
                         }
                         catch (Exception ex)
                         {
+                            LocalCorrectionDocument.RethrowManagedRuntimeFailure(file.FullName, ex);
                             skipped++;
                             DebugLogService.Instance.Warn(
                                 $"RawUserXmlOverlay: skipped element in {file.FullName}: {ex.GetType().Name}: {ex.Message}");
@@ -81,6 +100,7 @@ internal static class RawUserXmlOverlayService
             }
             catch (Exception ex)
             {
+                LocalCorrectionDocument.RethrowManagedRuntimeFailure(file.FullName, ex);
                 skipped++;
                 DebugLogService.Instance.LogException(ex, $"RawUserXmlOverlay: {file.FullName}");
             }

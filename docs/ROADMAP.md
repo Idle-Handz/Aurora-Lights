@@ -29,6 +29,36 @@ Current focus:
   before broad loader rewrites
 - preserve stable choice identity across builder rows and `.dnd5e` save/load
   so same-label choices do not drift between app sessions
+- adopt Aurora ID alone as canonical element identity after the content cleanup, silently
+  ignore harmless identical declarations, and preserve distinct references through
+  selection/save/load; see [the identity plan](element-identity-feasibility.md)
+- allow `user/local` content to be cached in SQLite as a separate override layer,
+  preserving the authoritative base and avoiding full rebuilds for local edits
+- persist explicit correction metadata in the local artifact and database; allow
+  unmodified companion elements to follow authoritative updates while marked
+  corrections remain pinned until direct review or verified published-match
+  acceptance; see [the override policy](local-correction-policy.md)
+- capture authoritative download evidence and automatically accept complete
+  matching corrections/groups after successful import; disk-only matches and
+  partial/differing upstream repairs remain protected for review
+- automatically retire a local file and its override cache once no marked
+  corrections remain and its full effective content matches an imported
+  authoritative update; retain any still-unique local content
+- first correction lifecycle implementation: embedded v1 metadata, a separate
+  SQLite mirror of originals and effective content, protected refreshes, explicit
+  review API, and recoverable retirement; see [implementation notes](local-correction-implementation.md)
+- six known hotfix files explicitly annotated from archived originals, with ten
+  protected operations and file-scoped runtime suppression; see
+  [the deployment record](hotfix-metadata-annotation-2026-09-13.md)
+- keep [the Translator handoff](../../5eApiTranslator/docs/aurora-translator-data-handoff.md) current as each
+  data feature lands; [remaining UI/migration estimates](content-migration-estimates.md)
+  separate implementation effort from library extraction and platform validation
+- neutral review/provenance records and read-only canonical classification now
+  exist in `Builder.Data`; production adapters and reference scanning remain pending
+- resolve content in app/CLI preparation before the SQLite writer receives it;
+  reuse AuroraXMLHelper diagnostics and repair previews through adapters, preserving
+  its manual suggestions without automatically applying ID-regeneration placeholders;
+  see [the preparation contract](content-preparation-contract.md)
 
 Next slice:
 
@@ -40,6 +70,30 @@ Next slice:
   selects, grants, and starting equipment reconstruction
 - begin a "content repair suggestion" layer that can propose Aurora element XML
   fixes without mutating user content automatically
+- for users with Advanced options enabled, surface ID conflicts detected during
+  database sync in a compact diff/resolution window inside the builder; show source
+  provenance, complete definition differences, and affected references before
+  applying a repair as a persistent local hotfix
+- consider reusing Constellations/Aurora XMLHelper/Aurora Studio conflict-resolution
+  logic for that window; keep larger authoring workflows in those tools while
+  supporting small repairs directly in the builder, and flag local corrections
+  for retirement once verified fetched upstream content incorporates and accepts
+  the complete fix, retaining review for unverified or differing outcomes
+
+## Shared Importer Migration (Later)
+
+- After resolving selected-element identity and definition-conflict behavior, extract
+  the authoritative AuroraTranslator importer into a versioned shared library.
+- Have Translator's CLI and Lights use the same implementation for SQLite creation,
+  refresh, migrations, and required package/source database maintenance; retire the
+  copied writer only after its callers and behavior have been migrated.
+- Validate import and SQLite loading on Android early. Normal loading must remain
+  SQLite-backed on supported platforms; runtime XML is a recovery path, not the
+  only platform option. Desktop CLI builds can remain optional wrappers.
+- Preserve progress, cancellation, multiple content directories, and platform-safe
+  file access, and establish a separate reader compatibility contract and publishing
+  check. Keep source availability, display ordering, and definition-conflict policy
+  distinct rather than inheriting current package precedence implicitly.
 
 ## MAUI
 

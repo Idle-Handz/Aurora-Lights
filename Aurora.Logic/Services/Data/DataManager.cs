@@ -254,7 +254,20 @@ public sealed class DataManager
         else
         {
           ElementBaseCollection applicationElements = new ElementBaseCollection();
-          XmlDocument xmlDocument = await DataManager.CreateXmlDocument(file.FullName);
+          var correction = LocalCorrectionDocument.ForRuntime(file.FullName);
+          string originPath = correction == null ? file.FullName : LocalCorrectionDocument.ResolveSourcePath(
+            LocalCorrectionDocument.FindContentRoot(file.FullName), correction.SourcePath);
+          XmlDocument xmlDocument;
+          if (correction != null)
+          {
+            xmlDocument = new XmlDocument();
+            xmlDocument.LoadXml(correction.EffectiveXml);
+            ef = new ElementsFile(correction.EffectiveXml);
+            ef.Load(correction.EffectiveXml);
+            foreach (var obsolete in coreElements.Where(e => LocalCorrectionDocument.IsSuppressedFromFile(
+              e.Id, e.ContentFilePath, originPath, correction.SuppressedIds)).ToList()) coreElements.Remove(obsolete);
+          }
+          else xmlDocument = await DataManager.CreateXmlDocument(file.FullName);
           AuroraXmlCompatibilityRepair.RepairDocument(xmlDocument);
           ObservableCollection<XmlNode> elementNodes = ef.ElementNodes;
           if (xmlDocument.DocumentElement != null)
@@ -266,7 +279,9 @@ public sealed class DataManager
               ElementHeader header = elementParser.ParseElementHeader(elementNode);
               if (elementParser.ParserType != header.Type)
                 elementParser = elementParserCollection.FirstOrDefault<ElementParser>((Func<ElementParser, bool>) (p => p.ParserType == header.Type)) ?? defaultParser;
-              applicationElements.Add(elementParser.ParseElement(elementNode));
+              var parsedElement = elementParser.ParseElement(elementNode);
+              parsedElement.ContentFilePath = originPath;
+              applicationElements.Add(parsedElement);
             }
           }
           foreach (ElementBase elementBase1 in (Collection<ElementBase>) applicationElements)
@@ -288,6 +303,9 @@ public sealed class DataManager
       }
       catch (ElementsFileLoadException ex)
       {
+        if (LocalCorrectionDocument.FindContentRoot(file.FullName) != null &&
+            LocalCorrectionDocument.HasMetadata(File.ReadAllText(file.FullName)))
+          throw new InvalidDataException("Local correction could not be loaded; existing content must be preserved.", ex);
         Logger.Warning(ex.Message);
         Logger.Exception((Exception) ex, nameof (InitializeElementDataAsync));
         ex.Data.Add((object) "filename", (object) file.FullName);
@@ -295,6 +313,9 @@ public sealed class DataManager
       }
       catch (Exception ex)
       {
+        if (LocalCorrectionDocument.FindContentRoot(file.FullName) != null &&
+            LocalCorrectionDocument.HasMetadata(File.ReadAllText(file.FullName)))
+          throw new InvalidDataException("Local correction could not be evaluated; existing content must be preserved.", ex);
         Logger.Warning("'{0}' in parsing {1}", (object) ex.GetType(), (object) file.FullName);
         Logger.Exception(ex, nameof (InitializeElementDataAsync));
         ex.Data.Add((object) "filename", (object) file.FullName);

@@ -1,0 +1,67 @@
+{
+  "work_directory": "C:\\Users\\Ralla\\AppData\\Local\\Temp\\aurora-correction-cli-vtpr6rlk",
+  "translator": "C:\\Users\\Ralla\\source\\repos\\Aurora-Lights\\Aurora.App\\BundledTools\\AuroraTranslator\\AuroraTranslator.exe",
+  "translator_sha256": "b405738310a0051fc74a76b4d5285cc767d6b202470902cd9f97191deb953457",
+  "files": [
+    {
+      "path": "core\\dungeon-masters-guide-2024\\items-staffs.xml",
+      "sha256": "77f1d4290e7730b59f346a0af69e98565db25e08787637894618e0ab849d5a56"
+    },
+    {
+      "path": "core\\dungeon-masters-guide-2024\\items-weapons.xml",
+      "sha256": "7395e88d283f929005c351e6411a584f0c7fed19b2a110e19a8bcee4fea8ad48"
+    },
+    {
+      "path": "reddit\\reddit-unearthed-arcana\\arcane-artillery\\guns.xml",
+      "sha256": "00ac3f401235adef117e7538c3012e31b03fdb0af60a23a84081250992375307"
+    },
+    {
+      "path": "reddit\\reddit-unearthed-arcana\\blazing-dawn-players-companion\\fighter-devout.xml",
+      "sha256": "4cb61f8e8fcc163955377725508a53f85fd223ae697cc830b4a19e1c2a9f9753"
+    },
+    {
+      "path": "ryokos-guide-to-the-yokai-realms\\race-tatsumi.xml",
+      "sha256": "dc7b25354e88ba9d56dc5086fd2280c0a5e3ae5fb7762e1d3faedcd33b607605"
+    },
+    {
+      "path": "third-party\\genuine-fantasy-press\\forgotten-secrets\\items.xml",
+      "sha256": "a15f0503bb44036456c596d5243f0ee67338f46f9c91124c1707788d3f0541aa"
+    }
+  ],
+  "compared_tables": 56,
+  "changed_content_tables": [],
+  "elements": 247,
+  "distinct_ids": 247,
+  "repaired_grants": [
+    [
+      "ID_JONOMAN3000_ARCHETYPE_FEATURE_DEVOUT_ZEALOTS_DEVOTION_DEFENDER_OF_KIN",
+      "ID_JONOMAN3000_ARCHETYPE_FEATURE_DEVOUT_ZEALOTS_DEVOTION_DEFENDER_OF_KIN"
+    ],
+    [
+      "ID_JONOMAN3000_ARCHETYPE_FEATURE_DEVOUT_ZEALOTS_DEVOTION_SLAYER_OF_FOES",
+      "ID_JONOMAN3000_ARCHETYPE_FEATURE_DEVOUT_ZEALOTS_DEVOTION_SLAYER_OF_FOES"
+    ],
+    [
+      "ID_RGTTYR_RACIAL_TRAIT_TATSUMI_RYUJIN_HEARTENING_BREATH",
+      "ID_RGTTYR_RACIAL_TRAIT_TATSUMI_RYUJIN_HEARTENING_BREATH"
+    ]
+  ],
+  "database_metadata": {
+    "singleton_id": 1,
+    "schema_version": 1,
+    "data_version": 11,
+    "importer_version": "AuroraTranslator/1.0",
+    "built_utc": "2026-09-13T08:44:16.1059301Z",
+    "source_file_count": 6,
+    "element_count": 247,
+    "content_root_hash": null
+  },
+  "original_files_unchanged": true,
+  "excluded_comparison_fields": [
+    "database_metadata",
+    "import_state",
+    "file_hash",
+    "created_utc"
+  ],
+  "scope": "Tolerance only; correction mirroring and lifecycle are not implemented."
+}

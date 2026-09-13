@@ -14,6 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Builder.Data\Builder.Data.csproj" />
     <EmbeddedResource Include="Resources\aurora-elements-schema.sql" />
   </ItemGroup>
 

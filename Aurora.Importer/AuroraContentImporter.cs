@@ -18,6 +18,9 @@ public sealed record ContentPackageInfo(
 /// </summary>
 public static class AuroraContentImporter
 {
+    public static string? ResolveSourceFilePath(IEnumerable<string> roots, string relativePath)
+        => AuroraXmlCatalogReader.ResolveSourceFilePath(roots, relativePath);
+
     /// <summary>
     /// Opens an existing database for queries. Normal reads remain read-only, but a leftover
     /// rollback journal requires a writable connection so SQLite can recover an interrupted
@@ -43,11 +46,12 @@ public static class AuroraContentImporter
     /// relative to the XML files in <paramref name="contentDirectory"/>.
     /// </summary>
     public static bool IsStale(string contentDirectory, string sqlitePath) =>
-        AuroraSqliteImporter.IsStale(contentDirectory, sqlitePath);
+        IsStale(new[] { contentDirectory }, sqlitePath);
 
     public static bool IsStale(
         IReadOnlyList<string> contentDirectories,
         string sqlitePath) =>
+        LocalCorrectionSync.IsStale(contentDirectories, sqlitePath) ??
         AuroraSqliteImporter.IsStale(AuroraXmlCatalogReader.BuildCatalog(contentDirectories), sqlitePath);
 
     public static ContentDatabaseMetadata? GetMetadata(string sqlitePath) =>
@@ -67,8 +71,7 @@ public static class AuroraContentImporter
         IProgress<AuroraImportProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
-        var catalog = AuroraXmlCatalogReader.BuildCatalog(contentDirectory);
-        return AuroraSqliteImporter.Import(catalog, sqlitePath, progress, cancellationToken);
+        return Import(new[] { contentDirectory }, sqlitePath, progress, cancellationToken);
     }
 
     public static AuroraImportResult Import(
@@ -77,8 +80,10 @@ public static class AuroraContentImporter
         IProgress<AuroraImportProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
-        var catalog = AuroraXmlCatalogReader.BuildCatalog(contentDirectories);
-        return AuroraSqliteImporter.Import(catalog, sqlitePath, progress, cancellationToken);
+        return LocalCorrectionSync.ImportAsync(contentDirectories, sqlitePath,
+            (prepared, candidate, token) => Task.FromResult(AuroraSqliteImporter.Import(
+                AuroraXmlCatalogReader.BuildCatalog(prepared), candidate, progress, token)),
+            cancellationToken).GetAwaiter().GetResult();
     }
 
     /// <summary>

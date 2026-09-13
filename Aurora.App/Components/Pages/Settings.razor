@@ -396,6 +396,19 @@
                         </MudButton>
                     </div>
 
+                    @foreach (var correction in ContentDb.GetLocalCorrections())
+                    {
+                        <div class="pref-row-desc" style="margin-top: 10px;">
+                            <strong>@System.IO.Path.GetFileName(correction.FilePath)</strong>:
+                            @(correction.Status == "retired" ? "Redundant local copy retired." : correction.Status == "ready-to-retire" ? "Redundant local copy awaiting retirement." : "Local corrections preserved for review.")
+                            @if (Prefs.DevMode)
+                            {
+                                <div>@correction.SourcePath</div>
+                                <div>@correction.ReviewDetails</div>
+                            }
+                        </div>
+                    }
+
                     @if (Tabs.Tabs.Count > 0 && !string.IsNullOrWhiteSpace(ContentDb.ContentDirectory))
                     {
                         <MudAlert Severity="Severity.Info" Class="mt-4" Dense="true">

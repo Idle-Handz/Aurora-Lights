@@ -270,16 +270,30 @@ public static class XmlContentFallbackService
                 if (ef.Ignore)
                     continue;
 
-                XmlDocument xmlDocument = CreateXmlDocument(file.FullName);
+                var correction = LocalCorrectionDocument.ForRuntime(file.FullName);
+                string originPath = correction == null ? file.FullName : LocalCorrectionDocument.ResolveSourcePath(
+                    LocalCorrectionDocument.FindContentRoot(file.FullName)!, correction.SourcePath);
+                XmlDocument xmlDocument;
+                if (correction != null)
+                {
+                    xmlDocument = new XmlDocument();
+                    xmlDocument.LoadXml(correction.EffectiveXml);
+                    foreach (var obsolete in byId.Values.Where(e => LocalCorrectionDocument.IsSuppressedFromFile(
+                        e.Id, e.ContentFilePath, originPath, correction.SuppressedIds)).ToList()) byId.Remove(obsolete.Id);
+                }
+                else xmlDocument = CreateXmlDocument(file.FullName);
                 AuroraXmlCompatibilityRepair.RepairDocument(xmlDocument);
                 documentCount++;
-                LoadDocument(xmlDocument, byId, appendNodes, IsUserOverrideFile(file), ref skipped);
+                LoadDocument(xmlDocument, byId, appendNodes, IsUserOverrideFile(file), ref skipped, originPath);
             }
             catch (Exception ex)
             {
                 skipped++;
                 DebugLogService.Instance.LogException(ex,
                     $"XmlContentFallbackService: {file.FullName}");
+                if (LocalCorrectionDocument.FindContentRoot(file.FullName) != null &&
+                    LocalCorrectionDocument.HasMetadata(File.ReadAllText(file.FullName)))
+                    throw new InvalidDataException("Local correction could not be evaluated; do not substitute uncorrected XML.", ex);
             }
         }
 
@@ -301,7 +315,8 @@ public static class XmlContentFallbackService
         Dictionary<string, XmlFallbackElement> byId,
         List<XmlFallbackAppend> appendNodes,
         bool isUserOverride,
-        ref int skipped)
+        ref int skipped,
+        string? contentFilePath = null)
     {
         if (xmlDocument.DocumentElement == null)
             return;
@@ -320,6 +335,7 @@ public static class XmlContentFallbackService
                     continue;
                 }
 
+                element.ContentFilePath = contentFilePath;
                 byId[element.Id] = element;
                 continue;
             }
@@ -391,6 +407,7 @@ public static class XmlContentFallbackService
                 .FirstOrDefault(p => p.ParserType == header.Type) ?? defaultParser;
 
             ElementBase element = parser.ParseElement(xmlElement.Node);
+            element.ContentFilePath = xmlElement.ContentFilePath;
             return UpsertLiveElement(element, replaceExisting);
         }
         catch (Exception ex)
@@ -802,6 +819,7 @@ public static class XmlContentFallbackService
         public string Source { get; } = source;
         public XmlNode Node { get; } = node;
         public bool IsUserOverride { get; set; } = isUserOverride;
+        public string? ContentFilePath { get; set; }
         public IReadOnlyList<string> Supports { get; set; } = [];
         public string Requirements { get; set; } = "";
         public int SpellLevel { get; set; }

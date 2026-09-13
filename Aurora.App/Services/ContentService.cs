@@ -278,7 +278,10 @@ public sealed class ContentService
             // actually changed. Run the catalog/hash scan off the UI thread.
             bool isStale = await Task.Run(() => _contentDb.CheckIsStale());
             if (isStale)
-                await _contentDb.SyncAsync();
+            {
+                var result = await _contentDb.SyncAsync();
+                if (!result.Success) return result.ErrorMessage ?? "Content sync failed; existing elements were preserved.";
+            }
 
             _tabs.CloseAllTabs();
             await _characters.ReloadElementsAsync();

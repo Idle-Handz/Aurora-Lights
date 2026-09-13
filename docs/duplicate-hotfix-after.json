@@ -1,0 +1,82 @@
+{
+  "id_only_duplicate_groups_after_exclusion": 5,
+  "different_source_groups": 0,
+  "same_source_groups": 5,
+  "different_source_groups_equal_except_source_attribute": 0,
+  "source_label_pairs": [],
+  "same_source_file_groups": [
+    {
+      "paths": [
+        "core\\players-handbook\\background-noble.xml",
+        "the-book-of-xellarant\\vigilante-background.xml"
+      ],
+      "count": 1,
+      "identical": 1,
+      "elements": [
+        {
+          "id": "ID_BACKGROUND_FEATURE_POSITIONOFPRIVILEGE",
+          "name": "Feature: Position of Privilege",
+          "identical": true
+        }
+      ]
+    },
+    {
+      "paths": [
+        "core\\players-handbook-2024\\rogue-thief.xml"
+      ],
+      "count": 1,
+      "identical": 1,
+      "elements": [
+        {
+          "id": "ID_INTERNAL_PHB24_FEATURE_REPLACEMENT_ROGUE_THIEF_SUPREME_SNEAK_STEALTH_ATTACK",
+          "name": "Supreme Sneak: Stealth Attack Feature Replacement",
+          "identical": true
+        }
+      ]
+    },
+    {
+      "paths": [
+        "ryokos-guide-to-the-yokai-realms\\creatures-of-the-yokai-realms.xml"
+      ],
+      "count": 1,
+      "identical": 1,
+      "elements": [
+        {
+          "id": "ID_RGTTYR_INFORMATION_ASPECT_OF_ASHURA",
+          "name": "Aspect of Ashura",
+          "identical": true
+        }
+      ]
+    },
+    {
+      "paths": [
+        "supplements\\sword-coast-adventurers-guide\\background-factionagent.xml",
+        "the-book-of-xellarant\\shadow-agent-background.xml"
+      ],
+      "count": 1,
+      "identical": 1,
+      "elements": [
+        {
+          "id": "ID_SCAG_BACKGROUND_FACTION_AGENT_SAFE_HAVEN",
+          "name": "Feature: Safe Haven",
+          "identical": true
+        }
+      ]
+    },
+    {
+      "paths": [
+        "unearthed-arcana\\20170313.xml"
+      ],
+      "count": 1,
+      "identical": 1,
+      "elements": [
+        {
+          "id": "ID_WOTC_UA20170313_SPELL_MYSTIC_CROWN_OF_DISGUST",
+          "name": "Crown of Disgust",
+          "identical": true
+        }
+      ]
+    }
+  ],
+  "split_examples": []
+}

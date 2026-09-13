@@ -300,7 +300,8 @@ internal static class DbElementLoader
     private record StatRow(long ElementId, string OwnerKind, string StatName, string? Value,
         string? Bonus, string? Equipped, int? Level, bool Inline, string? Alt, string? Requirements);
     private record SpellcastingRow(long ElementId, string ProfileName, string? Ability,
-        bool IsExtended, bool? Prepare, bool? AllowReplace, string? ListText, string? ExtendText);
+        bool IsExtended, bool? Prepare, bool? AllowReplace, string? ListText, string? ExtendText,
+        XmlElement? RawProfile = null);
     private record SpellRow(long ElementId, int Level, string? School, string? CastingTime,
         string? Range, string? Duration, bool HasVerbal, bool HasSomatic, bool HasMaterial,
         string? Material, bool IsConcentration, bool IsRitual);
@@ -351,12 +352,14 @@ internal static class DbElementLoader
                 $"Database metadata schema v{metadata.SchemaVersion} is incompatible with expected schema v{AuroraDatabaseVersions.SchemaVersion}. Re-sync the content database.");
         }
 
-        if (metadata.DataVersion != AuroraDatabaseVersions.DataVersion)
+        // The local importer still writes v10. Translator v11 preserves complete
+        // spellcasting XML; accepting it must not change the local writer's version.
+        if (metadata.DataVersion is not (10 or 11))
         {
             return DbLoadResult.Failed(
                 dbPath,
                 metadata.SchemaVersion,
-                $"Database data version v{metadata.DataVersion} is incompatible with expected data version v{AuroraDatabaseVersions.DataVersion}. Re-sync the content database.");
+                $"Database data version v{metadata.DataVersion} is incompatible with supported data versions v10 and v11.");
         }
 
         // Quick sanity check.
@@ -378,7 +381,7 @@ internal static class DbElementLoader
         var grantsMap      = QueryGrants(conn);
         var selectsMap     = QuerySelects(conn);
         var statsMap       = QueryStats(conn);
-        var spellcastingMap = QuerySpellcasting(conn);
+        var spellcastingMap = QuerySpellcasting(conn, metadata.DataVersion);
         var spellMap       = QuerySpells(conn);
         var classMap       = QueryClasses(conn);
         var multiclassMap  = QueryMulticlass(conn);
@@ -401,6 +404,9 @@ internal static class DbElementLoader
 
         int skippedElements = 0;
         var parsed = new List<ElementBase>(elements.Count);
+        var contentRoots = ContentDirectoryResolver.GetContentDirectories();
+        var sourcePaths = elements.Select(e => e.SourceFileRelativePath).Distinct()
+            .ToDictionary(path => path, path => AuroraContentImporter.ResolveSourceFilePath(contentRoots, path));
         foreach (var el in elements)
         {
             try
@@ -422,6 +428,7 @@ internal static class DbElementLoader
                                         ?? defaultParser;
 
                     ElementBase element = currentParser.ParseElement(node);
+                    element.ContentFilePath = sourcePaths[el.SourceFileRelativePath];
                     parsed.Add(element);
                 }
                 finally
@@ -436,6 +443,10 @@ internal static class DbElementLoader
                     $"DbElementLoader: skipped element {el.AuroraId} ({el.TypeName}): {ex.GetType().Name}: {ex.Message}");
             }
         }
+
+        if (skippedElements > 0)
+            return DbLoadResult.Failed(dbPath, metadata.SchemaVersion,
+                $"Could not reconstruct {skippedElements} database elements. Loading XML instead.");
 
         target.Clear();
         target.AddRange(parsed);
@@ -673,6 +684,12 @@ internal static class DbElementLoader
 
     private static void AppendSpellcasting(XmlDocument doc, XmlElement node, SpellcastingRow sc)
     {
+        if (sc.RawProfile is not null)
+        {
+            node.AppendChild(doc.ImportNode(sc.RawProfile, deep: true));
+            return;
+        }
+
         XmlElement el = doc.CreateElement("spellcasting");
         el.SetAttribute("name", sc.ProfileName);
         if (!string.IsNullOrEmpty(sc.Ability))
@@ -1084,8 +1101,13 @@ internal static class DbElementLoader
         return map;
     }
 
-    private static Dictionary<long, SpellcastingRow> QuerySpellcasting(SqliteConnection conn)
+    private static Dictionary<long, SpellcastingRow> QuerySpellcasting(SqliteConnection conn, int dataVersion)
     {
+        if (dataVersion == 11)
+            return TranslatorSpellcastingReader.ReadProfiles(conn).ToDictionary(
+                pair => pair.Key,
+                pair => new SpellcastingRow(pair.Key, "", null, false, null, null, null, null, pair.Value));
+
         var map = new Dictionary<long, SpellcastingRow>();
         using var cmd = conn.CreateCommand();
         cmd.CommandText = @"
