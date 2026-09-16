@@ -564,7 +564,7 @@ public class CharacterFile : ObservableObject
                     XmlNode node3 = node2.NonCommentChildNodes().FirstOrDefault<XmlNode>((Func<XmlNode, bool>)(x => x.Name.Equals("spells")));
                     if (node3 != null)
                     {
-                        foreach (XmlNode node4 in node3.NonCommentChildNodes().Where<XmlNode>((Func<XmlNode, bool>)(x => x.Name.Equals("spell") && x.GetAttributeValue("prepared").Equals("true", StringComparison.OrdinalIgnoreCase))))
+                        foreach (XmlNode node4 in node3.NonCommentChildNodes().Where<XmlNode>((Func<XmlNode, bool>)(x => x.Name.Equals("spell") && x.ContainsAttribute("prepared") && x.GetAttributeValue("prepared").Equals("true", StringComparison.OrdinalIgnoreCase))))
                             SpellcastingSectionContext.Current.SetPrepareSpell(information, node4.GetAttributeValue("id"));
                     }
                 }

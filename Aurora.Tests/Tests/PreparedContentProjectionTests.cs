@@ -188,13 +188,14 @@ public sealed class PreparedContentProjectionTests : IDisposable
             .Elements.Select(e => e.AuroraId).Should().Equal("LOCAL_ALIAS");
     }
 
-    [Fact]
-    public async Task WindowsBundledWriterBuildsFreshDatabaseAndCombinesSecondaryXml()
+    [Aurora.Tests.Helpers.TranslatorIntegrationFact]
+    [Trait("Category", "TranslatorIntegration")]
+    public async Task WindowsTranslatorWriterBuildsFreshDatabaseAndCombinesSecondaryXml()
     {
-        if (!OperatingSystem.IsWindows()) return; // Other targets use the future in-process writer.
-        string executable = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory,
-            "../../../../Aurora.App/BundledTools/AuroraTranslator/AuroraTranslator.exe"));
-        File.Exists(executable).Should().BeTrue("the Windows app must bundle a writer for first-run content setup");
+        string? configured = Environment.GetEnvironmentVariable("AURORA_TEST_TRANSLATOR");
+        configured.Should().NotBeNullOrWhiteSpace("the integration runner must supply the Translator executable");
+        string executable = Path.GetFullPath(configured!);
+        File.Exists(executable).Should().BeTrue($"AURORA_TEST_TRANSLATOR must point to a published executable: {executable}");
         string primary = Path.Combine(root, "primary");
         string secondary = Path.Combine(root, "secondary");
         Directory.CreateDirectory(primary);

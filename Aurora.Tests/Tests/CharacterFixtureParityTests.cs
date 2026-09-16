@@ -17,6 +17,39 @@ public sealed class CharacterFixtureParityTests : IAsyncLifetime
     public async Task InitializeAsync() => await ContentFixture.EnsureAvailableAsync();
     public Task DisposeAsync() => Task.CompletedTask;
 
+    [Theory]
+    [InlineData(null, false)]
+    [InlineData("false", false)]
+    [InlineData("true", true)]
+    [InlineData("TRUE", true)]
+    public async Task SavedSpell_PreparationIsOptionalAndOnlyExplicitTrueRestoresIt(string? prepared, bool expected)
+    {
+        ContentFixture.SkipIfUnavailable(_output);
+        const string spellId = "ID_PHB_SPELL_CURE_WOUNDS";
+        var document = new XmlDocument();
+        document.Load(ContentFixture.GetCharacterFixturePath("prepared-paladin.dnd5e"));
+        var spell = (XmlElement)document.SelectSingleNode($"/character/build/magic/spellcasting/spells/spell[@id='{spellId}']")!;
+        spell.RemoveAttribute("prepared");
+        if (prepared is not null) spell.SetAttribute("prepared", prepared);
+        string path = Path.Combine(Path.GetTempPath(), $"aurora-prepared-attribute-{Guid.NewGuid():N}.dnd5e");
+        try
+        {
+            document.Save(path);
+            var handler = new TestSpellHandler();
+            SpellcastingSectionContext.Current = handler;
+            CharacterLoadCompatibilityService.PrepareForCharacterLoad();
+            await new CharacterFile(path).Load();
+            handler.GetPreparedIds("Paladin").Contains(spellId).Should().Be(expected);
+            handler.GetPreparedIds("Paladin").Should().Contain("ID_PHB_SPELL_SHIELD_OF_FAITH",
+                "other explicitly prepared spells must still restore");
+            CharacterManager.Current.Character.Name.Should().Be("Fixture Prepared Paladin");
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
     [Fact]
     public async Task MulticlassPreparedCaster_RestoresProgressionAndPreparedSpells()
     {
