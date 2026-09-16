@@ -75,8 +75,15 @@ Each restored assembly should pass:
 
 1. **Binary inventory:** hash, version, MVID, target framework, exported-type
    count, and embedded-resource hashes are recorded.
-2. **API parity:** public types, inheritance, interfaces, constructors,
-   properties, fields, events, methods, constants, and enum values match.
+2. **API compatibility:** the original public types, inheritance, interfaces,
+   constructors, properties, fields, events, methods, constants, and enum values
+   remain available with their legacy signatures. New types, members, and
+   overloads are allowed; assembly names and versions remain checked. The
+   immutable oracle defines the required surface, not the current exported-type
+   count. Member comparisons are case-sensitive and scoped to the declaring
+   type; generic method constraints remain attached to their method. Existing
+   type headers and member signatures are conservatively required unchanged;
+   changes to them require explicit compatibility review.
 3. **Behavior parity:** focused characterization tests cover defaults, state
    changes, events, exceptions, parsing, and serialization as applicable.
 4. **Corpus parity:** the legacy and restored implementations produce equivalent

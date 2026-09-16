@@ -36,10 +36,11 @@ if ($LASTEXITCODE -ne 0) {
     throw "Unable to inspect restored assembly '$restoredPath'."
 }
 
-$differences = @(Compare-Object -ReferenceObject $oracleApi -DifferenceObject $restoredApi)
-if ($differences.Count -gt 0) {
-    $differences | Format-Table -AutoSize
-    throw "Assembly API comparison failed with $($differences.Count) differing line(s)."
+. (Join-Path $PSScriptRoot 'ApiCompatibility.ps1')
+$comparison = Compare-LegacyApi -OracleApi $oracleApi -RestoredApi $restoredApi
+if ($comparison.Missing.Count -gt 0) {
+    $comparison.Missing | ForEach-Object { Write-Output "Missing legacy API: $_" }
+    throw "Assembly API compatibility failed: $($comparison.Missing.Count) required legacy signature(s) missing or changed."
 }
 
-Write-Output "API surface matches across $($oracleApi.Count) normalized line(s)."
+Write-Output "Legacy API preserved: $($comparison.RequiredCount) required signatures; $($comparison.Added.Count) additions permitted."

@@ -93,9 +93,10 @@ internal static class ApiSurfaceFormatter
             foreach (MethodInfo method in type.GetMethods(DeclaredMembers)
                          .Where(method => !method.IsSpecialName && IsExternallyVisible(method)))
             {
-                members.Add(FormatMethod(method));
-                members.AddRange(FormatGenericConstraints(method.GetGenericArguments())
-                    .Select(constraint => $"  {constraint}"));
+                // Keep constraints attached to their method rather than sorting them
+                // independently, which could hide a constraint moved to another method.
+                string constraints = string.Join("; ", FormatGenericConstraints(method.GetGenericArguments()));
+                members.Add(FormatMethod(method) + (constraints.Length == 0 ? string.Empty : $" [{constraints}]"));
             }
 
             foreach (string member in members.Order(StringComparer.Ordinal))

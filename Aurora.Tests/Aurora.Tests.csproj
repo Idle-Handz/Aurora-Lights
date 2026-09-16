@@ -40,6 +40,8 @@
 
   <!-- Embed minimal test character XML as a resource -->
   <ItemGroup>
+    <Content Include="..\tests\LegacyOracles\Builder.Data.dll" Link="LegacyOracles\Builder.Data.dll" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\tests\LegacyOracles\Aurora.Documents.dll" Link="LegacyOracles\Aurora.Documents.dll" CopyToOutputDirectory="PreserveNewest" />
     <EmbeddedResource Include="Fixtures\*.dnd5e" />
     <Content Include="Fixtures\Characters\*.dnd5e" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Fixtures\ChoiceIdentity\*.json" CopyToOutputDirectory="PreserveNewest" />

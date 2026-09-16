@@ -27,11 +27,11 @@ public sealed class AuroraPresentationCompatibilityTests
             .Select(type => type.FullName)
             .Order(StringComparer.Ordinal)
             .Should()
-            .Equal(
+            .Contain(new[] {
                 "Aurora.Presentation.Controls.CommandButton",
                 "Aurora.Presentation.Controls.GraphicalButton",
                 "Aurora.Presentation.EventTriggers.SpaceDownEventTrigger",
-                "Aurora.Presentation.EventTriggers.SpaceUpEventTrigger");
+                "Aurora.Presentation.EventTriggers.SpaceUpEventTrigger" });
     }
 
     [Fact]
