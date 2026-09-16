@@ -856,7 +856,7 @@
             {
                 var first = group.First();
                 IReadOnlyList<MagicSpellAccessPathModel> paths = group
-                    .Select(pair => CreateProjectedAccessPath(pair.Group, pair.Entry, pair.Access))
+                    .SelectMany(pair => pair.Entry.ResolvedAccessPaths ?? [CreateProjectedAccessPath(pair.Group, pair.Entry, pair.Access)])
                     .Distinct()
                     .ToList();
                 MagicSpellDisplayState state = paths.Any(path => path.Kind == MagicSpellAccessKind.AlwaysPrepared)
@@ -926,7 +926,7 @@
             kind,
             group.SectionId ?? string.Empty,
             source,
-            CanCastNormally: kind != MagicSpellAccessKind.RitualBook,
+            CanCastNormally: kind != MagicSpellAccessKind.RitualBook && (kind != MagicSpellAccessKind.Granted || entry.SpellLevel == 0),
             CanCastAsRitual: kind == MagicSpellAccessKind.RitualBook);
     }
 
@@ -1185,6 +1185,17 @@
             ? MagicSpellSelectionAccess.Granted
             : entry.SelectionAccess;
         string source = FirstNonEmpty(entry.AccessSource, entry.GrantedBy, group.Label);
+        if (entry.ResolvedAccessPaths is { Count: > 0 } paths)
+        {
+            var labels = paths.Select(p => string.Join(" \u00b7 ", new[] {
+                p.SourceLabel, p.Ability,
+                p.CanUseSpellSlots ? "Spell slots allowed" : "",
+                p.FreeUses is > 0 ? $"{p.FreeUses}/{p.Recharge}" : "",
+                p.SlotUses is > 0 ? $"Slot casting: {p.SlotUses}/{p.Recharge}" : "",
+                p.Note
+            }.Where(v => !string.IsNullOrWhiteSpace(v))));
+            return (string.Join("; ", labels), "magic-spell-badge-granted");
+        }
 
         return access switch
         {
@@ -1310,7 +1321,11 @@
             _ => "Available",
         };
 
-        return AppendSource(label, path.SourceLabel);
+        return string.Join(" \u00b7 ", new[] { AppendSource(label, path.SourceLabel), path.Ability,
+            path.CanUseSpellSlots ? "Spell slots allowed" : "",
+            path.FreeUses is > 0 ? $"{path.FreeUses}/{path.Recharge}" : "",
+            path.SlotUses is > 0 ? $"Slot casting: {path.SlotUses}/{path.Recharge}" : "", path.Note
+        }.Where(value => !string.IsNullOrWhiteSpace(value)));
     }
 
     private static string GetAccessPathBadgeClass(MagicSpellAccessKind kind) => kind switch

@@ -49,7 +49,10 @@ public static class SelectionRuleRegistrationService
             element.Id.Equals(source.Id, StringComparison.OrdinalIgnoreCase) &&
             !ReferenceEquals(element, current));
 
-        if (alreadyOwned && !source.AllowDuplicate)
+        if (alreadyOwned && !source.AllowDuplicate && (source.Type != "Spell" || ownedElements.Any(element =>
+            element.Id == source.Id && !ReferenceEquals(element, current)
+            && SpellAcquisitionResolver.SameSelectionDomain(SpellAcquisitionResolver.AcquisitionRule(element), selectionRule,
+                ownedElements.ToArray(), manager.GetSpellcastingInformations().ToArray()))))
         {
             throw new InvalidOperationException(
                 $"'{source.Name}' is already selected and cannot be selected again.");
@@ -58,7 +61,7 @@ public static class SelectionRuleRegistrationService
         // A repeated selection needs its own acquisition record. Reusing the content
         // singleton would overwrite the first slot's SelectRule association.
         ElementBase toRegister = alreadyOwned
-            ? DataManager.Current.ElementsCollection.GetFresh(source.Id)
+            ? (source is Spell sourceSpell ? CloneSpell(sourceSpell) : DataManager.Current.ElementsCollection.GetFresh(source.Id))
                 ?? throw new InvalidOperationException($"Could not create a separate selection instance for '{source.Name}'.")
             : source;
 
@@ -67,8 +70,8 @@ public static class SelectionRuleRegistrationService
         if (currentIsOwned)
             manager.UnregisterElement(current!);
 
-        toRegister.Aquisition.WasSelected = true;
-        toRegister.Aquisition.SelectRule = selectionRule;
+        toRegister.Aquisition = new AquisitionInfo();
+        toRegister.Aquisition.SelectedBy(selectionRule);
         manager.RegisterElement(toRegister);
 
         if (selectionRule.Attributes.Type.Equals("Background Feature", StringComparison.OrdinalIgnoreCase) &&
@@ -84,6 +87,17 @@ public static class SelectionRuleRegistrationService
         }
 
         registrations[key] = toRegister;
+    }
+
+    private static Spell CloneSpell(Spell source)
+    {
+        // GetFresh returns a base element and shares AcquisitionInfo. Preserve typed spell
+        // properties without deep-cloning the source XML document or the existing character graph.
+        var copy = source.ConstructFrom<Spell, Spell>();
+        copy.RuleElements = new ElementBaseCollection();
+        copy.Rules = source.Rules.Select(rule => rule.Copy()).ToList();
+        foreach (var rule in copy.GetSelectRules()) rule.RenewIdentifier();
+        return copy;
     }
 
     public static void ClearRegisteredElement(

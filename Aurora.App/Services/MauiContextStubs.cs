@@ -86,41 +86,6 @@ internal sealed class MauiSelectionRuleExpanderHandler : ISelectionRuleExpanderH
 }
 
 /// <summary>
-/// MAUI implementation of ISpellcastingSectionHandler that stores prepared spell IDs
-/// so CharacterSnapshot can reflect them when building the spell list.
-/// </summary>
-internal sealed class MauiSpellcastingSectionHandler : ISpellcastingSectionHandler
-{
-    // Key: spellcasting class name (e.g. "Cleric"), Value: set of prepared element IDs loaded from XML.
-    private readonly Dictionary<string, HashSet<string>> _preparedIds
-        = new(StringComparer.OrdinalIgnoreCase);
-
-    /// <summary>Clears prepared state. Call before loading a new character.</summary>
-    public void ResetPreparedState() => _preparedIds.Clear();
-
-    /// <summary>Returns the prepared spell element IDs for the given spellcasting class.</summary>
-    public IReadOnlyCollection<string> GetPreparedIds(string spellcastingName) =>
-        _preparedIds.TryGetValue(spellcastingName, out var ids) ? ids : Array.Empty<string>();
-
-    public SpellcasterSelectionControlViewModel? GetSpellcasterSectionViewModel(string uniqueIdentifier) => null;
-
-    public bool SetPrepareSpell(SpellcastingInformation information, string elementId)
-    {
-        if (string.IsNullOrEmpty(elementId)) return false;
-        if (!_preparedIds.TryGetValue(information.Name, out var ids))
-            _preparedIds[information.Name] = ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        ids.Add(elementId);
-        return true;
-    }
-
-    public void UnsetPrepareSpell(string spellcastingName, string elementId)
-    {
-        if (_preparedIds.TryGetValue(spellcastingName, out var ids))
-            ids.Remove(elementId);
-    }
-}
-
-/// <summary>
 /// MAUI implementation of the shared launcher contract.
 /// Uses MAUI Essentials where possible and returns false when the platform
 /// cannot open the requested target.

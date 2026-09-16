@@ -277,17 +277,22 @@ public sealed class ContentService
             // MD5-based staleness check; only pay for the full incremental import if it
             // actually changed. Run the catalog/hash scan off the UI thread.
             bool isStale = await Task.Run(() => _contentDb.CheckIsStale());
+            string? refreshWarning = null;
             if (isStale)
             {
                 var result = await _contentDb.SyncAsync();
-                if (!result.Success) return result.ErrorMessage ?? "Content sync failed; existing elements were preserved.";
+                if (!result.Success)
+                {
+                    if (!DbElementLoader.IsAvailable) return result.ErrorMessage ?? "Content sync failed; existing elements were preserved.";
+                    refreshWarning = result.ErrorMessage ?? "Database refresh failed.";
+                }
             }
 
             _tabs.CloseAllTabs();
             await _characters.ReloadElementsAsync();
             _compendium.InvalidateCache(rebuildInBackground: true);
-            ClearContentReloadPending();
-            return null;
+            if (refreshWarning == null) ClearContentReloadPending();
+            return refreshWarning == null ? null : refreshWarning + " Runtime content was reloaded using the existing database and current local XML; primary database updates remain pending.";
         }
         catch (Exception ex)
         {

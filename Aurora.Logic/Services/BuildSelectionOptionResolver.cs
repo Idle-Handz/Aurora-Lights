@@ -165,10 +165,12 @@ public static class BuildSelectionOptionResolver
             if (SelectionRuleTypePolicy.AllowsStackedSelections(rule.Attributes.Type))
                 return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            return CharacterManager.Current.GetElements()
-                .Where(element =>
+            var elements = CharacterManager.Current.GetElements().ToArray();
+            var profiles = CharacterManager.Current.GetSpellcastingInformations().ToArray();
+            return elements.Where(element =>
                     element.Type.Equals(rule.Attributes.Type, StringComparison.Ordinal) &&
-                    !element.AllowDuplicate)
+                    !element.AllowDuplicate && (element.Type != "Spell" || SpellAcquisitionResolver.SameSelectionDomain(
+                        SpellAcquisitionResolver.AcquisitionRule(element), rule, elements, profiles)))
                 .Select(element => element.Id)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
         }
@@ -465,38 +467,8 @@ public static class BuildSelectionOptionResolver
 
     private static SpellcastingInformation? ResolveSpellcastingInformation(SelectRule rule)
     {
-        string? profileName = rule.Attributes.ContainsSpellcastingName()
-            ? rule.Attributes.SpellcastingName
-            : null;
-
-        try
-        {
-            SpellcastingInformation? active = CharacterManager.Current
-                .GetSpellcastingInformations()
-                .FirstOrDefault(candidate =>
-                    !candidate.IsExtension &&
-                    (string.IsNullOrWhiteSpace(profileName) ||
-                     candidate.Name.Equals(profileName, StringComparison.OrdinalIgnoreCase)));
-            if (active is not null)
-                return active;
-        }
-        catch
-        {
-        }
-
-        string? ownerId = rule.ElementHeader?.Id;
-        if (string.IsNullOrWhiteSpace(ownerId))
-            return null;
-
-        ElementBase? owner = DataManager.Current.ElementsCollection
-            .FirstOrDefault(element => element.Id.Equals(ownerId, StringComparison.OrdinalIgnoreCase));
-        if (owner?.HasSpellcastingInformation != true)
-            return null;
-
-        return string.IsNullOrWhiteSpace(profileName) ||
-               owner.SpellcastingInformation.Name.Equals(profileName, StringComparison.OrdinalIgnoreCase)
-            ? owner.SpellcastingInformation
-            : null;
+        return SpellAcquisitionResolver.ResolveProfile(rule, CharacterManager.Current.GetElements().ToArray(),
+            CharacterManager.Current.GetSpellcastingInformations().ToArray());
     }
 
     private static IReadOnlyList<int> ResolveSpellSlotLevels(

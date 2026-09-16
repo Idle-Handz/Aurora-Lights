@@ -59,6 +59,7 @@
     <Compile Include="..\Aurora.App\Services\Updates\GithubReleasesClient.cs" Link="Linked\GithubReleasesClient.cs" />
     <Compile Include="..\Aurora.App\Services\Updates\UpdateAvailability.cs" Link="Linked\UpdateAvailability.cs" />
     <Compile Include="..\Aurora.App\Services\Updates\GithubReleaseChannelService.cs" Link="Linked\GithubReleaseChannelService.cs" />
+    <Compile Include="..\Aurora.App\Services\MauiSpellcastingSectionHandler.cs" Link="Linked\MauiSpellcastingSectionHandler.cs" />
     <Compile Include="..\Aurora.App\Services\EquipmentService.cs" Link="Linked\EquipmentService.cs" />
     <Compile Include="..\Aurora.App\Services\CharacterFileWriteCoordinator.cs" Link="Linked\CharacterFileWriteCoordinator.cs" />
     <Compile Include="..\Aurora.App\Services\CompendiumService.cs" Link="Linked\CompendiumService.cs" />

@@ -11,7 +11,10 @@ public sealed record ContentPackageInfo(
     string PackageName,
     string PackageKind,
     int    PrecedenceRank,
-    bool   IsEnabled);
+    bool   IsEnabled)
+{
+    public bool IsRequired => Builder.Data.RequiredContentPolicy.IsRequiredPackage(PackageKey, PackageName);
+}
 
 /// <summary>
 /// Public entry point for importing Aurora XML content into the SQLite database.
@@ -115,28 +118,41 @@ ORDER BY
         using var reader = cmd.ExecuteReader();
         while (reader.Read())
         {
-            result.Add(new ContentPackageInfo(
+            var package = new ContentPackageInfo(
                 Id:            reader.GetInt64(0),
                 PackageKey:    reader.GetString(1),
                 PackageName:   reader.IsDBNull(2) ? reader.GetString(1) : reader.GetString(2),
                 PackageKind:   reader.IsDBNull(3) ? "local" : reader.GetString(3),
                 PrecedenceRank: reader.IsDBNull(4) ? 0 : reader.GetInt32(4),
-                IsEnabled:     reader.GetInt64(5) != 0));
+                IsEnabled:     reader.GetInt64(5) != 0);
+            // Old disabled flags must not hide the definitions the builder needs.
+            result.Add(package.IsRequired ? package with { IsEnabled = true } : package);
         }
         return result;
     }
 
     /// <summary>
-    /// Sets <c>is_enabled</c> for a package and rebuilds the resolution cache so the
-    /// change takes effect immediately in subsequent DB reads. The caller must reload
-    /// element data for the change to be visible in the running app.
+    /// Sets an optional package's preference. Only legacy catalogs need a cache rebuild;
+    /// prepared catalogs apply preferences in the app's next projection reload.
     /// </summary>
     public static void SetPackageEnabled(string sqlitePath, long packageId, bool enabled)
     {
+        bool prepared;
         using (var connection = new SqliteConnection(
             new SqliteConnectionStringBuilder { DataSource = sqlitePath }.ToString()))
         {
             connection.Open();
+            using (var query = connection.CreateCommand())
+            {
+                query.CommandText = "SELECT package_key, package_name FROM content_packages WHERE content_package_id=$id";
+                query.Parameters.AddWithValue("$id", packageId);
+                using var reader = query.ExecuteReader();
+                if (!reader.Read()) throw new ArgumentException("Content source does not exist.", nameof(packageId));
+                if (!enabled && Builder.Data.RequiredContentPolicy.IsRequiredPackage(reader.GetString(0),
+                    reader.IsDBNull(1) ? null : reader.GetString(1)))
+                    throw new InvalidOperationException("Aurora Essentials and Internal/Core infrastructure must remain enabled.");
+            }
+            prepared = AuroraTranslator.Content.PreparedCatalogReader.HasPreparationMetadata(connection);
             using var update = connection.CreateCommand();
             update.CommandText = "UPDATE content_packages SET is_enabled = $v WHERE content_package_id = $id;";
             update.Parameters.AddWithValue("$v",  enabled ? 1 : 0);
@@ -144,8 +160,22 @@ ORDER BY
             update.ExecuteNonQuery();
         }
 
-        // Rebuild the resolution cache immediately so FK columns reflect the new state.
-        // Connection above is closed before this opens a second write connection.
-        AuroraSqliteImporter.RebuildCacheOnly(sqlitePath);
+        // Legacy catalogs use filtered links; prepared catalogs keep global links intact.
+        // Runtime preferences take effect on the next app projection reload.
+        if (!prepared) AuroraSqliteImporter.RebuildCacheOnly(sqlitePath);
+    }
+
+    /// <summary>Effective preferences, including required infrastructure despite stale disabled flags.</summary>
+    public static HashSet<string> ReadEnabledPackageKeys(SqliteConnection connection)
+    {
+        var enabled = new HashSet<string>(StringComparer.Ordinal);
+        using var query = connection.CreateCommand();
+        query.CommandText = "SELECT package_key,package_name,COALESCE(is_enabled,1) FROM content_packages";
+        using var reader = query.ExecuteReader();
+        while (reader.Read())
+            if (reader.GetInt64(2) != 0 || Builder.Data.RequiredContentPolicy.IsRequiredPackage(reader.GetString(0),
+                reader.IsDBNull(1) ? null : reader.GetString(1)))
+                enabled.Add(reader.GetString(0));
+        return enabled;
     }
 }

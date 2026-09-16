@@ -5,6 +5,7 @@ using Builder.Presentation.Utilities;
 using Aurora.Importer;
 using Microsoft.Data.Sqlite;
 using System.Xml;
+using AuroraTranslator.Content;
 
 namespace Aurora.App.Services;
 
@@ -153,16 +154,34 @@ internal static class DbElementLoader
     // ── Runtime lookup caches (populated after a successful DB load) ────────
 
     /// <summary>Archetype aurora_id → parent class aurora_id. Empty until a DB load succeeds.</summary>
-    public static IReadOnlyDictionary<string, string> ArchetypeParentMap { get; private set; } =
-        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+    private sealed class LookupState
+    {
+        public IReadOnlyDictionary<string, string> Archetypes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        public IReadOnlyDictionary<string, IReadOnlySet<string>> Spells = new Dictionary<string, IReadOnlySet<string>>(StringComparer.OrdinalIgnoreCase);
+        public IReadOnlyDictionary<string, ElementSortMetadata> Sort = new Dictionary<string, ElementSortMetadata>(StringComparer.OrdinalIgnoreCase);
+        public Action? PublishFallback;
+    }
+    private static LookupState _lookups = new();
+    private static readonly AsyncLocal<LookupState?> PendingLookups = new();
+    public static IReadOnlyDictionary<string, string> ArchetypeParentMap
+    {
+        get => (PendingLookups.Value ?? _lookups).Archetypes;
+        private set => (PendingLookups.Value ?? _lookups).Archetypes = value;
+    }
 
     /// <summary>Class/list name → set of spell aurora_ids that have access. Empty until a DB load succeeds.</summary>
-    public static IReadOnlyDictionary<string, IReadOnlySet<string>> SpellAccessMap { get; private set; } =
-        new Dictionary<string, IReadOnlySet<string>>(StringComparer.OrdinalIgnoreCase);
+    public static IReadOnlyDictionary<string, IReadOnlySet<string>> SpellAccessMap
+    {
+        get => (PendingLookups.Value ?? _lookups).Spells;
+        private set => (PendingLookups.Value ?? _lookups).Spells = value;
+    }
 
     /// <summary>Picker ordering metadata keyed by Aurora element id + source name. Empty when XML fallback is active.</summary>
-    public static IReadOnlyDictionary<string, ElementSortMetadata> ElementSortMetadataMap { get; private set; } =
-        new Dictionary<string, ElementSortMetadata>(StringComparer.OrdinalIgnoreCase);
+    public static IReadOnlyDictionary<string, ElementSortMetadata> ElementSortMetadataMap
+    {
+        get => (PendingLookups.Value ?? _lookups).Sort;
+        private set => (PendingLookups.Value ?? _lookups).Sort = value;
+    }
 
     public static string? DbPath => ContentDatabaseService.GetDatabasePath();
 
@@ -232,9 +251,6 @@ internal static class DbElementLoader
 
     private static async Task<DbLoadResult> TryLoadInternalAsync(ElementBaseCollection target, bool runPostProcessing)
     {
-        ResetCaches();
-        XmlContentFallbackService.Invalidate();
-
         string? dbPath = DbPath;
         if (dbPath is null)
             return DbLoadResult.NotAvailable(null, "Content database path is not initialized.");
@@ -245,15 +261,25 @@ internal static class DbElementLoader
         if (new FileInfo(dbPath).Length <= 0)
             return DbLoadResult.NotAvailable(dbPath, "Database file is empty.");
 
+        var previousLookups = _lookups;
+        PendingLookups.Value = new LookupState();
+        var previousElements = target.ToList();
+        var restoreFallback = XmlContentFallbackService.CaptureRestore();
+        bool committed = false;
+        bool replacingTarget = false;
         try
         {
             DebugLogService.Instance.Info("DbElementLoader: loading elements from DB.", dbPath);
-            DbLoadResult result = await Task.Run(() => LoadFromDb(dbPath, target));
+            var candidate = new ElementBaseCollection();
+            DbLoadResult result = await Task.Run(() => LoadFromDb(dbPath, candidate));
             if (result.Success && runPostProcessing)
             {
-                await Task.Run(() => RawUserXmlOverlayService.ApplyTo(target));
-                await Task.Run(() => XmlContentFallbackService.MergeUnsynced());
-                await Task.Run(() => DataManager.Current.RunPostProcessing());
+                if (result.DataVersion != 12)
+                {
+                    await Task.Run(() => RawUserXmlOverlayService.ApplyTo(candidate));
+                    await Task.Run(() => XmlContentFallbackService.MergeUnsynced(candidate));
+                }
+                await Task.Run(() => DataManager.Current.RunPostProcessing(candidate, includeResources: result.DataVersion != 12, publish: false));
                 DebugLogService.Instance.Info(
                     "DbElementLoader: load complete.",
                     result.Summary);
@@ -262,16 +288,47 @@ internal static class DbElementLoader
             {
                 DebugLogService.Instance.Warn("DbElementLoader: falling back to XML.", result.Summary);
             }
+            if (result.Success)
+            {
+                replacingTarget = true;
+                target.Clear();
+                target.AddRange(candidate);
+                committed = true;
+                if (runPostProcessing)
+                {
+                    _lookups = PendingLookups.Value!;
+                    if (_lookups.PublishFallback is { } publishFallback)
+                    {
+                        publishFallback();
+                        _lookups.PublishFallback = null;
+                    }
+                    else XmlContentFallbackService.Invalidate();
+                    DataManager.Current.NotifyElementsLoaded();
+                }
+            }
             return result;
         }
         catch (Exception ex)
         {
             DebugLogService.Instance.LogException(ex, "DbElementLoader.TryLoadAsync");
-            target.Clear();
+            if (committed)
+            {
+                _lookups = previousLookups;
+                restoreFallback();
+            }
+            if (replacingTarget)
+            {
+                target.Clear();
+                target.AddRange(previousElements);
+            }
             return DbLoadResult.Failed(
                 dbPath,
                 schemaVersion: null,
                 reason: $"{ex.GetType().Name}: {ex.Message}");
+        }
+        finally
+        {
+            PendingLookups.Value = null;
         }
     }
 
@@ -354,13 +411,16 @@ internal static class DbElementLoader
 
         // The local importer still writes v10. Translator v11 preserves complete
         // spellcasting XML; accepting it must not change the local writer's version.
-        if (metadata.DataVersion is not (10 or 11))
+        if (metadata.DataVersion is not (10 or 11 or 12))
         {
             return DbLoadResult.Failed(
                 dbPath,
                 metadata.SchemaVersion,
-                $"Database data version v{metadata.DataVersion} is incompatible with supported data versions v10 and v11.");
+                $"Database data version v{metadata.DataVersion} is incompatible with supported data versions v10, v11 and v12.");
         }
+
+        if (metadata.DataVersion == 12)
+            return LoadPreparedCatalog(conn, dbPath, metadata, target);
 
         // Quick sanity check.
         using (var chk = conn.CreateCommand())
@@ -914,6 +974,77 @@ internal static class DbElementLoader
             pair => pair.Key,
             pair => SourceReleaseTextSelector.SelectLatest(pair.Value)!,
             StringComparer.OrdinalIgnoreCase);
+    }
+
+    internal static PreparedCatalogProjection ReadPreparedProjection(SqliteConnection connection, bool fromXml = false)
+    {
+        // Transitional app-preference storage. No catalog links depend on these flags.
+        var allowed = AuroraContentImporter.ReadEnabledPackageKeys(connection);
+        var resources = DataManager.Current.LoadElementDocumentsFromResource()
+            .SelectMany(doc => doc.DocumentElement?.ChildNodes.Cast<XmlNode>() ?? [])
+            .Where(node => node.Name == "element" && node.Attributes?["id"] != null)
+            .Select(node => new PreparedCatalogElement(node.Attributes!["id"]!.Value,
+                new PreparedCatalogSource("resource://aurora/builtins", "runtime/builtins.xml", "runtime-builtins", "core"), node.OuterXml))
+            .ToArray();
+        var roots = ContentDirectoryResolver.GetContentDirectories();
+        var runtimeFiles = RuntimeContentFiles.Read(connection, ContentDirectoryResolver.GetPrimaryContentDirectory(), roots.Skip(1), fromXml);
+        return PreparedCatalogReader.Read(connection,
+            source => source.PackageKey is "runtime-builtins" or "runtime-xml" || allowed.Contains(source.PackageKey),
+            hostDefinitions: resources, runtimeFiles: runtimeFiles);
+    }
+
+    private static DbLoadResult LoadPreparedCatalog(SqliteConnection connection, string path,
+        MetadataRow metadata, ElementBaseCollection target)
+    {
+        if (!PreparedCatalogReader.IsPrepared(connection))
+            return DbLoadResult.Failed(path, metadata.SchemaVersion,
+                "The database preparation contract is missing or unsupported.");
+        var projection = ReadPreparedProjection(connection);
+        var unknownTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        using (var diagnostics = connection.CreateCommand())
+        {
+            diagnostics.CommandText = "SELECT type_name FROM element_types WHERE loader_family='generic-unrecognized'";
+            using var reader = diagnostics.ExecuteReader();
+            while (reader.Read()) unknownTypes.Add(reader.GetString(0));
+        }
+        var parsers = ElementParserFactory.GetParsers().ToList();
+        var fallback = new ElementParser();
+        var parsed = new List<ElementBase>();
+        foreach (var prepared in projection.Elements)
+        {
+            var doc = new XmlDocument();
+            doc.LoadXml("<elements>" + prepared.Xml + "</elements>");
+            XmlNode node = doc.DocumentElement!.FirstChild!;
+            AuroraXmlCompatibilityRepair.RepairNode(node);
+            var header = fallback.ParseElementHeader(node);
+            var parser = parsers.FirstOrDefault(p => p.ParserType == header.Type) ?? fallback;
+            if (!prepared.Source.FilePath.StartsWith("resource://", StringComparison.Ordinal) && unknownTypes.Remove(header.Type))
+                DebugLogService.Instance.Warn($"Prepared element uses generic parsing: {header.Id} ({header.Type}, {prepared.Source.RelativePath}). Shared content is retained; specialized behavior is not inferred.");
+            var element = parser.ParseElement(node);
+            element.ContentFilePath = prepared.Source.FilePath;
+            parsed.Add(element);
+        }
+        // Complete reconstruction only: an exception leaves the previous target
+        // untouched and invokes the caller's complete XML fallback.
+        var ids = parsed.Select(e => e.Id).ToHashSet(StringComparer.Ordinal);
+        var rows = QueryElements(connection).Where(e => ids.Contains(e.AuroraId)).ToList();
+        // Runtime supports/grants remain intact. Do not expose a singular parent
+        // from an unrestricted database as the answer for a filtered projection.
+        ArchetypeParentMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        SpellAccessMap = parsed.Where(e => string.Equals(e.Type, "Spell", StringComparison.OrdinalIgnoreCase))
+            .SelectMany(e => ContentText.SplitTopLevel(e.ElementNode["supports"]?.InnerText ?? "", ',')
+                .Select(support => (Support: support, Id: e.Id)))
+            .GroupBy(e => e.Support, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => (IReadOnlySet<string>)g.Select(e => e.Id).ToHashSet(StringComparer.Ordinal), StringComparer.OrdinalIgnoreCase);
+        ElementSortMetadataMap = BuildElementSortMetadataMap(rows);
+        PendingLookups.Value!.PublishFallback = XmlContentFallbackService.PrepareProjection(parsed);
+        target.Clear();
+        target.AddRange(parsed);
+        foreach (var operation in projection.UnresolvedAppends)
+            DebugLogService.Instance.Warn($"Prepared append target remains unresolved: {operation.TargetId} ({operation.Source.RelativePath}, append {operation.Ordinal}).");
+        return DbLoadResult.Loaded(path, metadata.SchemaVersion, metadata.DataVersion,
+            metadata.ImporterVersion, metadata.BuiltUtc, metadata.SourceFileCount,
+            metadata.ContentRootHash, target.Count, 0);
     }
 
     private static IReadOnlyDictionary<string, ElementSortMetadata> BuildElementSortMetadataMap(

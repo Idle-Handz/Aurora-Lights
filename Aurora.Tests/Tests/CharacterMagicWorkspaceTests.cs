@@ -99,7 +99,8 @@ public sealed class CharacterMagicWorkspaceTests : BunitContext
                         SpellId: "ID_SPELL_MISTY_STEP",
                         GrantedBy: "Fey Touched",
                         SelectionAccess: MagicSpellSelectionAccess.Granted,
-                        AccessSource: "Fey Touched")
+                        AccessSource: "Fey Touched",
+                        ResolvedAccessPaths: [new(MagicSpellAccessKind.Granted, "", "Fey Touched", true, false)])
                 ],
                 ReadOnlyGroup: true)
         ];
@@ -257,7 +258,8 @@ public sealed class CharacterMagicWorkspaceTests : BunitContext
                         Source: "Player's Handbook",
                         School: "Conjuration",
                         CastingTime: "1 bonus action",
-                        GrantedBy: "Fey Touched")
+                        GrantedBy: "Fey Touched",
+                        ResolvedAccessPaths: [new(MagicSpellAccessKind.Granted, "", "Fey Touched", true, false)])
                 ],
                 ReadOnlyGroup: true)
         ];

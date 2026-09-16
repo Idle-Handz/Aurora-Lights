@@ -26,6 +26,49 @@ public static class XmlContentFallbackService
             _snapshot = null;
     }
 
+    internal static Action CaptureRestore()
+    {
+        XmlFallbackSnapshot? previous;
+        lock (Gate) previous = _snapshot;
+        return () => { lock (Gate) _snapshot = previous; };
+    }
+
+    internal static Action PrepareProjection(AuroraTranslator.Content.PreparedCatalogProjection projection)
+        => PrepareProjectionSnapshot(CreatePreparedSnapshot(projection));
+
+    internal static Action PrepareProjection(IEnumerable<ElementBase> elements)
+    {
+        var byId = new Dictionary<string, XmlFallbackElement>(StringComparer.OrdinalIgnoreCase);
+        foreach (var element in elements)
+        {
+            // Share the parser's immutable serialization, not its mutable DOM.
+            // Materialize only the definition requested by a fallback operation.
+            var entry = CreateElement(element.ElementNode, false, element.ElementNodeString);
+            if (entry == null) continue;
+            entry.ContentFilePath = element.ContentFilePath;
+            byId[entry.Id] = entry;
+        }
+        return PrepareProjectionSnapshot(CreateSnapshot(byId));
+    }
+
+    private static Action PrepareProjectionSnapshot(XmlFallbackSnapshot snapshot)
+        => () => { lock (Gate) _snapshot = snapshot; };
+
+    private static XmlFallbackSnapshot CreatePreparedSnapshot(AuroraTranslator.Content.PreparedCatalogProjection projection)
+    {
+        var byId = new Dictionary<string, XmlFallbackElement>(StringComparer.OrdinalIgnoreCase);
+        foreach (var element in projection.Elements)
+        {
+            var document = new XmlDocument();
+            document.LoadXml(element.Xml);
+            var entry = CreateElement(document.DocumentElement!, false, element.Xml);
+            if (entry == null) continue;
+            entry.ContentFilePath = element.Source.FilePath;
+            byId[entry.Id] = entry;
+        }
+        return CreateSnapshot(byId);
+    }
+
     /// <summary>
     /// Materializes every XML element from all custom content directories that is not already
     /// present in the live collection. Call this after a DB load to pull in any XML files that
@@ -33,13 +76,13 @@ public static class XmlContentFallbackService
     /// intentionally skipped here because <see cref="RawUserXmlOverlayService"/> handles them
     /// with full upsert semantics including append-node support.
     /// </summary>
-    public static void MergeUnsynced()
+    public static void MergeUnsynced(ElementBaseCollection? target = null)
     {
         try
         {
-            XmlFallbackSnapshot snapshot = EnsureLoaded();
+            XmlFallbackSnapshot snapshot = target == null ? EnsureLoaded() : LoadSnapshot();
 
-            HashSet<string> liveIds = DataManager.Current.ElementsCollection
+            HashSet<string> liveIds = (target ?? DataManager.Current.ElementsCollection)
                 .Where(e => !string.IsNullOrWhiteSpace(e.Id))
                 .Select(e => e.Id)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -54,7 +97,7 @@ public static class XmlContentFallbackService
                 if (liveIds.Contains(xmlElement.Id))
                     continue;
 
-                ElementBase? materialized = TryMaterializeElement(xmlElement, replaceExisting: false);
+                ElementBase? materialized = TryMaterializeElement(xmlElement, replaceExisting: false, target);
                 if (materialized != null)
                 {
                     liveIds.Add(materialized.Id);
@@ -252,6 +295,15 @@ public static class XmlContentFallbackService
     {
         Dictionary<string, XmlFallbackElement> byId = new(StringComparer.OrdinalIgnoreCase);
         List<XmlFallbackAppend> appendNodes = [];
+        if (ContentDatabaseService.GetDatabasePath() is { } preparedPath && File.Exists(preparedPath))
+        {
+            using var connection = Aurora.Importer.AuroraContentImporter.OpenReadableConnection(preparedPath);
+            if (AuroraTranslator.Content.PreparedCatalogReader.IsPrepared(connection))
+            {
+                return CreatePreparedSnapshot(DbElementLoader.ReadPreparedProjection(connection));
+            }
+        }
+
         int documentCount = 0;
         int skipped = 0;
 
@@ -310,6 +362,10 @@ public static class XmlContentFallbackService
         return new XmlFallbackSnapshot(byId, byType);
     }
 
+    private static XmlFallbackSnapshot CreateSnapshot(Dictionary<string, XmlFallbackElement> byId)
+        => new(byId, byId.Values.GroupBy(e => e.Type, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.OrdinalIgnoreCase));
+
     private static void LoadDocument(
         XmlDocument xmlDocument,
         Dictionary<string, XmlFallbackElement> byId,
@@ -345,7 +401,7 @@ public static class XmlContentFallbackService
         }
     }
 
-    private static XmlFallbackElement? CreateElement(XmlNode node, bool isUserOverride)
+    private static XmlFallbackElement? CreateElement(XmlNode node, bool isUserOverride, string? immutableXml = null)
     {
         string? id = node.Attributes?["id"]?.Value;
         string? name = node.Attributes?["name"]?.Value;
@@ -358,7 +414,7 @@ public static class XmlContentFallbackService
         }
 
         string source = node.Attributes?["source"]?.Value ?? "";
-        return new XmlFallbackElement(id, name, type, source, node, isUserOverride)
+        return new XmlFallbackElement(id, name, type, source, immutableXml == null ? node : null, isUserOverride, immutableXml)
         {
             Supports = ExtractSupports(node),
             Requirements = node["requirements"]?.InnerText.Trim() ?? "",
@@ -396,18 +452,24 @@ public static class XmlContentFallbackService
             target.IsUserOverride = true;
     }
 
-    private static ElementBase? TryMaterializeElement(XmlFallbackElement xmlElement, bool replaceExisting)
+    private static ElementBase? TryMaterializeElement(XmlFallbackElement xmlElement, bool replaceExisting, ElementBaseCollection? target = null)
     {
         try
         {
-            AuroraXmlCompatibilityRepair.RepairNode(xmlElement.Node);
+            XmlNode node = xmlElement.Node;
+            AuroraXmlCompatibilityRepair.RepairNode(node);
             ElementParser defaultParser = new();
-            ElementHeader header = defaultParser.ParseElementHeader(xmlElement.Node);
+            ElementHeader header = defaultParser.ParseElementHeader(node);
             ElementParser parser = ElementParserFactory.GetParsers()
                 .FirstOrDefault(p => p.ParserType == header.Type) ?? defaultParser;
 
-            ElementBase element = parser.ParseElement(xmlElement.Node);
+            ElementBase element = parser.ParseElement(node);
             element.ContentFilePath = xmlElement.ContentFilePath;
+            if (target != null)
+            {
+                target.Add(element);
+                return element;
+            }
             return UpsertLiveElement(element, replaceExisting);
         }
         catch (Exception ex)
@@ -810,14 +872,24 @@ public static class XmlContentFallbackService
         string name,
         string type,
         string source,
-        XmlNode node,
-        bool isUserOverride)
+        XmlNode? node,
+        bool isUserOverride,
+        string? immutableXml = null)
     {
         public string Id { get; } = id;
         public string Name { get; } = name;
         public string Type { get; } = type;
         public string Source { get; } = source;
-        public XmlNode Node { get; } = node;
+        public XmlNode Node
+        {
+            get
+            {
+                if (node != null) return node; // Mutable during legacy XML append assembly.
+                var document = new XmlDocument();
+                document.LoadXml(immutableXml!);
+                return document.DocumentElement!;
+            }
+        }
         public bool IsUserOverride { get; set; } = isUserOverride;
         public string? ContentFilePath { get; set; }
         public IReadOnlyList<string> Supports { get; set; } = [];

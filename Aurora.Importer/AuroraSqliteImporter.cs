@@ -41,6 +41,9 @@ internal static class AuroraSqliteImporter
             new SqliteConnectionStringBuilder { DataSource = sqlitePath }.ToString());
         connection.Open();
 
+        if (AuroraTranslator.Content.PreparedCatalogReader.HasPreparationMetadata(connection))
+            return AuroraImportResult.Failed("This catalog was prepared by Translator v12. Refresh it with that preparation-aware writer; the legacy importer cannot replace its append/provenance data.");
+
         EnsureSchema(connection);
         // When the importer logic changes in a way that affects stored data (e.g. adding a new
         // column to element_supports), bump this constant so existing DBs get a full rebuild.

@@ -241,3 +241,16 @@ bar instead of a zero-percent bar or a misleading zero changed-file count.
 Concurrent check/refresh button actions are disabled while either operation runs.
 The Windows app build passed with zero warnings/errors; no live UI interaction or
 database refresh was performed for this small presentation change.
+
+### Priority-impact investigation
+
+The [controlled priority audit](content-priority-impact-audit-2026-09-13.md) resolves
+the uncertainty behind the earlier 51-rank warning. Rebuilding both rank variants
+with the bundled Translator preserved every Aurora-ID winner and all grants and
+selectable-option memberships checked. Four Blazing Dawn artificer infusions did
+change their inferred parent from published Eberron Infuse Item to UA Infuse Item.
+The current Lights loader does not consume those changed parent-link fields, and
+the four options retain their Eberron/Tasha choice memberships. This is a concrete
+relationship/classification issue for shared-library integration, not evidence of
+51 broken sources or a demonstrated current Lights character-build regression.
+See the audit for IDs, reproduction, consumer boundaries and recommendations.

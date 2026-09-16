@@ -453,50 +453,10 @@ public static partial class BuildService
 
     private static void ClearStaleSelectedAbilityScoreElements(List<string> invalidated)
     {
-        var cm = CharacterManager.Current;
-        var activeRuleIds = cm.SelectionRules
-            .Select(rule => rule.UniqueIdentifier)
-            .Where(id => !string.IsNullOrWhiteSpace(id))
-            .ToHashSet(StringComparer.Ordinal);
-
-        foreach (var element in cm.GetElements().ToList())
-        {
-            if (!element.Type.Equals("Ability Score Improvement", StringComparison.OrdinalIgnoreCase))
-                continue;
-            if (!element.Aquisition.WasSelected)
-                continue;
-
-            var selectedRule = element.Aquisition.SelectRule;
-            if (selectedRule == null)
-                continue;
-
-            var selectedRuleId = selectedRule.UniqueIdentifier;
-            if (!string.IsNullOrWhiteSpace(selectedRuleId) && activeRuleIds.Contains(selectedRuleId))
-                continue;
-
-            int slot = FindRegisteredSelectionSlot(selectedRule, element);
-            bool cleared = false;
-            try
-            {
-                cm.UnregisterElement(element);
-                if (slot > 0)
-                    SelectionRuleExpanderContext.Current?.ClearRegisteredElement(selectedRule, slot);
-                cleared = true;
-            }
-            catch (Exception ex)
-            {
-                DebugLogService.Instance.LogException(
-                    ex,
-                    "BuildService.ClearStaleSelectedAbilityScoreElements");
-            }
-
-            if (cleared)
-            {
-                invalidated.Add(slot > 0
-                    ? BuildSelectionLabel(selectedRule, slot)
-                    : (selectedRule.Attributes.Name ?? selectedRule.Attributes.Type ?? "Ability Score Improvement"));
-            }
-        }
+        foreach (var removed in AbilityScoreSelectionCleanup.Normalize())
+            invalidated.Add(removed.Slot > 0
+                ? BuildSelectionLabel(removed.Rule, removed.Slot)
+                : (removed.Rule.Attributes.Name ?? removed.Rule.Attributes.Type ?? "Ability Score Improvement"));
     }
 
     private static int FindRegisteredSelectionSlot(SelectRule rule, ElementBase element)

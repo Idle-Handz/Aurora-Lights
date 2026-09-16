@@ -459,10 +459,15 @@
                                     var p = pkg;
                                     <div style="display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 6px; background: var(--mud-palette-background-grey);">
                                         <MudSwitch Value="p.IsEnabled"
+                                                   Disabled="p.IsRequired"
                                                    ValueChanged="@((bool v) => TogglePackageAsync(p.Id, v))"
                                                    Color="Color.Primary"
                                                    Style="margin: 0;" />
                                         <span style="font-size: 13px; color: var(--mud-palette-text-primary); flex: 1;">@p.PackageName</span>
+                                        @if (p.IsRequired)
+                                        {
+                                            <span style="font-size: 12px;">Required</span>
+                                        }
                                         <MudChip T="string" Size="Size.Small"
                                                  Style="@($"background: {KindColor(p.PackageKind)}22; color: {KindColor(p.PackageKind)}; font-size: 11px; height: 20px; border-radius: 4px;")">
                                             @p.PackageKind

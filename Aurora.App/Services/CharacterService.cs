@@ -133,6 +133,11 @@ public sealed class CharacterService :
             DbLoadResult dbResult = await DbElementLoader.TryLoadAsync(DataManager.Current.ElementsCollection);
             if (!dbResult.Success)
             {
+                if (DataManager.Current.ElementsCollection.Count > 0)
+                {
+                    _elementsInitialized = true;
+                    throw new InvalidDataException($"Content reload failed; the previous working elements were preserved. {dbResult.FailureReason}");
+                }
                 await DataManager.Current.InitializeElementDataAsync();
                 ElementLoadSource = "XML fallback";
                 ElementLoadSummary = $"Loaded baseline content from XML. SQLite reason: {dbResult.FailureReason ?? "unknown"}";
@@ -216,7 +221,6 @@ public sealed class CharacterService :
             ElementLoadDatabasePath = null;
             InventoryItemFactory.InvalidateSearchIndex();
             StartingEquipmentDataLoader.Invalidate();
-            XmlContentFallbackService.Invalidate();
             ElementLoadSchemaVersion = null;
             ElementLoadDataVersion = null;
             ElementLoadImporterVersion = null;

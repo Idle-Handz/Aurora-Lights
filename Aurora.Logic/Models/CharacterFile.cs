@@ -59,6 +59,7 @@ public class CharacterFile : ObservableObject
     private const string DisplayPropertiesLocalPortrait = "local-portrait";
     private const string DisplayPropertiesBase64Portrait = "base64-portrait";
     private XmlDocument _document;
+    private readonly Dictionary<XmlNode, string> _deferredChildElements = new();
     private string _filepath;
     private bool _isInitialized;
     private bool _isNew;
@@ -385,6 +386,7 @@ public class CharacterFile : ObservableObject
 
     public async Task<CharacterFile.LoadResult> Load(string filepath)
     {
+        _deferredChildElements.Clear();
         int currentProgress = 0;
         int progressMax = 8;
         await this.SendCharacterLoadingScreenProgressUpdate(currentProgress.IsPercetageOf(progressMax));
@@ -562,7 +564,7 @@ public class CharacterFile : ObservableObject
                     XmlNode node3 = node2.NonCommentChildNodes().FirstOrDefault<XmlNode>((Func<XmlNode, bool>)(x => x.Name.Equals("spells")));
                     if (node3 != null)
                     {
-                        foreach (XmlNode node4 in node3.NonCommentChildNodes().Where<XmlNode>((Func<XmlNode, bool>)(x => x.Name.Equals("spell") && x.ContainsAttribute("prepared"))))
+                        foreach (XmlNode node4 in node3.NonCommentChildNodes().Where<XmlNode>((Func<XmlNode, bool>)(x => x.Name.Equals("spell") && x.GetAttributeValue("prepared").Equals("true", StringComparison.OrdinalIgnoreCase))))
                             SpellcastingSectionContext.Current.SetPrepareSpell(information, node4.GetAttributeValue("id"));
                     }
                 }
@@ -686,71 +688,55 @@ public class CharacterFile : ObservableObject
             }
         }
         CharacterLoadCompatibilityService.RegisterLoadedEquipmentElements(character);
+        await ReplayDeferredChildElements();
         ++currentProgress;
         await this.SendCharacterLoadingScreenProgressUpdate(currentProgress.IsPercetageOf(progressMax));
         await this.SendCharacterLoadingScreenStatusUpdate("performing validation");
-        int elementCountBeforeDuplicateNormalization = CharacterManager.Current.GetElements().Count;
-        int duplicateElementCountDelta = 0;
+        var beforeNormalization = CharacterManager.Current.GetElements().Select(e => e.Id).ToArray();
         int duplicateProgressionStateRemoved = CharacterManager.Current.NormalizeDuplicateProgressionState();
         if (duplicateProgressionStateRemoved > 0)
         {
-            int elementCountAfterDuplicateNormalization = CharacterManager.Current.GetElements().Count;
-            duplicateElementCountDelta = Math.Max(0, elementCountBeforeDuplicateNormalization - elementCountAfterDuplicateNormalization);
-            Logger.Warning(
+            Logger.Info(
                 "normalized {0} duplicate progression element(s) while loading {1}",
                 (object)duplicateProgressionStateRemoved,
                 (object)this.FileName);
         }
-        int elementSaveCount = Convert.ToInt32(((XmlNode)buildNode["sum"] ?? throw new NullReferenceException("sumNode not found on " + this._filepath)).GetAttributeValue("element-count"));
-        int expectedElementSaveCount = elementSaveCount;
-        if (duplicateElementCountDelta > 0 && elementCountBeforeDuplicateNormalization == elementSaveCount)
+        // Final eligibility is known only after race, background, and their grants
+        // have all loaded. Never retain legacy racial ASIs beside a background ASI
+        // when the content rules have deactivated their originating choice.
+        var removedAsiChoices = AbilityScoreSelectionCleanup.Normalize();
+        if (removedAsiChoices.Count > 0)
         {
-            expectedElementSaveCount = Math.Max(0, elementSaveCount - duplicateElementCountDelta);
-            Logger.Warning(
-                "adjusted saved element count from {0} to {1} after duplicate progression normalization",
-                (object)elementSaveCount,
-                (object)expectedElementSaveCount);
+            Logger.Info("removed inactive ability-score selections while loading {0}: {1}",
+                this.FileName, string.Join(", ", removedAsiChoices.Select(e => e.ElementId)));
         }
-        int count1 = CharacterManager.Current.GetElements().Count;
-        if (expectedElementSaveCount != count1)
+        var afterNormalization = CharacterManager.Current.GetElements().Select(e => e.Id).ToArray();
+        // Compare actual identities and occurrences. Extra grants must neither
+        // trigger an error nor offset a missing character-used element.
+        var savedBuild = new System.Xml.Linq.XElement("build",
+            System.Xml.Linq.XElement.Parse(elementsNode.OuterXml),
+            buildNode["sum"] == null ? null : System.Xml.Linq.XElement.Parse(buildNode["sum"].OuterXml));
+        var missing = CharacterLoadValidation.FindMissing(savedBuild, afterNormalization, beforeNormalization, afterNormalization);
+        for (int attempt = 0; missing.Count > 0 && attempt < 10; attempt++)
         {
-            int difference = expectedElementSaveCount - count1;
-            Logger.Warning($"the sum of the saved elements ({expectedElementSaveCount}) differs from the sum that is loaded ({count1})");
-            bool validCount = false;
-            for (int count = 0; count < 10; ++count)
-            {
-                await Task.Delay(250);
-                if (expectedElementSaveCount == CharacterManager.Current.GetElements().Count)
-                {
-                    validCount = true;
-                    break;
-                }
-                Logger.Info("waiting for trailing elements to be registered ");
-            }
-            if (validCount)
-            {
-                sw.Stop();
-                Logger.Warning($"{character} loaded in {sw.ElapsedMilliseconds}ms");
-            }
-            else
-            {
-                sw.Stop();
-                Logger.Warning($"{character} loaded in {sw.ElapsedMilliseconds}ms without all elements ({difference})");
-            }
-            if (difference > 0)
-            {
-                await this.SendCharacterLoadingScreenProgressUpdate(100);
-                await this.SendCharacterLoadingScreenStatusUpdate("E10A", false);
-                return new CharacterFile.LoadResult(false, $"character not fully prepared, {difference} item{(difference > 1 ? (object)"(s)" : (object)"")} could not be set");
-            }
+            await Task.Delay(250);
+            await ReplayDeferredChildElements();
+            missing = CharacterLoadValidation.FindMissing(savedBuild,
+                CharacterManager.Current.GetElements().Select(e => e.Id), beforeNormalization, afterNormalization);
+        }
+        _deferredChildElements.Clear();
+        if (missing.Count > 0)
+        {
+            string details = string.Join("; ", missing.Select(e => $"{e.Id} (missing {e.Count}; {e.SavedPath})"));
+            Logger.Warning("{0} is missing saved character elements after loading: {1}", this.FileName, details);
             await this.SendCharacterLoadingScreenProgressUpdate(100);
-            await this.SendCharacterLoadingScreenStatusUpdate("E10B");
-            return new CharacterFile.LoadResult(true);
+            await this.SendCharacterLoadingScreenStatusUpdate("E10A", false);
+            return new CharacterFile.LoadResult(false, "Saved character elements could not be restored: " + details);
         }
         await this.SendCharacterLoadingScreenProgressUpdate(100);
         await this.SendCharacterLoadingScreenStatusUpdate("E10B");
         sw.Stop();
-        Logger.Warning($"{character} loaded in {sw.ElapsedMilliseconds}ms");
+        Logger.Info($"{character} loaded in {sw.ElapsedMilliseconds}ms");
         return new CharacterFile.LoadResult(true, "E10B");
     }
 
@@ -1442,23 +1428,14 @@ public class CharacterFile : ObservableObject
     {
         var spells = allSpells.Cast<Spell>().ToList();
 
-        // Spells granted via a grant rule whose "spellcasting" setter matches this class.
-        var granted = spells.Where(s =>
-            s.Aquisition.WasGranted &&
-            s.Aquisition.GrantRule.Setters.ContainsSetter("spellcasting") &&
-            s.Aquisition.GrantRule.Setters.GetSetter("spellcasting").Value
-                .Equals(info.Name, StringComparison.OrdinalIgnoreCase)).ToList();
-
-        // Spells selected via a select rule whose SpellcastingName matches this class.
-        var selected = spells.Where(s =>
-            s.Aquisition.WasSelected &&
-            s.Aquisition.SelectRule.Attributes.ContainsSpellcastingName() &&
-            s.Aquisition.SelectRule.Attributes.SpellcastingName
-                .Equals(info.Name, StringComparison.OrdinalIgnoreCase)).ToList();
+        var acquisitions = SpellAcquisitionResolver.Resolve(CharacterManager.Current.GetElements(),
+            CharacterManager.Current.GetSpellcastingInformations())
+            .Where(a => a.ProfileKey == SpellAcquisitionResolver.ProfileKey(info)
+                && a.Preparation is not (SpellPreparation.ListOnly or SpellPreparation.Feature or SpellPreparation.RitualOnly)).ToList();
 
         // Prepared IDs (non-always-prepared spells the user marked). Supplied via interface
         // so no dependency on the concrete MAUI handler type.
-        IReadOnlyCollection<string> preparedIds = handler?.GetPreparedIds(info.Name)
+        IReadOnlyCollection<string> preparedIds = handler?.GetPreparedIds(info)
             ?? Array.Empty<string>();
 
         // Warn about registered spells whose acquisition type is neither granted nor selected —
@@ -1467,12 +1444,11 @@ public class CharacterFile : ObservableObject
             Logger.Warning("BuildMauiKnownSpells: spell '{0}' has unknown acquisition type for class '{1}' — skipped", s.Id, info.Name);
 
         var emittedIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var s in granted.Concat(selected).GroupBy(x => x.Id).Select(g => g.First()))
+        foreach (var group in acquisitions.GroupBy(a => a.Spell.Id))
         {
+            var s = group.First().Spell;
             emittedIds.Add(s.Id);
-            bool isChosen = s.Aquisition.WasGranted
-                ? s.Aquisition.GrantRule.IsAlwaysPrepared()
-                : s.Aquisition.SelectRule.IsAlwaysPrepared();
+            bool isChosen = group.Any(a => a.IsAlwaysPrepared);
             if (!isChosen && info.Prepare)
                 isChosen = preparedIds.Contains(s.Id);
             yield return new SelectionElement((ElementBase)s) { IsChosen = isChosen };
@@ -1500,6 +1476,7 @@ public class CharacterFile : ObservableObject
         var current2 = SpellcastingSectionContext.Current;
         List<ElementBase> list = current1.GetElements().Where<ElementBase>((Func<ElementBase, bool>)(x => x.Type.Equals("Spell"))).ToList<ElementBase>();
         int count = list.Count;
+        var resolvedSpells = SpellAcquisitionResolver.Resolve(current1.GetElements(), current1.GetSpellcastingInformations());
         XmlElement element1 = this._document.CreateElement("magic");
         int num;
         if (current1.Status.HasMulticlass)
@@ -1555,7 +1532,7 @@ public class CharacterFile : ObservableObject
                 XmlNode xmlNode2 = parentNode1.AppendChild((XmlNode)this._document.CreateElement("spells"));
                 IEnumerable<SelectionElement> knownSpells = viewModel != null
                     ? (IEnumerable<SelectionElement>)viewModel.KnownSpells
-                    : BuildMauiKnownSpells(list, spellcastingInformation, current2);
+                    : BuildMauiKnownSpells(resolvedSpells.Select(a => a.Spell), spellcastingInformation, current2);
                 foreach (SelectionElement selectionElement in knownSpells
                     .OrderByDescending<SelectionElement, bool>((Func<SelectionElement, bool>)(x => x.IsChosen))
                     .ThenBy<SelectionElement, int>((Func<SelectionElement, int>)(x => x.Element.AsElement<Spell>().Level))
@@ -1586,7 +1563,7 @@ public class CharacterFile : ObservableObject
                                 selectionElement.IsChosen = flag2;
                             if (selectionElement.IsChosen)
                                 element2.AppendAttribute("prepared", selectionElement.IsChosen ? "true" : "false");
-                            if (flag1)
+                            if (resolvedSpells.Any(a => a.Spell.Id == spell.Id && a.ProfileKey == SpellAcquisitionResolver.ProfileKey(spellcastingInformation) && a.IsAlwaysPrepared))
                                 element2.AppendAttribute("always-prepared", "true");
                         }
                         if (flag1)
@@ -1856,18 +1833,17 @@ public class CharacterFile : ObservableObject
                             Logger.Debug("--Registered:" + registeredElementId);
                             if (!CharacterManager.Current.Elements.Any<ElementBase>((Func<ElementBase, bool>)(x => x.Id == registeredElementId)))
                             {
-                                Logger.Warning("--not yet registered!" + registeredElementId);
+                                Logger.Debug("selection registration pending: " + registeredElementId);
                                 await Task.Delay(500);
-                                if (!CharacterManager.Current.Elements.Any<ElementBase>((Func<ElementBase, bool>)(x => x.Id == registeredElementId)))
-                                    Logger.Warning("--not yet registered!" + registeredElementId);
-                                else
-                                    Logger.Warning("--yep! after 500ms it is now registered!" + registeredElementId);
                             }
                             ElementBase element1 = CharacterManager.Current.Elements.LastOrDefault<ElementBase>((Func<ElementBase, bool>)(x => x.Id == registeredElementId));
                             if (element1 != null)
+                            {
+                                _deferredChildElements.Remove(childNode);
                                 await this.ReadChildElements(childNode, element1);
+                            }
                             else
-                                Logger.Warning("unable to get element from character elements: {0}", (object)registeredElementId);
+                                _deferredChildElements[childNode] = registeredElementId;
                         }
                         catch (Exception ex)
                         {
@@ -1884,9 +1860,32 @@ public class CharacterFile : ObservableObject
                     Debugger.Break();
                 ElementBase element2 = CharacterManager.Current.GetElements().LastOrDefault<ElementBase>((Func<ElementBase, bool>)(x => x.Id == id));
                 if (element2 != null)
+                {
+                    _deferredChildElements.Remove(childNode);
                     await this.ReadChildElements(childNode, element2);
+                }
                 else
-                    Logger.Warning("unable to get element from character elements: {0}", (object)id);
+                    _deferredChildElements[childNode] = id;
+            }
+        }
+    }
+
+    private async Task ReplayDeferredChildElements()
+    {
+        // Each saved node is replayed at most once after its parent becomes
+        // available. Replaying can expose another deferred descendant.
+        var replayed = new HashSet<XmlNode>();
+        while (true)
+        {
+            var available = CharacterManager.Current.GetElements().GroupBy(e => e.Id)
+                .ToDictionary(g => g.Key, g => g.Last(), StringComparer.Ordinal);
+            var ready = _deferredChildElements.Where(p => !replayed.Contains(p.Key) && available.ContainsKey(p.Value)).ToArray();
+            if (ready.Length == 0) return;
+            foreach (var (node, id) in ready)
+            {
+                _deferredChildElements.Remove(node);
+                replayed.Add(node);
+                await ReadChildElements(node, available[id]);
             }
         }
     }

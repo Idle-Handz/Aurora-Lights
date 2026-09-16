@@ -109,7 +109,7 @@ public sealed class ContentDatabaseParityService
 
             // Filter the XML snapshot to only elements from enabled sources so the comparison
             // is symmetric with the DB, which uses resolved_elements_cache (enabled only).
-            HashSet<string> enabledSources = await DbElementLoader.LoadEnabledSourceNamesAsync();
+            HashSet<string> enabledSources = dbResult.DataVersion == 12 ? [] : await DbElementLoader.LoadEnabledSourceNamesAsync();
             IEnumerable<ElementBase> filteredXml = enabledSources.Count > 0
                 ? xmlSnapshot.Elements.Where(e => string.IsNullOrEmpty(e.Source) || enabledSources.Contains(e.Source))
                 : xmlSnapshot.Elements;
@@ -142,6 +142,31 @@ public sealed class ContentDatabaseParityService
 
     private static async Task<XmlSnapshotResult> LoadXmlSnapshotAsync(CancellationToken cancellationToken)
     {
+        if (DbElementLoader.DbPath is { } path && File.Exists(path))
+        {
+            using var connection = Aurora.Importer.AuroraContentImporter.OpenReadableConnection(path);
+            if (AuroraTranslator.Content.PreparedCatalogReader.IsPrepared(connection))
+            {
+                if (!AuroraTranslator.Content.PreparedCatalogReader.InputsMatch(connection, [ContentDirectoryResolver.GetPrimaryContentDirectory()]))
+                    return new(false, "Primary XML has changed since preparation. Refresh the database before checking parity.", new ElementBaseCollection(), 0);
+                var projection = DbElementLoader.ReadPreparedProjection(connection, fromXml: true);
+                var result = new ElementBaseCollection();
+                var fallback = new ElementParser();
+                var parsers = ElementParserFactory.GetParsers().ToList();
+                foreach (var entry in projection.Elements)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    var doc = new XmlDocument();
+                    doc.LoadXml(entry.Xml);
+                    AuroraXmlCompatibilityRepair.RepairNode(doc.DocumentElement!);
+                    var header = fallback.ParseElementHeader(doc.DocumentElement!);
+                    var element = (parsers.FirstOrDefault(p => p.ParserType == header.Type) ?? fallback).ParseElement(doc.DocumentElement!);
+                    element.ContentFilePath = entry.Source.FilePath;
+                    result.Add(element);
+                }
+                return new(true, null, result, 0);
+            }
+        }
         var parserCollection = ElementParserFactory.GetParsers().ToList();
         ElementParser defaultParser = new();
         ElementParser currentParser = new();

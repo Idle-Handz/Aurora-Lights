@@ -155,7 +155,8 @@ public class SourcesManager : ISourceRestrictionsProvider
       SourceItem sourceItem = source1.Dequeue();
       if (sourceItem.Source.IsCoreContent)
       {
-        sourceItem.AllowUnchecking = false;
+        // Core rulebooks remain selectable; only builder infrastructure is mandatory.
+        sourceItem.AllowUnchecking = !RequiredContentPolicy.IsRequiredSource(sourceItem.Source.Name);
         sourceItemList1.Add(sourceItem);
       }
       else if (sourceItem.Source.IsSupplementContent)

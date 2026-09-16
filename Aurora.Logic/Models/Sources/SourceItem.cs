@@ -27,7 +27,8 @@ public class SourceItem : ObservableObject
   {
     this.Source = source;
     this.Elements = new List<ElementHeader>();
-    this.AllowUnchecking = true;
+    this.AllowUnchecking = !RequiredContentPolicy.IsRequiredSource(source.Name);
+    if (!this.AllowUnchecking) this._isChecked = true;
   }
 
   public void SetParent(SourcesGroup parent)
@@ -48,6 +49,7 @@ public class SourceItem : ObservableObject
 
   public void SetIsChecked(bool? value, bool updateChildren, bool updateParent)
   {
+    if (RequiredContentPolicy.IsRequiredSource(Source.Name)) value = true;
     bool? nullable = value;
     bool? isChecked = this._isChecked;
     if (nullable.GetValueOrDefault() == isChecked.GetValueOrDefault() & nullable.HasValue == isChecked.HasValue)

@@ -86,7 +86,7 @@ public sealed class ContentDatabaseService
             fallback: null);
 
     /// <summary>
-    /// Toggles a package's enabled state and rebuilds the resolution cache.
+    /// Toggles an optional package's runtime preference (rebuilding only legacy caches).
     /// Fires <see cref="StateChanged"/> on completion so the UI can refresh.
     /// The caller should prompt for an element reload after calling this.
     /// </summary>
@@ -162,7 +162,7 @@ public sealed class ContentDatabaseService
             IsStale = false;
             return false;
         }
-        IsStale = AuroraContentImporter.IsStale(contentDirectories, dbPath);
+        IsStale = AuroraContentImporter.IsStale([ContentDirectory], dbPath);
         StateChanged?.Invoke();
         return IsStale;
     }
@@ -201,27 +201,26 @@ public sealed class ContentDatabaseService
 
             AuroraImportResult result;
 
-            if (contentDirectories.Count == 1 && BundledTranslatorPath is { } exePath && File.Exists(exePath))
+            if (BundledTranslatorPath is { } exePath && File.Exists(exePath))
             {
-                result = await Task.Run(() => LocalCorrectionSync.ImportAsync(contentDirectories, dbPath,
-                    (prepared, candidate, token) => SyncWithBundledTranslatorAsync(exePath, prepared[0], candidate, token),
-                    cancellationToken), cancellationToken);
+                // The preparation-aware writer owns correction evaluation, candidate
+                // validation, activation and retirement. Give it the real primary root.
+                // Secondary roots are composed from XML by the runtime reader.
+                result = await Task.Run(async () =>
+                {
+                    var compatible = await CheckTranslatorPreparationAsync(exePath, cancellationToken);
+                    return compatible.Success
+                        ? await SyncWithBundledTranslatorAsync(exePath, ContentDirectory, dbPath, cancellationToken)
+                        : compatible;
+                }, cancellationToken);
             }
             else
             {
-                var reportProgress = new Progress<AuroraImportProgress>(p =>
-                {
-                    Progress = p;
-                    StateChanged?.Invoke();
-                });
-                result = await Task.Run(
-                    () => AuroraContentImporter.Import(contentDirectories, dbPath, reportProgress, cancellationToken),
-                    cancellationToken);
+                result = AuroraImportResult.Failed("A preparation-aware importer is required to build this content database. This app bundle does not include one for this platform yet. On-device import through the shared library is pending; your existing database was preserved.");
             }
 
             LastResult = result;
             IsStale    = !result.Success;
-            if (result.Success) DbElementLoader.ResetCaches();
             SyncState  = result.Success
                 ? ContentDatabaseSyncState.Done
                 : ContentDatabaseSyncState.Failed;
@@ -260,12 +259,14 @@ public sealed class ContentDatabaseService
         process.StartInfo = new ProcessStartInfo
         {
             FileName               = exePath,
-            Arguments              = $"sqlite-import \"{contentDirectory}\" \"{dbPath}\"",
             UseShellExecute        = false,
             RedirectStandardOutput = true,
             RedirectStandardError  = true,
             CreateNoWindow         = true
         };
+        process.StartInfo.ArgumentList.Add("sqlite-import");
+        process.StartInfo.ArgumentList.Add(contentDirectory);
+        process.StartInfo.ArgumentList.Add(dbPath);
         process.Start();
 
         using var reg = cancellationToken.Register(() =>
@@ -299,6 +300,45 @@ public sealed class ContentDatabaseService
             return AuroraImportResult.Succeeded(changed, unchanged, elements);
         }
 
-        return AuroraImportResult.Succeeded(0, 0, 0);
+        if (File.Exists(dbPath))
+        {
+            using var connection = AuroraContentImporter.OpenReadableConnection(dbPath);
+            if (AuroraTranslator.Content.PreparedCatalogReader.IsPrepared(connection))
+            {
+                using var count = connection.CreateCommand();
+                count.CommandText = "SELECT COUNT(*) FROM content_prepared_elements";
+                return AuroraImportResult.Succeeded(0, 0, Convert.ToInt32(count.ExecuteScalar()));
+            }
+        }
+        return AuroraImportResult.Failed("Translator did not produce a compatible prepared database.");
+    }
+
+    private async Task<AuroraImportResult> CheckTranslatorPreparationAsync(string executable, CancellationToken cancellationToken)
+    {
+        // Transitional capability probe until Translator exposes a versioned CLI
+        // handshake. Never discover an old writer by running it on user content.
+        string work = Path.Combine(Path.GetTempPath(), "aurora-writer-probe-" + Guid.NewGuid().ToString("N"));
+        string root = Path.Combine(work, "content");
+        Directory.CreateDirectory(root);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, "probe.xml"),
+                "<elements><element id=\"ID_AURORA_IMPORT_PROBE\" name=\"Import capability probe\" type=\"Feat\" source=\"Aurora\"><description>Capability probe.</description></element></elements>", cancellationToken);
+            string database = Path.Combine(work, "probe.sqlite");
+            var result = await SyncWithBundledTranslatorAsync(executable, root, database, cancellationToken);
+            if (result.Success && File.Exists(database))
+            {
+                using var connection = AuroraContentImporter.OpenReadableConnection(database);
+                if (AuroraTranslator.Content.PreparedCatalogReader.IsPrepared(connection) &&
+                    AuroraTranslator.Content.PreparedCatalogReader.InputsMatch(connection, [root]))
+                    return result;
+            }
+            return AuroraImportResult.Failed("The bundled Translator does not support the required content preparation contract. Update the app's Translator bundle before refreshing. The working database was preserved. " + result.ErrorMessage);
+        }
+        finally
+        {
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            Directory.Delete(work, recursive: true);
+        }
     }
 }

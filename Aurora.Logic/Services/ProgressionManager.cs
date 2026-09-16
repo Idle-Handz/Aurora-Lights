@@ -92,8 +92,9 @@ public class ProgressionManager
 
   public void ProcessExistingElements()
   {
-    foreach (ElementBase element in (Collection<ElementBase>) this.Elements)
-      this.ProcessElement(element, this.ProgressionLevel);
+    // Losing a choice can remove other selected roots, including nested choices.
+    foreach (ElementBase element in this.Elements.ToArray())
+      if (this.Elements.Contains(element)) this.ProcessElement(element, this.ProgressionLevel);
   }
 
   public int NormalizeDuplicateProgressionState()
@@ -179,7 +180,9 @@ public class ProgressionManager
     {
       "element",
       id,
-      type
+      type,
+      element.Type == "Spell" ? element.Aquisition.GetParentHeader()?.Id ?? "" : "",
+      element.Type == "Spell" && element.Aquisition.WasSelected ? element.Aquisition.SelectRule.UniqueIdentifier : ""
     });
   }
 
@@ -308,7 +311,7 @@ public class ProgressionManager
             ElementBaseCollection elements = CharacterManager.Current.GetElements();
             if (!this._interpreter.EvaluateElementRequirementsExpression(element1.Requirements, elements.Select<ElementBase, string>((Func<ElementBase, string>) (x => x.Id))))
             {
-              Logger.Warning("\tungranting: {0} after losing element requirements", (object) element1);
+              Logger.Info("\tungranting: {0} after losing element requirements", (object) element1);
               this.CleanElement(element1);
               element.RuleElements.Remove(element1);
             }

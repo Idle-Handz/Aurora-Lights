@@ -1,6 +1,7 @@
 @page "/magic"
 @implements IDisposable
 @using Builder.Data.Rules
+@using Builder.Presentation.Services
 @using Builder.Presentation
 @inject CharacterTabService Tabs
 @inject IDialogService DialogService
@@ -115,13 +116,17 @@
         var groups = _spellRuleGroups.Select((group, groupIndex) =>
             new MagicKnownSpellGroupModel(
                 group.Label,
-                ResolveKnownSpellSectionId(group.Label),
+                ResolveKnownSpellSectionId(group),
                 group.Rules.Select((entry, entryIndex) =>
                 {
                     // Resolve the chosen spell's metadata by id so the Known-tab filters
                     // (source/school/ritual/concentration) work on these picker rows.
                     var d = string.IsNullOrWhiteSpace(entry.SpellId) ? null : GetSpellDetailCached(entry.SpellId!);
-                    var section = ResolveKnownSpellSection(group.Label);
+                    var acquisition = _snap!.SpellAcquisitions.FirstOrDefault(a =>
+                        a.Spell.Id == entry.SpellId && a.Rule is SelectRule selectedRule
+                        && selectedRule.UniqueIdentifier == entry.Rule.UniqueIdentifier);
+                    var section = acquisition?.Profile is null ? null : _snap.SpellcastingSections
+                        .FirstOrDefault(s => s.UniqueIdentifier == acquisition.Profile.UniqueIdentifier);
                     string ruleName = entry.Rule.Attributes.Name ?? entry.Rule.Attributes.Type ?? entry.Label;
                     var selectionAccess = MagicSpellAccessClassifier.InferSelectionAccess(
                         ruleName,
@@ -151,7 +156,8 @@
                         IsConcentration: d?.Concentration ?? false,
                         CastingTime: d?.CastingTime ?? string.Empty,
                         SelectionAccess: selectionAccess,
-                        AccessSource: accessSource);
+                        AccessSource: accessSource,
+                        ResolvedAccessPaths: acquisition is null ? null : ResolveAccessPaths(acquisition));
                 }).ToList()))
             .ToList();
 
@@ -176,12 +182,31 @@
                     CastingTime: d?.CastingTime ?? string.Empty,
                     GrantedBy: g.Source,
                     SelectionAccess: MagicSpellSelectionAccess.Granted,
-                    AccessSource: g.Source);
+                    AccessSource: g.Source,
+                    ResolvedAccessPaths: g.Acquisition is null ? null : ResolveAccessPaths(g.Acquisition));
             }).ToList();
             groups.Add(new MagicKnownSpellGroupModel("Granted by Features", grantedEntries, ReadOnlyGroup: true));
         }
 
         return groups;
+    }
+
+    private IReadOnlyList<MagicSpellAccessPathModel> ResolveAccessPaths(SpellAcquisition acquisition)
+    {
+        var section = _snap!.SpellcastingSections.FirstOrDefault(s => s.UniqueIdentifier == acquisition.Profile?.UniqueIdentifier);
+        bool prepared = section?.SpellLevels.SelectMany(l => l.Spells).Any(s => s.Id == acquisition.Spell.Id && s.IsPrepared) == true;
+        int level = acquisition.Spell is Builder.Data.Elements.Spell spell ? spell.Level : -1;
+        bool slots = level > 0 && acquisition.CanUseSlots(prepared);
+        var paths = new List<MagicSpellAccessPathModel>();
+        if (acquisition.FreeUses > 0 || acquisition.IsFeature || acquisition.Preparation == SpellPreparation.RitualOnly || level == 0)
+            paths.Add(new(acquisition.Preparation == SpellPreparation.RitualOnly ? MagicSpellAccessKind.RitualBook : MagicSpellAccessKind.Granted, "", acquisition.OriginName,
+                level == 0 || acquisition.FreeUses > 0 || (acquisition.IsFeature && slots), acquisition.Preparation == SpellPreparation.RitualOnly, acquisition.IsFeature && slots, acquisition.Ability,
+                acquisition.FreeUses, acquisition.Recharge, acquisition.Diagnostic, acquisition.SlotUses));
+        if (acquisition.Profile is not null && !acquisition.IsFeature && slots)
+            paths.Add(new(acquisition.IsAlwaysPrepared ? MagicSpellAccessKind.AlwaysPrepared : MagicSpellAccessKind.Known,
+                acquisition.Profile.UniqueIdentifier, acquisition.Profile.Name, true, false, true,
+                acquisition.Profile.AbilityName));
+        return paths;
     }
 
     private MagicSpellDetailModel? _selectedSpellModel;
@@ -291,15 +316,17 @@
             isCantrip,
             state,
             castingTime: detail?.CastingTime ?? string.Empty,
-            grantedBy: spell.GrantedBy);
+            grantedBy: spell.GrantedBy) { HasResolvedOwnership = true };
     }
 
-    private SpellcastingSectionEntry? ResolveKnownSpellSection(string label) =>
-        _snap?.SpellcastingSections
-            .FirstOrDefault(section => string.Equals(section.Name, label, StringComparison.OrdinalIgnoreCase));
-
-    private string? ResolveKnownSpellSectionId(string label) =>
-        ResolveKnownSpellSection(label)?.UniqueIdentifier;
+    private string? ResolveKnownSpellSectionId(SelectionRuleGroup group)
+    {
+        var ruleIds = group.Rules.Select(entry => entry.Rule.UniqueIdentifier).ToHashSet();
+        var profiles = _snap!.SpellAcquisitions.Where(a => !a.IsFeature && a.Profile is not null
+                && a.Rule is SelectRule rule && ruleIds.Contains(rule.UniqueIdentifier))
+            .Select(a => a.Profile!.UniqueIdentifier).Distinct().ToArray();
+        return profiles.Length == 1 ? profiles[0] : null;
+    }
 
     private async Task ManualSaveAsync()
     {
@@ -450,7 +477,9 @@
                 }
                 else
                 {
-                    handler.UnsetPrepareSpell(change.SpellcastingClass, change.SpellId);
+                    var info = CharacterManager.Current.GetSpellcastingInformations()
+                        .FirstOrDefault(i => i.UniqueIdentifier == change.SpellcastingSectionId);
+                    if (info is not null) handler.UnsetPrepareSpell(info, change.SpellId);
                 }
             }
         }
