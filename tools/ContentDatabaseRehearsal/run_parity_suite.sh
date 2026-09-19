@@ -2,11 +2,12 @@
 # Run the parity rehearsal suite against a root created by prepare_baseline.py.
 # Usage: run_parity_suite.sh <baseline-root> [db|characters|all]
 # Results (JSON, logs, database copies, summary.txt) are collected in <root>/results.
+# Set HARNESS_EXE to run a copy of the harness whose BundledTools holds a different Translator.
 set -u
 here="$(cd "$(dirname "$0")" && pwd)"
 root="$(cd "$1" && pwd)"
 part="${2:-all}"
-exe="$here/bin/Debug/net10.0/ContentDatabaseRehearsal.exe"
+exe="${HARNESS_EXE:-$here/bin/Debug/net10.0/ContentDatabaseRehearsal.exe}"
 results="$root/results"
 mkdir -p "$results/characters"
 win() { cygpath -w "$1"; }

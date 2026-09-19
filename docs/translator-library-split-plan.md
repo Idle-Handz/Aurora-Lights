@@ -315,8 +315,10 @@ Capture the baseline from the current working tree before changing anything (Pha
      models into them.
    - `LocalCorrectionDocument` goes to Contracts.
    - The CLI keeps `Program.cs`, the character-state engine (+ its
-     `AuroraRuntimeSelectionRules` partial), the 5e-API models,
-     `XellarantXmlGenerator` and `Data/`.
+     `AuroraRuntimeSelectionRules` partial), `XellarantXmlGenerator` and `Data/`.
+     The 5e-API models (`Spell`, `SpellDC`, `DamageComposite`, `BaseApiClass`)
+     moved to the library after all, because the importer's `AuroraSpell`
+     inherits `Spell`.
    - Nearly all moved types are `internal`. To stay behavior-neutral, the library
      grants `InternalsVisibleTo` to the CLI and tests, and **namespaces are left
      unchanged** in this phase. The public API and namespace alignment come with
@@ -326,6 +328,23 @@ Capture the baseline from the current working tree before changing anything (Pha
      to the baseline with `compare_databases.py --ignore "*.created_utc" --ignore
      database_metadata.built_utc`; they must be identical. Translator tests must
      stay 65/65.
+   **Result (2026-09-18, Translator `25167f3`): complete.**
+   - The committed pre-move source (`f1f76e1`) first proved to reproduce the
+     bundled Translator exactly: 68 tables identical, projections identical.
+     So the comparison isolates the move itself.
+   - The post-move build's fresh databases (both builds) are **identical to the
+     baseline in all 68 tables**, ignoring timestamps.
+   - Loaded projections are identical (101,333 / 94,005 elements).
+   - The refresh, XML-parity, fallback and failure-path checks succeed with
+     identical warning text. Translator tests pass 65/65.
+   - Three hidden dependencies surfaced at compile time and were resolved without
+     behavior change:
+     - `CharacterWarningResult` moved beside the expression context that stores it.
+     - `AuroraSpell` inherits the 5e-API `Spell`, so those models moved too.
+     - `PreparedContentWriter` now calls `ContentText.SplitTopLevel` directly
+       instead of the CLI's one-line pass-through.
+   - Characters were not re-run: app code is unchanged and its database input is
+     row-identical. They will be re-run when the app changes (Phase 4).
 2. **Reconcile duplicates.** Diff every Lights/Translator pair and merge
    Lights-only fixes into the library (the `LocalCorrectionSync` 306-vs-215 gap
    matters most).
