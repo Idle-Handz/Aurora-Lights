@@ -1,0 +1,259 @@
+{
+  "manifestVersion": 1,
+  "archive": "aurora-translator-win-x64-cbd98784147fc52d.zip",
+  "sha256": "cbd98784147fc52d340d07890369ae4547a823eda0eb1a3eeceace5ff29ec815",
+  "bytes": 4473272,
+  "runtimeIdentifier": "win-x64",
+  "productVersion": "1.0.0+21070b03a561343b17b563ae90d8a23ef00ab29a",
+  "provenance": "Captured from the installed local publish folder; productVersion is embedded build metadata, not proof of a clean source checkout.",
+  "selfContained": false,
+  "requiredFramework": {
+    "name": "Microsoft.NETCore.App",
+    "version": "10.0.0"
+  },
+  "excluded": [
+    "SNAPSHOT-* (historical metadata; regenerated inventory is authoritative for this artifact)"
+  ],
+  "files": [
+    {
+      "path": "AuroraTranslator.deps.json",
+      "bytes": 23139,
+      "sha256": "a4b8da79df86c47d27d13e2109fff6df7a41b23667b13256172c351144d9a4b9"
+    },
+    {
+      "path": "AuroraTranslator.dll",
+      "bytes": 1001472,
+      "sha256": "bb04b43366ff50a9aa6dfd762f0d44c8ede0aea6c180f37972d994f0916c02bc"
+    },
+    {
+      "path": "AuroraTranslator.exe",
+      "bytes": 162304,
+      "sha256": "61859c463750c8be0c291b1a952364bc6f1e5a8b5cb3aa5faa475cbd629fc51e"
+    },
+    {
+      "path": "AuroraTranslator.pdb",
+      "bytes": 146032,
+      "sha256": "28c7f22da7501eae57a1a84af37b65b57ed91d60aef00c958d3101af29f1ec92"
+    },
+    {
+      "path": "AuroraTranslator.runtimeconfig.json",
+      "bytes": 342,
+      "sha256": "c230a317a54dd960bcbeb5f347f52e18dc665a26f7efda2159fced9a5ac7e097"
+    },
+    {
+      "path": "cs/Microsoft.Data.SqlClient.resources.dll",
+      "bytes": 260216,
+      "sha256": "ee6a907e8f35bf8555b61ae8d3731cf335a675d919f1b0991decaee2847f1687"
+    },
+    {
+      "path": "Data/sqlite-character-loading.sql",
+      "bytes": 120397,
+      "sha256": "1f7a06a653c05e6b8da3a754bde9d8b80dbc0b9d366563d878985cfc40e2d5e3"
+    },
+    {
+      "path": "de/Microsoft.Data.SqlClient.resources.dll",
+      "bytes": 270496,
+      "sha256": "deb4fa5f356f513c0f58678b7c15c40f114835c18dd205742cab19483b6bf648"
+    },
+    {
+      "path": "e_sqlite3.dll",
+      "bytes": 1978880,
+      "sha256": "b7385d722c83fb52142a00477a726723745916d22a555711ee89834c1111fb2e"
+    },
+    {
+      "path": "es/Microsoft.Data.SqlClient.resources.dll",
+      "bytes": 262264,
+      "sha256": "876b3ec23d7860033586f7ce8cc93882eaffb2b585d998b43bff773cc5553cdc"
+    },
+    {
+      "path": "fr/Microsoft.Data.SqlClient.resources.dll",
+      "bytes": 271520,
+      "sha256": "c36a3d938e3d615f59c1a45f13a8aefb853fef846ebae5b07de21d8fd1e68391"
+    },
+    {
+      "path": "it/Microsoft.Data.SqlClient.resources.dll",
+      "bytes": 263288,
+      "sha256": "629b4cb5671524b357ba813a35a2ca555637bb30773b189e325ca10107074605"
+    },
+    {
+      "path": "ja/Microsoft.Data.SqlClient.resources.dll",
+      "bytes": 292984,
+      "sha256": "0a52522f40c04a38e7a857d82e8d2bb008f8e458776b287243da91f494887952"
+    },
+    {
+      "path": "ko/Microsoft.Data.SqlClient.resources.dll",
+      "bytes": 270968,
+      "sha256": "d6cba38d2d8e94b60348ff71b2868d4ed4daac032bef0ea6d37a9fea92eda043"
+    },
+    {
+      "path": "Microsoft.Bcl.Cryptography.dll",
+      "bytes": 16648,
+      "sha256": "b9b076648248645d7681f1a1b541d6534ea4a332d959df0c3b0c9e6c5c3780b2"
+    },
+    {
+      "path": "Microsoft.Data.SqlClient.dll",
+      "bytes": 1848448,
+      "sha256": "bcdbeb8fdb4bef85350ae119713998be41401a9bf71128cbdd430bb263922186"
+    },
+    {
+      "path": "Microsoft.Data.SqlClient.Extensions.Abstractions.dll",
+      "bytes": 23672,
+      "sha256": "6c85afcc73a2069e8127fbe45fc2f2432c50cb9447436eba60605db0486b27d7"
+    },
+    {
+      "path": "Microsoft.Data.SqlClient.Internal.Logging.dll",
+      "bytes": 53880,
+      "sha256": "3663a9609f5bfb0048f55a65e0466ca019e6a770adc6600be3b8368620189c4b"
+    },
+    {
+      "path": "Microsoft.Data.SqlClient.SNI.dll",
+      "bytes": 566832,
+      "sha256": "7e37c5bba3da06a955c122e3515b2980e2f1b8732ec0297f0a7e77e79b4de331"
+    },
+    {
+      "path": "Microsoft.Data.Sqlite.dll",
+      "bytes": 177464,
+      "sha256": "b98d957462be432895b00dccca012d3c127e118d3d4262418014b92c7bbd66cf"
+    },
+    {
+      "path": "Microsoft.Extensions.Caching.Abstractions.dll",
+      "bytes": 36624,
+      "sha256": "fe351f3fa95ab8389efaf48452aed71f36484e8edbac4e9081036c9ff3b8943b"
+    },
+    {
+      "path": "Microsoft.Extensions.Caching.Memory.dll",
+      "bytes": 48944,
+      "sha256": "20582fb34b6b5f0be4f6c3f3a3ddd23a59192915b66555a6a58e25408d5e7c15"
+    },
+    {
+      "path": "Microsoft.Extensions.DependencyInjection.Abstractions.dll",
+      "bytes": 66312,
+      "sha256": "7c97c4463fe0fc11d1f22f4d160b2bd2288981adf1de2717a6ff3fb993ddf294"
+    },
+    {
+      "path": "Microsoft.Extensions.Logging.Abstractions.dll",
+      "bytes": 67344,
+      "sha256": "a76a735b63e6ef3b0bf41ff92423cbd16103b8952e8306140a9bd650346034dc"
+    },
+    {
+      "path": "Microsoft.Extensions.Options.dll",
+      "bytes": 66320,
+      "sha256": "07850a36bc3387a2e46375cc30dff0bd627f599dc5aa5f69c0e8195c5209eaff"
+    },
+    {
+      "path": "Microsoft.Extensions.Primitives.dll",
+      "bytes": 45328,
+      "sha256": "7090bd5f06714eb81a23389f95fe02683e6b3ec2fccb2316ff676798035bc905"
+    },
+    {
+      "path": "Microsoft.IdentityModel.Abstractions.dll",
+      "bytes": 19528,
+      "sha256": "613fd94ff39ce6ff90666e062e93d5d5ea7fdeae93aaab2bf2cb6f5c87cea39d"
+    },
+    {
+      "path": "Microsoft.IdentityModel.JsonWebTokens.dll",
+      "bytes": 173088,
+      "sha256": "d1af130b42eaa6e8b5b45b0a48d286e7a282f2b67f5809aeb828aaa909d94891"
+    },
+    {
+      "path": "Microsoft.IdentityModel.Logging.dll",
+      "bytes": 38432,
+      "sha256": "b2b89896da6f307fe4c7fba033f4f629ce43b92cc6d28c7daa024a4e5cd68dbd"
+    },
+    {
+      "path": "Microsoft.IdentityModel.Protocols.dll",
+      "bytes": 53280,
+      "sha256": "647f131d0fd0a66802a80adc9cc38fe02aa2caf78d6f58796e758829541b16de"
+    },
+    {
+      "path": "Microsoft.IdentityModel.Protocols.OpenIdConnect.dll",
+      "bytes": 137248,
+      "sha256": "f19f659e8533ad2b0d4650779231efd0e25247df72c127b57cfdbf186be8d256"
+    },
+    {
+      "path": "Microsoft.IdentityModel.Tokens.dll",
+      "bytes": 391200,
+      "sha256": "21c943ec715d8771c3a711ad78fc109adceac0e002f67a76f3bca33d195d0f5f"
+    },
+    {
+      "path": "Microsoft.SqlServer.Server.dll",
+      "bytes": 23976,
+      "sha256": "a9dca1b42bc875f966b78b2c0880e62b838f0ed6567166d7f1f07ae4b76ec4bf"
+    },
+    {
+      "path": "pl/Microsoft.Data.SqlClient.resources.dll",
+      "bytes": 269944,
+      "sha256": "e9d1a6833bf7b1ba16179ad5af386f022cf1666d46de12f9585ae723e645c388"
+    },
+    {
+      "path": "pt-BR/Microsoft.Data.SqlClient.resources.dll",
+      "bytes": 258208,
+      "sha256": "10dd0e9d6cb9b80422ee04fdbe6a2df7dee552ff61573e8504aab7c977374104"
+    },
+    {
+      "path": "ru/Microsoft.Data.SqlClient.resources.dll",
+      "bytes": 348792,
+      "sha256": "1820ac4d09794c8554fe6e79aaec25045eb145c130709daa997f61d263356371"
+    },
+    {
+      "path": "SQLitePCLRaw.batteries_v2.dll",
+      "bytes": 5120,
+      "sha256": "815ce410c9eab531dd219318e3ba16c5e38e83d361cfbbdbb4bbca222c497b0b"
+    },
+    {
+      "path": "SQLitePCLRaw.core.dll",
+      "bytes": 51200,
+      "sha256": "af340ac9eb9195795660d7fc1114f486b6ab63998f33176e2f24c8e0acb9aa84"
+    },
+    {
+      "path": "SQLitePCLRaw.provider.e_sqlite3.dll",
+      "bytes": 36864,
+      "sha256": "df996bcae63c2cabcfe8d4b9c5110eb39a2a4706178b07d875665391c6eb3995"
+    },
+    {
+      "path": "System.Configuration.ConfigurationManager.dll",
+      "bytes": 443192,
+      "sha256": "23a07c6bae940887065fbd1043a99edf86fea415b5f5c11b3cd0a9569c65c8ec"
+    },
+    {
+      "path": "System.Diagnostics.EventLog.dll",
+      "bytes": 174904,
+      "sha256": "718d0bca6b6914556ca9b719904036a7bf6bac635ea97e535f44b09a67ee4972"
+    },
+    {
+      "path": "System.Diagnostics.EventLog.Messages.dll",
+      "bytes": 801080,
+      "sha256": "8994b1e8a7164c8a27d6995fb79ceffbca01f3c32261486006e21eec2322d41a"
+    },
+    {
+      "path": "System.IdentityModel.Tokens.Jwt.dll",
+      "bytes": 92232,
+      "sha256": "d6026966eb5304c2e3bdb3bc091a94d204dcb27696a61cdc89d1abf5259e24ca"
+    },
+    {
+      "path": "System.Security.Cryptography.Pkcs.dll",
+      "bytes": 319288,
+      "sha256": "d83a2104addc15144058441e0c38727d2e4ee24ad611402db816742b6306b4e1"
+    },
+    {
+      "path": "System.Security.Cryptography.ProtectedData.dll",
+      "bytes": 38672,
+      "sha256": "2e9dc3858bab3ada3acb5565f89a724347286c6ed0b56897794de6e8216fd6c4"
+    },
+    {
+      "path": "tr/Microsoft.Data.SqlClient.resources.dll",
+      "bytes": 253560,
+      "sha256": "2c38de9b4eadb213229b4ba84ba391ff074f2918495c68ab2246d4445b5c9f06"
+    },
+    {
+      "path": "zh-Hans/Microsoft.Data.SqlClient.resources.dll",
+      "bytes": 228472,
+      "sha256": "ec30cc88c079e6b68f033ddff65f0c2d7679a8ab833e92133ee48711888ad767"
+    },
+    {
+      "path": "zh-Hant/Microsoft.Data.SqlClient.resources.dll",
+      "bytes": 232056,
+      "sha256": "2c73a0db0b2a8860ac1e9122f9b4ec6ab65ca0942cd199d1250a173f520f05c1"
+    }
+  ]
+}
