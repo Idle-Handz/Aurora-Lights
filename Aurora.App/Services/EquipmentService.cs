@@ -867,14 +867,20 @@ public static class EquipmentService
                 if (!string.IsNullOrEmpty(sd)) return sd;
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            DebugLogService.Instance.LogException(ex, $"EquipmentService.GetDescription sheet description for '{e.Id}'");
+        }
         try
         {
             if (!string.IsNullOrWhiteSpace(e.Description))
                 return Builder.Presentation.Utilities.ElementDescriptionGenerator
                     .GeneratePlainDescription(e.Description).Trim();
         }
-        catch { }
+        catch (Exception ex)
+        {
+            DebugLogService.Instance.LogException(ex, $"EquipmentService.GetDescription for '{e.Id}'");
+        }
         return "";
     }
 

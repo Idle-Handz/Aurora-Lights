@@ -550,12 +550,17 @@ internal sealed class MauiCharacterSheetGenerator : ICharacterSheetGenerator
                     ? pm.GetElements().FirstOrDefault(x => x.Type == "Archetype")?.Name
                     : null) ?? "";
         }
-        catch { }
+        catch (Exception ex)
+        {
+            DebugLogService.Instance.LogException(ex, $"MauiCharacterSheetGenerator archetype for '{info.Name}'");
+        }
 
         // Stats
         page.Ability      = info.AbilityName;
-        try { page.AttackBonus = stats.GetValue(info.GetSpellcasterSpellAttackStatisticName()).ToValueString(); } catch { }
-        try { page.Save        = stats.GetValue(info.GetSpellcasterSpellSaveStatisticName()).ToString(); } catch { }
+        try { page.AttackBonus = stats.GetValue(info.GetSpellcasterSpellAttackStatisticName()).ToValueString(); }
+        catch (Exception ex) { DebugLogService.Instance.LogException(ex, $"MauiCharacterSheetGenerator attack bonus for '{info.Name}'"); }
+        try { page.Save        = stats.GetValue(info.GetSpellcasterSpellSaveStatisticName()).ToString(); }
+        catch (Exception ex) { DebugLogService.Instance.LogException(ex, $"MauiCharacterSheetGenerator save DC for '{info.Name}'"); }
         page.PrepareCount = info.Prepare
             ? stats.GetValue(info.GetPrepareAmountStatisticName()).ToString()
             : "N/A";
@@ -568,7 +573,8 @@ internal sealed class MauiCharacterSheetGenerator : ICharacterSheetGenerator
         {
             var levelProp = GetSpellsProperty(page, lvl);
             levelProp.Level = lvl;
-            try { levelProp.AvailableSlots = stats.GetValue(info.GetSlotStatisticName(lvl)); } catch { }
+            try { levelProp.AvailableSlots = stats.GetValue(info.GetSlotStatisticName(lvl)); }
+            catch (Exception ex) { DebugLogService.Instance.LogException(ex, $"MauiCharacterSheetGenerator slot count level {lvl} for '{info.Name}'"); }
         }
         if (cm.Status.HasMulticlassSpellSlots)
         {
@@ -625,9 +631,11 @@ internal sealed class MauiCharacterSheetGenerator : ICharacterSheetGenerator
                 castingTime = sp.CastingTime ?? "";
                 range       = sp.Range       ?? "";
                 duration    = sp.Duration    ?? "";
-                try { components = sp.GetComponentsString() ?? ""; } catch { }
+                try { components = sp.GetComponentsString() ?? ""; }
+                catch (Exception ex) { DebugLogService.Instance.LogException(ex, $"MauiCharacterSheetGenerator components for '{sp.Id}'"); }
                 subtitle    = sp.Underline   ?? "";
-                try { description = ElementDescriptionGenerator.GeneratePlainDescription(sp.Description ?? ""); } catch { }
+                try { description = ElementDescriptionGenerator.GeneratePlainDescription(sp.Description ?? ""); }
+                catch (Exception ex) { DebugLogService.Instance.LogException(ex, $"MauiCharacterSheetGenerator description for '{sp.Id}'"); }
                 isRitual = sp.IsRitual;
                 isConc   = sp.IsConcentration;
                 school   = sp.MagicSchool   ?? "";
@@ -687,8 +695,9 @@ internal sealed class MauiCharacterSheetGenerator : ICharacterSheetGenerator
             if (spell.Aquisition.WasSelected && HasPreparedSetter(spell.Aquisition.SelectRule.Setters))
                 return true;
         }
-        catch
+        catch (Exception ex)
         {
+            DebugLogService.Instance.LogException(ex, $"MauiCharacterSheetGenerator.IsAlwaysPreparedSpell for '{spell.Id}'");
         }
 
         return false;

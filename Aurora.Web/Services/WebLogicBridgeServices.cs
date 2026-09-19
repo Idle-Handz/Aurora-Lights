@@ -39,7 +39,7 @@ internal sealed class WebSelectionRuleExpanderHandler : ISelectionRuleExpanderHa
         if (_registered.TryGetValue(key, out object? previous) && previous is ElementBase previousElement)
         {
             try { CharacterManager.Current.UnregisterElement(previousElement); }
-            catch { }
+            catch (Exception ex) { Logger.Exception(ex, $"WebSelectionRuleExpanderHandler.SetRegisteredElement unregister previous '{previousElement.Id}'"); }
         }
 
         element.Aquisition.WasSelected = true;

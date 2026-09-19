@@ -77,7 +77,7 @@ public static class CharacterLoadCompatibilityService
                 else if (string.IsNullOrEmpty(location))
                 {
                     try { item.Activate(equip: true, attune: item.IsAttuned); }
-                    catch { }
+                    catch (Exception ex) { Logger.Exception(ex, nameof(RestoreEquippedSlots)); }
                 }
             }
 

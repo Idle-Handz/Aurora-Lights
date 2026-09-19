@@ -371,7 +371,10 @@ public sealed class CharacterSnapshot
                         if (!string.IsNullOrWhiteSpace(raw))
                             plain = ElementDescriptionGenerator.GeneratePlainDescription(raw).Trim();
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        DebugLogService.Instance.LogException(ex, $"CharacterSnapshot.CollectCompanionFeatures description for '{id}'");
+                    }
 
                     return new FeatureEntry(
                         element.Name ?? id,
@@ -560,7 +563,10 @@ public sealed class CharacterSnapshot
                     if (!string.IsNullOrWhiteSpace(e.Description))
                         desc = ElementDescriptionGenerator.GeneratePlainDescription(e.Description).Trim();
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    DebugLogService.Instance.LogException(ex, $"CharacterSnapshot description for '{e.Id}'");
+                }
                 return new FeatureEntry(
                     e.Name!,
                     desc,
@@ -602,7 +608,10 @@ public sealed class CharacterSnapshot
                 spellDC = dc.ToString();
                 spellAttack = atk >= 0 ? $"+{atk}" : $"{atk}";
             }
-            catch { }
+            catch (Exception ex)
+            {
+                DebugLogService.Instance.LogException(ex, $"CharacterSnapshot.CollectSpellcastingSections DC/attack for '{info.Name}'");
+            }
 
             bool isPreparedCaster = info.Prepare;
             bool isSpellbookCaster = isPreparedCaster
@@ -626,7 +635,10 @@ public sealed class CharacterSnapshot
                 if (isPreparedCaster)
                     maxPrepared = cm.StatisticsCalculator.StatisticValues.GetValue(info.GetPrepareAmountStatisticName());
             }
-            catch { }
+            catch (Exception ex)
+            {
+                DebugLogService.Instance.LogException(ex, $"CharacterSnapshot.CollectSpellcastingSections prepared-amount for '{info.Name}'");
+            }
 
             sections.Add(new SpellcastingSectionEntry
             {
@@ -702,7 +714,10 @@ public sealed class CharacterSnapshot
                     totalSlots[n] = cm.StatisticsCalculator.StatisticValues.GetValue(info.GetSlotStatisticName(n));
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            DebugLogService.Instance.LogException(ex, $"CharacterSnapshot.CollectSpellLevels slot totals for '{info?.Name}'");
+        }
 
         // Highest slot level this character can cast at.
         int maxSlot = 0;
@@ -967,8 +982,9 @@ public sealed class CharacterSnapshot
             if (spell.Aquisition.WasSelected && HasPreparedSetter(spell.Aquisition.SelectRule.Setters))
                 return true;
         }
-        catch
+        catch (Exception ex)
         {
+            DebugLogService.Instance.LogException(ex, $"CharacterSnapshot.IsAlwaysPreparedSpell for '{spell.Id}'");
         }
 
         return false;

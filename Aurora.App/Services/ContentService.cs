@@ -359,7 +359,8 @@ public sealed class ContentService
 
     /// <summary>
     /// Rewrites http:// to https:// in all url= attributes of every .index file under
-    /// <paramref name="directory"/>. Best-effort; individual failures are silently skipped.
+    /// <paramref name="directory"/>. Best-effort; individual failures are logged and skipped
+    /// so one bad file doesn't block upgrading the rest.
     /// </summary>
     private static void UpgradeIndexFileProtocols(string directory)
     {
@@ -374,7 +375,10 @@ public sealed class ContentService
                 if (upgraded != text)
                     File.WriteAllText(path, upgraded);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                DebugLogService.Instance.LogException(ex, $"ContentService.UpgradeIndexFileProtocols for '{path}'");
+            }
         }
     }
 

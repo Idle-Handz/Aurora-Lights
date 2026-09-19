@@ -180,7 +180,7 @@ public static class LocalCorrectionSync
                     }
                 }
                 catch (IOException) { /* Safe to leave a redundant file active until next sync. */ }
-                catch (UnauthorizedAccessException) { }
+                catch (UnauthorizedAccessException) { /* File locked/permission-denied; retry retirement next sync. */ }
                 catch (SqliteException) { /* Retirement is recoverable; the database is already active. */ }
             }
             return result;

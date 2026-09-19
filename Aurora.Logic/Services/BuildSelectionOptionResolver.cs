@@ -1,3 +1,4 @@
+using Builder.Core.Logging;
 using Builder.Data;
 using Builder.Data.Elements;
 using Builder.Data.Rules;
@@ -493,8 +494,9 @@ public static class BuildSelectionOptionResolver
             if (levels.Count > 0)
                 return levels;
         }
-        catch
+        catch (Exception ex)
         {
+            Logger.Exception(ex, nameof(ResolveSpellSlotLevels));
         }
 
         // Match legacy Aurora's no-slot sentinel: no real spell has level 99.
@@ -556,8 +558,9 @@ public static class BuildSelectionOptionResolver
                     if (stats.GetValue(info.GetSlotStatisticName(level)) > 0)
                         maxLevel = level;
                 }
-                catch
+                catch (Exception ex)
                 {
+                    Logger.Exception(ex, nameof(ResolveMaxCastableSpellLevel));
                 }
             }
 
@@ -630,8 +633,9 @@ public static class BuildSelectionOptionResolver
             if (!string.IsNullOrWhiteSpace(raw))
                 return ElementDescriptionGenerator.GeneratePlainDescription(raw).Trim();
         }
-        catch
+        catch (Exception ex)
         {
+            Logger.Exception(ex, nameof(GetFeatureDescription));
         }
 
         return string.Empty;

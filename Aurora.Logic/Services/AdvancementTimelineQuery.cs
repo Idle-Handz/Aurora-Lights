@@ -1,3 +1,4 @@
+using Builder.Core.Logging;
 using Builder.Data;
 using Builder.Data.Elements;
 
@@ -39,7 +40,8 @@ public static class AdvancementTimelineQuery
         }
 
         int hitDie = 0;
-        try { hitDie = manager.GetHitDieValue(); } catch { }
+        try { hitDie = manager.GetHitDieValue(); }
+        catch (Exception ex) { Logger.Exception(ex, nameof(BuildClassTimeline)); }
 
         return new ClassAdvancementTimeline(
             manager.ClassElement?.Name ?? "Unknown",
@@ -105,7 +107,10 @@ public static class AdvancementTimelineQuery
             if (feature.Aquisition.WasSelected)
                 return feature.Aquisition.SelectRule.Attributes.RequiredLevel;
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Logger.Exception(ex, nameof(GetRequiredLevel));
+        }
         return 0;
     }
 

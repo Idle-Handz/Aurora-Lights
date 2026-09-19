@@ -1,3 +1,4 @@
+using Builder.Core.Logging;
 using Builder.Data;
 using Builder.Data.Elements;
 using Builder.Data.Rules;
@@ -1400,8 +1401,9 @@ public sealed class WebCharacterEngineService
                         currentName = (string?)((dynamic)current).Name;
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
+                    Logger.Exception(ex, "WebCharacterEngineService.BuildMagicRuleSelectionGroups current selection");
                 }
 
                 string label = rule.Attributes.Number > 1
@@ -1599,8 +1601,9 @@ public sealed class WebCharacterEngineService
                 }
             }
         }
-        catch
+        catch (Exception ex)
         {
+            Logger.Exception(ex, $"WebCharacterEngineService.GetDescription sheet description for '{element.Id}'");
         }
 
         try
@@ -1610,8 +1613,9 @@ public sealed class WebCharacterEngineService
                 return ElementDescriptionGenerator.GeneratePlainDescription(element.Description).Trim();
             }
         }
-        catch
+        catch (Exception ex)
         {
+            Logger.Exception(ex, $"WebCharacterEngineService.GetDescription for '{element.Id}'");
         }
 
         return string.Empty;
@@ -1642,8 +1646,9 @@ public sealed class WebCharacterEngineService
                 spellAttack = attack >= 0 ? $"+{attack}" : attack.ToString();
             }
         }
-        catch
+        catch (Exception ex)
         {
+            Logger.Exception(ex, "WebCharacterEngineService.BuildMagicModel DC/attack");
         }
 
         bool preparedCaster = spellInfo?.Prepare ?? false;
@@ -1822,8 +1827,9 @@ public sealed class WebCharacterEngineService
             RefreshPreparedCounts(magic);
             MagicSpellAccessClassifier.Apply(magic);
         }
-        catch
+        catch (Exception ex)
         {
+            Logger.Exception(ex, $"WebCharacterEngineService.ApplyPersistedMagicState for '{absolutePath}'");
         }
     }
 
@@ -2083,12 +2089,18 @@ public sealed class WebCharacterEngineService
             string components = string.Empty;
             string duration = string.Empty;
 
-            try { level = (int)spell.Level; } catch { }
-            try { subtitle = (string)(spell.Underline ?? string.Empty); } catch { }
-            try { castingTime = (string)(spell.CastingTime ?? string.Empty); } catch { }
-            try { range = (string)(spell.Range ?? string.Empty); } catch { }
-            try { duration = (string)(spell.Duration ?? string.Empty); } catch { }
-            try { components = (string)spell.GetComponentsString(); } catch { }
+            try { level = (int)spell.Level; }
+            catch (Exception ex) { Logger.Exception(ex, $"WebCharacterEngineService.BuildMagicSpellDetail level for '{id}'"); }
+            try { subtitle = (string)(spell.Underline ?? string.Empty); }
+            catch (Exception ex) { Logger.Exception(ex, $"WebCharacterEngineService.BuildMagicSpellDetail subtitle for '{id}'"); }
+            try { castingTime = (string)(spell.CastingTime ?? string.Empty); }
+            catch (Exception ex) { Logger.Exception(ex, $"WebCharacterEngineService.BuildMagicSpellDetail casting time for '{id}'"); }
+            try { range = (string)(spell.Range ?? string.Empty); }
+            catch (Exception ex) { Logger.Exception(ex, $"WebCharacterEngineService.BuildMagicSpellDetail range for '{id}'"); }
+            try { duration = (string)(spell.Duration ?? string.Empty); }
+            catch (Exception ex) { Logger.Exception(ex, $"WebCharacterEngineService.BuildMagicSpellDetail duration for '{id}'"); }
+            try { components = (string)spell.GetComponentsString(); }
+            catch (Exception ex) { Logger.Exception(ex, $"WebCharacterEngineService.BuildMagicSpellDetail components for '{id}'"); }
 
             string body = string.Empty;
             string rawDescription = string.Empty;
@@ -2102,8 +2114,9 @@ public sealed class WebCharacterEngineService
                     descriptionHtml = MagicDescriptionFormatter.FromAuroraHtml(rawDescription);
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                Logger.Exception(ex, $"WebCharacterEngineService.BuildMagicSpellDetail description for '{id}'");
             }
 
             if (string.IsNullOrEmpty(castingTime) && string.IsNullOrEmpty(range))
@@ -2310,8 +2323,9 @@ public sealed class WebCharacterEngineService
                 }
             }
         }
-        catch
+        catch (Exception ex)
         {
+            Logger.Exception(ex, "WebCharacterEngineService.CollectSpellLevels slot totals");
         }
 
         int maxSlot = 0;
@@ -2387,8 +2401,9 @@ public sealed class WebCharacterEngineService
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                Logger.Exception(ex, $"WebCharacterEngineService.CollectPreparedCasterSpellLevels always-prepared check for '{element.Id}'");
             }
         }
 
