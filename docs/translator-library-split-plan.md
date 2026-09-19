@@ -187,6 +187,14 @@ The Translator CLI drops the unused `Microsoft.Data.SqlClient` reference.
 - the parity service
 - `ElementProvenance`
 
+**A local file is a correction only when it carries the markup** (user, 2026-09-19).
+`user/local` also holds plain homebrew, additions and overrides. Decide from
+`LocalCorrectionDocument.HasMetadata`, never from the path. `ContentIndexUpdateService`
+broke this rule: it refused to replace any `.xml` under `user/local`, reporting
+correction metadata that wasn't there, which blocked updates to local homebrew that
+carries its own update URL. Fixed 2026-09-19; the importer and library path checks were
+already fine, since they only narrow candidates before requiring the markup.
+
 **Legacy keeps applying local corrections (decided 2026-09-19, option B).**
 `Aurora.Logic` references `Aurora.Content.Contracts`, a dependency-free package
 holding one file. So `DataManager` keeps loading files that carry correction

@@ -234,8 +234,7 @@ public sealed class ContentIndexUpdateService
 
             if (changed && File.Exists(destinationPath) &&
                 Path.GetExtension(destinationPath).Equals(".xml", StringComparison.OrdinalIgnoreCase) &&
-                (Path.GetRelativePath(state.RootDirectory, destinationPath).Replace('\\', '/').StartsWith("user/local/", StringComparison.OrdinalIgnoreCase) ||
-                 Aurora.Content.Contracts.LocalCorrectionDocument.HasMetadata(await File.ReadAllTextAsync(destinationPath, cancellationToken))))
+                Aurora.Content.Contracts.LocalCorrectionDocument.HasMetadata(await File.ReadAllTextAsync(destinationPath, cancellationToken)))
                 throw new InvalidDataException("Embedded local correction metadata protects this file from automatic replacement. Update its authoritative source and review the local correction instead.");
 
             if (changed)

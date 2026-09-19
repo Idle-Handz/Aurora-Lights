@@ -334,6 +334,34 @@ public sealed class LocalCorrectionLifecycleTests : IDisposable
         File.ReadAllText(Origin).Should().Be(annotated);
     }
 
+    [Fact]
+    public async Task IndexUpdater_UpdatesAPlainLocalFile()
+    {
+        // Local homebrew without correction markup is an ordinary content file.
+        string homebrew = Baseline.Replace("name='Old'", "name='Homebrew'");
+        File.WriteAllText(Local, homebrew);
+        var result = await UpdateLocalFolder(Fixed);
+        result.FailedFileCount.Should().Be(0);
+        File.ReadAllText(Local).Should().Be(Fixed);
+    }
+
+    [Fact]
+    public async Task IndexUpdater_CannotOverwriteALocalCorrection()
+    {
+        string annotated = LocalCorrectionDocument.Create(Fixed, Baseline, "core/features.xml", [Replacement()]);
+        File.WriteAllText(Local, annotated);
+        var result = await UpdateLocalFolder(Baseline);
+        result.FailedFileCount.Should().BeGreaterThan(0);
+        File.ReadAllText(Local).Should().Be(annotated);
+    }
+
+    private async Task<ContentIndexUpdateResult> UpdateLocalFolder(string downloaded)
+    {
+        File.WriteAllText(Path.Combine(root, "user", "local.index"), "<index><info><name>Local</name><update version='1'><file name='local.index' url='https://test.invalid/local.index'/></update></info><files><file name='fix.xml' url='https://test.invalid/fix.xml'/></files></index>");
+        using var http = new HttpClient(new ResponseHandler(downloaded));
+        return await new ContentIndexUpdateService(http).UpdateAsync(new(root, [Path.Combine("user", "local.index")]));
+    }
+
     private AuroraImportResult RunImport()
     {
         string? translator = Environment.GetEnvironmentVariable("AURORA_TEST_TRANSLATOR");
