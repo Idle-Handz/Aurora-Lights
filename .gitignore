@@ -40,6 +40,8 @@ bld/
 packages/
 !**/packages/repositories.config
 *.nuspec
+# Vendored Aurora.Content packages are committed (see tools/update-content-library.ps1)
+!vendor/nuget/*.nupkg
 
 # Node / Playwright
 node_modules/

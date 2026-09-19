@@ -47,6 +47,10 @@ Resolved design questions:
   (see "Content sources and preferences").
 - **D4:** distribution is a versioned NuGet package, pinned in one place, with an
   easy switch to try another version or a local build (see "Distribution").
+  - *Revised 2026-09-19:* the mechanism is a **vendored local feed**, not GitHub
+    Packages. GitHub's NuGet registry requires a token for every restore, even for
+    public packages, and the repos have different owners. The user chose the
+    easier of nuget.org and a vendored feed.
 - **D5:** names are `Aurora.Content.Contracts`, `Aurora.Content` and
   `Aurora.DataIntegration`.
 - **Open:** checkpoint commits on the feature branches (see the last section).
@@ -270,18 +274,27 @@ both builds. `Aurora.Legacy.csproj` builds with no new package references.
 - `CompendiumService` and `CharacterInferenceEngine` raw SQL move behind library
   query APIs.
 
-## Distribution
+## Distribution (vendored local feed, implemented in Phase 3)
 
-- The Translator repo's CI builds and publishes `Aurora.Content.Contracts` and
-  `Aurora.Content` as versioned NuGet packages to GitHub Packages.
-- Lights pins the version in **one place**, a shared property/central package
-  version. Trying a new release means changing that one version.
-- A local switch (e.g. `-p:UseLocalContentLibrary=true` or a `Directory.Build.props`
-  override) swaps the package for a `ProjectReference` to the sibling checkout,
-  for experimenting before publishing.
-- Setup: if the Translator repo is private, grant the Aurora-Lights repository
-  read access to the packages in GitHub's package settings, so release CI's
-  built-in token can restore them.
+- The Translator's `Aurora.Content.props` holds the package version and metadata.
+  Packages record the source repository and commit.
+- `tools/update-content-library.ps1` (Lights):
+  - packs both projects from the sibling checkout (it refuses an uncommitted tree
+    unless `-AllowDirty`)
+  - copies them into `vendor/nuget/` (committed)
+  - appends provenance (commit, SHA-256 per package) to `vendor/nuget/manifest.json`
+  - updates the pin
+- **Vendored versions are immutable.** The script refuses an existing version,
+  because NuGet caches packages by version. Bump the version for every change.
+- **One pin:** `AuroraContentVersion` in `AuroraContent.props` at the Lights root,
+  referenced as an exact version (`[x.y.z]`).
+  - Only consuming projects import this file; **Aurora.Legacy never does**.
+  - `nuget.config` adds `vendor/nuget` as a source. `.gitignore` re-includes
+    `vendor/nuget/*.nupkg`.
+- **Local switch:** build with `-p:UseLocalContentLibrary=true` to use a
+  `ProjectReference` to `../5eApiTranslator` instead (override the location with
+  `AuroraContentSource`).
+- CI needs no secrets or extra steps; the packages are in the repo.
 
 ## Parity gates (Windows MAUI)
 
@@ -388,6 +401,36 @@ Capture the baseline from the current working tree before changing anything (Pha
    to the baseline, both projections are identical, every rehearsal check matches
    the baseline's warnings, and Translator tests pass 65/65.
 3. **Distribution** (D4).
+
+   **Result (2026-09-19): complete.** `Aurora.Content` / `Aurora.Content.Contracts`
+   0.1.0 are vendored from Translator `1423aa8`:
+   - Adding package metadata changes only assembly metadata; `verify_translator_build.sh`
+     still matches the baseline exactly.
+   - A throwaway consumer importing `AuroraContent.props` restored from the vendored
+     feed and read the baseline database: prepared, 20,876 elements, 21 unresolved
+     appends.
+   - The same consumer resolved to a `ProjectReference` with
+     `UseLocalContentLibrary=true`, with identical output.
+   - Re-vendoring an existing version is refused.
+
+   **Phase 4 prerequisites found here:**
+   - **SQLite version alignment.** `Aurora.App`, `Aurora.PdfImport` and
+     `Aurora.Importer` reference the floating `Microsoft.Data.Sqlite 9.*`
+     (currently 9.0.20). The library needs `10.0.12`, which is what the importer
+     runs in production. Referencing both would fail restore with NU1605. Pin
+     consumers to `10.0.12`; this also removes a non-reproducible floating version.
+     Aurora.Legacy doesn't reference SQLite.
+   - **Duplicate type names.** Aurora.Importer's `PreparedContent` files declare
+     `namespace AuroraTranslator.Content`, the same full names as the library
+     (`PreparedCatalogReader`, `ContentAppendComposer`, `ContentText`…).
+     `LocalCorrectionDocument` exists in both `Builder.Data` and Contracts as
+     `Builder.Data.Files.LocalCorrectionDocument`. A project seeing both gets CS0433.
+     Phase 4 must remove Aurora.Importer's copies in the same step it adds the
+     library, and must either give Contracts its own namespace or coordinate the
+     Builder.Data removal (Phase 6).
+   - **Public API.** The library's `LocalCorrectionSync` is `internal`; the app needs
+     `ReadStatuses`, `ReadRuntimeContent`, `IsStale`, metadata/health and the
+     runtime-file builder as public API.
 4. **Lights consumes the library.** Add `Aurora.DataIntegration` and the
    `DataManager` extension point; `ContentDatabaseService` goes in-process;
    multiple roots in one operation; health/metadata come from the library.

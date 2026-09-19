@@ -1,0 +1,18 @@
+<Project>
+  <!-- Imported only by projects that consume the shared content library (never Aurora.Legacy).
+       AuroraContentVersion is the single pin; tools/update-content-library.ps1 updates it.
+       Build with -p:UseLocalContentLibrary=true to use the sibling AuroraTranslator checkout
+       instead of the vendored package (override its location with AuroraContentSource). -->
+  <PropertyGroup>
+    <AuroraContentVersion>0.1.0</AuroraContentVersion>
+    <AuroraContentSource Condition="'$(AuroraContentSource)' == ''">$(MSBuildThisFileDirectory)..\5eApiTranslator</AuroraContentSource>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(UseLocalContentLibrary)' != 'true'">
+    <PackageReference Include="Aurora.Content" Version="[$(AuroraContentVersion)]" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(UseLocalContentLibrary)' == 'true'">
+    <ProjectReference Include="$(AuroraContentSource)\Aurora.Content\Aurora.Content.csproj" />
+  </ItemGroup>
+</Project>
