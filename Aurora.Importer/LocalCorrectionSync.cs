@@ -1,3 +1,5 @@
+using Aurora.Content;
+using Aurora.Content.Preparation;
 using Builder.Data.Files;
 using Microsoft.Data.Sqlite;
 using System.Security.Cryptography;
@@ -5,9 +7,6 @@ using System.Text.Json;
 using System.Xml.Linq;
 
 namespace Aurora.Importer;
-
-public sealed record LocalCorrectionStatus(string FilePath, string SourcePath, string Status, string ReviewDetails);
-public sealed record LocalCorrectionRuntimeContent(string EffectiveXml, IReadOnlyList<string> SuppressedIds, string SourcePath);
 
 /// <summary>Stages effective content without rewriting authoritative or local XML.</summary>
 public static class LocalCorrectionSync
@@ -39,7 +38,7 @@ public static class LocalCorrectionSync
 
         // Even an empty managed set must remove obsolete mirror rows/effective content
         // when the user removes their last correction file.
-        bool hasMirror = ReadStatuses(database).Count > 0;
+        bool hasMirror = ContentDatabaseReader.ReadLocalCorrections(database).Count > 0;
         if (managed.Count == 0 && !hasMirror)
             return await import(roots, database, cancellationToken);
 
@@ -74,7 +73,7 @@ public static class LocalCorrectionSync
             Directory.CreateDirectory(Path.GetDirectoryName(candidate)!);
             if (File.Exists(database))
             {
-                using var source = AuroraContentImporter.OpenReadableConnection(database);
+                using var source = ContentDatabase.OpenReadableConnection(database);
                 using var destination = Open(candidate);
                 source.BackupDatabase(destination);
             }
@@ -196,7 +195,7 @@ public static class LocalCorrectionSync
     public static bool? IsStale(IReadOnlyList<string> roots, string database)
     {
         if (!File.Exists(database)) return null;
-        using var connection = AuroraContentImporter.OpenReadableConnection(database);
+        using var connection = ContentDatabase.OpenReadableConnection(database);
         if (!HasTable(connection, "local_correction_inputs")) return null;
         using var command = connection.CreateCommand();
         command.CommandText = "SELECT path,sha256 FROM local_correction_inputs";
@@ -205,47 +204,6 @@ public static class LocalCorrectionSync
             while (reader.Read()) recorded.Add(reader.GetString(0), reader.GetString(1));
         var paths = roots.SelectMany(r => Directory.EnumerateFiles(r, "*.xml", SearchOption.AllDirectories)).Select(Path.GetFullPath).ToList();
         return paths.Count != recorded.Count || paths.Any(p => !recorded.TryGetValue(p, out string? hash) || hash != Hash(p));
-    }
-
-    public static IReadOnlyList<LocalCorrectionStatus> ReadStatuses(string database)
-    {
-        if (!File.Exists(database)) return [];
-        using var connection = AuroraContentImporter.OpenReadableConnection(database);
-        if (!HasTable(connection, "local_override_files")) return [];
-        using var command = connection.CreateCommand();
-        command.CommandText = "SELECT file_path,source_path,status,review_details FROM local_override_files ORDER BY file_path";
-        var result = new List<LocalCorrectionStatus>();
-        using var reader = command.ExecuteReader();
-        while (reader.Read()) result.Add(new(reader.GetString(0), reader.GetString(1), reader.GetString(2),
-            string.Join("; ", JsonSerializer.Deserialize<string[]>(reader.GetString(3)) ?? [])));
-        return result;
-    }
-
-    public static LocalCorrectionRuntimeContent? ReadRuntimeContent(string filePath, string database)
-    {
-        if (!File.Exists(database)) return null;
-        string? root = LocalCorrectionDocument.FindContentRoot(filePath);
-        if (root == null) return null;
-        using var connection = AuroraContentImporter.OpenReadableConnection(database);
-        if (!HasTable(connection, "local_override_files")) return null;
-        using var command = connection.CreateCommand();
-        command.CommandText = "SELECT source_path,effective_xml,suppressed_ids FROM local_override_files WHERE file_path=$path AND status <> 'retired'";
-        command.Parameters.AddWithValue("$path", Path.GetFullPath(filePath));
-        string source, xml, suppressed;
-        using (var reader = command.ExecuteReader())
-        {
-            if (!reader.Read()) return null;
-            source = LocalCorrectionDocument.ResolveSourcePath(root, reader.GetString(0));
-            xml = reader.GetString(1);
-            suppressed = reader.GetString(2);
-        }
-        foreach (string path in new[] { Path.GetFullPath(filePath), source })
-        {
-            command.CommandText = "SELECT sha256 FROM local_correction_inputs WHERE path=$path";
-            command.Parameters["$path"].Value = path;
-            if (!File.Exists(path) || (string?)command.ExecuteScalar() != Hash(path)) return null;
-        }
-        return new(xml, JsonSerializer.Deserialize<string[]>(suppressed) ?? [], source);
     }
 
     private static void Mirror(SqliteConnection connection, List<ManagedFile> managed)

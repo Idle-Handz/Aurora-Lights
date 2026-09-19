@@ -1,4 +1,5 @@
 using Aurora.Content;
+using Aurora.Content.Preparation;
 using Aurora.Importer;
 using Builder.Presentation.Services.Data;
 
@@ -23,7 +24,7 @@ public sealed class ContentDatabaseService
 
     public IReadOnlyList<LocalCorrectionStatus> GetLocalCorrections() => TryRead(
         "read local corrections", () => DatabasePath is { } path
-            ? LocalCorrectionSync.ReadStatuses(path) : [], []);
+            ? ContentDatabaseReader.ReadLocalCorrections(path) : [], []);
 
     /// <summary>Fires on the calling (background) thread whenever state changes.</summary>
     public event Action? StateChanged;
@@ -64,13 +65,13 @@ public sealed class ContentDatabaseService
     public ContentDatabaseMetadata? GetMetadata() =>
         TryRead(
             "read database metadata",
-            () => DatabasePath is { } p ? AuroraContentImporter.GetMetadata(p) : null,
+            () => DatabasePath is { } p ? ContentDatabaseReader.ReadMetadata(p) : null,
             fallback: null);
 
     public ContentDatabaseHealthReport? GetHealthReport() =>
         TryRead(
             "read database health",
-            () => DatabasePath is { } p ? AuroraContentImporter.GetHealthReport(p) : null,
+            () => DatabasePath is { } p ? ContentDatabaseReader.ReadHealth(p) : null,
             fallback: null);
 
     /// <summary>
@@ -150,7 +151,7 @@ public sealed class ContentDatabaseService
             IsStale = false;
             return false;
         }
-        IsStale = AuroraContentImporter.IsStale([ContentDirectory], dbPath);
+        IsStale = ContentDatabaseReader.IsStale([ContentDirectory], dbPath);
         StateChanged?.Invoke();
         return IsStale;
     }

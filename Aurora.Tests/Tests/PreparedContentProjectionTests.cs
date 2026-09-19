@@ -1,4 +1,4 @@
-using AuroraTranslator.Content;
+using Aurora.Content.Preparation;
 using Microsoft.Data.Sqlite;
 using System.Xml.Linq;
 using System.Diagnostics;
@@ -215,7 +215,7 @@ public sealed class PreparedContentProjectionTests : IDisposable
         await process.WaitForExitAsync(timeout.Token);
         string diagnostic = await stdout + await stderr;
         process.ExitCode.Should().Be(0, diagnostic);
-        using var connection = Aurora.Importer.AuroraContentImporter.OpenReadableConnection(database);
+        using var connection = ContentDatabase.OpenReadableConnection(database);
         PreparedCatalogReader.IsPrepared(connection).Should().BeTrue();
         PreparedCatalogReader.InputsMatch(connection, [primary]).Should().BeTrue();
         Aurora.Tests.Helpers.TestApplicationContextInstaller.EnsureInstalled();

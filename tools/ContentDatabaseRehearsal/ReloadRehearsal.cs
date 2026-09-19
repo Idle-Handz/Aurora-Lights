@@ -1,4 +1,5 @@
 using Aurora.App.Services;
+using Aurora.Content.Preparation;
 using Aurora.Importer;
 using Builder.Data;
 using Builder.Data.Files;
@@ -52,7 +53,7 @@ internal static class ReloadRehearsal
         Require(Hash(database) == originalHash, "secondary reload leaves database unchanged", checks);
 
         long packageId;
-        using (var connection = AuroraContentImporter.OpenReadableConnection(database))
+        using (var connection = ContentDatabase.OpenReadableConnection(database))
         {
             using var query = connection.CreateCommand();
             query.CommandText = "SELECT content_package_id FROM source_files WHERE replace(relative_path,char(92),'/')='core/base.xml'";
@@ -61,7 +62,7 @@ internal static class ReloadRehearsal
         Require(await service.SetPackageEnabledAsync(packageId, false) == null, "disable supplier preference", checks);
         Load();
         Require(!DataManager.Current.ElementsCollection.Any(e => e.Id == "ID_REHEARSAL_BASE") && DataManager.Current.ElementsCollection.Any(e => e.Id == "ID_REHEARSAL_SECONDARY"), "disabled primary stays excluded; secondary remains", checks);
-        using (var connection = AuroraContentImporter.OpenReadableConnection(database))
+        using (var connection = ContentDatabase.OpenReadableConnection(database))
         {
             using var query = connection.CreateCommand();
             query.CommandText = "SELECT COUNT(*) FROM elements WHERE aurora_id='ID_REHEARSAL_BASE'";

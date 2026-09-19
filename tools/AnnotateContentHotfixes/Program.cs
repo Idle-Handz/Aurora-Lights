@@ -1,5 +1,6 @@
 // Stages this session's six manifest-verified hotfixes; never writes installed content.
 using Aurora.Importer;
+using Aurora.Content.Preparation;
 using Builder.Data.Files;
 using Microsoft.Data.Sqlite;
 using System.Diagnostics;
@@ -129,7 +130,7 @@ var result = await LocalCorrectionSync.ImportAsync([root], database, async (prep
     return process.ExitCode == 0 ? AuroraImportResult.Succeeded(0, 0, 0) : AuroraImportResult.Failed("See translator.log");
 });
 Require(result.Success, "Staged Translator import failed.");
-using (var connection = AuroraContentImporter.OpenReadableConnection(database))
+using (var connection = ContentDatabase.OpenReadableConnection(database))
 {
     long Scalar(string sql) { using var command = connection.CreateCommand(); command.CommandText = sql; return Convert.ToInt64(command.ExecuteScalar()); }
     Require(Scalar("SELECT COUNT(*) FROM elements") == 248, "Expected corrected corpus plus legitimate XGTE Staff.");

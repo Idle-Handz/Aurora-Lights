@@ -1,3 +1,4 @@
+using Aurora.Content.Preparation;
 using Builder.Data;
 using Builder.Data.Elements;
 using Builder.Data.Extensions;
@@ -144,10 +145,10 @@ public sealed class ContentDatabaseParityService
     {
         if (DbElementLoader.DbPath is { } path && File.Exists(path))
         {
-            using var connection = Aurora.Importer.AuroraContentImporter.OpenReadableConnection(path);
-            if (AuroraTranslator.Content.PreparedCatalogReader.IsPrepared(connection))
+            using var connection = ContentDatabase.OpenReadableConnection(path);
+            if (PreparedCatalogReader.IsPrepared(connection))
             {
-                if (!AuroraTranslator.Content.PreparedCatalogReader.InputsMatch(connection, [ContentDirectoryResolver.GetPrimaryContentDirectory()]))
+                if (!PreparedCatalogReader.InputsMatch(connection, [ContentDirectoryResolver.GetPrimaryContentDirectory()]))
                     return new(false, "Primary XML has changed since preparation. Refresh the database before checking parity.", new ElementBaseCollection(), 0);
                 var projection = DbElementLoader.ReadPreparedProjection(connection, fromXml: true);
                 var result = new ElementBaseCollection();

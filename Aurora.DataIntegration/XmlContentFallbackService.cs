@@ -1,4 +1,5 @@
 using Aurora.Components.Models;
+using Aurora.Content.Preparation;
 using Builder.Data;
 using Builder.Data.Files;
 using Builder.Data.Rules;
@@ -33,7 +34,7 @@ public static class XmlContentFallbackService
         return () => { lock (Gate) _snapshot = previous; };
     }
 
-    internal static Action PrepareProjection(AuroraTranslator.Content.PreparedCatalogProjection projection)
+    internal static Action PrepareProjection(PreparedCatalogProjection projection)
         => PrepareProjectionSnapshot(CreatePreparedSnapshot(projection));
 
     internal static Action PrepareProjection(IEnumerable<ElementBase> elements)
@@ -54,7 +55,7 @@ public static class XmlContentFallbackService
     private static Action PrepareProjectionSnapshot(XmlFallbackSnapshot snapshot)
         => () => { lock (Gate) _snapshot = snapshot; };
 
-    private static XmlFallbackSnapshot CreatePreparedSnapshot(AuroraTranslator.Content.PreparedCatalogProjection projection)
+    private static XmlFallbackSnapshot CreatePreparedSnapshot(PreparedCatalogProjection projection)
     {
         var byId = new Dictionary<string, XmlFallbackElement>(StringComparer.OrdinalIgnoreCase);
         foreach (var element in projection.Elements)
@@ -297,8 +298,8 @@ public static class XmlContentFallbackService
         List<XmlFallbackAppend> appendNodes = [];
         if (ContentDatabaseService.GetDatabasePath() is { } preparedPath && File.Exists(preparedPath))
         {
-            using var connection = Aurora.Importer.AuroraContentImporter.OpenReadableConnection(preparedPath);
-            if (AuroraTranslator.Content.PreparedCatalogReader.IsPrepared(connection))
+            using var connection = ContentDatabase.OpenReadableConnection(preparedPath);
+            if (PreparedCatalogReader.IsPrepared(connection))
             {
                 return CreatePreparedSnapshot(DbElementLoader.ReadPreparedProjection(connection));
             }

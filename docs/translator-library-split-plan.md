@@ -471,6 +471,33 @@ Capture the baseline from the current working tree before changing anything (Pha
    - The `BundledTools` copy item in Aurora.App is now dead. It's removed with the
      other exe tooling in Phase 7.
 
+   **Step 2 (2026-09-19): reads through the library.** Aurora.Content 0.3.0 adds
+   the public `ContentDatabaseReader`: `IsStale`, `ReadMetadata`, `ReadHealth`,
+   `ReadLocalCorrections` and `ReadLocalCorrectionContent`. It also makes
+   `RuntimeContentFiles` (the Lights copy, verbatim) and the health/metadata
+   records public.
+   - The app, DataIntegration, tests and tools read through these APIs,
+     `ContentDatabase.OpenReadableConnection`, and the library's
+     `PreparedCatalogReader`.
+   - Aurora.Importer now references the library. It loses its duplicate
+     prepared-content reader, health/metadata code and correction read side.
+   - What Aurora.Importer keeps retires in later phases: the v10 writer and
+     its import-side `LocalCorrectionSync` (tests/tools only), package
+     preferences (Phase 5), and the v10/v11 reader helpers
+     (`ResolveSourceFilePath`, `SpellcastingExtensionText`,
+     `TranslatorSpellcastingReader`) (Phase 7).
+   - **Staleness is library-owned.** A database is stale when it's missing, isn't
+     a prepared database at the library's current data version, or its recorded
+     inputs differ from disk. For a current v12 database the answer is unchanged.
+     An old v10/v11 database now shows as out of date, and a refresh rebuilds it
+     at v12, per "the app always builds its own database".
+   - **Parity:**
+     - The full suite on the library's readers matches the Phase 0 baseline:
+       databases, projections, checks, 60/60 characters.
+     - The pinned 0.3.0 package (Translator `54e8cdd`) passes the database suite.
+     - Aurora.Tests 562 pass / 1 skip; Translator tests 68/68.
+     - Windows, Android, Legacy and the tools all build.
+
    **Deferred from this phase: multiple roots in one import.** The Translator's
    catalog builder reads one root, and secondary roots keep being composed at
    read time (as before). A multi-root import needs its own precedence and

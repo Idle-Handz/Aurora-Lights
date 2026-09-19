@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Xml;
 using Aurora.Importer;
+using Aurora.Content.Preparation;
 using Builder.Data;
 using Builder.Data.Files;
 using Builder.Presentation.Utilities;
@@ -115,7 +116,7 @@ public sealed class CorrectionMetadataCompatibilityTests : IDisposable
             .Replace("<elements>", $"<elements xmlns=\"{MetadataNamespace}\">"));
         string database = Path.Combine(temporary, "content.sqlite");
         Import(content, database);
-        using var connection = AuroraContentImporter.OpenReadableConnection(database);
+        using var connection = ContentDatabase.OpenReadableConnection(database);
         using var command = connection.CreateCommand();
         command.CommandText = "SELECT COUNT(*) FROM elements";
         Convert.ToInt64(command.ExecuteScalar()).Should().Be(0,
@@ -168,7 +169,7 @@ public sealed class CorrectionMetadataCompatibilityTests : IDisposable
 
     private static Dictionary<string, string[]> Snapshot(string path)
     {
-        using var connection = AuroraContentImporter.OpenReadableConnection(path);
+        using var connection = ContentDatabase.OpenReadableConnection(path);
         using var tableCommand = connection.CreateCommand();
         tableCommand.CommandText = "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT IN ('database_metadata', 'import_state') ORDER BY name";
         var tables = new List<string>();

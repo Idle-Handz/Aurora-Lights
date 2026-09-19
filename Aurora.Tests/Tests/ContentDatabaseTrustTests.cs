@@ -1,4 +1,6 @@
 using Aurora.Importer;
+using Aurora.Content.Preparation;
+using Aurora.Content;
 
 namespace Aurora.Tests.Tests;
 
@@ -41,7 +43,7 @@ public sealed class ContentDatabaseTrustTests
 
             AuroraContentImporter.Import(tempDirectory, sqlitePath);
 
-            ContentDatabaseHealthReport health = AuroraContentImporter.GetHealthReport(sqlitePath)
+            ContentDatabaseHealthReport health = ContentDatabaseReader.ReadHealth(sqlitePath)
                 ?? throw new InvalidOperationException("Expected a content database health report.");
 
             health.ActionableUnresolvedLinks.Should().Be(0);
@@ -73,7 +75,7 @@ public sealed class ContentDatabaseTrustTests
                 && sample.Reason == "grant-target-id-in-name-attribute"
                 && sample.Owner == "ID_TEST_BACKGROUND");
 
-            using (var connection = AuroraContentImporter.OpenReadableConnection(sqlitePath))
+            using (var connection = ContentDatabase.OpenReadableConnection(sqlitePath))
             {
                 QueryScalar(connection, "SELECT option_kind FROM select_items;")
                     .Should().Be("text-choice");
@@ -117,7 +119,7 @@ public sealed class ContentDatabaseTrustTests
 
             AuroraContentImporter.Import(tempDirectory, sqlitePath);
 
-            ContentDatabaseHealthReport health = AuroraContentImporter.GetHealthReport(sqlitePath)
+            ContentDatabaseHealthReport health = ContentDatabaseReader.ReadHealth(sqlitePath)
                 ?? throw new InvalidOperationException("Expected a content database health report.");
 
             health.ManualReviewIssueCount.Should().Be(1);

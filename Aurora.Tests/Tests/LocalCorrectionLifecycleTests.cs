@@ -1,4 +1,6 @@
 using Aurora.Importer;
+using Aurora.Content.Preparation;
+using Aurora.Content;
 using Builder.Data.Files;
 using Builder.Presentation.Services.Content;
 using Microsoft.Data.Sqlite;
@@ -183,9 +185,9 @@ public sealed class LocalCorrectionLifecycleTests : IDisposable
         Query("SELECT state FROM local_corrections").Should().Be("review-pending");
         File.ReadAllText(Origin).Should().Be(Baseline);
         AuroraContentImporter.IsStale(root, Database).Should().BeFalse();
-        LocalCorrectionSync.ReadRuntimeContent(Local, Database)!.EffectiveXml.Should().Contain("corrected");
+        ContentDatabaseReader.ReadLocalCorrectionContent(Local, Database)!.EffectiveXml.Should().Contain("corrected");
         File.AppendAllText(Local, "\n");
-        LocalCorrectionSync.ReadRuntimeContent(Local, Database).Should().BeNull();
+        ContentDatabaseReader.ReadLocalCorrectionContent(Local, Database).Should().BeNull();
         File.Delete(Database);
         RunImport().Success.Should().BeTrue();
         Query("SELECT state FROM local_corrections").Should().Be("review-pending");
@@ -350,7 +352,7 @@ public sealed class LocalCorrectionLifecycleTests : IDisposable
 
     private string Query(string sql)
     {
-        using var connection = AuroraContentImporter.OpenReadableConnection(Database);
+        using var connection = ContentDatabase.OpenReadableConnection(Database);
         using var command = connection.CreateCommand();
         command.CommandText = sql;
         return Convert.ToString(command.ExecuteScalar())!;

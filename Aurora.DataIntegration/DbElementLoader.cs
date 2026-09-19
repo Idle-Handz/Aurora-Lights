@@ -3,9 +3,9 @@ using Builder.Data.Elements;
 using Builder.Presentation.Services.Data;
 using Builder.Presentation.Utilities;
 using Aurora.Importer;
+using Aurora.Content.Preparation;
 using Microsoft.Data.Sqlite;
 using System.Xml;
-using AuroraTranslator.Content;
 
 namespace Aurora.App.Services;
 
@@ -213,7 +213,7 @@ internal static class DbElementLoader
         {
             try
             {
-                using var conn = AuroraContentImporter.OpenReadableConnection(dbPath);
+                using var conn = ContentDatabase.OpenReadableConnection(dbPath);
                 using var cmd = conn.CreateCommand();
                 cmd.CommandText = @"
                     SELECT DISTINCT sb.name
@@ -379,7 +379,7 @@ internal static class DbElementLoader
 
     private static DbLoadResult LoadFromDb(string dbPath, ElementBaseCollection target)
     {
-        using var conn = AuroraContentImporter.OpenReadableConnection(dbPath);
+        using var conn = ContentDatabase.OpenReadableConnection(dbPath);
 
         int? schemaVersion = QuerySchemaVersion(conn);
         HashSet<string> existingTables = QueryExistingTables(conn);

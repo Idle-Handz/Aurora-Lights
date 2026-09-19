@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using Aurora.Components.Models;
+using Aurora.Content.Preparation;
 using Aurora.Importer;
 using Builder.Presentation.Services.Data;
 using Microsoft.Data.Sqlite;
@@ -1628,7 +1629,7 @@ LIMIT 1;
     }
 
     private static SqliteConnection OpenReadOnlyConnection(string dbPath)
-        => AuroraContentImporter.OpenReadableConnection(dbPath);
+        => ContentDatabase.OpenReadableConnection(dbPath);
 
     private static string GetString(object target, string propertyName)
     {

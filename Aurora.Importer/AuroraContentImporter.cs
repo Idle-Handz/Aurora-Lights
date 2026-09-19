@@ -1,3 +1,4 @@
+using Aurora.Content.Preparation;
 using Microsoft.Data.Sqlite;
 
 namespace Aurora.Importer;
@@ -25,26 +26,6 @@ public static class AuroraContentImporter
         => AuroraXmlCatalogReader.ResolveSourceFilePath(roots, relativePath);
 
     /// <summary>
-    /// Opens an existing database for queries. Normal reads remain read-only, but a leftover
-    /// rollback journal requires a writable connection so SQLite can recover an interrupted
-    /// transaction before serving data.
-    /// </summary>
-    public static SqliteConnection OpenReadableConnection(string sqlitePath)
-    {
-        var connection = new SqliteConnection(
-            new SqliteConnectionStringBuilder
-            {
-                DataSource = sqlitePath,
-                Mode = File.Exists(sqlitePath + "-journal")
-                    ? SqliteOpenMode.ReadWrite
-                    : SqliteOpenMode.ReadOnly,
-                Pooling = false
-            }.ToString());
-        connection.Open();
-        return connection;
-    }
-
-    /// <summary>
     /// Returns true if the SQLite database does not exist or is out of date
     /// relative to the XML files in <paramref name="contentDirectory"/>.
     /// </summary>
@@ -56,12 +37,6 @@ public static class AuroraContentImporter
         string sqlitePath) =>
         LocalCorrectionSync.IsStale(contentDirectories, sqlitePath) ??
         AuroraSqliteImporter.IsStale(AuroraXmlCatalogReader.BuildFileCatalog(contentDirectories), sqlitePath);
-
-    public static ContentDatabaseMetadata? GetMetadata(string sqlitePath) =>
-        AuroraSqliteImporter.GetMetadata(sqlitePath);
-
-    public static ContentDatabaseHealthReport? GetHealthReport(string sqlitePath) =>
-        AuroraSqliteImporter.GetHealthReport(sqlitePath);
 
     /// <summary>
     /// Scans <paramref name="contentDirectory"/> for Aurora XML files, then
@@ -98,7 +73,7 @@ public static class AuroraContentImporter
         if (!File.Exists(sqlitePath)) return [];
 
         var result = new List<ContentPackageInfo>();
-        using var connection = OpenReadableConnection(sqlitePath);
+        using var connection = ContentDatabase.OpenReadableConnection(sqlitePath);
 
         using var cmd = connection.CreateCommand();
         cmd.CommandText = @"
@@ -152,7 +127,7 @@ ORDER BY
                     reader.IsDBNull(1) ? null : reader.GetString(1)))
                     throw new InvalidOperationException("Aurora Essentials and Internal/Core infrastructure must remain enabled.");
             }
-            prepared = AuroraTranslator.Content.PreparedCatalogReader.HasPreparationMetadata(connection);
+            prepared = PreparedCatalogReader.HasPreparationMetadata(connection);
             using var update = connection.CreateCommand();
             update.CommandText = "UPDATE content_packages SET is_enabled = $v WHERE content_package_id = $id;";
             update.Parameters.AddWithValue("$v",  enabled ? 1 : 0);

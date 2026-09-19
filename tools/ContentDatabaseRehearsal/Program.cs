@@ -1,4 +1,5 @@
 using Aurora.App.Services;
+using Aurora.Content.Preparation;
 using Aurora.Importer;
 using Builder.Core.Events;
 using Builder.Data;
@@ -54,7 +55,7 @@ try
         case "failure-check": result = await ReloadRehearsal.Run(caseRoot, false); success = true; break;
         case "fallback-check": result = FallbackRegressionChecks.Run(); success = true; break;
         case "profile-projection":
-            using (var connection = AuroraContentImporter.OpenReadableConnection(Path.Combine(primary, ContentDatabaseService.DatabaseFileName)))
+            using (var connection = ContentDatabase.OpenReadableConnection(Path.Combine(primary, ContentDatabaseService.DatabaseFileName)))
             {
                 var projection = DbElementLoader.ReadPreparedProjection(connection);
                 double before = GC.GetTotalMemory(true) / 1048576.0;

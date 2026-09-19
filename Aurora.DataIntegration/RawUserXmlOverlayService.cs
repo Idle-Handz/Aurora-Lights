@@ -1,3 +1,4 @@
+using Aurora.Content;
 using Builder.Data;
 using Builder.Data.Extensions;
 using Builder.Data.Files;
@@ -44,7 +45,7 @@ internal static class RawUserXmlOverlayService
                     continue;
 
                 var cached = ContentDatabaseService.GetDatabasePath() is { } database
-                    ? Aurora.Importer.LocalCorrectionSync.ReadRuntimeContent(file.FullName, database) : null;
+                    ? ContentDatabaseReader.ReadLocalCorrectionContent(file.FullName, database) : null;
                 var correction = cached == null ? LocalCorrectionDocument.ForRuntime(file.FullName) : null;
                 string? effectiveXml = cached?.EffectiveXml ?? correction?.EffectiveXml;
                 string originPath = cached?.SourcePath ?? (correction == null ? file.FullName :
