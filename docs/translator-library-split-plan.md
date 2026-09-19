@@ -53,13 +53,25 @@ Resolved design questions:
 
 ## Current state (verified 2026-09-18)
 
-**Two writers, chosen silently by route.** On Windows with one content root and
-the bundled exe present, `ContentDatabaseService` runs the Translator
-(`sqlite-import`) and gets data v12. Every other route runs the copied
-`Aurora.Importer` writer, which still writes **data v10**
-(`AuroraDatabaseMetadata.cs:6`). Those routes are Windows with multiple roots,
-Windows without the exe, Android and Mac. The exe lookup is `#if WINDOWS` only
-(`ContentDatabaseService.cs:56`).
+**One production writer, and no sync without it.** *(Corrected during Phase 2.
+An earlier draft relied on the 2026-09-12 ownership audit, which `ec9dff8`
+(2026-09-16) superseded.)*
+- When the bundled exe is present, `ContentDatabaseService.SyncAsync` runs the
+  Translator (`sqlite-import`) on the **primary** content root. The Translator's
+  own `LocalCorrectionSync`/`ContentPreparation` handles corrections inside the exe.
+- **Secondary roots are composed at read time.** `PreparedCatalogReader`'s
+  runtime-file overlay handles them.
+- Without the exe (Android, Mac), sync **fails** with "on-device import through
+  the shared library is pending" and the existing database is kept. The exe
+  lookup is `#if WINDOWS` only (`ContentDatabaseService.cs:56`).
+- The copied `Aurora.Importer` writer (**data v10**,
+  `AuroraDatabaseMetadata.cs:6`) and the Lights `LocalCorrectionSync.ImportAsync`
+  are now called only by tests and tools.
+- The app still uses Aurora.Importer's *read* side:
+  - `OpenReadableConnection`, `IsStale`, metadata/health, and
+    `LocalCorrectionSync.ReadStatuses`/`ReadRuntimeContent`
+  - package list/toggle: `SetPackageEnabled` still writes `content_packages` and
+    rebuilds caches until Phase 5 removes it
 
 **The copied code has already diverged:**
 
@@ -249,10 +261,11 @@ both builds. `Aurora.Legacy.csproj` builds with no new package references.
 
 - The database is a disposable artifact. On a library schema/data version
   mismatch, the app rebuilds it.
-- If Phase 1 proves the library writes exactly what today's exe writes, existing
-  Windows single-root users' v12 databases are accepted as-is, so they see no
-  rebuild on first launch. Multi-root users (v10 today) rebuild once, with the
-  existing progress UI. A fresh v12 build took 23 s in rehearsal.
+- Phase 1 proved the library writes exactly what today's exe writes, so existing
+  Windows users' v12 databases can be accepted as-is, with no rebuild on first
+  launch. Secondary roots keep being composed at read time; the library takes
+  multiple roots so this can later move into import. Android/Mac gain on-device
+  import as an optional upgrade. A fresh v12 build took 23–25 s in rehearsal.
 - The v10/v11 reader paths in `DbElementLoader` are removed after parity.
 - `CompendiumService` and `CharacterInferenceEngine` raw SQL move behind library
   query APIs.
@@ -348,6 +361,32 @@ Capture the baseline from the current working tree before changing anything (Pha
 2. **Reconcile duplicates.** Diff every Lights/Translator pair and merge
    Lights-only fixes into the library (the `LocalCorrectionSync` 306-vs-215 gap
    matters most).
+
+   **Result (2026-09-19): complete.**
+
+   Pairs that already matched:
+   - `LocalCorrectionDocument`: byte-identical.
+   - `ContentAppendComposer`, `ContentText`: identical apart from the namespace line.
+
+   The two that differed were decided by the user:
+   - **`PreparedCatalogReader`:** the library adopts the Lights copy verbatim. It
+     is a superset with the runtime-file overlay that the app uses for secondary
+     roots and unsynced edits. Its unresolved-append rule checks the live
+     catalog instead of trusting the stored status; on all 1,215 operations in
+     both real databases, stored status and catalog membership agree.
+   - **`LocalCorrectionSync`, import side:** the Translator's version stays. It is
+     today's production behavior, running inside the exe, and it enforces every
+     Lights-copy safety rule plus symlink, duplicate-ID, spelling and append-conflict
+     checks. The Lights `ImportAsync` is test/tool-only and retires in Phase 7.
+   - **`LocalCorrectionSync`, read side** (`IsStale`, `ReadStatuses`,
+     `ReadRuntimeContent`): these now open read-only, writable only to recover a
+     leftover rollback journal. They use a new public
+     `ContentDatabase.OpenReadableConnection`, identical to the Lights helper the
+     app already uses. Import-side opens are unchanged.
+
+   Verified with `verify_translator_build.sh`: both fresh databases are identical
+   to the baseline, both projections are identical, every rehearsal check matches
+   the baseline's warnings, and Translator tests pass 65/65.
 3. **Distribution** (D4).
 4. **Lights consumes the library.** Add `Aurora.DataIntegration` and the
    `DataManager` extension point; `ContentDatabaseService` goes in-process;
@@ -365,6 +404,12 @@ Capture the baseline from the current working tree before changing anything (Pha
 8. **Full parity run,** then merge to `main`.
 
 Later / optional:
+- **automatic correction retirement on verified origin downloads** (user
+  requirement, 2026-09-19): when a source freshly fetched from its update origin
+  fully matches a correction file's intended result, accept those corrections and
+  retire the file. The `ContentDownloadEvidence` contract exists, but no
+  downloader evidence producer does yet. Matching files already on disk must
+  never count as acceptance (`docs/local-correction-policy.md`).
 - in-process import on Android and Mac (validate native SQLite packaging)
 - attribute typo corrections/aliases (D2 follow-up)
 - the parent-inference fix
