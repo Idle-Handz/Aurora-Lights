@@ -4,22 +4,13 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <DefineConstants>$(DefineConstants);WINDOWS</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../Aurora.Logic/Aurora.Logic.csproj" />
     <ProjectReference Include="../../Aurora.Components/Aurora.Components.csproj" />
     <ProjectReference Include="../../Aurora.Importer/Aurora.Importer.csproj" />
-    <Compile Include="../../Aurora.App/Services/DbElementLoader.cs" Link="App/DbElementLoader.cs" />
-    <Compile Include="../../Aurora.App/Services/ContentDatabaseService.cs" Link="App/ContentDatabaseService.cs" />
-    <Compile Include="../../Aurora.App/Services/ContentDirectoryResolver.cs" Link="App/ContentDirectoryResolver.cs" />
-    <Compile Include="../../Aurora.App/Services/ContentDatabaseParityService.cs" Link="App/ContentDatabaseParityService.cs" />
-    <Compile Include="../../Aurora.App/Services/RawUserXmlOverlayService.cs" Link="App/RawUserXmlOverlayService.cs" />
-    <Compile Include="../../Aurora.App/Services/XmlContentFallbackService.cs" Link="App/XmlContentFallbackService.cs" />
-    <Compile Include="../../Aurora.App/Services/DebugLogService.cs" Link="App/DebugLogService.cs" />
-    <Compile Include="../../Aurora.App/Services/StartingEquipmentParser.cs" Link="App/StartingEquipmentParser.cs" />
+    <ProjectReference Include="../../Aurora.DataIntegration/Aurora.DataIntegration.csproj" />
     <Compile Include="../../Aurora.App/Services/MauiSpellcastingSectionHandler.cs" Link="App/MauiSpellcastingSectionHandler.cs" />
     <Compile Include="../../Aurora.App/Services/MauiContextStubs.cs" Link="App/MauiContextStubs.cs" />
-    <Content Include="../../Aurora.App/BundledTools/**/*" Link="BundledTools/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

@@ -14,6 +14,10 @@ string mode = args[0];
 string caseRoot = Path.GetFullPath(args[1]);
 if (!File.Exists(Path.Combine(caseRoot, ".aurora-rehearsal")))
     throw new InvalidOperationException("The case directory must contain .aurora-rehearsal; do not use installed content.");
+// REHEARSAL_OUTPUT lets parallel read-only runs share one case while writing results separately.
+string output = Environment.GetEnvironmentVariable("REHEARSAL_OUTPUT") is { Length: > 0 } requested
+    ? Path.GetFullPath(requested) : caseRoot;
+Directory.CreateDirectory(output);
 var context = new RehearsalContext(caseRoot);
 if (args.Length > 2 && mode is not ("characters" or "characters-after-reload" or "characters-edit-background")) context.Settings.AdditionalCustomDirectories.Add(Path.GetFullPath(args[2]));
 Builder.Presentation.ApplicationContext.SetCurrent(context);
@@ -23,11 +27,11 @@ SetPath(nameof(DataManager.UserDocumentsCustomElementsDirectory), primary);
 foreach (var property in typeof(DataManager).GetProperties().Where(p => p.PropertyType == typeof(string)
     && p.Name.EndsWith("Directory", StringComparison.Ordinal) && p.SetMethod != null && p.GetValue(DataManager.Current) == null))
 {
-    string directory = Path.Combine(caseRoot, "runtime-directories", property.Name);
+    string directory = Path.Combine(output, "runtime-directories", property.Name);
     Directory.CreateDirectory(directory);
     property.SetValue(DataManager.Current, directory);
 }
-DebugLogService.Instance.InitializePersistentLog(caseRoot, mode + "-app.log");
+DebugLogService.Instance.InitializePersistentLog(output, mode + "-app.log");
 var stopwatch = Stopwatch.StartNew();
 object? result = null;
 bool success = false;
@@ -43,7 +47,7 @@ try
         case "characters":
         case "characters-after-reload":
         case "characters-edit-background":
-            result = await CharacterRehearsal.Run(caseRoot, args.Length > 2 ? args[2] : null, mode == "characters-after-reload", mode == "characters-edit-background");
+            result = await CharacterRehearsal.Run(caseRoot, output, args.Length > 2 ? args[2] : null, mode == "characters-after-reload", mode == "characters-edit-background");
             success = !JsonSerializer.SerializeToElement(result).GetProperty("hasFailures").GetBoolean();
             break;
         case "reload-check": result = await ReloadRehearsal.Run(caseRoot); success = true; break;
@@ -115,7 +119,7 @@ try
                     provenance = RelativeTo(primary, e.ContentFilePath) })
                 .OrderBy(e => e.Id, StringComparer.Ordinal).ThenBy(e => e.fingerprint, StringComparer.Ordinal)
                 .ToArray();
-            File.WriteAllText(Path.Combine(caseRoot, "projection-dump.json"),
+            File.WriteAllText(Path.Combine(output, "projection-dump.json"),
                 JsonSerializer.Serialize(entries, new JsonSerializerOptions { WriteIndented = true }));
             result = new { load = dumpLoad, runtimeCount = dumpElements.Count, dumped = entries.Length };
             success = dumpLoad.Success;
@@ -152,7 +156,7 @@ var report = new { mode, caseRoot, success, elapsedSeconds = stopwatch.Elapsed.T
     peakWorkingSetMiB = current.PeakWorkingSet64 / 1048576.0, managedMiB = GC.GetTotalMemory(false) / 1048576.0, result,
     warnings = DebugLogService.Instance.Entries.Where(e => e.Level != LogLevel.Info).ToArray() };
 string json = JsonSerializer.Serialize(report, new JsonSerializerOptions { WriteIndented = true });
-File.WriteAllText(Path.Combine(caseRoot, mode + "-result.json"), json);
+File.WriteAllText(Path.Combine(output, mode + "-result.json"), json);
 Console.WriteLine(json);
 Environment.ExitCode = success ? 0 : 1;
 

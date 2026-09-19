@@ -1215,22 +1215,6 @@ public sealed record BuildGuidanceTarget(
     string? EntryKey,
     string TargetLabel);
 
-public sealed record ElementOption(
-    string Id,
-    string Name,
-    string Description,
-    string Source = "",
-    string Requirements = "",
-    int SpellLevel = 0,
-    string School = "",
-    bool IsRitual = false,
-    bool IsConcentration = false,
-    DateTimeOffset? SourceReleaseDate = null,
-    DateTimeOffset? SourceFileModifiedUtc = null,
-    bool IsDisabled = false,
-    bool IsCurrentSelection = false,
-    string DescriptionHtml = "");
-
 /// <summary>A class the character can level up: its element id (Class or Multiclass), display name,
 /// current level in that class, and whether it's the main class.</summary>
 public sealed record LevelUpClassOption(string Id, string Name, int Level, bool IsMain);

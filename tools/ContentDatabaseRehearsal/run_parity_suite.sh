@@ -2,7 +2,7 @@
 # Run the parity rehearsal suite against a root created by prepare_baseline.py.
 # Usage: run_parity_suite.sh <baseline-root> [db|characters|all]
 # Results (JSON, logs, database copies, summary.txt) are collected in <root>/results.
-# Set HARNESS_EXE to run a copy of the harness whose BundledTools holds a different Translator.
+# Set HARNESS_EXE to run a harness built elsewhere (verify_content_library.sh builds one per library).
 set -u
 here="$(cd "$(dirname "$0")" && pwd)"
 root="$(cd "$1" && pwd)"
@@ -39,13 +39,20 @@ if [ "$part" = db ] || [ "$part" = all ]; then
   run failure-check fresh-b
 fi
 
+# Each character runs in its own process and output folder (REHEARSAL_OUTPUT), reading the shared
+# case read-only, so PARALLEL workers (default 4) can run at once.
+run_character() {
+  local name="$1" out="$results/characters/runs/$1" start=$SECONDS code
+  mkdir -p "$out"
+  REHEARSAL_OUTPUT="$(cygpath -w "$out")" timeout 300 "$exe" characters "$(cygpath -w "$root/installed")" "$name" > /dev/null 2>&1; code=$?
+  cp "$out/characters-result.json" "$results/characters/$name.json" 2>/dev/null
+  cp "$out/characters-app.log" "$results/characters/$name.log" 2>/dev/null
+  echo "character $name exit=$code seconds=$((SECONDS - start))" | tee -a "$results/summary.txt"
+}
+
 if [ "$part" = characters ] || [ "$part" = all ]; then
-  for file in "$root/installed/characters"/*.dnd5e; do
-    name="$(basename "$file")"
-    start=$SECONDS
-    timeout 300 "$exe" characters "$(win "$root/installed")" "$name" > /dev/null 2>&1; code=$?
-    mv "$root/installed/characters-result.json" "$results/characters/$name.json" 2>/dev/null
-    mv "$root/installed/characters-app.log" "$results/characters/$name.log" 2>/dev/null
-    echo "character $name exit=$code seconds=$((SECONDS - start))" | tee -a "$results/summary.txt"
-  done
+  export exe root results
+  export -f run_character
+  find "$root/installed/characters" -maxdepth 1 -name '*.dnd5e' -printf '%f\n' | sort \
+    | xargs -d '\n' -P "${PARALLEL:-4}" -I{} bash -c 'run_character "$1"' _ {}
 fi

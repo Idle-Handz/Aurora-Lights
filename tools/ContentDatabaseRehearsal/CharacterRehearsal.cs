@@ -10,9 +10,9 @@ using System.Xml.Linq;
 
 internal static class CharacterRehearsal
 {
-    public static async Task<object> Run(string root, string? onlyFile = null, bool afterReload = false, bool editBackground = false)
+    public static async Task<object> Run(string root, string output, string? onlyFile = null, bool afterReload = false, bool editBackground = false)
     {
-        var trace = new CharacterTrace(Path.Combine(root, "character-trace.log"));
+        var trace = new CharacterTrace(Path.Combine(output, "character-trace.log"));
         Builder.Core.Logging.Logger.RegisterLogger(trace);
         if (afterReload)
         {
@@ -27,7 +27,7 @@ internal static class CharacterRehearsal
                 Reset();
                 var initial = await new CharacterFile(Path.Combine(root, "characters", onlyFile ?? "Test E.dnd5e"))
                     .Load().WaitAsync(TimeSpan.FromSeconds(120));
-                File.WriteAllText(Path.Combine(root, "before-reload.json"), JsonSerializer.Serialize(new {
+                File.WriteAllText(Path.Combine(output, "before-reload.json"), JsonSerializer.Serialize(new {
                     previous.DataVersion, initial, missingGrants = trace.MissingGrants.ToArray(), state = Capture() }));
                 trace.MissingGrants.Clear();
             }
@@ -35,7 +35,7 @@ internal static class CharacterRehearsal
         }
         var loaded = await DbElementLoader.TryLoadAsync(DataManager.Current.ElementsCollection);
         if (!loaded.Success) throw new InvalidOperationException(loaded.Summary);
-        File.WriteAllText(Path.Combine(root, "proficiency-projection.json"), JsonSerializer.Serialize(
+        File.WriteAllText(Path.Combine(output, "proficiency-projection.json"), JsonSerializer.Serialize(
             DataManager.Current.ElementsCollection.Where(e => e.Type == "Proficiency")
                 .Select(e => new { e.Id, e.ContentFilePath, grants = e.GetGrantRules().Select(g => g.Attributes.Name).ToArray() }),
             new JsonSerializerOptions { WriteIndented = true }));
@@ -48,12 +48,12 @@ internal static class CharacterRehearsal
             {
                 Reset();
                 var file = new CharacterFile(path);
-                File.WriteAllText(Path.Combine(root, "character-phase.json"), JsonSerializer.Serialize(new { file = Path.GetFileName(path), phase = "first load" }));
+                File.WriteAllText(Path.Combine(output, "character-phase.json"), JsonSerializer.Serialize(new { file = Path.GetFileName(path), phase = "first load" }));
                 var first = await Task.Run(() => file.Load()).WaitAsync(TimeSpan.FromSeconds(120));
                 CharacterLoadCompatibilityService.RestoreEquippedSlots(CharacterManager.Current.Character);
                 if (editBackground) ExerciseBackgroundReplacement();
                 var firstState = Capture();
-                File.WriteAllText(Path.Combine(root, "choice-diagnostics-" + Path.GetFileName(path) + ".json"),
+                File.WriteAllText(Path.Combine(output, "choice-diagnostics-" + Path.GetFileName(path) + ".json"),
                     JsonSerializer.Serialize(CharacterManager.Current.GetElements()
                         .Where(e => e.Type is "Race" or "Ability Score Improvement")
                         .Select(e => new { e.Id, rules = e.GetSelectRules().Select(rule => new {
@@ -61,13 +61,13 @@ internal static class CharacterRehearsal
                             hasProgressManager = CharacterManager.Current.GetProgressManager(rule) != null,
                             registeredId = (SelectionRuleExpanderContext.Current!.GetRegisteredElement(rule) as ElementBase)?.Id
                         }).ToArray() }), new JsonSerializerOptions { WriteIndented = true }));
-                string savedPath = Path.Combine(root, "roundtrip", Path.GetFileName(path));
+                string savedPath = Path.Combine(output, "roundtrip", Path.GetFileName(path));
                 Directory.CreateDirectory(Path.GetDirectoryName(savedPath)!);
                 // Exact shared writer, redirected to a disposable output path.
                 File.WriteAllBytes(savedPath, file.SerializeCharacter(CharacterManager.Current.Character));
                 Reset();
                 var secondFile = new CharacterFile(savedPath);
-                File.WriteAllText(Path.Combine(root, "character-phase.json"), JsonSerializer.Serialize(new { file = Path.GetFileName(path), phase = "roundtrip load" }));
+                File.WriteAllText(Path.Combine(output, "character-phase.json"), JsonSerializer.Serialize(new { file = Path.GetFileName(path), phase = "roundtrip load" }));
                 var second = await Task.Run(() => secondFile.Load()).WaitAsync(TimeSpan.FromSeconds(120));
                 CharacterLoadCompatibilityService.RestoreEquippedSlots(CharacterManager.Current.Character);
                 var secondState = Capture();
@@ -88,7 +88,7 @@ internal static class CharacterRehearsal
                 break; // Do not run another character beside the timed-out shared singleton.
             }
             catch (Exception error) { results.Add(new { file = Path.GetFileName(path), error = error.ToString() }); }
-            File.WriteAllText(Path.Combine(root, "character-progress.json"), JsonSerializer.Serialize(results, new JsonSerializerOptions { WriteIndented = true }));
+            File.WriteAllText(Path.Combine(output, "character-progress.json"), JsonSerializer.Serialize(results, new JsonSerializerOptions { WriteIndented = true }));
         }
         bool hasFailures = results.Select(r => JsonSerializer.SerializeToElement(r)).Any(r =>
             r.TryGetProperty("error", out _) || !r.GetProperty("first").GetProperty("Success").GetBoolean()

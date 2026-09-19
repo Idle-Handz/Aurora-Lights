@@ -81,7 +81,7 @@
     <PackageReference Include="MudBlazor" Version="7.*" />
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.0" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="9.*" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.12" />
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.12" />
     <!-- Mac Catalyst folder selection is provided by the toolkit core essentials API. -->
     <PackageReference Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'"
@@ -117,6 +117,10 @@
                       GlobalPropertiesToRemove="RuntimeIdentifier;RuntimeIdentifiers"
                       SetTargetFramework="TargetFramework=net10.0" />
     <ProjectReference Include="..\Aurora.PdfImport\Aurora.PdfImport.csproj"
+                      SkipGetTargetFrameworkProperties="true"
+                      GlobalPropertiesToRemove="RuntimeIdentifier;RuntimeIdentifiers"
+                      SetTargetFramework="TargetFramework=net10.0" />
+    <ProjectReference Include="..\Aurora.DataIntegration\Aurora.DataIntegration.csproj"
                       SkipGetTargetFrameworkProperties="true"
                       GlobalPropertiesToRemove="RuntimeIdentifier;RuntimeIdentifiers"
                       SetTargetFramework="TargetFramework=net10.0" />

@@ -1,5 +1,4 @@
-using System.Diagnostics;
-using System.Text.RegularExpressions;
+using Aurora.Content;
 using Aurora.Importer;
 using Builder.Presentation.Services.Data;
 
@@ -47,17 +46,6 @@ public sealed class ContentDatabaseService
             ? null
             : Path.Combine(contentDirectory, DatabaseFileName);
     }
-
-    /// <summary>
-    /// Path to the bundled AuroraTranslator snapshot published via tools/publish-translator.ps1.
-    /// Null (on non-Windows) or a path that may not exist yet on first run.
-    /// </summary>
-    private static string? BundledTranslatorPath =>
-#if WINDOWS
-        Path.Combine(AppContext.BaseDirectory, "BundledTools", "AuroraTranslator", "AuroraTranslator.exe");
-#else
-        null;
-#endif
 
     // ── Public API ───────────────────────────────────────────────────────────
 
@@ -199,25 +187,11 @@ public sealed class ContentDatabaseService
             Progress  = null;
             StateChanged?.Invoke();
 
-            AuroraImportResult result;
-
-            if (BundledTranslatorPath is { } exePath && File.Exists(exePath))
-            {
-                // The preparation-aware writer owns correction evaluation, candidate
-                // validation, activation and retirement. Give it the real primary root.
-                // Secondary roots are composed from XML by the runtime reader.
-                result = await Task.Run(async () =>
-                {
-                    var compatible = await CheckTranslatorPreparationAsync(exePath, cancellationToken);
-                    return compatible.Success
-                        ? await SyncWithBundledTranslatorAsync(exePath, ContentDirectory, dbPath, cancellationToken)
-                        : compatible;
-                }, cancellationToken);
-            }
-            else
-            {
-                result = AuroraImportResult.Failed("A preparation-aware importer is required to build this content database. This app bundle does not include one for this platform yet. On-device import through the shared library is pending; your existing database was preserved.");
-            }
+            // The shared library owns correction evaluation, candidate validation,
+            // activation and retirement. Give it the real primary root; secondary
+            // roots are composed from XML by the runtime reader.
+            string contentDirectory = ContentDirectory;
+            var result = await Task.Run(() => ImportAsync(contentDirectory, dbPath, cancellationToken), cancellationToken);
 
             LastResult = result;
             IsStale    = !result.Success;
@@ -247,98 +221,42 @@ public sealed class ContentDatabaseService
         }
     }
 
-    private async Task<AuroraImportResult> SyncWithBundledTranslatorAsync(
-        string exePath, string contentDirectory, string dbPath, CancellationToken cancellationToken)
+    private async Task<AuroraImportResult> ImportAsync(string contentDirectory, string dbPath, CancellationToken cancellationToken)
     {
-        // This executable reports its totals only after exiting. Keep an animated
-        // indicator instead of displaying a determinate bar stuck at zero.
-        Progress = new AuroraImportProgress(AuroraImportPhase.Importing, 0, 0, 0, 0, null);
-        StateChanged?.Invoke();
-
-        using var process = new Process();
-        process.StartInfo = new ProcessStartInfo
-        {
-            FileName               = exePath,
-            UseShellExecute        = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError  = true,
-            CreateNoWindow         = true
-        };
-        process.StartInfo.ArgumentList.Add("sqlite-import");
-        process.StartInfo.ArgumentList.Add(contentDirectory);
-        process.StartInfo.ArgumentList.Add(dbPath);
-        process.Start();
-
-        using var reg = cancellationToken.Register(() =>
-        {
-            try { process.Kill(entireProcessTree: true); } catch { }
-        });
-
-        Task<string> stdoutTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
-        Task<string> stderrTask = process.StandardError.ReadToEndAsync(cancellationToken);
-
-        await process.WaitForExitAsync(cancellationToken);
-        string stdout = await stdoutTask;
-        string stderr = await stderrTask;
-
-        cancellationToken.ThrowIfCancellationRequested();
-
-        if (process.ExitCode != 0)
-        {
-            string msg = stderr.Length > 0 ? stderr.Trim() : $"AuroraTranslator exited with code {process.ExitCode}";
-            return AuroraImportResult.Failed(msg);
-        }
-
-        // Parse "Aurora import: N elements processed (M files changed, K unchanged)."
-        var match = Regex.Match(stdout,
-            @"Aurora import: (\d+) elements processed \((\d+) files changed, (\d+) unchanged\)");
-        if (match.Success)
-        {
-            int elements  = int.Parse(match.Groups[1].Value);
-            int changed   = int.Parse(match.Groups[2].Value);
-            int unchanged = int.Parse(match.Groups[3].Value);
-            return AuroraImportResult.Succeeded(changed, unchanged, elements);
-        }
-
-        if (File.Exists(dbPath))
-        {
-            using var connection = AuroraContentImporter.OpenReadableConnection(dbPath);
-            if (AuroraTranslator.Content.PreparedCatalogReader.IsPrepared(connection))
-            {
-                using var count = connection.CreateCommand();
-                count.CommandText = "SELECT COUNT(*) FROM content_prepared_elements";
-                return AuroraImportResult.Succeeded(0, 0, Convert.ToInt32(count.ExecuteScalar()));
-            }
-        }
-        return AuroraImportResult.Failed("Translator did not produce a compatible prepared database.");
+        var imported = await ContentImport.ImportAsync(contentDirectory, dbPath,
+            new InlineProgress<ContentImportProgress>(ReportProgress), cancellationToken,
+            onDiagnostic: diagnostic => DebugLogService.Instance.Info("Content import: " + diagnostic));
+        return AuroraImportResult.Succeeded(imported.FilesChanged, imported.FilesUnchanged, imported.ElementsWritten);
     }
 
-    private async Task<AuroraImportResult> CheckTranslatorPreparationAsync(string executable, CancellationToken cancellationToken)
+    private void ReportProgress(ContentImportProgress p)
     {
-        // Transitional capability probe until Translator exposes a versioned CLI
-        // handshake. Never discover an old writer by running it on user content.
-        string work = Path.Combine(Path.GetTempPath(), "aurora-writer-probe-" + Guid.NewGuid().ToString("N"));
-        string root = Path.Combine(work, "content");
-        Directory.CreateDirectory(root);
-        try
-        {
-            await File.WriteAllTextAsync(Path.Combine(root, "probe.xml"),
-                "<elements><element id=\"ID_AURORA_IMPORT_PROBE\" name=\"Import capability probe\" type=\"Feat\" source=\"Aurora\"><description>Capability probe.</description></element></elements>", cancellationToken);
-            string database = Path.Combine(work, "probe.sqlite");
-            var result = await SyncWithBundledTranslatorAsync(executable, root, database, cancellationToken);
-            if (result.Success && File.Exists(database))
-            {
-                using var connection = AuroraContentImporter.OpenReadableConnection(database);
-                if (AuroraTranslator.Content.PreparedCatalogReader.IsPrepared(connection) &&
-                    AuroraTranslator.Content.PreparedCatalogReader.InputsMatch(connection, [root]))
-                    return result;
-            }
-            return AuroraImportResult.Failed("The bundled Translator does not support the required content preparation contract. Update the app's Translator bundle before refreshing. The working database was preserved. " + result.ErrorMessage);
-        }
-        finally
-        {
-            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
-            Directory.Delete(work, recursive: true);
-        }
+        Progress = MapProgress(p);
+        StateChanged?.Invoke();
+    }
+
+    // The Settings bar shows Scanning as 0-50% and Importing as 50-90% from FilesScanned/FilesTotal,
+    // so each library phase is scaled into a fixed share of a 1000-step range.
+    internal static AuroraImportProgress MapProgress(ContentImportProgress p) => p.Phase switch
+    {
+        ContentImportPhase.Preparing => Scaled(AuroraImportPhase.Scanning, p, 0, 500),
+        ContentImportPhase.Reading => Scaled(AuroraImportPhase.Scanning, p, 500, 500),
+        ContentImportPhase.Comparing => Scaled(AuroraImportPhase.Importing, p, 0, 250),
+        ContentImportPhase.Writing => Scaled(AuroraImportPhase.Importing, p, 250, 750),
+        ContentImportPhase.Resolving or ContentImportPhase.Activating =>
+            new AuroraImportProgress(AuroraImportPhase.Resolving, 1000, 1000, p.FilesChanged, p.ElementsWritten, null),
+        _ => new AuroraImportProgress(AuroraImportPhase.Complete, 1000, 1000, p.FilesChanged, p.ElementsWritten, null),
+    };
+
+    private static AuroraImportProgress Scaled(AuroraImportPhase phase, ContentImportProgress p, int offset, int span)
+    {
+        int step = p.Total > 0 ? (int)((long)span * p.Completed / p.Total) : span;
+        return new AuroraImportProgress(phase, offset + step, 1000, p.FilesChanged, p.ElementsWritten, p.CurrentFile);
+    }
+
+    // Reports synchronously on the importing thread; StateChanged consumers already marshal to the UI.
+    private sealed class InlineProgress<T>(Action<T> handler) : IProgress<T>
+    {
+        public void Report(T value) => handler(value);
     }
 }

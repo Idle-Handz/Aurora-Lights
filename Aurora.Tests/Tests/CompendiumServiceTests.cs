@@ -1,10 +1,5 @@
 namespace Aurora.App.Services
 {
-    public sealed class ContentDatabaseService
-    {
-        public string? DatabasePath => null;
-    }
-
     public sealed class CharacterService
     {
         public Task PreloadAsync() => Task.CompletedTask;

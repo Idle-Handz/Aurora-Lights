@@ -434,6 +434,47 @@ Capture the baseline from the current working tree before changing anything (Pha
 4. **Lights consumes the library.** Add `Aurora.DataIntegration` and the
    `DataManager` extension point; `ContentDatabaseService` goes in-process;
    multiple roots in one operation; health/metadata come from the library.
+
+   **Step 1 (2026-09-19): in-process import, complete.** Aurora.Content 0.2.0
+   (Translator `dc3cf01`) is vendored. The user approved all three prerequisites:
+   the SQLite 10.0.12 pin, the `Aurora.Content.*` namespaces, and real refresh
+   progress.
+   - `Aurora.DataIntegration` (`net10.0`) holds the content database services
+     that moved out of Aurora.App with `git mv`: `DbElementLoader`,
+     `ContentDatabaseService`, the parity/fallback/overlay services,
+     `ContentDirectoryResolver`, `DebugLogService`, `StartingEquipmentParser` and
+     `ElementOption`. The app, Aurora.Tests and the rehearsal harness now share one
+     compiled copy instead of linked sources. Aurora.Legacy doesn't reference it,
+     and its package graph is unchanged.
+   - `ContentDatabaseService.SyncAsync` calls `ContentImport.ImportAsync` in
+     process. The bundled exe, its compatibility probe and the `#if WINDOWS` gate
+     are gone.
+     - Library phases map onto the existing Settings bar: preparing/reading
+       0–50%, comparing/writing 50–90%, resolving/activating 90%.
+       `ContentImportProgressMappingTests` covers the mapping.
+     - **User-visible upgrade:** refresh now works wherever the app runs:
+       Android, Mac, and CI-built Windows releases. Those never had the bundled
+       exe, so refresh used to fail there with "importer required". Android
+       still needs an on-device check.
+   - `Microsoft.Data.Sqlite` is pinned at 10.0.12 in Aurora.App,
+     Aurora.Importer and Aurora.PdfImport (was a floating `9.*`).
+   - `verify_content_library.sh` replaces `verify_translator_build.sh`. It builds
+     the harness against a Translator checkout, or against the pinned package
+     with `AURORA_CONTENT_SOURCE=pinned`, then runs the suite and
+     `compare_to_baseline.py`.
+   - **Parity:**
+     - The full suite with the in-process refresh matches the Phase 0 baseline:
+       both fresh databases row-identical, both projections identical, all 5
+       service checks with identical warnings, 60/60 characters.
+     - The pinned 0.2.0 package's database suite matches too.
+     - Aurora.Tests 562 pass / 1 skip. Windows and Android app builds are clean.
+   - The `BundledTools` copy item in Aurora.App is now dead. It's removed with the
+     other exe tooling in Phase 7.
+
+   **Deferred from this phase: multiple roots in one import.** The Translator's
+   catalog builder reads one root, and secondary roots keep being composed at
+   read time (as before). A multi-root import needs its own precedence and
+   correction rules and its own parity check.
 5. **Sources and preferences.** Remove package toggles; add the Settings default
    restrictions editor and new-character toggle; load the full catalog; drop DB
    preference reads.
