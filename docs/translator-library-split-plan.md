@@ -1,6 +1,6 @@
 # Shared content library: Translator split plan (draft)
 
-Status: **draft, updated 2026-09-18.** Work happens on
+Status: **active, updated 2026-09-19** (Phase 4 complete). Work happens on
 `feature_shared-content-library` in both this repo and `5eApiTranslator`.
 Nothing merges to `main` in either repo until Windows MAUI user-experience parity
 is demonstrated.
@@ -11,8 +11,10 @@ is demonstrated.
    2026-07-26 restoration moves out, except for the two small exceptions below
    (D1, D2). Builder.\* changes still pass the legacy parity gates
    (`docs/LEGACY_RESTORATION.md`).
-2. **Aurora Legacy stays independent of Reflections.** Legacy gains no new
-   package dependencies from this work.
+2. **Aurora Legacy stays independent of Reflections.** Its only new dependency
+   from this work is `Aurora.Content.Contracts`, a dependency-free package of one
+   file, so Legacy keeps applying local corrections as it does today (option B,
+   2026-09-19). Legacy takes nothing else.
 3. **The app always builds its own content database.** The shared library owns all
    schema knowledge, reading and writing. No separate reader-compatibility
    contract is needed.
@@ -53,7 +55,8 @@ Resolved design questions:
     easier of nuget.org and a vendored feed.
 - **D5:** names are `Aurora.Content.Contracts`, `Aurora.Content` and
   `Aurora.DataIntegration`.
-- **Open:** checkpoint commits on the feature branches (see the last section).
+- **D7:** checkpoint commits on the feature branches are approved; each merges to
+  `main` as one commit per phase, once parity is demonstrated.
 
 ## Current state (verified 2026-09-18)
 
