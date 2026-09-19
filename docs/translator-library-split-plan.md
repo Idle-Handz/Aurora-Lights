@@ -161,11 +161,11 @@ them, so all new projects use `net10.0`.
 
 | Project | Repo | Contents | Referenced by |
 | --- | --- | --- | --- |
-| **`Aurora.Content.Contracts`** (new, `net10.0`, no dependencies) | Translator | `LocalCorrectionDocument` + evaluation, `ContentReviewContracts`, `CanonicalContentAnalyzer` | `Aurora.Content`, `Aurora.DataIntegration` |
+| **`Aurora.Content.Contracts`** (new, `net10.0`, no dependencies) | Translator | `LocalCorrectionDocument` + evaluation, `ContentReviewContracts`, `CanonicalContentAnalyzer` | `Aurora.Content`, `Aurora.DataIntegration`, `Aurora.Logic` (and through it Aurora.Legacy) |
 | **`Aurora.Content`** (new, `net10.0`; Contracts + `Microsoft.Data.Sqlite`) | Translator | See list below | Translator CLI, Aurora.App, Aurora.PdfImport, `Aurora.DataIntegration`, tests/tools |
 | **AuroraTranslator CLI** (existing, slimmed) | Translator | Verb dispatch, baseline/regression commands, character-state engine, 5e-API models, `XellarantXmlGenerator` | — |
 | **`Aurora.DataIntegration`** (new, `net10.0`) | Lights | See list below | Aurora.App, Aurora.Tests, tools — **not** Aurora.Legacy |
-| `Aurora.Logic` | Lights | Gains small dependency-free pieces only; **no new package references** | (unchanged) |
+| `Aurora.Logic` | Lights | Gains small dependency-free pieces; its only new package is `Aurora.Content.Contracts` | (unchanged) |
 | `Builder.Data` | Lights | Restoration baseline + the D1 guard + the D2 attribute collection | (unchanged) |
 | `Aurora.Importer` | Lights | **Retired** | — |
 
@@ -185,18 +185,19 @@ The Translator CLI drops the unused `Microsoft.Data.SqlClient` reference.
 - prepared-catalog → `ElementBase` materialization (the `DbElementLoader` prepared path)
 - XML fallback and the raw user overlay
 - the parity service
-- the correction-aware `DataManager` loading extension (below)
 - `ElementProvenance`
 
-**How Legacy avoids the contracts package.** `DataManager` gets a small optional
-loading extension point, an interface in `Aurora.Logic`. Reflections registers a
-correction-aware implementation from `Aurora.DataIntegration`. Legacy registers
-nothing, so it loads XML exactly as original Aurora did. Consequence: Legacy
-treats a corrected local file as an ordinary user override (original Aurora
-behavior) instead of applying Reflections' correction rules. The D1 guard still
-stops Legacy from overwriting that file. The metadata check in
-`ContentIndexUpdateService` moves behind the same extension point, or relies on
-the D1 guard.
+**Legacy keeps applying local corrections (decided 2026-09-19, option B).**
+`Aurora.Logic` references `Aurora.Content.Contracts`, a dependency-free package
+holding one file. So `DataManager` keeps loading files that carry correction
+markup exactly as today, in both apps. Plain local files (homebrew, additions,
+overrides) load as ordinary user files, as they always have.
+- The alternative was an optional `DataManager` extension point that only
+  Reflections registers. It was rejected: Legacy would have loaded correction
+  files as plain overrides. With the user's hotfixes, that shows 7 renamed items
+  under both IDs and brings back the removed `ID_RDDT_AA_MUSKETBALL`.
+- Legacy's package graph gains only `Aurora.Content.Contracts`.
+- `AuroraContent.props` supports this with `AuroraContentContractsOnly=true`.
 
 **Aurora.App afterwards:**
 - `ContentDatabaseService` calls `Aurora.Content` in-process, with no child
@@ -211,14 +212,14 @@ the D1 guard.
 | 1–2 | `Aurora.Content.Contracts` | Namespace changes; update call sites. |
 | 3 | `Aurora.Content.Contracts` | Diff against the Translator copy first. The line counts match, but content might not. |
 | 4 | `Aurora.Logic` (`IsRequiredSource` only) | `IsRequiredPackage` is retired with packages. Locked infrastructure rows in the restriction editors stay locked in both apps. |
-| 5 | `Aurora.DataIntegration`: `ElementProvenance` (a `ConditionalWeakTable<ElementBase, string>`) | Set through the `DataManager` extension point and by the loaders. Check that `ElementBaseCollection.GetFresh` copies keep their provenance. |
+| 5 | `Aurora.DataIntegration`: `ElementProvenance` (a `ConditionalWeakTable<ElementBase, string>`) | Set by `DataManager` and the loaders. Check that `ElementBaseCollection.GetFresh` copies keep their provenance. |
 | 6 | Stays, rewritten as a self-contained check (D1) | Same behavior; no dependency on `LocalCorrectionDocument`. |
 | 7 | Replaced by generic unrecognized-attribute preservation (D2) | Spell-specific cases removed. `SpellAcquisitionResolver` reads the preserved collection. |
 | 8 | Restore in `Builder.Data` | If it's noise in Reflections, filter it with the existing `EngineLogNoiseFilter`. |
 
 **Finish line:** `Compare-RestoredAssemblyApi.ps1` reports only the D2 collection
 as an addition (down from 265). `Compare-BuilderDataBehavior.ps1` passes against
-both builds. `Aurora.Legacy.csproj` builds with no new package references.
+both builds. `Aurora.Legacy.csproj` builds with `Aurora.Content.Contracts` as its only new package.
 
 ## Content sources and preferences
 
@@ -288,7 +289,8 @@ both builds. `Aurora.Legacy.csproj` builds with no new package references.
   because NuGet caches packages by version. Bump the version for every change.
 - **One pin:** `AuroraContentVersion` in `AuroraContent.props` at the Lights root,
   referenced as an exact version (`[x.y.z]`).
-  - Only consuming projects import this file; **Aurora.Legacy never does**.
+  - Only consuming projects import this file; **Aurora.Legacy never does**. `Aurora.Logic` imports it
+    with `AuroraContentContractsOnly=true`, so Legacy gets the contracts package only.
   - `nuget.config` adds `vendor/nuget` as a source. `.gitignore` re-includes
     `vendor/nuget/*.nupkg`.
 - **Local switch:** build with `-p:UseLocalContentLibrary=true` to use a
@@ -431,8 +433,9 @@ Capture the baseline from the current working tree before changing anything (Pha
    - **Public API.** The library's `LocalCorrectionSync` is `internal`; the app needs
      `ReadStatuses`, `ReadRuntimeContent`, `IsStale`, metadata/health and the
      runtime-file builder as public API.
-4. **Lights consumes the library.** Add `Aurora.DataIntegration` and the
-   `DataManager` extension point; `ContentDatabaseService` goes in-process;
+4. **Lights consumes the library.** Add `Aurora.DataIntegration`;
+   `Aurora.Logic` takes the correction contracts from the package (decision B,
+   replacing the planned `DataManager` extension point); `ContentDatabaseService` goes in-process;
    multiple roots in one operation; health/metadata come from the library.
 
    **Step 1 (2026-09-19): in-process import, complete.** Aurora.Content 0.2.0
@@ -497,6 +500,23 @@ Capture the baseline from the current working tree before changing anything (Pha
      - The pinned 0.3.0 package (Translator `54e8cdd`) passes the database suite.
      - Aurora.Tests 562 pass / 1 skip; Translator tests 68/68.
      - Windows, Android, Legacy and the tools all build.
+
+   **Step 3 (2026-09-19): correction contracts from the package (decision B).**
+   - `Aurora.Logic` (`DataManager`, `ContentIndexUpdateService`),
+     DataIntegration, Aurora.Importer, tests and tools now use
+     `Aurora.Content.Contracts.LocalCorrectionDocument`. Apart from its
+     namespace, it's line-for-line identical to the Builder.Data copy, so both
+     apps load corrections exactly as before.
+   - Only Builder.Data itself still uses its own copy (the `SaveContent` guard,
+     `ContentReviewContracts`). Phase 6 removes it.
+   - Four files need `ElementsFile` from `Builder.Data.Files` as well, so they
+     alias the Contracts type until then.
+   - **CI fix found here:** `release.yml` restores each shared library without a
+     RID before its `--no-restore` publish. Aurora.DataIntegration (step 1) was
+     missing from that list, so its assets file held only the app's
+     `net10.0-windows…` target, and the release publish would have failed. Both
+     publish jobs now restore it. Replaying the exact release sequence locally
+     publishes successfully.
 
    **Deferred from this phase: multiple roots in one import.** The Translator's
    catalog builder reads one root, and secondary roots keep being composed at
@@ -632,8 +652,5 @@ lands as one commit per phase.
 - `DbElementLoader` / `XmlContentFallbackService` may touch MAUI APIs. The
   rehearsal harness already compiles them outside MAUI, which suggests they're
   movable, but this needs checking.
-- The `DataManager` extension point changes Legacy's handling of corrected files
-  back to original Aurora behavior. Confirm nothing in Legacy's own tests relied
-  on correction-aware loading.
 - The Translator's uncommitted work predates this plan. Phase 0 must capture it
   before any `git mv`.

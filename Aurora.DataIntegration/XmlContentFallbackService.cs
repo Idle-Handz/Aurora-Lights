@@ -2,6 +2,7 @@ using Aurora.Components.Models;
 using Aurora.Content.Preparation;
 using Builder.Data;
 using Builder.Data.Files;
+using LocalCorrectionDocument = Aurora.Content.Contracts.LocalCorrectionDocument;
 using Builder.Data.Rules;
 using Builder.Presentation;
 using Builder.Presentation.Services.Data;

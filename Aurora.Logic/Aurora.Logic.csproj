@@ -22,7 +22,12 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
     <NoWarn>$(NoWarn);CS8618;CS0618;CS0612</NoWarn>
+    <!-- Local correction handling while loading XML comes from the dependency-free contracts
+         package, shared with Aurora.Content. Legacy inherits only this package. -->
+    <AuroraContentContractsOnly>true</AuroraContentContractsOnly>
   </PropertyGroup>
+
+  <Import Project="..\AuroraContent.props" />
 
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <Optimize>false</Optimize>

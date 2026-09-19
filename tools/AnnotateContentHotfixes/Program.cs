@@ -1,7 +1,7 @@
 // Stages this session's six manifest-verified hotfixes; never writes installed content.
 using Aurora.Importer;
 using Aurora.Content.Preparation;
-using Builder.Data.Files;
+using Aurora.Content.Contracts;
 using Microsoft.Data.Sqlite;
 using System.Diagnostics;
 using System.Text.Json;

@@ -2,6 +2,8 @@ using Aurora.Importer;
 using Aurora.Content.Preparation;
 using Aurora.Content;
 using Builder.Data.Files;
+using LocalCorrection = Aurora.Content.Contracts.LocalCorrection;
+using LocalCorrectionDocument = Aurora.Content.Contracts.LocalCorrectionDocument;
 using Builder.Presentation.Services.Content;
 using Microsoft.Data.Sqlite;
 using System.Diagnostics;

@@ -10,6 +10,7 @@ using Builder.Data;
 using Builder.Data.Elements;
 using Builder.Data.Extensions;
 using Builder.Data.Files;
+using LocalCorrectionDocument = Aurora.Content.Contracts.LocalCorrectionDocument;
 using Builder.Data.Rules;
 using Builder.Data.Strings;
 using Builder.Presentation.Events.Data;

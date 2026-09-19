@@ -139,8 +139,8 @@ try
             var missingXml = dbElements.Select(e => e.Id).Except(xmlElements.Select(e => e.Id), StringComparer.Ordinal).ToArray();
             var xmlById = xmlElements.ToDictionary(e => e.Id);
             var differences = dbElements.Where(e => xmlById.TryGetValue(e.Id, out var x) &&
-                Builder.Data.Files.LocalCorrectionDocument.Fingerprint(System.Xml.Linq.XElement.Parse(e.ElementNode.OuterXml)) !=
-                Builder.Data.Files.LocalCorrectionDocument.Fingerprint(System.Xml.Linq.XElement.Parse(x.ElementNode.OuterXml)))
+                Aurora.Content.Contracts.LocalCorrectionDocument.Fingerprint(System.Xml.Linq.XElement.Parse(e.ElementNode.OuterXml)) !=
+                Aurora.Content.Contracts.LocalCorrectionDocument.Fingerprint(System.Xml.Linq.XElement.Parse(x.ElementNode.OuterXml)))
                 .Select(e => e.Id).ToArray();
             bool xmlSuccess = (bool)xmlType.GetProperty("Success")!.GetValue(xmlResult)!;
             result = new { xmlSuccess, xmlFailure = xmlType.GetProperty("FailureReason")!.GetValue(xmlResult), dbResult,
@@ -167,7 +167,7 @@ static string Fingerprint(ElementBase element)
 {
     string? xml = element.ElementNode?.OuterXml ?? element.ElementNodeString;
     return string.IsNullOrEmpty(xml) ? ""
-        : Builder.Data.Files.LocalCorrectionDocument.Fingerprint(System.Xml.Linq.XElement.Parse(xml));
+        : Aurora.Content.Contracts.LocalCorrectionDocument.Fingerprint(System.Xml.Linq.XElement.Parse(xml));
 }
 
 static string? RelativeTo(string root, string? path)
