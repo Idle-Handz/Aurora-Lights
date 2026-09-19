@@ -306,6 +306,26 @@ Capture the baseline from the current working tree before changing anything (Pha
    library; drop SqlClient. This phase is **behavior-neutral**: CLI output is
    byte/row-identical and Translator tests pass. The parent-inference/rank issue
    is carried over unchanged and fixed afterwards with its own tests.
+   **Approach:**
+   - New projects at the Translator repo root: `Aurora.Content.Contracts/` and
+     `Aurora.Content/`, both `net10.0`, added to `AuroraTranslator.sln`.
+   - `git mv` the importer partials, preparation/correction/prepared-content
+     files, `AuroraDataIntegrity`, `AuroraSelectionRules`,
+     `AuroraSpellcastingXml`, the expression engine, `SrdHelpers` and the Aurora/SRD
+     models into them.
+   - `LocalCorrectionDocument` goes to Contracts.
+   - The CLI keeps `Program.cs`, the character-state engine (+ its
+     `AuroraRuntimeSelectionRules` partial), the 5e-API models,
+     `XellarantXmlGenerator` and `Data/`.
+   - Nearly all moved types are `internal`. To stay behavior-neutral, the library
+     grants `InternalsVisibleTo` to the CLI and tests, and **namespaces are left
+     unchanged** in this phase. The public API and namespace alignment come with
+     Lights integration (Phase 4).
+   - Verification: build `fresh-*` databases with the new CLI through a copy of
+     the rehearsal harness whose `BundledTools` holds the new build. Compare them
+     to the baseline with `compare_databases.py --ignore "*.created_utc" --ignore
+     database_metadata.built_utc`; they must be identical. Translator tests must
+     stay 65/65.
 2. **Reconcile duplicates.** Diff every Lights/Translator pair and merge
    Lights-only fixes into the library (the `LocalCorrectionSync` 306-vs-215 gap
    matters most).
@@ -332,13 +352,102 @@ Later / optional:
 - the 462 generated-ID collision groups (scroll generator)
 - the multi-user engine
 
-## Open: checkpoint commits
+## Phase 0 baseline (2026-09-18, complete)
 
-Checkpoint commits on the feature branches, never `main`. They are combined when
-merging (see the explanation in the conversation). If approved:
-- The first checkpoint in each repo records the existing uncommitted work as the
-  baseline, so later diffs show only this project's changes.
-- The merge to `main` lands as one commit per phase rather than one giant commit.
+Location: `buildtmp/parity-baseline-20260918-190022-f89a8d` (ignored). It was
+created by `tools/ContentDatabaseRehearsal/prepare_baseline.py` and run with
+`run_parity_suite.sh`. Installed content is read-only: 1,189 XML files, the v12
+database, and 60 characters (59 of the user's plus the prepared-paladin
+fixture). All 65,083 absolute paths in the database copy were relocated into the
+case, and no live references remain. The relocated copy scans as up to date.
+
+| Check | Result |
+| --- | --- |
+| Fresh build with the bundled Translator (×2) | Both succeeded, 24–25 s |
+| **Determinism** (fresh-a vs fresh-b, `compare_databases.py`) | **All 68 tables identical**, row IDs included, after ignoring `*.created_utc` and `database_metadata.built_utc`. So gate 1 can be strict row-for-row equality. |
+| XML ↔ database definition parity (fresh) | Pass |
+| Fallback checks (9) / service failure checks | Pass / pass |
+| AuroraTranslator.Tests | 65/65 pass |
+| Aurora.Tests (same code, 2026-09-17) | 548 pass, 1 skipped |
+| Character load/save/reopen, one process each (60) | 19 fully clean; 41 partial first load; 9 round-trip issues (see below); 0 timeouts; ~39 s per character |
+| Installed inputs after the run | Unchanged (1,249 files re-hashed) |
+
+**Finding: saved package toggles hide content *and* its modifications.** The
+installed database has **Ryoko's Guide to the Yokai Realms** disabled (plus the
+stale `ALE.xml` flag, which the required-content policy already overrides).
+Compared with a fresh build (everything enabled), the installed projection loads
+94,005 runtime elements instead of 101,333:
+- 7,326 IDs are missing: about 865 Ryoko definitions plus 6,461 elements
+  generated from them.
+- **118 elements from other books differ in content** because Ryoko's append
+  operations are excluded:
+  - 102 PHB spells (the Bender and Spirit Caller spell lists)
+  - 14 proficiency groups (Ryoko weapons such as *Claw* added to Simple Melee
+    Weapons and similar)
+  - 1 class and 1 multiclass entry
+
+Under the "whole catalog loads, restrictions apply at runtime" model, a source's
+appends modify the shared catalog for every character, even when that character
+restricts the source. This is also why v12's Ryoko exclusion caused the earlier
+Claw/proficiency warnings on characters saved under v11. Open question for the
+user: see the next section.
+
+## Decided: restricted sources' effects on other books (2026-09-18)
+
+- **Option B, restriction-aware grants:** skip grants that would give a character
+  an element from a source that character restricts (e.g. no *Claw* proficiency
+  when Ryoko is restricted). This is implemented through a Reflections-side
+  extension point in grant processing, so Legacy's behavior is unchanged.
+  Tag-only appends (spell-list entries) need no filtering.
+- **Symmetric re-enable:** un-restricting the source re-evaluates grants, so the
+  suppressed grants are applied again.
+  - Interpretation to confirm: *selections* that were cleared stay as re-pick
+    prompts. Only automatic grants come back automatically.
+- **Load validation:** grants suppressed by a character's own restrictions are
+  expected. `CharacterLoadValidation` must report them as informational, not as
+  missing saved elements.
+- **One-time seeding of global defaults:** on first launch after upgrade, read
+  the old database's disabled packages once and add the sources of their
+  elements to `DefaultSourceRestrictions`. Required infrastructure sources (e.g.
+  `ALE.xml`) are excluded, since they can't be restricted. This touches app
+  settings only, never character files. After this one read, database
+  preferences are ignored.
+
+## Pre-existing issues surfaced by the baseline (not caused by this work)
+
+These are recorded so parity comparisons treat them as the baseline, not as
+regressions. Counts are across all 60 characters.
+- **A renamed content ID (24 characters):** characters saved with
+  `ID_WOTC_DMG_PROFICIENCY_WEAPON_FUTURISTIC_FIREARMS_LASTER_PISTOL` (typo) now
+  miss it, because content has `..._LASER_PISTOL`. They warn on every load.
+  Renaissance musket/pistol proficiencies (11 and 10 characters) exist in the
+  catalog but are no longer restored; this is likely a changed grant path and
+  needs its own trace. The D2 follow-up (aliases for typos/renames) should map
+  old saved IDs to their replacements.
+- **Ryoko-derived grants** (*Claw* 5, *Tessen* 3, Ryoko options 3) are missing
+  because Ryoko is disabled. Resolved by Option B plus the seeded defaults.
+- **A spurious ASI warning on reopen (7 characters):** *Aurora*, *Daiyu Ao-shi*,
+  *Gobta*, *Luna*, *Lusten Winterblush*, *Michelle Character 1* and *Remy
+  Morningstar* keep identical state, choices and inventory, but reopening a saved
+  copy reports a missing ASI option. This is the same family as the Art E
+  stale-racial-ASI issue.
+- **Real round-trip changes (2 characters):** *The Doc* **loses a multiclass
+  level** (`ID_INTERNAL_MULTICLASS_LEVEL_9`) and gains
+  `ID_RDDT_AA_CLASS_FEATURE_GUNSLINGER_BULLET_TIME`. *Remy Morningstar (Strahd)*
+  gains `ID_TBOX_COMPANION_CHICKEN`. Both are pre-existing data-integrity bugs, to
+  be investigated separately from this project.
+
+## Checkpoint commits (approved 2026-09-18)
+
+Checkpoint commits go on the feature branches, never `main`. The merge to `main`
+lands as one commit per phase.
+- Baselines: Translator `f1f76e1` (pre-existing uncommitted work); Lights
+  `6c1660a` (exception logging), `86459a5` (docs), `e812560` (pre-existing pin
+  scripts).
+- The pinned Translator zip is left untracked because it's a build artifact.
+- Before pushing the Translator branch: its new grant-repair test fixtures
+  quote description text from DMs Guild / third-party products. The tests likely
+  only need IDs and grants, so consider stripping the prose if the repo is public.
 
 ## Risks
 

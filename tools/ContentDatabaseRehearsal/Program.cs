@@ -107,6 +107,19 @@ try
                 lookupCounts = new { archetypes = DbElementLoader.ArchetypeParentMap.Count, spells = DbElementLoader.SpellAccessMap.Count, sort = DbElementLoader.ElementSortMetadataMap.Count } };
             success = load.Success;
             break;
+        case "dump":
+            var dumpElements = DataManager.Current.ElementsCollection;
+            var dumpLoad = await DbElementLoader.TryLoadAsync(dumpElements);
+            var entries = dumpElements
+                .Select(e => new { e.Id, e.Type, e.Name, fingerprint = Fingerprint(e),
+                    provenance = RelativeTo(primary, e.ContentFilePath) })
+                .OrderBy(e => e.Id, StringComparer.Ordinal).ThenBy(e => e.fingerprint, StringComparer.Ordinal)
+                .ToArray();
+            File.WriteAllText(Path.Combine(caseRoot, "projection-dump.json"),
+                JsonSerializer.Serialize(entries, new JsonSerializerOptions { WriteIndented = true }));
+            result = new { load = dumpLoad, runtimeCount = dumpElements.Count, dumped = entries.Length };
+            success = dumpLoad.Success;
+            break;
         case "parity":
             // Avoid InitializeDirectories, which also touches the user's AppData.
             var method = typeof(ContentDatabaseParityService).GetMethod("LoadXmlSnapshotAsync", BindingFlags.NonPublic | BindingFlags.Static)!;
@@ -144,6 +157,16 @@ Console.WriteLine(json);
 Environment.ExitCode = success ? 0 : 1;
 
 static void SetPath(string name, string value) => typeof(DataManager).GetProperty(name)!.SetValue(DataManager.Current, value);
+
+static string Fingerprint(ElementBase element)
+{
+    string? xml = element.ElementNode?.OuterXml ?? element.ElementNodeString;
+    return string.IsNullOrEmpty(xml) ? ""
+        : Builder.Data.Files.LocalCorrectionDocument.Fingerprint(System.Xml.Linq.XElement.Parse(xml));
+}
+
+static string? RelativeTo(string root, string? path)
+    => string.IsNullOrEmpty(path) ? path : Path.GetRelativePath(root, path).Replace('\\', '/');
 
 [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
 static DbLoadResult LoadForMemory(ElementBaseCollection elements)
