@@ -363,6 +363,7 @@ public class CharacterFile : ObservableObject
 
     private void BuildDocument(Character character)
     {
+        XmlElement previousRoot = this._document?.DocumentElement;
         this._document = new XmlDocument();
         XmlNode parentNode = this._document.AppendChild(this._document.CreateNode(XmlNodeType.Element, nameof(character), (string)null));
         Dictionary<string, string> attributesDictionary = new Dictionary<string, string>()
@@ -380,6 +381,28 @@ public class CharacterFile : ObservableObject
         parentNode.AppendChild(this.CreateBuildNode(character));
         parentNode.AppendChild((XmlNode)this._document.CreateComment(" restricted sources "));
         parentNode.AppendChild(this.CreateRestrictedSourcesNode());
+        this.PreserveUnrecognizedRootNodes(previousRoot, parentNode);
+    }
+
+    /// <summary>
+    /// Carries root-level nodes this writer does not produce over from the file that was loaded, so
+    /// saving from one client keeps data another client stores there (for example Reflections'
+    /// &lt;custom-features&gt;). Nodes this writer emits are rebuilt from the character and are not copied.
+    /// </summary>
+    private void PreserveUnrecognizedRootNodes(XmlElement previousRoot, XmlNode rebuiltRoot)
+    {
+        if (previousRoot == null)
+            return;
+        HashSet<string> written = rebuiltRoot.ChildNodes.Cast<XmlNode>()
+            .Where(node => node.NodeType == XmlNodeType.Element)
+            .Select(node => node.Name)
+            .ToHashSet(StringComparer.Ordinal);
+        foreach (XmlNode node in previousRoot.ChildNodes.Cast<XmlNode>()
+            .Where(node => node.NodeType == XmlNodeType.Element && !written.Contains(node.Name)).ToList())
+        {
+            Logger.Info("preserving unrecognized character node " + node.Name);
+            rebuiltRoot.AppendChild(this._document.ImportNode(node, true));
+        }
     }
 
     public async Task<CharacterFile.LoadResult> Load() => await this.Load(this._filepath);
