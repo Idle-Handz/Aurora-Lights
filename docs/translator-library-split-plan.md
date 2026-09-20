@@ -536,6 +536,49 @@ Capture the baseline from the current working tree before changing anything (Pha
 5. **Sources and preferences.** Remove package toggles; add the Settings default
    restrictions editor and new-character toggle; load the full catalog; drop DB
    preference reads.
+
+   **Step 1 (2026-09-20): the whole catalog loads; preferences become restrictions.**
+   - `DbElementLoader` no longer filters the projection by package preference, so
+     every installed source is in the projection the engine reasons over.
+   - **One-time migration** (`SourcePreferenceSeed`): sources whose every element
+     came from switched-off packages are added to
+     `AppSettingsStore.DefaultSourceRestrictions`, and
+     `ApplyDefaultSourceRestrictionsOnNewCharacter` is switched on when it
+     migrates anything, so new characters keep the user's intent. A source that
+     only partly came from a switched-off package keeps loading (a supplement
+     often adds a few elements to a book that stays on), and builder
+     infrastructure is never restricted. `SourcePreferencesSeeded` marks it done.
+     On this machine it resolves to exactly Ryoko's Guide to the Yokai Realms;
+     Aurora Legacy Essentials is correctly left alone as infrastructure.
+   - **Settings** replaces the package list with the same restriction tree the
+     Manage page uses (`SourceRestrictionModelMapper`, now shared), editing a
+     dedicated `SourcesManager` so the loaded character is untouched, plus the
+     apply-to-new-characters toggle.
+   - `GetPackages`, `SetPackageEnabled` and `ContentPackageInfo` are gone from the
+     app. The database's `is_enabled` column is now ignored; the writer-side API
+     stays in the retiring `Aurora.Importer` for its tests until Phase 7.
+   - The rehearsal's disable/re-enable check is now restriction-based, and asserts
+     the new invariant: a restricted source stays loaded and stored.
+   - **Compendium: no change.** Legacy filters it by nothing at all, and
+     Reflections already filters by the open character's restrictions, which is
+     the more useful superset. Global defaults are not applied there.
+   - **Parity: the first intended departure from the Phase 0 baseline**, reviewed
+     item by item. Databases, both fresh projections and all 5 service checks
+     still match; the installed projection and every character differ:
+     - **6 characters improved, none worsened.** Crow, Honesty and Seraphine now
+       load with no missing elements (Seraphine went from 17 to 0); Michelle
+       Character 2 from 22 to 3; Fresh E and Michelle Character 1 by one each.
+       The known "Art E Claw" diagnostic resolves too: *Claw* is Ryoko content.
+     - **Characters gain Ryoko weapon proficiencies** (Claw, Chakram, magitech
+       firearms), because Ryoko attaches its weapons to the standard weapon
+       proficiency grants. Step 2's Option B filters these for characters that
+       restrict the source; until then every character receives them.
+     - **New warnings are Ryoko's own content diagnostics** (generic parsing,
+       appends targeting `ID_WOTC_PHB_MULTICLASS_MONK`, which this collection
+       does not have). They were invisible only because the package was filtered
+       out, and belong to the content, not to this change.
+     - New reference root for later comparisons:
+       `buildtmp/parity-rerun-20260920-041208-e05e32`.
 6. **Builder.Data cleanup** (the 8 items) and the `Aurora.Logic` additions; legacy gates.
 7. **Retire the old paths:**
    - `Aurora.Importer` and the copied writer

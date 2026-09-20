@@ -4,7 +4,9 @@ using Aurora.Importer;
 using Builder.Data;
 using Aurora.Content.Contracts;
 using Builder.Presentation;
+using Builder.Presentation.Models.Sources;
 using Builder.Presentation.Services.Data;
+using Builder.Presentation.Services.Sources;
 using Microsoft.Data.Sqlite;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -52,25 +54,30 @@ internal static class ReloadRehearsal
         Require(DataManager.Current.ElementsCollection.First(e => e.Id == "ID_REHEARSAL_BASE").Supports.Contains("Second"), "secondary XML changes reload without import", checks);
         Require(Hash(database) == originalHash, "secondary reload leaves database unchanged", checks);
 
-        long packageId;
-        using (var connection = ContentDatabase.OpenReadableConnection(database))
-        {
-            using var query = connection.CreateCommand();
-            query.CommandText = "SELECT content_package_id FROM source_files WHERE replace(relative_path,char(92),'/')='core/base.xml'";
-            packageId = Convert.ToInt64(query.ExecuteScalar() ?? throw new InvalidOperationException("Fixture supplier missing"));
-        }
-        Require(await service.SetPackageEnabledAsync(packageId, false) == null, "disable supplier preference", checks);
+        // The catalog always loads in full now. What a character may use is decided by its source
+        // restrictions, so switched-off content stays stored, loaded and ready to come back.
+        Require(DataManager.Current.ElementsCollection.Any(e => e.Id == "ID_REHEARSAL_BASE")
+            && DataManager.Current.ElementsCollection.Any(e => e.Id == "ID_REHEARSAL_SECONDARY"),
+            "every source loads into the catalog", checks);
+        var sources = new SourcesManager();
+        SourceItem? fixtureSource = sources.SourceGroups.SelectMany(group => group.Sources)
+            .FirstOrDefault(item => string.Equals(item.Source.Name, "Fixture", StringComparison.OrdinalIgnoreCase));
+        Require(fixtureSource != null, "fixture source is offered for restriction", checks);
+        fixtureSource!.SetIsChecked(false, updateChildren: true, updateParent: true);
+        sources.ApplyRestrictions();
+        Require(sources.GetRestrictedSources().Contains("Fixture"), "restricting a source records it", checks);
         Load();
-        Require(!DataManager.Current.ElementsCollection.Any(e => e.Id == "ID_REHEARSAL_BASE") && DataManager.Current.ElementsCollection.Any(e => e.Id == "ID_REHEARSAL_SECONDARY"), "disabled primary stays excluded; secondary remains", checks);
+        Require(DataManager.Current.ElementsCollection.Any(e => e.Id == "ID_REHEARSAL_BASE"),
+            "a restricted source stays loaded and stored", checks);
         using (var connection = ContentDatabase.OpenReadableConnection(database))
         {
             using var query = connection.CreateCommand();
             query.CommandText = "SELECT COUNT(*) FROM elements WHERE aurora_id='ID_REHEARSAL_BASE'";
-            Require(Convert.ToInt32(query.ExecuteScalar()) == 1, "disabled definition remains stored", checks);
+            Require(Convert.ToInt32(query.ExecuteScalar()) == 1, "restricted definition remains stored", checks);
         }
-        Require(await service.SetPackageEnabledAsync(packageId, true) == null, "reenable supplier preference", checks);
-        Load();
-        Require(DataManager.Current.ElementsCollection.Any(e => e.Id == "ID_REHEARSAL_BASE"), "reenabled definition returns", checks);
+        fixtureSource.SetIsChecked(true, updateChildren: true, updateParent: true);
+        sources.ApplyRestrictions();
+        Require(!sources.GetRestrictedSources().Any(), "clearing a restriction returns the source", checks);
 
         var priorElements = DataManager.Current.ElementsCollection.ToArray();
         var priorSort = DbElementLoader.ElementSortMetadataMap;

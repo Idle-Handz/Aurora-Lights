@@ -978,8 +978,6 @@ internal static class DbElementLoader
 
     internal static PreparedCatalogProjection ReadPreparedProjection(SqliteConnection connection, bool fromXml = false)
     {
-        // Transitional app-preference storage. No catalog links depend on these flags.
-        var allowed = AuroraContentImporter.ReadEnabledPackageKeys(connection);
         var resources = DataManager.Current.LoadElementDocumentsFromResource()
             .SelectMany(doc => doc.DocumentElement?.ChildNodes.Cast<XmlNode>() ?? [])
             .Where(node => node.Name == "element" && node.Attributes?["id"] != null)
@@ -988,9 +986,9 @@ internal static class DbElementLoader
             .ToArray();
         var roots = ContentDirectoryResolver.GetContentDirectories();
         var runtimeFiles = RuntimeContentFiles.Read(connection, ContentDirectoryResolver.GetPrimaryContentDirectory(), roots.Skip(1), fromXml);
-        return PreparedCatalogReader.Read(connection,
-            source => source.PackageKey is "runtime-builtins" or "runtime-xml" || allowed.Contains(source.PackageKey),
-            hostDefinitions: resources, runtimeFiles: runtimeFiles);
+        // The whole catalog loads. What a character may use is decided at runtime by its source
+        // restrictions, so content is never missing from the projection the engine reasons over.
+        return PreparedCatalogReader.Read(connection, hostDefinitions: resources, runtimeFiles: runtimeFiles);
     }
 
     private static DbLoadResult LoadPreparedCatalog(SqliteConnection connection, string path,

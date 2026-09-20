@@ -4,20 +4,6 @@ using Microsoft.Data.Sqlite;
 namespace Aurora.Importer;
 
 /// <summary>
-/// Describes one content package row from <c>content_packages</c>.
-/// </summary>
-public sealed record ContentPackageInfo(
-    long   Id,
-    string PackageKey,
-    string PackageName,
-    string PackageKind,
-    int    PrecedenceRank,
-    bool   IsEnabled)
-{
-    public bool IsRequired => Builder.Data.RequiredContentPolicy.IsRequiredPackage(PackageKey, PackageName);
-}
-
-/// <summary>
 /// Public entry point for importing Aurora XML content into the SQLite database.
 /// </summary>
 public static class AuroraContentImporter
@@ -62,48 +48,6 @@ public static class AuroraContentImporter
             (prepared, candidate, token) => Task.FromResult(AuroraSqliteImporter.Import(
                 AuroraXmlCatalogReader.BuildCatalog(prepared), candidate, progress, token)),
             cancellationToken).GetAwaiter().GetResult();
-    }
-
-    /// <summary>
-    /// Returns all content packages registered in the database.
-    /// Returns an empty list if the database does not exist or has no packages yet.
-    /// </summary>
-    public static IReadOnlyList<ContentPackageInfo> GetPackages(string sqlitePath)
-    {
-        if (!File.Exists(sqlitePath)) return [];
-
-        var result = new List<ContentPackageInfo>();
-        using var connection = ContentDatabase.OpenReadableConnection(sqlitePath);
-
-        using var cmd = connection.CreateCommand();
-        cmd.CommandText = @"
-SELECT content_package_id, package_key, package_name, package_kind, precedence_rank,
-       COALESCE(is_enabled, 1)
-FROM content_packages
-ORDER BY
-    CASE package_kind
-        WHEN 'core'        THEN 0
-        WHEN 'official'    THEN 1
-        WHEN 'third-party' THEN 2
-        WHEN 'homebrew'    THEN 3
-        ELSE 4
-    END,
-    package_name COLLATE NOCASE;";
-
-        using var reader = cmd.ExecuteReader();
-        while (reader.Read())
-        {
-            var package = new ContentPackageInfo(
-                Id:            reader.GetInt64(0),
-                PackageKey:    reader.GetString(1),
-                PackageName:   reader.IsDBNull(2) ? reader.GetString(1) : reader.GetString(2),
-                PackageKind:   reader.IsDBNull(3) ? "local" : reader.GetString(3),
-                PrecedenceRank: reader.IsDBNull(4) ? 0 : reader.GetInt32(4),
-                IsEnabled:     reader.GetInt64(5) != 0);
-            // Old disabled flags must not hide the definitions the builder needs.
-            result.Add(package.IsRequired ? package with { IsEnabled = true } : package);
-        }
-        return result;
     }
 
     /// <summary>

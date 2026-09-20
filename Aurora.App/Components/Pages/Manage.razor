@@ -116,7 +116,7 @@
     private EditableCharacterInfoModel? _infoModel;
     private bool _optionSaving;
     private IReadOnlyList<SourceRestrictionGroupModel> SourceGroups =>
-        CharacterManager.Current.SourcesManager.SourceGroups.Select(ToGroupModel).ToList();
+        SourceRestrictionModelMapper.ToGroupModels(CharacterManager.Current.SourcesManager);
 
     protected override void OnInitialized()
     {
@@ -253,7 +253,7 @@
     {
         List<SourceItem> matchingSources = CharacterManager.Current.SourcesManager.SourceGroups
             .SelectMany(group => group.Sources)
-            .Where(item => item.AllowUnchecking && ClassifySource(item) == toggle.Category)
+            .Where(item => item.AllowUnchecking && SourceRestrictionModelMapper.Classify(item) == toggle.Category)
             .ToList();
 
         if (matchingSources.Count == 0)
@@ -337,30 +337,6 @@
         snap.Notes1 = model.Notes1;
         snap.Notes2 = model.Notes2;
     }
-
-    private static SourceRestrictionGroupModel ToGroupModel(SourcesGroup group) =>
-        new(
-            group.Name,
-            group.Name,
-            group.Underline,
-            group.AllowUnchecking,
-            group.IsChecked,
-            group.Sources.Select(item => new SourceRestrictionItemModel(
-                item.Source.Id,
-                item.Source.Name ?? string.Empty,
-                item.IsChecked,
-                item.AllowUnchecking,
-                !item.AllowUnchecking,
-                ClassifySource(item))).ToList());
-
-    private static SourceRestrictionCategory? ClassifySource(SourceItem item) =>
-        SourceRestrictionCategoryClassifier.Classify(
-            item.Source.IsOfficialContent,
-            item.Source.IsThirdPartyContent,
-            item.Source.IsHomebrewContent,
-            item.Source.Author,
-            item.Source.Name,
-            item.Source.ReleaseDate);
 
     private async Task<bool> PersistSourceRestrictionsAsync(CharacterTab tab)
     {

@@ -50,18 +50,6 @@ public sealed class ContentDatabaseService
 
     // ── Public API ───────────────────────────────────────────────────────────
 
-    // ── Package management ───────────────────────────────────────────────────
-
-    /// <summary>
-    /// Returns all content packages from the database, ordered by kind then name.
-    /// Returns an empty list when the database does not exist yet.
-    /// </summary>
-    public IReadOnlyList<ContentPackageInfo> GetPackages() =>
-        TryRead(
-            "read content packages",
-            () => DatabasePath is { } p ? AuroraContentImporter.GetPackages(p) : [],
-            []);
-
     public ContentDatabaseMetadata? GetMetadata() =>
         TryRead(
             "read database metadata",
@@ -73,35 +61,6 @@ public sealed class ContentDatabaseService
             "read database health",
             () => DatabasePath is { } p ? ContentDatabaseReader.ReadHealth(p) : null,
             fallback: null);
-
-    /// <summary>
-    /// Toggles an optional package's runtime preference (rebuilding only legacy caches).
-    /// Fires <see cref="StateChanged"/> on completion so the UI can refresh.
-    /// The caller should prompt for an element reload after calling this.
-    /// </summary>
-    public async Task<string?> SetPackageEnabledAsync(long packageId, bool enabled)
-    {
-        await _lock.WaitAsync();
-        try
-        {
-            if (DatabasePath is not { } p)
-                return "Content database path could not be determined.";
-
-            await Task.Run(() => AuroraContentImporter.SetPackageEnabled(p, packageId, enabled));
-            LastReadFailure = null;
-            return null;
-        }
-        catch (Exception ex)
-        {
-            RecordReadFailure("update content package", ex);
-            return ex.Message;
-        }
-        finally
-        {
-            _lock.Release();
-            StateChanged?.Invoke();
-        }
-    }
 
     public void NotifyContentDirectoryChanged()
     {

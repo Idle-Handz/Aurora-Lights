@@ -3,6 +3,10 @@
 @using Aurora.Content
 @using Aurora.Importer
 @using Builder.Presentation
+@using Builder.Presentation.Models.Sources
+@using Builder.Presentation.Services.Sources
+@using Builder.Presentation.Services.Data
+@using Aurora.Components.Models
 @using System.Text
 @inject ContentDatabaseService ContentDb
 @inject ContentService Content
@@ -417,72 +421,39 @@
             <MudTabPanel Text="Sources">
 
                 <div class="pref-section" style="margin-bottom: 24px;">
-                    <div class="section-label">Sources</div>
+                    <div class="section-label">Default source restrictions</div>
                     <div class="pref-row-desc" style="margin-bottom: 10px;">
-                        Enable or disable individual content sources. Disabled sources are excluded
-                        from element resolution. Refresh the database after making changes for them to take effect.
+                        All installed content is always loaded. These defaults decide which sources a
+                        character may use, and a character's own restrictions are edited on its Manage tab.
+                        Builder infrastructure stays enabled.
                     </div>
-                    @{
-                        var packages = ContentDb.GetPackages();
-                        IReadOnlyList<ContentPackageInfo> filteredPackages = string.IsNullOrWhiteSpace(PackageSearch)
-                            ? packages
-                            : packages.Where(p =>
-                                p.PackageName.Contains(PackageSearch, StringComparison.OrdinalIgnoreCase) ||
-                                p.PackageKey.Contains(PackageSearch, StringComparison.OrdinalIgnoreCase) ||
-                                p.PackageKind.Contains(PackageSearch, StringComparison.OrdinalIgnoreCase)).ToList();
-                    }
-                    @if (packages.Count == 0)
+
+                    <div class="pref-row" style="margin-bottom: 12px;">
+                        <div class="pref-row-text">
+                            <div class="pref-row-title">Apply these defaults to new characters</div>
+                            <div class="pref-row-desc">
+                                New characters start with the sources below switched off. Existing
+                                characters are unaffected until you use Load Default on their Manage tab.
+                            </div>
+                        </div>
+                        <MudSwitch Value="ApplyDefaultRestrictionsOnNewCharacter"
+                                   ValueChanged="@((bool v) => SetApplyDefaultRestrictions(v))"
+                                   Color="Color.Primary" />
+                    </div>
+
+                    @if (DefaultSourceGroups.Count == 0)
                     {
                         <div style="font-size: 13px; color: var(--mud-palette-text-disabled);">
-                            No sources found. Refresh Database first to index installed content.
+                            No sources found. Refresh the database to index installed content.
                         </div>
                     }
                     else
                     {
-                        <MudTextField @bind-Value="PackageSearch"
-                                      Placeholder="Search sources…"
-                                      Adornment="Adornment.Start"
-                                      AdornmentIcon="@Icons.Material.Filled.Search"
-                                      Clearable="true"
-                                      Immediate="true"
-                                      Variant="Variant.Outlined"
-                                      Margin="Margin.Dense"
-                                      Class="mb-3" />
-                        @if (!filteredPackages.Any())
-                        {
-                            <div style="font-size: 13px; color: var(--mud-palette-text-disabled);">No sources match your search.</div>
-                        }
-                        else
-                        {
-                            <div style="display: flex; flex-direction: column; gap: 4px; max-height: 320px; overflow-y: auto;">
-                                @foreach (var pkg in filteredPackages)
-                                {
-                                    var p = pkg;
-                                    <div style="display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 6px; background: var(--mud-palette-background-grey);">
-                                        <MudSwitch Value="p.IsEnabled"
-                                                   Disabled="p.IsRequired"
-                                                   ValueChanged="@((bool v) => TogglePackageAsync(p.Id, v))"
-                                                   Color="Color.Primary"
-                                                   Style="margin: 0;" />
-                                        <span style="font-size: 13px; color: var(--mud-palette-text-primary); flex: 1;">@p.PackageName</span>
-                                        @if (p.IsRequired)
-                                        {
-                                            <span style="font-size: 12px;">Required</span>
-                                        }
-                                        <MudChip T="string" Size="Size.Small"
-                                                 Style="@($"background: {KindColor(p.PackageKind)}22; color: {KindColor(p.PackageKind)}; font-size: 11px; height: 20px; border-radius: 4px;")">
-                                            @p.PackageKind
-                                        </MudChip>
-                                    </div>
-                                }
-                            </div>
-                            @if (filteredPackages.Count < packages.Count)
-                            {
-                                <div style="font-size: 12px; color: var(--mud-palette-text-disabled); margin-top: 6px;">
-                                    Showing @filteredPackages.Count of @packages.Count sources.
-                                </div>
-                            }
-                        }
+                        <SourceRestrictionsEditor Groups="DefaultSourceGroups"
+                                                  Busy="_defaultSourcesBusy"
+                                                  OnToggleCategory="ToggleDefaultCategoryAsync"
+                                                  OnToggleGroup="ToggleDefaultGroupAsync"
+                                                  OnToggleItem="ToggleDefaultSourceAsync" />
                     }
                 </div>
 
@@ -1221,12 +1192,6 @@
         set => PageState.Settings.ActiveContentTabIndex = value;
     }
 
-    private string PackageSearch
-    {
-        get => PageState.Settings.PackageSearch;
-        set => PageState.Settings.PackageSearch = value ?? string.Empty;
-    }
-
     protected override void OnParametersSet()
     {
         if (string.IsNullOrWhiteSpace(RequestedTab))
@@ -1407,30 +1372,114 @@
     }
 #endif
 
-    private async Task TogglePackageAsync(long packageId, bool enabled)
-    {
-        string? error = await ContentDb.SetPackageEnabledAsync(packageId, enabled);
-        if (error != null)
-        {
-            Snackbar.Add(
-                $"Could not update content source: {error}",
-                Severity.Error,
-                cfg => cfg.VisibleStateDuration = 8000);
-            return;
-        }
+    // ── Default source restrictions ──────────────────────────────────────
+    // Edited against their own SourcesManager so toggling defaults never disturbs the
+    // restrictions of the character currently loaded in the engine singleton.
+    private SourcesManager? _defaultSources;
+    private bool _defaultSourcesBusy;
 
-        _needsContentReload = true;
+    private SourcesManager DefaultSources
+    {
+        get
+        {
+            if (_defaultSources is null)
+            {
+                _defaultSources = new SourcesManager();
+                _defaultSources.LoadDefaults();
+            }
+            return _defaultSources;
+        }
+    }
+
+    private IReadOnlyList<SourceRestrictionGroupModel> DefaultSourceGroups =>
+        DataManager.Current.ElementsCollection.Count == 0
+            ? []
+            : SourceRestrictionModelMapper.ToGroupModels(DefaultSources);
+
+    private bool ApplyDefaultRestrictionsOnNewCharacter =>
+        ApplicationContext.Current.Settings.ApplyDefaultSourceRestrictionsOnNewCharacter;
+
+    private void SetApplyDefaultRestrictions(bool enabled)
+    {
+        ApplicationContext.Current.Settings.ApplyDefaultSourceRestrictionsOnNewCharacter = enabled;
+        ApplicationContext.Current.Settings.Save();
         StateHasChanged();
     }
 
-    private static string KindColor(string kind) => kind switch
+    private Task ToggleDefaultGroupAsync(string groupId)
     {
-        "core" => "#a6e3a1",
-        "official" => "#89b4fa",
-        "third-party" => "#fab387",
-        "homebrew" => "#cba6f7",
-        _ => "#6c7086",
-    };
+        SourcesGroup? group = DefaultSources.SourceGroups
+            .FirstOrDefault(candidate => string.Equals(candidate.Name, groupId, StringComparison.Ordinal));
+        if (group is null) return NotifyMissingSource("group");
+        if (!group.AllowUnchecking) return NotifyRequiredSource();
+        group.SetIsChecked(group.IsChecked == true ? false : (bool?)true, updateChildren: true);
+        return StoreDefaultRestrictions();
+    }
+
+    private Task ToggleDefaultSourceAsync(string sourceId)
+    {
+        SourceItem? item = DefaultSources.SourceGroups
+            .SelectMany(group => group.Sources)
+            .FirstOrDefault(candidate => string.Equals(candidate.Source.Id, sourceId, StringComparison.Ordinal));
+        if (item is null) return NotifyMissingSource("source");
+        if (!item.AllowUnchecking) return NotifyRequiredSource();
+        item.SetIsChecked(item.IsChecked != true, updateChildren: true, updateParent: true);
+        return StoreDefaultRestrictions();
+    }
+
+    private Task ToggleDefaultCategoryAsync(SourceRestrictionCategoryToggle toggle)
+    {
+        List<SourceItem> matching = DefaultSources.SourceGroups
+            .SelectMany(group => group.Sources)
+            .Where(item => item.AllowUnchecking && SourceRestrictionModelMapper.Classify(item) == toggle.Category)
+            .ToList();
+        if (matching.Count == 0)
+        {
+            Snackbar.Add("No optional sources are available in that category.", Severity.Info,
+                cfg => cfg.VisibleStateDuration = 2500);
+            return Task.CompletedTask;
+        }
+        foreach (SourceItem item in matching)
+            item.SetIsChecked(toggle.IsEnabled, updateChildren: true, updateParent: true);
+        return StoreDefaultRestrictions();
+    }
+
+    private Task StoreDefaultRestrictions()
+    {
+        _defaultSourcesBusy = true;
+        try
+        {
+            DefaultSources.ApplyRestrictions();
+            DefaultSources.StoreDefaults();
+            ApplicationContext.Current.Settings.Save();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Could not save the default source restrictions: {ex.Message}", Severity.Error,
+                cfg => cfg.VisibleStateDuration = 8000);
+            DebugLogService.Catch(ex, "Settings.StoreDefaultRestrictions");
+        }
+        finally
+        {
+            _defaultSourcesBusy = false;
+        }
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private Task NotifyMissingSource(string what)
+    {
+        Snackbar.Add($"That source {what} could not be found.", Severity.Warning,
+            cfg => cfg.VisibleStateDuration = 2500);
+        return Task.CompletedTask;
+    }
+
+    private Task NotifyRequiredSource()
+    {
+        Snackbar.Add("That source is required and can't be disabled.", Severity.Info,
+            cfg => cfg.VisibleStateDuration = 2500);
+        return Task.CompletedTask;
+    }
 
     private void OnStateChanged() => _ = InvokeAsync(async () =>
     {
@@ -1509,6 +1558,8 @@
             {
                 _needsContentReload = false;
                 _stalenessChecked = true;
+                // Sources may have come or gone with the reload; rebuild the defaults tree from them.
+                _defaultSources = null;
                 await RefreshDatabaseDiagnosticsAsync();
                 Snackbar.Add("Database refreshed.", Severity.Success);
             }

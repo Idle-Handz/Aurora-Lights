@@ -159,6 +159,8 @@ public sealed class CharacterService :
             ElementLoadSkippedElements = dbResult.SkippedElementCount;
 
             InventoryItemFactory.InvalidateSearchIndex();
+            // Sources are loaded now, so switched-off packages can become default restrictions.
+            SourcePreferenceSeed.SeedDefaultRestrictions(ElementLoadDatabasePath);
             _elementsInitialized = true;
             _ = WarmEquipmentSearchIndexAsync();
 

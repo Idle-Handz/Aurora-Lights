@@ -20,7 +20,8 @@ public sealed class RequiredContentPolicyTests
         => RequiredContentPolicy.IsRequiredPackage(key, name).Should().Be(required);
 
     [Fact]
-    public void DisabledInfrastructureRemainsVisibleAndCannotBeDisabledThroughTheApi()
+    // The app no longer reads these flags; this guards the database side until the column goes.
+    public void DisabledInfrastructureStaysEnabledInTheDatabase()
     {
         string path = Path.Combine(Path.GetTempPath(), "aurora-required-" + Guid.NewGuid() + ".sqlite");
         try
@@ -38,10 +39,6 @@ public sealed class RequiredContentPolicyTests
                 """;
             command.ExecuteNonQuery();
             AuroraContentImporter.ReadEnabledPackageKeys(connection).Should().Equal("core-ale-xml");
-            var packages = AuroraContentImporter.GetPackages(path);
-            packages.Single(p => p.Id == 1).IsEnabled.Should().BeTrue();
-            packages.Single(p => p.Id == 1).IsRequired.Should().BeTrue();
-            packages.Single(p => p.Id == 2).IsEnabled.Should().BeFalse();
             Action disable = () => AuroraContentImporter.SetPackageEnabled(path, 1, false);
             disable.Should().Throw<InvalidOperationException>().WithMessage("*must remain enabled*");
             AuroraContentImporter.SetPackageEnabled(path, 2, true);

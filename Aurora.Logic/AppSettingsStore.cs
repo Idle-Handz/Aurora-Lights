@@ -125,6 +125,13 @@ public sealed class AppSettingsStore
     public bool SheetStartSpellCardsOnNewPage { get; set; } = false;
     public string DefaultSourceRestrictions { get; set; } = "";
 
+    /// <summary>
+    /// Set once the sources a user had switched off in the content database have been copied into
+    /// <see cref="DefaultSourceRestrictions"/>. The catalog always loads in full; restrictions decide
+    /// what a character sees.
+    /// </summary>
+    public bool SourcePreferencesSeeded { get; set; } = false;
+
 
     // ----------------------------------------------------------------
     // Load / Save / Reset
