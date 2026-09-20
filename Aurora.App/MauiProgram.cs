@@ -1,6 +1,7 @@
 using Aurora.App.Services;
 using Aurora.App.Services.Updates;
 using Builder.Presentation;
+using Builder.Presentation.Services;
 using Microsoft.Extensions.Logging;
 using MudBlazor.Services;
 
@@ -40,6 +41,8 @@ public static class MauiProgram
         MessageDialogContext.Current          = new MauiMessageDialogService();
         ExternalLauncherContext.Current       = new MauiExternalLauncher();
         CharacterSheetGeneratorContext.Current = new MauiCharacterSheetGenerator();
+        // A character never receives content from a source it restricts, even through another book's grants.
+        GrantPolicyContext.Current             = new RestrictedSourceGrantPolicy();
 
         var builder = MauiApp.CreateBuilder();
 

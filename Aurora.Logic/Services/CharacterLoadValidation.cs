@@ -56,4 +56,34 @@ public static class CharacterLoadValidation
         }
         return missing;
     }
+
+    /// <summary>
+    /// Separates entries the character itself keeps out. A source a character restricts stops
+    /// granting it anything, so an element saved before that restriction is expected to be absent
+    /// now — that is the restriction working, not a lost element.
+    /// </summary>
+    public static (IReadOnlyList<MissingElement> Lost, IReadOnlyList<MissingElement> Restricted) SplitRestricted(
+        IReadOnlyList<MissingElement> missing,
+        BuildSourceRestrictionSnapshot restrictions,
+        Func<string, Builder.Data.ElementBase?> lookup)
+    {
+        ArgumentNullException.ThrowIfNull(missing);
+        ArgumentNullException.ThrowIfNull(restrictions);
+        ArgumentNullException.ThrowIfNull(lookup);
+
+        if (restrictions.ElementIds.Count == 0 && restrictions.SourceNames.Count == 0)
+            return (missing, []);
+
+        var lost = new List<MissingElement>();
+        var restricted = new List<MissingElement>();
+        foreach (MissingElement element in missing)
+        {
+            Builder.Data.ElementBase? definition = lookup(element.Id);
+            bool keptOut = definition is null
+                ? restrictions.ElementIds.Contains(element.Id)
+                : !restrictions.Allows(definition);
+            (keptOut ? restricted : lost).Add(element);
+        }
+        return (lost, restricted);
+    }
 }

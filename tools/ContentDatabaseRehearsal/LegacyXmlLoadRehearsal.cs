@@ -32,6 +32,7 @@ internal static class LegacyXmlLoadRehearsal
             trace.MissingGrants.Clear();
             trace.LoadWarnings.Clear();
             SelectionRuleExpanderContext.Current = new MauiSelectionRuleExpanderHandler();
+            GrantPolicyContext.Current = new RestrictedSourceGrantPolicy();
             SpellcastingSectionContext.Current = new MauiSpellcastingSectionHandler();
             CharacterLoadCompatibilityService.PrepareForCharacterLoad();
 

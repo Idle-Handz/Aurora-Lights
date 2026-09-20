@@ -137,6 +137,7 @@ internal static class CharacterRehearsal
     private static void Reset()
     {
         SelectionRuleExpanderContext.Current = new MauiSelectionRuleExpanderHandler();
+        GrantPolicyContext.Current = new RestrictedSourceGrantPolicy();
         SpellcastingSectionContext.Current = new MauiSpellcastingSectionHandler();
         CharacterLoadCompatibilityService.PrepareForCharacterLoad();
     }

@@ -443,7 +443,10 @@ public static partial class BuildService
                         // dataset, or an unrecognised supports expression like "Custom Race Language").
                         // Validation is meaningless in this case — preserve the user's selection
                         // rather than silently clearing a choice that was valid when it was made.
-                        if (validIds.Count == 0)
+                        // A pick from a source the character restricts is different: it is known to
+                        // be disallowed, so it is cleared and surfaced as a choice to make again.
+                        if (validIds.Count == 0 &&
+                            BuildSourceRestrictionSnapshot.CaptureCurrent().Allows(registered))
                             continue;
 
                         DebugLogService.Instance.Log(LogLevel.Warning,

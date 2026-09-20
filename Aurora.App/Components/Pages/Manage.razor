@@ -210,13 +210,53 @@
             Snackbar.Add("Source restrictions cannot be changed because there is no active character.", Severity.Warning, cfg => cfg.VisibleStateDuration = 2500);
             return;
         }
-        using var scope = await CharacterContext.EnterAsync(tab);
+        IReadOnlyList<string> cleared;
+        using (var scope = await CharacterContext.EnterAsync(tab))
+        {
+            CharacterManager.Current.SourcesManager.ApplyRestrictions(reprocess: true);
+            // Restricting a source also takes back what it gave this character: its picks are
+            // cleared here and its grants are suppressed by the grant policy.
+            cleared = RestrictedSelectionSweep.ClearRestrictedSelections();
+            if (!await PersistSourceRestrictionsAsync(tab)) return;
+        }
 
-        CharacterManager.Current.SourcesManager.ApplyRestrictions(reprocess: true);
-        if (!await PersistSourceRestrictionsAsync(tab)) return;
+        await SettleAfterRestrictionChangeAsync(tab, cleared);
         _ = MarkDirty();
 
         StateHasChanged();
+    }
+
+    /// <summary>
+    /// Writes the character and reloads it so cleared choices come back as picks to make again,
+    /// with the engine settled from the saved state rather than from an edited in-memory one.
+    /// </summary>
+    private async Task SettleAfterRestrictionChangeAsync(CharacterTab tab, IReadOnlyList<string> cleared)
+    {
+        if (cleared.Count == 0)
+        {
+            using var scope = await CharacterContext.EnterAsync(tab);
+            BuildService.ResnapTab(tab);
+            return;
+        }
+
+        string? error = await BuildService.SaveTabAsync(tab);
+        if (error != null)
+        {
+            Snackbar.Add($"Sources changed, but the character could not be saved: {error}", Severity.Error,
+                cfg => cfg.VisibleStateDuration = 9000);
+            return;
+        }
+
+        using (var scope = await CharacterContext.EnterAsync(tab))
+        {
+            await CharacterContext.ReloadFromDiskAsync(tab);
+            BuildService.ResnapTab(tab);
+        }
+        LoadFromActiveTab();
+
+        string choices = cleared.Count == 1 ? "choice" : "choices";
+        Snackbar.Add($"{cleared.Count} {choices} need picking again: {string.Join(", ", cleared.Take(4))}" +
+            (cleared.Count > 4 ? "…" : ""), Severity.Info, cfg => cfg.VisibleStateDuration = 9000);
     }
 
 
@@ -278,10 +318,15 @@
             Snackbar.Add("Default sources cannot be loaded because there is no active character.", Severity.Warning, cfg => cfg.VisibleStateDuration = 2500);
             return;
         }
-        using var scope = await CharacterContext.EnterAsync(tab);
+        IReadOnlyList<string> cleared;
+        using (var scope = await CharacterContext.EnterAsync(tab))
+        {
+            CharacterManager.Current.SourcesManager.LoadDefaults();
+            cleared = RestrictedSelectionSweep.ClearRestrictedSelections();
+            if (!await PersistSourceRestrictionsAsync(tab)) return;
+        }
 
-        CharacterManager.Current.SourcesManager.LoadDefaults();
-        if (!await PersistSourceRestrictionsAsync(tab)) return;
+        await SettleAfterRestrictionChangeAsync(tab, cleared);
         _ = MarkDirty();
 
         StateHasChanged();

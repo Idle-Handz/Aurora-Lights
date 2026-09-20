@@ -579,6 +579,29 @@ Capture the baseline from the current working tree before changing anything (Pha
        out, and belong to the content, not to this change.
      - New reference root for later comparisons:
        `buildtmp/parity-rerun-20260920-041208-e05e32`.
+
+   **Step 2 (2026-09-20): restrictions take content back (Option B).**
+   - `IGrantPolicy` / `GrantPolicyContext` in `Aurora.Logic` is consulted both
+     when a grant is applied and when grants are re-evaluated. Aurora Legacy
+     registers none and grants exactly as before; a policy that throws is treated
+     as "grant it", so a host policy can never strip a character's content.
+   - `RestrictedSourceGrantPolicy` (Reflections, registered in `MauiProgram` and
+     the rehearsal harness) suppresses grants of elements from sources the
+     character restricts, and re-applies them when the restriction is cleared,
+     because every reprocess re-evaluates grants. It caches the restricted sets
+     and refreshes them on `SourceRestrictionsApplied`.
+   - `RestrictedSelectionSweep` clears picks whose source the character now
+     restricts. The Manage page runs it for both a source toggle and Load
+     Default, then saves and reloads the character so the cleared choices come
+     back as picks to make again, settled from the saved state (the round-trip
+     the user allowed).
+   - **The known `validIds.Count == 0` gap is closed:** an empty option pool
+     still preserves a pick when evaluation is simply inconclusive, but a pick
+     from a restricted source is known to be disallowed and is cleared.
+   - **Load validation** now separates elements a character keeps out itself:
+     `CharacterLoadValidation.SplitRestricted` reports them as informational, so
+     a character saved before a restriction does not read as having lost content.
+   - Aurora.Web registers no policy, so it keeps granting everything for now.
 6. **Builder.Data cleanup** (the 8 items) and the `Aurora.Logic` additions; legacy gates.
 7. **Retire the old paths:**
    - `Aurora.Importer` and the copied writer

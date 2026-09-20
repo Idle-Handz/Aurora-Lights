@@ -281,7 +281,15 @@ public class ProgressionManager
       if (element1.Aquisition.WasGranted)
       {
         GrantRule grantRule = element1.Aquisition.GrantRule;
-        if (!grantRule.Attributes.MeetsLevelRequirement(currentLevel))
+        if (GrantPolicyContext.IsSuppressed(element1, grantRule))
+        {
+          // The host no longer allows this element (a source the character restricts, say).
+          // Clearing the restriction re-grants it, because this runs on every reprocess.
+          Logger.Info("\tungranting: {0} suppressed by the host grant policy", (object) element1);
+          this.CleanElement(element1);
+          element.RuleElements.Remove(element1);
+        }
+        else if (!grantRule.Attributes.MeetsLevelRequirement(currentLevel))
         {
           this.CleanSelectionRules(element1);
           this.CleanGrantRules(element1);
@@ -358,6 +366,11 @@ public class ProgressionManager
               }
               continue;
             }
+          }
+          if (GrantPolicyContext.IsSuppressed(element2, rule))
+          {
+            Logger.Debug("\tnot granting: {0} suppressed by the host grant policy", (object) element2);
+            continue;
           }
           element2.RuleElements.Any<ElementBase>();
           if (element.RuleElements.ContainsRuleElement(element2, rule))

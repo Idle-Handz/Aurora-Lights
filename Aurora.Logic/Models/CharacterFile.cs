@@ -748,6 +748,13 @@ public class CharacterFile : ObservableObject
                 CharacterManager.Current.GetElements().Select(e => e.Id), beforeNormalization, afterNormalization);
         }
         _deferredChildElements.Clear();
+        var (lost, restricted) = CharacterLoadValidation.SplitRestricted(missing,
+            BuildSourceRestrictionSnapshot.CaptureCurrent(),
+            id => DataManager.Current.ElementsCollection.FirstOrDefault(e => e.Id.Equals(id, StringComparison.Ordinal)));
+        if (restricted.Count > 0)
+            Logger.Info("{0} left out {1} saved element(s) from sources it restricts: {2}", this.FileName,
+                restricted.Count, string.Join("; ", restricted.Select(e => e.Id)));
+        missing = lost;
         if (missing.Count > 0)
         {
             string details = string.Join("; ", missing.Select(e => $"{e.Id} (missing {e.Count}; {e.SavedPath})"));
