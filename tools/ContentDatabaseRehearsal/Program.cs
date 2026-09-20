@@ -20,7 +20,7 @@ string output = Environment.GetEnvironmentVariable("REHEARSAL_OUTPUT") is { Leng
     ? Path.GetFullPath(requested) : caseRoot;
 Directory.CreateDirectory(output);
 var context = new RehearsalContext(caseRoot);
-if (args.Length > 2 && mode is not ("characters" or "characters-after-reload" or "characters-edit-background")) context.Settings.AdditionalCustomDirectories.Add(Path.GetFullPath(args[2]));
+if (args.Length > 2 && mode is not ("characters" or "characters-after-reload" or "characters-edit-background" or "legacy-xml-load")) context.Settings.AdditionalCustomDirectories.Add(Path.GetFullPath(args[2]));
 Builder.Presentation.ApplicationContext.SetCurrent(context);
 string primary = Path.Combine(caseRoot, "custom");
 SetPath(nameof(DataManager.UserDocumentsRootDirectory), caseRoot);
@@ -50,6 +50,10 @@ try
         case "characters-edit-background":
             result = await CharacterRehearsal.Run(caseRoot, output, args.Length > 2 ? args[2] : null, mode == "characters-after-reload", mode == "characters-edit-background");
             success = !JsonSerializer.SerializeToElement(result).GetProperty("hasFailures").GetBoolean();
+            break;
+        case "legacy-xml-load":
+            result = await LegacyXmlLoadRehearsal.Run(caseRoot, output, args.Length > 2 ? args[2] : null);
+            success = true;
             break;
         case "reload-check": result = await ReloadRehearsal.Run(caseRoot); success = true; break;
         case "failure-check": result = await ReloadRehearsal.Run(caseRoot, false); success = true; break;
