@@ -4,6 +4,7 @@
 // MVID: 09D35420-8FA0-4A71-9A21-FF952C48F8A3
 // Assembly location: C:\Program Files (x86)\Aurora\Aurora Character Builder\Aurora Builder.exe
 
+using Builder.Presentation.Services;
 using Builder.Core.Events;
 using Builder.Core.Logging;
 using Builder.Data;
@@ -266,7 +267,7 @@ public sealed class DataManager
             ef = new ElementsFile(correction.EffectiveXml);
             ef.Load(correction.EffectiveXml);
             foreach (var obsolete in coreElements.Where(e => LocalCorrectionDocument.IsSuppressedFromFile(
-              e.Id, e.ContentFilePath, originPath, correction.SuppressedIds)).ToList()) coreElements.Remove(obsolete);
+              e.Id, ElementProvenance.GetContentFilePath(e), originPath, correction.SuppressedIds)).ToList()) coreElements.Remove(obsolete);
           }
           else xmlDocument = await DataManager.CreateXmlDocument(file.FullName);
           AuroraXmlCompatibilityRepair.RepairDocument(xmlDocument);
@@ -281,7 +282,7 @@ public sealed class DataManager
               if (elementParser.ParserType != header.Type)
                 elementParser = elementParserCollection.FirstOrDefault<ElementParser>((Func<ElementParser, bool>) (p => p.ParserType == header.Type)) ?? defaultParser;
               var parsedElement = elementParser.ParseElement(elementNode);
-              parsedElement.ContentFilePath = originPath;
+              ElementProvenance.SetContentFilePath(parsedElement, originPath);
               applicationElements.Add(parsedElement);
             }
           }

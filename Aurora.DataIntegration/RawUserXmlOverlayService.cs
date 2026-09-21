@@ -1,3 +1,4 @@
+using Builder.Presentation.Services;
 using Aurora.Content;
 using Builder.Data;
 using Builder.Data.Extensions;
@@ -59,7 +60,7 @@ internal static class RawUserXmlOverlayService
                     elementsFile = new ElementsFile(effectiveXml);
                     elementsFile.Load(effectiveXml);
                     foreach (var obsolete in target.Where(e => LocalCorrectionDocument.IsSuppressedFromFile(
-                        e.Id, e.ContentFilePath, originPath, cached?.SuppressedIds ?? correction!.SuppressedIds)).ToList())
+                        e.Id, ElementProvenance.GetContentFilePath(e), originPath, cached?.SuppressedIds ?? correction!.SuppressedIds)).ToList())
                         target.Remove(obsolete);
                 }
                 else xmlDocument = CreateXmlDocument(file.FullName);
@@ -81,7 +82,7 @@ internal static class RawUserXmlOverlayService
                                 currentParser = parsers.FirstOrDefault(p => p.ParserType == header.Type) ?? defaultParser;
 
                             ElementBase element = currentParser.ParseElement(node);
-                            element.ContentFilePath = originPath;
+                            ElementProvenance.SetContentFilePath(element, originPath);
                             UpsertElement(target, element);
                             parsedElements++;
                         }

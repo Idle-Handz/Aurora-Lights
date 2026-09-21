@@ -94,6 +94,7 @@ public static class SelectionRuleRegistrationService
         // GetFresh returns a base element and shares AcquisitionInfo. Preserve typed spell
         // properties without deep-cloning the source XML document or the existing character graph.
         var copy = source.ConstructFrom<Spell, Spell>();
+        ElementProvenance.CopyTo(source, copy);
         copy.RuleElements = new ElementBaseCollection();
         copy.Rules = source.Rules.Select(rule => rule.Copy()).ToList();
         foreach (var rule in copy.GetSelectRules()) rule.RenewIdentifier();

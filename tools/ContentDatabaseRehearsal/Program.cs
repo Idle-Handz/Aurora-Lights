@@ -1,3 +1,4 @@
+using Builder.Presentation.Services;
 using Aurora.App.Services;
 using Aurora.Content.Preparation;
 using Aurora.Importer;
@@ -121,7 +122,7 @@ try
             var dumpLoad = await DbElementLoader.TryLoadAsync(dumpElements);
             var entries = dumpElements
                 .Select(e => new { e.Id, e.Type, e.Name, fingerprint = Fingerprint(e),
-                    provenance = RelativeTo(primary, e.ContentFilePath) })
+                    provenance = RelativeTo(primary, ElementProvenance.GetContentFilePath(e)) })
                 .OrderBy(e => e.Id, StringComparer.Ordinal).ThenBy(e => e.fingerprint, StringComparer.Ordinal)
                 .ToArray();
             File.WriteAllText(Path.Combine(output, "projection-dump.json"),

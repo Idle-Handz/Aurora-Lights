@@ -37,7 +37,7 @@ internal static class CharacterRehearsal
         if (!loaded.Success) throw new InvalidOperationException(loaded.Summary);
         File.WriteAllText(Path.Combine(output, "proficiency-projection.json"), JsonSerializer.Serialize(
             DataManager.Current.ElementsCollection.Where(e => e.Type == "Proficiency")
-                .Select(e => new { e.Id, e.ContentFilePath, grants = e.GetGrantRules().Select(g => g.Attributes.Name).ToArray() }),
+                .Select(e => new { e.Id, ContentFilePath = ElementProvenance.GetContentFilePath(e), grants = e.GetGrantRules().Select(g => g.Attributes.Name).ToArray() }),
             new JsonSerializerOptions { WriteIndented = true }));
         var results = new List<object>();
         foreach (string path in Directory.GetFiles(Path.Combine(root, "characters"), "*.dnd5e")

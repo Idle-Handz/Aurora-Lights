@@ -89,3 +89,6 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+
+# Test run artifacts
+TestResults/

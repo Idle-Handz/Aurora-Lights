@@ -53,6 +53,7 @@ public static partial class BuildService
                 if (repeatable && !isAbilityScoreIncrease)
                 {
                     toRegister = DataManager.Current.ElementsCollection.GetFresh(targetId) ?? target;
+                    ElementProvenance.CopyTo(target, toRegister);
                 }
 
                 CharacterManager.Current.RegisterElement(toRegister);
@@ -148,7 +149,10 @@ public static partial class BuildService
                 // repeated registration of the shared instance because that is what the engine counts.
                 var toRegister = target;
                 if (repeatable && !isAbilityScoreIncrease)
+                {
                     toRegister = DataManager.Current.ElementsCollection.GetFresh(targetId) ?? target;
+                    ElementProvenance.CopyTo(target, toRegister);
+                }
 
                 cm.RegisterElement(toRegister);
                 any = true;

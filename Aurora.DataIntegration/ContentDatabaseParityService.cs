@@ -1,3 +1,4 @@
+using Builder.Presentation.Services;
 using Aurora.Content.Preparation;
 using Builder.Data;
 using Builder.Data.Elements;
@@ -162,7 +163,7 @@ public sealed class ContentDatabaseParityService
                     AuroraXmlCompatibilityRepair.RepairNode(doc.DocumentElement!);
                     var header = fallback.ParseElementHeader(doc.DocumentElement!);
                     var element = (parsers.FirstOrDefault(p => p.ParserType == header.Type) ?? fallback).ParseElement(doc.DocumentElement!);
-                    element.ContentFilePath = entry.Source.FilePath;
+                    ElementProvenance.SetContentFilePath(element, entry.Source.FilePath);
                     result.Add(element);
                 }
                 return new(true, null, result, 0);

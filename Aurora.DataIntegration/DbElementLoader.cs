@@ -1,3 +1,4 @@
+using Builder.Presentation.Services;
 using Builder.Data;
 using Builder.Data.Elements;
 using Builder.Presentation.Services.Data;
@@ -488,7 +489,7 @@ internal static class DbElementLoader
                                         ?? defaultParser;
 
                     ElementBase element = currentParser.ParseElement(node);
-                    element.ContentFilePath = sourcePaths[el.SourceFileRelativePath];
+                    ElementProvenance.SetContentFilePath(element, sourcePaths[el.SourceFileRelativePath]);
                     parsed.Add(element);
                 }
                 finally
@@ -1019,7 +1020,7 @@ internal static class DbElementLoader
             if (!prepared.Source.FilePath.StartsWith("resource://", StringComparison.Ordinal) && unknownTypes.Remove(header.Type))
                 DebugLogService.Instance.Warn($"Prepared element uses generic parsing: {header.Id} ({header.Type}, {prepared.Source.RelativePath}). Shared content is retained; specialized behavior is not inferred.");
             var element = parser.ParseElement(node);
-            element.ContentFilePath = prepared.Source.FilePath;
+            ElementProvenance.SetContentFilePath(element, prepared.Source.FilePath);
             parsed.Add(element);
         }
         // Complete reconstruction only: an exception leaves the previous target

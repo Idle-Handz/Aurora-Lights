@@ -1,5 +1,6 @@
 using Aurora.Importer;
 using Builder.Data;
+using Builder.Presentation.Services;
 using Aurora.Content.Contracts;
 
 namespace Aurora.Tests.Tests;
@@ -15,12 +16,14 @@ public sealed class LocalCorrectionProvenanceTests
         const string id = "ID_WOTC_XGTE_MAGIC_ITEM_STAFF_OF_FLOWERS";
         // Both malformed and legitimate definitions even claim the same name/source.
         var elements = new[] {
-            new ElementBase("Staff of Flowers", "Magic Item", "Xanathar", id) { ContentFilePath = dmg },
-            new ElementBase("Staff of Flowers", "Magic Item", "Xanathar", id) { ContentFilePath = xgte }
+            new ElementBase("Staff of Flowers", "Magic Item", "Xanathar", id),
+            new ElementBase("Staff of Flowers", "Magic Item", "Xanathar", id)
         };
+        ElementProvenance.SetContentFilePath(elements[0], dmg);
+        ElementProvenance.SetContentFilePath(elements[1], xgte);
         var surviving = elements.Where(e => !LocalCorrectionDocument.IsSuppressedFromFile(e.Id,
-            e.ContentFilePath, dmg, [id])).ToArray();
-        surviving.Should().ContainSingle().Which.ContentFilePath.Should().Be(xgte);
+            ElementProvenance.GetContentFilePath(e), dmg, [id])).ToArray();
+        ElementProvenance.GetContentFilePath(surviving.Should().ContainSingle().Subject).Should().Be(xgte);
         LocalCorrectionDocument.IsSuppressedFromFile(id, null, dmg, [id]).Should().BeFalse();
         LocalCorrectionDocument.IsSuppressedFromFile("ID_OTHER", dmg, dmg, [id]).Should().BeFalse();
     }

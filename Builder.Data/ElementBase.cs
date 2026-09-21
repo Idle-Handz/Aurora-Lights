@@ -22,8 +22,6 @@ public class ElementBase
 	public string ElementNodeString { get; set; }
 
 	// Runtime provenance for scoped local corrections; not a character identity.
-	public string ContentFilePath { get; set; }
-
 	public ElementHeader ElementHeader { get; set; }
 
 	public string Name => ElementHeader.Name;

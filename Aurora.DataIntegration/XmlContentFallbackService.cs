@@ -1,3 +1,4 @@
+using Builder.Presentation.Services;
 using Aurora.Components.Models;
 using Aurora.Content.Preparation;
 using Builder.Data;
@@ -47,7 +48,7 @@ public static class XmlContentFallbackService
             // Materialize only the definition requested by a fallback operation.
             var entry = CreateElement(element.ElementNode, false, element.ElementNodeString);
             if (entry == null) continue;
-            entry.ContentFilePath = element.ContentFilePath;
+            entry.ContentFilePath = ElementProvenance.GetContentFilePath(element);
             byId[entry.Id] = entry;
         }
         return PrepareProjectionSnapshot(CreateSnapshot(byId));
@@ -466,7 +467,7 @@ public static class XmlContentFallbackService
                 .FirstOrDefault(p => p.ParserType == header.Type) ?? defaultParser;
 
             ElementBase element = parser.ParseElement(node);
-            element.ContentFilePath = xmlElement.ContentFilePath;
+            ElementProvenance.SetContentFilePath(element, xmlElement.ContentFilePath);
             if (target != null)
             {
                 target.Add(element);

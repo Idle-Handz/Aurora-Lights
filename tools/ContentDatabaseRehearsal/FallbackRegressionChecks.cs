@@ -1,3 +1,4 @@
+using Builder.Presentation.Services;
 using Aurora.App.Services;
 using Builder.Data;
 using Builder.Data.Rules;
@@ -34,7 +35,7 @@ internal static class FallbackRegressionChecks
         var collection = DataManager.Current.ElementsCollection;
         collection.Clear();
         var recovered = XmlContentFallbackService.GetElementFallbacks(materialize).Single();
-        Check(recovered.ContentFilePath == "fixture.xml", "materialization provenance", checks);
+        Check(ElementProvenance.GetContentFilePath(recovered) == "fixture.xml", "materialization provenance", checks);
         recovered.ElementNode.SelectSingleNode("rules/select/item")!.InnerText = "Mutated recovered";
         collection.Clear();
         var recoveredAgain = XmlContentFallbackService.GetElementFallbacks(materialize).Single();
@@ -61,7 +62,7 @@ internal static class FallbackRegressionChecks
         var doc = new XmlDocument();
         doc.LoadXml($"<element id='ID_FALLBACK_FIXTURE' name='Fixture' type='Feat' source='Fixture'><supports>Fallback Fixture</supports><starting-equipment><gold amount='15'/></starting-equipment><rules><select type='List' name='Fixture choice'><item id='1'>{label}</item></select></rules></element>");
         var element = new ElementParser().ParseElement(doc.DocumentElement!);
-        element.ContentFilePath = "fixture.xml";
+        ElementProvenance.SetContentFilePath(element, "fixture.xml");
         return element;
     }
 }
