@@ -67,8 +67,7 @@ public static class AuroraContentImporter
                 query.Parameters.AddWithValue("$id", packageId);
                 using var reader = query.ExecuteReader();
                 if (!reader.Read()) throw new ArgumentException("Content source does not exist.", nameof(packageId));
-                if (!enabled && Builder.Data.RequiredContentPolicy.IsRequiredPackage(reader.GetString(0),
-                    reader.IsDBNull(1) ? null : reader.GetString(1)))
+                if (!enabled && IsRequiredPackage(reader.GetString(0), reader.IsDBNull(1) ? null : reader.GetString(1)))
                     throw new InvalidOperationException("Aurora Essentials and Internal/Core infrastructure must remain enabled.");
             }
             prepared = PreparedCatalogReader.HasPreparationMetadata(connection);
@@ -84,6 +83,14 @@ public static class AuroraContentImporter
         if (!prepared) AuroraSqliteImporter.RebuildCacheOnly(sqlitePath);
     }
 
+    // Package preferences retire with this project; the app decides what a character may use through
+    // source restrictions now. Kept here rather than in the engine, which no longer knows packages.
+    private static bool IsRequiredPackage(string? key, string? name) =>
+        name?.Trim().ToLowerInvariant() is "internal" or "core" or "aurora essentials" or "aurora legacy essentials"
+        || key?.ToLowerInvariant() is
+            "core-ale-xml" or "core-internal-xml" or "core:internal" or "core:core" or
+            "core:aurora-legacy-essentials" or "core:aurora-essentials" or "runtime-builtins";
+
     /// <summary>Effective preferences, including required infrastructure despite stale disabled flags.</summary>
     public static HashSet<string> ReadEnabledPackageKeys(SqliteConnection connection)
     {
@@ -92,8 +99,7 @@ public static class AuroraContentImporter
         query.CommandText = "SELECT package_key,package_name,COALESCE(is_enabled,1) FROM content_packages";
         using var reader = query.ExecuteReader();
         while (reader.Read())
-            if (reader.GetInt64(2) != 0 || Builder.Data.RequiredContentPolicy.IsRequiredPackage(reader.GetString(0),
-                reader.IsDBNull(1) ? null : reader.GetString(1)))
+            if (reader.GetInt64(2) != 0 || IsRequiredPackage(reader.GetString(0), reader.IsDBNull(1) ? null : reader.GetString(1)))
                 enabled.Add(reader.GetString(0));
         return enabled;
     }

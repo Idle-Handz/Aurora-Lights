@@ -75,6 +75,10 @@ public class SelectRuleParser : RuleParser
 			}
 			Logger.Warning("unable to parse [" + attribute.Name + ":" + attribute.Value + "] attribute on the " + selectRule.RuleName + " rule in [" + selectRule.ElementHeader.Name + "]");
 		}
+		if (selectRule.Attributes.Type.Equals("Spell") && string.IsNullOrWhiteSpace(selectRule.Attributes.SpellcastingName) && (elementHeader.Type.Equals("Class") || elementHeader.Type.Equals("Archetype") || elementHeader.Type.Equals("Class Feature") || elementHeader.Type.Equals("Archetype Feature")))
+		{
+			Logger.Warning($"missing 'spellcasting' attribute on select rule in {elementHeader}");
+		}
 		if (string.IsNullOrWhiteSpace(selectRule.Attributes.Name))
 		{
 			Logger.Warning($"missing 'name' attribute on select rule in {elementHeader}");
