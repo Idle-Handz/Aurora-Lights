@@ -1,6 +1,6 @@
 # Shared content library: Translator split plan (draft)
 
-Status: **active, updated 2026-09-19** (Phase 4 complete). Work happens on
+Status: **active, updated 2026-09-20** (Phases 4-6 complete; Phase 5 still needs its manual UI pass). Work happens on
 `feature_shared-content-library` in both this repo and `5eApiTranslator`.
 Nothing merges to `main` in either repo until Windows MAUI user-experience parity
 is demonstrated.
