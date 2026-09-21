@@ -203,6 +203,12 @@ public static class SpellAcquisitionResolver
             preparation, slots, ability, uses, recharge, counts, diagnostic, slotUses);
     }
 
-    private static string Value(RuleBase? rule, string name) =>
-        rule?.Setters.ContainsSetter(name) == true ? rule.Setters.GetSetter(name).Value.Trim() : "";
+    // spell-* attributes are not part of the rule grammar the parsers understand, so they arrive in
+    // the preserved-attribute collection. Older content that set them through setters still works.
+    private static string Value(RuleBase? rule, string name)
+    {
+        if (rule is null) return "";
+        if (rule.PreservedAttributes.TryGetValue(name, out string? preserved)) return preserved.Trim();
+        return rule.Setters.ContainsSetter(name) ? rule.Setters.GetSetter(name).Value.Trim() : "";
+    }
 }

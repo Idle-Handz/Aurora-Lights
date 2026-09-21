@@ -54,15 +54,6 @@ public class SelectRuleParser : RuleParser
 			case "spellcasting":
 				selectRule.Attributes.SpellcastingName = attribute.Value.Trim();
 				continue;
-			case "spell-access":
-			case "spell-slots":
-			case "spell-ability":
-			case "spell-slot-uses":
-			case "spell-uses":
-			case "spell-recharge":
-			case "spell-counts-known":
-				selectRule.Setters.Add(new ElementSetters.Setter(attribute.Name, attribute.Value));
-				continue;
 			case "prepared":
 				selectRule.Setters.Add(new ElementSetters.Setter("prepared", attribute.Value));
 				continue;
@@ -73,6 +64,7 @@ public class SelectRuleParser : RuleParser
 				selectRule.Attributes.ListSelectionInlineStatisticName = attribute.Value.Trim();
 				continue;
 			}
+			selectRule.PreservedAttributes[attribute.Name] = attribute.Value;
 			Logger.Warning("unable to parse [" + attribute.Name + ":" + attribute.Value + "] attribute on the " + selectRule.RuleName + " rule in [" + selectRule.ElementHeader.Name + "]");
 		}
 		if (selectRule.Attributes.Type.Equals("Spell") && string.IsNullOrWhiteSpace(selectRule.Attributes.SpellcastingName) && (elementHeader.Type.Equals("Class") || elementHeader.Type.Equals("Archetype") || elementHeader.Type.Equals("Class Feature") || elementHeader.Type.Equals("Archetype Feature")))

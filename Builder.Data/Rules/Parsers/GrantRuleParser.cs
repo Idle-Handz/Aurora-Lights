@@ -37,19 +37,11 @@ public class GrantRuleParser : RuleParser
 			case "spellcasting":
 				grantRule.Setters.Add(new ElementSetters.Setter("spellcasting", attribute.Value));
 				continue;
-			case "spell-access":
-			case "spell-slots":
-			case "spell-ability":
-			case "spell-slot-uses":
-			case "spell-uses":
-			case "spell-recharge":
-			case "spell-counts-known":
-				grantRule.Setters.Add(new ElementSetters.Setter(attribute.Name, attribute.Value));
-				continue;
 			case "prepared":
 				grantRule.Setters.Add(new ElementSetters.Setter("prepared", attribute.Value));
 				continue;
 			}
+			grantRule.PreservedAttributes[attribute.Name] = attribute.Value;
 			Logger.Warning("unable to parse [" + attribute.Name + ":" + attribute.Value + "] attribute on the " + grantRule.RuleName + " rule in [" + grantRule.ElementHeader.Name + "]");
 		}
 		grantRule.Setters.AddRange(base.ParseSetters(ruleNode, elementHeader));

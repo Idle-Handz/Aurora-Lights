@@ -35,7 +35,16 @@ public static class EngineLogNoiseFilter
     if (!message.Contains("unable to parse [", StringComparison.OrdinalIgnoreCase))
       return false;
 
+    // The parsers keep attributes they do not recognise instead of discarding them, and warn so a
+    // typo gets noticed. Reflections understands these, so their warnings are not news here.
     return message.Contains("[known:", StringComparison.OrdinalIgnoreCase)
-           || message.Contains("[allowReplace:", StringComparison.OrdinalIgnoreCase);
+           || message.Contains("[allowReplace:", StringComparison.OrdinalIgnoreCase)
+           || message.Contains("[spell-access:", StringComparison.OrdinalIgnoreCase)
+           || message.Contains("[spell-slots:", StringComparison.OrdinalIgnoreCase)
+           || message.Contains("[spell-ability:", StringComparison.OrdinalIgnoreCase)
+           || message.Contains("[spell-slot-uses:", StringComparison.OrdinalIgnoreCase)
+           || message.Contains("[spell-uses:", StringComparison.OrdinalIgnoreCase)
+           || message.Contains("[spell-recharge:", StringComparison.OrdinalIgnoreCase)
+           || message.Contains("[spell-counts-known:", StringComparison.OrdinalIgnoreCase);
   }
 }
