@@ -603,6 +603,37 @@ Capture the baseline from the current working tree before changing anything (Pha
      a character saved before a restriction does not read as having lost content.
    - Aurora.Web registers no policy, so it keeps granting everything for now.
 6. **Builder.Data cleanup** (the 8 items) and the `Aurora.Logic` additions; legacy gates.
+
+   **Result (2026-09-20): complete.** Builder.Data reports exactly one addition,
+   the D2 collection, down from 265. Builder.Core and Aurora.Documents report
+   none, the behavior gate passes, and Aurora.Tests 585 pass / 1 skip with full
+   parity against the Phase 5 reference.
+   - **The API gate was broken before this phase** (`bbfe8c5`). Current Roslyn
+     marks every async method's kickoff `[DebuggerStepThrough]`; the compiler
+     behind the oracles did not, so all five public async methods in Builder.Data
+     read as changed and the gate failed on `main`, reporting nothing useful. It
+     now compares that attribute only where source declares it.
+   - Items 1–3 and 6 (`d9e5f84`): review contracts and the analyzer to
+     `Aurora.DataIntegration`, `LocalCorrectionDocument` deleted, and the
+     `SaveContent` guard rewritten self-contained (D1). **Deviation from the
+     table above:** the contracts were to go to `Aurora.Content.Contracts`, but
+     decision B puts that package in Legacy's graph, and these have no production
+     consumer yet, so they stay on the Reflections side.
+   - Items 4 and 8 (`a54d3cc`): `RequiredContentPolicy` to `Aurora.Logic` with
+     `IsRequiredSource` only (the retiring importer keeps its own package check);
+     the "missing 'spellcasting' attribute" warning restored for Legacy and
+     filtered in Reflections through `EngineLogNoiseFilter`.
+   - Item 7 (`6309b00`): rules keep unrecognized attributes in
+     `PreservedAttributes` instead of the parsers carrying a `spell-*` list;
+     `SpellAcquisitionResolver` reads from there, with the old setters as
+     fallback. This is the one addition Builder.Data keeps.
+   - Item 5 (`2ebdb7d`, fixed in `51227e5`): `ElementBase.ContentFilePath` becomes
+     `ElementProvenance` in `Aurora.Logic`, keyed by element.
+     **`Copy` is a field-level deep clone and cannot carry a table entry**, so the
+     synthesized per-class ASI/Feat features lost their provenance — 540 elements.
+     The parity suite caught it (characters and checks still matched; only the
+     projection dump showed it). The synthesis sites now carry it across, and
+     tests cover the rule.
 7. **Retire the old paths:**
    - `Aurora.Importer` and the copied writer
    - the v10/v11 reader paths
