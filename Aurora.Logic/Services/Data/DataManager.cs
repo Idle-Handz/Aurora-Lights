@@ -464,6 +464,7 @@ public sealed class DataManager
               Debugger.Break();
           }
           ElementBase elementBase3 = original1.Copy<ElementBase>();
+          ElementProvenance.CopyTo(original1, elementBase3);
           string str1 = $"ID_INTERNAL_CLASS_FEATURE_ASI_{num}_{name.ToUpperInvariant()}";
           if (!ElementsHelper.ValidateID(str1))
             str1 = ElementsHelper.SanitizeID(str1);
@@ -479,6 +480,7 @@ public sealed class DataManager
           elementBase3.IncludeInCompendium = false;
           elements.Add(elementBase3);
           ElementBase elementBase4 = original2.Copy<ElementBase>();
+          ElementProvenance.CopyTo(original2, elementBase4);
           string str2 = $"ID_INTERNAL_CLASS_FEATURE_FEAT_{num}_{name.ToUpperInvariant()}";
           if (!ElementsHelper.ValidateID(str2))
             str2 = ElementsHelper.SanitizeID(str2);
@@ -710,6 +712,7 @@ public sealed class DataManager
           if (asiAbilityTemplate != null)
           {
             ElementBase copy = asiAbilityTemplate.Copy<ElementBase>();
+            ElementProvenance.CopyTo(asiAbilityTemplate, copy);
             string id = $"ID_INTERNAL_CLASS_FEATURE_ASI_{level}_{className.ToUpperInvariant()}";
             if (!ElementsHelper.ValidateID(id)) id = ElementsHelper.SanitizeID(id);
             copy.ElementHeader = new ElementHeader(
@@ -729,6 +732,7 @@ public sealed class DataManager
           if (asiFeatTemplate != null)
           {
             ElementBase copy = asiFeatTemplate.Copy<ElementBase>();
+            ElementProvenance.CopyTo(asiFeatTemplate, copy);
             string id = $"ID_INTERNAL_CLASS_FEATURE_FEAT_{level}_{className.ToUpperInvariant()}";
             if (!ElementsHelper.ValidateID(id)) id = ElementsHelper.SanitizeID(id);
             copy.ElementHeader = new ElementHeader(

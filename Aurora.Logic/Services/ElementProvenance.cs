@@ -26,8 +26,9 @@ public static class ElementProvenance
     }
 
     /// <summary>
-    /// Carries provenance onto a fresh instance of the same definition, so copies made while building
-    /// a character still know where their definition came from.
+    /// Carries provenance onto another instance. Entries live beside elements rather than on them, so
+    /// <c>Copy</c> and <c>Construct</c> do not bring them along: code that derives one element from
+    /// another calls this when the copy stands for the same definition.
     /// </summary>
     public static void CopyTo(ElementBase? source, ElementBase? copy) =>
         SetContentFilePath(copy, GetContentFilePath(source));
