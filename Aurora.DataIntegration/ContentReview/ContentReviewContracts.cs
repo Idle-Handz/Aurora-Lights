@@ -1,5 +1,5 @@
 #nullable enable
-using Builder.Data.Files;
+using Aurora.Content.Contracts;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -10,7 +10,7 @@ using System.Text.Json;
 using System.Xml;
 using System.Xml.Linq;
 
-namespace Builder.Data.Content.Review;
+namespace Aurora.App.Services.ContentReview;
 
 /// <summary>Read-only review contract v1; not a database schema or an authorization API.</summary>
 public static class ContentReviewContract

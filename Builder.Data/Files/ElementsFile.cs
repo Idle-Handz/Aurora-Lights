@@ -40,7 +40,7 @@ public class ElementsFile
 	public void SaveContent(FileInfo file)
 	{
 		if (file.Exists && file.Extension.Equals(".xml", StringComparison.OrdinalIgnoreCase) &&
-			LocalCorrectionDocument.HasMetadata(File.ReadAllText(file.FullName)) &&
+			HasCorrectionMetadata(File.ReadAllText(file.FullName)) &&
 			!string.Equals(File.ReadAllText(file.FullName), Content, StringComparison.Ordinal))
 			throw new InvalidDataException("Use explicit correction review to replace a file containing correction metadata.");
 		FileInfo = file;
@@ -50,6 +50,18 @@ public class ElementsFile
 			Directory.CreateDirectory(file.DirectoryName);
 		}
 		File.WriteAllText(FileInfo.FullName, Content);
+	}
+
+	// A file carrying correction markup is replaced only through correction review, never by a
+	// generic save. Self-contained on purpose: this guard is the one content-correction concept
+	// Builder.Data keeps, and it must not pull in the correction contracts.
+	private static bool HasCorrectionMetadata(string xml)
+	{
+		using var reader = System.Xml.XmlReader.Create(new StringReader(xml), new System.Xml.XmlReaderSettings
+		{ DtdProcessing = System.Xml.DtdProcessing.Prohibit, XmlResolver = null });
+		var document = System.Xml.Linq.XDocument.Load(reader, System.Xml.Linq.LoadOptions.PreserveWhitespace);
+		return document.Root?.Name == "elements" &&
+			document.Root.Elements().Any(element => element.Name.LocalName == "corrections");
 	}
 
 	public void Load()

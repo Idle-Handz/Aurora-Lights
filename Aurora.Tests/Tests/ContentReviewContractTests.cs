@@ -1,4 +1,4 @@
-using Builder.Data.Content.Review;
+using Aurora.App.Services.ContentReview;
 
 namespace Aurora.Tests.Tests;
 
