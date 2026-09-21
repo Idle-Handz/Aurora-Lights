@@ -224,7 +224,12 @@ internal static class ApiSurfaceFormatter
         string genericArguments = method.IsGenericMethodDefinition
             ? $"<{string.Join(",", method.GetGenericArguments().Select(argument => argument.Name))}>"
             : string.Empty;
-        string attributes = method.GetCustomAttributesData()
+        // Current Roslyn marks the kickoff method of every async method [DebuggerStepThrough]; the
+        // compiler that produced the legacy oracles did not. That is a debugging aid, not part of the
+        // API, so it only counts where it was written in source — on a method that is not async.
+        bool isAsync = method.GetCustomAttributesData()
+            .Any(attribute => attribute.AttributeType == typeof(AsyncStateMachineAttribute));
+        string attributes = !isAsync && method.GetCustomAttributesData()
             .Any(attribute => attribute.AttributeType == typeof(System.Diagnostics.DebuggerStepThroughAttribute))
             ? " [DebuggerStepThrough]"
             : string.Empty;
