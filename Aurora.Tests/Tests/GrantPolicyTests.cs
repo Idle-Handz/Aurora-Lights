@@ -100,7 +100,9 @@ public sealed class GrantPolicyTests : IAsyncLifetime
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
         ElementBase granted = CharacterManager.Current.GetElements()
             .FirstOrDefault(e => e.Aquisition is { WasGranted: true } && restrictable.Contains(e.Source))
-            ?? throw new InvalidOperationException("The fixture character has no grant from a restrictable source.");
+            ?? throw new InvalidOperationException(
+                "The fixture character has no grant from a restrictable source " +
+                $"({restrictable.Count} restrictable sources, {sources.SourceItems.Count} in the catalog).");
 
         policy.IsSuppressed(granted, TestRule()).Should().BeFalse("nothing is restricted yet");
 

@@ -61,11 +61,7 @@ public sealed class RestrictedSelectionSweepTests : IAsyncLifetime
             }
             if (pick is not null) break;
         }
-        if (pick is null)
-        {
-            _output.WriteLine("The fixture character has no pick from a restrictable source.");
-            return;
-        }
+        pick.Should().NotBeNull("the fixture character makes choices from books it could restrict");
 
         SourceItem item = restrictable[pick.Value.Source];
         item.SetIsChecked(false, updateChildren: true, updateParent: true);
