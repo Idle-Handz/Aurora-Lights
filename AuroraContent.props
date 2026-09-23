@@ -6,7 +6,7 @@
        Build with -p:UseLocalContentLibrary=true to use the sibling AuroraTranslator checkout
        instead of the vendored package (override its location with AuroraContentSource). -->
   <PropertyGroup>
-    <AuroraContentVersion>0.3.0</AuroraContentVersion>
+    <AuroraContentVersion>0.4.0</AuroraContentVersion>
     <AuroraContentSource Condition="'$(AuroraContentSource)' == ''">$(MSBuildThisFileDirectory)..\5eApiTranslator</AuroraContentSource>
     <AuroraContentProject Condition="'$(AuroraContentContractsOnly)' == 'true'">Aurora.Content.Contracts</AuroraContentProject>
     <AuroraContentProject Condition="'$(AuroraContentProject)' == ''">Aurora.Content</AuroraContentProject>
