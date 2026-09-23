@@ -1,4 +1,4 @@
-// Decompiled with JetBrains decompiler
+﻿// Decompiled with JetBrains decompiler
 // Type: Builder.Presentation.Models.CharacterFile
 // Assembly: Aurora Builder, Version=1.0.166.7407, Culture=neutral, PublicKeyToken=null
 // MVID: 09D35420-8FA0-4A71-9A21-FF952C48F8A3
@@ -471,15 +471,19 @@ public class CharacterFile : ObservableObject
         if (int32 != availablePoints)
             Logger.Warning("availablePoints ({0}) differs from the calculatedAvailablePoints ({1})", (object)int32, (object)availablePoints);
         XmlNode sourcesNode = (XmlNode)this._document.DocumentElement["sources"];
+        ++currentProgress;
+        await this.SendCharacterLoadingScreenProgressUpdate(currentProgress.IsPercetageOf(progressMax));
+        await this.SendCharacterLoadingScreenStatusUpdate("Setting Source Restrictions");
         if (sourcesNode != null)
-        {
-            ++currentProgress;
-            await this.SendCharacterLoadingScreenProgressUpdate(currentProgress.IsPercetageOf(progressMax));
-            await this.SendCharacterLoadingScreenStatusUpdate("Setting Source Restrictions");
             this.ReadRestrictedSourcesNodes(sourcesNode);
-        }
         else
-            Logger.Warning("no sources in " + this.FileName);
+        {
+            // Every character follows some rule about what content it may use. A file that never
+            // recorded one of its own falls back to the configured defaults, so that whichever
+            // character was loaded before this one cannot decide what this one is allowed to see.
+            Logger.Warning("no sources in " + this.FileName + "; applying the default source restrictions");
+            CharacterManager.Current.SourcesManager.LoadDefaults();
+        }
         ++currentProgress;
         await this.SendCharacterLoadingScreenProgressUpdate(currentProgress.IsPercetageOf(progressMax));
         await this.SendCharacterLoadingScreenStatusUpdate("preparing character");

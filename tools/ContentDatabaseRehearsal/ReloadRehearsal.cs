@@ -1,4 +1,4 @@
-using Aurora.App.Services;
+﻿using Aurora.App.Services;
 using Aurora.Content.Preparation;
 using Builder.Data;
 using Aurora.Content.Contracts;
@@ -91,10 +91,27 @@ internal static class ReloadRehearsal
         Require(ReferenceEquals(priorSort, DbElementLoader.ElementSortMetadataMap) && ReferenceEquals(priorSpells, DbElementLoader.SpellAccessMap)
             && ReferenceEquals(priorFallback, typeof(XmlContentFallbackService).GetField("_snapshot", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)), "invalid correction preserves lookup and fallback state", checks);
         string beforeRejected = Hash(database);
+        // With skipping off a refusal is still the whole story: nothing of the installed database moves.
+        ApplicationContext.Current.Settings.SkipUnusableContentOnRefresh = false;
         var rejected = await service.SyncAsync();
         Require(!rejected.Success && service.SyncState == ContentDatabaseSyncState.Failed && Hash(database) == beforeRejected,
             "rejected refresh preserves installed candidate and reports failure", checks);
+
+        // With skipping on the same file costs the user only itself: the refresh completes and the
+        // file is named in the database for them to fix.
+        ApplicationContext.Current.Settings.SkipUnusableContentOnRefresh = true;
+        var skippedRefresh = await service.SyncAsync();
+        var reportedSkips = service.GetSkippedContent();
+        Require(skippedRefresh.Success && skippedRefresh.FilesSkipped == 1 && reportedSkips.Count == 1
+            && reportedSkips[0].Path.Equals(local, StringComparison.OrdinalIgnoreCase),
+            "a refresh allowed to skip reports the file it left out", checks);
+        Require((await DbElementLoader.TryLoadAsync(DataManager.Current.ElementsCollection)).Success,
+            "content still loads after a file was skipped", checks);
+
         File.Move(local, local + ".invalid-fixture");
+        var repaired = await service.SyncAsync();
+        Require(repaired.Success && repaired.FilesSkipped == 0 && service.GetSkippedContent().Count == 0,
+            "removing the bad file clears the report", checks);
 
         using var cancel = new CancellationTokenSource();
         int importStages = 0;

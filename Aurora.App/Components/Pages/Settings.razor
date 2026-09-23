@@ -1,4 +1,4 @@
-@page "/settings"
+﻿@page "/settings"
 @implements IDisposable
 @using Aurora.Content
 @using Builder.Presentation
@@ -406,6 +406,43 @@
                         </div>
                     }
 
+                    <div class="pref-row" style="margin-top: 14px;">
+                        <div class="pref-row-text">
+                            <div class="pref-row-title">Skip content files that can't be imported</div>
+                            <div class="pref-row-desc">
+                                A refresh leaves out a file it cannot read, or one that defines an element
+                                another file already defines differently, and lists it below instead of
+                                stopping. Turn this off to have a refresh stop at the first such file.
+                            </div>
+                        </div>
+                        <MudSwitch Value="SkipUnusableContent"
+                                   ValueChanged="@((bool v) => SetSkipUnusableContent(v))"
+                                   Color="Color.Primary" />
+                    </div>
+
+                    @{ var skipped = ContentDb.GetSkippedContent(); }
+                    @if (skipped.Count > 0)
+                    {
+                        <MudAlert Severity="Severity.Warning" Class="mt-2" Dense="true">
+                            @skipped.Count content file@(skipped.Count == 1 ? "" : "s") need@(skipped.Count == 1 ? "s" : "") attention.
+                            They were left out of the last refresh and stay listed here until they are fixed
+                            and the database is refreshed again.
+                        </MudAlert>
+                        <div style="margin-top: 8px;">
+                            @foreach (var skip in skipped)
+                            {
+                                <div class="pref-row-desc" style="margin-top: 8px;">
+                                    <strong>@skip.RelativePath</strong> — @SkippedReason(skip.Kind)
+                                    <div style="font-family: monospace; font-size: 11px; word-break: break-word;">@skip.Detail</div>
+                                    @if (!string.IsNullOrWhiteSpace(skip.RelatedPath))
+                                    {
+                                        <div>Conflicts with @skip.RelatedPath</div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+
                     @if (Tabs.Tabs.Count > 0 && !string.IsNullOrWhiteSpace(ContentDb.ContentDirectory))
                     {
                         <MudAlert Severity="Severity.Info" Class="mt-4" Dense="true">
@@ -423,21 +460,10 @@
                     <div class="section-label">Default source restrictions</div>
                     <div class="pref-row-desc" style="margin-bottom: 10px;">
                         All installed content is always loaded. These defaults decide which sources a
-                        character may use, and a character's own restrictions are edited on its Manage tab.
-                        Builder infrastructure stays enabled.
-                    </div>
-
-                    <div class="pref-row" style="margin-bottom: 12px;">
-                        <div class="pref-row-text">
-                            <div class="pref-row-title">Apply these defaults to new characters</div>
-                            <div class="pref-row-desc">
-                                New characters start with the sources below switched off. Existing
-                                characters are unaffected until you use Load Default on their Manage tab.
-                            </div>
-                        </div>
-                        <MudSwitch Value="ApplyDefaultRestrictionsOnNewCharacter"
-                                   ValueChanged="@((bool v) => SetApplyDefaultRestrictions(v))"
-                                   Color="Color.Primary" />
+                        character may use whenever it has not chosen its own: new characters start from
+                        them, and so does any older file that never recorded restrictions. A character
+                        that has its own keeps them &mdash; edit those on its Manage tab, where Load
+                        Default brings it back to what you set here. Builder infrastructure stays enabled.
                     </div>
 
                     @if (DefaultSourceGroups.Count == 0)
@@ -1371,6 +1397,27 @@
     }
 #endif
 
+    // ── Content that could not be imported ───────────────────────────────
+
+    private static bool SkipUnusableContent =>
+        ApplicationContext.Current.Settings.SkipUnusableContentOnRefresh;
+
+    private void SetSkipUnusableContent(bool enabled)
+    {
+        ApplicationContext.Current.Settings.SkipUnusableContentOnRefresh = enabled;
+        ApplicationContext.Current.Settings.Save();
+        StateHasChanged();
+    }
+
+    private static string SkippedReason(string kind) => kind switch
+    {
+        "unreadable" => "the file could not be read, so none of it was imported.",
+        "conflict" => "it defines an element another file already defines differently; neither can win, so this file was left out.",
+        "correction" => "its corrections could not be evaluated, so the file was left out.",
+        "append" => "one of its append operations could not be applied; the rest of the file was imported.",
+        _ => "it was left out of the last refresh.",
+    };
+
     // ── Default source restrictions ──────────────────────────────────────
     // Edited against their own SourcesManager so toggling defaults never disturbs the
     // restrictions of the character currently loaded in the engine singleton.
@@ -1394,16 +1441,6 @@
         DataManager.Current.ElementsCollection.Count == 0
             ? []
             : SourceRestrictionModelMapper.ToGroupModels(DefaultSources);
-
-    private bool ApplyDefaultRestrictionsOnNewCharacter =>
-        ApplicationContext.Current.Settings.ApplyDefaultSourceRestrictionsOnNewCharacter;
-
-    private void SetApplyDefaultRestrictions(bool enabled)
-    {
-        ApplicationContext.Current.Settings.ApplyDefaultSourceRestrictionsOnNewCharacter = enabled;
-        ApplicationContext.Current.Settings.Save();
-        StateHasChanged();
-    }
 
     private Task ToggleDefaultGroupAsync(string groupId)
     {

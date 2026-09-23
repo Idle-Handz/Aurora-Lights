@@ -1,4 +1,4 @@
-using Aurora.Content.Preparation;
+﻿using Aurora.Content.Preparation;
 using Builder.Data;
 using Builder.Presentation;
 using Builder.Presentation.Services.Data;
@@ -62,9 +62,8 @@ public static class SourcePreferenceSeed
         settings.SourcePreferencesSeeded = true;
         if (added.Count > 0)
         {
-            // The user had switched this content off, so keep it off for characters they make next.
-            // Both this and the restrictions themselves are editable in Settings.
-            settings.ApplyDefaultSourceRestrictionsOnNewCharacter = true;
+            // The user had switched this content off, so it stays off for characters they make next:
+            // the defaults apply to every character that has not chosen its own restrictions.
             DebugLogService.Instance.Info("Migrated switched-off sources to default restrictions: " + string.Join(", ", added));
         }
         settings.Save();

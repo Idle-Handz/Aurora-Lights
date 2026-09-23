@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 // Cross-platform replacement for Builder.Presentation.Properties.Settings
 // (System.Configuration / Properties.Settings.Default is .NET Framework only)
 //
@@ -121,9 +121,16 @@ public sealed class AppSettingsStore
     public bool ShellWindowState { get; set; } = false;
     public bool Bundle { get; set; } = false;
     public bool CharacterSheetOpenOnSave { get; set; } = false;
-    public bool ApplyDefaultSourceRestrictionsOnNewCharacter { get; set; } = false;
     public bool SheetStartSpellCardsOnNewPage { get; set; } = false;
     public string DefaultSourceRestrictions { get; set; } = "";
+
+    /// <summary>
+    /// Lets a refresh leave out a content file it cannot use — one whose XML cannot be read, or one
+    /// that redefines an element another file already defines differently — instead of refusing the
+    /// whole refresh over it. The files are listed in Settings until they are fixed. Turn this off
+    /// to have a refresh stop at the first such file.
+    /// </summary>
+    public bool SkipUnusableContentOnRefresh { get; set; } = true;
 
     /// <summary>
     /// Set once the sources a user had switched off in the content database have been copied into

@@ -1,4 +1,4 @@
-using Builder.Presentation.Services.Sources;
+﻿using Builder.Presentation.Services.Sources;
 // Decompiled with JetBrains decompiler
 // Type: Builder.Presentation.Services.Sources.SourcesManager
 // Assembly: Aurora Builder, Version=1.0.166.7407, Culture=neutral, PublicKeyToken=null
@@ -252,7 +252,13 @@ public class SourcesManager : ISourceRestrictionsProvider
     {
       string sourceRestrictions = ApplicationContext.Current.Settings.DefaultSourceRestrictions;
       if (string.IsNullOrWhiteSpace(sourceRestrictions))
+      {
+        // No defaults configured means every source is allowed, which is still a rule: anything
+        // the previously loaded character restricted has to be released rather than left standing.
+        if (this.RestrictedSources.Count > 0)
+          this.ClearRestrictions();
         return;
+      }
       this.Load((IEnumerable<string>) sourceRestrictions.Split(','));
     }
     catch (Exception ex)

@@ -33,15 +33,17 @@ public sealed record AuroraImportResult(
     int FilesProcessed,
     int FilesUnchanged,
     int ElementsImported,
-    string? ErrorMessage)
+    string? ErrorMessage,
+    int FilesSkipped = 0)
 {
-    public static AuroraImportResult Succeeded(int filesProcessed, int filesUnchanged, int elements) =>
-        new(true, filesProcessed, filesUnchanged, elements, null);
+    public static AuroraImportResult Succeeded(int filesProcessed, int filesUnchanged, int elements, int filesSkipped = 0) =>
+        new(true, filesProcessed, filesUnchanged, elements, null, filesSkipped);
 
     public static AuroraImportResult Failed(string reason) =>
         new(false, 0, 0, 0, reason);
 
     public string Summary => Success
         ? $"Content database updated: {ElementsImported} elements from {FilesProcessed} changed file{(FilesProcessed == 1 ? "" : "s")} ({FilesUnchanged} unchanged)."
+          + (FilesSkipped > 0 ? $" {FilesSkipped} file{(FilesSkipped == 1 ? " was" : "s were")} skipped and need attention." : "")
         : $"Content database update failed: {ErrorMessage}";
 }

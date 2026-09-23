@@ -1,4 +1,4 @@
-// Decompiled with JetBrains decompiler
+﻿// Decompiled with JetBrains decompiler
 // Type: Builder.Presentation.CharacterManager
 // Assembly: Aurora Builder, Version=1.0.166.7407, Culture=neutral, PublicKeyToken=null
 // MVID: 09D35420-8FA0-4A71-9A21-FF952C48F8A3
@@ -433,8 +433,8 @@ public sealed class CharacterManager
         break;
     }
     SelectionRuleExpanderContext.Current.RemoveAllExpanders();
-    if (ApplicationContext.Current.Settings.ApplyDefaultSourceRestrictionsOnNewCharacter)
-      this.SourcesManager.LoadDefaults();
+    // A brand new character has not chosen its own restrictions, so it starts from the defaults.
+    this.SourcesManager.LoadDefaults();
     this.Character.ResetEntryFields();
     this.Status.HasCompanion = false;
     if (initializeFirstLevel)

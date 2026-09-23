@@ -108,14 +108,52 @@ Expect:
 
 ## 4. New character follows the defaults
 
-1. With **Apply these defaults to new characters** on, create a new character.
+A character that has not chosen its own restrictions follows the defaults. There
+is no toggle for this any more: to have new characters start unrestricted, clear
+the defaults in Settings.
+
+1. With some sources switched off in Settings, create a new character.
 2. Open its **Manage → Sources**.
 
 Expect: the sources you switched off in Settings are off for this character, and
 content from them is absent from its choice lists.
 
-Then switch the toggle off, create another new character, and confirm it starts
-with everything enabled.
+Then clear the defaults in Settings, create another new character, and confirm it
+starts with everything enabled.
+
+3. Load a character that restricts a book, then create a new character without
+   restarting the app.
+
+Expect: the new character shows the defaults, not the restrictions of the one you
+just had open.
+
+## 4b. A content file that cannot be imported
+
+This needs a throwaway file, not your real content. Put it in the built-in custom
+directory named in **Settings → Content** and delete it when you are done.
+
+1. Create `zz-broken.xml` there containing `<elements xmlns="http://example.com">
+   </elements>`.
+2. **Settings → Content → Refresh Database** with **Skip content files that
+   can't be imported** on (the default).
+
+Expect: the refresh finishes, its summary says one file was skipped and needs
+attention, and the file is listed underneath with what is wrong with it. Your
+other content is present as usual.
+
+3. Close and reopen the app, and look at **Settings → Content** again.
+
+Expect: the file is still listed. The list comes from the database, not from the
+last refresh.
+
+4. Delete the file and refresh again.
+
+Expect: the list is empty.
+
+5. Switch the setting off, put the file back, and refresh.
+
+Expect: the refresh fails with an error naming the file, and the database you had
+is untouched — check that characters still load.
 
 ## 5. Restricting a source on an existing character
 

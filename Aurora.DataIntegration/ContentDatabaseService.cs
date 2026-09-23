@@ -1,5 +1,6 @@
 using Aurora.Content;
 using Aurora.Content.Preparation;
+using Builder.Presentation;
 using Builder.Presentation.Services.Data;
 
 namespace Aurora.App.Services;
@@ -24,6 +25,14 @@ public sealed class ContentDatabaseService
     public IReadOnlyList<LocalCorrectionStatus> GetLocalCorrections() => TryRead(
         "read local corrections", () => DatabasePath is { } path
             ? ContentDatabaseReader.ReadLocalCorrections(path) : [], []);
+
+    /// <summary>
+    /// Content the last refresh could not use and left out. Read from the database, so it survives
+    /// a restart and stands until the next refresh reads those files again.
+    /// </summary>
+    public IReadOnlyList<ContentImportSkip> GetSkippedContent() => TryRead(
+        "read skipped content", () => DatabasePath is { } path
+            ? ContentDatabaseReader.ReadSkippedContent(path) : [], []);
 
     /// <summary>Fires on the calling (background) thread whenever state changes.</summary>
     public event Action? StateChanged;
@@ -182,10 +191,17 @@ public sealed class ContentDatabaseService
 
     private async Task<AuroraImportResult> ImportAsync(string contentDirectory, string dbPath, CancellationToken cancellationToken)
     {
+        // A file the library cannot use is left out and listed in Settings rather than costing the
+        // user the whole refresh; the setting turns that off for anyone who wants it to stop instead.
+        bool skipUnusable = ApplicationContext.Current.Settings.SkipUnusableContentOnRefresh;
         var imported = await ContentImport.ImportAsync(contentDirectory, dbPath,
             new InlineProgress<ContentImportProgress>(ReportProgress), cancellationToken,
-            onDiagnostic: diagnostic => DebugLogService.Instance.Info("Content import: " + diagnostic));
-        return AuroraImportResult.Succeeded(imported.FilesChanged, imported.FilesUnchanged, imported.ElementsWritten);
+            onDiagnostic: diagnostic => DebugLogService.Instance.Info("Content import: " + diagnostic),
+            skipUnusableContent: skipUnusable);
+        foreach (var skip in imported.Skipped)
+            DebugLogService.Instance.Warn($"Content skipped ({skip.Kind}): {skip.Path}", skip.Detail);
+        return AuroraImportResult.Succeeded(imported.FilesChanged, imported.FilesUnchanged, imported.ElementsWritten,
+            imported.Skipped.Count);
     }
 
     private void ReportProgress(ContentImportProgress p)

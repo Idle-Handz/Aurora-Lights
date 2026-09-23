@@ -672,6 +672,60 @@ Capture the baseline from the current working tree before changing anything (Pha
    - the bundled exe, the pin scripts and `publish-translator.ps1`
 
    Also point `tools/RunImporter` and the rehearsal harness at the library.
+   **Follow-ups found while reviewing Phase 7 (2026-09-23).** Three things the
+   review turned up, each fixed where it belongs:
+
+   - **Aurora.Content 0.4.0** (Translator `7a64ed9`): an id reference written
+     with surrounding whitespace is stored trimmed, so the grant it names
+     actually happens (an element's own id is never rewritten); and a file whose
+     root is not an unnamespaced `<elements>` is refused with an error that names
+     the file and says what it found, instead of reporting "correction content"
+     for a file with no corrections in it. Lights takes it in `30d1806`;
+     `ContentDatabaseTrustTests` now describes the fixed behaviour. **Parity:**
+     databases, projections, all five checks and 60/60 characters match.
+
+   - **Aurora.Content 0.5.0** (Translator `87f56e6`): an import may be told to
+     skip content it cannot use — `ContentImport.ImportAsync(...,
+     skipUnusableContent: true)` — instead of refusing the whole refresh over one
+     file. A file whose XML cannot be read, one that redefines an element another
+     file already declares differently, or one whose corrections cannot be
+     evaluated is left out whole; an append operation is narrower, dropping only
+     the operation. Declarations are committed per file, so a file that fails
+     halfway leaves nothing behind. What was skipped is written to
+     `content_skipped_files` and read back with
+     `ContentDatabaseReader.ReadSkippedContent`, so it survives a restart, and
+     every import re-reads the files: a repaired one stops being listed, an
+     unrepaired one is listed again. Skipping stays opt-in, so an import that
+     reports success without it has read everything it was given.
+     - **In the app:** `SkipUnusableContentOnRefresh` (on by default, in
+       Settings › Content) decides, the refresh summary says how many files were
+       skipped, and the files are listed with what is wrong with each under the
+       refresh controls until they are fixed.
+     - The rehearsal's `failure-check` now covers both: with skipping off a
+       refusal still preserves the installed database untouched, and with it on
+       the refresh completes, names the file, still loads, and clears the report
+       once the file is gone. That check's output is therefore a deliberate
+       baseline move.
+     - **Still to do** (user, 2026-09-23): auto-fixes for conflicting duplicate
+       ids, so the user can resolve one from the list rather than by hand.
+
+   - **Source restrictions fall back to the defaults.** A character file with no
+     `<sources>` node used to leave whatever the previously loaded character had
+     restricted in place. Every character follows some rule about what content it
+     may use, and a file that records none has not chosen one, so it now applies
+     the configured defaults — as does every new character, which is what
+     `ApplyDefaultSourceRestrictionsOnNewCharacter` used to gate. That setting is
+     gone: "new characters start unrestricted" is expressed by leaving the
+     defaults empty, and empty defaults now clear the previous character's
+     restrictions rather than leaving them standing. This is shared engine code,
+     so Aurora Legacy follows the same rule.
+
+   **Deferred (user, 2026-09-23):** Aurora.Web never registers a grant policy, so
+   restrictions there hide content from lists but do not suppress what a rule
+   grants. Web is not the priority; the fix is `GrantPolicyContext.Current =
+   new RestrictedSourceGrantPolicy()` at its composition root, as
+   `MauiProgram` does.
+
 8. **Full parity run,** then merge to `main`.
 
 Later / optional:
