@@ -1,4 +1,4 @@
-using Aurora.App.Services;
+﻿using Aurora.App.Services;
 using Builder.Data;
 using Builder.Presentation;
 using Builder.Presentation.Models;
@@ -10,6 +10,13 @@ using System.Xml.Linq;
 
 internal static class CharacterRehearsal
 {
+    /// <summary>
+    /// The heaviest character in the corpus loads in about two minutes on its own, so a suite
+    /// running several processes at once was reporting it as a difference when it had only run out
+    /// of time. The limit is here to catch a hang, not to measure the machine.
+    /// </summary>
+    private static readonly TimeSpan LoadTimeout = TimeSpan.FromMinutes(5);
+
     public static async Task<object> Run(string root, string output, string? onlyFile = null, bool afterReload = false, bool editBackground = false)
     {
         var trace = new CharacterTrace(Path.Combine(output, "character-trace.log"));
@@ -26,7 +33,7 @@ internal static class CharacterRehearsal
                 if (!previous.Success) throw new InvalidOperationException(previous.Summary);
                 Reset();
                 var initial = await new CharacterFile(Path.Combine(root, "characters", onlyFile ?? "Test E.dnd5e"))
-                    .Load().WaitAsync(TimeSpan.FromSeconds(120));
+                    .Load().WaitAsync(LoadTimeout);
                 File.WriteAllText(Path.Combine(output, "before-reload.json"), JsonSerializer.Serialize(new {
                     previous.DataVersion, initial, missingGrants = trace.MissingGrants.ToArray(), state = Capture() }));
                 trace.MissingGrants.Clear();
@@ -49,7 +56,7 @@ internal static class CharacterRehearsal
                 Reset();
                 var file = new CharacterFile(path);
                 File.WriteAllText(Path.Combine(output, "character-phase.json"), JsonSerializer.Serialize(new { file = Path.GetFileName(path), phase = "first load" }));
-                var first = await Task.Run(() => file.Load()).WaitAsync(TimeSpan.FromSeconds(120));
+                var first = await Task.Run(() => file.Load()).WaitAsync(LoadTimeout);
                 CharacterLoadCompatibilityService.RestoreEquippedSlots(CharacterManager.Current.Character);
                 if (editBackground) ExerciseBackgroundReplacement();
                 var firstState = Capture();
@@ -68,7 +75,7 @@ internal static class CharacterRehearsal
                 Reset();
                 var secondFile = new CharacterFile(savedPath);
                 File.WriteAllText(Path.Combine(output, "character-phase.json"), JsonSerializer.Serialize(new { file = Path.GetFileName(path), phase = "roundtrip load" }));
-                var second = await Task.Run(() => secondFile.Load()).WaitAsync(TimeSpan.FromSeconds(120));
+                var second = await Task.Run(() => secondFile.Load()).WaitAsync(LoadTimeout);
                 CharacterLoadCompatibilityService.RestoreEquippedSlots(CharacterManager.Current.Character);
                 var secondState = Capture();
                 string secondPath = savedPath + ".second.xml";

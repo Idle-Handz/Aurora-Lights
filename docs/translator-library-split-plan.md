@@ -718,6 +718,17 @@ Capture the baseline from the current working tree before changing anything (Pha
      - **Still to do** (user, 2026-09-23): auto-fixes for conflicting duplicate
        ids, so the user can resolve one from the list rather than by hand.
 
+   **Parity for both follow-ups (2026-09-23, Lights `3bd9d76`).** Against the
+   0.4.0 reference `buildtmp/parity-rerun-20260923-041953-b38161`: both
+   projections match, all five checks pass, and the only database difference in
+   68 tables compared is the new, empty `content_skipped_files`. The
+   `failure-check` output differs by its three new checks and passes 17/17.
+   Characters: 59/60 matched in the suite; `Remy Morningstar (Strahd)` ran out of
+   its 120 s load budget under four parallel processes, and matches the reference
+   field for field when run on its own. That per-character limit is now 5 minutes
+   — it is there to catch a hang, not to measure the machine, and it had produced
+   a false difference twice.
+
    - **Source restrictions fall back to the defaults.** A character file with no
      `<sources>` node used to leave whatever the previously loaded character had
      restricted in place. Every character follows some rule about what content it
