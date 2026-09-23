@@ -657,6 +657,10 @@ Capture the baseline from the current working tree before changing anything (Pha
      namespaced content root is refused, and an archetype's class is not inferred
      from its supports tag (a gap the library tracks). Real content has no padded
      references (0 of 12,486 grants).
+   - **Parity:** databases, both projections, every check and 60/60 characters
+     match the Phase 5 reference. (A first run showed one character differing;
+     it had timed out because builds were running against the same machine, and
+     on its own it matches the reference field for field.)
    - **A test-order hazard is fixed:** the engine's `SourcesManager` snapshots the
      catalog when `CharacterManager.Current` is first touched. The app warms it
      after loading on purpose; tests run in any order, so `ContentFixture` now
