@@ -13,21 +13,21 @@ included or modified. The paths reflect this project's current local content set
 
 Build with dotnet build tools/ContentDatabaseRehearsal/ContentDatabaseRehearsal.csproj.
 Run the resulting executable with scan, refresh, load, snapshot, parity,
-or legacy-import, followed by the disposable case directory. A case must contain
+legacy-xml-load, reload-check, failure-check or dump, followed by the disposable
+case directory. A case must contain
 .aurora-rehearsal, and its XML/database live in its custom subdirectory.
 An optional third argument names a secondary XML directory. Each run writes its
 JSON result and application log inside the case. Save earlier results before
 repeating a mode.
 
-legacy-import deliberately creates a v10 fixture using the old in-process
-importer; the production app no longer uses that writer for prepared refreshes.
+legacy-xml-load loads content the way Aurora Legacy does, through DataManager
+XML with no database, and opens each character to show what Legacy resolves.
 parity compares complete parsed definition XML, not just names or counts.
 audit.py <rehearsal-root> checks SQL integrity, identity counts, fresh/migrated
 prepared definitions and append operations, and hashes the installed inputs again.
 
 Timings are observational and include service work, not GUI startup. Peak working
-set is for the rehearsal process; during refresh it does not include the separate
-Translator process. Load measurements include runtime postprocessing and caches.
+set is for the rehearsal process; refresh now imports in process, so it is included. Load measurements include runtime postprocessing and caches.
 Result/log files are retained under the ignored buildtmp directory for review.
 
 profile-load measures managed memory after collection, after invalidating the

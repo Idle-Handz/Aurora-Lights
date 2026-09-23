@@ -1,6 +1,6 @@
 # Shared content library: Translator split plan (draft)
 
-Status: **active, updated 2026-09-20** (Phases 4-6 complete; Phase 5 still needs its manual UI pass). Work happens on
+Status: **active, updated 2026-09-22** (Phases 4-7 complete; Phase 5 still needs its manual UI pass, then Phase 8 merges). Work happens on
 `feature_shared-content-library` in both this repo and `5eApiTranslator`.
 Nothing merges to `main` in either repo until Windows MAUI user-experience parity
 is demonstrated.
@@ -59,6 +59,11 @@ Resolved design questions:
   `main` as one commit per phase, once parity is demonstrated.
 
 ## Current state (verified 2026-09-18)
+
+> **Historical.** This section records what the code looked like before the split,
+> and is what the phases were planned against. Phases 4-7 have since carried it
+> out: there is no bundled executable, no `Aurora.Importer`, and no v10/v11
+> reader. See the phase results below.
 
 **One production writer, and no sync without it.** *(Corrected during Phase 2.
 An earlier draft relied on the 2026-09-12 ownership audit, which `ec9dff8`
@@ -635,6 +640,29 @@ Capture the baseline from the current working tree before changing anything (Pha
      projection dump showed it). The synthesis sites now carry it across, and
      tests cover the rule.
 7. **Retire the old paths:**
+
+   **Result (2026-09-22): complete.**
+   - The bundled executable, the publish/pin/restore scripts and the opt-in
+     integration attribute are gone; the test they guarded imports through the
+     library, so that coverage runs in the ordinary suite instead of skipping.
+   - Aurora.Importer is deleted. `DbElementLoader` accepts only what the library
+     writes and drops from 1516 to 805 lines; an older database is reported as
+     needing a refresh rather than read by a second reader. The Settings progress
+     types moved to `Aurora.DataIntegration`.
+   - `RunImporter`, `AnnotateContentHotfixes` and the rehearsal import through the
+     library; the rehearsal's `legacy-import` mode is gone.
+   - **Content tests now describe the library**, which surfaced where it behaves
+     differently from the retired writer: a padded grant reference stays unresolved
+     rather than being matched, conflicting duplicate ids refuse the import, a
+     namespaced content root is refused, and an archetype's class is not inferred
+     from its supports tag (a gap the library tracks). Real content has no padded
+     references (0 of 12,486 grants).
+   - **A test-order hazard is fixed:** the engine's `SourcesManager` snapshots the
+     catalog when `CharacterManager.Current` is first touched. The app warms it
+     after loading on purpose; tests run in any order, so `ContentFixture` now
+     rebuilds the source list when it finds it empty. This was the intermittent
+     failure seen during Phase 6.
+
    - `Aurora.Importer` and the copied writer
    - the v10/v11 reader paths
    - the bundled exe, the pin scripts and `publish-translator.ps1`
