@@ -1,7 +1,6 @@
 using Builder.Presentation.Services;
 using Aurora.App.Services;
 using Aurora.Content.Preparation;
-using Aurora.Importer;
 using Builder.Core.Events;
 using Builder.Data;
 using Builder.Presentation.Interfaces;
@@ -73,11 +72,6 @@ try
                 GC.KeepAlive(projection);
                 success = true;
             }
-            break;
-        case "legacy-import":
-            var legacy = AuroraContentImporter.Import(primary, Path.Combine(primary, ContentDatabaseService.DatabaseFileName));
-            result = legacy;
-            success = legacy.Success;
             break;
         case "refresh":
             using (var cancellation = new CancellationTokenSource(TimeSpan.FromMinutes(15)))

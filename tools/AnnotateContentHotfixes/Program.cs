@@ -1,5 +1,6 @@
 // Stages this session's six manifest-verified hotfixes; never writes installed content.
-using Aurora.Importer;
+using Aurora.App.Services;
+using Aurora.Content;
 using Aurora.Content.Preparation;
 using Aurora.Content.Contracts;
 using Microsoft.Data.Sqlite;
@@ -25,8 +26,8 @@ if (args.Length == 2 && args[0] == "--verify-installed")
     Console.WriteLine("PASS: six installed files, ten protected corrections, no unclassified changes, none eligible for automatic retirement.");
     return;
 }
-if (args.Length != 3) throw new ArgumentException("Usage: <original-archive> <new-output-directory> <translator-exe>");
-string archive = Path.GetFullPath(args[0]), work = Path.GetFullPath(args[1]), translator = Path.GetFullPath(args[2]);
+if (args.Length != 2) throw new ArgumentException("Usage: <original-archive> <new-output-directory>");
+string archive = Path.GetFullPath(args[0]), work = Path.GetFullPath(args[1]);
 if (Directory.Exists(work)) throw new IOException("Output directory must be new.");
 var manifest = JsonDocument.Parse(File.ReadAllText(Path.Combine(archive, "manifest.json")));
 var entries = manifest.RootElement.EnumerateArray().ToArray();
@@ -117,19 +118,9 @@ var staff = xgte.Root!.Elements("element").Single(e => Id(e) == "ID_WOTC_XGTE_MA
 Write(Path.Combine(root, "supplements/xanathars-guide-to-everything/items-wondrous.xml"),
     new XDocument(new XElement("elements", new XElement(staff))).ToString(SaveOptions.DisableFormatting));
 string database = Path.Combine(work, "verified.sqlite");
-var result = await LocalCorrectionSync.ImportAsync([root], database, async (prepared, candidate, token) =>
-{
-    using var process = new Process { StartInfo = new ProcessStartInfo(translator)
-        { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, CreateNoWindow = true } };
-    foreach (string arg in new[] { "sqlite-import", prepared[0], candidate }) process.StartInfo.ArgumentList.Add(arg);
-    process.Start();
-    var output = process.StandardOutput.ReadToEndAsync(token);
-    var error = process.StandardError.ReadToEndAsync(token);
-    await process.WaitForExitAsync(token);
-    File.WriteAllText(Path.Combine(work, "translator.log"), await output + "\n" + await error);
-    return process.ExitCode == 0 ? AuroraImportResult.Succeeded(0, 0, 0) : AuroraImportResult.Failed("See translator.log");
-});
-Require(result.Success, "Staged Translator import failed.");
+await ContentImport.ImportAsync(root, database, onDiagnostic: message =>
+    File.AppendAllText(Path.Combine(work, "import.log"), message + Environment.NewLine));
+
 using (var connection = ContentDatabase.OpenReadableConnection(database))
 {
     long Scalar(string sql) { using var command = connection.CreateCommand(); command.CommandText = sql; return Convert.ToInt64(command.ExecuteScalar()); }
@@ -139,9 +130,9 @@ using (var connection = ContentDatabase.OpenReadableConnection(database))
     Require(Scalar("SELECT COUNT(*) FROM local_corrections WHERE state='review-pending'") == 10, "Mirror operation count.");
     Require(Scalar("SELECT COUNT(*) FROM grants WHERE target_aurora_id IN ('ID_JONOMAN3000_ARCHETYPE_FEATURE_DEVOUT_ZEALOTS_DEVOTION_DEFENDER_OF_KIN','ID_JONOMAN3000_ARCHETYPE_FEATURE_DEVOUT_ZEALOTS_DEVOTION_SLAYER_OF_FOES','ID_RGTTYR_RACIAL_TRAIT_TATSUMI_RYUJIN_HEARTENING_BREATH') AND target_element_id IS NOT NULL") == 3, "Repaired grants unresolved.");
 }
-Require(!AuroraContentImporter.IsStale(root, database), "Fresh staged import reports stale.");
+Require(!ContentDatabaseReader.IsStale([root], database), "Fresh staged import reports stale.");
 File.WriteAllText(Path.Combine(work, "annotation-evidence.json"), JsonSerializer.Serialize(new {
-    createdUtc = DateTimeOffset.UtcNow, workDirectory = work, database, translatorSha256 = Hash(translator),
+    createdUtc = DateTimeOffset.UtcNow, workDirectory = work, database,
     files = report, operationCount = operations, correctedElements = elementCount,
     importedElements = 248, distinctIds = 248, resolvedParentGrants = 3,
     baselineAndCurrentEvaluationPassed = true, installedContentModified = false

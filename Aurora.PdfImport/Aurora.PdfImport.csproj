@@ -14,11 +14,4 @@
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.12" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Aurora.Importer\Aurora.Importer.csproj"
-                      SkipGetTargetFrameworkProperties="true"
-                      GlobalPropertiesToRemove="RuntimeIdentifier;RuntimeIdentifiers"
-                      SetTargetFramework="TargetFramework=net10.0" />
-  </ItemGroup>
-
 </Project>

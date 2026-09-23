@@ -1,5 +1,6 @@
-namespace Aurora.Importer;
+namespace Aurora.App.Services;
 
+/// <summary>Progress the Settings page shows while the content database is rebuilt.</summary>
 public enum AuroraImportPhase
 {
     Scanning,

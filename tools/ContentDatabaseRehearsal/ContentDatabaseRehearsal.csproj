@@ -8,7 +8,6 @@
   <ItemGroup>
     <ProjectReference Include="../../Aurora.Logic/Aurora.Logic.csproj" />
     <ProjectReference Include="../../Aurora.Components/Aurora.Components.csproj" />
-    <ProjectReference Include="../../Aurora.Importer/Aurora.Importer.csproj" />
     <ProjectReference Include="../../Aurora.DataIntegration/Aurora.DataIntegration.csproj" />
     <Compile Include="../../Aurora.App/Services/MauiSpellcastingSectionHandler.cs" Link="App/MauiSpellcastingSectionHandler.cs" />
     <Compile Include="../../Aurora.App/Services/MauiContextStubs.cs" Link="App/MauiContextStubs.cs" />

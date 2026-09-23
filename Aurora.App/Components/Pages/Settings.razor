@@ -1,7 +1,6 @@
 @page "/settings"
 @implements IDisposable
 @using Aurora.Content
-@using Aurora.Importer
 @using Builder.Presentation
 @using Builder.Presentation.Models.Sources
 @using Builder.Presentation.Services.Sources
@@ -1497,10 +1496,10 @@
     private bool DatabaseProgressIndeterminate =>
         ContentDb.SyncState != ContentDatabaseSyncState.Syncing ||
         ContentDb.Progress is not { FilesTotal: > 0 } ||
-        ContentDb.Progress.Phase == Aurora.Importer.AuroraImportPhase.Complete;
+        ContentDb.Progress.Phase == AuroraImportPhase.Complete;
 
     private string DatabaseProgressLabel => ContentDb.SyncState == ContentDatabaseSyncState.Syncing
-        ? ContentDb.Progress?.Phase == Aurora.Importer.AuroraImportPhase.Complete
+        ? ContentDb.Progress?.Phase == AuroraImportPhase.Complete
             ? "Finalizing database…"
             : ContentDb.Progress?.PhaseLabel ?? "Preparing content…"
         : _checkingStale ? "Checking for changes…" : "Refreshing and loading content…";
@@ -1513,10 +1512,10 @@
             if (p == null || p.FilesTotal == 0) return 0;
             return p.Phase switch
             {
-                Aurora.Importer.AuroraImportPhase.Scanning => (int)(p.FilesScanned * 50.0 / p.FilesTotal),
-                Aurora.Importer.AuroraImportPhase.Importing => 50 + (int)(p.FilesScanned * 40.0 / Math.Max(1, p.FilesTotal)),
-                Aurora.Importer.AuroraImportPhase.Resolving => 90,
-                Aurora.Importer.AuroraImportPhase.Complete => 100,
+                AuroraImportPhase.Scanning => (int)(p.FilesScanned * 50.0 / p.FilesTotal),
+                AuroraImportPhase.Importing => 50 + (int)(p.FilesScanned * 40.0 / Math.Max(1, p.FilesTotal)),
+                AuroraImportPhase.Resolving => 90,
+                AuroraImportPhase.Complete => 100,
                 _ => 0
             };
         }

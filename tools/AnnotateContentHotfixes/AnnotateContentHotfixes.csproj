@@ -6,6 +6,6 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../../Aurora.Importer/Aurora.Importer.csproj" />
+    <ProjectReference Include="../../Aurora.DataIntegration/Aurora.DataIntegration.csproj" />
   </ItemGroup>
 </Project>

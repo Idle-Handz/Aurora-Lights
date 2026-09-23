@@ -1,4 +1,3 @@
-using Aurora.Importer;
 using Builder.Data;
 using Builder.Presentation.Services;
 using Aurora.Content.Contracts;
@@ -26,26 +25,5 @@ public sealed class LocalCorrectionProvenanceTests
         ElementProvenance.GetContentFilePath(surviving.Should().ContainSingle().Subject).Should().Be(xgte);
         LocalCorrectionDocument.IsSuppressedFromFile(id, null, dmg, [id]).Should().BeFalse();
         LocalCorrectionDocument.IsSuppressedFromFile("ID_OTHER", dmg, dmg, [id]).Should().BeFalse();
-    }
-
-    [Fact]
-    public void CatalogProvenance_ResolvesPrimaryAndAdditionalRootsWithWindowsSeparators()
-    {
-        string work = Path.Combine(Path.GetTempPath(), "aurora-provenance-" + Guid.NewGuid().ToString("N"));
-        string primary = Path.Combine(work, "primary"), secondary = Path.Combine(work, "Extra Books");
-        try
-        {
-            foreach (string root in new[] { primary, secondary })
-            {
-                Directory.CreateDirectory(Path.Combine(root, "core"));
-                File.WriteAllText(Path.Combine(root, "core", "item.xml"), "<elements/>");
-            }
-            AuroraContentImporter.ResolveSourceFilePath([primary, secondary], "core\\item.xml")
-                .Should().Be(Path.Combine(primary, "core", "item.xml"));
-            AuroraContentImporter.ResolveSourceFilePath([primary, secondary], "additional-1-extra-books\\core\\item.xml")
-                .Should().Be(Path.Combine(secondary, "core", "item.xml"));
-            AuroraContentImporter.ResolveSourceFilePath([primary, secondary], "../outside.xml").Should().BeNull();
-        }
-        finally { Directory.Delete(work, recursive: true); }
     }
 }
