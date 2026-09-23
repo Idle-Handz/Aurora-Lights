@@ -105,7 +105,8 @@ internal static class ReloadRehearsal
         Require(skippedRefresh.Success && skippedRefresh.FilesSkipped == 1 && reportedSkips.Count == 1
             && reportedSkips[0].Path.Equals(local, StringComparison.OrdinalIgnoreCase),
             "a refresh allowed to skip reports the file it left out", checks);
-        Require((await DbElementLoader.TryLoadAsync(DataManager.Current.ElementsCollection)).Success,
+        // Into a collection of its own: the live one is what the checks below are about.
+        Require((await DbElementLoader.TryLoadAsync(new ElementBaseCollection())).Success,
             "content still loads after a file was skipped", checks);
 
         File.Move(local, local + ".invalid-fixture");
@@ -113,6 +114,8 @@ internal static class ReloadRehearsal
         Require(repaired.Success && repaired.FilesSkipped == 0 && service.GetSkippedContent().Count == 0,
             "removing the bad file clears the report", checks);
 
+        // Two refreshes have legitimately rewritten the database since beforeRejected.
+        string beforeCancel = Hash(database);
         using var cancel = new CancellationTokenSource();
         int importStages = 0;
         void OnState()
@@ -125,7 +128,7 @@ internal static class ReloadRehearsal
         try { await service.SyncAsync(cancel.Token); }
         catch (OperationCanceledException) { canceled = true; }
         finally { service.StateChanged -= OnState; }
-        Require(canceled && service.SyncState == ContentDatabaseSyncState.Idle && Hash(database) == beforeRejected,
+        Require(canceled && service.SyncState == ContentDatabaseSyncState.Idle && Hash(database) == beforeCancel,
             "cancellation preserves database and clears syncing state", checks);
         Require(priorElements.SequenceEqual(DataManager.Current.ElementsCollection), "refresh failure/cancellation never replace live collection", checks);
         return new { passed = checks.Count, checks, retainedMiB = retained };

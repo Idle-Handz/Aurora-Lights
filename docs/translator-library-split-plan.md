@@ -705,7 +705,16 @@ Capture the baseline from the current working tree before changing anything (Pha
        refusal still preserves the installed database untouched, and with it on
        the refresh completes, names the file, still loads, and clears the report
        once the file is gone. That check's output is therefore a deliberate
-       baseline move.
+       baseline move (17 checks, was 14), as is the new empty
+       `content_skipped_files` table in the database comparison.
+     - **The harness caught a hole in the first cut** (0.5.0): skipping only
+       reached the database. The runtime overlay reads user content from disk on
+       every load, so it read the skipped file again and the load failed for the
+       very reason the import had skipped it — a refresh that succeeded and then
+       would not load, which is worse than refusing. **0.6.0** (Translator
+       `1a4a93a`) has `RuntimeContentFiles` honour what the database records and
+       leave those files unread. An append skip is not one of them: that file was
+       imported and only one operation was dropped.
      - **Still to do** (user, 2026-09-23): auto-fixes for conflicting duplicate
        ids, so the user can resolve one from the list rather than by hand.
 
