@@ -92,3 +92,7 @@ $RECYCLE.BIN/
 
 # Test run artifacts
 TestResults/
+
+# Retired bundled Translator copy; the app imports content in process.
+Aurora.App/BundledTools/
+tools/translator-artifacts/

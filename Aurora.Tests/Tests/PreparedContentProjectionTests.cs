@@ -1,3 +1,4 @@
+using Aurora.Content;
 using Aurora.Content.Preparation;
 using Microsoft.Data.Sqlite;
 using System.Xml.Linq;
@@ -188,14 +189,9 @@ public sealed class PreparedContentProjectionTests : IDisposable
             .Elements.Select(e => e.AuroraId).Should().Equal("LOCAL_ALIAS");
     }
 
-    [Aurora.Tests.Helpers.TranslatorIntegrationFact]
-    [Trait("Category", "TranslatorIntegration")]
-    public async Task WindowsTranslatorWriterBuildsFreshDatabaseAndCombinesSecondaryXml()
+    [Fact]
+    public async Task TheLibraryBuildsAFreshDatabaseAndSecondaryXmlCombinesWithIt()
     {
-        string? configured = Environment.GetEnvironmentVariable("AURORA_TEST_TRANSLATOR");
-        configured.Should().NotBeNullOrWhiteSpace("the integration runner must supply the Translator executable");
-        string executable = Path.GetFullPath(configured!);
-        File.Exists(executable).Should().BeTrue($"AURORA_TEST_TRANSLATOR must point to a published executable: {executable}");
         string primary = Path.Combine(root, "primary");
         string secondary = Path.Combine(root, "secondary");
         Directory.CreateDirectory(primary);
@@ -204,17 +200,10 @@ public sealed class PreparedContentProjectionTests : IDisposable
             "<append id='ID_TEST_FEAT_PRIMARY'><rules><grant type='Feat' id='ID_TEST_FEAT_SECONDARY'/></rules></append></elements>");
         File.WriteAllText(Path.Combine(secondary, "extra.xml"), "<elements>" + Element("ID_TEST_FEAT_SECONDARY") + "</elements>");
         string database = Path.Combine(root, "fresh.sqlite");
-        using var process = new Process { StartInfo = new(executable)
-            { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true } };
-        foreach (var arg in new[] { "sqlite-import", primary, database }) process.StartInfo.ArgumentList.Add(arg);
-        process.Start();
-        var stdout = process.StandardOutput.ReadToEndAsync();
-        var stderr = process.StandardError.ReadToEndAsync();
-        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(60));
-        using var registration = timeout.Token.Register(() => { try { process.Kill(true); } catch (InvalidOperationException) { } });
-        await process.WaitForExitAsync(timeout.Token);
-        string diagnostic = await stdout + await stderr;
-        process.ExitCode.Should().Be(0, diagnostic);
+
+        // The app imports through the shared library in process; no external writer is involved.
+        await ContentImport.ImportAsync(primary, database);
+
         using var connection = ContentDatabase.OpenReadableConnection(database);
         PreparedCatalogReader.IsPrepared(connection).Should().BeTrue();
         PreparedCatalogReader.InputsMatch(connection, [primary]).Should().BeTrue();

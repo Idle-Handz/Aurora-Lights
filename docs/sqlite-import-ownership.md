@@ -2,6 +2,12 @@
 
 Audited 2026-09-12. Runtime XML ingestion is outside this audit's replacement scope.
 
+> **Superseded (2026-09-22).** This records the state before the shared content
+> library. The app now imports in process through `Aurora.Content`, the bundled
+> executable and the copied importer are retired, and preferences live in app
+> settings as source restrictions. Kept for the reasoning that led there; see
+> `docs/translator-library-split-plan.md` for what replaced it.
+
 ## Current application behavior
 
 - `Aurora.App/Services/ContentDatabaseService.cs`: `SyncAsync` launches the bundled Windows Translator with `sqlite-import` only when exactly one content directory is configured and the executable exists. Otherwise it calls `AuroraContentImporter.Import`. A Translator process failure returns a failed result; it does not invoke the copied importer afterward.
