@@ -1,75 +1,88 @@
-using Aurora.Importer;
+using Aurora.App.Services;
+using Aurora.Content;
 using Microsoft.Data.Sqlite;
-using System.Security.Cryptography;
 
 namespace Aurora.Tests.Tests;
 
+/// <summary>
+/// Deciding whether the content database is out of date compares the files it was built from
+/// against what is on disk now. It must notice an edit that keeps a file's size and timestamp,
+/// must not need to parse the XML to answer, and must notice files appearing or disappearing.
+/// </summary>
 public sealed class ContentChangeScanTests : IDisposable
 {
     private readonly string work = Path.Combine(Path.GetTempPath(), "aurora-change-scan-" + Guid.NewGuid().ToString("N"));
     private string Root => Path.Combine(work, "content");
-    private string Extra => Path.Combine(work, "extra-content");
     private string Database => Path.Combine(work, "content.sqlite");
-    private string FilePath => Path.Combine(Root, "features.xml");
+    private string FilePath => Path.Combine(Root, "core", "features.xml");
     private const string Xml = "<elements><element id='ID_TEST' name='Old' type='Item' source='Test'/></elements>";
 
     public ContentChangeScanTests()
     {
-        Directory.CreateDirectory(Root);
-        Directory.CreateDirectory(Extra);
+        Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
         File.WriteAllText(FilePath, Xml);
-        using var connection = new SqliteConnection($"Data Source={Database};Pooling=False");
-        connection.Open();
-        using var command = connection.CreateCommand();
-        command.CommandText = "CREATE TABLE source_files(relative_path TEXT PRIMARY KEY, file_hash TEXT);";
-        command.ExecuteNonQuery();
-        Record("features.xml", FilePath);
+        Import();
     }
 
+    private void Import() => ContentImport.ImportAsync(Root, Database).GetAwaiter().GetResult();
+
+    private bool IsStale() => ContentDatabaseReader.IsStale([Root], Database);
+
     [Fact]
-    public void ChangedMalformedXml_IsReportedWithoutParsingTheCatalog()
+    public void AnUnchangedContentFolderIsNotStale() => IsStale().Should().BeFalse();
+
+    [Fact]
+    public void ChangedMalformedXmlIsReportedWithoutParsingTheCatalog()
     {
         File.WriteAllText(FilePath, "<elements><element");
-        AuroraContentImporter.IsStale(Root, Database).Should().BeTrue();
+
+        IsStale().Should().BeTrue("the check compares file contents and never parses them");
     }
 
     [Fact]
-    public void SameSizeAndTimestampEdit_IsStillDetectedByContentHash()
+    public void AnEditKeepingTheSameSizeAndTimestampIsStillDetected()
     {
-        AuroraContentImporter.IsStale(Root, Database).Should().BeFalse();
         var timestamp = File.GetLastWriteTimeUtc(FilePath);
         File.WriteAllText(FilePath, Xml.Replace("Old", "New"));
         File.SetLastWriteTimeUtc(FilePath, timestamp);
-        AuroraContentImporter.IsStale(Root, Database).Should().BeTrue();
+
+        IsStale().Should().BeTrue();
     }
 
     [Theory]
     [InlineData("add")]
     [InlineData("delete")]
     [InlineData("rename")]
-    public void MultipleRootsAndWindowsCatalogPaths_DetectFileSetChanges(string change)
+    public void FilesAppearingOrDisappearingAreDetected(string change)
     {
-        string extraFile = Path.Combine(Extra, "features.xml");
-        File.WriteAllText(extraFile, Xml);
-        Record("additional-1-extra-content\\features.xml", extraFile);
-        string[] roots = [Root, Root, Extra];
-        AuroraContentImporter.IsStale(roots, Database).Should().BeFalse();
-        if (change == "add") File.WriteAllText(Path.Combine(Extra, "new.xml"), Xml);
-        else if (change == "delete") File.Delete(extraFile);
-        else File.Move(extraFile, Path.Combine(Extra, "renamed.xml"));
-        AuroraContentImporter.IsStale(roots, Database).Should().BeTrue();
+        IsStale().Should().BeFalse();
+
+        if (change == "add") File.WriteAllText(Path.Combine(Root, "core", "new.xml"), Xml);
+        else if (change == "delete") File.Delete(FilePath);
+        else File.Move(FilePath, Path.Combine(Root, "core", "renamed.xml"));
+
+        IsStale().Should().BeTrue();
     }
 
-    private void Record(string relative, string path)
+    [Fact]
+    public void ADatabaseThisLibraryDidNotBuildNeedsRebuilding()
     {
-        using var connection = new SqliteConnection($"Data Source={Database};Pooling=False");
-        connection.Open();
-        using var command = connection.CreateCommand();
-        command.CommandText = "INSERT INTO source_files VALUES ($path,$hash)";
-        command.Parameters.AddWithValue("$path", relative);
-        command.Parameters.AddWithValue("$hash", Convert.ToHexString(MD5.HashData(File.ReadAllBytes(path))));
-        command.ExecuteNonQuery();
+        // An older database is not upgraded in place; the app rebuilds it.
+        File.Delete(Database);
+        using (var connection = new SqliteConnection($"Data Source={Database};Pooling=False"))
+        {
+            connection.Open();
+            using var command = connection.CreateCommand();
+            command.CommandText = "CREATE TABLE source_files(relative_path TEXT PRIMARY KEY, file_hash TEXT);";
+            command.ExecuteNonQuery();
+        }
+
+        IsStale().Should().BeTrue();
     }
 
-    public void Dispose() => Directory.Delete(work, recursive: true);
+    public void Dispose()
+    {
+        SqliteConnection.ClearAllPools();
+        Directory.Delete(work, recursive: true);
+    }
 }

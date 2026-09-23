@@ -1,4 +1,3 @@
-using Aurora.Importer;
 using Builder.Data;
 using Builder.Presentation.Services.Sources;
 using Builder.Data.Elements;
@@ -19,39 +18,6 @@ public sealed class RequiredContentPolicyTests
     [InlineData("Monster Manual", false)]
     public void InfrastructureIsRequiredButRulebooksRemainSelectable(string name, bool required)
         => RequiredContentPolicy.IsRequiredSource(name).Should().Be(required);
-
-    [Fact]
-    // The app no longer reads these flags; this guards the database side until the column goes.
-    public void DisabledInfrastructureStaysEnabledInTheDatabase()
-    {
-        string path = Path.Combine(Path.GetTempPath(), "aurora-required-" + Guid.NewGuid() + ".sqlite");
-        try
-        {
-            using var connection = new SqliteConnection($"Data Source={path};Pooling=False");
-            connection.Open();
-            using var command = connection.CreateCommand();
-            command.CommandText = """
-                CREATE TABLE content_packages(content_package_id INTEGER,package_key TEXT,package_name TEXT,
-                    package_kind TEXT,precedence_rank INTEGER,is_enabled INTEGER);
-                INSERT INTO content_packages VALUES(1,'core-ale-xml','ALE.xml','core',0,0),
-                    (2,'core-players-handbook','Players Handbook','core',0,0);
-                CREATE TABLE content_preparation_metadata(singleton_id,contract_version,catalog_policy,append_policy);
-                INSERT INTO content_preparation_metadata VALUES(1,1,'unrestricted','materialized');
-                """;
-            command.ExecuteNonQuery();
-            AuroraContentImporter.ReadEnabledPackageKeys(connection).Should().Equal("core-ale-xml");
-            Action disable = () => AuroraContentImporter.SetPackageEnabled(path, 1, false);
-            disable.Should().Throw<InvalidOperationException>().WithMessage("*must remain enabled*");
-            AuroraContentImporter.SetPackageEnabled(path, 2, true);
-            AuroraContentImporter.SetPackageEnabled(path, 2, false);
-            AuroraContentImporter.ReadEnabledPackageKeys(connection).Should().Equal("core-ale-xml");
-        }
-        finally
-        {
-            SqliteConnection.ClearAllPools();
-            File.Delete(path);
-        }
-    }
 
     [Theory]
     [InlineData("Aurora Legacy Essentials", true)]

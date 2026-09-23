@@ -1,6 +1,6 @@
+using Aurora.Content;
 using System.Text.Json;
 using System.Xml;
-using Aurora.Importer;
 using Aurora.Content.Preparation;
 using Builder.Data;
 using Builder.Data.Files;
@@ -115,12 +115,13 @@ public sealed class CorrectionMetadataCompatibilityTests : IDisposable
         File.WriteAllText(Path.Combine(content, "staff.xml"), ReadFixture("staff.xml")
             .Replace("<elements>", $"<elements xmlns=\"{MetadataNamespace}\">"));
         string database = Path.Combine(temporary, "content.sqlite");
-        Import(content, database);
-        using var connection = ContentDatabase.OpenReadableConnection(database);
-        using var command = connection.CreateCommand();
-        command.CommandText = "SELECT COUNT(*) FROM elements";
-        Convert.ToInt64(command.ExecuteScalar()).Should().Be(0,
-            "this negative control documents why the content root must stay unnamespaced");
+
+        Action import = () => Import(content, database);
+
+        import.Should().Throw<InvalidDataException>()
+            .WithMessage("*unnamespaced elements root*",
+                "a namespaced root is refused rather than quietly importing nothing");
+        File.Exists(database).Should().BeFalse("a refused import leaves no database behind");
     }
 
     [Fact]
@@ -162,9 +163,8 @@ public sealed class CorrectionMetadataCompatibilityTests : IDisposable
 
     private static void Import(string content, string database)
     {
-        var result = AuroraContentImporter.Import(content, database);
-        result.Success.Should().BeTrue(result.ErrorMessage);
-        result.FilesProcessed.Should().Be(1);
+        var result = ContentImport.ImportAsync(content, database).GetAwaiter().GetResult();
+        result.FilesChanged.Should().Be(1);
     }
 
     private static Dictionary<string, string[]> Snapshot(string path)
@@ -188,7 +188,9 @@ public sealed class CorrectionMetadataCompatibilityTests : IDisposable
                 for (int i = 0; i < reader.FieldCount; i++)
                 {
                     string name = reader.GetName(i);
-                    if (name is "file_hash" or "created_utc") continue;
+                    // Hashes of the file bytes move whenever the file is annotated, which is the
+                    // point of this test; what must not move is the content derived from it.
+                    if (name is "file_hash" or "created_utc" or "input_sha256" or "sha256") continue;
                     row[name] = reader.IsDBNull(i) ? null : reader.GetValue(i);
                 }
                 rows.Add(JsonSerializer.Serialize(row));
