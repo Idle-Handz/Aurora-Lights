@@ -1,9 +1,28 @@
 # Content database rehearsal
 
-Windows-only headless integration tool. It compiles the actual Lights database,
-projection, fallback, and parity service sources and uses the bundled Translator.
+Windows-only headless integration tool. It references the actual Lights database,
+projection, fallback, and parity services and uses the pinned shared content library.
 It does not launch MAUI, render pickers, or exercise character UI interactions.
 The only copied UI type is the shape-only ElementOption DTO.
+
+## Content policy lifecycle checks
+
+Run `tools/ContentDatabaseRehearsal/run-policy-checks.ps1` from PowerShell. It builds
+the Release tool (use `-NoBuild` only after building it), creates uniquely named
+disposable fixtures under `buildtmp`, and invokes every phase in a fresh process.
+Both skip-content preference values are exercised. No installed XML, database,
+character saves or app settings are read or modified.
+
+The `policy-*` phases verify first-import conflict exclusions and durable report
+data, unaffected definitions/grants, byte-for-byte database preservation on rejected
+refreshes, retention of the live catalog on failed reconstruction, repair, and
+fresh-process reopening. A separate cold-start probe records the current failure
+to load while invalid correction metadata remains on disk; it is an observation,
+not an assertion that unavailable startup is the desired long-term behavior.
+Each phase writes JSON plus an application log, and the runner writes `summary.json`.
+These are service-level checks; they do not render Settings, pickers or PDFs.
+
+## Earlier corpus rehearsals
 
 prepare.py captures SHA-256 hashes of installed XML/database, creates a consistent
 read-only SQLite backup, checks the existing alias drafts against their recorded

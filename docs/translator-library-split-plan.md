@@ -1,9 +1,21 @@
 # Shared content library: Translator split plan (draft)
 
-Status: **active, updated 2026-09-22** (Phases 4-7 complete; Phase 5 still needs its manual UI pass, then Phase 8 merges). Work happens on
+Status: **active, updated 2026-09-24** (Phases 4-7 complete; Phase 5 still needs its manual UI pass, then Phase 8 merges). Work happens on
 `feature_shared-content-library` in both this repo and `5eApiTranslator`.
 Nothing merges to `main` in either repo until Windows MAUI user-experience parity
 is demonstrated.
+
+**September 24 policy follow-up:** local package 0.7.0 (schema 1/data 13) implements
+first-install conflict exclusions and blocking invalid corrections. See the
+[policy and verification record](content-conflict-policy-2026-09-24.md). Selective
+preservation remains deferred; the current scan does not support a greater-than-15%
+per-refresh conflict estimate.
+
+**September 23 review follow-up:** the local 0.6.1 fixes, regression evidence,
+remaining skip-policy decisions, and manual checks are recorded in
+[the fix record](content-library-fixes-2026-09-23.md). This supersedes the earlier
+0.6.0 claim that all skipped operations stay out of the runtime read: rejected
+appends could still be replayed. No merge or release is implied by the follow-up.
 
 ## Decisions
 

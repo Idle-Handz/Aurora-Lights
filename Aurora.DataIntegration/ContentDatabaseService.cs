@@ -34,6 +34,18 @@ public sealed class ContentDatabaseService
         "read skipped content", () => DatabasePath is { } path
             ? ContentDatabaseReader.ReadSkippedContent(path) : [], []);
 
+    /// <summary>Prevents a failed prepared load from restoring deliberately unavailable definitions.</summary>
+    public static void ValidateRawXmlFallback(string? databasePath, string? loadFailure = null)
+    {
+        if (string.IsNullOrWhiteSpace(databasePath)) return;
+        var unavailable = ContentDatabaseReader.ReadUnavailableIds(databasePath);
+        if (unavailable.Count > 0)
+            throw new InvalidDataException("The database contains conflicting element IDs that must remain unavailable. " +
+                "Raw XML fallback cannot bypass that decision. Review conflicts in Settings, correct the content files, and refresh the database before retrying. " +
+                "Unavailable IDs: " + string.Join(", ", unavailable.OrderBy(id => id, StringComparer.Ordinal)) +
+                (string.IsNullOrWhiteSpace(loadFailure) ? "" : ". Prepared load failed: " + loadFailure));
+    }
+
     /// <summary>Fires on the calling (background) thread whenever state changes.</summary>
     public event Action? StateChanged;
 
@@ -201,7 +213,9 @@ public sealed class ContentDatabaseService
         foreach (var skip in imported.Skipped)
             DebugLogService.Instance.Warn($"Content skipped ({skip.Kind}): {skip.Path}", skip.Detail);
         return AuroraImportResult.Succeeded(imported.FilesChanged, imported.FilesUnchanged, imported.ElementsWritten,
-            imported.Skipped.Count);
+            filesSkipped: imported.Skipped.Count(skip => skip.Kind is not ("append" or "definition-conflict")),
+            appendOperationsSkipped: imported.Skipped.Count(skip => skip.Kind == "append"),
+            unavailableDefinitions: imported.Skipped.Count(skip => skip.Kind == "definition-conflict"));
     }
 
     private void ReportProgress(ContentImportProgress p)
@@ -214,19 +228,29 @@ public sealed class ContentDatabaseService
     // so each library phase is scaled into a fixed share of a 1000-step range.
     internal static AuroraImportProgress MapProgress(ContentImportProgress p) => p.Phase switch
     {
-        ContentImportPhase.Preparing => Scaled(AuroraImportPhase.Scanning, p, 0, 500),
-        ContentImportPhase.Reading => Scaled(AuroraImportPhase.Scanning, p, 500, 500),
-        ContentImportPhase.Comparing => Scaled(AuroraImportPhase.Importing, p, 0, 250),
-        ContentImportPhase.Writing => Scaled(AuroraImportPhase.Importing, p, 250, 750),
+        ContentImportPhase.Preparing => Scaled(AuroraImportPhase.Scanning, p, 0, 500, "Scanning content files", "files"),
+        ContentImportPhase.Reading => Scaled(AuroraImportPhase.Scanning, p, 500, 500, "Reading content files", "files"),
+        ContentImportPhase.Comparing => Scaled(AuroraImportPhase.Importing, p, 0, 250, "Comparing content files", "files"),
+        ContentImportPhase.Writing => Scaled(AuroraImportPhase.Importing, p, 250, 750, "Writing content to database", "elements"),
         ContentImportPhase.Resolving or ContentImportPhase.Activating =>
-            new AuroraImportProgress(AuroraImportPhase.Resolving, 1000, 1000, p.FilesChanged, p.ElementsWritten, null),
+            new AuroraImportProgress(AuroraImportPhase.Resolving, 1000, 1000, p.FilesChanged, p.ElementsWritten, null)
+            {
+                IsIndeterminate = true,
+                StatusText = p.Phase == ContentImportPhase.Activating
+                    ? "Validating and activating database…" : "Resolving relationships…"
+            },
         _ => new AuroraImportProgress(AuroraImportPhase.Complete, 1000, 1000, p.FilesChanged, p.ElementsWritten, null),
     };
 
-    private static AuroraImportProgress Scaled(AuroraImportPhase phase, ContentImportProgress p, int offset, int span)
+    private static AuroraImportProgress Scaled(AuroraImportPhase phase, ContentImportProgress p, int offset, int span,
+        string activity, string units)
     {
         int step = p.Total > 0 ? (int)((long)span * p.Completed / p.Total) : span;
-        return new AuroraImportProgress(phase, offset + step, 1000, p.FilesChanged, p.ElementsWritten, p.CurrentFile);
+        return new AuroraImportProgress(phase, offset + step, 1000, p.FilesChanged, p.ElementsWritten, p.CurrentFile)
+        {
+            IsIndeterminate = p.Total <= 0,
+            StatusText = p.Total > 0 ? $"{activity} ({p.Completed:N0} / {p.Total:N0} {units})…" : $"{activity}…"
+        };
     }
 
     // Reports synchronously on the importing thread; StateChanged consumers already marshal to the UI.

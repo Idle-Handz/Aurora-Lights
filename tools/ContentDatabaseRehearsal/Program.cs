@@ -39,6 +39,12 @@ bool success = false;
 try
 {
     var service = new ContentDatabaseService();
+    if (mode.StartsWith("policy-", StringComparison.Ordinal))
+    {
+        result = await ContentPolicyRehearsal.Run(caseRoot, mode);
+        success = true;
+    }
+    else
     switch (mode)
     {
         case "farmer-annotation": result = FarmerCorrectionRehearsal.Run(caseRoot); success = true; break;

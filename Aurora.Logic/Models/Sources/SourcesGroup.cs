@@ -21,6 +21,7 @@ public class SourcesGroup : ObservableObject
     this.Name = name;
     this.AllowUnchecking = allowUnchecking;
     this.Sources = new ObservableCollection<SourceItem>();
+    if (!allowUnchecking) this._isChecked = true;
   }
 
   public string Name { get; set; }
@@ -37,21 +38,18 @@ public class SourcesGroup : ObservableObject
 
   public void SetIsChecked(bool? value, bool updateChildren)
   {
-    bool? nullable = value;
-    bool? isChecked1 = this._isChecked;
-    if (nullable.GetValueOrDefault() == isChecked1.GetValueOrDefault() & nullable.HasValue == isChecked1.HasValue)
-      return;
-    this._isChecked = value;
-    if (updateChildren && this._isChecked.HasValue)
+    if (!this.AllowUnchecking) value = true;
+    if (updateChildren && value.HasValue)
     {
-      foreach (SourceItem source in (Collection<SourceItem>) this.Sources)
-      {
-        bool? isChecked2 = this._isChecked;
-        bool flag = false;
-        if (!(isChecked2.GetValueOrDefault() == flag & isChecked2.HasValue) || source.AllowUnchecking)
-          source.SetIsChecked(this._isChecked, true, false);
-      }
+      foreach (SourceItem source in this.Sources)
+        source.SetIsChecked(value, true, false);
+
+      // A mixed group still includes its required children after a bulk disable.
+      if (this.AllowUnchecking && this.Sources.Count > 0)
+        value = this.Sources.All(source => source.IsChecked == this.Sources[0].IsChecked)
+          ? this.Sources[0].IsChecked : null;
     }
+    this._isChecked = value;
     this.OnPropertyChanged("IsChecked", "Underline");
   }
 

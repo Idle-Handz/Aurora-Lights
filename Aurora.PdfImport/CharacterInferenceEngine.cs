@@ -292,7 +292,6 @@ public sealed class CharacterInferenceEngine
                 LEFT JOIN source_elements se ON e.element_id = se.element_id
                 WHERE et.type_name = $type
                   AND (e.name = $name OR e.name LIKE $nameLike)
-                  AND (cp.is_enabled IS NULL OR cp.is_enabled = 1)
             ),
             preferred_matches AS (
                 SELECT *
@@ -495,7 +494,6 @@ public sealed class CharacterInferenceEngine
             LEFT JOIN content_packages cp ON sf.content_package_id = cp.content_package_id
             WHERE sr.aurora_id = $aurora_id
               AND parent_et.type_name = 'Race'
-              AND (cp.is_enabled IS NULL OR cp.is_enabled = 1)
             ORDER BY COALESCE(cp.precedence_rank, -2147483648) DESC
             LIMIT 1;
             """;

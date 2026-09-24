@@ -1,4 +1,5 @@
 using Aurora.Content;
+using System.Security.Cryptography;
 using System.Text.Json;
 using System.Xml;
 using Aurora.Content.Preparation;
@@ -9,7 +10,8 @@ using Microsoft.Data.Sqlite;
 
 namespace Aurora.Tests.Tests;
 
-// Characterization tests for a proposed extension, not a correction implementation.
+// Legacy XML parsers tolerate the extension; database preparation additionally enforces
+// correction placement and validity. Probe metadata is not a valid managed correction.
 public sealed class CorrectionMetadataCompatibilityTests : IDisposable
 {
     private const string MetadataNamespace = "urn:aurora-lights:corrections:1";
@@ -54,7 +56,39 @@ public sealed class CorrectionMetadataCompatibilityTests : IDisposable
     [InlineData("tatsumi.xml")]
     [InlineData("musketball.xml")]
     [InlineData("staff.xml")]
-    public void ImportAndMetadataOnlyRefresh_PreserveAllNonvolatileDatabaseRows(string fixture)
+    public void MisplacedCorrectionMetadata_RefusesRefreshAndPreservesInstalledDatabase(string fixture)
+    {
+        string content = Path.Combine(temporary, "content");
+        Directory.CreateDirectory(content);
+        string file = Path.Combine(content, fixture);
+        string database = Path.Combine(temporary, "content.sqlite");
+        string original = ReadFixture(fixture);
+        File.WriteAllText(file, original);
+        Import(content, database);
+        string databaseHash = Hash(database);
+
+        // Neither a review-state change nor the skip option may silently discard intent.
+        foreach (string annotated in new[] { Annotate(original), Annotate(original).Replace("review-pending", "reviewed") })
+        foreach (bool skipUnusable in new[] { false, true })
+        {
+            File.WriteAllText(file, annotated);
+            string inputHash = Hash(file);
+            Action import = () => ContentImport.ImportAsync(content, database,
+                skipUnusableContent: skipUnusable).GetAwaiter().GetResult();
+
+            import.Should().Throw<InvalidDataException>()
+                .WithMessage("*Correction metadata in*must be placed under user/local*");
+            Hash(database).Should().Be(databaseHash, "a refused refresh preserves the entire installed database");
+            Hash(file).Should().Be(inputHash, "a refused refresh leaves the user's XML for review");
+        }
+    }
+
+    [Theory]
+    [InlineData("devout.xml")]
+    [InlineData("tatsumi.xml")]
+    [InlineData("musketball.xml")]
+    [InlineData("staff.xml")]
+    public void NamespaceDeclarationsAndComments_AreNotCorrectionIntent(string fixture)
     {
         string content = Path.Combine(temporary, "content");
         Directory.CreateDirectory(content);
@@ -65,17 +99,19 @@ public sealed class CorrectionMetadataCompatibilityTests : IDisposable
         Import(content, database);
         var baseline = Snapshot(database);
 
-        File.WriteAllText(file, Annotate(original));
-        Import(content, database);
-        Snapshot(database).Should().BeEquivalentTo(baseline);
-
-        File.WriteAllText(file, Annotate(original).Replace("review-pending", "reviewed"));
-        Import(content, database);
-        Snapshot(database).Should().BeEquivalentTo(baseline);
-
-        File.WriteAllText(file, original);
-        Import(content, database);
-        Snapshot(database).Should().BeEquivalentTo(baseline);
+        string declared = original.Replace("<elements>", $"<elements xmlns:al=\"{MetadataNamespace}\">");
+        foreach (string xml in new[]
+        {
+            declared,
+            declared.Replace("</elements>", "<!-- Documentation example: <al:corrections /> -->\n</elements>"),
+            original
+        })
+        {
+            File.WriteAllText(file, xml);
+            Import(content, database);
+            Snapshot(database).Should().BeEquivalentTo(baseline,
+                "unused namespaces and comments do not mark an otherwise ordinary file as a correction");
+        }
     }
 
     [Fact]
@@ -107,20 +143,22 @@ public sealed class CorrectionMetadataCompatibilityTests : IDisposable
         load.Should().Throw<NullReferenceException>().WithMessage("missing update node in info block");
     }
 
-    [Fact]
-    public void DefaultNamespaceOnContentRoot_PreventsImporterDiscovery()
+    [Theory]
+    [InlineData("urn:example:content", "*unnamespaced elements root*")]
+    [InlineData(MetadataNamespace, "*Correction metadata in*must be placed under user/local*")]
+    public void DefaultNamespaceOnContentRoot_RefusesImport(string contentNamespace, string diagnostic)
     {
         string content = Path.Combine(temporary, "content");
         Directory.CreateDirectory(content);
         File.WriteAllText(Path.Combine(content, "staff.xml"), ReadFixture("staff.xml")
-            .Replace("<elements>", $"<elements xmlns=\"{MetadataNamespace}\">"));
+            .Replace("<elements>", $"<elements xmlns=\"{contentNamespace}\">"));
         string database = Path.Combine(temporary, "content.sqlite");
 
         Action import = () => Import(content, database);
 
         import.Should().Throw<InvalidDataException>()
-            .WithMessage("*unnamespaced elements root*",
-                "a namespaced root is refused rather than quietly importing nothing");
+            .WithMessage(diagnostic,
+                "a namespaced root is refused; the reserved correction namespace is checked first");
         File.Exists(database).Should().BeFalse("a refused import leaves no database behind");
     }
 
@@ -160,6 +198,8 @@ public sealed class CorrectionMetadataCompatibilityTests : IDisposable
         </al:corrections>
         </elements>
         """);
+
+    private static string Hash(string path) => Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path)));
 
     private static void Import(string content, string database)
     {

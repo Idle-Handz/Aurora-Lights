@@ -20,10 +20,9 @@ public class GrantRuleParser : RuleParser
 			switch (attribute.Name)
 			{
 			case "id":
-				grantRule.Attributes.Name = attribute.Value;
-				continue;
 			case "name":
-				grantRule.Attributes.Name = attribute.Value;
+				// Normalize reference padding for lookup; leave the source XML and definition IDs intact.
+				grantRule.Attributes.Name = attribute.Value.Trim();
 				continue;
 			case "type":
 				grantRule.Attributes.Type = attribute.Value;

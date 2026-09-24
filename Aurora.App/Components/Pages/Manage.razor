@@ -1,4 +1,4 @@
-@page "/manage"
+﻿@page "/manage"
 @implements IDisposable
 @inject CharacterTabService Tabs
 @inject ISnackbar Snackbar
@@ -27,8 +27,7 @@
                                   InfoModel="@null"
                                   SourceGroups="@SourceGroups"
                                   ShowDefaultActions="true"
-                                  OnToggleCategory="ToggleCategoryAsync"
-                                  OnToggleGroup="ToggleGroupAsync"
+                                  OnToggleNode="ToggleNodeAsync"
                                   OnToggleItem="ToggleSourceAsync"
                                   OnLoadDefaults="LoadDefaultAsync"
                                   OnSaveDefaults="SaveAsDefault" />
@@ -181,17 +180,6 @@
         return Task.CompletedTask;
     }
 
-    private async Task ToggleGroupInternal(SourcesGroup group)
-    {
-        if (!group.AllowUnchecking)
-        {
-            Snackbar.Add("That source group is required and can't be disabled.", Severity.Info, cfg => cfg.VisibleStateDuration = 2500);
-            return;
-        }
-        group.SetIsChecked(group.IsChecked == true ? false : (bool?)true, updateChildren: true);
-        await ApplyAndPersistRestrictions();
-    }
-
     private async Task ToggleSourceInternal(SourceItem item)
     {
         if (!item.AllowUnchecking)
@@ -260,20 +248,6 @@
     }
 
 
-    private async Task ToggleGroupAsync(string groupId)
-    {
-        SourcesGroup? group = CharacterManager.Current.SourcesManager.SourceGroups
-            .FirstOrDefault(candidate => string.Equals(candidate.Name, groupId, StringComparison.Ordinal));
-        if (group is not null)
-        {
-            await ToggleGroupInternal(group);
-        }
-        else
-        {
-            Snackbar.Add("That source group could not be found.", Severity.Warning, cfg => cfg.VisibleStateDuration = 2500);
-        }
-    }
-
     private async Task ToggleSourceAsync(string sourceId)
     {
         SourceItem? item = CharacterManager.Current.SourcesManager.SourceGroups
@@ -289,17 +263,18 @@
         }
     }
 
-    private async Task ToggleCategoryAsync(SourceRestrictionCategoryToggle toggle)
+    /// <summary>A category or publisher row: every source under it moves together, in one save.</summary>
+    private async Task ToggleNodeAsync(SourceRestrictionNodeToggle toggle)
     {
         List<SourceItem> matchingSources = CharacterManager.Current.SourcesManager.SourceGroups
             .SelectMany(group => group.Sources)
-            .Where(item => item.AllowUnchecking && SourceRestrictionModelMapper.Classify(item) == toggle.Category)
+            .Where(item => item.AllowUnchecking && toggle.SourceIds.Contains(item.Source.Id, StringComparer.Ordinal))
             .ToList();
 
         if (matchingSources.Count == 0)
         {
             Snackbar.Add(
-                "No optional sources are available in that category.",
+                "No optional sources are available under that heading.",
                 Severity.Info,
                 cfg => cfg.VisibleStateDuration = 2500);
             return;

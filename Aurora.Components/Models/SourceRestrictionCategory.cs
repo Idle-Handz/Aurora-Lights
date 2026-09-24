@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 
 namespace Aurora.Components.Models;
 
@@ -10,9 +10,23 @@ public enum SourceRestrictionCategory
     Official55E
 }
 
-public sealed record SourceRestrictionCategoryToggle(
+/// <summary>How a category is labelled in the sources tree, and the order the tree lists them in.</summary>
+public sealed record SourceRestrictionCategoryDefinition(
     SourceRestrictionCategory Category,
-    bool IsEnabled);
+    string Label,
+    string Description);
+
+public static class SourceRestrictionCategories
+{
+    /// <summary>Official material first: it is what most characters are built from.</summary>
+    public static readonly IReadOnlyList<SourceRestrictionCategoryDefinition> InDisplayOrder =
+    [
+        new(SourceRestrictionCategory.Official5E, "5e official", "Official 2014-rules material"),
+        new(SourceRestrictionCategory.Official55E, "5.5e official", "Official 2024-rules material"),
+        new(SourceRestrictionCategory.ThirdParty, "3rd party", "Published third-party material"),
+        new(SourceRestrictionCategory.Homebrew, "Homebrew", "Personal and community content")
+    ];
+}
 
 public static class SourceRestrictionCategoryClassifier
 {

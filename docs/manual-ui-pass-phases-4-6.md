@@ -1,9 +1,11 @@
 # Manual UI pass — phases 4 to 6
 
-Everything in phases 4 to 6 is verified by automated gates except what a person
-has to look at. This is that list. It covers the shared content library going
-in-process, source restrictions replacing the old per-package switches, and the
-Builder.Data cleanup.
+This lists the remaining integrated UI, character workflow, and installed-app
+review for phases 4 to 6. Many underlying rules already have automated coverage;
+the checklist is not a claim that every remaining item requires a person. Data
+round trips, PDF values, and installed-runtime smoke checks can also be automated.
+Visual presentation and interaction still need review in the rendered app. It
+covers the shared library, source restrictions, and Builder.Data cleanup.
 
 Work on branch `feature_shared-content-library`. Nothing here has merged to `main`.
 
@@ -56,9 +58,15 @@ Expect:
 - A **Default source restrictions** section — the same tree as a character's
   Sources tab. The old package list with its search box is gone.
 - **Ryoko's Guide to the Yokai Realms** switched off there.
-- **Apply these defaults to new characters** switched on. The migration turns it
-  on only because it migrated something.
-- Aurora Legacy Essentials, Internal and Core still enabled and not switchable.
+- There is no apply-defaults toggle: new characters and saved characters whose
+  files have no `<sources>` node use these defaults. Empty defaults mean unrestricted.
+- **Required builder sources** shows Aurora Legacy Essentials and the
+  Internal/Core infrastructure labels present in the loaded catalog (including
+  Aurora Essentials when present). Every row is checked, labeled **Always
+  enabled**, and cannot be toggled; the group's toggle is also disabled. Old
+  restrictions and broad category toggles cannot switch these off.
+  Rulebook sources such as the PHB, DMG and Monster Manual remain selectable,
+  including when they are grouped under Core.
 - Everything else you had switched on is still on.
 
 Then confirm it only happens once: close the app, launch again, and check the
@@ -70,6 +78,11 @@ character.
 
 ## 2. Content refresh, in-process
 
+The 0.7.0 first-import, blocked-refresh and repair/restart behavior has passed
+[automated lifecycle rehearsals](content-conflict-policy-2026-09-24.md#automated-lifecycle-rehearsal--september-24-follow-up)
+in both skip modes. Those functional checks no longer need manual repetition.
+The following UI presentation and interaction checks remain separate.
+
 Refresh no longer runs a bundled Translator executable; the shared library does
 the import inside the app.
 
@@ -77,15 +90,21 @@ the import inside the app.
 2. Watch the progress bar through the run.
 
 Expect:
-- Progress moves through scanning, importing and resolving, in that order, and
-  reaches 100%. It should not sit at 0% or jump straight to done.
+- Progress distinguishes scanning, reading, comparing, and writing. Writing
+  shows completed/total element counts and the current file, even when the
+  rounded percentage has not changed yet. An activity spinner remains animated
+  between callbacks; percentages describe work phases, not estimated time.
+- Resolving relationships and validating/activating use an animated bar because
+  they do not report a measurable total. Loading the refreshed content also
+  keeps the animated indicator until completion.
 - No console window appears at any point.
 - It finishes with "Database refreshed."
 - Afterwards the app still lists your content: open **Compendium** and search for
   something from a third-party book.
 
-Also try cancelling a refresh midway. The app should return to idle with your
-existing database intact and content still loaded.
+Cancellation is a service-level check; Settings currently has no Cancel control.
+There is no manual cancellation step in this screen. Do not close or kill the app
+as a substitute for cooperative cancellation.
 
 Why it matters: on Windows this replaces a child process. It is also the first
 time refresh works at all in a release build, on Mac, or on Android, because
@@ -97,8 +116,11 @@ The editor in Settings edits **defaults for new characters**. It must never
 change the character you have open.
 
 1. Open a character, note a source it uses on its **Manage → Sources** tab.
-2. In **Settings → Content → Sources**, switch some sources off and on: a single
-   book, a whole group, and one of the broad category buttons.
+2. In **Settings → Content → Sources** (now the first sub-tab), work the tree:
+   expand a category, expand a publisher under it, and switch things off and on at
+   each level — a single book, a publisher, a whole category. Check that a
+   half-switched category shows the dash rather than a tick, and that typing in the
+   filter box opens only what it matches.
 3. Go back to the character's **Manage → Sources**.
 
 Expect:

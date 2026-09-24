@@ -138,6 +138,7 @@ public sealed class CharacterService :
                     _elementsInitialized = true;
                     throw new InvalidDataException($"Content reload failed; the previous working elements were preserved. {dbResult.FailureReason}");
                 }
+                ContentDatabaseService.ValidateRawXmlFallback(dbResult.DatabasePath, dbResult.FailureReason);
                 await DataManager.Current.InitializeElementDataAsync();
                 ElementLoadSource = "XML fallback";
                 ElementLoadSummary = $"Loaded baseline content from XML. SQLite reason: {dbResult.FailureReason ?? "unknown"}";

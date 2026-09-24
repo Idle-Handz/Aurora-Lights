@@ -1,4 +1,4 @@
-using Aurora.Components.Models;
+﻿using Aurora.Components.Models;
 using Builder.Presentation.Models;
 using Builder.Presentation.Services;
 
@@ -300,7 +300,8 @@ public sealed class WebCharacterSessionService : IDisposable
         return await _engine.GetCurrentSourceStateAsync();
     }
 
-    public async Task<WebCharacterSourceState> ToggleCurrentSourceGroupAsync(string groupId)
+    public async Task<WebCharacterSourceState> ToggleCurrentSourceNodeAsync(
+        SourceRestrictionNodeToggle toggle)
     {
         if (_currentRuntimeState is null || string.IsNullOrWhiteSpace(_currentCharacterPath))
         {
@@ -308,21 +309,7 @@ public sealed class WebCharacterSessionService : IDisposable
         }
 
         PhaseZeroSessionWorkspace workspace = await _workspaceService.GetWorkspaceAsync();
-        WebCharacterSourceState state = await _engine.ToggleSourceGroupAsync(workspace, _currentCharacterPath, groupId);
-        await PersistMagicIfAvailableAsync(workspace);
-        return state;
-    }
-
-    public async Task<WebCharacterSourceState> ToggleCurrentSourceCategoryAsync(
-        SourceRestrictionCategoryToggle toggle)
-    {
-        if (_currentRuntimeState is null || string.IsNullOrWhiteSpace(_currentCharacterPath))
-        {
-            throw new InvalidOperationException("No character is active in the current web session.");
-        }
-
-        PhaseZeroSessionWorkspace workspace = await _workspaceService.GetWorkspaceAsync();
-        WebCharacterSourceState state = await _engine.ToggleSourceCategoryAsync(
+        WebCharacterSourceState state = await _engine.ToggleSourceNodeAsync(
             workspace,
             _currentCharacterPath,
             toggle);

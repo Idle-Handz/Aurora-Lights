@@ -1,4 +1,4 @@
-using Builder.Core.Logging;
+﻿using Builder.Core.Logging;
 using Builder.Data;
 using Builder.Data.Elements;
 using Builder.Data.Rules;
@@ -250,48 +250,18 @@ public sealed class WebCharacterEngineService
         }
     }
 
-    public async Task<WebCharacterSourceState> ToggleSourceGroupAsync(
+    /// <summary>A category or publisher row in the sources tree: its sources move together.</summary>
+    public async Task<WebCharacterSourceState> ToggleSourceNodeAsync(
         PhaseZeroSessionWorkspace workspace,
         string relativePath,
-        string groupId)
-    {
-        await _operationLock.WaitAsync();
-        try
-        {
-            SourcesGroup? group = CharacterManager.Current.SourcesManager.SourceGroups
-                .FirstOrDefault(candidate => string.Equals(candidate.Name, groupId, StringComparison.Ordinal));
-            if (group is null)
-            {
-                throw new InvalidOperationException("The requested source group was not found.");
-            }
-
-            if (group.AllowUnchecking)
-            {
-                group.SetIsChecked(group.IsChecked == true ? false : (bool?)true, updateChildren: true);
-                ApplyAndPersistSourceRestrictions(workspace, relativePath);
-            }
-
-            return new WebCharacterSourceState(
-                BuildSourceGroups(),
-                "Source restrictions updated for the current browser session.");
-        }
-        finally
-        {
-            _operationLock.Release();
-        }
-    }
-
-    public async Task<WebCharacterSourceState> ToggleSourceCategoryAsync(
-        PhaseZeroSessionWorkspace workspace,
-        string relativePath,
-        SourceRestrictionCategoryToggle toggle)
+        SourceRestrictionNodeToggle toggle)
     {
         await _operationLock.WaitAsync();
         try
         {
             List<SourceItem> matchingSources = CharacterManager.Current.SourcesManager.SourceGroups
                 .SelectMany(group => group.Sources)
-                .Where(item => item.AllowUnchecking && ClassifySource(item) == toggle.Category)
+                .Where(item => item.AllowUnchecking && toggle.SourceIds.Contains(item.Source.Id, StringComparer.Ordinal))
                 .ToList();
 
             foreach (SourceItem item in matchingSources)

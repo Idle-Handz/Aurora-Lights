@@ -17,83 +17,119 @@
         </div>
     }
 
-    <section class="source-restrictions-categories" aria-label="Broad source toggles">
-        <div class="source-restrictions-categories-header">
-            <strong>Broad source toggles</strong>
-            <span>Enable or disable whole source families. Required core sources stay enabled.</span>
-        </div>
-
-        <div class="source-restrictions-category-grid">
-            @foreach (BroadToggleModel toggle in BroadToggles)
-            {
-                <button type="button"
-                        class="source-restrictions-category"
-                        aria-checked="@GetAriaChecked(toggle.IsChecked)"
-                        role="checkbox"
-                        @onclick="() => ToggleCategoryAsync(toggle)"
-                        disabled="@(Busy || toggle.TotalCount == 0)">
-                    <span class="source-restrictions-checkbox @GetCheckClass(toggle.IsChecked, allowUnchecking: true)"></span>
-                    <span class="source-restrictions-category-copy">
-                        <strong>@toggle.Label</strong>
-                        <small>@toggle.Description</small>
-                    </span>
-                    <span class="source-restrictions-count">@toggle.EnabledCount / @toggle.TotalCount</span>
-                </button>
-            }
-        </div>
-    </section>
-
-    @* Search filter *@
-    <div style="margin-bottom: 10px;">
+    <div class="source-restrictions-search-row">
         <input class="source-restrictions-search"
                type="search"
                placeholder="Filter sources…"
                value="@_search"
                @oninput="e => _search = e.Value?.ToString() ?? string.Empty" />
+        @if (Searching)
+        {
+            <button type="button" class="source-restrictions-button" @onclick="() => _search = string.Empty">
+                Clear
+            </button>
+        }
     </div>
 
-    @foreach (SourceRestrictionGroupModel group in FilteredGroups)
+    @foreach (SourceRestrictionNodeModel category in VisibleNodes)
     {
-        int enabledCount = group.Sources.Count(s => s.IsChecked == true);
-        var visibleItems = FilteredItems(group);
-        if (visibleItems.Count == 0) continue;
+        bool expanded = IsExpanded(category);
 
-        <section class="source-restrictions-group">
-            <div class="source-restrictions-group-header">
+        <section class="source-restrictions-node category @(expanded ? "expanded" : "collapsed")">
+            <div class="source-restrictions-node-header">
+                <button type="button"
+                        class="source-restrictions-disclosure"
+                        aria-expanded="@expanded.ToString().ToLowerInvariant()"
+                        aria-label="@(expanded ? $"Collapse {category.Label}" : $"Expand {category.Label}")"
+                        @onclick="() => ToggleExpanded(category)">
+                    <span class="source-restrictions-chevron">@(expanded ? "▾" : "▸")</span>
+                </button>
+
                 <button type="button"
                         class="source-restrictions-toggle"
-                        @onclick="() => OnToggleGroup.InvokeAsync(group.Id)"
-                        disabled="@(Busy || !group.AllowUnchecking)">
-                    <span class="source-restrictions-checkbox @(GetCheckClass(group.IsChecked, group.AllowUnchecking))"></span>
-                    <span style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0;">
-                        <strong>@group.Name</strong>
-                        <span class="source-restrictions-count">@enabledCount / @group.Sources.Count</span>
+                        role="checkbox"
+                        aria-checked="@GetAriaChecked(category.IsChecked)"
+                        title="@(category.AllowUnchecking ? null : AlwaysEnabledTitle)"
+                        @onclick="() => ToggleNodeAsync(category)"
+                        disabled="@(Busy || !category.AllowUnchecking)">
+                    <span class="source-restrictions-checkbox @GetCheckClass(category.IsChecked, category.AllowUnchecking)"></span>
+                    <span class="source-restrictions-node-copy">
+                        <strong>@category.Label</strong>
+                        <small>@category.Description</small>
                     </span>
+                    @if (category.AllowUnchecking)
+                    {
+                        <span class="source-restrictions-count">@category.EnabledCount / @category.TotalCount</span>
+                    }
+                    else
+                    {
+                        <span class="source-restrictions-core">Always enabled</span>
+                    }
                 </button>
             </div>
 
-            <div class="source-restrictions-items">
-                @foreach (SourceRestrictionItemModel item in visibleItems)
-                {
-                    <button type="button"
-                            class="source-restrictions-item @(item.AllowUnchecking ? string.Empty : "locked")"
-                            @onclick="() => OnToggleItem.InvokeAsync(item.Id)"
-                            disabled="@(Busy || !item.AllowUnchecking)">
-                        <span class="source-restrictions-checkbox @(GetCheckClass(item.IsChecked, item.AllowUnchecking))"></span>
-                        <span class="source-restrictions-item-name">@item.Name</span>
-                        @if (item.IsCore)
-                        {
-                            <span class="source-restrictions-core">core</span>
-                        }
-                    </button>
-                }
-            </div>
+            @if (expanded)
+            {
+                <div class="source-restrictions-node-body">
+                    @if (VisibleSources(category).Count > 0)
+                    {
+                        <div class="source-restrictions-items">
+                            @foreach (SourceRestrictionItemModel item in VisibleSources(category))
+                            {
+                                @RenderSource(item)
+                            }
+                        </div>
+                    }
+
+                    @foreach (SourceRestrictionNodeModel publisher in VisibleChildren(category))
+                    {
+                        bool publisherExpanded = IsExpanded(publisher);
+
+                        <section class="source-restrictions-node publisher @(publisherExpanded ? "expanded" : "collapsed")">
+                            <div class="source-restrictions-node-header">
+                                <button type="button"
+                                        class="source-restrictions-disclosure"
+                                        aria-expanded="@publisherExpanded.ToString().ToLowerInvariant()"
+                                        aria-label="@(publisherExpanded ? $"Collapse {publisher.Label}" : $"Expand {publisher.Label}")"
+                                        @onclick="() => ToggleExpanded(publisher)">
+                                    <span class="source-restrictions-chevron">@(publisherExpanded ? "▾" : "▸")</span>
+                                </button>
+
+                                <button type="button"
+                                        class="source-restrictions-toggle"
+                                        role="checkbox"
+                                        aria-checked="@GetAriaChecked(publisher.IsChecked)"
+                                        @onclick="() => ToggleNodeAsync(publisher)"
+                                        disabled="@Busy">
+                                    <span class="source-restrictions-checkbox @GetCheckClass(publisher.IsChecked, allowUnchecking: true)"></span>
+                                    <span class="source-restrictions-node-copy">
+                                        <strong>@publisher.Label</strong>
+                                    </span>
+                                    <span class="source-restrictions-count">@publisher.EnabledCount / @publisher.TotalCount</span>
+                                </button>
+                            </div>
+
+                            @if (publisherExpanded)
+                            {
+                                <div class="source-restrictions-items">
+                                    @foreach (SourceRestrictionItemModel item in VisibleSources(publisher))
+                                    {
+                                        @RenderSource(item)
+                                    }
+                                </div>
+                            }
+                        </section>
+                    }
+                </div>
+            }
         </section>
     }
 
-    @if (FilteredGroups.All(g => FilteredItems(g).Count == 0))
+    @if (VisibleNodes.Count == 0)
     {
-        <p style="color: #6c7086; font-size: 13px; padding: 8px 0;">No sources match "@_search".</p>
+        <p class="source-restrictions-empty">
+            @(Searching ? $"No sources match \"{_search}\"." : "No sources are available.")
+        </p>
     }
 </div>
 
@@ -107,11 +143,9 @@
     [Parameter]
     public bool ShowDefaultActions { get; set; }
 
+    /// <summary>Switches every source under a category or publisher on or off in one step.</summary>
     [Parameter]
-    public EventCallback<SourceRestrictionCategoryToggle> OnToggleCategory { get; set; }
-
-    [Parameter]
-    public EventCallback<string> OnToggleGroup { get; set; }
+    public EventCallback<SourceRestrictionNodeToggle> OnToggleNode { get; set; }
 
     [Parameter]
     public EventCallback<string> OnToggleItem { get; set; }
@@ -122,47 +156,73 @@
     [Parameter]
     public EventCallback OnSaveDefaults { get; set; }
 
+    private const string AlwaysEnabledTitle = "Required for the builder. Always enabled.";
+
     private string _search = "";
 
-    private IReadOnlyList<BroadToggleModel> BroadToggles =>
-        CategoryDefinitions.Select(definition =>
-        {
-            List<SourceRestrictionItemModel> items = Groups
-                .SelectMany(group => group.Sources)
-                .Where(item => item.AllowUnchecking && item.Category == definition.Category)
-                .ToList();
-            int enabledCount = items.Count(item => item.IsChecked == true);
-            bool? isChecked = enabledCount == 0
-                ? false
-                : enabledCount == items.Count
-                    ? true
-                    : null;
+    // Collapsed on arrival: the whole catalog is over two hundred books, and the counts on each
+    // category say what state it is in without opening it.
+    private readonly HashSet<string> _expanded = new(StringComparer.Ordinal);
 
-            return new BroadToggleModel(
-                definition.Category,
-                definition.Label,
-                definition.Description,
-                isChecked,
-                enabledCount,
-                items.Count);
-        }).ToList();
+    private bool Searching => !string.IsNullOrWhiteSpace(_search);
 
-    private IReadOnlyList<SourceRestrictionGroupModel> FilteredGroups =>
-        string.IsNullOrWhiteSpace(_search) ? Groups :
-        Groups.Where(g => g.Name.Contains(_search, StringComparison.OrdinalIgnoreCase)
-                       || g.Sources.Any(s => s.Name.Contains(_search, StringComparison.OrdinalIgnoreCase)))
-              .ToList();
+    private IReadOnlyList<SourceRestrictionNodeModel> Tree => SourceRestrictionTreeBuilder.Build(Groups);
 
-    private List<SourceRestrictionItemModel> FilteredItems(SourceRestrictionGroupModel group) =>
-        string.IsNullOrWhiteSpace(_search) ? group.Sources.ToList() :
-        group.Sources.Where(s => s.Name.Contains(_search, StringComparison.OrdinalIgnoreCase)
-                              || group.Name.Contains(_search, StringComparison.OrdinalIgnoreCase))
-             .ToList();
+    private IReadOnlyList<SourceRestrictionNodeModel> VisibleNodes =>
+        Tree.Where(node => !Searching || Matches(node)).ToList();
 
-    private Task ToggleCategoryAsync(BroadToggleModel toggle) =>
-        OnToggleCategory.InvokeAsync(new SourceRestrictionCategoryToggle(
-            toggle.Category,
-            toggle.IsChecked != true));
+    /// <summary>A filter opens what it finds; otherwise the user's own expansions decide.</summary>
+    private bool IsExpanded(SourceRestrictionNodeModel node) =>
+        Searching ? Matches(node) : _expanded.Contains(node.Id);
+
+    private void ToggleExpanded(SourceRestrictionNodeModel node)
+    {
+        if (!_expanded.Add(node.Id)) _expanded.Remove(node.Id);
+    }
+
+    private bool Matches(SourceRestrictionNodeModel node) =>
+        !Searching
+        || node.Label.Contains(_search, StringComparison.OrdinalIgnoreCase)
+        || node.AllSources.Any(source => source.Name.Contains(_search, StringComparison.OrdinalIgnoreCase));
+
+    private IReadOnlyList<SourceRestrictionNodeModel> VisibleChildren(SourceRestrictionNodeModel node) =>
+        node.Children.Where(child => !Searching || Matches(child)).ToList();
+
+    /// <summary>A node whose own label matches shows everything under it; otherwise only the hits.</summary>
+    private IReadOnlyList<SourceRestrictionItemModel> VisibleSources(SourceRestrictionNodeModel node)
+    {
+        if (!Searching || node.Label.Contains(_search, StringComparison.OrdinalIgnoreCase))
+            return node.Sources;
+
+        return node.Sources
+            .Where(source => source.Name.Contains(_search, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+    }
+
+    private Task ToggleNodeAsync(SourceRestrictionNodeModel node)
+    {
+        var ids = node.ToggleableSources.Select(source => source.Id).ToList();
+        if (ids.Count == 0) return Task.CompletedTask;
+
+        return OnToggleNode.InvokeAsync(new SourceRestrictionNodeToggle(
+            node.Id, ids, node.IsChecked != true));
+    }
+
+    private RenderFragment RenderSource(SourceRestrictionItemModel item) =>
+        @<button type="button"
+                 class="source-restrictions-item @(item.AllowUnchecking ? string.Empty : "locked")"
+                 role="checkbox"
+                 aria-checked="@GetAriaChecked(item.IsChecked)"
+                 title="@(item.AllowUnchecking ? null : AlwaysEnabledTitle)"
+                 @onclick="() => OnToggleItem.InvokeAsync(item.Id)"
+                 disabled="@(Busy || !item.AllowUnchecking)">
+            <span class="source-restrictions-checkbox @GetCheckClass(item.IsChecked, item.AllowUnchecking)"></span>
+            <span class="source-restrictions-item-name">@item.Name</span>
+            @if (!item.AllowUnchecking)
+            {
+                <span class="source-restrictions-core">Always enabled</span>
+            }
+        </button>;
 
     private static string GetAriaChecked(bool? value) =>
         value?.ToString().ToLowerInvariant() ?? "mixed";
@@ -173,25 +233,4 @@
         if (!value.HasValue)  return "mixed";
         return value.Value ? "checked" : "unchecked";
     }
-
-    private static readonly CategoryDefinition[] CategoryDefinitions =
-    [
-        new(SourceRestrictionCategory.ThirdParty, "3rd party", "Published third-party material"),
-        new(SourceRestrictionCategory.Homebrew, "Homebrew", "Personal and community content"),
-        new(SourceRestrictionCategory.Official5E, "5e official", "Official 2014-rules material"),
-        new(SourceRestrictionCategory.Official55E, "5.5e official", "Official 2024-rules material")
-    ];
-
-    private sealed record CategoryDefinition(
-        SourceRestrictionCategory Category,
-        string Label,
-        string Description);
-
-    private sealed record BroadToggleModel(
-        SourceRestrictionCategory Category,
-        string Label,
-        string Description,
-        bool? IsChecked,
-        int EnabledCount,
-        int TotalCount);
 }

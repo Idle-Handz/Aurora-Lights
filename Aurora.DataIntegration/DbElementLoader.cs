@@ -3,6 +3,7 @@ using Builder.Data;
 using Builder.Data.Elements;
 using Builder.Presentation.Services.Data;
 using Builder.Presentation.Utilities;
+using Aurora.Content;
 using Aurora.Content.Preparation;
 using Microsoft.Data.Sqlite;
 using System.Xml;
@@ -103,10 +104,6 @@ public sealed record DbLoadResult(
 
 internal static class DbElementLoader
 {
-    /// <summary>Schema and data version the shared library writes; anything older is rebuilt.</summary>
-    private const int PreparedSchemaVersion = 1;
-    private const int PreparedDataVersion = 12;
-
     private static readonly string[] RequiredTables =
     [
         "elements",
@@ -278,12 +275,15 @@ internal static class DbElementLoader
             DbLoadResult result = await Task.Run(() => LoadFromDb(dbPath, candidate));
             if (result.Success && runPostProcessing)
             {
-                if (result.DataVersion != 12)
-                {
-                    await Task.Run(() => RawUserXmlOverlayService.ApplyTo(candidate));
-                    await Task.Run(() => XmlContentFallbackService.MergeUnsynced(candidate));
-                }
-                await Task.Run(() => DataManager.Current.RunPostProcessing(candidate, includeResources: result.DataVersion != 12, publish: false));
+                // Every successful read is the current prepared contract. Runtime XML and built-ins
+                // were already composed there, including deliberate exclusions; never replay them.
+                await Task.Run(() => DataManager.Current.RunPostProcessing(candidate, includeResources: false, publish: false));
+                // Post-processing also synthesizes internal elements. Their generated IDs cannot
+                // make a deliberately unavailable identity usable again.
+                var unavailable = ContentDatabaseReader.ReadUnavailableIds(dbPath)
+                    .Select(id => id.Trim()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                foreach (var element in candidate.Where(element => unavailable.Contains(element.Id.Trim())).ToArray())
+                    candidate.Remove(element);
                 DebugLogService.Instance.Info(
                     "DbElementLoader: load complete.",
                     result.Summary);
@@ -405,23 +405,23 @@ internal static class DbElementLoader
                 schemaVersion,
                 "Database metadata is missing. Sync the content database again before using SQLite loading.");
 
-        if (metadata.SchemaVersion != PreparedSchemaVersion)
+        if (metadata.SchemaVersion != ContentDatabaseReader.CurrentSchemaVersion)
         {
             return DbLoadResult.Failed(
                 dbPath,
                 metadata.SchemaVersion,
-                $"Database metadata schema v{metadata.SchemaVersion} is incompatible with expected schema v{PreparedSchemaVersion}. Re-sync the content database.");
+                $"Database metadata schema v{metadata.SchemaVersion} is incompatible with the shared library's schema v{ContentDatabaseReader.CurrentSchemaVersion}. Re-sync the content database.");
         }
 
         // The app builds its own database through the shared library. An older one is rebuilt by a
         // refresh rather than read: staleness reports it, and reading it would mean keeping a second
         // reader for a format nothing writes any more.
-        if (metadata.DataVersion != PreparedDataVersion)
+        if (metadata.DataVersion != ContentDatabaseReader.CurrentDataVersion)
         {
             return DbLoadResult.Failed(
                 dbPath,
                 metadata.SchemaVersion,
-                $"Database data version v{metadata.DataVersion} predates the current content format (v{PreparedDataVersion}). Refresh the content database.");
+                $"Database data version v{metadata.DataVersion} does not match the shared library's content format (v{ContentDatabaseReader.CurrentDataVersion}). Refresh the content database.");
         }
 
         return LoadPreparedCatalog(conn, dbPath, metadata, target);

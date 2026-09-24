@@ -99,6 +99,10 @@ public sealed class ContentSkipReportingTests
     {
         AuroraImportResult.Succeeded(3, 10, 42, filesSkipped: 2).Summary
             .Should().Contain("2 files were skipped and need attention");
+        AuroraImportResult.Succeeded(3, 10, 42, appendOperationsSkipped: 2).Summary
+            .Should().Contain("2 append operations were skipped").And.NotContain("files were skipped");
+        AuroraImportResult.Succeeded(3, 10, 42, filesSkipped: 1, appendOperationsSkipped: 1).Summary
+            .Should().Contain("1 file was skipped and needs attention").And.Contain("1 append operation was skipped");
         AuroraImportResult.Succeeded(3, 10, 42).Summary
             .Should().NotContain("skipped");
     }

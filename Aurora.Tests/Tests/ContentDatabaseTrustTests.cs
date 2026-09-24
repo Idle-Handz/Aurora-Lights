@@ -90,7 +90,7 @@ public sealed class ContentDatabaseTrustTests
     }
 
     [Fact]
-    public void Import_RefusesConflictingDuplicateElementIds()
+    public void FirstImport_ReportsConflictingIdsAsUnavailable()
     {
         string tempDirectory = Path.Combine(
             Path.GetTempPath(),
@@ -110,12 +110,15 @@ public sealed class ContentDatabaseTrustTests
                 </elements>
                 """);
 
-            Action import = () => ContentImport.ImportAsync(tempDirectory, sqlitePath).GetAwaiter().GetResult();
+            var result = ContentImport.ImportAsync(tempDirectory, sqlitePath).GetAwaiter().GetResult();
 
-            import.Should().Throw<InvalidDataException>()
-                .WithMessage("*duplicate-element-id*ID_TEST_DUPLICATE_ITEM*conflicting definitions*",
-                    "two different definitions of one id are resolved by review, not by picking one");
-            File.Exists(sqlitePath).Should().BeFalse("a refused import leaves the installed database alone");
+            result.Skipped.Should().ContainSingle().Which.Kind.Should().Be("definition-conflict");
+            ContentDatabaseReader.ReadUnavailableIds(sqlitePath).Should().ContainSingle()
+                .Which.Should().Be("ID_TEST_DUPLICATE_ITEM");
+            using var connection = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={sqlitePath};Pooling=False");
+            connection.Open();
+            Convert.ToInt64(QueryScalar(connection, "SELECT COUNT(*) FROM elements")).Should().Be(0,
+                "two different definitions of one id are resolved by review, not by picking one");
         }
         finally
         {
