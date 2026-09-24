@@ -1025,6 +1025,10 @@ public sealed class WebCharacterEngineService
 
         InventoryItemFactory.InvalidateSearchIndex();
         await DataManager.Current.InitializeElementDataAsync();
+        // The engine lists sources from a snapshot taken when CharacterManager.Current is first
+        // touched, which can predate this load. Rebuild it so the session's Manage page offers the
+        // sources that were just loaded.
+        CharacterManager.Current.SourcesManager.Refresh();
         await InventoryItemFactory.PrecomputeSearchIndexAsync();
     }
 

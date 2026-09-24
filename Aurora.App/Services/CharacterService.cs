@@ -1,4 +1,4 @@
-using Builder.Core.Events;
+﻿using Builder.Core.Events;
 using Builder.Presentation;
 using Builder.Presentation.Events.Shell;
 using Builder.Presentation.Models;
@@ -162,6 +162,7 @@ public sealed class CharacterService :
             InventoryItemFactory.InvalidateSearchIndex();
             // Sources are loaded now, so switched-off packages can become default restrictions.
             SourcePreferenceSeed.SeedDefaultRestrictions(ElementLoadDatabasePath);
+            RefreshEngineSourceList();
             _elementsInitialized = true;
             _ = WarmEquipmentSearchIndexAsync();
 
@@ -180,6 +181,26 @@ public sealed class CharacterService :
         finally
         {
             _elementLock.Release();
+        }
+    }
+
+    /// <summary>
+    /// The engine lists sources from a snapshot of the catalog taken when CharacterManager.Current
+    /// is first touched, which can happen before this load finishes and always happens before a
+    /// refresh replaces the catalog. Rebuild it here so the Manage tab offers the sources that were
+    /// just loaded instead of whatever the catalog held at that moment - an empty list, if nothing
+    /// had loaded yet.
+    /// </summary>
+    private static void RefreshEngineSourceList()
+    {
+        try
+        {
+            CharacterManager.Current.SourcesManager.Refresh();
+        }
+        catch (Exception ex)
+        {
+            // Content is loaded either way; only the restriction list would be out of date.
+            DebugLogService.Instance.LogException(ex, "CharacterService.RefreshEngineSourceList");
         }
     }
 

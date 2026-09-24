@@ -75,6 +75,25 @@ public class SourcesManager : ISourceRestrictionsProvider
     return (IEnumerable<string>) restrictedElementIds;
   }
 
+  /// <summary>
+  /// Rebuilds the list from the catalog as it stands now. The list is a snapshot taken when this
+  /// manager is constructed, which for <see cref="CharacterManager.Current"/> is whenever something
+  /// first touches the singleton - possibly before content has finished loading, which leaves every
+  /// source missing, and always before a content refresh replaces the catalog. The manager itself is
+  /// kept so that anything listening to <see cref="SourceRestrictionsApplied"/> stays attached, and
+  /// whatever is restricted now is re-applied to the rebuilt list.
+  /// </summary>
+  public void Refresh()
+  {
+    List<string> restricted = this.RestrictedSources.Select<SourceItem, string>((Func<SourceItem, string>) (x => x.Source.Id)).ToList<string>();
+    this.RestrictedSources.Clear();
+    this.SourceItems.Clear();
+    this.SourceGroups.Clear();
+    this.InitializeSources();
+    if (restricted.Count > 0)
+      this.Load((IEnumerable<string>) restricted);
+  }
+
   private void InitializeSources()
   {
     foreach (SourceItem sourceItem in DataManager.Current.ElementsCollection.Where<ElementBase>((Func<ElementBase, bool>) (x => x.Type.Equals("Source", StringComparison.OrdinalIgnoreCase))).Cast<Source>().OrderBy<Source, string>((Func<Source, string>) (x => x.ReleaseDate)).ThenBy<Source, string>((Func<Source, string>) (x => x.Name)).Select<Source, SourceItem>((Func<Source, SourceItem>) (x => new SourceItem(x.Copy<Source>()))))
@@ -94,6 +113,7 @@ public class SourcesManager : ISourceRestrictionsProvider
     }
     foreach (SourcesGroup group in this.CreateGroups())
       this.SourceGroups.Add(group);
+    Logger.Info("sources: listing {0} source(s) from {1} element(s)", (object) this.SourceItems.Count, (object) DataManager.Current.ElementsCollection.Count);
   }
 
   private IEnumerable<SourcesGroup> CreateGroups()

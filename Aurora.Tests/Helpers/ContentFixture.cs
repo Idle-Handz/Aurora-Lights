@@ -1,4 +1,4 @@
-using Builder.Presentation;
+﻿using Builder.Presentation;
 using Builder.Presentation.Models;
 using Builder.Presentation.Services;
 using Builder.Presentation.Services.Data;
@@ -90,8 +90,8 @@ public static class ContentFixture
     /// The engine's SourcesManager reads the catalog once, when CharacterManager.Current is first
     /// touched. A test that touches it before content finished loading would leave every source list
     /// empty for the rest of the run, so anything about restrictions would quietly find nothing to
-    /// restrict. The app warms the singleton after loading; tests run in any order, so rebuild it
-    /// here from the loaded catalog.
+    /// restrict. The app rebuilds it after every load (CharacterService.RefreshEngineSourceList);
+    /// tests run in any order, so do the same here, through the same engine call.
     /// </summary>
     private static void EnsureSourcesReflectTheCatalog()
     {
@@ -100,9 +100,7 @@ public static class ContentFixture
         if (!DataManager.Current.ElementsCollection.Any(element =>
                 element.Type.Equals("Source", StringComparison.OrdinalIgnoreCase))) return;
 
-        var rebuilt = new Builder.Presentation.Services.Sources.SourcesManager();
-        foreach (var item in rebuilt.SourceItems) sources.SourceItems.Add(item);
-        foreach (var group in rebuilt.SourceGroups) sources.SourceGroups.Add(group);
+        sources.Refresh();
     }
 
     public static string GetCharacterFixturePath(string fileName) =>
