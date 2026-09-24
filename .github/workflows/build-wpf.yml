@@ -10,6 +10,9 @@ on:
       - 'Aurora.Documents/**'
       - 'Aurora.Presentation/**'
       - 'lib/**'
+      - 'AuroraContent.props'
+      - 'nuget.config'
+      - 'vendor/nuget/**'
       - '.github/workflows/build-wpf.yml'
   workflow_dispatch:
 

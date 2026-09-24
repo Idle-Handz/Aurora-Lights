@@ -6,9 +6,12 @@ on:
   #     - 'Aurora.App/**'
   #     - 'Aurora.Logic/**'
   #     - 'Aurora.Components/**'
-  #     - 'Aurora.Importer/**'
+  #     - 'Aurora.DataIntegration/**'
   #     - 'Aurora.PdfImport/**'
   #     - 'lib/**'
+  #     - 'AuroraContent.props'
+  #     - 'nuget.config'
+  #     - 'vendor/nuget/**'
   #     - '.github/workflows/build-macos.yml'
   workflow_dispatch:
 

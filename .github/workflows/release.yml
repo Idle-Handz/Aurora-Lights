@@ -148,7 +148,6 @@ jobs:
         run: |
           dotnet restore Aurora.Components/Aurora.Components.csproj
           dotnet restore Aurora.Logic/Aurora.Logic.csproj
-          dotnet restore Aurora.Importer/Aurora.Importer.csproj
           dotnet restore Aurora.DataIntegration/Aurora.DataIntegration.csproj
           dotnet restore Aurora.PdfImport/Aurora.PdfImport.csproj
 
@@ -245,7 +244,6 @@ jobs:
         run: |
           dotnet restore Aurora.Components/Aurora.Components.csproj
           dotnet restore Aurora.Logic/Aurora.Logic.csproj
-          dotnet restore Aurora.Importer/Aurora.Importer.csproj
           dotnet restore Aurora.DataIntegration/Aurora.DataIntegration.csproj
           dotnet restore Aurora.PdfImport/Aurora.PdfImport.csproj
 
