@@ -1,4 +1,4 @@
-using Builder.Core.Logging;
+﻿using Builder.Core.Logging;
 using Builder.Data;
 using Builder.Data.Elements;
 using Builder.Data.Rules;
@@ -107,12 +107,12 @@ public static class BuildSelectionOptionResolver
             }
 
             bool isSpellRule = string.Equals(rule.Attributes.Type, "Spell", StringComparison.OrdinalIgnoreCase);
-            IReadOnlySet<string> ownedNonRepeatableElementIds = GetOwnedNonRepeatableElementIds(rule);
+            OwnedSelections owned = GetOwnedNonRepeatableSelections(rule, currentSelectionId);
             List<BuildSelectionOption> options = BuildElementOptions(
                 elements,
                 isSpellRule,
                 currentSelectionId,
-                ownedNonRepeatableElementIds,
+                owned,
                 settings);
 
             if (options.Count == 0 && isSpellRule)
@@ -121,7 +121,7 @@ public static class BuildSelectionOptionResolver
                     SpellFallbackOptions(rule, baseCollection, settings.SpellAccessMap),
                     isSpellRule: true,
                     currentSelectionId,
-                    ownedNonRepeatableElementIds,
+                    owned,
                     settings);
             }
 
@@ -133,7 +133,7 @@ public static class BuildSelectionOptionResolver
                     FilterBySupportsCaseInsensitive(rule.Attributes.Supports, baseCollection),
                     isSpellRule: false,
                     currentSelectionId,
-                    ownedNonRepeatableElementIds,
+                    owned,
                     settings);
             }
 
@@ -144,7 +144,7 @@ public static class BuildSelectionOptionResolver
                     settings.ElementFallbackProvider(rule),
                     isSpellRule,
                     currentSelectionId,
-                    ownedNonRepeatableElementIds,
+                    owned,
                     settings);
 
                 if (fallback.Count > 0)
@@ -159,33 +159,58 @@ public static class BuildSelectionOptionResolver
         }
     }
 
-    private static HashSet<string> GetOwnedNonRepeatableElementIds(SelectRule rule)
+    /// <summary>
+    /// What the character already holds for this rule, by id and - where a name identifies one
+    /// thing - by name. The pick being edited is left out of the names, so it can still be swapped
+    /// for the other ruleset's version of itself.
+    /// </summary>
+    private static OwnedSelections GetOwnedNonRepeatableSelections(SelectRule rule, string? currentSelectionId)
     {
+        var empty = new OwnedSelections(
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase),
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase));
         try
         {
             if (SelectionRuleTypePolicy.AllowsStackedSelections(rule.Attributes.Type))
-                return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                return empty;
 
             var elements = CharacterManager.Current.GetElements().ToArray();
             var profiles = CharacterManager.Current.GetSpellcastingInformations().ToArray();
-            return elements.Where(element =>
+            var owned = elements.Where(element =>
                     element.Type.Equals(rule.Attributes.Type, StringComparison.Ordinal) &&
                     !element.AllowDuplicate && (element.Type != "Spell" || SpellAcquisitionResolver.SameSelectionDomain(
                         SpellAcquisitionResolver.AcquisitionRule(element), rule, elements, profiles)))
-                .Select(element => element.Id)
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                .ToArray();
+
+            var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (SelectionRuleTypePolicy.EnforcesUniqueNames(rule.Attributes.Type))
+            {
+                foreach (var element in owned.Where(element =>
+                    !string.Equals(element.Id, currentSelectionId, StringComparison.OrdinalIgnoreCase) &&
+                    !string.IsNullOrWhiteSpace(element.Name)))
+                {
+                    names.Add(element.Name);
+                }
+            }
+
+            return new OwnedSelections(
+                owned.Select(element => element.Id).ToHashSet(StringComparer.OrdinalIgnoreCase), names);
         }
         catch
         {
-            return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            return empty;
         }
     }
+
+    private readonly record struct OwnedSelections(
+        IReadOnlySet<string> Ids,
+        IReadOnlySet<string> Names);
 
     private static List<BuildSelectionOption> BuildElementOptions(
         IEnumerable<ElementBase> elements,
         bool isSpellRule,
         string? currentSelectionId,
-        IReadOnlySet<string> ownedNonRepeatableElementIds,
+        OwnedSelections owned,
         BuildSelectionOptionResolverSettings settings)
     {
         return OrderElementOptions(
@@ -196,7 +221,7 @@ public static class BuildSelectionOptionResolver
                         element,
                         isSpellRule,
                         currentSelectionId,
-                        ownedNonRepeatableElementIds,
+                        owned,
                         settings)),
                 isSpellRule)
             .ToList();
@@ -214,7 +239,7 @@ public static class BuildSelectionOptionResolver
         ElementBase element,
         bool isSpellRule,
         string? currentSelectionId,
-        IReadOnlySet<string> ownedNonRepeatableElementIds,
+        OwnedSelections owned,
         BuildSelectionOptionResolverSettings settings)
     {
         BuildSelectionOptionSortMetadata? metadata = settings.SortMetadataSelector?.Invoke(element);
@@ -236,7 +261,9 @@ public static class BuildSelectionOptionResolver
                 element.Id,
                 element.AllowDuplicate,
                 currentSelectionId,
-                ownedNonRepeatableElementIds),
+                owned.Ids,
+                element.Name,
+                owned.Names),
             IsCurrentSelection: isCurrentSelection,
             DescriptionMarkup: isSpellRule ? string.Empty : GetRawDescription(element));
     }
