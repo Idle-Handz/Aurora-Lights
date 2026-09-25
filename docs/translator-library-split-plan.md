@@ -760,6 +760,44 @@ Capture the baseline from the current working tree before changing anything (Pha
 
 8. **Full parity run,** then merge to `main`.
 
+   **Result (2026-09-24/25): the content is identical across the version change.**
+   Run `buildtmp/parity-rerun-20260924-214506-816c1b`, pinned to the vendored
+   0.7.0, against the 0.6.0 reference `buildtmp/parity-rerun-20260923-055401-6ab69b`.
+
+   - **Databases:** 69 tables compared, every row identical — the same 20,876
+     elements from 1,189 files. The only differences are the new
+     `content_unavailable_elements` table and `database_metadata.data_version`
+     12 → 13. The quarantine rule finds nothing to quarantine in real content:
+     0 unavailable definitions, 0 skipped files.
+   - **Projections:** fresh-a matches; the installed projection matches exactly,
+     101,333 entries, nothing on either side.
+   - **Checks:** all five pass.
+   - **Characters: 60/60.** 59 match in-suite; `Remy Morningstar (Strahd)` shows
+     as different only because the *reference* run timed out on it, and the new
+     result matches a known-good standalone run of that character field for field.
+   - The one systematic difference in every character result is `Missing: []`,
+     the field added to `LoadResult` so the partial-load toast can summarise
+     instead of printing every id.
+
+   **Two things the run had to work around, both recorded so the next run is
+   cheaper:**
+
+   - **A copied database cannot cross a data-version boundary.** The suite runs
+     every character against the `installed` case, whose database
+     `prepare_baseline.py` copies from the reference. At v12 the v13 reader
+     refuses it — correctly, with "Refresh the content database" — so the first
+     pass produced 60 identical failures and no comparison at all. Refresh that
+     case (`ContentDatabaseRehearsal.exe refresh <root>/installed`) before the
+     character part whenever the data version has moved; the `scan` check must
+     run before that refresh, since it is about staleness.
+   - **The rehearsal's failure-check asserted retired behaviour.** It was written
+     at 0.6.0, where a malformed correction file under `user/local` was skippable.
+     0.7.0 refuses that in both skip modes, because a truncated document can hide
+     a correction section. The check now asserts the refusal in both modes and
+     covers the skippable case with an ordinary unreadable file outside
+     `user/local`; it passes at 18 checks, which is a deliberate move of that
+     one output file.
+
 Later / optional:
 - **automatic correction retirement on verified origin downloads** (user
   requirement, 2026-09-19): when a source freshly fetched from its update origin

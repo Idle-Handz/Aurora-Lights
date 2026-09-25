@@ -91,25 +91,34 @@ internal static class ReloadRehearsal
         Require(ReferenceEquals(priorSort, DbElementLoader.ElementSortMetadataMap) && ReferenceEquals(priorSpells, DbElementLoader.SpellAccessMap)
             && ReferenceEquals(priorFallback, typeof(XmlContentFallbackService).GetField("_snapshot", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)), "invalid correction preserves lookup and fallback state", checks);
         string beforeRejected = Hash(database);
-        // With skipping off a refusal is still the whole story: nothing of the installed database moves.
-        ApplicationContext.Current.Settings.SkipUnusableContentOnRefresh = false;
-        var rejected = await service.SyncAsync();
-        Require(!rejected.Success && service.SyncState == ContentDatabaseSyncState.Failed && Hash(database) == beforeRejected,
-            "rejected refresh preserves installed candidate and reports failure", checks);
+        // Malformed XML under user/local refuses in BOTH skip modes: a truncated document can hide
+        // a correction section, so the intent behind it cannot be read from what is left, and
+        // skipping it would silently drop a protected correction.
+        foreach (bool skipping in new[] { false, true })
+        {
+            ApplicationContext.Current.Settings.SkipUnusableContentOnRefresh = skipping;
+            var rejected = await service.SyncAsync();
+            Require(!rejected.Success && service.SyncState == ContentDatabaseSyncState.Failed && Hash(database) == beforeRejected,
+                $"a malformed local correction refuses the refresh (skipping={skipping}) and preserves the database", checks);
+        }
+        File.Move(local, local + ".invalid-fixture");
 
-        // With skipping on the same file costs the user only itself: the refresh completes and the
-        // file is named in the database for them to fix.
+        // An ordinary file that cannot be read, outside user/local, is the skippable case: it
+        // carries no correction intent, so leaving it out costs the user only that file.
+        string unreadable = Path.Combine(primary, "core", "zz-unreadable.xml");
+        File.WriteAllText(unreadable,
+            "<elements xmlns=\"urn:example:not-aurora\"><element name=\"Zz\" type=\"Proficiency\" source=\"Rehearsal\" id=\"ID_REHEARSAL_UNREADABLE\" /></elements>");
         ApplicationContext.Current.Settings.SkipUnusableContentOnRefresh = true;
         var skippedRefresh = await service.SyncAsync();
         var reportedSkips = service.GetSkippedContent();
         Require(skippedRefresh.Success && skippedRefresh.FilesSkipped == 1 && reportedSkips.Count == 1
-            && reportedSkips[0].Path.Equals(local, StringComparison.OrdinalIgnoreCase),
+            && reportedSkips[0].Path.Equals(unreadable, StringComparison.OrdinalIgnoreCase),
             "a refresh allowed to skip reports the file it left out", checks);
         // Into a collection of its own: the live one is what the checks below are about.
         Require((await DbElementLoader.TryLoadAsync(new ElementBaseCollection())).Success,
             "content still loads after a file was skipped", checks);
 
-        File.Move(local, local + ".invalid-fixture");
+        File.Delete(unreadable);
         var repaired = await service.SyncAsync();
         Require(repaired.Success && repaired.FilesSkipped == 0 && service.GetSkippedContent().Count == 0,
             "removing the bad file clears the report", checks);
