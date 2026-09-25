@@ -14,7 +14,9 @@ v12 database. A database already at v13 needs no further format migration. Check
 1 therefore needs an older-format database and cannot be repeated on the same
 database after it has been refreshed.
 
-Work on branch `feature_shared-content-library`. Nothing here has merged to `main`.
+The shared-library work is now on `main` (fast-forwarded through `6b2f7e8` on
+2026-09-24). The handoff records the manual UI pass as cleared; retain this guide
+for future regression reviews.
 
 Record each check as pass or fail with a note. A failure is worth more than a
 completed list — stop and write down what you saw rather than working around it.

@@ -1,10 +1,11 @@
-# Shared content library: Translator split plan (draft)
+# Shared content library: Translator split plan
 
-Status: **verified, awaiting the Lights merge decision, updated 2026-09-24**.
+Status: **verified and merged, updated 2026-09-24**.
 Phases 4-7 are complete, the supplied handoff records the manual UI pass as cleared,
 and the committed-source 0.7.1 uptake passed the verification below. Translator is
-merged to `master`; Lights remains on `feature_shared-content-library` pending the
-user's choice of merge history. No remote publication is implied.
+merged to `master`; Lights was fast-forwarded to `main` through `6b2f7e8`,
+preserving all 45 feature-branch commits as approved by the user. This records
+source integration, not a tagged application release.
 
 **September 24 policy follow-up:** local package 0.7.0 (schema 1/data 13) implements
 first-install conflict exclusions and blocking invalid corrections. See the
