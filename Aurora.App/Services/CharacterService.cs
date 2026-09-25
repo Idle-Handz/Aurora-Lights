@@ -438,9 +438,14 @@ public sealed class CharacterService :
                     if (!string.IsNullOrEmpty(file.FilePath))
                         Preferences.Default.Set("app.mru_character", file.FilePath);
                 }
-                return (result.Success,
-                        result.Success ? string.Empty
-                            : $"⚠ Partial load: {result.Message}\n\nElements loaded: {ElementCount}\n{_initDiagnostic}\nCustom dir: {CustomElementsDirectory}");
+                if (!result.Success)
+                {
+                    // The detail and the load diagnostics belong in the log, where they can be read
+                    // and copied; the toast only has to say what was lost and where to look.
+                    DebugLogService.Instance.Warn($"Partial character load: {file.FileName}",
+                        $"{result.Message}\n\nElements loaded: {ElementCount}\n{_initDiagnostic}\nCustom dir: {CustomElementsDirectory}");
+                }
+                return (result.Success, result.Success ? string.Empty : PartialLoadReport.Describe(result));
             }
             catch (Exception ex)
             {

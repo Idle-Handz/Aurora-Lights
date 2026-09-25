@@ -765,7 +765,7 @@ public class CharacterFile : ObservableObject
             Logger.Warning("{0} is missing saved character elements after loading: {1}", this.FileName, details);
             await this.SendCharacterLoadingScreenProgressUpdate(100);
             await this.SendCharacterLoadingScreenStatusUpdate("E10A", false);
-            return new CharacterFile.LoadResult(false, "Saved character elements could not be restored: " + details);
+            return new CharacterFile.LoadResult(false, "Saved character elements could not be restored: " + details, missing);
         }
         await this.SendCharacterLoadingScreenProgressUpdate(100);
         await this.SendCharacterLoadingScreenStatusUpdate("E10B");
@@ -2188,10 +2188,18 @@ public class CharacterFile : ObservableObject
 
         public string Message { get; }
 
-        public LoadResult(bool success, string message = "")
+        /// <summary>
+        /// What could not be restored, so a caller can report it its own way instead of taking the
+        /// message apart again. Empty unless the load was partial.
+        /// </summary>
+        public IReadOnlyList<Builder.Presentation.Services.CharacterLoadValidation.MissingElement> Missing { get; }
+
+        public LoadResult(bool success, string message = "",
+            IReadOnlyList<Builder.Presentation.Services.CharacterLoadValidation.MissingElement> missing = null)
         {
             this.Success = success;
             this.Message = message;
+            this.Missing = missing ?? new List<Builder.Presentation.Services.CharacterLoadValidation.MissingElement>();
         }
     }
 }
