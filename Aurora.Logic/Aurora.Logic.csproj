@@ -82,6 +82,9 @@
     <EmbeddedResource Include="Resources\Gallery\**\*.jpg" />
     <EmbeddedResource Include="Resources\Gallery\**\*.png" />
     <EmbeddedResource Include="Resources\card-bg.jpg" />
+    <EmbeddedResource Include="..\Aurora.Lights\resources\default-portrait.png"
+                      Link="Resources\default-portrait.png"
+                      LogicalName="Builder.Presentation.Resources.default-portrait.png" />
     <EmbeddedResource Include="Resources\Sheets\**\*.pdf" />
   </ItemGroup>
 

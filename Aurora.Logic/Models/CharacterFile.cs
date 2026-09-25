@@ -226,6 +226,8 @@ public class CharacterFile : ObservableObject
         try
         {
             this.IsInitialized = false;
+            this.DisplayPortraitFilePath = string.Empty;
+            this.DisplayPortraitBase64 = string.Empty;
             this._document = CharacterFileIo.LoadXmlDocument(this._filepath, out this._lastKnownDiskStamp);
             XmlElement xmlElement1 = this._document["character"];
             XmlElement xmlElement2 = xmlElement1?["display-properties"];
@@ -262,8 +264,8 @@ public class CharacterFile : ObservableObject
                             case "portrait":
                                 try
                                 {
-                                    this.DisplayPortraitFilePath = childNode["local"].GetInnerText();
-                                    this.DisplayPortraitBase64 = childNode["base64"].GetInnerText();
+                                    this.DisplayPortraitFilePath = childNode["local"]?.InnerText ?? string.Empty;
+                                    this.DisplayPortraitBase64 = childNode["base64"]?.InnerText ?? string.Empty;
                                     continue;
                                 }
                                 catch (Exception ex)
@@ -294,6 +296,8 @@ public class CharacterFile : ObservableObject
                     Logger.Warning("unhandled display property element {0} in character file '{1}'", (object)childNode.Name, (object)this._filepath);
                 }
                 this.FileName = new FileInfo(this._filepath).Name;
+                if (string.IsNullOrWhiteSpace(this.DisplayPortraitFilePath))
+                    this.DisplayPortraitFilePath = this._document.SelectSingleNode("character/build/appearance/portrait")?.InnerText;
                 this.SaveRemotePortrait();
                 this.IsInitialized = true;
             }
@@ -363,6 +367,13 @@ public class CharacterFile : ObservableObject
 
     private void BuildDocument(Character character)
     {
+        if (string.IsNullOrWhiteSpace(character.PortraitFilename) ||
+            ((!System.IO.File.Exists(character.PortraitFilename) || new FileInfo(character.PortraitFilename).Length == 0) &&
+             CharacterPortraits.GetFileName(character.PortraitFilename) == CharacterPortraits.DefaultFileName &&
+             string.IsNullOrWhiteSpace(this.DisplayPortraitBase64)))
+        {
+            character.PortraitFilename = CharacterPortraits.EnsureDefaultPortrait();
+        }
         XmlElement previousRoot = this._document?.DocumentElement;
         this._document = new XmlDocument();
         XmlNode parentNode = this._document.AppendChild(this._document.CreateNode(XmlNodeType.Element, nameof(character), (string)null));
@@ -818,11 +829,12 @@ public class CharacterFile : ObservableObject
         XmlNode node8 = this._document.CreateNode(XmlNodeType.Element, "portrait", (string)null);
         node8.AppendChild((XmlNode)this._document.CreateElement("companion")).InnerText = character.Companion.Portrait.ToString();
         node8.AppendChild((XmlNode)this._document.CreateElement("local")).InnerText = character.PortraitFilename;
-        Path.GetFileName(character.PortraitFilename);
+        this.DisplayPortraitFilePath = character.PortraitFilename;
         if (System.IO.File.Exists(character.PortraitFilename))
         {
+            this.DisplayPortraitBase64 = Convert.ToBase64String(System.IO.File.ReadAllBytes(character.PortraitFilename));
             XmlNode node9 = this._document.CreateNode(XmlNodeType.Element, "base64", (string)null);
-            XmlCDataSection cdataSection = this._document.CreateCDataSection(Convert.ToBase64String(System.IO.File.ReadAllBytes(character.PortraitFilename)));
+            XmlCDataSection cdataSection = this._document.CreateCDataSection(this.DisplayPortraitBase64);
             node9.AppendChild((XmlNode)cdataSection);
             node8.AppendChild(node9);
         }
@@ -1766,7 +1778,13 @@ public class CharacterFile : ObservableObject
 
     private void ReadAppearanceNode(XmlNode appearanceNode, Character character)
     {
-        character.PortraitFilename = appearanceNode["portrait"].GetInnerText();
+        string savedPortrait = appearanceNode["portrait"]?.InnerText;
+        // Display initialization has already restored an embedded portrait or
+        // supplied the default. Use its local path when the saved path is absent
+        // or belongs to a different machine.
+        character.PortraitFilename = System.IO.File.Exists(savedPortrait) && new FileInfo(savedPortrait).Length > 0
+            ? savedPortrait
+            : this.DisplayPortraitFilePath;
         character.AgeField.Content = appearanceNode["age"].GetInnerText();
         character.HeightField.Content = appearanceNode["height"].GetInnerText();
         character.WeightField.Content = appearanceNode["weight"].GetInnerText();
@@ -2153,15 +2171,33 @@ public class CharacterFile : ObservableObject
     {
         try
         {
-            if (System.IO.File.Exists(this.DisplayPortraitFilePath))
+            if (System.IO.File.Exists(this.DisplayPortraitFilePath) &&
+                new FileInfo(this.DisplayPortraitFilePath).Length > 0)
                 return;
-            string str = Path.Combine(DataManager.Current.UserDocumentsPortraitsDirectory, Path.GetFileName(this.DisplayPortraitFilePath));
-            if (System.IO.File.Exists(str))
+            string filename = CharacterPortraits.GetFileName(this.DisplayPortraitFilePath);
+            if (string.IsNullOrWhiteSpace(this.DisplayPortraitBase64) &&
+                (string.IsNullOrWhiteSpace(this.DisplayPortraitFilePath) || filename == CharacterPortraits.DefaultFileName))
+            {
+                this.DisplayPortraitFilePath = CharacterPortraits.EnsureDefaultPortrait();
+                this.DisplayPortraitBase64 = Convert.ToBase64String(System.IO.File.ReadAllBytes(this.DisplayPortraitFilePath));
+                return;
+            }
+            // A portable character can contain image bytes without a local name.
+            // Retain that image rather than replacing it with the default.
+            if (string.IsNullOrWhiteSpace(filename) && !string.IsNullOrWhiteSpace(this.DisplayPortraitBase64))
+            {
+                byte[] bytes = Convert.FromBase64String(this.DisplayPortraitBase64);
+                filename = "portrait-" + Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes)) + ".png";
+            }
+            string str = Path.Combine(DataManager.Current.UserDocumentsPortraitsDirectory, filename);
+            if (System.IO.File.Exists(str) && new FileInfo(str).Length > 0)
             {
                 this.DisplayPortraitFilePath = str;
             }
             else
             {
+                if (string.IsNullOrWhiteSpace(this.DisplayPortraitBase64))
+                    return;
                 GalleryUtilities.SaveBase64AsImage(this.DisplayPortraitBase64, str);
                 this.DisplayPortraitFilePath = str;
             }

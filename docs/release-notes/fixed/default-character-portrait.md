@@ -1,0 +1,1 @@
+Characters without a portrait now use Aurora Legacy's default image and embed it in the character file when saved. Loading a portraitless character no longer produces an "Unable to save remote portrait" dialog, and the saved image survives transfer to another device. Existing custom portraits are preserved.
