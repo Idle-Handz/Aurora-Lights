@@ -1,9 +1,10 @@
 # Shared content library: Translator split plan (draft)
 
-Status: **active, updated 2026-09-24** (Phases 4-7 complete; Phase 5 still needs its manual UI pass, then Phase 8 merges). Work happens on
-`feature_shared-content-library` in both this repo and `5eApiTranslator`.
-Nothing merges to `main` in either repo until Windows MAUI user-experience parity
-is demonstrated.
+Status: **verified, awaiting the Lights merge decision, updated 2026-09-24**.
+Phases 4-7 are complete, the supplied handoff records the manual UI pass as cleared,
+and the committed-source 0.7.1 uptake passed the verification below. Translator is
+merged to `master`; Lights remains on `feature_shared-content-library` pending the
+user's choice of merge history. No remote publication is implied.
 
 **September 24 policy follow-up:** local package 0.7.0 (schema 1/data 13) implements
 first-install conflict exclusions and blocking invalid corrections. See the
@@ -798,7 +799,47 @@ Capture the baseline from the current working tree before changing anything (Pha
      `user/local`; it passes at 18 checks, which is a deliberate move of that
      one output file.
 
+   **Committed-source 0.7.1 uptake (2026-09-24):** both packages were built from
+   the clean Translator `master` commit
+   `a84bdf176dc4145cd11bcbe41c903f92d8e9abc4`. That commit changes only the package
+   version. The new vendor manifest entry records `dirtySource: false`; both
+   package hashes and embedded repository commits were verified.
+
+   - Windows MAUI **Release build passed**, with 0 errors and 24 warnings.
+   - **Aurora.Tests: 653/653 passed**, no skipped tests, in Release.
+   - All four **legacy gates passed** in Release: Builder.Core 65 required
+     signatures, Builder.Data 1,362 with one permitted addition, Aurora.Documents
+     166, and Builder.Data behavior tests 10/10 against both source and oracle.
+   - Database rehearsal `buildtmp/parity-rerun-20260924-234943-8b572b` used only
+     frozen copies from `buildtmp/parity-rerun-20260924-214506-816c1b` and the
+     pinned 0.7.1 packages. Both fresh imports succeeded (20,876 elements, 1,189
+     files, no skipped files or unavailable definitions). Both databases match
+     row for row after excluding build timestamps, both runtime projections
+     match exactly, and all five compared diagnostic checks match. All nine
+     rehearsal operations returned success; required output files were checked
+     explicitly because the comparison script skips absent artifacts.
+   - The comparison initially reported a difference in the randomly generated
+     failure-fixture directory inside an otherwise identical warning. The
+     comparator now normalizes that directory and the rehearsal root, preserving
+     filenames, diagnostic text, and IDs. Four Python regression tests pass,
+     including changed/missing-warning and failed-check cases. The same captured
+     rehearsal results then passed comparison; no application behavior changed.
+   - The shell wrapper hit a local build-permission failure; its stages were run
+     separately with a single-worker harness build (`-m:1 -nr:false
+     -p:UseSharedCompilation=false`), followed by the unchanged database suite and
+     the corrected comparator. Logs are in `buildtmp/verification-0.7.1`.
+     Character parity was not repeated for this version-only uptake.
+
 Later / optional:
+- **Refine the same-name selection restriction** (user follow-up, 2026-09-24):
+  keep the current picker rule for this release to prevent selecting both PHB
+  2014 and PHB 2024 printings of a spell, but review how alternate printings are
+  identified and enforced. A shared name alone does not prove functional or
+  referential equivalence: unrelated homebrew or third-party definitions may
+  collide by name. Investigate explicit printing/equivalence metadata rather than
+  broadening name-based identity. Preserve separate spellcasting acquisition
+  domains, repeatable selections, the ability to replace the current choice, and
+  existing saved/granted elements; the current rule only disables picker options.
 - **automatic correction retirement on verified origin downloads** (user
   requirement, 2026-09-19): when a source freshly fetched from its update origin
   fully matches a correction file's intended result, accept those corrections and

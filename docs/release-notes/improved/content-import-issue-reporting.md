@@ -1,0 +1,1 @@
+When skipping unusable content is enabled, unreadable files and invalid append operations are left out and listed for repair, while correction errors still stop the refresh and preserve the working database.

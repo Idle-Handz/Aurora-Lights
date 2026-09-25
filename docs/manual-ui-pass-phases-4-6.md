@@ -8,11 +8,11 @@ Visual presentation and interaction still need review in the rendered app. It
 covers the shared library, source restrictions, Builder.Data cleanup, the 0.7.0
 conflict and correction policy, and the rebuilt sources editor.
 
-**Data version 13.** Every installed database reads as out of date once and has
-to be refreshed before content loads at all; the v13 reader will not read a v12
-database. That is correct behaviour for a format change, not a fault, and it is
-why check 1 below can no longer be performed on a machine that has already
-refreshed.
+**Data version 13.** An installed database in an older format reads as out of
+date and must be refreshed before content loads; the v13 reader will not read a
+v12 database. A database already at v13 needs no further format migration. Check
+1 therefore needs an older-format database and cannot be repeated on the same
+database after it has been refreshed.
 
 Work on branch `feature_shared-content-library`. Nothing here has merged to `main`.
 
@@ -323,8 +323,9 @@ a PDF import, and switch between two open character tabs.
   and a skill proficiency re-attributed from the PHB to Aurora Legacy Essentials
   changes the id of the proxy item that grants it. Re-picking each one and saving
   clears it for good.
-- **The database reads as out of date on first launch** after taking this branch,
-  because the content format moved to data version 13. Refresh once.
+- **An older-format database reads as out of date on first launch** after taking
+  this branch, because the content format moved to data version 13. Refresh once;
+  a database already at v13 does not need this migration again.
 
 ## If something looks wrong
 

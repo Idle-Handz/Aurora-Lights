@@ -9,6 +9,7 @@ Exit code 0 means every compared item matches.
 """
 import json
 import pathlib
+import re
 import subprocess
 import sys
 
@@ -20,8 +21,15 @@ def load(path):
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def messages(report):
-    return sorted(w["Message"] for w in report.get("warnings", []))
+def messages(report, roots):
+    values = [normalize(w["Message"], roots) for w in report.get("warnings", [])]
+    if report.get("mode") == "failure-check":
+        # ReloadRehearsal creates this temporary directory with a new GUID per run.
+        # Keep the case, relative file path, and diagnostic text significant.
+        values = [re.sub(
+            r"(<root>[\\/](?:installed|fresh-a|fresh-b)[\\/])failure-fixture-[0-9a-f]{32}([\\/])",
+            r"\1failure-fixture-<generated>\2", value) for value in values]
+    return sorted(values)
 
 
 def normalize(value, roots):
@@ -88,7 +96,7 @@ def main():
         a, b = base_results / name, new_results / name
         if a.exists() and b.exists():
             x, y = load(a), load(b)
-            same = x["success"] == y["success"] and messages(x) == messages(y)
+            same = x["success"] == y["success"] and messages(x, roots) == messages(y, roots)
             print(f"check {name}: success={y['success']} {'match' if same else 'DIFFERENT'}")
             ok &= same
 
@@ -101,8 +109,8 @@ def main():
                 differing.append((name, "missing from rerun"))
                 continue
             x, y = load(base_chars[name]), load(new_chars[name])
-            a = normalize({"result": x.get("result"), "warnings": messages(x)}, roots)
-            b = normalize({"result": y.get("result"), "warnings": messages(y)}, roots)
+            a = normalize({"result": x.get("result"), "warnings": messages(x, roots)}, roots)
+            b = normalize({"result": y.get("result"), "warnings": messages(y, roots)}, roots)
             where = first_difference(a, b)
             if where:
                 differing.append((name, where))
