@@ -71,11 +71,11 @@ internal sealed class MauiCharacterSheetGenerator : ICharacterSheetGenerator
         sheet.EquipmentSheetExportContent =
             new ExportContentGenerator(cm, sheet.Configuration).GetEquipmentContent();
 
-        // Spellcasting pages
-        var addedSpells = new List<string>();
+        // Spellcasting pages. The spell list is de-duplicated by element id where it is built,
+        // so two printings of one name both appear, exactly as the character holds them.
         foreach (var info in spellInfos)
             sheet.SpellcastingPageExportContentCollection.Add(
-                BuildSpellcastingPage(cm, stats, info, addedSpells));
+                BuildSpellcastingPage(cm, stats, info));
 
         foreach (var group in SpellAcquisitionResolver.Resolve(elements, spellInfos)
             .Where(a => a.IsFeature || a.FreeUses > 0 || a.Preparation == SpellPreparation.RitualOnly)
@@ -532,8 +532,7 @@ internal sealed class MauiCharacterSheetGenerator : ICharacterSheetGenerator
     private static CharacterSheetSpellcastingPageExportContent BuildSpellcastingPage(
         CharacterManager cm,
         Builder.Presentation.Services.Calculator.StatisticValuesGroupCollection stats,
-        SpellcastingInformation info,
-        List<string> addedSpells)
+        SpellcastingInformation info)
     {
         var page = new CharacterSheetSpellcastingPageExportContent();
         page.SpellcastingClass = info.Name;
@@ -658,7 +657,6 @@ internal sealed class MauiCharacterSheetGenerator : ICharacterSheetGenerator
                 Concentration = isConc,
             };
 
-            addedSpells.Add(spell.Name ?? "");
             GetSpellsProperty(page, level).Spells.Add(entry);
         }
 
