@@ -1809,14 +1809,11 @@ public sealed class WebCharacterEngineService
 
     private static void CopyPersistedMagicState(MagicOverviewModel source, MagicOverviewModel target)
     {
-        Dictionary<string, bool> preparedById = source.SpellLevels
-            .SelectMany(level => level.Spells)
-            .Where(spell => !string.IsNullOrWhiteSpace(spell.Id))
-            .ToDictionary(spell => spell.Id, spell => spell.IsPrepared, StringComparer.OrdinalIgnoreCase);
-
-        Dictionary<string, bool> preparedByName = source.SpellLevels
-            .SelectMany(level => level.Spells)
-            .ToDictionary(spell => spell.Name, spell => spell.IsPrepared, StringComparer.OrdinalIgnoreCase);
+        var sourceSpells = source.SpellLevels.SelectMany(level => level.Spells).ToList();
+        Dictionary<string, bool> preparedById =
+            PreparedSpellLookup.ById(sourceSpells, spell => spell.Id, spell => spell.IsPrepared);
+        Dictionary<string, bool> preparedByName =
+            PreparedSpellLookup.ByName(sourceSpells, spell => spell.Name, spell => spell.IsPrepared);
 
         foreach (MagicSpellListEntryModel spell in target.SpellLevels.SelectMany(level => level.Spells))
         {
@@ -1872,13 +1869,11 @@ public sealed class WebCharacterEngineService
         XmlDocument document = new();
         document.Load(absolutePath);
 
-        Dictionary<string, bool> preparedById = magic.SpellLevels
-            .SelectMany(level => level.Spells)
-            .Where(spell => !string.IsNullOrWhiteSpace(spell.Id))
-            .ToDictionary(spell => spell.Id, spell => spell.IsPrepared, StringComparer.OrdinalIgnoreCase);
-        Dictionary<string, bool> preparedByName = magic.SpellLevels
-            .SelectMany(level => level.Spells)
-            .ToDictionary(spell => spell.Name, spell => spell.IsPrepared, StringComparer.OrdinalIgnoreCase);
+        var magicSpells = magic.SpellLevels.SelectMany(level => level.Spells).ToList();
+        Dictionary<string, bool> preparedById =
+            PreparedSpellLookup.ById(magicSpells, spell => spell.Id, spell => spell.IsPrepared);
+        Dictionary<string, bool> preparedByName =
+            PreparedSpellLookup.ByName(magicSpells, spell => spell.Name, spell => spell.IsPrepared);
 
         XmlNode? buildNode = document.DocumentElement?["build"];
         XmlNode? magicNode = buildNode?["magic"];
