@@ -1,4 +1,4 @@
-using Builder.Presentation.Services;
+﻿using Builder.Presentation.Services;
 using Aurora.App.Services;
 using Aurora.Content.Preparation;
 using Builder.Core.Events;
@@ -129,6 +129,23 @@ try
                 JsonSerializer.Serialize(entries, new JsonSerializerOptions { WriteIndented = true }));
             result = new { load = dumpLoad, runtimeCount = dumpElements.Count, dumped = entries.Length };
             success = dumpLoad.Success;
+            break;
+        // The legacy loader's own answer to "which declaration wins this id". Legacy replaces an
+        // element outright when a later file re-declares its id, so this is the oracle the database
+        // projection has to match: same shape as "dump", so one comparison serves both.
+        case "legacy-dump":
+            await DataManager.Current.InitializeElementDataAsync();
+            var legacyElements = DataManager.Current.ElementsCollection;
+            var legacyEntries = legacyElements
+                .Select(e => new { e.Id, e.Type, e.Name, fingerprint = Fingerprint(e),
+                    provenance = RelativeTo(primary, ElementProvenance.GetContentFilePath(e)) })
+                .OrderBy(e => e.Id, StringComparer.Ordinal).ThenBy(e => e.fingerprint, StringComparer.Ordinal)
+                .ToArray();
+            File.WriteAllText(Path.Combine(output, "projection-dump.json"),
+                JsonSerializer.Serialize(legacyEntries, new JsonSerializerOptions { WriteIndented = true }));
+            result = new { runtimeCount = legacyElements.Count, dumped = legacyEntries.Length,
+                duplicateIds = legacyEntries.GroupBy(e => e.Id, StringComparer.Ordinal).Count(g => g.Count() > 1) };
+            success = true;
             break;
         case "parity":
             // Avoid InitializeDirectories, which also touches the user's AppData.
