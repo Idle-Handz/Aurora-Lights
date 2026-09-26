@@ -103,8 +103,9 @@ Step "branch $branch" {
 }
 
 Step "vendor $available" {
-    $arguments = @('-TranslatorRepo', $translator)
-    if ($AllowDirty) { $arguments += '-AllowDirty' }
+    # A hashtable splat binds by name; an array splat would bind positionally.
+    $arguments = @{ TranslatorRepo = $translator }
+    if ($AllowDirty) { $arguments['AllowDirty'] = $true }
     & (Join-Path $PSScriptRoot 'update-content-library.ps1') @arguments
     if ($LASTEXITCODE -ne 0) { throw 'Vendoring failed.' }
 }
