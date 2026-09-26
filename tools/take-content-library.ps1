@@ -29,6 +29,7 @@ $translator = (Resolve-Path -LiteralPath $TranslatorRepo).Path
 Set-Location -LiteralPath $repo
 
 $steps = New-Object System.Collections.ArrayList
+trap { Write-Host ""; $steps | Format-Table -AutoSize; break }
 function Step {
     param([string]$Name, [scriptblock]$Body)
     $started = Get-Date
@@ -39,6 +40,16 @@ function Step {
     $seconds = [int]((Get-Date) - $started).TotalSeconds
     [void]$steps.Add([pscustomobject]@{ Step = $Name; Result = $(if ($ok) { 'pass' } else { 'FAIL' }); Seconds = $seconds })
     if (-not $ok) { throw "$Name failed." }
+}
+
+function Invoke-Native {
+    param([scriptblock]$Command)
+    # Windows PowerShell wraps a native command's redirected stderr in an ErrorRecord, which
+    # ErrorActionPreference=Stop then treats as fatal even when the command succeeded. Capture
+    # the output without that, and judge the command by its exit code.
+    $previous = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try { & $Command 2>&1 } finally { $ErrorActionPreference = $previous }
 }
 
 function Get-RepoRelativePath {
@@ -87,7 +98,7 @@ Step 'preconditions' {
 
 $branch = "content-library-$available"
 Step "branch $branch" {
-    git -C $repo checkout -b $branch 2>&1 | Out-Null
+    Invoke-Native { git -C $repo checkout -b $branch } | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "Could not create branch $branch (does it already exist?)." }
 }
 
@@ -140,7 +151,7 @@ if ($Parity -ne 'none') {
 
     Step 'parity (databases)' {
         $relative = Get-RepoRelativePath $ParityBaseline
-        $output = & bash 'tools/ContentDatabaseRehearsal/verify_content_library.sh' $relative $label 'db' 2>&1
+        $output = Invoke-Native { bash 'tools/ContentDatabaseRehearsal/verify_content_library.sh' $relative $label 'db' }
         $output | ForEach-Object { Write-Host "   $_" }
         $line = $output | Where-Object { $_ -match '^rerun root: ' } | Select-Object -First 1
         if (-not $line) { throw 'The parity run did not report a rerun root.' }
@@ -167,14 +178,14 @@ if ($Parity -ne 'none') {
             }
             $env:HARNESS_EXE = "buildtmp/content-library-builds/$label/harness/ContentDatabaseRehearsal.exe"
             $relativeRerun = Get-RepoRelativePath $rerunRoot
-            & bash 'tools/ContentDatabaseRehearsal/run_parity_suite.sh' $relativeRerun 'characters' 2>&1 |
+            Invoke-Native { bash 'tools/ContentDatabaseRehearsal/run_parity_suite.sh' $relativeRerun 'characters' } |
                 Select-Object -Last 3 | ForEach-Object { Write-Host "   $_" }
 
             # dataVersion differs by design across a format change, and Missing rides on every
             # load result; everything else must still match.
             $ignore = @()
             if ($formatMoved) { $ignore = @('--ignore-field', 'dataVersion', '--ignore-field', 'Missing') }
-            $comparison = & python 'tools/ContentDatabaseRehearsal/compare_to_baseline.py' @ignore $ParityBaseline $rerunRoot 2>&1
+            $comparison = Invoke-Native { python 'tools/ContentDatabaseRehearsal/compare_to_baseline.py' @ignore $ParityBaseline $rerunRoot }
             $comparison | ForEach-Object { Write-Host "   $_" }
             if ($comparison -notmatch 'OVERALL: match') {
                 throw 'Parity differs. Read the comparison above before taking this version.'
