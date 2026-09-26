@@ -1,3 +1,5 @@
+@{ var visibleNodes = FilterNodes(SourceRestrictionTreeBuilder.Build(Groups)); }
+
 <div class="source-restrictions-editor">
     @if (ShowDefaultActions)
     {
@@ -31,8 +33,9 @@
         }
     </div>
 
-    @foreach (SourceRestrictionNodeModel category in VisibleNodes)
+    @foreach (var categoryView in visibleNodes)
     {
+        SourceRestrictionNodeModel category = categoryView.Node;
         bool expanded = IsExpanded(category);
 
         <section class="source-restrictions-node category @(expanded ? "expanded" : "collapsed")">
@@ -41,6 +44,7 @@
                         class="source-restrictions-disclosure"
                         aria-expanded="@expanded.ToString().ToLowerInvariant()"
                         aria-label="@(expanded ? $"Collapse {category.Label}" : $"Expand {category.Label}")"
+                        disabled="@Searching"
                         @onclick="() => ToggleExpanded(category)">
                     <span class="source-restrictions-chevron">@(expanded ? "▾" : "▸")</span>
                 </button>
@@ -71,18 +75,19 @@
             @if (expanded)
             {
                 <div class="source-restrictions-node-body">
-                    @if (VisibleSources(category).Count > 0)
+                    @if (categoryView.Sources.Count > 0)
                     {
                         <div class="source-restrictions-items">
-                            @foreach (SourceRestrictionItemModel item in VisibleSources(category))
+                            @foreach (SourceRestrictionItemModel item in categoryView.Sources)
                             {
                                 @RenderSource(item)
                             }
                         </div>
                     }
 
-                    @foreach (SourceRestrictionNodeModel publisher in VisibleChildren(category))
+                    @foreach (var publisherView in categoryView.Children)
                     {
+                        SourceRestrictionNodeModel publisher = publisherView.Node;
                         bool publisherExpanded = IsExpanded(publisher);
 
                         <section class="source-restrictions-node publisher @(publisherExpanded ? "expanded" : "collapsed")">
@@ -91,6 +96,7 @@
                                         class="source-restrictions-disclosure"
                                         aria-expanded="@publisherExpanded.ToString().ToLowerInvariant()"
                                         aria-label="@(publisherExpanded ? $"Collapse {publisher.Label}" : $"Expand {publisher.Label}")"
+                                        disabled="@Searching"
                                         @onclick="() => ToggleExpanded(publisher)">
                                     <span class="source-restrictions-chevron">@(publisherExpanded ? "▾" : "▸")</span>
                                 </button>
@@ -112,7 +118,7 @@
                             @if (publisherExpanded)
                             {
                                 <div class="source-restrictions-items">
-                                    @foreach (SourceRestrictionItemModel item in VisibleSources(publisher))
+                                    @foreach (SourceRestrictionItemModel item in publisherView.Sources)
                                     {
                                         @RenderSource(item)
                                     }
@@ -125,7 +131,7 @@
         </section>
     }
 
-    @if (VisibleNodes.Count == 0)
+    @if (visibleNodes.Count == 0)
     {
         <p class="source-restrictions-empty">
             @(Searching ? $"No sources match \"{_search}\"." : "No sources are available.")
@@ -166,37 +172,39 @@
 
     private bool Searching => !string.IsNullOrWhiteSpace(_search);
 
-    private IReadOnlyList<SourceRestrictionNodeModel> Tree => SourceRestrictionTreeBuilder.Build(Groups);
-
-    private IReadOnlyList<SourceRestrictionNodeModel> VisibleNodes =>
-        Tree.Where(node => !Searching || Matches(node)).ToList();
-
-    /// <summary>A filter opens what it finds; otherwise the user's own expansions decide.</summary>
+    /// <summary>Every visible search result is expanded; manual expansions survive filtering.</summary>
     private bool IsExpanded(SourceRestrictionNodeModel node) =>
-        Searching ? Matches(node) : _expanded.Contains(node.Id);
+        Searching || _expanded.Contains(node.Id);
 
     private void ToggleExpanded(SourceRestrictionNodeModel node)
     {
+        if (Searching) return;
         if (!_expanded.Add(node.Id)) _expanded.Remove(node.Id);
     }
 
-    private bool Matches(SourceRestrictionNodeModel node) =>
-        !Searching
-        || node.Label.Contains(_search, StringComparison.OrdinalIgnoreCase)
-        || node.AllSources.Any(source => source.Name.Contains(_search, StringComparison.OrdinalIgnoreCase));
+    // Keep the original node for counts and bulk toggles: filtering changes visibility only.
+    private sealed record FilteredSourceNode(
+        SourceRestrictionNodeModel Node,
+        IReadOnlyList<FilteredSourceNode> Children,
+        IReadOnlyList<SourceRestrictionItemModel> Sources);
 
-    private IReadOnlyList<SourceRestrictionNodeModel> VisibleChildren(SourceRestrictionNodeModel node) =>
-        node.Children.Where(child => !Searching || Matches(child)).ToList();
-
-    /// <summary>A node whose own label matches shows everything under it; otherwise only the hits.</summary>
-    private IReadOnlyList<SourceRestrictionItemModel> VisibleSources(SourceRestrictionNodeModel node)
+    private IReadOnlyList<FilteredSourceNode> FilterNodes(
+        IReadOnlyList<SourceRestrictionNodeModel> nodes, bool ancestorMatches = false)
     {
-        if (!Searching || node.Label.Contains(_search, StringComparison.OrdinalIgnoreCase))
-            return node.Sources;
+        var visible = new List<FilteredSourceNode>();
+        foreach (var node in nodes)
+        {
+            bool showAll = !Searching || ancestorMatches
+                || node.Label.Contains(_search.Trim(), StringComparison.OrdinalIgnoreCase);
+            var children = FilterNodes(node.Children, showAll);
+            var sources = showAll ? node.Sources : node.Sources
+                .Where(source => source.Name.Contains(_search.Trim(), StringComparison.OrdinalIgnoreCase)).ToList();
 
-        return node.Sources
-            .Where(source => source.Name.Contains(_search, StringComparison.OrdinalIgnoreCase))
-            .ToList();
+            // A descendant match keeps its ancestors; an ancestor match keeps all descendants.
+            if (showAll || children.Count > 0 || sources.Count > 0)
+                visible.Add(new FilteredSourceNode(node, children, sources));
+        }
+        return visible;
     }
 
     private Task ToggleNodeAsync(SourceRestrictionNodeModel node)

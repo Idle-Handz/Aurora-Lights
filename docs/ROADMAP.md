@@ -80,20 +80,53 @@ Next slice:
   for retirement once verified fetched upstream content incorporates and accepts
   the complete fix, retaining review for unverified or differing outcomes
 
-## Shared Importer Migration (Later)
+### Import workflow backlog (queued 2026-09-25)
 
-- After resolving selected-element identity and definition-conflict behavior, extract
-  the authoritative AuroraTranslator importer into a versioned shared library.
-- Have Translator's CLI and Lights use the same implementation for SQLite creation,
-  refresh, migrations, and required package/source database maintenance; retire the
-  copied writer only after its callers and behavior have been migrated.
-- Validate import and SQLite loading on Android early. Normal loading must remain
-  SQLite-backed on supported platforms; runtime XML is a recovery path, not the
-  only platform option. Desktop CLI builds can remain optional wrappers.
-- Preserve progress, cancellation, multiple content directories, and platform-safe
-  file access, and establish a separate reader compatibility contract and publishing
-  check. Keep source availability, display ordering, and definition-conflict policy
-  distinct rather than inheriting current package precedence implicitly.
+These improvements are planned, not implemented. The current unsafe-fallback guard
+stops loading when raw XML would undo persisted import decisions; snapshot recovery
+is the next priority.
+
+- [ ] **Recover from the last validated content snapshot.** Preserve retained and
+  rejected definitions, skipped operations, and local correction decisions when new
+  runtime content cannot load. Tell the user that recent changes were not applied.
+  If the saved snapshot cannot be validated, retain the explicit failure rather than
+  guessing. Cover cold starts, failed refreshes, and successful recovery after repair.
+- [ ] **Provide one Update Content workflow.** Coordinate downloading, importing,
+  runtime validation, and activation through one operation with clear stage progress.
+  Keep the working catalog usable until the replacement passes validation, and defer
+  activation while character tabs are open. Coordinate simultaneous requests so
+  downloads and imports do not race over changing inputs.
+- [ ] **Make import issues actionable.** Group related issues by file/source and
+  distinguish unavailable content, retained previous definitions, provisional choices,
+  and metadata notices. Provide a copyable report and targeted retry of failed
+  downloads without discarding successful downloads or rewriting user content.
+- [ ] **Expose safe cancellation.** Connect the existing download/import cancellation
+  tokens to the UI. Preserve completed downloads and the working database, define
+  the point after which activation must finish, and report cancellation separately
+  from failure. Cover cancellation before and during import and subsequent retry.
+
+## Shared Importer Integration
+
+The versioned `Aurora.Content` / `Aurora.Content.Contracts` integration and retirement
+of the copied importer are complete; see [the split and verification record](translator-library-split-plan.md).
+Lights consumes immutable packages from `vendor/nuget`, pinned in `AuroraContent.props`;
+pushing Translator alone does not update this consumer.
+
+- [x] **Consume the committed 0.8.1 packages** (local uptake completed 2026-09-25).
+  Both release packages from Translator commit `ce612682dc1bcb69027a3ef1527b6d3cac78e79b`
+  are vendored with verified hashes and clean-source provenance. The pin is updated,
+  test/app dependencies are restored, and 104 focused import/loader tests passed.
+  See [the uptake record](content-library-0.8.1-uptake.md). This is not an app release.
+- [ ] **Release and install the updated app, then refresh its database.** Rebuild the
+  platform release with the 0.8.1 dependency and refresh installed databases to data
+  version 15 through Settings > Content > Refresh Database. An XML download alone
+  cannot update the importer embedded in an installed app.
+- Validate import and SQLite loading on Android and Mac with actual platform runs.
+  Normal loading remains SQLite-backed; keep progress, cancellation, multiple
+  content directories, and platform-safe file access covered as integration evolves.
+- Keep source availability, display ordering, and definition-conflict policy distinct.
+  Use the shared library's current schema/data contract instead of duplicating a
+  separate compatibility contract in Lights.
 
 ## MAUI
 

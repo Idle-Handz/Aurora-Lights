@@ -1,0 +1,18 @@
+
+  Builder.Core -> C:\Users\Ralla\source\repos\Aurora-Lights\Builder.Core\bin\Debug\net10.0\Builder.Core.dll
+  Builder.Data -> C:\Users\Ralla\source\repos\Aurora-Lights\Builder.Data\bin\Debug\net10.0\Builder.Data.dll
+  Aurora.Documents -> C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.Documents\bin\Debug\net10.0\Aurora.Documents.dll
+  Aurora.Logic -> C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.Logic\bin\Debug\net10.0\Aurora.Logic.dll
+  Aurora.Components -> C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.Components\bin\Debug\net10.0\Aurora.Components.dll
+  Aurora.Web -> C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.Web\bin\Debug\net10.0\Aurora.Web.dll
+  Aurora.DataIntegration -> C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.DataIntegration\bin\Debug\net10.0\Aurora.DataIntegration.dll
+  Aurora.PdfImport -> C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.PdfImport\bin\Debug\net10.0\Aurora.PdfImport.dll
+C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.Tests\Tests\RestrictedSelectionSweepTests.cs(66,40): warning CS8629: Nullable value type may be null. [C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.Tests\Aurora.Tests.csproj]
+C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.Tests\Tests\ContentDatabaseTrustTests.cs(43,79): warning xUnit1031: Test methods should not use blocking task operations, as they can cause deadlocks. Use an async test method and await instead. (https://xunit.net/xunit.analyzers/rules/xUnit1031) [C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.Tests\Aurora.Tests.csproj]
+C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.Tests\Tests\ContentDatabaseTrustTests.cs(113,92): warning xUnit1031: Test methods should not use blocking task operations, as they can cause deadlocks. Use an async test method and await instead. (https://xunit.net/xunit.analyzers/rules/xUnit1031) [C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.Tests\Aurora.Tests.csproj]
+  Aurora.Tests -> C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.Tests\bin\Debug\net10.0\Aurora.Tests.dll
+Test run for C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.Tests\bin\Debug\net10.0\Aurora.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+Results File: C:\Users\Ralla\source\repos\Aurora-Lights\artifacts\content-0.8.1\content-0.8.1.trx
+
+Passed!  - Failed:     0, Passed:   104, Skipped:     0, Total:   104, Duration: 46 s - Aurora.Tests.dll (net10.0)

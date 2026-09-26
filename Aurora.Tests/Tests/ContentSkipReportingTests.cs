@@ -105,6 +105,11 @@ public sealed class ContentSkipReportingTests
             .Should().Contain("1 file was skipped and needs attention").And.Contain("1 append operation was skipped");
         AuroraImportResult.Succeeded(3, 10, 42).Summary
             .Should().NotContain("skipped");
+        AuroraImportResult.Succeeded(3, 10, 42, definitionCollisions: 2, supersededDefinitions: 4, classificationIssues: 1).Summary
+            .Should().Contain("2 conflicting declaration(s) held for review")
+            .And.Contain("4 archived definition(s) superseded by AuroraLegacy")
+            .And.Contain("1 publisher classification issue(s)")
+            .And.NotContain("files were skipped").And.NotContain("unavailable");
     }
 
     [Fact]

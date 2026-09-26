@@ -1,0 +1,15 @@
+
+  Builder.Core -> C:\Users\Ralla\source\repos\Aurora-Lights\Builder.Core\bin\Debug\net10.0\Builder.Core.dll
+  Builder.Data -> C:\Users\Ralla\source\repos\Aurora-Lights\Builder.Data\bin\Debug\net10.0\Builder.Data.dll
+  Aurora.Documents -> C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.Documents\bin\Debug\net10.0\Aurora.Documents.dll
+  Aurora.Logic -> C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.Logic\bin\Debug\net10.0\Aurora.Logic.dll
+  Aurora.Components -> C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.Components\bin\Debug\net10.0\Aurora.Components.dll
+  Aurora.Web -> C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.Web\bin\Debug\net10.0\Aurora.Web.dll
+  Aurora.DataIntegration -> C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.DataIntegration\bin\Debug\net10.0\Aurora.DataIntegration.dll
+  Aurora.PdfImport -> C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.PdfImport\bin\Debug\net10.0\Aurora.PdfImport.dll
+  Aurora.Tests -> C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.Tests\bin\Debug\net10.0\Aurora.Tests.dll
+Test run for C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.Tests\bin\Debug\net10.0\Aurora.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+Results File: C:\Users\Ralla\source\repos\Aurora-Lights\artifacts\review-2026-09-25\recent-update-review.trx
+
+Passed!  - Failed:     0, Passed:   123, Skipped:     0, Total:   123, Duration: 29 s - Aurora.Tests.dll (net10.0)

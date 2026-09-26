@@ -196,6 +196,75 @@ public sealed class SourceRestrictionsEditorTests : BunitContext
             .Should().Equal("Unearthed Arcana: Feats");
     }
 
+    [Theory]
+    [InlineData("Wizards of the Coast")]
+    [InlineData("  wizards OF THE coast  ")]
+    public void FilteringByPublisherShowsItsBooksAndCategory(string query)
+    {
+        var cut = RenderEditor();
+
+        cut.Find("input.source-restrictions-search").Input(query);
+
+        cut.FindAll("button.source-restrictions-toggle strong").Select(node => node.TextContent)
+            .Should().Equal("5e official", "Wizards of the Coast");
+        cut.FindAll("button.source-restrictions-item").Select(row => row.TextContent.Trim())
+            .Should().Equal("Player's Handbook", "Dungeon Master's Guide");
+    }
+
+    [Fact]
+    public void FilteringByCategoryShowsEveryPublisherAndBookBelowIt()
+    {
+        var cut = RenderEditor();
+
+        cut.Find("input.source-restrictions-search").Input("5e official");
+
+        cut.FindAll("button.source-restrictions-toggle strong").Select(node => node.TextContent)
+            .Should().Equal("5e official", "Wizards of the Coast", "Unearthed Arcana");
+        cut.FindAll("button.source-restrictions-item").Select(row => row.TextContent.Trim())
+            .Should().Equal("Player's Handbook", "Dungeon Master's Guide", "Unearthed Arcana: Feats");
+        cut.FindAll("button.source-restrictions-disclosure")
+            .Should().OnlyContain(button => button.GetAttribute("aria-expanded") == "true");
+    }
+
+    [Fact]
+    public void ClearingTheFilterRestoresManualExpansions()
+    {
+        var cut = RenderEditor();
+        cut.Find("button[aria-label='Expand 5e official']").Click();
+        cut.Find("button[aria-label='Expand Wizards of the Coast']").Click();
+
+        cut.Find("input.source-restrictions-search").Input("5e official");
+        cut.FindAll("button.source-restrictions-disclosure")
+            .Should().OnlyContain(button => button.HasAttribute("disabled"),
+                "search expansion must not change the remembered manual state");
+        cut.FindAll("button.source-restrictions-button").Single(button => button.TextContent.Trim() == "Clear").Click();
+
+        cut.Find("button[aria-label='Collapse 5e official']").GetAttribute("aria-expanded").Should().Be("true");
+        cut.Find("button[aria-label='Collapse Wizards of the Coast']").GetAttribute("aria-expanded").Should().Be("true");
+        cut.Find("button[aria-label='Expand Unearthed Arcana']").GetAttribute("aria-expanded").Should().Be("false");
+        cut.Find("button[aria-label='Expand 3rd party']").GetAttribute("aria-expanded").Should().Be("false");
+        cut.FindAll("button.source-restrictions-item").Select(row => row.TextContent.Trim())
+            .Should().Equal("Player's Handbook", "Dungeon Master's Guide");
+    }
+
+    [Fact]
+    public void FilteringDoesNotChangeCategoryCountsOrBulkToggleScope()
+    {
+        SourceRestrictionNodeToggle? requested = null;
+        var cut = RenderEditor(parameters => parameters.Add(
+            component => component.OnToggleNode,
+            EventCallback.Factory.Create<SourceRestrictionNodeToggle>(this, toggle => requested = toggle)));
+
+        cut.Find("input.source-restrictions-search").Input("Handbook");
+        cut.FindAll("button.source-restrictions-item").Should().ContainSingle();
+        Header(cut, "5e official").TextContent.Should().Contain("2 / 3");
+        Header(cut, "5e official").Click();
+
+        requested.Should().NotBeNull();
+        requested!.SourceIds.Should().Equal("phb", "dmg", "ua-feats");
+        requested.IsEnabled.Should().BeTrue();
+    }
+
     [Fact]
     public void AFilterThatMatchesNothingSaysSo()
     {

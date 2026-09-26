@@ -539,7 +539,7 @@
                         </div>
                     </div>
 
-                    <div style="margin-bottom: 16px;">
+                    <div style="margin-bottom: 16px; overflow-wrap: anywhere;">
                         <div class="pref-row-title" style="margin-bottom: 4px;">Status</div>
                         @if (ContentDb.SyncState == ContentDatabaseSyncState.Syncing || _checkingStale || _reloadingElements)
                         {
@@ -622,11 +622,12 @@
                         <div class="pref-row-text">
                             <div class="pref-row-title">Skip content files that can't be imported</div>
                             <div class="pref-row-desc">
-                                Leave unreadable files and invalid append operations out of a refresh and
-                                list them below. On the first import, conflicting element IDs remain
-                                unavailable while unaffected content is imported. New definition conflicts
-                                during later refreshes, and correction errors, stop the refresh and preserve
-                                the working database. Turn this off to stop on unreadable files or invalid append operations.
+                                Import as much usable content as possible and list issues below. AuroraLegacy
+                                replaces overlapping archived aurorabuilder definitions. For unresolved collisions,
+                                keep the last-known working definition; if none exists, use the first valid
+                                definition in stable file/declaration order and report the alternatives for review.
+                                Unreadable files and invalid append operations are skipped. Correction errors still
+                                stop activation. Turn this off to stop on unreadable files, invalid appends, or new unresolved collisions.
                             </div>
                         </div>
                         <MudSwitch Value="SkipUnusableContent"
@@ -634,25 +635,38 @@
                                    Color="Color.Primary" />
                     </div>
 
-                    @{ var skipped = _skippedContent; }
+                    @{ var superseded = _skippedContent.Count(s => s.Kind == "superseded-definition");
+                       var skipped = _skippedContent.Where(s => s.Kind != "superseded-definition").ToList(); }
+                    @if (superseded > 0)
+                    {
+                        <MudAlert Severity="Severity.Info" Class="mt-2" Dense="true">
+                            @superseded archived definition(s) replaced by AuroraLegacy. The import record retains their provenance.
+                        </MudAlert>
+                    }
                     @if (skipped.Count > 0)
                     {
                         <MudAlert Severity="Severity.Warning" Class="mt-2" Dense="true">
                             @skipped.Count content issue@(skipped.Count == 1 ? "" : "s") need@(skipped.Count == 1 ? "s" : "") attention.
-                            Unavailable element IDs, skipped files, and skipped append operations stay listed
+                            Retained or provisional definitions remain usable. Skipped alternatives and operations stay listed
                             here until their issues are resolved and the database is refreshed again.
                         </MudAlert>
                         <div style="margin-top: 8px;">
-                            @foreach (var skip in skipped)
+                            @foreach (var skip in skipped.Take(_showAllImportIssues ? skipped.Count : 30))
                             {
                                 <div class="pref-row-desc" style="margin-top: 8px;">
                                     <strong>@skip.RelativePath</strong> — @SkippedReason(skip.Kind)
                                     <div style="font-family: monospace; font-size: 11px; word-break: break-word;">@skip.Detail</div>
                                     @if (!string.IsNullOrWhiteSpace(skip.RelatedPath))
                                     {
-                                        <div>Conflicts with @skip.RelatedPath</div>
+                                        <div>Related definition: @skip.RelatedPath</div>
                                     }
                                 </div>
+                            }
+                            @if (skipped.Count > 30)
+                            {
+                                <MudButton OnClick="@(() => _showAllImportIssues = !_showAllImportIssues)">
+                                    @(_showAllImportIssues ? "Show fewer issues" : $"Show all {skipped.Count} issues")
+                                </MudButton>
                             }
                         </div>
                     }
@@ -1423,9 +1437,13 @@
         StateHasChanged();
     }
 
+    private bool _showAllImportIssues;
     private static string SkippedReason(string kind) => kind switch
     {
-        "unreadable" => "the file could not be read, so none of it was imported.",
+        "unreadable" => "the current file could not be read; previously imported definitions were retained where available.",
+        "definition-collision" => "an unresolved collision was held for review; the last-known or provisional definition remains available.",
+        "superseded-definition" => "AuroraLegacy supplied the successor definition.",
+        "classification" => "content was imported without inferring a publisher; review its Source metadata.",
         "conflict" => "it defines an element another file already defines differently; this file was left out and the earlier definition in import order was retained.",
         "definition-conflict" => "this element ID is unavailable because its definitions conflict; no version was selected. Other content in the files was imported.",
         "correction" => "an earlier refresh left this correction file out; correction errors now stop a refresh to protect the working content.",

@@ -11,7 +11,7 @@ $assembly = Join-Path $PSScriptRoot 'bin/Release/net10.0/ContentDatabaseRehearsa
 $runRoot = Join-Path $repoRoot ('buildtmp/content-policy-smoke-' + [DateTime]::UtcNow.ToString('yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0,6))
 New-Item -ItemType Directory -Path $runRoot | Out-Null
 $phases = @('policy-first-import','policy-reopen-unavailable','policy-repair-conflict','policy-reopen-repaired',
-    'policy-reject-conflict','policy-repair-conflict','policy-protect-correction','policy-reject-correction',
+    'policy-refresh-conflict','policy-repair-conflict','policy-protect-correction','policy-reject-correction',
     'policy-probe-invalid-startup','policy-repair-correction','policy-reopen-repaired')
 $results = [Collections.Generic.List[object]]::new()
 $previousOutput = $env:REHEARSAL_OUTPUT

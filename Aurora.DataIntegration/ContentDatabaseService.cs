@@ -34,7 +34,7 @@ public sealed class ContentDatabaseService
         "read skipped content", () => DatabasePath is { } path
             ? ContentDatabaseReader.ReadSkippedContent(path) : [], []);
 
-    /// <summary>Prevents a failed prepared load from restoring deliberately unavailable definitions.</summary>
+    /// <summary>Prevents raw XML recovery from undoing persisted import decisions.</summary>
     public static void ValidateRawXmlFallback(string? databasePath, string? loadFailure = null)
     {
         if (string.IsNullOrWhiteSpace(databasePath)) return;
@@ -44,6 +44,26 @@ public sealed class ContentDatabaseService
                 "Raw XML fallback cannot bypass that decision. Review conflicts in Settings, correct the content files, and refresh the database before retrying. " +
                 "Unavailable IDs: " + string.Join(", ", unavailable.OrderBy(id => id, StringComparer.Ordinal)) +
                 (string.IsNullOrWhiteSpace(loadFailure) ? "" : ". Prepared load failed: " + loadFailure));
+
+        // Retained/provisional definitions and successor choices remain usable, so they are not
+        // in ReadUnavailableIds. The library persists their rejected declarations here alongside
+        // skipped files and append operations. Raw XML loading cannot preserve those decisions.
+        // Classification notices alone do not exclude or replace any content.
+        var exclusions = ContentDatabaseReader.ReadSkippedContent(databasePath)
+            .Where(issue => issue.Kind != "classification")
+            .ToArray();
+        if (exclusions.Length > 0)
+        {
+            var affectedFiles = exclusions.Select(issue => issue.RelativePath)
+                .Distinct(StringComparer.Ordinal).OrderBy(path => path, StringComparer.Ordinal).ToArray();
+            throw new InvalidDataException(
+                "The database contains retained definitions or skipped content that raw XML fallback cannot preserve. " +
+                "Loading was stopped to avoid replacing working definitions or restoring rejected content. " +
+                "Review content issues in Settings, correct the files, and refresh the database before retrying. " +
+                "Affected files: " + string.Join(", ", affectedFiles.Take(5)) +
+                (affectedFiles.Length > 5 ? $" (and {affectedFiles.Length - 5} more)" : "") +
+                (string.IsNullOrWhiteSpace(loadFailure) ? "" : ". Prepared load failed: " + loadFailure));
+        }
     }
 
     /// <summary>Fires on the calling (background) thread whenever state changes.</summary>
@@ -211,11 +231,17 @@ public sealed class ContentDatabaseService
             onDiagnostic: diagnostic => DebugLogService.Instance.Info("Content import: " + diagnostic),
             skipUnusableContent: skipUnusable);
         foreach (var skip in imported.Skipped)
-            DebugLogService.Instance.Warn($"Content skipped ({skip.Kind}): {skip.Path}", skip.Detail);
+            if (skip.Kind == "superseded-definition")
+                DebugLogService.Instance.Info($"Archived definition superseded: {skip.Path}", skip.Detail);
+            else
+                DebugLogService.Instance.Warn($"Content import notice ({skip.Kind}): {skip.Path}", skip.Detail);
         return AuroraImportResult.Succeeded(imported.FilesChanged, imported.FilesUnchanged, imported.ElementsWritten,
-            filesSkipped: imported.Skipped.Count(skip => skip.Kind is not ("append" or "definition-conflict")),
+            filesSkipped: imported.Skipped.Count(skip => skip.Kind is not ("append" or "definition-conflict" or "definition-collision" or "superseded-definition" or "classification")),
             appendOperationsSkipped: imported.Skipped.Count(skip => skip.Kind == "append"),
-            unavailableDefinitions: imported.Skipped.Count(skip => skip.Kind == "definition-conflict"));
+            unavailableDefinitions: imported.Skipped.Count(skip => skip.Kind == "definition-conflict"),
+            definitionCollisions: imported.Skipped.Count(skip => skip.Kind == "definition-collision"),
+            supersededDefinitions: imported.Skipped.Count(skip => skip.Kind == "superseded-definition"),
+            classificationIssues: imported.Skipped.Count(skip => skip.Kind == "classification"));
     }
 
     private void ReportProgress(ContentImportProgress p)

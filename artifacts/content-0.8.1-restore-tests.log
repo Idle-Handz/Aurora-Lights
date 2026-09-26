@@ -1,0 +1,8 @@
+
+  Determining projects to restore...
+  Restored C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.DataIntegration\Aurora.DataIntegration.csproj (in 302 ms).
+  Restored C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.Components\Aurora.Components.csproj (in 302 ms).
+  Restored C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.Logic\Aurora.Logic.csproj (in 302 ms).
+  Restored C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.Web\Aurora.Web.csproj (in 745 ms).
+  Restored C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.Tests\Aurora.Tests.csproj (in 795 ms).
+  4 of 9 projects are up-to-date for restore.

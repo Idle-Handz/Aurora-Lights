@@ -82,13 +82,14 @@ internal static class ContentPolicyRehearsal
         {
             case "policy-first-import":
                 await Sync(true);
-                Require(import!.UnavailableDefinitions == 1 && import.FilesSkipped == 0 && import.AppendOperationsSkipped == 0,
-                    "Settings summary distinguishes one unavailable ID from skipped files and appends");
-                await Load(false);
+                Require(import!.UnavailableDefinitions == (skip ? 0 : 1) && import.DefinitionCollisions == (skip ? 1 : 0) &&
+                    import.FilesSkipped == 0 && import.AppendOperationsSkipped == 0,
+                    "Settings summary distinguishes provisional collisions from unavailable IDs and skipped files");
+                await Load(skip);
                 break;
             case "policy-reopen-unavailable":
                 Require(service.LastResult == null && elements.Count == 0, "Fresh process has no prior result or loaded catalog");
-                await Load(false);
+                await Load(skip);
                 break;
             case "policy-repair-conflict":
                 File.WriteAllText(second, Second(true));
@@ -100,16 +101,23 @@ internal static class ContentPolicyRehearsal
                 Require(service.LastResult == null && elements.Count == 0, "Fresh process has no prior result or loaded catalog");
                 await Load(true, File.Exists(local));
                 break;
-            case "policy-reject-conflict":
+            case "policy-refresh-conflict":
                 await Load(true);
                 var previous = elements.ToArray();
-                File.WriteAllText(second, Second(false));
+                File.WriteAllText(second, Second(false).Replace("</elements>", Element("ID_POLICY_REHEARSAL_NEW", "New unaffected") + "</elements>"));
                 string beforeConflict = Hash(database);
-                await Sync(false);
-                Require(import!.ErrorMessage?.Contains("duplicate-element-id") == true, "Failure identifies the conflicting definition");
+                await Sync(skip);
                 databaseUnchanged = Hash(database) == beforeConflict;
-                Require(databaseUnchanged.Value && previous.SequenceEqual(elements), "Rejected conflict preserves database bytes and the live catalog");
+                if (!skip)
+                {
+                    Require(import!.ErrorMessage?.Contains("duplicate-element-id") == true, "Failure identifies the conflicting definition");
+                    Require(databaseUnchanged.Value && previous.SequenceEqual(elements), "Strict rejection preserves database bytes and the live catalog");
+                }
+                else Require(import!.DefinitionCollisions > 0 && !databaseUnchanged.Value,
+                    "Skip mode activates unaffected updates and reports retained definitions");
                 await Load(true);
+                Require(elements.Single(e => e.Id == Conflict).Name == "Conflict original", "The previous definition remains authoritative");
+                Require(elements.Any(e => e.Id == "ID_POLICY_REHEARSAL_NEW") == skip, "Only successful best-effort refresh publishes the unrelated update");
                 break;
             case "policy-protect-correction":
                 Directory.CreateDirectory(Path.GetDirectoryName(local)!);
@@ -159,10 +167,12 @@ internal static class ContentPolicyRehearsal
         Require(service.LastReadFailure == null, "Persisted issue reports read successfully");
         if (mode is "policy-first-import" or "policy-reopen-unavailable")
         {
-            Require(issues.Count == 1 && issues[0].Kind == "definition-conflict" &&
+            Require(issues.Count == 1 && issues[0].Kind == (skip ? "definition-collision" : "definition-conflict") &&
                 new[] { Conflict, "first.xml", "second.xml" }.All(s => issues[0].Detail.Contains(s)),
-                "Persisted Settings report names the unavailable ID and both supplier files");
+                "Persisted Settings report names the affected ID and both supplier files");
         }
+        else if (mode == "policy-refresh-conflict" && skip)
+            Require(issues.All(i => i.Kind == "definition-collision"), "Retained decisions survive the actual app loader");
         else Require(issues.Count == 0, "Resolved conflict report remains cleared in the database");
         return new { processId = Environment.ProcessId, skipUnusable = skip, checks, passed = checks.Count,
             import, load, service.SyncState, service.Progress, issues, databaseUnchanged, coldFailure,

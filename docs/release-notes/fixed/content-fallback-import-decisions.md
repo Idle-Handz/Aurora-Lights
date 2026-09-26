@@ -1,0 +1,1 @@
+If content loading fails, recovery now stops before it can replace preserved definitions or restore rejected content from XML. The error identifies affected content files and directs you to repair and refresh them in Settings.
