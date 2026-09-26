@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
@@ -190,12 +190,21 @@ public sealed class ContentIndexUpdateService
                 ? await ReadCacheAsync(cachePath, cancellationToken).ConfigureAwait(false)
                 : null;
 
+            // The cache records what the server last sent, not what is on disk. Should the two
+            // part company - an interrupted write, a file restored from a backup or replaced from
+            // elsewhere - sending those validators makes the server answer "not modified" forever,
+            // and the stale file can never catch up. Trust the entry only while it still describes
+            // the local file, and ask unconditionally when it does not.
+            bool cacheDescribesLocalFile = cache?.ContentLength is not { } cachedLength
+                || FileLength(destinationPath) == cachedLength;
+            if (!cacheDescribesLocalFile) cache = null;
+
             using var message = new HttpRequestMessage(HttpMethod.Get, url);
             if (!string.IsNullOrWhiteSpace(cache?.ETag))
                 message.Headers.TryAddWithoutValidation("If-None-Match", cache.ETag);
             if (cache?.LastModified is { } lastModified)
                 message.Headers.IfModifiedSince = lastModified;
-            else if (localFileExists)
+            else if (localFileExists && cacheDescribesLocalFile)
                 message.Headers.IfModifiedSince = File.GetLastWriteTimeUtc(destinationPath);
 
             state.Report($"Checking {entry.Name}...", currentFileName: entry.Name);
@@ -441,6 +450,13 @@ public sealed class ContentIndexUpdateService
         string tempPath = destinationPath + ".tmp-" + Guid.NewGuid().ToString("N");
         await File.WriteAllBytesAsync(tempPath, bytes, cancellationToken).ConfigureAwait(false);
         File.Move(tempPath, destinationPath, overwrite: true);
+    }
+
+    private static long? FileLength(string path)
+    {
+        try { return new FileInfo(path).Length; }
+        catch (IOException) { return null; }
+        catch (UnauthorizedAccessException) { return null; }
     }
 
     private static string GetCachePath(string rootDirectory, string url)

@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Net;
 using Builder.Presentation.Services.Content;
 
@@ -252,6 +252,64 @@ public sealed class ContentIndexUpdateServiceTests
         };
 
     private sealed record RecordedRequest(string Url, IReadOnlyList<string> IfNoneMatch, DateTimeOffset? IfModifiedSince);
+
+    /// <summary>
+    /// The cache records what the server sent, not what is on disk. When a local file stops
+    /// matching it - an interrupted write, a restore from a backup, a copy from somewhere older -
+    /// sending the cached validators makes the server answer "not modified" and the stale file can
+    /// never catch up. This happened for real: an index cached in June still described the current
+    /// file on the server, while the copy on disk was the May revision, so content updates
+    /// reported "nothing to do" indefinitely.
+    /// </summary>
+    [Fact]
+    public async Task UpdateAsync_refetches_when_the_cached_entry_no_longer_describes_the_local_file()
+    {
+        string root = CreateTempDirectory();
+        try
+        {
+            File.WriteAllText(
+                Path.Combine(root, "core.index"),
+                """
+                <index>
+                  <files>
+                    <file name="book.xml" url="https://example.test/book.xml" />
+                  </files>
+                </index>
+                """);
+
+            var handler = new SequenceHandler();
+            handler.Respond(
+                "https://example.test/book.xml",
+                Ok("<elements id=\"current\" />", etag: "\"current\""),
+                // A real server: it answers 304 to the validator it issued, and only sends the
+                // file to a request that does not claim to hold it already.
+                request => request.Headers.IfNoneMatch.Any(tag => tag.ToString() == "\"current\"")
+                    ? new HttpResponseMessage(HttpStatusCode.NotModified)
+                    : Ok("<elements id=\"current\" />", etag: "\"current\"")(request));
+
+            var service = new ContentIndexUpdateService(new HttpClient(handler));
+            var request = new ContentIndexUpdateRequest(root, new[] { "core.index" });
+
+            await service.UpdateAsync(request);
+            string downloaded = Path.Combine(root, "core", "book.xml");
+            File.Exists(downloaded).Should().BeTrue();
+
+            // The file drifts away from what the cache describes.
+            File.WriteAllText(downloaded, "<elements id=\"stale\" />");
+
+            ContentIndexUpdateResult result = await service.UpdateAsync(request);
+
+            File.ReadAllText(downloaded).Should().Contain("current",
+                "the cached entry no longer describes this file, so it must be fetched again");
+            result.UpdatedFileCount.Should().Be(1);
+            handler.Requests.Last().IfNoneMatch.Should().BeEmpty(
+                "claiming to hold content the file does not have is what made the server answer 304");
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
 
     private sealed class SequenceHandler : HttpMessageHandler
     {
