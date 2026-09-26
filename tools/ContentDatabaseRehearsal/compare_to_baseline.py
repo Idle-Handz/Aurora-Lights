@@ -1,6 +1,10 @@
 """Compare a parity rerun root against a baseline root.
 
-Usage: python compare_to_baseline.py <baseline-root> <rerun-root>
+Usage: python compare_to_baseline.py <baseline-root> <rerun-root> [--ignore-field NAME ...]
+
+--ignore-field drops a field name wherever it appears before comparing. Use it when a
+result carries something that is expected to differ across the boundary being compared,
+such as dataVersion after a content-format bump. Everything else is still compared.
 
 Checks everything present in both roots' results folders: fresh databases (row by row,
 ignoring build timestamps), loaded projections, rehearsal checks (success and warning text),
@@ -16,9 +20,19 @@ import sys
 CHECKS = ["installed-scan.json", "fresh-a-refresh.json", "fresh-a-parity.json",
           "fresh-a-fallback-check.json", "fresh-b-failure-check.json"]
 
+IGNORED_FIELDS = set()
+
+
+def drop_ignored(value):
+    if isinstance(value, dict):
+        return {k: drop_ignored(v) for k, v in value.items() if k not in IGNORED_FIELDS}
+    if isinstance(value, list):
+        return [drop_ignored(v) for v in value]
+    return value
+
 
 def load(path):
-    return json.loads(path.read_text(encoding="utf-8"))
+    return drop_ignored(json.loads(path.read_text(encoding="utf-8")))
 
 
 def messages(report, roots):
@@ -67,7 +81,14 @@ def first_difference(a, b, path=""):
 
 
 def main():
-    baseline, rerun = (pathlib.Path(p).resolve() for p in sys.argv[1:3])
+    arguments = sys.argv[1:]
+    while "--ignore-field" in arguments:
+        at = arguments.index("--ignore-field")
+        IGNORED_FIELDS.add(arguments[at + 1])
+        del arguments[at:at + 2]
+    baseline, rerun = (pathlib.Path(p).resolve() for p in arguments[:2])
+    if IGNORED_FIELDS:
+        print("ignoring field(s): " + ", ".join(sorted(IGNORED_FIELDS)))
     base_results, new_results = baseline / "results", rerun / "results"
     roots = [str(baseline), str(rerun)]
     ok = True
