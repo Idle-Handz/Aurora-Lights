@@ -315,6 +315,21 @@ both builds. `Aurora.Legacy.csproj` builds with `Aurora.Content.Contracts` as it
   - copies them into `vendor/nuget/` (committed)
   - appends provenance (commit, SHA-256 per package) to `vendor/nuget/manifest.json`
   - updates the pin
+- `tools/take-content-library.ps1` (Lights) runs the whole uptake, which is
+  otherwise a hand-run sequence that has gone wrong twice:
+  - reports the pinned and available versions and stops when there is nothing to
+    take, so it is safe to run on a schedule or before starting work
+  - refuses a dirty repo, an older offered version, or a running Aurora:
+    Reflections, which holds the build output and fails the MAUI build late
+  - vendors through `update-content-library.ps1`, then builds the Windows app,
+    runs Aurora.Tests, runs all four legacy parity gates, and runs parity
+  - `-Parity auto` (the default) runs the database part, compares the data
+    version against the baseline, and only when the format moved refreshes the
+    installed case and runs the characters — because the suite reads every
+    character from that case, and an unrefreshed one fails them all on the
+    version check without comparing anything
+  - leaves the result on `content-library-<version>` with a step summary; it
+    never pushes and never opens a pull request
 - **Vendored versions are immutable.** The script refuses an existing version,
   because NuGet caches packages by version. Bump the version for every change.
 - **One pin:** `AuroraContentVersion` in `AuroraContent.props` at the Lights root,
