@@ -557,6 +557,25 @@ internal static class DbElementLoader
 
     // ── DB queries ───────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Loads the forwarding addresses content declared for ids it renamed. Absent in databases
+    /// built before aliases existed, which simply means nothing forwards.
+    /// </summary>
+    private static void LoadElementAliases(SqliteConnection conn)
+    {
+        var aliases = new List<KeyValuePair<string, string>>();
+        try
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT saved_aurora_id, target_aurora_id FROM content_element_aliases";
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                aliases.Add(new(reader.GetString(0), reader.GetString(1)));
+        }
+        catch (SqliteException) { aliases.Clear(); }
+        ElementIdAliases.Set(aliases);
+    }
+
     private static List<ElementRow> QueryElements(SqliteConnection conn)
     {
         var rows = new List<ElementRow>();
@@ -663,6 +682,8 @@ internal static class DbElementLoader
         // Complete reconstruction only: an exception leaves the previous target
         // untouched and invokes the caller's complete XML fallback.
         var ids = parsed.Select(e => e.Id).ToHashSet(StringComparer.Ordinal);
+        // Forwarding addresses travel with the catalog they describe.
+        LoadElementAliases(connection);
         var rows = QueryElements(connection).Where(e => ids.Contains(e.AuroraId)).ToList();
         // Runtime supports/grants remain intact. Do not expose a singular parent
         // from an unrestricted database as the answer for a filtered projection.

@@ -45,6 +45,13 @@ public static class CharacterLoadValidation
         var before = Counts(beforeNormalization ?? []);
         var after = Counts(afterNormalization ?? []);
         var missing = new List<MissingElement>();
+        // A saved id that content has forwarded is satisfied by whatever it now points at, since
+        // that is the element the loader restored. Direct matches are settled first so a shared
+        // target cannot be claimed twice and mask a real loss.
+        var unclaimed = new Dictionary<string, int>(loaded, StringComparer.Ordinal);
+        foreach (var id in expected.Keys)
+            if (unclaimed.TryGetValue(id, out int direct))
+                unclaimed[id] = Math.Max(0, direct - expected[id]);
         foreach (var (id, count) in expected)
         {
             // Discount only these exact occurrences actually removed by approved
@@ -52,6 +59,12 @@ public static class CharacterLoadValidation
             int normalized = Math.Min(Math.Max(0, before.GetValueOrDefault(id) - after.GetValueOrDefault(id)),
                 Math.Max(0, count - after.GetValueOrDefault(id)));
             int absent = Math.Max(0, count - normalized - loaded.GetValueOrDefault(id));
+            if (absent > 0 && ElementIdAliases.TryGetTarget(id, out string forwarded))
+            {
+                int drawn = Math.Min(absent, unclaimed.GetValueOrDefault(forwarded));
+                unclaimed[forwarded] = unclaimed.GetValueOrDefault(forwarded) - drawn;
+                absent -= drawn;
+            }
             if (absent > 0) missing.Add(new(id, absent, used.GetValueOrDefault(id, "saved character summary (origin unavailable)")));
         }
         return missing;

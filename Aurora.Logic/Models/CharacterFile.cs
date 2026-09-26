@@ -515,7 +515,7 @@ public class CharacterFile : ObservableObject
                 ++optionCount;
                 await this.SendCharacterLoadingScreenStatusUpdate("applying character options");
                 string attributeValue2 = elementNode.GetAttributeValue("id");
-                ElementBase element = DataManager.Current.ElementsCollection.GetElement(attributeValue2);
+                ElementBase element = ElementIdAliases.Resolve(DataManager.Current.ElementsCollection, attributeValue2);
                 if (element != null)
                     CharacterManager.Current.RegisterElement(element);
                 else
@@ -565,7 +565,7 @@ public class CharacterFile : ObservableObject
             string attributeValue3 = elementNode.GetAttributeValue("type");
             if (attributeValue3 == "Level" || attributeValue3 == "Option")
             {
-                ElementBase element = DataManager.Current.ElementsCollection.GetElement(elementNode.GetAttributeValue("id"));
+                ElementBase element = ElementIdAliases.Resolve(DataManager.Current.ElementsCollection, elementNode.GetAttributeValue("id"));
                 await this.ReadChildElements(elementNode, element);
                 if (elementNode.ContainsAttribute("rndhp"))
                 {
@@ -633,6 +633,8 @@ public class CharacterFile : ObservableObject
                     element = DataManager.Current.ElementsCollection.GetElement(attributeValue5.Replace("ID_WOTC_ITEM", "ID_WOTC_PHB_ITEM"));
                 if (element == null && attributeValue5.Contains("ID_WOTC_WEAPON"))
                     element = DataManager.Current.ElementsCollection.GetElement(attributeValue5.Replace("ID_WOTC_WEAPON", "ID_WOTC_PHB_WEAPON"));
+                if (element == null && ElementIdAliases.TryGetTarget(attributeValue5, out string aliasedItemId))
+                    element = DataManager.Current.ElementsCollection.GetElement(aliasedItemId);
                 if (element == null)
                 {
                     Logger.Warning("unable to add " + node6.GetAttributeValue("name"));
@@ -718,7 +720,7 @@ public class CharacterFile : ObservableObject
                 }
                 else
                 {
-                    ElementBase element = DataManager.Current.ElementsCollection.GetElement(id);
+                    ElementBase element = ElementIdAliases.Resolve(DataManager.Current.ElementsCollection, id);
                     await this.ReadChildElements(childNode, element);
                     index = 0;
                 }
@@ -1509,7 +1511,7 @@ public class CharacterFile : ObservableObject
             foreach (var id in preparedIds)
             {
                 if (emittedIds.Contains(id)) continue;
-                var element = DataManager.Current.ElementsCollection.GetElement(id);
+                var element = ElementIdAliases.Resolve(DataManager.Current.ElementsCollection, id);
                 if (element is Spell preparedSpell)
                     yield return new SelectionElement((ElementBase)preparedSpell) { IsChosen = true };
             }
