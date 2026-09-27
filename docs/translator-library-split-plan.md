@@ -846,6 +846,76 @@ Capture the baseline from the current working tree before changing anything (Pha
      the corrected comparator. Logs are in `buildtmp/verification-0.7.1`.
      Character parity was not repeated for this version-only uptake.
 
+### Aurora.Content 0.9.0 uptake (2026-09-26)
+
+The pin and both immutable packages now use **0.9.0**, from clean Translator
+commit `d35837845ff663c3612d9e1b8678ea58cc0cefd2`. The database contract is
+**schema 1, data 17**. Readable same-ID collisions follow legacy declaration
+order; superseded declarations remain inspectable without supplying active
+mechanics. Content-authored and curated aliases forward absent saved IDs to
+live definitions through the host's runtime alias resolver. Unrelated names
+are not treated as identity, and unreadable suppliers can retain their previous
+effective definition.
+
+Installed content was updated **before** capturing the 0.8.1 baseline: 32 files
+updated, 1,353 entries checked across 92 indexes, zero download failures. Both
+versions use the same frozen 1,191 XML files and 60 characters. Evidence is in
+`buildtmp/take-0.9.0-evidence`; the baseline is
+`buildtmp/parity-baseline-20260926-161933-4cd90b`, and the 0.9.0 run is
+`buildtmp/parity-rerun-20260926-164637-e33776` (all ignored).
+
+- The Windows app build passed. **Aurora.Tests: 680 passed, zero failed or
+  skipped.** Two fallback-policy cases initially expected the superseded
+  first-declaration/retain-readable-edits policy. Their fixtures now verify
+  last-readable-declaration selection and retention of an unreadable supplier,
+  while retaining failed-reload preservation, raw-fallback refusal and repair
+  assertions. The focused policy suite passes 11/11.
+- Legacy API gates passed: **Builder.Core 65**, **Builder.Data 1,362 plus one
+  permitted addition**, **Aurora.Documents 166**. Builder.Data behavior passes
+  **10/10 against both restored source and the production oracle**.
+- The declaration-winner oracle reports **zero missing on either side, 806
+  label-only differences and one behavioral difference**:
+  `ID_INTERNAL_GRANTS_CHARACTER_BASE`, the generated builtin exception. No
+  other declaration winner differs.
+- A real data-15 database copied from the refreshed baseline migrated to
+  **data 17** through `ContentDatabaseService.SyncAsync`: three files processed,
+  1,188 unchanged, zero skipped or unavailable definitions. SQLite integrity
+  is `ok`, with zero foreign-key errors. The migrated runtime projection equals
+  the fresh-import projection; two fresh imports match across all 74 tables
+  after normalizing rehearsal roots and build timestamps. All nine database
+  rehearsal operations succeeded.
+- **Handoff schema discrepancy:** `elements.declaration_status`,
+  `content_rejected_declarations.relative_path`, and `content_element_aliases`
+  exist after migration. The requested
+  `content_prepared_sources.order_relative_path` does **not** exist in either
+  the 0.9.0 source contract or the migrated database. The writer and reader use
+  `content_prepared_sources.relative_path`. Migration succeeded against the
+  actual contract; the handoff's literal four-object assertion is not met.
+
+- All **60 character results** are present: **41 match, 19 have fewer missing
+  references, none have more**. Captured first/second state, choice counts,
+  choice/inventory stability, and original-file preservation match for all 60.
+  There are 30 successful cases and 30 with pre-existing failures (baseline:
+  25 successful, 35 failing); this is a regression-free comparison, not a claim
+  that every saved character is repaired.
+  - Lola Bunny: **1 -> 0 missing**.
+  - Rochelle Lee (Revised): **5 -> 4 missing**. The remaining references are
+    the TCoE custom-lineage Dexterity option, `ID_INTERNAL_ASI_DEXTERITY`, and
+    the two drake companion saved paths identified in the handoff.
+  - Rochelle Lee: **3 -> 2 missing**.
+- Both runtime projections and all five diagnostic checks match the refreshed
+  0.8.1 baseline. The generic comparator still reports `OVERALL: DIFFERENT`:
+  the 19 character diagnostics improve, and database contract/alias rows change.
+  The 39 differing text/cache rows match by stable Aurora ID after normalizing
+  numeric row IDs; three prepared source hashes also change. The frozen input
+  XML hashes match exactly. Fresh-import determinism and the winner oracle
+  independently pass; raw database equality across data 15 and 17 is not claimed.
+
+The vendoring pipeline stopped at the two stale test expectations before
+committing. Its remaining gates were executed explicitly after correcting the
+fixtures; no dirty-source override was used. The uptake is committed on
+`content-library-0.9.0` for review. Nothing is pushed or merged by this uptake.
+
 Later / optional:
 - **Refine the same-name selection restriction** (user follow-up, 2026-09-24):
   keep the current picker rule for this release to prevent selecting both PHB

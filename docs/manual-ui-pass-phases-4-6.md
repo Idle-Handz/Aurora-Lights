@@ -8,15 +8,25 @@ Visual presentation and interaction still need review in the rendered app. It
 covers the shared library, source restrictions, Builder.Data cleanup, the 0.7.0
 conflict and correction policy, and the rebuilt sources editor.
 
-**Data version 13.** An installed database in an older format reads as out of
-date and must be refreshed before content loads; the v13 reader will not read a
-v12 database. A database already at v13 needs no further format migration. Check
+**Aurora.Content 0.9.0, data version 17 (schema 1).** An installed database in an
+older format reads as out of date and must be refreshed before content loads;
+the v17 reader will not read a
+v15 database. A database already at v17 needs no further format migration. Check
 1 therefore needs an older-format database and cannot be repeated on the same
 database after it has been refreshed.
 
-The shared-library work is now on `main` (fast-forwarded through `6b2f7e8` on
-2026-09-24). The handoff records the manual UI pass as cleared; retain this guide
-for future regression reviews.
+The library now follows legacy declaration order for readable same-ID collisions
+and records superseded declarations separately from active mechanics. Explicit
+content-authored and curated aliases forward absent old IDs to live definitions;
+the host resolves those aliases when restoring saved references. They do not
+merge unrelated definitions merely because their names match.
+
+Earlier shared-library work reached `main` (fast-forwarded through `6b2f7e8` on
+2026-09-24). That handoff records the manual UI pass as cleared; retain this
+guide for future regression reviews. The 0.9.0 uptake is on
+`content-library-0.9.0`, pending review before any push or merge. Its automated
+acceptance evidence is in `translator-library-split-plan.md`; it does not claim
+a new manual UI pass.
 
 Record each check as pass or fail with a note. A failure is worth more than a
 completed list — stop and write down what you saw rather than working around it.
@@ -43,7 +53,7 @@ robocopy "%USERPROFILE%\Documents\5e Character Builder" "%USERPROFILE%\Documents
 migration reads the switched-off packages recorded in the database, and it ran
 before the first refresh: `settings.json` has `"SourcePreferencesSeeded": true`.
 Restoring an old database no longer brings it back either, because a data-12
-database is not readable by the data-13 reader — it has to be refreshed first,
+database is not readable by the data-17 reader — it has to be refreshed first,
 and the refresh is what retires those flags. Check 1 is kept below as a record of
 what it was meant to show, and its lasting half (what the Sources panel holds) is
 still worth reading.
@@ -319,15 +329,16 @@ a PDF import, and switch between two open character tabs.
 - **New warnings mentioning Ryoko content** in the console: unresolved append
   targets and generic parsing notes. They belong to that content and were
   invisible only because it was switched off.
-- **Stale references to renamed content**, pre-existing and tracked separately.
+- **Stale references to renamed content** in older saves.
   `LASTER_PISTOL` is a typo the content has since fixed to `LASER_PISTOL`;
   `MODERN_FIREARMS_RIFLE` was split into `RIFLE_AUTOMATIC` and `RIFLE_HUNTING`;
   and a skill proficiency re-attributed from the PHB to Aurora Legacy Essentials
-  changes the id of the proxy item that grants it. Re-picking each one and saving
-  clears it for good.
+  changes the id of the proxy item that grants it. The 0.9.0 alias map restores
+  references with an explicit forwarding entry. References without one still
+  require a content repair or re-picking the appropriate choice and saving.
 - **An older-format database reads as out of date on first launch** after taking
-  this branch, because the content format moved to data version 13. Refresh once;
-  a database already at v13 does not need this migration again.
+  this branch, because the content format moved to data version 17. Refresh once;
+  a database already at v17 does not need this migration again.
 
 ## If something looks wrong
 

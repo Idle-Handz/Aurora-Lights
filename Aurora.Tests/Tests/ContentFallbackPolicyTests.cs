@@ -72,7 +72,9 @@ public sealed class ContentFallbackPolicyTests : IDisposable
                 File.WriteAllText(first, Xml("Original retained"));
                 await ContentImport.ImportAsync(_root, Database, skipUnusableContent: true);
             }
-            File.WriteAllText(first, Xml("Changed A"));
+            // Readable collisions now follow legacy load order (b.xml wins). Retention
+            // applies when the previous supplier becomes unreadable, not merely edited.
+            File.WriteAllText(first, retainPrevious ? "<elements><broken" : Xml("Changed A"));
             File.WriteAllText(second, Xml("Conflicting B"));
             await ContentImport.ImportAsync(_root, Database, skipUnusableContent: true);
             ContentDatabaseReader.ReadSkippedContent(Database).Should().Contain(issue => issue.Kind == "definition-collision");
@@ -81,7 +83,7 @@ public sealed class ContentFallbackPolicyTests : IDisposable
             var live = new ElementBaseCollection();
             var loaded = await DbElementLoader.TryLoadSnapshotAsync(live);
             loaded.Success.Should().BeTrue(loaded.FailureReason);
-            live.GetElement(id)!.Name.Should().Be(retainPrevious ? "Original retained" : "Changed A");
+            live.GetElement(id)!.Name.Should().Be(retainPrevious ? "Original retained" : "Conflicting B");
             var originalElements = live.ToArray();
             byte[] originalDatabase = File.ReadAllBytes(Database);
 
@@ -105,6 +107,7 @@ public sealed class ContentFallbackPolicyTests : IDisposable
             // Repair releases the old decisions; a stale in-memory flag must not keep blocking recovery.
             File.Delete(broken);
             File.Delete(second);
+            File.WriteAllText(first, Xml("Changed A"));
             await ContentImport.ImportAsync(_root, Database, skipUnusableContent: true);
             Action repairedFallback = () => ContentDatabaseService.ValidateRawXmlFallback(Database);
             repairedFallback.Should().NotThrow();
