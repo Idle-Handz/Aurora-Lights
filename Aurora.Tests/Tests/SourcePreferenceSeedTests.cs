@@ -90,6 +90,29 @@ public sealed class SourcePreferenceSeedTests : IDisposable
     }
 
     [Fact]
+    public void SupersededDeclarationsDoNotChangeSourceRestrictions()
+    {
+        WriteDatabase(true,
+            ("Disabled winner", "disabled", false),
+            ("Disabled winner", "enabled", true),
+            ("Enabled winner", "enabled", true),
+            ("Enabled winner", "disabled", false),
+            ("Superseded only", "disabled", false));
+
+        using (var connection = new SqliteConnection($"Data Source={_path};Pooling=False"))
+        {
+            connection.Open();
+            using var command = connection.CreateCommand();
+            command.CommandText = "UPDATE elements SET declaration_status = 'superseded' WHERE element_id IN (2, 4, 5)";
+            command.ExecuteNonQuery();
+        }
+
+        // An enabled losing declaration must not cancel the disabled winner's restriction.
+        // A disabled loser cannot restrict either an enabled winner or a superseded-only book.
+        SourcePreferenceSeed.ReadSwitchedOffSourceNames(_path).Should().Equal("Disabled winner");
+    }
+
+    [Fact]
     public void BuilderInfrastructureIsNeverRestricted()
     {
         WriteDatabase(true,

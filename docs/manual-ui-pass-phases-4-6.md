@@ -23,8 +23,8 @@ merge unrelated definitions merely because their names match.
 
 Earlier shared-library work reached `main` (fast-forwarded through `6b2f7e8` on
 2026-09-24). That handoff records the manual UI pass as cleared; retain this
-guide for future regression reviews. The 0.9.0 uptake is on
-`content-library-0.9.0`, pending review before any push or merge. Its automated
+guide for future regression reviews. The 0.9.0 uptake reached `main` in
+`a066867`. Its automated
 acceptance evidence is in `translator-library-split-plan.md`; it does not claim
 a new manual UI pass.
 
