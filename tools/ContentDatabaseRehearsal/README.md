@@ -121,3 +121,30 @@ of the background ASI authority/combination, removal of the inactive racial
 subtree, idempotence, legal racial choices without the background, and cleanup
 when that background is restored. It edits only in-memory state and disposable
 roundtrip files. The real character and installed content remain unchanged.
+
+## Which declaration wins an element id
+
+Legacy does not merge duplicate declarations. When a later file re-declares an id it removes the
+element it already had and adds the new one, so the last file to declare an id owns it outright, and
+its order comes from the ladder in `DataManager.GetCustomFiles`. That makes the legacy catalogue the
+authority on collisions: whatever it resolves an id to is what the database projection has to
+resolve it to.
+
+`legacy-dump` emits the legacy loader's answer in the same shape `dump` emits the database's. Run
+both against one case, each with its own `REHEARSAL_OUTPUT`, then diff them:
+
+```
+REHEARSAL_OUTPUT=<dir-a> ContentDatabaseRehearsal.exe legacy-dump <case>
+REHEARSAL_OUTPUT=<dir-b> ContentDatabaseRehearsal.exe dump        <case>
+python compare_projection_winners.py <dir-a> <dir-b>
+```
+
+The comparison separates three things: ids one path has and the other does not, provenance
+labelling differing while the definition matches, and a different file winning *with* a different
+definition. Only the third is a defect; the script exits non-zero when any appears.
+
+Expected on the installed corpus: **0 missing either way**, around **806 label-only** (mostly
+builtins Legacy never stamps with a path, plus an override file credited to itself rather than the
+file it corrects), and **1 behavioural** — `ID_INTERNAL_GRANTS_CHARACTER_BASE`, a generated builtin
+unrelated to collisions. Any other behavioural difference is a blocker. The label-only count moves
+legitimately when content changes; the behavioural count must not.

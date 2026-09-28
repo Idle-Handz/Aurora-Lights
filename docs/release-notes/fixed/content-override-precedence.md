@@ -1,0 +1,1 @@
+Content that redefines an element another book already defines now takes effect the way Aurora Builder applies it, so a homebrew revision of official material is no longer quietly ignored in favour of the original.

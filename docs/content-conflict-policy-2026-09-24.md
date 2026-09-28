@@ -1,5 +1,9 @@
 # Content conflict and correction activation policy — September 24, 2026
 
+> **Superseded in part.** The collision handling described here — quarantining conflicting
+> definitions and retaining the previously imported one — was replaced in Aurora.Content 0.9.0.
+> See `content-declaration-precedence-2026-09-27.md`. The correction-activation half still stands.
+
 This implements the decisions following the September 23 review. Changes remain
 local and uncommitted; installed content, character saves and the live database
 were not modified.

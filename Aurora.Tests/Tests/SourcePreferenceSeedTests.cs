@@ -29,13 +29,13 @@ public sealed class SourcePreferenceSeedTests : IDisposable
               CREATE TABLE content_packages(content_package_id INTEGER PRIMARY KEY, package_key TEXT, is_enabled INTEGER);
               CREATE TABLE source_files(source_file_id INTEGER PRIMARY KEY, content_package_id INTEGER);
               CREATE TABLE source_books(source_book_id INTEGER PRIMARY KEY, name TEXT);
-              CREATE TABLE elements(element_id INTEGER PRIMARY KEY, source_file_id INTEGER, source_book_id INTEGER);
+              CREATE TABLE elements(element_id INTEGER PRIMARY KEY, source_file_id INTEGER, source_book_id INTEGER, declaration_status TEXT NOT NULL DEFAULT 'effective');
               """
             : """
               CREATE TABLE content_packages(content_package_id INTEGER PRIMARY KEY, package_key TEXT);
               CREATE TABLE source_files(source_file_id INTEGER PRIMARY KEY, content_package_id INTEGER);
               CREATE TABLE source_books(source_book_id INTEGER PRIMARY KEY, name TEXT);
-              CREATE TABLE elements(element_id INTEGER PRIMARY KEY, source_file_id INTEGER, source_book_id INTEGER);
+              CREATE TABLE elements(element_id INTEGER PRIMARY KEY, source_file_id INTEGER, source_book_id INTEGER, declaration_status TEXT NOT NULL DEFAULT 'effective');
               """;
         command.ExecuteNonQuery();
 
@@ -60,7 +60,8 @@ public sealed class SourcePreferenceSeedTests : IDisposable
                 command.CommandText = $"INSERT INTO source_books VALUES({bookId},'{book.Replace("'", "''")}');";
                 command.ExecuteNonQuery();
             }
-            command.CommandText = $"INSERT INTO elements VALUES({++elementId},{packageId},{bookId});";
+            command.CommandText = $"INSERT INTO elements(element_id, source_file_id, source_book_id) " +
+                $"VALUES({++elementId},{packageId},{bookId});";
             command.ExecuteNonQuery();
         }
     }

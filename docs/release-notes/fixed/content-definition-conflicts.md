@@ -1,1 +1,1 @@
-The first database import reports conflicting element IDs as unavailable while importing unaffected content, and new conflicts during later refreshes preserve the existing database for review.
+When two content files define the same element ID, the database now keeps the definition Aurora Builder would have used and records the alternatives for review, rather than leaving the element unavailable; a file that cannot be read still preserves the working database instead of replacing a definition with nothing.

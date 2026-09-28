@@ -93,6 +93,9 @@ public static class SourcePreferenceSeed
             JOIN source_files sf ON sf.source_file_id = e.source_file_id
             JOIN content_packages cp ON cp.content_package_id = sf.content_package_id
             JOIN source_books sb ON sb.source_book_id = e.source_book_id
+            -- Declarations that lost a collision are kept for provenance and carry no rules.
+            -- Counting them would misjudge whether a source book is entirely switched off.
+            WHERE e.declaration_status = 'effective'
             GROUP BY sb.name
             HAVING switched_off = total
             ORDER BY sb.name
