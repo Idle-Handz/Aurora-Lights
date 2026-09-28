@@ -846,7 +846,7 @@ LIMIT 1;
             companionLanguages,
             companionProficiencyBonus);
 
-        return fallback with
+        return (fallback with
         {
             Summary = string.IsNullOrWhiteSpace(summary) ? fallback.Summary : summary,
             DescriptionHtml = descriptionHtml,
@@ -877,10 +877,8 @@ LIMIT 1;
             CompanionActions = companionActions,
             CompanionReactions = companionReactions,
             InformationDetails = informationDetails,
-            SearchText = searchText,
-            SearchKey = searchText.ToUpperInvariant(),
             HasComputedDetail = true
-        };
+        }).WithSearchText(searchText);
     }
 
     private static IReadOnlyList<CompendiumLinkedEntryModel> LoadInformationDetails(
@@ -1182,7 +1180,7 @@ LIMIT 1;
             companionLanguages,
             companionProficiencyBonus);
 
-        return entry with
+        return (entry with
         {
             Summary = string.IsNullOrWhiteSpace(summary) ? entry.Summary : summary,
             DescriptionHtml = descriptionHtml,
@@ -1207,10 +1205,8 @@ LIMIT 1;
             CompanionActions = companionActions,
             CompanionReactions = companionReactions,
             InformationDetails = informationDetails,
-            SearchText = enrichedSearchText,
-            SearchKey = enrichedSearchText.ToUpperInvariant(),
             HasComputedDetail = true
-        };
+        }).WithSearchText(enrichedSearchText);
     }
 
     private static IReadOnlyList<CompendiumLinkedEntryModel> LoadInformationDetailsFromLoadedElements(object element)
@@ -1822,6 +1818,18 @@ public sealed record CompendiumEntryModel(
         !string.IsNullOrWhiteSpace(SpellDuration);
     public bool HasSpellDetails => HasSpellPropertyDetails || SpellIsConcentration || SpellIsRitual;
     public string SearchKey { get; init; } = CompendiumService.NormalizeSearchKey(SearchText);
+
+    /// <summary>
+    /// Replaces the searchable text and the key derived from it together. A with-expression does
+    /// not re-run the key's initializer, so setting the text alone would leave the old key behind,
+    /// and setting the key by hand is how the two drifted apart: entries holding a typographic
+    /// apostrophe became unreachable by a query that had folded its own to a straight one.
+    /// </summary>
+    public CompendiumEntryModel WithSearchText(string? text) => this with
+    {
+        SearchText = text ?? string.Empty,
+        SearchKey = CompendiumService.NormalizeSearchKey(text)
+    };
 }
 
 public sealed record CompendiumLinkedEntryModel(
