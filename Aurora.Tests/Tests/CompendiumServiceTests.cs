@@ -1,11 +1,3 @@
-namespace Aurora.App.Services
-{
-    public sealed class CharacterService
-    {
-        public Task PreloadAsync() => Task.CompletedTask;
-    }
-}
-
 namespace Aurora.Tests.Tests
 {
     using Aurora.App.Services;
@@ -15,6 +7,7 @@ namespace Aurora.Tests.Tests
         [Fact]
         public void FilterAppliesSpellCastingTimeToSpellEntriesOnly()
         {
+            Helpers.TestApplicationContextInstaller.EnsureInstalled();
             var service = new CompendiumService(new ContentDatabaseService(), new CharacterService());
             CompendiumEntryModel[] entries =
             [

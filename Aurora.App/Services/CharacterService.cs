@@ -235,6 +235,13 @@ public sealed class CharacterService :
     /// </summary>
     public async Task ReloadElementsAsync()
     {
+        // Catalog objects are also held by the loaded character graph. Serialize
+        // refresh with character loads/edits and invalidate both preload and tab
+        // context state before replacing them, even if the reload subsequently fails.
+        // Otherwise reopening the same file skips Load() and mixes old/new grants.
+        using var scope = await CharacterContext.EnterForLoadAsync();
+        CurrentCharacter = null;
+        CurrentCharacterFile = null;
         await _elementLock.WaitAsync();
         try
         {
@@ -430,6 +437,10 @@ public sealed class CharacterService :
                     // they live outside the standard build and aren't round-tripped by file.Load.
                     BuildService.ReapplyCustomFeatures(file);
                     BuildService.NormalizeSelectionState();
+
+                    // The file's first calculation runs before equipped slot references
+                    // are restored. Re-evaluate armor conditions before publishing the snapshot.
+                    CharacterManager.Current!.ReprocessCharacter();
 
                     CurrentCharacter     = character;
                     CurrentCharacterFile = file;
