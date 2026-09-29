@@ -49,6 +49,26 @@ public sealed record OverrideFileModel(
         : "In use";
 }
 
+/// <summary>One file's claim on an element id, and whether the catalog resolved the id to it.</summary>
+public sealed record ConflictDeclarationModel(string PackageName, string RelativePath, bool IsWinner);
+
+/// <summary>
+/// An element id more than one file declares. Aurora Builder gives the id to the declaration it
+/// loads last, so a book published later overrides an earlier one by design - the alternatives are
+/// kept so a reader can see what was set aside rather than having to infer it.
+/// </summary>
+public sealed record ContentConflictModel(
+    string AuroraId,
+    string Name,
+    string TypeName,
+    IReadOnlyList<ConflictDeclarationModel> Declarations)
+{
+    public ConflictDeclarationModel? Winner => Declarations.FirstOrDefault(d => d.IsWinner);
+
+    public IReadOnlyList<ConflictDeclarationModel> SetAside =>
+        Declarations.Where(d => !d.IsWinner).ToList();
+}
+
 /// <summary>
 /// Reads the override files the content importer knows about and re-evaluates each one against
 /// what is on disk now.
@@ -86,6 +106,52 @@ public sealed class ContentDoctorService
     public void AcceptCorrection(OverrideFileModel file, OverrideCorrectionModel correction) =>
         LocalCorrectionDocument.AcceptUpstream(
             file.FilePath, file.LocalHash, file.UpstreamHash, [correction.Key]);
+
+    /// <summary>
+    /// Element ids more than one file declares. Read from the database rather than from disk: which
+    /// declaration won is the importer's decision, recorded when the catalog was built.
+    /// </summary>
+    public IReadOnlyList<ContentConflictModel> LoadConflicts() =>
+        _contentDb.DatabasePath is { } path && File.Exists(path) ? ReadConflicts(path) : [];
+
+    /// <summary>Internal so a test can point it at a database without resolving the app's own.</summary>
+    internal static IReadOnlyList<ContentConflictModel> ReadConflicts(string dbPath)
+    {
+        var byId = new Dictionary<string, List<ConflictDeclarationModel>>(StringComparer.Ordinal);
+        var names = new Dictionary<string, (string Name, string Type)>(StringComparer.Ordinal);
+        try
+        {
+            using var connection = new SqliteConnection($"Data Source={dbPath};Mode=ReadOnly;Pooling=False");
+            connection.Open();
+            using var command = connection.CreateCommand();
+            command.CommandText = """
+                SELECT aurora_id, name, type_name, COALESCE(package_name, ''), relative_path, is_winner
+                FROM v_duplicate_aurora_ids
+                ORDER BY aurora_id, is_winner DESC, relative_path
+                """;
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                string id = reader.GetString(0);
+                if (!byId.TryGetValue(id, out var declarations))
+                    byId[id] = declarations = [];
+                declarations.Add(new(reader.GetString(3), reader.GetString(4), reader.GetInt64(5) != 0));
+                names.TryAdd(id, (reader.GetString(1), reader.GetString(2)));
+            }
+        }
+        catch (SqliteException)
+        {
+            // A database built before duplicate declarations were kept has no such view.
+            return [];
+        }
+
+        return byId
+            .Select(pair => new ContentConflictModel(
+                pair.Key, names[pair.Key].Name, names[pair.Key].Type, pair.Value))
+            .OrderBy(conflict => conflict.Name, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(conflict => conflict.AuroraId, StringComparer.Ordinal)
+            .ToList();
+    }
 
     private IReadOnlyList<string> ReadKnownOverridePaths()
     {

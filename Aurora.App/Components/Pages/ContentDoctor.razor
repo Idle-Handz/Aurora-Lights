@@ -9,6 +9,7 @@
                OnClick="Reload" Disabled="_loading">Re-check</MudButton>
 </div>
 
+<MudText Typo="Typo.h6" Class="mb-1">Override files</MudText>
 <MudText Typo="Typo.body2" Class="mb-4">
     Override files keep a local copy of a content file so a correction can be applied to it. When the
     people who publish that content adopt the same fix, the correction stops doing anything &mdash;
@@ -100,8 +101,59 @@ else
     }
 }
 
+<MudText Typo="Typo.h6" Class="mt-8 mb-1">Conflicting definitions</MudText>
+<MudText Typo="Typo.body2" Class="mb-4">
+    Element IDs that more than one file declares. Aurora Builder gives the ID to whichever file it
+    loads last, so a book published later overrides an earlier one on purpose. What is set aside is
+    kept here so you can see it rather than having to work it out.
+</MudText>
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+else if (_conflicts.Count == 0)
+{
+    <MudAlert Severity="Severity.Success">
+        No element ID is declared by more than one file.
+    </MudAlert>
+}
+else
+{
+    <MudText Typo="Typo.body2" Class="mb-2">
+        @_conflicts.Count element@(_conflicts.Count == 1 ? "" : "s") declared more than once.
+    </MudText>
+    @foreach (ContentConflictModel conflict in _conflicts)
+    {
+        <MudPaper Class="pa-4 mb-3" Elevation="1">
+            <MudText Typo="Typo.subtitle1">@conflict.Name</MudText>
+            <MudText Typo="Typo.caption">@conflict.TypeName &middot; @conflict.AuroraId</MudText>
+            <MudSimpleTable Dense="true" Class="mt-3">
+                <tbody>
+                    @foreach (ConflictDeclarationModel declaration in conflict.Declarations)
+                    {
+                        <tr>
+                            <td style="width: 1%; white-space: nowrap;">
+                                <MudChip T="string" Size="Size.Small"
+                                         Color="@(declaration.IsWinner ? Color.Success : Color.Default)">
+                                    @(declaration.IsWinner ? "In use" : "Set aside")
+                                </MudChip>
+                            </td>
+                            <td>
+                                <MudText Typo="Typo.body2">@declaration.PackageName</MudText>
+                                <MudText Typo="Typo.caption">@declaration.RelativePath</MudText>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </MudSimpleTable>
+        </MudPaper>
+    }
+}
+
 @code {
     private IReadOnlyList<OverrideFileModel> _files = [];
+    private IReadOnlyList<ContentConflictModel> _conflicts = [];
     private bool _loading = true;
     private bool _busy;
 
@@ -111,7 +163,8 @@ else
     {
         _loading = true;
         StateHasChanged();
-        _files = await Task.Run(Doctor.LoadOverrideFiles);
+        (_files, _conflicts) = await Task.Run(() =>
+            (Doctor.LoadOverrideFiles(), Doctor.LoadConflicts()));
         _loading = false;
     }
 

@@ -134,4 +134,55 @@ public sealed class ContentDoctorServiceTests : IDisposable
         file.Problem.Should().Contain("no longer on disk");
         file.Corrections.Should().BeEmpty();
     }
+
+    /// <summary>
+    /// The conflict view reports one row per declaration of a duplicated id. Grouping them wrongly
+    /// would either hide the alternative or claim the wrong file is the one in use.
+    /// </summary>
+    [Fact]
+    public void ConflictsGroupTheirDeclarationsAndNameTheOneInUse()
+    {
+        string db = Path.Combine(root, "conflicts.sqlite");
+        using (var connection = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={db};Pooling=False"))
+        {
+            connection.Open();
+            using var command = connection.CreateCommand();
+            command.CommandText = """
+                CREATE TABLE v_duplicate_aurora_ids (aurora_id TEXT, name TEXT, type_name TEXT,
+                    package_name TEXT, relative_path TEXT, is_winner INTEGER);
+                INSERT INTO v_duplicate_aurora_ids VALUES
+                    ('ID_SHARED', 'Extra Attack', 'Class Feature', 'Players Handbook', 'core/ranger.xml', 0),
+                    ('ID_SHARED', 'Extra Attack', 'Class Feature', 'A Homebrew Book', 'homebrew/ranger.xml', 1),
+                    ('ID_OTHER', 'Drakewarden', 'Archetype', 'Fizbans', 'supplements/drake.xml', 1),
+                    ('ID_OTHER', 'Drakewarden', 'Archetype', 'A Homebrew Book', 'homebrew/drake.xml', 0);
+                """;
+            command.ExecuteNonQuery();
+        }
+
+        IReadOnlyList<ContentConflictModel> conflicts = ContentDoctorService.ReadConflicts(db);
+
+        conflicts.Should().HaveCount(2);
+        ContentConflictModel shared = conflicts.Single(c => c.AuroraId == "ID_SHARED");
+        shared.Name.Should().Be("Extra Attack");
+        shared.Declarations.Should().HaveCount(2);
+        shared.Winner!.PackageName.Should().Be("A Homebrew Book");
+        shared.SetAside.Should().ContainSingle().Which.PackageName.Should().Be("Players Handbook");
+    }
+
+    [Fact]
+    public void AnAbsentOrOlderDatabaseReportsNoConflictsRatherThanFailing()
+    {
+        ContentDoctorService.ReadConflicts(Path.Combine(root, "missing.sqlite")).Should().BeEmpty();
+
+        string empty = Path.Combine(root, "empty.sqlite");
+        using (var connection = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={empty};Pooling=False"))
+        {
+            connection.Open();
+            using var command = connection.CreateCommand();
+            command.CommandText = "CREATE TABLE unrelated (x INTEGER)";
+            command.ExecuteNonQuery();
+        }
+
+        ContentDoctorService.ReadConflicts(empty).Should().BeEmpty("a database built before duplicates were kept has no such view");
+    }
 }
