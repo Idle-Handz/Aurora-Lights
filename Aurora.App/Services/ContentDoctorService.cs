@@ -108,6 +108,13 @@ public sealed class ContentDoctorService
             file.FilePath, file.LocalHash, file.UpstreamHash, [correction.Key]);
 
     /// <summary>
+    /// Content the last refresh could not use. Already read by ContentDatabaseService, so this only
+    /// puts it beside the other content problems rather than querying for it again.
+    /// </summary>
+    public IReadOnlyList<Aurora.Content.ContentImportSkip> LoadSkippedContent() =>
+        _contentDb.GetSkippedContent();
+
+    /// <summary>
     /// Element ids more than one file declares. Read from the database rather than from disk: which
     /// declaration won is the importer's decision, recorded when the catalog was built.
     /// </summary>

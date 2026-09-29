@@ -1,5 +1,6 @@
 @page "/content-doctor"
 @using Aurora.App.Services
+@using Aurora.Content
 @inject ContentDoctorService Doctor
 @inject ISnackbar Snackbar
 
@@ -151,9 +152,61 @@ else
     }
 }
 
+<MudText Typo="Typo.h6" Class="mt-8 mb-1">Content that was left out</MudText>
+<MudText Typo="Typo.body2" Class="mb-4">
+    Files and operations the last refresh could not use. These stay listed until the problem is
+    fixed and the database is refreshed again.
+</MudText>
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+else
+{
+    @if (_superseded > 0)
+    {
+        <MudAlert Severity="Severity.Info" Dense="true" Class="mb-2">
+            @_superseded archived definition@(_superseded == 1 ? "" : "s") replaced by AuroraLegacy.
+            The import record keeps their provenance.
+        </MudAlert>
+    }
+    @if (_skipped.Count == 0)
+    {
+        <MudAlert Severity="Severity.Success">Every content file was imported.</MudAlert>
+    }
+    else
+    {
+        <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-2">
+            @_skipped.Count content issue@(_skipped.Count == 1 ? "" : "s")
+            need@(_skipped.Count == 1 ? "s" : "") attention.
+        </MudAlert>
+        @foreach (ContentImportSkip skip in _skipped.Take(_showAll ? _skipped.Count : 30))
+        {
+            <MudPaper Class="pa-3 mb-2" Elevation="0" Outlined="true">
+                <MudText Typo="Typo.body2"><strong>@skip.RelativePath</strong> &mdash; @Reason(skip.Kind)</MudText>
+                <MudText Typo="Typo.caption" Style="font-family: monospace; word-break: break-word;">@skip.Detail</MudText>
+                @if (!string.IsNullOrWhiteSpace(skip.RelatedPath))
+                {
+                    <MudText Typo="Typo.caption">Related definition: @skip.RelatedPath</MudText>
+                }
+            </MudPaper>
+        }
+        @if (_skipped.Count > 30)
+        {
+            <MudButton OnClick="@(() => _showAll = !_showAll)">
+                @(_showAll ? "Show fewer" : $"Show all {_skipped.Count}")
+            </MudButton>
+        }
+    }
+}
+
 @code {
     private IReadOnlyList<OverrideFileModel> _files = [];
     private IReadOnlyList<ContentConflictModel> _conflicts = [];
+    private IReadOnlyList<ContentImportSkip> _skipped = [];
+    private int _superseded;
+    private bool _showAll;
     private bool _loading = true;
     private bool _busy;
 
@@ -163,8 +216,15 @@ else
     {
         _loading = true;
         StateHasChanged();
-        (_files, _conflicts) = await Task.Run(() =>
-            (Doctor.LoadOverrideFiles(), Doctor.LoadConflicts()));
+        var loaded = await Task.Run(() =>
+            (Files: Doctor.LoadOverrideFiles(), Conflicts: Doctor.LoadConflicts(),
+             Skipped: Doctor.LoadSkippedContent()));
+        _files = loaded.Files;
+        _conflicts = loaded.Conflicts;
+        // A superseded definition is AuroraLegacy replacing an archived one, which is the
+        // policy working rather than a problem to fix; count it apart from the rest.
+        _superseded = loaded.Skipped.Count(s => s.Kind == "superseded-definition");
+        _skipped = loaded.Skipped.Where(s => s.Kind != "superseded-definition").ToList();
         _loading = false;
     }
 
@@ -200,4 +260,18 @@ else
         correction.Accepted ? Color.Success
         : correction.Incorporated ? Color.Primary
         : Color.Default;
+
+    private static string Reason(string kind) => kind switch
+    {
+        "unreadable" => "the file could not be read; previously imported definitions were kept where available.",
+        "definition-collision" => "more than one file defines this element; the one Aurora Builder loads last is in use and the alternatives are kept for review.",
+        "superseded-definition" => "AuroraLegacy supplied the successor definition.",
+        "classification" => "it was imported without inferring a publisher; review its Source metadata.",
+        "conflict" => "it defines an element another file already defines differently; the declaration loaded last is the one in use.",
+        "definition-conflict" => "this element ID is unavailable because its definitions conflict and none was selected. The rest of the file was imported.",
+        "correction" => "an earlier refresh left this correction file out; correction errors now stop a refresh to protect working content.",
+        "append" => "one of its append operations could not be applied; the rest of the file was imported.",
+        "alias" => "a forwarding address it declared was refused; the rest of the file was imported.",
+        _ => "it was left out of the last refresh.",
+    };
 }

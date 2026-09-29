@@ -613,10 +613,10 @@
                         <div class="pref-row-text">
                             <div class="pref-row-title">Skip content files that can't be imported</div>
                             <div class="pref-row-desc">
-                                Import as much usable content as possible and list issues below. AuroraLegacy
-                                replaces overlapping archived aurorabuilder definitions. For unresolved collisions,
-                                the declaration Aurora Builder would
-                                load last wins, and the alternatives are kept for review.
+                                Import as much usable content as possible and list what was left out in
+                                Content Doctor. AuroraLegacy replaces overlapping archived aurorabuilder
+                                definitions. Where more than one file defines an element, the declaration
+                                Aurora Builder would load last wins and the alternatives are kept for review.
                                 Unreadable files and invalid append operations are skipped. Correction errors still
                                 stop activation. Turn this off to stop on unreadable files, invalid appends, or new unresolved collisions.
                             </div>
@@ -625,42 +625,6 @@
                                    ValueChanged="@((bool v) => SetSkipUnusableContent(v))"
                                    Color="Color.Primary" />
                     </div>
-
-                    @{ var superseded = _skippedContent.Count(s => s.Kind == "superseded-definition");
-                       var skipped = _skippedContent.Where(s => s.Kind != "superseded-definition").ToList(); }
-                    @if (superseded > 0)
-                    {
-                        <MudAlert Severity="Severity.Info" Class="mt-2" Dense="true">
-                            @superseded archived definition(s) replaced by AuroraLegacy. The import record retains their provenance.
-                        </MudAlert>
-                    }
-                    @if (skipped.Count > 0)
-                    {
-                        <MudAlert Severity="Severity.Warning" Class="mt-2" Dense="true">
-                            @skipped.Count content issue@(skipped.Count == 1 ? "" : "s") need@(skipped.Count == 1 ? "s" : "") attention.
-                            Retained or provisional definitions remain usable. Skipped alternatives and operations stay listed
-                            here until their issues are resolved and the database is refreshed again.
-                        </MudAlert>
-                        <div style="margin-top: 8px;">
-                            @foreach (var skip in skipped.Take(_showAllImportIssues ? skipped.Count : 30))
-                            {
-                                <div class="pref-row-desc" style="margin-top: 8px;">
-                                    <strong>@skip.RelativePath</strong> — @SkippedReason(skip.Kind)
-                                    <div style="font-family: monospace; font-size: 11px; word-break: break-word;">@skip.Detail</div>
-                                    @if (!string.IsNullOrWhiteSpace(skip.RelatedPath))
-                                    {
-                                        <div>Related definition: @skip.RelatedPath</div>
-                                    }
-                                </div>
-                            }
-                            @if (skipped.Count > 30)
-                            {
-                                <MudButton OnClick="@(() => _showAllImportIssues = !_showAllImportIssues)">
-                                    @(_showAllImportIssues ? "Show fewer issues" : $"Show all {skipped.Count} issues")
-                                </MudButton>
-                            }
-                        </div>
-                    }
 
                     @if (Tabs.Tabs.Count > 0 && !string.IsNullOrWhiteSpace(ContentDb.ContentDirectory))
                     {
@@ -1216,7 +1180,6 @@
     private bool _needsContentReload;
     private ContentDatabaseHealthReport? _dbHealth;
     private ContentDatabaseMetadata? _dbMetadata;
-    private IReadOnlyList<ContentImportSkip> _skippedContent = [];
     private ContentDatabaseParityReport? _dbParity;
     private bool _dirBusy;
     private string? _dirError;
@@ -1427,19 +1390,6 @@
         StateHasChanged();
     }
 
-    private bool _showAllImportIssues;
-    private static string SkippedReason(string kind) => kind switch
-    {
-        "unreadable" => "the current file could not be read; previously imported definitions were retained where available.",
-        "definition-collision" => "an unresolved collision was held for review; the last-known or provisional definition remains available.",
-        "superseded-definition" => "AuroraLegacy supplied the successor definition.",
-        "classification" => "content was imported without inferring a publisher; review its Source metadata.",
-        "conflict" => "it defines an element another file already defines differently; this file was left out and the earlier definition in import order was retained.",
-        "definition-conflict" => "this element ID is unavailable because its definitions conflict; no version was selected. Other content in the files was imported.",
-        "correction" => "an earlier refresh left this correction file out; correction errors now stop a refresh to protect the working content.",
-        "append" => "one of its append operations could not be applied; the rest of the file was imported.",
-        _ => "it was left out of the last refresh.",
-    };
 
     // ── Default source restrictions ──────────────────────────────────────
     // Edited against their own SourcesManager so toggling defaults never disturbs the
@@ -1660,14 +1610,12 @@
         // while syncing and replace them together after the new database is available.
         var diagnostics = await Task.Run(() => (
             Health: ContentDb.GetHealthReport(),
-            Metadata: ContentDb.GetMetadata(),
-            Skipped: ContentDb.GetSkippedContent()));
+            Metadata: ContentDb.GetMetadata()));
         if (_disposed)
             return;
 
         _dbHealth = diagnostics.Health;
         _dbMetadata = diagnostics.Metadata;
-        _skippedContent = diagnostics.Skipped;
     }
 
     private static Severity ParitySeverity(ContentDatabaseParityReport report) => report.Status switch
