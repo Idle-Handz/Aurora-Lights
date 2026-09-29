@@ -605,18 +605,9 @@
                         </MudButton>
                     </div>
 
-                    @foreach (var correction in _localCorrections)
-                    {
-                        <div class="pref-row-desc" style="margin-top: 10px;">
-                            <strong>@System.IO.Path.GetFileName(correction.FilePath)</strong>:
-                            @(correction.Status == "retired" ? "Redundant local copy retired." : correction.Status == "ready-to-retire" ? "Redundant local copy awaiting retirement." : "Local corrections preserved for review.")
-                            @if (Prefs.DevMode)
-                            {
-                                <div>@correction.SourcePath</div>
-                                <div>@correction.ReviewDetails</div>
-                            }
-                        </div>
-                    }
+                    <div class="pref-row-desc" style="margin-top: 10px;">
+                        Local corrections are reviewed in <MudLink Href="/content-doctor">Content Doctor</MudLink>.
+                    </div>
 
                     <div class="pref-row" style="margin-top: 14px;">
                         <div class="pref-row-text">
@@ -624,8 +615,8 @@
                             <div class="pref-row-desc">
                                 Import as much usable content as possible and list issues below. AuroraLegacy
                                 replaces overlapping archived aurorabuilder definitions. For unresolved collisions,
-                                keep the last-known working definition; if none exists, use the first valid
-                                definition in stable file/declaration order and report the alternatives for review.
+                                the declaration Aurora Builder would
+                                load last wins, and the alternatives are kept for review.
                                 Unreadable files and invalid append operations are skipped. Correction errors still
                                 stop activation. Turn this off to stop on unreadable files, invalid appends, or new unresolved collisions.
                             </div>
@@ -1225,7 +1216,6 @@
     private bool _needsContentReload;
     private ContentDatabaseHealthReport? _dbHealth;
     private ContentDatabaseMetadata? _dbMetadata;
-    private IReadOnlyList<LocalCorrectionStatus> _localCorrections = [];
     private IReadOnlyList<ContentImportSkip> _skippedContent = [];
     private ContentDatabaseParityReport? _dbParity;
     private bool _dirBusy;
@@ -1671,14 +1661,12 @@
         var diagnostics = await Task.Run(() => (
             Health: ContentDb.GetHealthReport(),
             Metadata: ContentDb.GetMetadata(),
-            Corrections: ContentDb.GetLocalCorrections(),
             Skipped: ContentDb.GetSkippedContent()));
         if (_disposed)
             return;
 
         _dbHealth = diagnostics.Health;
         _dbMetadata = diagnostics.Metadata;
-        _localCorrections = diagnostics.Corrections;
         _skippedContent = diagnostics.Skipped;
     }
 
