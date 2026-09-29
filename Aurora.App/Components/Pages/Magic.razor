@@ -53,7 +53,9 @@
     </MudAlert>
 }
 
-<CharacterMagicWorkspace Model="@MagicModel"
+<CharacterMagicWorkspace @key="_workspaceState"
+                         State="_workspaceState"
+                         Model="@MagicModel"
                          Busy="_saving"
                          SelectedSpellId="_selectedId"
                          SelectedSpell="@SelectedSpellModel"
@@ -64,6 +66,7 @@
 
 @code {
     private CharacterSnapshot? _snap;
+    private MagicWorkspaceState _workspaceState = new();
     private IReadOnlyList<SelectionRuleGroup> _spellRuleGroups = [];
     private readonly Dictionary<string, SpellDetail?> _spellDetailCache = new(StringComparer.OrdinalIgnoreCase);
     private bool _saving;
@@ -221,24 +224,24 @@
     private async Task LoadFromActiveTabAsync()
     {
         var tab = Tabs.ActiveTab;
-        _snap = tab?.Snapshot;
-        _selectedId = null;
-        _spellDetail = null;
-        _spellDetailCache.Clear();
-
-        if (tab != null && _snap != null)
+        var snapshot = tab?.Snapshot;
+        IReadOnlyList<SelectionRuleGroup> spellRuleGroups = [];
+        if (tab != null && snapshot != null)
         {
             using (await CharacterContext.EnterAsync(tab))
             {
-                _spellRuleGroups = BuildService.GetSpellRuleGroups();
+                if (_disposed || !ReferenceEquals(tab, Tabs.ActiveTab)) return;
+                spellRuleGroups = BuildService.GetSpellRuleGroups();
             }
-
-        }
-        else
-        {
-            _spellRuleGroups = [];
         }
 
+        if (_disposed || !ReferenceEquals(tab, Tabs.ActiveTab)) return;
+        _snap = snapshot;
+        _workspaceState = tab?.MagicWorkspace ?? new();
+        _spellRuleGroups = spellRuleGroups;
+        _selectedId = null;
+        _spellDetail = null;
+        _spellDetailCache.Clear();
         BuildMagicModel();
     }
 

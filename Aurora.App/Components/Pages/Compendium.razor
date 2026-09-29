@@ -557,6 +557,10 @@
     private bool _isSearching;
     private bool _hasSearched;
     private bool _disposed;
+    // Blazor handlers can overlap while awaiting work. Only the latest request may publish.
+    private long _searchRequestId;
+    private long _selectionRequestId;
+    private long _sourceRequestId;
 
     private bool CanUseCharacterSources => Tabs.ActiveTab is { IsLoading: false };
     private bool ShowSpellFilters => string.Equals(_selectedType, "Spell", StringComparison.OrdinalIgnoreCase);
@@ -617,7 +621,9 @@
     {
         if (!firstRender) return;
 
-        _catalog = (await CompendiumData.BuildCatalogAsync()).ToList();
+        var catalog = await CompendiumData.BuildCatalogAsync();
+        if (_disposed) return;
+        _catalog = catalog.ToList();
         _types = CompendiumFilter.GetTypes(_catalog);
         _spellLevels = CompendiumFilter.GetSpellLevels(_catalog);
         _spellSchools = CompendiumFilter.GetSpellSchools(_catalog);
@@ -631,7 +637,7 @@
 
         if (_hasSearched || !string.IsNullOrWhiteSpace(RequestedQuery) || !string.IsNullOrWhiteSpace(RequestedId))
             await ExecuteSearchAsync(selectRequestedId: true);
-        await InvokeAsync(StateHasChanged);
+        if (!_disposed) await InvokeAsync(StateHasChanged);
     }
 
     private Task OnQueryChanged(string value)
@@ -731,12 +737,16 @@
 
     private async Task OnCurrentSourcesOnlyChanged(bool value)
     {
+        if (_disposed) return;
+        InvalidatePendingResults();
+        long requestId = _searchRequestId;
         _currentCharacterSourcesOnly = value;
         if (_currentCharacterSourcesOnly)
             await LoadRestrictedSourcesAsync();
         else
             _restrictedSources.Clear();
 
+        if (!IsCurrentSearch(requestId)) return;
         RefreshSourceOptions();
         SaveState();
         if (_hasSearched)
@@ -788,6 +798,7 @@
 
     private async Task ExecuteSearchAsync(bool selectRequestedId = false)
     {
+        if (_disposed) return;
         _hasSearched = true;
         SaveState();
         await RefreshAsync(selectRequestedId);
@@ -795,17 +806,22 @@
 
     private async Task RefreshAsync(bool selectRequestedId = false)
     {
-        if (_isLoadingCatalog)
+        if (_disposed || _isLoadingCatalog)
             return;
 
-        if (_currentCharacterSourcesOnly && CanUseCharacterSources && _restrictedSources.Count == 0)
-            await LoadRestrictedSourcesAsync();
-
+        long requestId = ++_searchRequestId;
+        long selectionRequestId = ++_selectionRequestId;
         _isSearching = true;
-        await InvokeAsync(StateHasChanged);
 
         try
         {
+            if (_currentCharacterSourcesOnly && CanUseCharacterSources && _restrictedSources.Count == 0)
+                await LoadRestrictedSourcesAsync();
+            if (!IsCurrentSearch(requestId)) return;
+
+            await InvokeAsync(StateHasChanged);
+            if (!IsCurrentSearch(requestId)) return;
+
             var catalog = _catalog;
             var query = _query;
             var selectedType = _selectedType;
@@ -823,12 +839,16 @@
                 ? new HashSet<string>(_restrictedSources, StringComparer.OrdinalIgnoreCase)
                 : null;
 
-            _filteredEntries = await Task.Run(() => CompendiumFilter.Filter(
+            var filteredEntries = await Task.Run(() => CompendiumFilter.Filter(
                 catalog, query, selectedType, selectedSource,
                 spellLevel, spellSchool, spellClass, spellCastingTime,
                 itemRarity, itemAttunement,
                 creatureType, creatureSize, creatureChallenge,
                 restrictedSources).ToList());
+
+            if (!IsCurrentSearch(requestId)) return;
+            _filteredEntries = filteredEntries;
+            if (selectionRequestId != _selectionRequestId) return;
 
             string? selectionId = !string.IsNullOrWhiteSpace(RequestedId)
                 ? RequestedId
@@ -844,24 +864,33 @@
                 _selectedEntry = _filteredEntries.FirstOrDefault();
 
             if (_selectedEntry is not null)
-                _selectedEntry = await CompendiumData.EnrichEntryAsync(_selectedEntry);
+            {
+                var enriched = await CompendiumData.EnrichEntryAsync(_selectedEntry);
+                if (!IsCurrentSearch(requestId) || selectionRequestId != _selectionRequestId) return;
+                _selectedEntry = enriched;
+            }
 
             SaveState();
         }
         finally
         {
-            _isSearching = false;
+            if (IsCurrentSearch(requestId))
+                _isSearching = false;
         }
     }
 
     private async Task LoadRestrictedSourcesAsync()
     {
+        long requestId = ++_sourceRequestId;
         _restrictedSources.Clear();
 
         if (Tabs.ActiveTab is not { IsLoading: false } tab)
             return;
 
         using var scope = await CharacterContext.EnterAsync(tab);
+        if (_disposed || requestId != _sourceRequestId || !_currentCharacterSourcesOnly ||
+            !ReferenceEquals(tab, Tabs.ActiveTab)) return;
+
         foreach (var source in CharacterManager.Current.SourcesManager.GetRestrictedSources())
         {
             if (!string.IsNullOrWhiteSpace(source))
@@ -875,6 +904,8 @@
         _ = InvokeAsync(async () =>
         {
             if (_disposed) return;
+            InvalidatePendingResults();
+            long requestId = _searchRequestId;
 
             if (!CanUseCharacterSources && _currentCharacterSourcesOnly)
             {
@@ -887,22 +918,41 @@
                 await LoadRestrictedSourcesAsync();
             }
 
+            if (!IsCurrentSearch(requestId)) return;
             RefreshSourceOptions();
             if (_hasSearched)
                 await RefreshAsync(selectRequestedId: true);
-            StateHasChanged();
+            if (!_disposed) StateHasChanged();
         });
     }
 
     private async Task SelectEntryAsync(CompendiumEntryModel entry)
     {
-        _selectedEntry = await CompendiumData.EnrichEntryAsync(entry);
+        if (_disposed) return;
+        long requestId = ++_selectionRequestId;
+        _selectedEntry = entry;
+        SaveState();
+
+        var enriched = await CompendiumData.EnrichEntryAsync(entry);
+        if (_disposed || requestId != _selectionRequestId) return;
+        _selectedEntry = enriched;
         SaveState();
         await InvokeAsync(StateHasChanged);
     }
 
+    private bool IsCurrentSearch(long requestId) => !_disposed && requestId == _searchRequestId;
+
+    private void InvalidatePendingResults()
+    {
+        ++_searchRequestId;
+        ++_selectionRequestId;
+        ++_sourceRequestId;
+        _isSearching = false;
+    }
+
     private Task ResetFilters()
     {
+        InvalidatePendingResults();
         _query = string.Empty;
         _selectedType = "All";
         _selectedSource = "All";
@@ -967,6 +1017,7 @@
     public void Dispose()
     {
         _disposed = true;
+        InvalidatePendingResults();
         Tabs.TabsChanged -= OnTabsChanged;
     }
 }
