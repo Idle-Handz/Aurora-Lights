@@ -1,6 +1,7 @@
 namespace Aurora.Tests.Tests
 {
     using Aurora.App.Services;
+    using Aurora.Components.Models;
 
     public sealed class CompendiumServiceTests
     {
@@ -51,7 +52,7 @@ namespace Aurora.Tests.Tests
             string? creatureSize = "All",
             string? creatureChallenge = "All",
             ISet<string>? restrictedSources = null) =>
-            service.Filter(entries, query, type, source, spellLevel, spellSchool, spellClass,
+            CompendiumFilter.Filter(entries, query, type, source, spellLevel, spellSchool, spellClass,
                 spellCastingTime, itemRarity, itemAttunement, creatureType, creatureSize,
                 creatureChallenge, restrictedSources);
 
@@ -145,7 +146,7 @@ namespace Aurora.Tests.Tests
                 Entry("Hex", "Spell", source: "Player's Handbook")
             ];
 
-            service.GetSources(entries).Should().Equal("All", "Player's Handbook");
+            CompendiumFilter.GetSources(entries).Should().Equal("All", "Player's Handbook");
         }
 
         /// <summary>
@@ -179,7 +180,7 @@ namespace Aurora.Tests.Tests
                     .WithSearchText("Tasha’s Hideous Laughter, Enchantment, Bard");
 
             enriched.SearchKey.Should().Be(
-                CompendiumService.NormalizeSearchKey(enriched.SearchText));
+                CompendiumFilter.NormalizeSearchKey(enriched.SearchText));
             Filter(service, [enriched], query: "Tasha's").Should().HaveCount(1);
         }
 
@@ -227,13 +228,13 @@ namespace Aurora.Tests.Tests
         [Fact]
         public void NormalizeSearchKeyFoldsEveryApostropheSpellingTogether()
         {
-            string straight = CompendiumService.NormalizeSearchKey("Player's Handbook");
+            string straight = CompendiumFilter.NormalizeSearchKey("Player's Handbook");
 
-            CompendiumService.NormalizeSearchKey("Player’s Handbook").Should().Be(straight);
-            CompendiumService.NormalizeSearchKey("Player‘s Handbook").Should().Be(straight);
-            CompendiumService.NormalizeSearchKey("Playerʼs Handbook").Should().Be(straight);
-            CompendiumService.NormalizeSearchKey("  Player's Handbook  ").Should().Be(straight);
-            CompendiumService.NormalizeSearchKey(null).Should().BeEmpty();
+            CompendiumFilter.NormalizeSearchKey("Player’s Handbook").Should().Be(straight);
+            CompendiumFilter.NormalizeSearchKey("Player‘s Handbook").Should().Be(straight);
+            CompendiumFilter.NormalizeSearchKey("Playerʼs Handbook").Should().Be(straight);
+            CompendiumFilter.NormalizeSearchKey("  Player's Handbook  ").Should().Be(straight);
+            CompendiumFilter.NormalizeSearchKey(null).Should().BeEmpty();
         }
 
         /// <summary>
@@ -324,8 +325,8 @@ namespace Aurora.Tests.Tests
             var service = NewService();
             CompendiumEntryModel[] entries = [Entry("Potion", "Item"), Entry("Bless", "Spell")];
 
-            service.GetTypes(entries).Should().StartWith("All");
-            service.GetTypes(entries).Should().Contain(["Spell", "Item"]);
+            CompendiumFilter.GetTypes(entries).Should().StartWith("All");
+            CompendiumFilter.GetTypes(entries).Should().Contain(["Spell", "Item"]);
         }
 
         private static CompendiumEntryModel Entry(

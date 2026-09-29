@@ -618,14 +618,14 @@
         if (!firstRender) return;
 
         _catalog = (await CompendiumData.BuildCatalogAsync()).ToList();
-        _types = CompendiumData.GetTypes(_catalog);
-        _spellLevels = CompendiumData.GetSpellLevels(_catalog);
-        _spellSchools = CompendiumData.GetSpellSchools(_catalog);
-        _spellClasses = CompendiumData.GetSpellClasses(_catalog);
-        _itemRarities = CompendiumData.GetItemRarities(_catalog);
-        _creatureTypes = CompendiumData.GetCreatureTypes(_catalog);
-        _creatureSizes = CompendiumData.GetCreatureSizes(_catalog);
-        _creatureChallenges = CompendiumData.GetCreatureChallenges(_catalog);
+        _types = CompendiumFilter.GetTypes(_catalog);
+        _spellLevels = CompendiumFilter.GetSpellLevels(_catalog);
+        _spellSchools = CompendiumFilter.GetSpellSchools(_catalog);
+        _spellClasses = CompendiumFilter.GetSpellClasses(_catalog);
+        _itemRarities = CompendiumFilter.GetItemRarities(_catalog);
+        _creatureTypes = CompendiumFilter.GetCreatureTypes(_catalog);
+        _creatureSizes = CompendiumFilter.GetCreatureSizes(_catalog);
+        _creatureChallenges = CompendiumFilter.GetCreatureChallenges(_catalog);
         RefreshSourceOptions();
         _isLoadingCatalog = false;
 
@@ -748,12 +748,12 @@
         if (_catalog.Count == 0)
             return;
 
-        string selectedSourceKey = CompendiumService.NormalizeSourceFilterKey(_selectedSource);
+        string selectedSourceKey = CompendiumFilter.NormalizeSourceFilterKey(_selectedSource);
         ISet<string>? restrictedSources = _currentCharacterSourcesOnly && _restrictedSources.Count > 0
             ? new HashSet<string>(_restrictedSources, StringComparer.OrdinalIgnoreCase)
             : null;
 
-        IReadOnlyList<CompendiumEntryModel> sourceScope = CompendiumData.Filter(
+        IReadOnlyList<CompendiumEntryModel> sourceScope = CompendiumFilter.Filter(
             _catalog,
             _query,
             _selectedType,
@@ -769,12 +769,12 @@
             ShowCompanionFilters ? _selectedCreatureChallenge : "All",
             restrictedSources);
 
-        _sources = CompendiumData.GetSources(sourceScope);
+        _sources = CompendiumFilter.GetSources(sourceScope);
         if (string.Equals(_selectedSource, "All", StringComparison.OrdinalIgnoreCase))
             return;
 
         string? matchedSource = _sources.FirstOrDefault(source => string.Equals(
-            CompendiumService.NormalizeSourceFilterKey(source),
+            CompendiumFilter.NormalizeSourceFilterKey(source),
             selectedSourceKey,
             StringComparison.Ordinal));
         _selectedSource = matchedSource ?? "All";
@@ -823,7 +823,7 @@
                 ? new HashSet<string>(_restrictedSources, StringComparer.OrdinalIgnoreCase)
                 : null;
 
-            _filteredEntries = await Task.Run(() => CompendiumData.Filter(
+            _filteredEntries = await Task.Run(() => CompendiumFilter.Filter(
                 catalog, query, selectedType, selectedSource,
                 spellLevel, spellSchool, spellClass, spellCastingTime,
                 itemRarity, itemAttunement,
