@@ -163,6 +163,47 @@ namespace Aurora.Tests.Tests
             Filter(service, [enriched], query: "Tasha's").Should().HaveCount(1);
         }
 
+        /// <summary>
+        /// Whichever path built an entry, its search text comes from the entry's own fields, so a
+        /// companion is findable by its stats and a spell by its casting time without each builder
+        /// repeating the list. Five places used to spell it out, and they had already drifted.
+        /// </summary>
+        [Fact]
+        public void SearchTextComesFromTheEntrysOwnFields()
+        {
+            var service = NewService();
+            CompendiumEntryModel drake = Entry("Drake Companion", "Companion", creatureType: "Dragon") with
+            {
+                CompanionSpeed = "40 ft., fly 80 ft.",
+                CompanionSenses = "darkvision 60 ft.",
+                ChallengeText = "2"
+            };
+
+            CompendiumEntryModel searchable = drake.WithSearchTextFrom("a plain description");
+
+            Filter(service, [searchable], query: "darkvision").Should().HaveCount(1);
+            Filter(service, [searchable], query: "fly 80").Should().HaveCount(1);
+            Filter(service, [searchable], query: "Dragon").Should().HaveCount(1);
+            Filter(service, [searchable], query: "plain description").Should().HaveCount(1);
+            Filter(service, [searchable], query: "nothing here").Should().BeEmpty();
+        }
+
+        /// <summary>
+        /// The prose a caller passes is extra, never a replacement: rebuilding must not drop the
+        /// fields, and must not keep stale text from a previous build either.
+        /// </summary>
+        [Fact]
+        public void RebuildingSearchTextReplacesTheProseButKeepsTheFields()
+        {
+            var service = NewService();
+            CompendiumEntryModel first = Entry("Bless", "Spell").WithSearchTextFrom("first description");
+            CompendiumEntryModel second = first.WithSearchTextFrom("second description");
+
+            Filter(service, [second], query: "second description").Should().HaveCount(1);
+            Filter(service, [second], query: "first description").Should().BeEmpty();
+            Filter(service, [second], query: "Evocation").Should().HaveCount(1);
+        }
+
         [Fact]
         public void NormalizeSearchKeyFoldsEveryApostropheSpellingTogether()
         {

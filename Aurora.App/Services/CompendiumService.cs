@@ -627,8 +627,6 @@ ORDER BY e.name COLLATE NOCASE;
                 reader.IsDBNull(26) ? string.Empty : reader.GetString(26));
             bool spellConcentration = !reader.IsDBNull(27) && reader.GetInt64(27) != 0;
             bool spellRitual = !reader.IsDBNull(28) && reader.GetInt64(28) != 0;
-            string searchText = string.Join(" ", name, type, source, spellSchool, spellCastingTime, spellRange, spellDuration, spellComponents, itemRarity, displayWeight, displayPrice, itemDamage, itemRange, itemProperties, creatureType, creatureSize, challenge, string.Join(" ", spellClasses), preview);
-
             rows.Add(new CompendiumEntryModel(
                 id,
                 name,
@@ -636,7 +634,7 @@ ORDER BY e.name COLLATE NOCASE;
                 source,
                 preview,
                 string.Empty,
-                searchText,
+                string.Empty,
                 spellLevel,
                 spellSchool,
                 spellClasses,
@@ -656,7 +654,7 @@ ORDER BY e.name COLLATE NOCASE;
                 spellDuration,
                 spellConcentration,
                 spellRitual,
-                false));
+                false).WithSearchTextFrom(preview));
         }
 
         return rows
@@ -819,32 +817,6 @@ LIMIT 1;
         string linkedPlain = CreatePlainText(string.Join(" ", companionTraits.Concat(companionActions).Concat(companionReactions).Select(detail => detail.DescriptionHtml)));
         string summary = CreateSummary(string.IsNullOrWhiteSpace(plain) ? informationPlain : plain);
 
-        string searchText = string.Join(" ",
-            fallback.SearchText,
-            plain,
-            informationPlain,
-            linkedPlain,
-            spellCastingTime,
-            spellRange,
-            spellDuration,
-            spellComponents,
-            companionAlignment,
-            companionArmorClass,
-            companionHitPoints,
-            companionSpeed,
-            companionStrength,
-            companionDexterity,
-            companionConstitution,
-            companionIntelligence,
-            companionWisdom,
-            companionCharisma,
-            companionSkills,
-            companionResistances,
-            companionImmunities,
-            companionConditionImmunities,
-            companionSenses,
-            companionLanguages,
-            companionProficiencyBonus);
 
         return (fallback with
         {
@@ -878,7 +850,7 @@ LIMIT 1;
             CompanionReactions = companionReactions,
             InformationDetails = informationDetails,
             HasComputedDetail = true
-        }).WithSearchText(searchText);
+        }).WithSearchTextFrom(fallback.SearchText, plain, informationPlain, linkedPlain);
     }
 
     private static IReadOnlyList<CompendiumLinkedEntryModel> LoadInformationDetails(
@@ -1124,9 +1096,6 @@ LIMIT 1;
             ? plain[..217].TrimEnd() + "..."
             : plain;
 
-        string searchText = string.IsNullOrWhiteSpace(plain)
-            ? entry.SearchText
-            : string.Join(" ", entry.SearchText, plain);
         IReadOnlyList<CompendiumLinkedEntryModel> informationDetails = LoadInformationDetailsFromLoadedElements(element);
         IReadOnlyList<CompendiumLinkedEntryModel> companionTraits = entry.IsCompanionLike
             ? LoadCompanionLinkedEntriesFromLoadedElements(element, "Traits", "traits", "Companion Trait")
@@ -1158,27 +1127,6 @@ LIMIT 1;
         string companionSenses = entry.IsCompanionLike ? GetStringOrSetter(element, "Senses", "senses") : string.Empty;
         string companionLanguages = entry.IsCompanionLike ? GetStringOrSetter(element, "Languages", "languages") : string.Empty;
         string companionProficiencyBonus = entry.IsCompanionLike ? GetStringOrSetter(element, "Proficiency", "proficiency") : string.Empty;
-        string enrichedSearchText = string.Join(" ",
-            searchText,
-            informationPlain,
-            linkedPlain,
-            companionAlignment,
-            companionArmorClass,
-            companionHitPoints,
-            companionSpeed,
-            companionStrength,
-            companionDexterity,
-            companionConstitution,
-            companionIntelligence,
-            companionWisdom,
-            companionCharisma,
-            companionSkills,
-            companionResistances,
-            companionImmunities,
-            companionConditionImmunities,
-            companionSenses,
-            companionLanguages,
-            companionProficiencyBonus);
 
         return (entry with
         {
@@ -1206,7 +1154,7 @@ LIMIT 1;
             CompanionReactions = companionReactions,
             InformationDetails = informationDetails,
             HasComputedDetail = true
-        }).WithSearchText(enrichedSearchText);
+        }).WithSearchTextFrom(entry.SearchText, plain, informationPlain, linkedPlain);
     }
 
     private static IReadOnlyList<CompendiumLinkedEntryModel> LoadInformationDetailsFromLoadedElements(object element)
@@ -1429,7 +1377,7 @@ LIMIT 1;
             source,
             preview,
             string.Empty,
-            string.Join(" ", name, type, source, spellSchool, spellCastingTime, spellRange, spellDuration, spellComponents, itemRarity, displayWeight, displayPrice, itemDamage, itemRange, itemProperties, creatureType, creatureSize, challenge, string.Join(" ", spellClasses), preview),
+            string.Empty,
             spellLevel,
             spellSchool,
             spellClasses,
@@ -1449,7 +1397,7 @@ LIMIT 1;
             spellDuration,
             spellConcentration,
             spellRitual,
-            false);
+            false).WithSearchTextFrom(preview);
     }
 
     internal static bool IsItemLike(string type) =>
@@ -1825,6 +1773,32 @@ public sealed record CompendiumEntryModel(
     /// and setting the key by hand is how the two drifted apart: entries holding a typographic
     /// apostrophe became unreachable by a query that had folded its own to a straight one.
     /// </summary>
+    /// <summary>
+    /// Rebuilds the search text from this entry's own searchable fields, plus whatever prose the
+    /// caller holds that is not a field of its own - a plain-text description, the text of linked
+    /// entries. Five places used to spell this list out by hand, two of them character for
+    /// character, so a newly searchable field had to be added to all of them or an entry became
+    /// findable in one state and not another.
+    /// </summary>
+    public CompendiumEntryModel WithSearchTextFrom(params string?[] prose) =>
+        WithSearchText(string.Join(" ", prose.Concat(SearchableFields())
+            .Where(part => !string.IsNullOrWhiteSpace(part))));
+
+    private IEnumerable<string?> SearchableFields() =>
+    [
+        Name, Type, Source,
+        SpellSchool, SpellCastingTime, SpellRange, SpellDuration, SpellComponents,
+        string.Join(" ", SpellClasses),
+        ItemRarity, DisplayWeight, DisplayPrice, ItemDamage, ItemRange, ItemProperties,
+        CreatureType, CreatureSize, ChallengeText,
+        CompanionAlignment, CompanionArmorClass, CompanionHitPoints, CompanionSpeed,
+        CompanionStrength, CompanionDexterity, CompanionConstitution,
+        CompanionIntelligence, CompanionWisdom, CompanionCharisma,
+        CompanionSkills, CompanionResistances, CompanionImmunities,
+        CompanionConditionImmunities, CompanionSenses, CompanionLanguages,
+        CompanionProficiencyBonus
+    ];
+
     public CompendiumEntryModel WithSearchText(string? text) => this with
     {
         SearchText = text ?? string.Empty,
