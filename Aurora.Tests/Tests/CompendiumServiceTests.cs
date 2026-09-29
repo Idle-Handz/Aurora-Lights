@@ -4,10 +4,30 @@ namespace Aurora.Tests.Tests
 
     public sealed class CompendiumServiceTests
     {
+        // Element loading lives on the DataManager singleton, so every service in the process has
+        // to share the one CharacterService that owns it; a second one would try to initialize
+        // global state that is already loaded. The caches under test are per-instance, so each test
+        // still gets its own CompendiumService and cannot see another test's invalidations.
+        private static readonly ContentDatabaseService SharedContentDb = new();
+        private static readonly CharacterService SharedCharacters = new();
+
+        private static bool _warmed;
+
         private static CompendiumService NewService()
         {
             Helpers.TestApplicationContextInstaller.EnsureInstalled();
-            return new CompendiumService(new ContentDatabaseService(), new CharacterService());
+            if (!_warmed)
+            {
+                _warmed = true;
+                // When a content database is absent but an earlier test already populated the
+                // element singleton, the first load reports that it kept the working elements and
+                // throws to say so. It marks itself initialized first, so the next call succeeds -
+                // absorb that one report rather than letting test order decide who receives it.
+                try { SharedCharacters.PreloadAsync().GetAwaiter().GetResult(); }
+                catch (InvalidDataException) { }
+            }
+
+            return new CompendiumService(SharedContentDb, SharedCharacters);
         }
 
         /// <summary>
@@ -214,6 +234,88 @@ namespace Aurora.Tests.Tests
             CompendiumService.NormalizeSearchKey("Playerʼs Handbook").Should().Be(straight);
             CompendiumService.NormalizeSearchKey("  Player's Handbook  ").Should().Be(straight);
             CompendiumService.NormalizeSearchKey(null).Should().BeEmpty();
+        }
+
+        /// <summary>
+        /// The catalog is cached, so a refresh has to be able to throw it away. This is the shape of
+        /// bug that bit the character graph: state that outlived the content it was built from.
+        /// </summary>
+        [Fact]
+        public async Task TheCatalogIsReusedUntilSomethingInvalidatesIt()
+        {
+            var service = NewService();
+
+            IReadOnlyList<CompendiumEntryModel> first = await service.BuildCatalogAsync();
+            IReadOnlyList<CompendiumEntryModel> again = await service.BuildCatalogAsync();
+            again.Should().BeSameAs(first, "a second read must not rebuild the catalog");
+
+            service.InvalidateCache(rebuildInBackground: false);
+            IReadOnlyList<CompendiumEntryModel> afterRefresh = await service.BuildCatalogAsync();
+            afterRefresh.Should().NotBeSameAs(first, "invalidating must discard the catalog, not reuse it");
+        }
+
+        [Fact]
+        public async Task ConcurrentReadersShareOneBuild()
+        {
+            var service = NewService();
+
+            IReadOnlyList<CompendiumEntryModel>[] results = await Task.WhenAll(
+                Enumerable.Range(0, 8).Select(_ => service.BuildCatalogAsync()));
+
+            results.Should().AllBeEquivalentTo(results[0]);
+            results.Distinct().Should().ContainSingle("eight readers must not each build their own catalog");
+        }
+
+        /// <summary>
+        /// A build that began before a refresh must not install its result afterwards - that is a
+        /// catalog describing content the app no longer has, which is the shape of the bug that bit
+        /// the character graph. Both outcomes hand back a fresh list, so the only way to see the
+        /// difference is to count assemblies: a discarded build is repeated, an installed one is not.
+        /// </summary>
+        [Fact]
+        public async Task ABuildRunningAcrossARefreshIsDiscardedAndRepeated()
+        {
+            var service = NewService();
+            await service.BuildCatalogAsync();
+
+            service.InvalidateCache(rebuildInBackground: false);
+            int before = service.CatalogBuildCount;
+
+            // Refresh repeatedly while the build runs rather than at one instant: a warm build
+            // takes a couple of hundred milliseconds, and a single well-timed invalidation is a
+            // race the test would lose as often as it won.
+            Task<IReadOnlyList<CompendiumEntryModel>> inFlight = service.BuildCatalogAsync();
+            DateTime until = DateTime.UtcNow.AddMilliseconds(60);
+            while (DateTime.UtcNow < until)
+            {
+                service.InvalidateCache(rebuildInBackground: false);
+                await Task.Delay(2);
+            }
+            await inFlight;
+
+            service.CatalogBuildCount.Should().BeGreaterThan(before + 1,
+                "a build spanning a refresh must be thrown away and run again, not installed");
+            (await service.BuildCatalogAsync()).Should().NotBeNull();
+        }
+
+        /// <summary>
+        /// Enriched details are cached separately and describe the same content, so they have to go
+        /// when the catalog does. A detail kept across a refresh is the character-graph bug again.
+        /// </summary>
+        [Fact]
+        public async Task EnrichedDetailIsRecomputedAfterARefresh()
+        {
+            var service = NewService();
+            IReadOnlyList<CompendiumEntryModel> catalog = await service.BuildCatalogAsync();
+            CompendiumEntryModel subject = catalog.First(entry => !entry.HasComputedDetail);
+
+            CompendiumEntryModel enriched = await service.EnrichEntryAsync(subject);
+            CompendiumEntryModel cached = await service.EnrichEntryAsync(subject);
+            cached.Should().BeSameAs(enriched, "a second read must come from the detail cache");
+
+            service.InvalidateCache(rebuildInBackground: false);
+            CompendiumEntryModel afterRefresh = await service.EnrichEntryAsync(subject);
+            afterRefresh.Should().NotBeSameAs(enriched, "invalidating must clear cached detail too");
         }
 
         [Fact]

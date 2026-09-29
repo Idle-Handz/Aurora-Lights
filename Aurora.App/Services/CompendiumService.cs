@@ -58,6 +58,13 @@ public sealed class CompendiumService
     private IReadOnlyList<CompendiumEntryModel>? _catalogCache;
     private readonly ConcurrentDictionary<string, CompendiumEntryModel> _detailCache = new(StringComparer.Ordinal);
     private int _cacheGeneration;
+
+    /// <summary>
+    /// How many times the catalog has actually been assembled. Exists so a test can see that a
+    /// build which ran across an invalidation was discarded and repeated rather than installed:
+    /// both outcomes hand back a fresh list, so the discard is otherwise invisible from outside.
+    /// </summary>
+    internal int CatalogBuildCount;
     private Task? _warmupTask;
 
     public CompendiumService(ContentDatabaseService contentDb, CharacterService characterService)
@@ -93,6 +100,7 @@ public sealed class CompendiumService
                 await _characterService.PreloadAsync();
 
                 IReadOnlyList<CompendiumEntryModel> built = await Task.Run(BuildCatalogCore);
+                Interlocked.Increment(ref CatalogBuildCount);
                 lock (_catalogLock)
                 {
                     if (generation != _cacheGeneration)
