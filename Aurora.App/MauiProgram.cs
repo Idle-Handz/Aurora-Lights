@@ -64,6 +64,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<UserPreferencesService>();
         builder.Services.AddSingleton<CompendiumService>();
         builder.Services.AddSingleton<ContentService>();
+        builder.Services.AddSingleton<ContentDoctorService>();
         builder.Services.AddSingleton<ContentDatabaseService>();
         builder.Services.AddSingleton<ContentDatabaseParityService>();
         builder.Services.AddSingleton<PdfImportService>();
