@@ -215,7 +215,7 @@ static bool HasFallbackPublisher()
 sealed class RehearsalContext(string root) : IApplicationContext
 {
     public IEventAggregator EventAggregator { get; } = new EventAggregator();
-    public Builder.Presentation.AppSettingsStore Settings { get; } = new() { DocumentsRootDirectory = root };
+    public Builder.Presentation.AppSettingsStore Settings { get; } = new(Path.Combine(root, "settings.json")) { DocumentsRootDirectory = root };
     public bool IsInDeveloperMode { get; set; }
     public bool EnableDiagnostics { get; set; }
     public string? LoadedCharacterFilePath { get; set; }

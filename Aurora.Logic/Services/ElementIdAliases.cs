@@ -39,6 +39,21 @@ public static class ElementIdAliases
 
     public static int Count => forwarding.Count;
 
+    // Generated proxies are forwarding addresses for the same underlying definition.
+    // Derive their old IDs only from explicit aliases; never infer equivalence by name.
+    internal static void ForwardGeneratedIds(string targetId, Func<string, string?> generateId)
+    {
+        var additions = forwarding.Keys.Where(saved => TryGetTarget(saved, out string target) && target == targetId)
+            .Select(saved => generateId(saved)).Where(id => id is not null).ToArray();
+        if (additions.Length == 0) return;
+        string? generatedTarget = generateId(targetId);
+        if (generatedTarget is null) return;
+        var map = new Dictionary<string, string>(forwarding, StringComparer.Ordinal);
+        foreach (string? saved in additions)
+            if (saved != generatedTarget) map.TryAdd(saved!, generatedTarget);
+        forwarding = map;
+    }
+
     /// <summary>The id an old reference now points at, following a short chain if one exists.</summary>
     public static bool TryGetTarget(string? savedId, out string targetId)
     {

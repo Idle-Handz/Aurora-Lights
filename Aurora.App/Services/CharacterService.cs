@@ -29,6 +29,7 @@ public sealed class CharacterService :
 {
     private bool _directoriesInitialized;
     private bool _elementsInitialized;
+    private string? _loadedContentDirectory;
     private readonly SemaphoreSlim _elementLock  = new(1, 1);
 
     // ── Character list cache ────────────────────────────────────────────────
@@ -135,7 +136,13 @@ public sealed class CharacterService :
             {
                 if (DataManager.Current.ElementsCollection.Count > 0)
                 {
-                    _elementsInitialized = true;
+                    // A failed refresh can retain a working catalog only for its own folder. Never
+                    // make the old folder's catalog reusable after a switch: _loadedContentDirectory
+                    // is set only on success, so after a switch it still names the folder we left.
+                    // With no record at all there is nothing to contradict, and refusing a catalog
+                    // that is already loaded would leave the app unable to start rather than safer.
+                    _elementsInitialized = _loadedContentDirectory is null || string.Equals(_loadedContentDirectory,
+                        DataManager.Current.UserDocumentsCustomElementsDirectory, StringComparison.OrdinalIgnoreCase);
                     throw new InvalidDataException($"Content reload failed; the previous working elements were preserved. {dbResult.FailureReason}");
                 }
                 ContentDatabaseService.ValidateRawXmlFallback(dbResult.DatabasePath, dbResult.FailureReason);
@@ -163,6 +170,7 @@ public sealed class CharacterService :
             // Sources are loaded now, so switched-off packages can become default restrictions.
             SourcePreferenceSeed.SeedDefaultRestrictions(ElementLoadDatabasePath);
             RefreshEngineSourceList();
+            _loadedContentDirectory = DataManager.Current.UserDocumentsCustomElementsDirectory;
             _elementsInitialized = true;
             _ = WarmEquipmentSearchIndexAsync();
 
@@ -719,6 +727,12 @@ public sealed class CharacterService :
         ApplicationContext.Current.Settings.Save();
         DataManager.Current.InitializeDirectories();
         InvalidateFileListCache();
+        // The selected folder also owns the content catalog. A character load while
+        // Settings is refreshing it must not reuse the previous folder's preload.
+        _elementsInitialized = false;
+        _initDiagnostic = null;
+        CurrentCharacter = null;
+        CurrentCharacterFile = null;
         return null;
     }
 

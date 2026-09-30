@@ -603,7 +603,7 @@ public static class EquipmentService
     /// <summary>
     /// Categories surfaced by the "Add Custom Feature" picker: Aurora's engine-generated
     /// "Additional …" proxies (one hidden Item per addable feat / spell / language /
-    /// proficiency / feature, etc.) plus Supernatural Gifts. Ordinary equipment is excluded —
+    /// proficiency / feature, etc.), Supernatural Gifts, and companion templates. Ordinary equipment is excluded —
     /// that belongs in the inventory picker.
     /// </summary>
     public static IReadOnlyList<string> GetCustomFeatureCategories()
@@ -611,7 +611,6 @@ public static class EquipmentService
         var cats = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var e in DataManager.Current.ElementsCollection)
         {
-            if (!ItemTypes.Contains(e.Type)) continue;
             var cat = GetCustomFeatureCategory(e);
             if (cat != null) cats.Add(cat);
         }
@@ -621,6 +620,8 @@ public static class EquipmentService
     /// <summary>Returns the custom-feature category for an element, or null if it isn't one.</summary>
     private static string? GetCustomFeatureCategory(Builder.Data.ElementBase e)
     {
+        if (e is Builder.Data.Elements.CompanionElement) return "Companions";
+        if (!ItemTypes.Contains(e.Type)) return null;
         var name = e.Name ?? "";
         if (name.StartsWith("Additional ", StringComparison.OrdinalIgnoreCase))
         {
@@ -639,11 +640,14 @@ public static class EquipmentService
     /// description is taken from the underlying granted element (the proxy's own description is just
     /// engine boilerplate about gaining a benefit).
     /// </summary>
-    public static IReadOnlyList<ItemSearchResult> SearchCustomFeatures(string category, string query)
+    public static IReadOnlyList<ItemSearchResult> SearchCustomFeatures(
+        string category, string query, IReadOnlySet<string>? ownedElementIds = null)
     {
         IEnumerable<Builder.Data.ElementBase> source = DataManager.Current.ElementsCollection.Where(e =>
-            ItemTypes.Contains(e.Type) &&
             string.Equals(GetCustomFeatureCategory(e), category, StringComparison.OrdinalIgnoreCase));
+
+        if (ownedElementIds != null)
+            source = source.Where(e => CanAddCustomFeature(e, ownedElementIds));
 
         if (!string.IsNullOrWhiteSpace(query))
             source = source.Where(e => (e.Name ?? "").Contains(query, StringComparison.OrdinalIgnoreCase));
@@ -688,17 +692,17 @@ public static class EquipmentService
 
     public static bool IsRepeatableCustomFeature(Builder.Data.ElementBase element)
     {
-        if (element.AllowMultipleElements)
-            return true;
+        // AllowMultipleElements permits different definitions of a type (e.g. several feats).
+        // Only AllowDuplicate permits repeating the same grant. Inventory stackability and
+        // a proxy's settings must not override the granted definition's restriction.
+        return ResolveCustomFeatureTarget(element).AllowDuplicate;
+    }
 
-        if (!element.ElementSetters.ContainsSetter("stackable"))
-            return false;
-
-        string? value = element.ElementSetters.GetSetter("stackable")?.Value;
-        return string.IsNullOrWhiteSpace(value)
-               || value.Equals("true", StringComparison.OrdinalIgnoreCase)
-               || value.Equals("1", StringComparison.OrdinalIgnoreCase)
-               || value.Equals("yes", StringComparison.OrdinalIgnoreCase);
+    public static bool CanAddCustomFeature(
+        Builder.Data.ElementBase element, IReadOnlySet<string> ownedElementIds)
+    {
+        var target = ResolveCustomFeatureTarget(element);
+        return IsRepeatableCustomFeature(target) || !ownedElementIds.Contains(target.Id);
     }
 
     private static string CleanCustomFeatureName(string name, string category)

@@ -760,6 +760,8 @@ public sealed class CharacterManager
 
   private void SetCharacterDetails()
   {
+    this.Character.SynchronizeCompanions(this.GetElements());
+    this.Status.HasCompanion = this.Character.Companions.Count > 0;
     int progressionLevel = this._progressionManager.ProgressionLevel;
     if (this.StatisticsCalculator == null)
       this.StatisticsCalculator = new StatisticsHandler2(this);
@@ -1008,7 +1010,14 @@ public sealed class CharacterManager
     else
       this.Status.HasMulticlassSpellSlots = false;
     if (this.Status.HasCompanion)
-      this.Character.Companion.Statistics.Update(values);
+    {
+      foreach (var companion in this.Character.Companions)
+      {
+        var companionValues = ReferenceEquals(companion, this.Character.Companion)
+          ? values : this.StatisticsCalculator.CalculateCompanionValues(companion, this.GetElements(), progressionLevel);
+        companion.Statistics.Update(companionValues);
+      }
+    }
     this.Character.Inventory.CalculateWeight();
     CharacterManager.Current.Status.HasChanges = true;
   }
@@ -1068,6 +1077,8 @@ public sealed class CharacterManager
     }
   }
 
+  internal void InvalidateElementCache() => _elementsCacheDirty = true;
+
   public ElementBaseCollection GetElements()
   {
     if (!_elementsCacheDirty && _elementsCache != null)
@@ -1103,21 +1114,21 @@ public sealed class CharacterManager
     return (IEnumerable<ElementBase>) proficiencyList;
   }
 
-  public IEnumerable<StatisticRule> GetStatisticRules2()
+  public IEnumerable<StatisticRule> GetStatisticRules2(Func<ElementBase, bool> companionScope = null)
   {
     List<StatisticRule> statisticRules2 = new List<StatisticRule>();
-    statisticRules2.AddRange(this._progressionManager.GetStatisticRules());
+    statisticRules2.AddRange(this._progressionManager.GetStatisticRules(companionScope: companionScope));
     foreach (ClassProgressionManager progressionManager in (Collection<ClassProgressionManager>) this.ClassProgressionManagers)
-      statisticRules2.AddRange(progressionManager.GetStatisticRules());
+      statisticRules2.AddRange(progressionManager.GetStatisticRules(companionScope: companionScope));
     return (IEnumerable<StatisticRule>) statisticRules2;
   }
 
-  public IEnumerable<StatisticRule> GetStatisticRulesAtLevel(int level)
+  public IEnumerable<StatisticRule> GetStatisticRulesAtLevel(int level, Func<ElementBase, bool> companionScope = null)
   {
     List<StatisticRule> statisticRulesAtLevel = new List<StatisticRule>();
-    statisticRulesAtLevel.AddRange(this._progressionManager.GetStatisticRulesAtLevel(level));
+    statisticRulesAtLevel.AddRange(this._progressionManager.GetStatisticRulesAtLevel(level, companionScope));
     foreach (ClassProgressionManager progressionManager in (Collection<ClassProgressionManager>) this.ClassProgressionManagers)
-      statisticRulesAtLevel.AddRange(progressionManager.GetStatisticRulesAtLevel(level));
+      statisticRulesAtLevel.AddRange(progressionManager.GetStatisticRulesAtLevel(level, companionScope));
     return (IEnumerable<StatisticRule>) statisticRulesAtLevel;
   }
 

@@ -47,8 +47,13 @@ internal static class CharacterRehearsal
                 .Select(e => new { e.Id, ContentFilePath = ElementProvenance.GetContentFilePath(e), grants = e.GetGrantRules().Select(g => g.Attributes.Name).ToArray() }),
             new JsonSerializerOptions { WriteIndented = true }));
         var results = new List<object>();
+        int shards = int.TryParse(Environment.GetEnvironmentVariable("REHEARSAL_SHARDS"), out int count) ? count : 1;
+        int shard = int.TryParse(Environment.GetEnvironmentVariable("REHEARSAL_SHARD"), out int index) ? index : 0;
+        if (shards < 1 || shard < 0 || shard >= shards) throw new ArgumentException("Invalid rehearsal shard.");
         foreach (string path in Directory.GetFiles(Path.Combine(root, "characters"), "*.dnd5e")
-            .Where(p => onlyFile == null || Path.GetFileName(p) == onlyFile))
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Where(p => onlyFile == null || Path.GetFileName(p) == onlyFile)
+            .Where((_, index) => index % shards == shard))
         {
             string originalHash = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path)));
             try
@@ -158,6 +163,10 @@ internal static class CharacterRehearsal
                 character.Abilities.Constitution.AdditionalScore, character.Abilities.Intelligence.AdditionalScore,
                 character.Abilities.Wisdom.AdditionalScore, character.Abilities.Charisma.AdditionalScore },
             ids = elements.Select(e => e.Id).OrderBy(x => x, StringComparer.Ordinal).ToArray(),
+            companions = character.Companions.Select(c => new { c.Element.Id, name = c.CompanionName.Content,
+                c.Statistics.ArmorClass, c.Statistics.MaxHp, c.Statistics.Speed,
+                strength = c.Abilities.Strength.FinalScore, dexterity = c.Abilities.Dexterity.FinalScore })
+                .OrderBy(c => c.Id).ThenBy(c => c.name).ToArray(),
             prepared = elements.Where(e => e.SpellcastingInformation != null).Select(e => e.SpellcastingInformation.Name)
                 .Distinct().Order().ToDictionary(n => n, n => SpellcastingSectionContext.Current!.GetPreparedIds(n).Order().ToArray()) };
     }

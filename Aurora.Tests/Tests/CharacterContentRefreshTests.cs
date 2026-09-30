@@ -12,8 +12,10 @@ namespace Aurora.Tests.Tests;
 
 public sealed class CharacterContentRefreshTests
 {
-    [Fact]
-    public async Task RefreshThenReopenAndToggleArmorPreservesStatsAndSavedClassChoice()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task RefreshThenReopenAndToggleArmorPreservesStatsAndSavedClassChoice(bool changeDirectory)
     {
         TestApplicationContextInstaller.EnsureInstalled();
         var settings = ApplicationContext.Current.Settings;
@@ -81,6 +83,17 @@ public sealed class CharacterContentRefreshTests
             // This is the app sequence: close tab, replace the catalog, reopen the
             // same file through the preload fast path if the service still permits it.
             tabs.CloseAllTabs();
+            if (changeDirectory)
+            {
+                string otherRoot = Path.Combine(root, "other-root");
+                string otherCustom = Path.Combine(otherRoot, "custom");
+                Directory.CreateDirectory(otherCustom);
+                File.Copy(Path.Combine(custom, "refresh-test.xml"), Path.Combine(otherCustom, "refresh-test.xml"));
+                await ContentImport.ImportAsync(otherCustom, Path.Combine(otherCustom, ContentDatabaseService.DatabaseFileName));
+                service.ApplyCustomCharactersDirectory(otherRoot).Should().BeNull();
+                service.IsPreloaded(file).Should().BeFalse();
+                service.ElementCount.Should().Be(-1);
+            }
             await service.ReloadElementsAsync();
             catalog.GetElement("ID_INTERNAL_GRANTS_CHARACTER_BASE").Should().NotBeSameAs(oldBase);
             service.IsPreloaded(file).Should().BeFalse();
@@ -111,6 +124,20 @@ public sealed class CharacterContentRefreshTests
             var choice = manager.SelectionRules.Single(r => r.Attributes.Name == "Fighting Style");
             ((ElementBase)handler.GetRegisteredElement(choice)).Id.Should().Be("ID_TEST_REFRESH_STYLE");
             manager.GetElements().Count(e => e.Id == "ID_TEST_REFRESH_STYLE").Should().Be(1);
+            if (changeDirectory)
+            {
+                // Even after a failed import, another load must not accept the old
+                // folder's content as if it belonged to the newly selected folder.
+                tabs.CloseAllTabs();
+                string brokenRoot = Path.Combine(root, "broken-root");
+                Directory.CreateDirectory(Path.Combine(brokenRoot, "custom"));
+                File.WriteAllText(Path.Combine(brokenRoot, "custom", "broken.xml"), "<elements");
+                service.ApplyCustomCharactersDirectory(brokenRoot).Should().BeNull();
+                Func<Task> preload = () => service.PreloadAsync();
+                await preload.Should().ThrowAsync<InvalidDataException>();
+                await preload.Should().ThrowAsync<InvalidDataException>();
+                service.ElementCount.Should().Be(-1);
+            }
         }
         finally
         {

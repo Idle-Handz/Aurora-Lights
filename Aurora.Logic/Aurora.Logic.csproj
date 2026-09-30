@@ -29,6 +29,10 @@
 
   <Import Project="..\AuroraContent.props" />
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Aurora.Tests" />
+  </ItemGroup>
+
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <Optimize>false</Optimize>
     <DebugType>full</DebugType>

@@ -27,6 +27,17 @@ public class InternalElementsGenerator
     return string.Format(format, (object) str).ToUpperInvariant();
   }
 
+  /// <summary>
+  /// Teaches the alias table what each generated proxy used to be called. A save refers to the
+  /// proxy, not the definition underneath it, so an alias on the definition only reaches the save
+  /// if the proxy id derived from the old name forwards too. The id is derived exactly as
+  /// <see cref="GenerateInternalId"/> derives the current one.
+  /// </summary>
+  private void ForwardGeneratedProxyIds(ElementBase element, string splitSection, string format) =>
+    ElementIdAliases.ForwardGeneratedIds(element.Id, savedId => savedId.Contains(splitSection)
+      ? string.Format(format, (object) (((IEnumerable<string>) Regex.Split(savedId, splitSection)).LastOrDefault<string>() ?? "")).ToUpperInvariant()
+      : null);
+
   public List<ElementBase> GenerateInternalFeats(IEnumerable<ElementBase> content)
   {
     List<ElementBase> internalFeats = new List<ElementBase>();
@@ -47,6 +58,7 @@ public class InternalElementsGenerator
         {
           string upperInvariant = (list2.FirstOrDefault<Source>((Func<Source, bool>) (x => x.Name.Equals(element.Source)))?.Abbreviation ?? "").ToUpperInvariant();
           string internalId = this.GenerateInternalId((ElementBase) element, "_FEAT_", $"ID_{upperInvariant}_INTERNAL_ITEM_FEAT_PROXY_{{0}}");
+          this.ForwardGeneratedProxyIds((ElementBase) element, "_FEAT_", $"ID_{upperInvariant}_INTERNAL_ITEM_FEAT_PROXY_{{0}}");
           Item obj1 = new Item();
           obj1.ElementHeader = new ElementHeader($"Additional {element.Type}, {element.Name}", "Item", element.Source, internalId);
           Item obj2 = obj1;
@@ -98,6 +110,7 @@ public class InternalElementsGenerator
         {
           string upperInvariant = (list2.FirstOrDefault<Source>((Func<Source, bool>) (x => x.Name.Equals(element.Source)))?.Abbreviation ?? "").ToUpperInvariant();
           string internalId = this.GenerateInternalId((ElementBase) element, splitSection, $"ID_{upperInvariant}_INTERNAL_ITEM_LANGUAGE_PROXY{splitSection}{{0}}");
+          this.ForwardGeneratedProxyIds((ElementBase) element, splitSection, $"ID_{upperInvariant}_INTERNAL_ITEM_LANGUAGE_PROXY{splitSection}{{0}}");
           Item obj1 = new Item();
           obj1.ElementHeader = new ElementHeader($"Additional {element.Type}, {element.Name}", "Item", element.Source, internalId);
           Item obj2 = obj1;
@@ -149,6 +162,7 @@ public class InternalElementsGenerator
         {
           string upperInvariant = (list2.FirstOrDefault<Source>((Func<Source, bool>) (x => x.Name.Equals(element.Source)))?.Abbreviation ?? "").ToUpperInvariant();
           string internalId = this.GenerateInternalId((ElementBase) element, splitSection, $"ID_{upperInvariant}_INTERNAL_ITEM_PROFICIENCY_PROXY{splitSection}{{0}}");
+          this.ForwardGeneratedProxyIds((ElementBase) element, splitSection, $"ID_{upperInvariant}_INTERNAL_ITEM_PROFICIENCY_PROXY{splitSection}{{0}}");
           string str1 = $"Skill Proficiency ({element.Name})";
           string str2 = element.Name;
           if (element.HasSupports && element.Supports.Contains("Skill"))
@@ -204,6 +218,7 @@ public class InternalElementsGenerator
         {
           string upperInvariant = (list2.FirstOrDefault<Source>((Func<Source, bool>) (x => x.Name.Equals(element.Source)))?.Abbreviation ?? "").ToUpperInvariant();
           string internalId = this.GenerateInternalId(element, splitSection, $"ID_{upperInvariant}_INTERNAL_ITEM_PROXY{splitSection}{{0}}");
+          this.ForwardGeneratedProxyIds(element, splitSection, $"ID_{upperInvariant}_INTERNAL_ITEM_PROXY{splitSection}{{0}}");
           Item obj1 = new Item();
           obj1.ElementHeader = new ElementHeader($"Additional {element.Type}, {element.Name}", "Item", element.Source, internalId);
           Item obj2 = obj1;
@@ -262,6 +277,7 @@ public class InternalElementsGenerator
           foreach (string str in list3)
           {
             string internalId = this.GenerateInternalId((ElementBase) element, splitSection, $"ID_{upperInvariant}_INTERNAL_ITEM_{str.Replace(" ", "_")}_SPELL_PROXY{splitSection}{{0}}");
+            this.ForwardGeneratedProxyIds((ElementBase) element, splitSection, $"ID_{upperInvariant}_INTERNAL_ITEM_{str.Replace(" ", "_")}_SPELL_PROXY{splitSection}{{0}}");
             string name = $"Additional {element.Type}, {element.Name}";
             if (!string.IsNullOrWhiteSpace(str))
               name = $"Additional {str} {element.Type}, {element.Name}";

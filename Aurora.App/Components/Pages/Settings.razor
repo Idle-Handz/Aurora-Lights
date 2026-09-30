@@ -1875,8 +1875,8 @@
             _dirError = Characters.ApplyCustomCharactersDirectory(chosen);
             if (_dirError == null)
             {
-                HandleContentRootChanged();
-                Snackbar.Add($"Characters folder set to: {chosen}", Severity.Success,
+                await HandleContentRootChangedAsync();
+                if (_dirError == null) Snackbar.Add($"Characters folder set to: {chosen}", Severity.Success,
                     cfg => cfg.VisibleStateDuration = 4000);
             }
         }
@@ -1887,50 +1887,56 @@
         }
     }
 
-    private Task UseExternalStorageAsync()
+    private async Task UseExternalStorageAsync()
     {
         _dirError = null;
         string? path = CharacterService.GetAndroidExternalStoragePath();
         if (path == null)
         {
             _dirError = "External storage path is not available on this device.";
-            return Task.CompletedTask;
+            return;
         }
         _dirError = Characters.ApplyCustomCharactersDirectory(path);
         if (_dirError == null)
         {
-            HandleContentRootChanged();
-            Snackbar.Add("Switched to external storage. Files are now accessible from the Files app.",
+            await HandleContentRootChangedAsync();
+            if (_dirError == null) Snackbar.Add("Switched to external storage. Files are now accessible from the Files app.",
                 Severity.Success, cfg => cfg.VisibleStateDuration = 5000);
         }
         StateHasChanged();
-        return Task.CompletedTask;
     }
 
-    private Task ResetCharactersDirAsync()
+    private async Task ResetCharactersDirAsync()
     {
         _dirError = Characters.ApplyCustomCharactersDirectory(null);
         if (_dirError == null)
         {
-            HandleContentRootChanged();
-            Snackbar.Add("Characters folder reset to default.", Severity.Success,
+            await HandleContentRootChangedAsync();
+            if (_dirError == null) Snackbar.Add("Characters folder reset to default.", Severity.Success,
                 cfg => cfg.VisibleStateDuration = 3000);
         }
         StateHasChanged();
-        return Task.CompletedTask;
     }
 
-    private void HandleContentRootChanged()
+    private async Task HandleContentRootChangedAsync()
     {
+        _dirBusy = true;
         ContentDb.NotifyContentDirectoryChanged();
         _stalenessChecked = false;
         _dbParity = null;
         _needsContentReload = true;
-        _ = InvokeAsync(async () =>
+        StateHasChanged();
+        try
         {
+            _dirError = await Content.ReloadContentAsync();
+            _needsContentReload = _dirError != null;
             await RefreshDatabaseDiagnosticsAsync();
+        }
+        finally
+        {
+            _dirBusy = false;
             StateHasChanged();
-        });
+        }
     }
 
     public void Dispose()

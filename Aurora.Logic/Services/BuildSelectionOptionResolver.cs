@@ -431,7 +431,7 @@ public static class BuildSelectionOptionResolver
             : firstWord;
     }
 
-    private static string ExpandDynamicSpellcastingSupports(SelectRule rule)
+    internal static string ExpandDynamicSpellcastingSupports(SelectRule rule)
     {
         string expression = rule.Attributes.Supports ?? string.Empty;
         if (!expression.Contains("$(spellcasting:list)", StringComparison.OrdinalIgnoreCase)

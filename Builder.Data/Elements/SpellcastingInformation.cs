@@ -52,6 +52,8 @@ public class SpellcastingInformation
 
 	public List<SpellcastingList> ExtendedSupportedSpellsExpressions { get; } = new List<SpellcastingList>();
 
+	private readonly HashSet<SpellcastingList> _mergedExtensions = new HashSet<SpellcastingList>();
+
 	public SpellcastingInformation(ElementHeader elementHeader)
 	{
 		UniqueIdentifier = Guid.NewGuid().ToString("D");
@@ -113,6 +115,31 @@ public class SpellcastingInformation
 		return $"{Name} [ex:{IsExtension}] [prep:{Prepare}] [from known list:{PrepareFromSpellList}]";
 	}
 
+	/// <summary>Copies owned lists while retaining the identity of lists borrowed from other features.</summary>
+	public SpellcastingInformation CloneForSelection()
+	{
+		var copy = new SpellcastingInformation(ElementHeader)
+		{
+			Name = Name,
+			AbilityName = AbilityName,
+			Prepare = Prepare,
+			PrepareFromSpellList = PrepareFromSpellList,
+			AssignToAllSpellcastingClasses = AssignToAllSpellcastingClasses,
+			AllowSpellSwap = AllowSpellSwap,
+			IsExtension = IsExtension,
+		};
+		if (InitialSupportedSpellsExpression is { } initial)
+			copy.InitialSupportedSpellsExpression = new SpellcastingList(initial.Supports, initial.Known);
+		foreach (var list in ExtendedSupportedSpellsExpressions)
+		{
+			if (_mergedExtensions.Contains(list))
+				copy.MergeExtended(new List<SpellcastingList> { list });
+			else
+				copy.ExtendedSupportedSpellsExpressions.Add(new SpellcastingList(list.Supports, list.Known));
+		}
+		return copy;
+	}
+
 	public void MergeExtended(List<SpellcastingList> extendedSupportedSpellsExpressions)
 	{
 		foreach (SpellcastingList extendedSupportedSpellsExpression in extendedSupportedSpellsExpressions)
@@ -120,6 +147,7 @@ public class SpellcastingInformation
 			if (!ExtendedSupportedSpellsExpressions.Contains(extendedSupportedSpellsExpression))
 			{
 				ExtendedSupportedSpellsExpressions.Add(extendedSupportedSpellsExpression);
+				_mergedExtensions.Add(extendedSupportedSpellsExpression);
 			}
 			else
 			{
@@ -135,12 +163,14 @@ public class SpellcastingInformation
 			if (ExtendedSupportedSpellsExpressions.Contains(expression))
 			{
 				ExtendedSupportedSpellsExpressions.Remove(expression);
+				_mergedExtensions.Remove(expression);
 				continue;
 			}
 			SpellcastingList spellcastingList = ExtendedSupportedSpellsExpressions.FirstOrDefault((SpellcastingList x) => x.UniqueIdentifier.Equals(expression.UniqueIdentifier));
 			if (spellcastingList != null)
 			{
 				ExtendedSupportedSpellsExpressions.Remove(spellcastingList);
+				_mergedExtensions.Remove(spellcastingList);
 			}
 		}
 	}

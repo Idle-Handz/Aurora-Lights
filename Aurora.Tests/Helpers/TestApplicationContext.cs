@@ -12,6 +12,7 @@ internal sealed class TestApplicationContext : IApplicationContext
             "Aurora.Tests",
             Environment.ProcessId.ToString());
         Directory.CreateDirectory(documentsRoot);
+        Settings = new(Path.Combine(documentsRoot, "settings.json"));
         Settings.DocumentsRootDirectory = documentsRoot;
         Settings.AdditionalCustomDirectory = string.Empty;
         Settings.AdditionalCustomDirectories.Clear();
@@ -19,7 +20,7 @@ internal sealed class TestApplicationContext : IApplicationContext
 
     public IEventAggregator EventAggregator { get; } = new EventAggregator();
 
-    public Builder.Presentation.AppSettingsStore Settings { get; } = new();
+    public Builder.Presentation.AppSettingsStore Settings { get; }
 
     public bool IsInDeveloperMode { get; set; }
 

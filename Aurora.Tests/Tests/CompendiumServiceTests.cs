@@ -22,8 +22,9 @@ namespace Aurora.Tests.Tests
                 _warmed = true;
                 // When a content database is absent but an earlier test already populated the
                 // element singleton, the first load reports that it kept the working elements and
-                // throws to say so. It marks itself initialized first, so the next call succeeds -
-                // absorb that one report rather than letting test order decide who receives it.
+                // throws to say so. It has no record of loading another folder's content, so it
+                // adopts them and the next call succeeds - absorb that one report here rather than
+                // letting test order decide which test receives it.
                 try { SharedCharacters.PreloadAsync().GetAwaiter().GetResult(); }
                 catch (InvalidDataException) { }
             }

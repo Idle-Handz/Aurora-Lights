@@ -121,9 +121,9 @@ public sealed class CharacterSnapshot
     // ── Advancement timeline (calculated at snapshot time, tab-specific) ──
     public IReadOnlyList<AdvancementClassTimeline> AdvancementTimeline { get; init; } = [];
 
-    // ── Companion (calculated; null when no companion is active) ──
-    public CompanionSnapshot? Companion { get; init; }
-    public bool HasCompanion => Companion is not null;
+    public IReadOnlyList<CompanionSnapshot> Companions { get; init; } = [];
+    public CompanionSnapshot? Companion => Companions.LastOrDefault();
+    public bool HasCompanion => Companions.Count > 0;
 
     /// <summary>Captures all display-relevant data from the live Character object.</summary>
     public static CharacterSnapshot From(Character c)
@@ -272,7 +272,7 @@ public sealed class CharacterSnapshot
             SpeedSwim   = GetAltSpeed(cm, "speed:swim",   "innate speed:swim"),
             SpeedBurrow = GetAltSpeed(cm, "speed:burrow", "innate speed:burrow"),
             AdvancementTimeline = BuildService.GetAdvancementTimeline(),
-            Companion   = cm.Status.HasCompanion ? BuildCompanionSnapshot(c) : null,
+            Companions  = c.Companions.Select(BuildCompanionSnapshot).OfType<CompanionSnapshot>().ToList(),
         };
     }
 
@@ -302,11 +302,10 @@ public sealed class CharacterSnapshot
     private static int GetAltSpeed(CharacterManager cm, string statName, string innateName)
         => Math.Max(GetStatGroupValue(cm, statName), GetStatGroupValue(cm, innateName));
 
-    private static CompanionSnapshot? BuildCompanionSnapshot(Character c)
+    private static CompanionSnapshot? BuildCompanionSnapshot(Companion comp)
     {
         try
         {
-            var comp = c.Companion;
             var el   = comp.Element;
             if (el is null) return null;
 

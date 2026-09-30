@@ -4,6 +4,8 @@ namespace Builder.Data.Elements;
 
 public sealed class CompanionElement : ElementBase
 {
+	public override bool AllowMultipleElements => true;
+
 	public int Strength { get; set; }
 
 	public int Dexterity { get; set; }

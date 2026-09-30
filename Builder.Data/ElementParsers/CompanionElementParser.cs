@@ -12,6 +12,10 @@ public sealed class CompanionElementParser : ElementParser
 	public override ElementBase ParseElement(XmlNode elementNode)
 	{
 		CompanionElement companionElement = base.ParseElement(elementNode).Construct<CompanionElement>();
+		// Each acquisition represents a creature, even when two use the same template. Content
+		// that states its own answer keeps it: the base parser already read that setter.
+		if (!companionElement.ElementSetters.ContainsSetter("allow duplicate"))
+			companionElement.AllowDuplicate = true;
 		ValidateElementSetters(companionElement, "strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma", "type", "size", "challenge");
 		companionElement.Strength = companionElement.ElementSetters.GetSetter("strength").ValueAsInteger();
 		companionElement.Dexterity = companionElement.ElementSetters.GetSetter("dexterity").ValueAsInteger();

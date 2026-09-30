@@ -212,7 +212,9 @@ public class AbilitiesCollection : ObservableObject
       this.Wisdom,
       this.Charisma
     };
-    this.CalculateAvailablePoints();
+    // A newly constructed companion is not attached to its character yet.
+    // Reprocessing here would recursively construct the same companion again.
+    this.CalculateAvailablePoints(reprocessCharacter: false);
   }
 
   public int MinimumAbilityBaseScore
@@ -302,11 +304,11 @@ public class AbilitiesCollection : ObservableObject
     this.DecreaseAbilityCommand.OnCanExecuteChanged();
   }
 
-  public int CalculateAvailablePoints()
+  public int CalculateAvailablePoints(bool reprocessCharacter = true)
   {
     if (this.DisablePointsCalculation)
     {
-      if (CharacterManager.Current != null && CharacterManager.Current.Status.IsLoaded)
+      if (reprocessCharacter && CharacterManager.Current != null && CharacterManager.Current.Status.IsLoaded)
         CharacterManager.Current.ReprocessCharacter();
       return 0;
     }
@@ -322,7 +324,7 @@ public class AbilitiesCollection : ObservableObject
       this.AvailablePoints = 27 - (num1 + num7 + num3 + num4 + num5 + num6);
       this.IncreaseAbilityCommand.OnCanExecuteChanged();
       this.DecreaseAbilityCommand.OnCanExecuteChanged();
-      if (CharacterManager.Current != null && CharacterManager.Current.Status.IsLoaded)
+      if (reprocessCharacter && CharacterManager.Current != null && CharacterManager.Current.Status.IsLoaded)
         CharacterManager.Current.ReprocessCharacter();
       return this.AvailablePoints;
     }

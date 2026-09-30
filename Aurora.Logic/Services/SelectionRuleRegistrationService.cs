@@ -61,8 +61,7 @@ public static class SelectionRuleRegistrationService
         // A repeated selection needs its own acquisition record. Reusing the content
         // singleton would overwrite the first slot's SelectRule association.
         ElementBase toRegister = alreadyOwned
-            ? (source is Spell sourceSpell ? CloneSpell(sourceSpell) : DataManager.Current.ElementsCollection.GetFresh(source.Id))
-                ?? throw new InvalidOperationException($"Could not create a separate selection instance for '{source.Name}'.")
+            ? CloneSelectionElement(source)
             : source;
 
         // Validate first, then remove the previous slot value. A rejected replacement must
@@ -89,15 +88,35 @@ public static class SelectionRuleRegistrationService
         registrations[key] = toRegister;
     }
 
-    private static Spell CloneSpell(Spell source)
+    public static ElementBase CloneSelectionElement(ElementBase source)
     {
-        // GetFresh returns a base element and shares AcquisitionInfo. Preserve typed spell
-        // properties without deep-cloning the source XML document or the existing character graph.
-        var copy = source.ConstructFrom<Spell, Spell>();
+        // GetFresh erases the runtime type, including AllowMultipleElements overrides.
+        // Copy definition properties without copying the acquired character graph.
+        ElementBase copy;
+        try
+        {
+            copy = (ElementBase)Activator.CreateInstance(source.GetType())!;
+        }
+        catch (MissingMethodException ex)
+        {
+            throw new InvalidOperationException(
+                $"Could not create a separate selection instance for '{source.Name}'.", ex);
+        }
+
+        foreach (var property in source.GetType().GetProperties())
+            if (property.GetSetMethod() is not null && property.GetIndexParameters().Length == 0)
+                property.SetValue(copy, property.GetValue(source));
         ElementProvenance.CopyTo(source, copy);
         copy.RuleElements = new ElementBaseCollection();
+        copy.SelectionRuleListItems = new();
+        copy.Aquisition = new AquisitionInfo();
         copy.Rules = source.Rules.Select(rule => rule.Copy()).ToList();
         foreach (var rule in copy.GetSelectRules()) rule.RenewIdentifier();
+        // The progression manager adds and removes spellcasting sections by UniqueIdentifier, so
+        // a shared instance means the second copy never registers one and removing either copy
+        // takes the section away from both.
+        if (copy.SpellcastingInformation is { } spellcasting)
+            copy.SpellcastingInformation = spellcasting.CloneForSelection();
         return copy;
     }
 

@@ -4,9 +4,7 @@
 // MVID: 09D35420-8FA0-4A71-9A21-FF952C48F8A3
 // Assembly location: C:\Program Files (x86)\Aurora\Aurora Character Builder\Aurora Builder.exe
 
-using Builder.Core.Events;
 using Builder.Data.Elements;
-using Builder.Presentation.Events.Character;
 using Builder.Presentation.Models.NewFolder1;
 using Builder.Presentation.Services.Data;
 using System.IO;
@@ -14,10 +12,7 @@ using System.IO;
 #nullable disable
 namespace Builder.Presentation.Models;
 
-public class Companion : 
-  StatisticsBase,
-  ISubscriber<CharacterManagerElementRegistered>,
-  ISubscriber<CharacterManagerElementUnregistered>
+public class Companion : StatisticsBase
 {
   public Companion(CompanionElement element = null)
   {
@@ -25,7 +20,6 @@ public class Companion :
     this.Statistics = new CompanionStatistics(this);
     if (element != null)
       this.SetTemplate(element);
-    ApplicationContext.Current.EventAggregator.Subscribe((object) this);
   }
 
   public CompanionStatistics Statistics { get; }
@@ -48,7 +42,8 @@ public class Companion :
   {
     this.Element = element;
     this.CompanionName.OriginalContent = element.Name;
-    foreach (string file in Directory.GetFiles(DataManager.Current.UserDocumentsCompanionGalleryDirectory))
+    foreach (string file in Directory.Exists(DataManager.Current.UserDocumentsCompanionGalleryDirectory)
+      ? Directory.GetFiles(DataManager.Current.UserDocumentsCompanionGalleryDirectory) : System.Array.Empty<string>())
     {
       if (file.ToLower().Contains(element.Name.ToLower()))
       {
@@ -63,12 +58,11 @@ public class Companion :
     this.Abilities.Wisdom.BaseScore = element.Wisdom;
     this.Abilities.Charisma.BaseScore = element.Charisma;
     this.DisplayName = element.Name;
-    this.DisplayBuild = $"{element.Size} {element.CreatureType.ToLower()}, {element.Alignment.ToLower()}";
+    this.DisplayBuild = $"{element.Size} {element.CreatureType?.ToLower()}, {element.Alignment?.ToLower()}";
     this.Initiative.OriginalContent = this.Abilities.Dexterity.ModifierString;
     this.ArmorClass.OriginalContent = element.ArmorClass;
     this.Speed.OriginalContent = element.Speed;
-    this.MaxHp.OriginalContent = element.ElementSetters.GetSetter("hp").Value;
-    this.Statistics.Update(CharacterManager.Current.StatisticsCalculator.StatisticValues);
+    this.MaxHp.OriginalContent = element.HitPoints;
   }
 
   public override void Reset()
@@ -84,19 +78,4 @@ public class Companion :
     this.Statistics.Reset();
   }
 
-  public void OnHandleEvent(CharacterManagerElementRegistered args)
-  {
-    if (!(args.Element is CompanionElement element))
-      return;
-    this.SetTemplate(element);
-    CharacterManager.Current.Status.HasCompanion = this.Element != null;
-  }
-
-  public void OnHandleEvent(CharacterManagerElementUnregistered args)
-  {
-    if (!(args.Element is CompanionElement))
-      return;
-    this.Reset();
-    CharacterManager.Current.Status.HasCompanion = this.Element != null;
-  }
 }

@@ -1017,6 +1017,11 @@ regressions. Counts are across all 60 characters.
   Morningstar* keep identical state, choices and inventory, but reopening a saved
   copy reports a missing ASI option. This is the same family as the Art E
   stale-racial-ASI issue.
+  **Correction (2026-09-29):** stability after the first load did not prove that
+  load was correct. Isolated probes found repeated ASI selections losing their
+  concrete type and removing earlier ability increases; Daiyu actually lost
+  Intelligence +2. See the [character-load investigation](character-load-failures-2026-09-29.md)
+  for the paired reproduction, affected-character checks, and separate grant-cache defect.
 - **Real round-trip changes (2 characters):** *The Doc* **loses a multiclass
   level** (`ID_INTERNAL_MULTICLASS_LEVEL_9`) and gains
   `ID_RDDT_AA_CLASS_FEATURE_GUNSLINGER_BULLET_TIME`. *Remy Morningstar (Strahd)*
