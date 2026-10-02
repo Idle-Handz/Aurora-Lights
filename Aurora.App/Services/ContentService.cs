@@ -2,7 +2,6 @@ using Builder.Data.Files;
 using Builder.Presentation;
 using Builder.Presentation.Services.Content;
 using Builder.Presentation.Services.Data;
-using System.Text.RegularExpressions;
 
 namespace Aurora.App.Services;
 
@@ -16,14 +15,11 @@ public enum ContentUpdateOutcome { Updated, UpToDate, Failed }
 /// </summary>
 public sealed class ContentService
 {
-    private static readonly Regex IndexUrlAttributeRegex = new(
-        @"(?i)(\burl\s*=\s*[""'])http://",
-        RegexOptions.Compiled);
-
     private readonly CharacterService _characters;
     private readonly CharacterTabService _tabs;
     private readonly ContentDatabaseService _contentDb;
     private readonly CompendiumService _compendium;
+    private readonly ContentIndexUpdateService _indexUpdater;
     private readonly SemaphoreSlim _startupRefreshLock = new(1, 1);
     private readonly SemaphoreSlim _contentUpdateLock = new(1, 1);
     private bool _startupRefreshAttempted;
@@ -33,11 +29,22 @@ public sealed class ContentService
         CharacterTabService tabs,
         ContentDatabaseService contentDb,
         CompendiumService compendium)
+        : this(characters, tabs, contentDb, compendium, new ContentIndexUpdateService())
+    {
+    }
+
+    internal ContentService(
+        CharacterService characters,
+        CharacterTabService tabs,
+        ContentDatabaseService contentDb,
+        CompendiumService compendium,
+        ContentIndexUpdateService indexUpdater)
     {
         _characters = characters;
         _tabs = tabs;
         _contentDb = contentDb;
         _compendium = compendium;
+        _indexUpdater = indexUpdater;
     }
 
     // ── Additional custom directories ─────────────────────────────────────────
@@ -175,19 +182,15 @@ public sealed class ContentService
 
         try
         {
-            // Patch any http:// URLs inside installed index files before the DLL reads them.
-            // Android blocks cleartext HTTP; index files saved by the WPF app or authored
-            // with http:// URLs would otherwise fail silently on Android 9+.
-            UpgradeIndexFileProtocols(dir);
-
-            var updater = new ContentIndexUpdateService();
+            // The updater upgrades request URLs to HTTPS. Keep the publisher's index bytes
+            // intact: rewriting them makes unchanged downloads look like new content.
             var progress = new Progress<ContentIndexUpdateProgress>(update =>
             {
                 ContentUpdatedFileCount = update.UpdatedFileCount;
                 UpdateContentCheckStatus(update.StatusMessage, update.ProgressPercentage);
             });
 
-            ContentIndexUpdateResult result = await updater.UpdateAsync(
+            ContentIndexUpdateResult result = await _indexUpdater.UpdateAsync(
                     new ContentIndexUpdateRequest(dir, indexNames),
                     progress)
                 .ConfigureAwait(false);
@@ -355,31 +358,6 @@ public sealed class ContentService
 
         ContentReloadPending = false;
         Changed?.Invoke();
-    }
-
-    /// <summary>
-    /// Rewrites http:// to https:// in all url= attributes of every .index file under
-    /// <paramref name="directory"/>. Best-effort; individual failures are logged and skipped
-    /// so one bad file doesn't block upgrading the rest.
-    /// </summary>
-    private static void UpgradeIndexFileProtocols(string directory)
-    {
-        if (!Directory.Exists(directory)) return;
-        foreach (string path in Directory.EnumerateFiles(directory, "*.index", SearchOption.AllDirectories))
-        {
-            try
-            {
-                string text = File.ReadAllText(path);
-                if (!text.Contains("http://", StringComparison.Ordinal)) continue;
-                string upgraded = IndexUrlAttributeRegex.Replace(text, "$1https://");
-                if (upgraded != text)
-                    File.WriteAllText(path, upgraded);
-            }
-            catch (Exception ex)
-            {
-                DebugLogService.Instance.LogException(ex, $"ContentService.UpgradeIndexFileProtocols for '{path}'");
-            }
-        }
     }
 
     private static IReadOnlyList<string> GetInstalledIndexNames(string directory)

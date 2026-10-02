@@ -67,6 +67,7 @@
     <Compile Include="..\Aurora.App\Services\CharacterFileWriteCoordinator.cs" Link="Linked\CharacterFileWriteCoordinator.cs" />
     <Compile Include="..\Aurora.App\Services\CompendiumService.cs" Link="Linked\CompendiumService.cs" />
     <Compile Include="..\Aurora.App\Services\ContentDoctorService.cs" Link="Linked\ContentDoctorService.cs" />
+    <Compile Include="..\Aurora.App\Services\ContentService.cs" Link="Linked\ContentService.cs" />
     <Compile Include="..\Aurora.App\Services\AttackReminderCharacterService.cs" Link="Linked\AttackReminderCharacterService.cs" />
     <Compile Include="..\Aurora.App\Services\SessionAttackReminderService.cs" Link="Linked\SessionAttackReminderService.cs" />
     <Compile Include="..\Aurora.App\Services\SessionState.cs" Link="Linked\SessionState.cs" />
