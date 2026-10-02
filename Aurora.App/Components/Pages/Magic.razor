@@ -241,6 +241,7 @@
         _spellRuleGroups = spellRuleGroups;
         _selectedId = null;
         _spellDetail = null;
+        _selectedSpellModel = null;
         _spellDetailCache.Clear();
         BuildMagicModel();
     }
@@ -383,11 +384,16 @@
             return;
         }
 
-        var options = await Task.Run(() => BuildService.GetOptions(entry.Rule, entry.Number));
-        var diagnostics = SelectionRuleDiagnosticService.ExplainEmptyOptions(
-            entry.Rule,
-            entry.Number,
-            options.Count);
+        IReadOnlyList<ElementOption> options;
+        IReadOnlyList<SelectionRuleDiagnostic> diagnostics;
+        using (var scope = await CharacterContext.EnterAsync(tab))
+        {
+            if (_disposed || !ReferenceEquals(tab, Tabs.ActiveTab)) return;
+            options = await Task.Run(() => BuildService.GetOptions(entry.Rule, entry.Number));
+            diagnostics = SelectionRuleDiagnosticService.ExplainEmptyOptions(
+                entry.Rule, entry.Number, options.Count);
+        }
+        if (_disposed || !ReferenceEquals(tab, Tabs.ActiveTab)) return;
 
         var parameters = new DialogParameters
         {

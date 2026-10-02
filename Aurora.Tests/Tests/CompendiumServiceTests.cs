@@ -5,6 +5,71 @@ namespace Aurora.Tests.Tests
 
     public sealed class CompendiumServiceTests
     {
+        [Fact]
+        public void LoadedFallbackSkipsDatabaseWinnersBeforeReadingTheirDescriptions()
+        {
+            var covered = new LoadedElement("ID_COVERED", "Old loaded name");
+            var lowerCaseId = new LoadedElement("id_covered", "Different ordinal ID");
+            var missing = new LoadedElement("ID_MISSING", "Loaded-only entry");
+            var databaseEntry = Entry("Current database name", "Feat") with { Id = covered.Id };
+            var databaseEntries = new Dictionary<string, CompendiumEntryModel>(StringComparer.Ordinal)
+            {
+                [databaseEntry.Id] = databaseEntry
+            };
+
+            IReadOnlyList<CompendiumEntryModel> fallback = CompendiumService.BuildCatalogFromLoadedElements(
+                [covered, lowerCaseId, missing], databaseEntries);
+            foreach (var entry in fallback)
+                databaseEntries.TryAdd(entry.Id, entry);
+
+            databaseEntries[covered.Id].Should().BeSameAs(databaseEntry);
+            fallback.Select(entry => entry.Id).Should().Equal(lowerCaseId.Id, missing.Id);
+            covered.DescriptionReads.Should().Be(0, "a database-covered declaration is never projected");
+            lowerCaseId.DescriptionReads.Should().Be(1);
+            missing.DescriptionReads.Should().Be(1);
+        }
+
+        [Fact]
+        public void LoadedFallbackKeepsDuplicateOrderingAndWorksWithoutDatabaseEntries()
+        {
+            var elements = new[]
+            {
+                new LoadedElement("ID_DUPLICATE", "Zebra"),
+                new LoadedElement("ID_DUPLICATE", "Alpha"),
+                new LoadedElement("ID_OTHER", "Middle"),
+                new LoadedElement("ID_HIDDEN", "Hidden") { IncludeInCompendium = false },
+                new LoadedElement("ID_INTERNAL", "Internal") { Type = "Internal" }
+            };
+            var databaseEntries = new Dictionary<string, CompendiumEntryModel>(StringComparer.Ordinal);
+
+            IReadOnlyList<CompendiumEntryModel> fallback = CompendiumService.BuildCatalogFromLoadedElements(
+                elements, databaseEntries);
+            foreach (var entry in fallback)
+                databaseEntries.TryAdd(entry.Id, entry);
+
+            fallback.Select(entry => entry.Name).Should().Equal("Alpha", "Middle", "Zebra");
+            databaseEntries["ID_DUPLICATE"].Name.Should().Be("Alpha");
+            databaseEntries.Should().HaveCount(2);
+        }
+
+        private sealed class LoadedElement(string id, string name)
+        {
+            public string Id => id;
+            public string Name => name;
+            public string Type { get; init; } = "Feat";
+            public string Source => "Test Source";
+            public bool IncludeInCompendium { get; init; } = true;
+            public int DescriptionReads { get; private set; }
+            public string Description
+            {
+                get
+                {
+                    DescriptionReads++;
+                    return "<p>Loaded description.</p>";
+                }
+            }
+        }
+
         // Element loading lives on the DataManager singleton, so every service in the process has
         // to share the one CharacterService that owns it; a second one would try to initialize
         // global state that is already loaded. The caches under test are per-instance, so each test

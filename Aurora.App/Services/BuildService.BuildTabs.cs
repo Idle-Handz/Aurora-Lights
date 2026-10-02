@@ -98,7 +98,7 @@ public static partial class BuildService
             {
                 foreach (var rule in group.Rules)
                 {
-                    if (rule.CurrentName == null)
+                    if (rule.CurrentName == null && !rule.IsOptional)
                     {
                         next = new BuildGuidanceTarget(
                             BuildGuidanceActionKind.Selection,
@@ -114,7 +114,7 @@ public static partial class BuildService
 
         foreach (var entry in asi)
         {
-            if (entry.CurrentName == null)
+            if (entry.CurrentName == null && !entry.IsOptional)
             {
                 next = new BuildGuidanceTarget(
                     BuildGuidanceActionKind.Selection,
@@ -287,7 +287,7 @@ public static partial class BuildService
 
         // Overflow tabs — one per unrecognised type, alphabetical
         foreach (var (typeName, entries) in overflowEntries.OrderBy(kv => kv.Key))
-            tabs.Add(new BuildTabGroup(typeName, [new SelectionRuleGroup("", Sort(entries))], entries.Count(e => e.CurrentName == null)));
+            tabs.Add(new BuildTabGroup(typeName, [new SelectionRuleGroup("", Sort(entries))], entries.Count(e => e.CurrentName == null && !e.IsOptional)));
 
         return tabs;
     }
@@ -497,41 +497,8 @@ public static partial class BuildService
     /// Returns the tab label and rule label of the first unfilled required SelectionRule,
     /// or null when everything is complete for the current level.
     /// </summary>
-    public static BuildGuidanceTarget? GetNextRequiredStep()
-    {
-        var (tabs, asi, next) = GetBuildData(preferClassFirst: false);
-        if (next != null)
-            return next;
-
-        foreach (var tab in tabs)
-        {
-            foreach (var group in tab.RuleGroups)
-            {
-                foreach (var rule in group.Rules)
-                {
-                    if (rule.CurrentName == null)
-                        return new BuildGuidanceTarget(
-                            BuildGuidanceActionKind.Selection,
-                            tab.Label,
-                            rule.Label,
-                            rule.EntryKey,
-                            TargetLabel: $"{tab.Label} tab");
-                }
-            }
-        }
-        // Check ASI entries last
-        foreach (var entry in asi)
-        {
-            if (entry.CurrentName == null)
-                return new BuildGuidanceTarget(
-                    BuildGuidanceActionKind.Selection,
-                    "Ability Scores",
-                    entry.Label,
-                    entry.EntryKey,
-                    TargetLabel: "Ability Scores tab");
-        }
-        return null;
-    }
+    public static BuildGuidanceTarget? GetNextRequiredStep() =>
+        GetBuildData(preferClassFirst: false).NextStep;
 
     private static int CountUnresolved(IEnumerable<SelectionRuleGroup> groups) =>
         groups.SelectMany(g => g.Rules).Count(r => r.CurrentName == null && !r.IsOptional);

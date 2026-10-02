@@ -54,6 +54,7 @@ public static class DndBeyondJsonImporter
             int    totalLevel      = 0;
             string? primaryName   = null;
             int     primaryLevel  = 0;
+            bool    hasStartingClass = false;
 
             foreach (var cls in classes.EnumerateArray())
             {
@@ -73,10 +74,11 @@ public static class DndBeyondJsonImporter
                 }
 
                 bool isStarting = Bool(cls, "isStartingClass") ?? false;
-                if (isStarting || primaryName == null || lvl > primaryLevel)
+                if (isStarting || (!hasStartingClass && (primaryName == null || lvl > primaryLevel)))
                 {
                     primaryName  = name;
                     primaryLevel = lvl;
+                    hasStartingClass = isStarting;
                 }
             }
 
@@ -85,7 +87,7 @@ public static class DndBeyondJsonImporter
         }
 
         // ── Background ────────────────────────────────────────────────────────
-        if (ch.TryGetProperty("background", out var bg))
+        if (ch.TryGetProperty("background", out var bg) && bg.ValueKind == JsonValueKind.Object)
         {
             string? bgName = null;
 
@@ -146,10 +148,10 @@ public static class DndBeyondJsonImporter
         }
 
         // ── Spells ────────────────────────────────────────────────────────────
-        if (ch.TryGetProperty("spells", out var spellsEl))
+        if (ch.TryGetProperty("spells", out var spellsEl) && spellsEl.ValueKind == JsonValueKind.Object)
         {
             // Spells from class sources (older export format).
-            if (spellsEl.TryGetProperty("class", out var classSources))
+            if (spellsEl.TryGetProperty("class", out var classSources) && classSources.ValueKind == JsonValueKind.Array)
                 foreach (var src in classSources.EnumerateArray())
                     if (src.TryGetProperty("spells", out var list))
                         AddSpells(list, sheet);
@@ -161,7 +163,7 @@ public static class DndBeyondJsonImporter
         }
 
         // v5 API: class spells live in a top-level classSpells array.
-        if (ch.TryGetProperty("classSpells", out var classSpellsEl))
+        if (ch.TryGetProperty("classSpells", out var classSpellsEl) && classSpellsEl.ValueKind == JsonValueKind.Array)
             foreach (var entry in classSpellsEl.EnumerateArray())
                 if (entry.TryGetProperty("spells", out var list))
                     AddSpells(list, sheet);

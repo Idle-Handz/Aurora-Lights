@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { writeFileSync } from "node:fs";
 import { isAbsolute, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -76,7 +76,7 @@ export function findReleaseNotePaths({
           "--",
           `${releaseNotePrefix}*/**.md`,
         ]
-      : ["ls-files", "-z", `${releaseNotePrefix}*/**.md`];
+      : ["ls-tree", "-r", "--name-only", "-z", to, "--", releaseNotePrefix];
 
   const output = runGit("git", args, {
     cwd: repositoryRoot,
@@ -103,11 +103,14 @@ export function compileReleaseNotes({
     runGit,
   }).map((filePath) => {
     const category = categoryForPath(filePath);
-    const absolutePath = resolve(repositoryRoot, filePath);
+    const content = runGit("git", ["show", `${to}:${filePath}`], {
+      cwd: repositoryRoot,
+      encoding: "utf8",
+    });
 
     return {
       category: category.directory,
-      note: normalizeFragment(readFileSync(absolutePath, "utf8"), filePath),
+      note: normalizeFragment(content, filePath),
       path: filePath,
     };
   });

@@ -575,16 +575,23 @@ public sealed class CharacterService :
             string safeName = string.Concat(character.Name
                 .Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
             string path = DataManager.Current.GetCombinedCharacterFilePath(safeName);
-
-            // Avoid clobbering an existing file.
-            if (File.Exists(path))
-            {
-                string ts = DateTime.Now.ToString("yyyyMMdd-HHmmss");
-                path = DataManager.Current.GetCombinedCharacterFilePath($"{safeName}_{ts}");
-            }
-
+            // Reserve the name before the atomic writer replaces it. Checking File.Exists and
+            // falling back to a timestamp can overwrite a previous character from the same second.
+            using (var reservation = CreateAvailableCharacterFile(path))
+                path = reservation.Name;
             var file = new CharacterFile(path);
-            file.Save(character);
+            file.RefreshKnownDiskStamp();
+            try
+            {
+                file.Save(character);
+            }
+            catch
+            {
+                // Preserve anything another writer put at this path after the reservation.
+                if (!file.HasExternalFileChanges() && new FileInfo(path).Length == 0)
+                    DeleteFailedCharacterFile(path);
+                throw;
+            }
 
             CurrentCharacter     = character;
             CurrentCharacterFile = file;
@@ -634,29 +641,58 @@ public sealed class CharacterService :
 
         EnsureDirectoriesInitialized();
 
+        string? createdPath = null;
         try
         {
             string destDir  = DataManager.Current.UserDocumentsRootDirectory;
-            string destPath = Path.Combine(destDir, picked.FileName);
-
-            if (File.Exists(destPath))
-            {
-                var ts   = DateTime.Now.ToString("yyyyMMdd-HHmmss");
-                var stem = Path.GetFileNameWithoutExtension(picked.FileName);
-                destPath = Path.Combine(destDir, $"{stem}_{ts}.dnd5e");
-            }
+            string destPath = Path.Combine(destDir, Path.GetFileName(picked.FileName));
 
             // OpenReadAsync works with both plain file paths and Android content:// URIs.
             using var src  = await picked.OpenReadAsync();
-            using var dest = File.Create(destPath);
+            using var dest = CreateAvailableCharacterFile(destPath);
+            createdPath = dest.Name;
             await src.CopyToAsync(dest);
 
-            return (new CharacterFile(destPath), null);
+            return (new CharacterFile(createdPath), null);
         }
         catch (Exception ex)
         {
+            if (createdPath != null)
+                DeleteFailedCharacterFile(createdPath);
             DebugLogService.Instance.LogException(ex, "CharacterService.ImportCharacterFromFileAsync");
             return (null, $"Failed to import file: {ex.Message}");
+        }
+    }
+
+    private static FileStream CreateAvailableCharacterFile(string preferredPath)
+    {
+        string directory = Path.GetDirectoryName(preferredPath)!;
+        string stem = Path.GetFileNameWithoutExtension(preferredPath);
+        string extension = Path.GetExtension(preferredPath);
+        for (int number = 1; ; number++)
+        {
+            string candidate = number == 1
+                ? preferredPath
+                : Path.Combine(directory, $"{stem}_{number}{extension}");
+            try
+            {
+                // CreateNew is the collision check and reservation together: concurrent imports
+                // cannot truncate a name another import has already claimed.
+                return new FileStream(candidate, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+            }
+            catch (IOException) when (File.Exists(candidate))
+            {
+                // Try the next suffix only for an occupied path; surface other I/O failures.
+            }
+        }
+    }
+
+    private static void DeleteFailedCharacterFile(string path)
+    {
+        try { File.Delete(path); }
+        catch (Exception ex)
+        {
+            DebugLogService.Instance.LogException(ex, "CharacterService.DeleteFailedCharacterFile");
         }
     }
 
@@ -715,7 +751,7 @@ public sealed class CharacterService :
     {
         path = string.IsNullOrWhiteSpace(path)
             ? null
-            : path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            : Path.TrimEndingDirectorySeparator(path);
 
         if (path != null && !Directory.Exists(path))
         {

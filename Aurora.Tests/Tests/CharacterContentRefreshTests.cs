@@ -76,8 +76,29 @@ public sealed class CharacterContentRefreshTests
             loaded.Success.Should().BeTrue(loaded.Message);
             service.CurrentCharacter!.ArmorClass.Should().Be(14, "equipped armor must count immediately after load");
             var tabs = new CharacterTabService();
-            CharacterContext.ClaimAfterLoad(tabs.OpenTab(file, service.CurrentCharacter!));
+            var originalTab = tabs.OpenTab(file, service.CurrentCharacter!);
+            CharacterContext.ClaimAfterLoad(originalTab);
             service.IsPreloaded(file).Should().BeTrue();
+
+            // Switching tabs and recovering a failed save hydrate through CharacterContext,
+            // not CharacterService. They must restore the same equipped slots and AC.
+            string otherFilePath = Path.Combine(root, "other-character.dnd5e");
+            File.Copy(file.FilePath, otherFilePath);
+            var otherTab = new CharacterTab(new CharacterFile(otherFilePath));
+            using (await CharacterContext.EnterAsync(otherTab))
+            {
+                otherTab.Character!.Inventory.EquippedArmor.Should().NotBeNull();
+                otherTab.Character.ArmorClass.Should().Be(14, "a tab loaded from disk must restore equipped armor");
+            }
+            using (await CharacterContext.EnterAsync(originalTab))
+            {
+                originalTab.StateXml.Should().NotBeNull("the previous tab's unsaved state is restored from memory");
+                originalTab.Character!.Inventory.EquippedArmor.Should().NotBeNull();
+                originalTab.Character.ArmorClass.Should().Be(14, "a tab restored from its snapshot must restore equipped armor");
+                await CharacterContext.ReloadFromDiskAsync(originalTab);
+                originalTab.Character.Inventory.EquippedArmor.Should().NotBeNull();
+                originalTab.Character.ArmorClass.Should().Be(14, "save recovery must restore equipped armor");
+            }
             var oldBase = catalog.GetElement("ID_INTERNAL_GRANTS_CHARACTER_BASE");
 
             // This is the app sequence: close tab, replace the catalog, reopen the

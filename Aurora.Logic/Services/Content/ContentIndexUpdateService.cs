@@ -195,17 +195,15 @@ public sealed class ContentIndexUpdateService
             // elsewhere - sending those validators makes the server answer "not modified" forever,
             // and the stale file can never catch up. Trust the entry only while it still describes
             // the local file, and ask unconditionally when it does not.
-            bool cacheDescribesLocalFile = cache?.ContentLength is not { } cachedLength
-                || FileLength(destinationPath) == cachedLength;
-            if (!cacheDescribesLocalFile) cache = null;
+            if (cache is not null &&
+                !await CacheMatchesFileAsync(cache, destinationPath, cancellationToken).ConfigureAwait(false))
+                cache = null;
 
             using var message = new HttpRequestMessage(HttpMethod.Get, url);
             if (!string.IsNullOrWhiteSpace(cache?.ETag))
                 message.Headers.TryAddWithoutValidation("If-None-Match", cache.ETag);
             if (cache?.LastModified is { } lastModified)
                 message.Headers.IfModifiedSince = lastModified;
-            else if (localFileExists && cacheDescribesLocalFile)
-                message.Headers.IfModifiedSince = File.GetLastWriteTimeUtc(destinationPath);
 
             state.Report($"Checking {entry.Name}...", currentFileName: entry.Name);
             using HttpResponseMessage response = await _httpClient.SendAsync(
@@ -233,6 +231,10 @@ public sealed class ContentIndexUpdateService
             byte[] remoteBytes = await response.Content.ReadAsByteArrayAsync(downloadCts.Token)
                 .ConfigureAwait(false);
 
+            // A successful HTTP status can still carry a truncated document or an error page.
+            // Validate before replacing the last usable file or remembering its validators.
+            ValidateDownloadedDocument(destinationPath, remoteBytes);
+
             bool changed = true;
             if (File.Exists(destinationPath))
             {
@@ -251,7 +253,7 @@ public sealed class ContentIndexUpdateService
 
             try
             {
-                await WriteCacheAsync(cachePath, CreateCacheEntry(response), cancellationToken).ConfigureAwait(false);
+                await WriteCacheAsync(cachePath, CreateCacheEntry(response, remoteBytes), cancellationToken).ConfigureAwait(false);
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
             {
@@ -360,6 +362,10 @@ public sealed class ContentIndexUpdateService
             {
                 if (File.Exists(targetPath))
                 {
+                    if (Path.GetExtension(targetPath).Equals(".xml", StringComparison.OrdinalIgnoreCase) &&
+                        Aurora.Content.Contracts.LocalCorrectionDocument.HasMetadata(File.ReadAllText(targetPath)))
+                        throw new InvalidDataException("Embedded local correction metadata protects this file from automatic deletion. Review the local correction before retiring it.");
+
                     File.Delete(targetPath);
                     state.MarkLocalChange(obsolete.Name);
                 }
@@ -452,11 +458,34 @@ public sealed class ContentIndexUpdateService
         File.Move(tempPath, destinationPath, overwrite: true);
     }
 
-    private static long? FileLength(string path)
+    private static async Task<bool> CacheMatchesFileAsync(
+        HttpCacheEntry cache, string path, CancellationToken cancellationToken)
     {
-        try { return new FileInfo(path).Length; }
-        catch (IOException) { return null; }
-        catch (UnauthorizedAccessException) { return null; }
+        // Length alone cannot detect same-size edits or restored files. Older cache entries
+        // have no fingerprint; fetch once without validators to establish a trustworthy one.
+        if (string.IsNullOrEmpty(cache.ContentHash)) return false;
+        try
+        {
+            await using var stream = File.OpenRead(path);
+            if (cache.ContentLength is { } length && stream.Length != length) return false;
+            byte[] hash = await SHA256.HashDataAsync(stream, cancellationToken).ConfigureAwait(false);
+            return string.Equals(Convert.ToHexString(hash), cache.ContentHash, StringComparison.Ordinal);
+        }
+        catch (IOException) { return false; }
+        catch (UnauthorizedAccessException) { return false; }
+    }
+
+    private static void ValidateDownloadedDocument(string destinationPath, byte[] bytes)
+    {
+        string extension = Path.GetExtension(destinationPath);
+        bool isIndex = extension.Equals(".index", StringComparison.OrdinalIgnoreCase);
+        if (!isIndex && !extension.Equals(".xml", StringComparison.OrdinalIgnoreCase)) return;
+
+        using var stream = new MemoryStream(bytes, writable: false);
+        using var reader = XmlReader.Create(stream, new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit });
+        XDocument document = XDocument.Load(reader);
+        if (isIndex && document.Root?.Name != "index")
+            throw new InvalidDataException("The downloaded file is not an Aurora index.");
     }
 
     private static string GetCachePath(string rootDirectory, string url)
@@ -494,11 +523,12 @@ public sealed class ContentIndexUpdateService
             .ConfigureAwait(false);
     }
 
-    private static HttpCacheEntry CreateCacheEntry(HttpResponseMessage response) =>
+    private static HttpCacheEntry CreateCacheEntry(HttpResponseMessage response, byte[] bytes) =>
         new(
             ETag: response.Headers.ETag?.ToString(),
-            LastModified: response.Content.Headers.LastModified ?? response.Headers.Date,
-            ContentLength: response.Content.Headers.ContentLength);
+            LastModified: response.Content.Headers.LastModified,
+            ContentLength: bytes.LongLength,
+            ContentHash: Convert.ToHexString(SHA256.HashData(bytes)));
 
     private sealed record ParsedIndex(
         IndexEntry? UpdateFile,
@@ -510,7 +540,7 @@ public sealed class ContentIndexUpdateService
         public bool IsIndex => Name.EndsWith(".index", StringComparison.OrdinalIgnoreCase);
     }
 
-    private sealed record HttpCacheEntry(string? ETag, DateTimeOffset? LastModified, long? ContentLength);
+    private sealed record HttpCacheEntry(string? ETag, DateTimeOffset? LastModified, long? ContentLength, string? ContentHash = null);
 
     private enum DownloadResult
     {

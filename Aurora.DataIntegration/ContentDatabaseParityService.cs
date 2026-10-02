@@ -72,7 +72,9 @@ public sealed class ContentDatabaseParityService
         {
             DataManager.Current.InitializeDirectories();
 
-            XmlSnapshotResult xmlSnapshot = await LoadXmlSnapshotAsync(cancellationToken);
+            // Prepared snapshots read and parse the entire catalog synchronously. Keep that work
+            // off the UI thread even though the raw XML path also has asynchronous file reads.
+            XmlSnapshotResult xmlSnapshot = await Task.Run(() => LoadXmlSnapshotAsync(cancellationToken), cancellationToken);
             if (!xmlSnapshot.Success)
             {
                 return new ContentDatabaseParityReport(

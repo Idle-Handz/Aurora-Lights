@@ -168,6 +168,7 @@ public sealed class ContentDatabaseService
             {
                 var fail = AuroraImportResult.Failed("Content database path could not be determined.");
                 LastResult = fail;
+                SyncState = ContentDatabaseSyncState.Failed;
                 IsStale = false;
                 StateChanged?.Invoke();
                 return fail;
@@ -178,6 +179,7 @@ public sealed class ContentDatabaseService
             {
                 var fail = AuroraImportResult.Failed($"Content directory not found: {ContentDirectory}");
                 LastResult = fail;
+                SyncState = ContentDatabaseSyncState.Failed;
                 IsStale = false;
                 StateChanged?.Invoke();
                 return fail;

@@ -78,7 +78,7 @@ public sealed class ContentService
     /// </summary>
     public void AddDirectory(string path)
     {
-        path = path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        path = Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));
         var list = ApplicationContext.Current.Settings.AdditionalCustomDirectories;
         if (list.Any(d => d.Equals(path, StringComparison.OrdinalIgnoreCase))) return;
         if (path.Equals(BuiltInCustomDirectory, StringComparison.OrdinalIgnoreCase)) return;
@@ -136,7 +136,7 @@ public sealed class ContentService
             if (indexFile is null)
                 return (false, "Failed to download index file — server returned no content.");
 
-            string savePath = Path.Combine(GetBuiltInCustomDirectory(), indexFile.Info.UpdateFilename);
+            string savePath = ResolveInstalledIndexPath(GetBuiltInCustomDirectory(), indexFile.Info.UpdateFilename);
             indexFile.SaveContent(new FileInfo(savePath));
 
             Changed?.Invoke();
@@ -184,7 +184,7 @@ public sealed class ContentService
         {
             // The updater upgrades request URLs to HTTPS. Keep the publisher's index bytes
             // intact: rewriting them makes unchanged downloads look like new content.
-            var progress = new Progress<ContentIndexUpdateProgress>(update =>
+            var progress = new InlineProgress(update =>
             {
                 ContentUpdatedFileCount = update.UpdatedFileCount;
                 UpdateContentCheckStatus(update.StatusMessage, update.ProgressPercentage);
@@ -198,6 +198,8 @@ public sealed class ContentService
             string duration = FormatDuration(result.Duration);
             ContentUpdateProgress = 100;
             ContentUpdatedFileCount = result.UpdatedFileCount;
+            if (result.Updated)
+                ContentReloadPending = true;
 
             string checkedSummary = $"Checked {result.CheckedEntryCount} content entries across {result.IndexFileCount} index file(s) in {duration}";
             string failureSuffix = result.FailedFileCount > 0
@@ -243,7 +245,7 @@ public sealed class ContentService
         try
         {
             string dir = GetBuiltInCustomDirectory();
-            string path = Path.Combine(dir, filename);
+            string path = ResolveInstalledIndexPath(dir, filename);
             if (File.Exists(path))
             {
                 File.Delete(path);
@@ -367,6 +369,26 @@ public sealed class ContentService
                         .Select(Path.GetFileName)
                         .Where(n => n != null)
                         .ToList()!;
+    }
+
+    internal static string ResolveInstalledIndexPath(string directory, string filename)
+    {
+        // The update filename is supplied by downloaded XML. Installation and removal
+        // both accept one .index basename, never a publisher-selected filesystem path.
+        if (string.IsNullOrWhiteSpace(filename) ||
+            filename.IndexOfAny(['/', '\\', ':']) >= 0 ||
+            filename.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 ||
+            !filename.EndsWith(".index", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidDataException("An installed source must have a .index filename without a directory path.");
+        return Path.Combine(Path.GetFullPath(directory), filename);
+    }
+
+    // Progress<T> posts callbacks asynchronously. Updating service state inline ensures
+    // a late progress callback cannot replace the completed result; UI subscribers marshal
+    // Changed themselves, just as they do for the background startup check.
+    private sealed class InlineProgress(Action<ContentIndexUpdateProgress> report) : IProgress<ContentIndexUpdateProgress>
+    {
+        public void Report(ContentIndexUpdateProgress value) => report(value);
     }
 
     private void UpdateContentCheckStatus(string? statusMessage, int? progressPercentage)

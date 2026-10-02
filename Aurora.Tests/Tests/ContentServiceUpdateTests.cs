@@ -11,6 +11,28 @@ namespace Aurora.Tests.Tests;
 
 public sealed class ContentServiceUpdateTests
 {
+    [Theory]
+    [InlineData("../outside.index")]
+    [InlineData("..\\outside.index")]
+    [InlineData("C:\\outside.index")]
+    [InlineData("/outside.index")]
+    [InlineData("source.index:stream")]
+    [InlineData("character.dnd5e")]
+    [InlineData("")]
+    public void InstalledSourceNamesCannotEscapeTheContentDirectory(string filename)
+    {
+        Action resolve = () => ContentService.ResolveInstalledIndexPath(Path.GetTempPath(), filename);
+        resolve.Should().Throw<InvalidDataException>();
+    }
+
+    [Fact]
+    public void InstalledSourceNamesPreserveNormalPublisherFilenames()
+    {
+        string root = Path.GetFullPath(Path.GetTempPath());
+        ContentService.ResolveInstalledIndexPath(root, "The Book of Xellarant.index")
+            .Should().Be(Path.Combine(root, "The Book of Xellarant.index"));
+    }
+
     [Fact]
     public async Task StartupChecksPreservePublishedIndexesAndOnlyNotifyForRealChanges()
     {
@@ -75,12 +97,45 @@ public sealed class ContentServiceUpdateTests
             File.ReadAllBytes(indexPath).Should().Equal(indexBytes);
             handler.Requests.Should().HaveCount(6);
             handler.Requests.Should().OnlyContain(url => url.Scheme == "https");
+
+            changed.ClearContentReloadPending();
+            handler.BookXml = "<elements><info><name>Manually checked update</name></info></elements>";
+            var manual = await changed.CheckForUpdatesAsync();
+            manual.Outcome.Should().Be(ContentUpdateOutcome.Updated);
+            changed.ContentReloadPending.Should().BeTrue("manual downloads also need a database refresh");
+
+            // Delay SynchronizationContext.Post callbacks until the check is complete. Progress<T>
+            // used to leave these queued, allowing them to overwrite the final status afterwards.
+            var queuedContext = new QueuedContext();
+            SynchronizationContext? previousContext = SynchronizationContext.Current;
+            Task<(ContentUpdateOutcome Outcome, string Message)> check;
+            try
+            {
+                SynchronizationContext.SetSynchronizationContext(queuedContext);
+                check = changed.CheckForUpdatesAsync();
+            }
+            finally { SynchronizationContext.SetSynchronizationContext(previousContext); }
+            await check;
+            string? completedStatus = changed.ContentUpdateStatus;
+            queuedContext.Drain();
+            changed.ContentUpdateStatus.Should().Be(completedStatus);
+            changed.ContentUpdateProgress.Should().Be(100);
         }
         finally
         {
             settings.DocumentsRootDirectory = originalRoot;
             DataManager.Current.InitializeDirectories();
             Directory.Delete(root, recursive: true);
+        }
+    }
+
+    private sealed class QueuedContext : SynchronizationContext
+    {
+        private readonly ConcurrentQueue<(SendOrPostCallback Callback, object? State)> callbacks = new();
+        public override void Post(SendOrPostCallback callback, object? state) => callbacks.Enqueue((callback, state));
+        public void Drain()
+        {
+            while (callbacks.TryDequeue(out var pending)) pending.Callback(pending.State);
         }
     }
 

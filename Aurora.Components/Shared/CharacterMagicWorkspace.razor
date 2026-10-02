@@ -229,7 +229,8 @@
                             @foreach (var ent in entries)
                             {
                                 <div class="magic-known-row"
-                                     @ondblclick="() => { if (OnChangeKnownSpell.HasDelegate && !Busy && !ent.IsReadOnly) OnChangeKnownSpell.InvokeAsync(ent.Id); }">
+                                     @ondblclick="() => OnChangeKnownSpell.HasDelegate && !Busy && !ent.IsReadOnly
+                                         ? OnChangeKnownSpell.InvokeAsync(ent.Id) : Task.CompletedTask">
                                     <div class="magic-known-label">@ent.Label</div>
                                     <div class="magic-known-value @(string.IsNullOrWhiteSpace(ent.CurrentName) ? "empty" : string.Empty)">
                                         @(ent.CurrentName ?? "-")
