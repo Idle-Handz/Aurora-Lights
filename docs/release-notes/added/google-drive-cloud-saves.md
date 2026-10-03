@@ -1,0 +1,1 @@
+Characters now includes a Cloud Saves section for Google Drive on desktop. Open and save cloud characters with session state included; Drive remains authoritative, and newer cloud saves replace the local working copy while displaced edits are kept for recovery. Google desktop sign-in configuration is required.

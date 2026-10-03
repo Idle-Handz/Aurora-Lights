@@ -1227,8 +1227,19 @@
         PersistSessionChanges();
     }
 
-    private void SaveSession()
+    private async Task SaveSession()
     {
+        if (_tab?.CloudSession is not null)
+        {
+            var error = await BuildService.SaveTabAsync(_tab);
+            if (error is not null) Snackbar.Add(error, Severity.Error);
+            else
+            {
+                Tabs.MarkClean(_tab);
+                Snackbar.Add(_tab.CloudNotice ?? "Saved to Google Drive.", Severity.Success);
+            }
+            return;
+        }
         if (PersistSessionChanges())
         {
             Snackbar.Add("Session saved.", Severity.Success);
@@ -1279,6 +1290,7 @@
 
         if (sessionSaved)
         {
+            if (tab.CloudSession is not null) Tabs.MarkDirty(tab);
             _saveError = null;
             return true;
         }

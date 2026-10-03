@@ -1,0 +1,124 @@
+@using Builder.Presentation.Services.Storage
+@inject CloudCharacterService Cloud
+@inject CharacterTabService Tabs
+@inject ISnackbar Snackbar
+@implements IDisposable
+
+<MudPaper Class="mt-6 pa-4" Outlined="true">
+    <MudText Typo="Typo.h5">Cloud Saves</MudText>
+    <MudText Typo="Typo.body2" Class="mb-3">Open and save characters in Google Drive. Drive is the main save; this device keeps a working copy.</MudText>
+    @if (!Cloud.IsSupported)
+    {
+        <MudText>Google Drive sign-in is currently available on desktop.</MudText>
+    }
+    else if (!Cloud.IsConfigured)
+    {
+        <MudAlert Severity="Severity.Info">Google Drive sign-in has not been configured for this installation.</MudAlert>
+        <MudButton OnClick="Configure" Disabled="_busy">Set up Google Drive</MudButton>
+    }
+    else if (!Cloud.IsConnected)
+    {
+        <MudButton OnClick="Connect" Disabled="_busy" Variant="Variant.Filled" Color="Color.Primary">
+            Connect Google Drive
+        </MudButton>
+    }
+    else
+    {
+        <MudText Typo="Typo.body2">@Cloud.AccountName</MudText>
+        <div class="d-flex flex-wrap gap-2 my-3">
+            <MudButton OnClick="Refresh" Disabled="_busy" StartIcon="@Icons.Material.Filled.Refresh">Refresh</MudButton>
+            <MudButton OnClick="Upload" Disabled="_busy" StartIcon="@Icons.Material.Filled.CloudUpload"
+                       Variant="Variant.Filled" Color="Color.Primary">Upload Character</MudButton>
+            <MudButton OnClick="Connect" Disabled="_busy">Reconnect</MudButton>
+            <MudButton OnClick="Disconnect" Disabled="@(_busy || Tabs.Tabs.Any(t => t.CloudSession is not null))">
+                Disconnect
+            </MudButton>
+        </div>
+        @if (_files.Count == 0 && !_busy)
+        {
+            <MudText>No cloud characters yet. Upload a .dnd5e file to get started.</MudText>
+        }
+        @foreach (var file in _files)
+        {
+            <div @key="file.Reference.DocumentId" class="d-flex align-center justify-space-between pa-3"
+                 style="border-bottom: 1px solid var(--mud-palette-divider); gap: 16px;">
+                <div>
+                    <MudText>@System.IO.Path.GetFileNameWithoutExtension(file.FileName)</MudText>
+                    <MudText Typo="Typo.caption">Saved @file.ModifiedTime?.ToLocalTime().ToString("g")</MudText>
+                </div>
+                <MudButton Disabled="_busy" OnClick="@(() => Open(file))">Open</MudButton>
+            </div>
+        }
+    }
+    @if (_busy)
+    {
+        <MudProgressLinear Indeterminate="true" Class="my-2" />
+        <MudText Typo="Typo.body2">@_status</MudText>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+    }
+    @if (_error is not null)
+    {
+        <MudAlert Severity="Severity.Warning" Class="mt-2">@_error</MudAlert>
+    }
+</MudPaper>
+
+@code {
+    [Parameter] public EventCallback<(CharacterDocumentMetadata Metadata, CancellationToken Token)> OnOpen { get; set; }
+    private IReadOnlyList<CharacterDocumentMetadata> _files = [];
+    private bool _busy;
+    private string? _error;
+    private string _status = "";
+    private CancellationTokenSource? _operation;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Cloud.IsConnected) await Refresh();
+        else if (Cloud.IsConfigured && Cloud.IsSupported)
+        {
+            // Restore a previous connection without opening a browser. Refusal simply shows Connect.
+            try { await Cloud.ConnectAsync(interactive: false); await Refresh(); }
+            catch { }
+        }
+    }
+
+    private Task Configure() => Run("Setting up Google Drive...", async ct =>
+    {
+        await Cloud.ImportConfigurationAsync();
+    });
+    private Task Connect() => Run("Complete sign-in in your browser...", async ct =>
+    {
+        await Cloud.ConnectAsync(interactive: true, ct);
+        _files = await Cloud.ListAsync(ct);
+    });
+    private Task Refresh() => Run("Loading cloud characters...", async ct => _files = await Cloud.ListAsync(ct));
+    private Task Upload() => Run("Uploading character...", async ct =>
+    {
+        var created = await Cloud.UploadFileAsync(ct);
+        if (created is not null)
+        {
+            _files = await Cloud.ListAsync(ct);
+            Snackbar.Add("Character saved to Google Drive.", Severity.Success);
+        }
+    });
+    private Task Open(CharacterDocumentMetadata file) => Run("Loading Google Drive save...", async ct =>
+        await OnOpen.InvokeAsync((file, ct)));
+    private Task Disconnect() => Run("Disconnecting...", async ct =>
+    {
+        await Cloud.DisconnectAsync();
+        _files = [];
+    });
+    private async Task Run(string status, Func<CancellationToken, Task> operation)
+    {
+        if (_busy) return;
+        _busy = true;
+        _status = status;
+        _error = null;
+        _operation = new CancellationTokenSource();
+        try { await operation(_operation.Token); }
+        catch (OperationCanceledException) { _error = "Cancelled. Any unsent changes remain on this device."; }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; _operation.Dispose(); _operation = null; }
+    }
+    private void Cancel() => _operation?.Cancel();
+    public void Dispose() { _operation?.Cancel(); }
+}

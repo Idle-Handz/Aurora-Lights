@@ -38,7 +38,8 @@ public sealed record CharacterDocumentMetadata(
     string ProviderVersion,
     string? ContentHash,
     long? Size,
-    DateTimeOffset? ModifiedTime);
+    DateTimeOffset? ModifiedTime,
+    string? EntityTag = null);
 
 /// <summary>A portable character file and the provider revision it came from.</summary>
 public sealed record CharacterDocument(CharacterDocumentMetadata Metadata, byte[] Content);
@@ -52,7 +53,7 @@ public sealed class CharacterDocumentConflictException : IOException
         CharacterDocumentMetadata expected,
         CharacterDocumentMetadata actual)
         : base($"{actual.FileName} changed in cloud storage after Aurora opened it. " +
-               "Reload the Drive copy or save this character as a new file.")
+               "The current Drive copy must be loaded before saving.")
     {
         Expected = expected;
         Actual = actual;
