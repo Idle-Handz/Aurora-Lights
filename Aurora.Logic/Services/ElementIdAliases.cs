@@ -139,8 +139,12 @@ public static class ElementIdAliases
     public static ElementBase? Resolve(ElementBaseCollection collection, string? savedId)
     {
         if (collection == null || string.IsNullOrWhiteSpace(savedId)) return null;
-        var element = collection.GetElement(savedId);
+        // A spell proxy is built when something first asks for its category, so a saved character
+        // naming one directly misses until that happens. ResolveOrBuild builds it rather than
+        // letting the element be reported as lost; only a proxy-shaped id can trigger that.
+        var element = Data.SpellProxyCatalog.ResolveOrBuild(collection, savedId);
         if (element != null) return element;
-        return TryGetTarget(savedId, out string target) ? collection.GetElement(target) : null;
+        return TryGetTarget(savedId, out string target)
+            ? Data.SpellProxyCatalog.ResolveOrBuild(collection, target) : null;
     }
 }

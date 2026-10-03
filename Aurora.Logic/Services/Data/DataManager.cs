@@ -774,8 +774,16 @@ public sealed class DataManager
       (IEnumerable<ElementBase>) internalGen.GenerateInternalProficiency((IEnumerable<ElementBase>) collection));
     collection.AddRange(
       (IEnumerable<ElementBase>) internalGen.GenerateInternalAsi((IEnumerable<ElementBase>) collection));
-    collection.AddRange(
-      (IEnumerable<ElementBase>) internalGen.GenerateInternalSpells((IEnumerable<ElementBase>) collection));
+    // The spell proxies are a cross product of every spell and every spellcasting list - 79,032
+    // items for the shipped catalog. Their only consumer is the "Add Custom Feature" picker, so
+    // they are built per category when something first asks, not on every launch. Only a run over
+    // the live catalog primes it; the database loader post-processes a candidate it copies from
+    // afterwards, and primes the real collection itself once that copy is in place.
+    if (!SpellProxyCatalog.Enabled)
+      collection.AddRange(
+        (IEnumerable<ElementBase>) internalGen.GenerateInternalSpells((IEnumerable<ElementBase>) collection));
+    else if (object.ReferenceEquals(collection, this.ElementsCollection))
+      SpellProxyCatalog.Prime(collection, internalGen.GetSpellcastingListNames((IEnumerable<ElementBase>) collection), (IEnumerable<string>) null);
     if (Debugger.IsAttached || ApplicationContext.Current.IsInDeveloperMode)
       collection.AddRange(
         (IEnumerable<ElementBase>) internalGen.GenerateInternalIgnore((IEnumerable<ElementBase>) collection));

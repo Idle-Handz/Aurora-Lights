@@ -274,6 +274,7 @@ internal static class DbElementLoader
         {
             DebugLogService.Instance.Info("DbElementLoader: loading elements from DB.", dbPath);
             var candidate = new ElementBaseCollection();
+            HashSet<string>? unavailableIds = null;
             DbLoadResult result = await Task.Run(() => LoadFromDb(dbPath, candidate));
             if (result.Success && runPostProcessing)
             {
@@ -284,6 +285,7 @@ internal static class DbElementLoader
                 // make a deliberately unavailable identity usable again.
                 var unavailable = ContentDatabaseReader.ReadUnavailableIds(dbPath)
                     .Select(id => id.Trim()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                unavailableIds = unavailable;
                 foreach (var element in candidate.Where(element => unavailable.Contains(element.Id.Trim())).ToArray())
                     candidate.Remove(element);
                 DebugLogService.Instance.Info(
@@ -302,6 +304,12 @@ internal static class DbElementLoader
                 committed = true;
                 if (runPostProcessing)
                 {
+                    // Post-processing ran over the candidate; the proxies it defers are built later
+                    // and must be built into this collection, honouring the same exclusions the
+                    // sweep above applied to the eagerly generated ones.
+                    if (SpellProxyCatalog.Enabled)
+                        SpellProxyCatalog.Prime(target,
+                            new InternalElementsGenerator().GetSpellcastingListNames(target), unavailableIds);
                     _lookups = PendingLookups.Value!;
                     if (_lookups.PublishFallback is { } publishFallback)
                     {

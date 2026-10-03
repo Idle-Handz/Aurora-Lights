@@ -249,15 +249,37 @@ public class InternalElementsGenerator
     return internalAsi;
   }
 
-  public List<ElementBase> GenerateInternalSpells(IEnumerable<ElementBase> content)
+  /// <summary>
+  /// The spellcasting list names the spell proxies are generated across, with the unnamed list
+  /// first. Deriving these without building any proxy is what lets the proxies themselves be
+  /// built on demand; see <see cref="SpellProxyCatalog"/>.
+  /// </summary>
+  public List<string> GetSpellcastingListNames(IEnumerable<ElementBase> content)
+  {
+    List<string> names = content == null
+      ? new List<string>()
+      : content.Where<ElementBase>((Func<ElementBase, bool>) (x => x.HasSpellcastingInformation && !x.SpellcastingInformation.IsExtension && !x.SpellcastingInformation.ElementHeader.Id.Equals("ID_WOTC_UA20170313_CLASS_FEATURE_MYSTIC_PSIONICS"))).Select<ElementBase, SpellcastingInformation>((Func<ElementBase, SpellcastingInformation>) (x => x.SpellcastingInformation)).ToList<SpellcastingInformation>().Select<SpellcastingInformation, string>((Func<SpellcastingInformation, string>) (x => x.Name)).Distinct<string>().ToList<string>();
+    names.Insert(0, "");
+    return names;
+  }
+
+  /// <summary>
+  /// One proxy item per spell per spellcasting list. That cross product is 79,032 items for the
+  /// shipped catalog, so <paramref name="includeList"/> narrows it to the lists actually wanted;
+  /// passing null keeps the whole product.
+  /// </summary>
+  public List<ElementBase> GenerateInternalSpells(IEnumerable<ElementBase> content, Func<string, bool> includeList = null)
   {
     List<ElementBase> internalSpells = new List<ElementBase>();
     if (content == null)
       return internalSpells;
     List<Spell> list1 = content.Where<ElementBase>((Func<ElementBase, bool>) (x => x.Type.Equals("Spell"))).Cast<Spell>().ToList<Spell>();
     List<Source> list2 = content.Where<ElementBase>((Func<ElementBase, bool>) (x => x.Type.Equals("Source"))).Cast<Source>().ToList<Source>();
-    List<string> list3 = content.Where<ElementBase>((Func<ElementBase, bool>) (x => x.HasSpellcastingInformation && !x.SpellcastingInformation.IsExtension && !x.SpellcastingInformation.ElementHeader.Id.Equals("ID_WOTC_UA20170313_CLASS_FEATURE_MYSTIC_PSIONICS"))).Select<ElementBase, SpellcastingInformation>((Func<ElementBase, SpellcastingInformation>) (x => x.SpellcastingInformation)).ToList<SpellcastingInformation>().Select<SpellcastingInformation, string>((Func<SpellcastingInformation, string>) (x => x.Name)).Distinct<string>().ToList<string>();
-    list3.Insert(0, "");
+    List<string> list3 = this.GetSpellcastingListNames(content);
+    if (includeList != null)
+      list3 = list3.Where<string>(includeList).ToList<string>();
+    if (list3.Count == 0)
+      return internalSpells;
     foreach (Spell spell in list1)
     {
       Spell element = spell;

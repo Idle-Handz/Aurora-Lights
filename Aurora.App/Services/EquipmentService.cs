@@ -626,6 +626,9 @@ public static class EquipmentService
             var cat = GetCustomFeatureCategory(e);
             if (cat != null) cats.Add(cat);
         }
+        // The spell proxy categories are offered before anything builds them, so the picker lists
+        // them without the catalog carrying 79,032 items it may never be asked for.
+        foreach (var cat in SpellProxyCatalog.Categories) cats.Add(cat);
         return cats.ToList();
     }
 
@@ -655,6 +658,10 @@ public static class EquipmentService
     public static IReadOnlyList<ItemSearchResult> SearchCustomFeatures(
         string category, string query, IReadOnlySet<string>? ownedElementIds = null)
     {
+        // Build this category's spell proxies if they are not in the catalog yet. One category is
+        // 2,136 items against 79,032 for every category at once, and it happens once per session.
+        SpellProxyCatalog.EnsureCategory(category);
+
         IEnumerable<Builder.Data.ElementBase> source = DataManager.Current.ElementsCollection.Where(e =>
             string.Equals(GetCustomFeatureCategory(e), category, StringComparison.OrdinalIgnoreCase));
 
