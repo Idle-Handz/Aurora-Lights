@@ -557,7 +557,7 @@ else if (_workflowSuggestion != null)
             @if (_customFeatures.Count == 0)
             {
                 <MudText Color="Color.Secondary" Style="font-size:13px;">
-                    Nothing added yet. Use <b>Add Custom Feature</b> to add feats, spells, or other
+                    Nothing added yet. Use <b>Add Custom Feature</b> to add companions, feats, spells, or other
                     options that aren't granted by your class, race, or background. Spell choices from
                     added feats appear on the <b>Magic</b> page.
                 </MudText>
@@ -956,12 +956,21 @@ else if (_workflowSuggestion != null)
 
         _saving = true;
         StateHasChanged();
-        var options = await Task.Run(() => BuildService.GetOptions(entry.Rule, entry.Number));
-        var diagnostics = SelectionRuleDiagnosticService.ExplainEmptyOptions(
-            entry.Rule,
-            entry.Number,
-            options.Count);
-        _saving = false;
+        IReadOnlyList<ElementOption> options;
+        IReadOnlyList<SelectionRuleDiagnostic> diagnostics;
+        try
+        {
+            using var scope = await CharacterContext.EnterAsync(tab);
+            if (_disposed || !ReferenceEquals(tab, Tabs.ActiveTab)) return;
+            options = await Task.Run(() => BuildService.GetOptions(entry.Rule, entry.Number));
+            diagnostics = SelectionRuleDiagnosticService.ExplainEmptyOptions(
+                entry.Rule, entry.Number, options.Count);
+        }
+        finally
+        {
+            _saving = false;
+        }
+        if (_disposed || !ReferenceEquals(tab, Tabs.ActiveTab)) return;
         StateHasChanged();
 
         var parameters = new DialogParameters
@@ -1154,7 +1163,11 @@ else if (_workflowSuggestion != null)
             FullWidth        = true,
             CloseOnEscapeKey = true,
         };
-        var dialog = await DialogService.ShowAsync<CustomFeatureDialog>("Add Custom Feature", dialogOptions);
+        var parameters = new DialogParameters
+        {
+            [nameof(CustomFeatureDialog.OwnedElementIds)] = await BuildService.GetCustomFeatureOwnedIdsAsync(tab),
+        };
+        var dialog = await DialogService.ShowAsync<CustomFeatureDialog>("Add Custom Feature", parameters, dialogOptions);
         var result = await dialog.Result;
 
         if (result is { Canceled: false, Data: string elementId })

@@ -57,7 +57,7 @@
                 {
                     var secId = sec.Id;
                     <button type="button"
-                            class="magic-view-tab @(_selectedTab == secId ? "selected" : string.Empty)"
+                            class="magic-view-tab @(State.SelectedTab == secId ? "selected" : string.Empty)"
                             @onclick="() => SelectTab(secId)">
                         Prepared — @sec.Label
                     </button>
@@ -124,9 +124,9 @@
                     <input class="magic-filter-input"
                            type="text"
                            placeholder="Search known spells..."
-                           @bind="_knownSearchText"
+                           @bind="State.Known.SearchText"
                            @bind:event="oninput" />
-                    <select class="magic-filter-select" @bind="_knownLevelFilter">
+                    <select class="magic-filter-select" @bind="State.Known.Level">
                         <option value="">All levels</option>
                         <option value="0">Cantrips</option>
                         @for (int i = 1; i <= 9; i++)
@@ -134,21 +134,21 @@
                             <option value="@i">@Ordinal(i) level</option>
                         }
                     </select>
-                    <select class="magic-filter-select" @bind="_knownSourceFilter">
+                    <select class="magic-filter-select" @bind="State.Known.Source">
                         <option value="">All sources</option>
                         @foreach (string source in _availableSources)
                         {
                             <option value="@source">@source</option>
                         }
                     </select>
-                    <select class="magic-filter-select" @bind="_knownSchoolFilter">
+                    <select class="magic-filter-select" @bind="State.Known.School">
                         <option value="">All schools</option>
                         @foreach (string school in _availableSchools)
                         {
                             <option value="@school">@school</option>
                         }
                     </select>
-                    <select class="magic-filter-select magic-casting-time-filter" @bind="_knownCastingTimeFilter">
+                    <select class="magic-filter-select magic-casting-time-filter" @bind="State.Known.CastingTime">
                         <option value="">All casting times</option>
                         <option value="action">Action</option>
                         <option value="bonus-action">Bonus action</option>
@@ -157,11 +157,11 @@
                     </select>
                     <div class="magic-filter-checks">
                         <label class="magic-filter-check">
-                            <input type="checkbox" @bind="_knownRitualOnly" />
+                            <input type="checkbox" @bind="State.Known.RitualOnly" />
                             <span>Rituals</span>
                         </label>
                         <label class="magic-filter-check">
-                            <input type="checkbox" @bind="_knownConcentrationOnly" />
+                            <input type="checkbox" @bind="State.Known.ConcentrationOnly" />
                             <span>Concentration</span>
                         </label>
                     </div>
@@ -229,7 +229,8 @@
                             @foreach (var ent in entries)
                             {
                                 <div class="magic-known-row"
-                                     @ondblclick="() => { if (OnChangeKnownSpell.HasDelegate && !Busy && !ent.IsReadOnly) OnChangeKnownSpell.InvokeAsync(ent.Id); }">
+                                     @ondblclick="() => OnChangeKnownSpell.HasDelegate && !Busy && !ent.IsReadOnly
+                                         ? OnChangeKnownSpell.InvokeAsync(ent.Id) : Task.CompletedTask">
                                     <div class="magic-known-label">@ent.Label</div>
                                     <div class="magic-known-value @(string.IsNullOrWhiteSpace(ent.CurrentName) ? "empty" : string.Empty)">
                                         @(ent.CurrentName ?? "-")
@@ -271,9 +272,9 @@
                     <input class="magic-filter-input"
                            type="text"
                            placeholder="Search castable spells..."
-                           @bind="_castableSearchText"
+                           @bind="State.Castable.SearchText"
                            @bind:event="oninput" />
-                    <select class="magic-filter-select" @bind="_castableLevelFilter">
+                    <select class="magic-filter-select" @bind="State.Castable.Level">
                         <option value="">All levels</option>
                         <option value="0">Cantrips</option>
                         @for (int i = 1; i <= 9; i++)
@@ -281,21 +282,21 @@
                             <option value="@i">@Ordinal(i) level</option>
                         }
                     </select>
-                    <select class="magic-filter-select" @bind="_castableSourceFilter">
+                    <select class="magic-filter-select" @bind="State.Castable.Source">
                         <option value="">All sources</option>
                         @foreach (string source in _availableSources)
                         {
                             <option value="@source">@source</option>
                         }
                     </select>
-                    <select class="magic-filter-select" @bind="_castableSchoolFilter">
+                    <select class="magic-filter-select" @bind="State.Castable.School">
                         <option value="">All schools</option>
                         @foreach (string school in _availableSchools)
                         {
                             <option value="@school">@school</option>
                         }
                     </select>
-                    <select class="magic-filter-select magic-casting-time-filter" @bind="_castableCastingTimeFilter">
+                    <select class="magic-filter-select magic-casting-time-filter" @bind="State.Castable.CastingTime">
                         <option value="">All casting times</option>
                         <option value="action">Action</option>
                         <option value="bonus-action">Bonus action</option>
@@ -304,11 +305,11 @@
                     </select>
                     <div class="magic-filter-checks">
                         <label class="magic-filter-check">
-                            <input type="checkbox" @bind="_castableRitualOnly" />
+                            <input type="checkbox" @bind="State.Castable.RitualOnly" />
                             <span>Rituals</span>
                         </label>
                         <label class="magic-filter-check">
-                            <input type="checkbox" @bind="_castableConcentrationOnly" />
+                            <input type="checkbox" @bind="State.Castable.ConcentrationOnly" />
                             <span>Concentration</span>
                         </label>
                     </div>
@@ -492,30 +493,30 @@
                     <input class="magic-filter-input"
                            type="text"
                            placeholder="Search spells..."
-                           @bind="_preparedSearchText"
+                           @bind="State.Prepared.SearchText"
                            @bind:event="oninput" />
-                    <select class="magic-filter-select" @bind="_preparedLevelFilter">
+                    <select class="magic-filter-select" @bind="State.Prepared.Level">
                         <option value="">All levels</option>
                         @for (int i = 1; i <= 9; i++)
                         {
                             <option value="@i">@Ordinal(i) level</option>
                         }
                     </select>
-                    <select class="magic-filter-select" @bind="_preparedSourceFilter">
+                    <select class="magic-filter-select" @bind="State.Prepared.Source">
                         <option value="">All sources</option>
                         @foreach (string source in _availableSources)
                         {
                             <option value="@source">@source</option>
                         }
                     </select>
-                    <select class="magic-filter-select" @bind="_preparedSchoolFilter">
+                    <select class="magic-filter-select" @bind="State.Prepared.School">
                         <option value="">All schools</option>
                         @foreach (string school in _availableSchools)
                         {
                             <option value="@school">@school</option>
                         }
                     </select>
-                    <select class="magic-filter-select magic-casting-time-filter" @bind="_preparedCastingTimeFilter">
+                    <select class="magic-filter-select magic-casting-time-filter" @bind="State.Prepared.CastingTime">
                         <option value="">All casting times</option>
                         <option value="action">Action</option>
                         <option value="bonus-action">Bonus action</option>
@@ -526,16 +527,16 @@
                         @if (ActiveSection.IsPreparedCaster)
                         {
                             <label class="magic-filter-check">
-                                <input type="checkbox" @bind="_preparedOnly" />
+                                <input type="checkbox" @bind="State.PreparedOnly" />
                                 <span>Prepared only</span>
                             </label>
                         }
                         <label class="magic-filter-check">
-                            <input type="checkbox" @bind="_preparedRitualOnly" />
+                            <input type="checkbox" @bind="State.Prepared.RitualOnly" />
                             <span>Rituals</span>
                         </label>
                         <label class="magic-filter-check">
-                            <input type="checkbox" @bind="_preparedConcentrationOnly" />
+                            <input type="checkbox" @bind="State.Prepared.ConcentrationOnly" />
                             <span>Concentration</span>
                         </label>
                     </div>
@@ -676,6 +677,9 @@
     public MagicOverviewModel Model { get; set; } = new();
 
     [Parameter]
+    public MagicWorkspaceState State { get; set; } = new();
+
+    [Parameter]
     public string? SelectedSpellId { get; set; }
 
     [Parameter]
@@ -696,34 +700,9 @@
     [Parameter]
     public EventCallback<MagicSlotToggleModel> OnToggleSlot { get; set; }
 
-    private const string KnownTabId = "known";
-    private const string CastableTabId = "castable";
+    private const string KnownTabId = MagicWorkspaceState.KnownTabId;
+    private const string CastableTabId = MagicWorkspaceState.CastableTabId;
 
-    private string _knownSearchText = string.Empty;
-    private string _knownLevelFilter = string.Empty;
-    private string _knownSourceFilter = string.Empty;
-    private string _knownSchoolFilter = string.Empty;
-    private string _knownCastingTimeFilter = string.Empty;
-    private bool _knownRitualOnly;
-    private bool _knownConcentrationOnly;
-    private string _castableSearchText = string.Empty;
-    private string _castableLevelFilter = string.Empty;
-    private string _castableSourceFilter = string.Empty;
-    private string _castableSchoolFilter = string.Empty;
-    private string _castableCastingTimeFilter = string.Empty;
-    private bool _castableRitualOnly;
-    private bool _castableConcentrationOnly;
-    private string _preparedSearchText = string.Empty;
-    private string _preparedLevelFilter = string.Empty;
-    private string _preparedSourceFilter = string.Empty;
-    private string _preparedSchoolFilter = string.Empty;
-    private string _preparedCastingTimeFilter = string.Empty;
-    private bool _preparedOnly;
-    private bool _preparedRitualOnly;
-    private bool _preparedConcentrationOnly;
-    // Selected tab: all castable spells, known spells, or a prepared-caster section id. Each
-    // prepared-casting class gets its own "Prepared — <class>" tab.
-    private string _selectedTab = CastableTabId;
     private readonly HashSet<string> _collapsedGroups = new(StringComparer.Ordinal);
     private readonly HashSet<int> _collapsedLevels = new();
     private IReadOnlyList<MagicSpellcastingSectionModel> _castableSections = [];
@@ -735,14 +714,14 @@
     // The section backing the active Prepared tab (or the primary section as a fallback, e.g. for
     // the Known tab's stats strip).
     private MagicSpellcastingSectionModel ActiveSection =>
-        Model.Sections.FirstOrDefault(section => section.Id == _selectedTab)
+        Model.Sections.FirstOrDefault(section => section.Id == State.SelectedTab)
         ?? Model.Sections.FirstOrDefault()
         ?? new MagicSpellcastingSectionModel();
 
-    private bool OnKnownTab => _selectedTab == KnownTabId
-        || (_selectedTab != CastableTabId && !Model.Sections.Any(s => s.Id == _selectedTab));
+    private bool OnKnownTab => State.SelectedTab == KnownTabId
+        || (State.SelectedTab != CastableTabId && !Model.Sections.Any(s => s.Id == State.SelectedTab));
 
-    private bool OnCastableTab => _selectedTab == CastableTabId && HasCastableSpells;
+    private bool OnCastableTab => State.SelectedTab == CastableTabId && HasCastableSpells;
 
     private bool HasCastableSpells =>
         _castableSections.Any(section =>
@@ -763,27 +742,27 @@
 
     // Known-view filtering. Each entry carries its resolved spell metadata (source/school/ritual/
     // concentration, looked up by spell id in the page), so the full filter bar works here too.
-    // State is shared with the Prepared browse so a search carries across tabs. Empty groups drop out.
+    // Each view keeps its own filters in the character-owned state. Empty groups drop out.
     private bool KnownEntryMatches(MagicKnownSpellEntryModel ent)
     {
-        if (!string.IsNullOrWhiteSpace(_knownSearchText)
-            && !(ent.CurrentName ?? "").Contains(_knownSearchText, StringComparison.OrdinalIgnoreCase)
-            && !(ent.Label ?? "").Contains(_knownSearchText, StringComparison.OrdinalIgnoreCase))
+        if (!string.IsNullOrWhiteSpace(State.Known.SearchText)
+            && !(ent.CurrentName ?? "").Contains(State.Known.SearchText, StringComparison.OrdinalIgnoreCase)
+            && !(ent.Label ?? "").Contains(State.Known.SearchText, StringComparison.OrdinalIgnoreCase))
             return false;
-        if (!string.IsNullOrWhiteSpace(_knownLevelFilter)
-            && int.TryParse(_knownLevelFilter, out int lf) && ent.SpellLevel != lf)
+        if (!string.IsNullOrWhiteSpace(State.Known.Level)
+            && int.TryParse(State.Known.Level, out int lf) && ent.SpellLevel != lf)
             return false;
-        if (!string.IsNullOrWhiteSpace(_knownSourceFilter)
-            && !string.Equals(ent.Source, _knownSourceFilter, StringComparison.OrdinalIgnoreCase))
+        if (!string.IsNullOrWhiteSpace(State.Known.Source)
+            && !string.Equals(ent.Source, State.Known.Source, StringComparison.OrdinalIgnoreCase))
             return false;
-        if (!string.IsNullOrWhiteSpace(_knownSchoolFilter)
-            && !string.Equals(ent.School, _knownSchoolFilter, StringComparison.OrdinalIgnoreCase))
+        if (!string.IsNullOrWhiteSpace(State.Known.School)
+            && !string.Equals(ent.School, State.Known.School, StringComparison.OrdinalIgnoreCase))
             return false;
-        if (!MatchesCastingTimeFilter(ent.CastingTime, _knownCastingTimeFilter))
+        if (!MatchesCastingTimeFilter(ent.CastingTime, State.Known.CastingTime))
             return false;
-        if (_knownRitualOnly && !ent.IsRitual)
+        if (State.Known.RitualOnly && !ent.IsRitual)
             return false;
-        if (_knownConcentrationOnly && !ent.IsConcentration)
+        if (State.Known.ConcentrationOnly && !ent.IsConcentration)
             return false;
         return true;
     }
@@ -856,7 +835,7 @@
             {
                 var first = group.First();
                 IReadOnlyList<MagicSpellAccessPathModel> paths = group
-                    .Select(pair => CreateProjectedAccessPath(pair.Group, pair.Entry, pair.Access))
+                    .SelectMany(pair => pair.Entry.ResolvedAccessPaths ?? [CreateProjectedAccessPath(pair.Group, pair.Entry, pair.Access)])
                     .Distinct()
                     .ToList();
                 MagicSpellDisplayState state = paths.Any(path => path.Kind == MagicSpellAccessKind.AlwaysPrepared)
@@ -926,7 +905,7 @@
             kind,
             group.SectionId ?? string.Empty,
             source,
-            CanCastNormally: kind != MagicSpellAccessKind.RitualBook,
+            CanCastNormally: kind != MagicSpellAccessKind.RitualBook && (kind != MagicSpellAccessKind.Granted || entry.SpellLevel == 0),
             CanCastAsRitual: kind == MagicSpellAccessKind.RitualBook);
     }
 
@@ -984,17 +963,17 @@
         _castableSections = BuildCastableSections();
 
         // Reset to the Known tab if the selected Prepared section is gone (or never existed).
-        if (_selectedTab != KnownTabId && _selectedTab != CastableTabId && !Model.Sections.Any(section => section.Id == _selectedTab))
-            _selectedTab = KnownTabId;
-        if (_selectedTab == CastableTabId && !HasCastableSpells)
-            _selectedTab = KnownTabId;
+        if (State.SelectedTab != KnownTabId && State.SelectedTab != CastableTabId && !Model.Sections.Any(section => section.Id == State.SelectedTab))
+            State.SelectedTab = KnownTabId;
+        if (State.SelectedTab == CastableTabId && !HasCastableSpells)
+            State.SelectedTab = KnownTabId;
 
         RefreshFilterLists();
     }
 
     private void SelectTab(string tab)
     {
-        _selectedTab = tab;
+        State.SelectedTab = tab;
         _collapsedGroups.Clear();
         _collapsedLevels.Clear();
         RefreshFilterLists();
@@ -1014,40 +993,40 @@
 
     private bool MatchesSpellFilter(MagicSpellListEntryModel spell)
     {
-        if (!string.IsNullOrWhiteSpace(_preparedSearchText))
+        if (!string.IsNullOrWhiteSpace(State.Prepared.SearchText))
         {
             bool matchesText =
-                spell.Name.Contains(_preparedSearchText, StringComparison.OrdinalIgnoreCase) ||
+                spell.Name.Contains(State.Prepared.SearchText, StringComparison.OrdinalIgnoreCase) ||
                 (!string.IsNullOrWhiteSpace(spell.Source) &&
-                 spell.Source.Contains(_preparedSearchText, StringComparison.OrdinalIgnoreCase));
+                 spell.Source.Contains(State.Prepared.SearchText, StringComparison.OrdinalIgnoreCase));
 
             if (!matchesText) return false;
         }
 
-        if (!string.IsNullOrWhiteSpace(_preparedLevelFilter) &&
-            int.TryParse(_preparedLevelFilter, out int levelFilter) &&
+        if (!string.IsNullOrWhiteSpace(State.Prepared.Level) &&
+            int.TryParse(State.Prepared.Level, out int levelFilter) &&
             spell.Level != levelFilter)
         {
             return false;
         }
 
-        if (_preparedOnly && !spell.IsPrepared && !spell.IsAlwaysPrepared)
+        if (State.PreparedOnly && !spell.IsPrepared && !spell.IsAlwaysPrepared)
             return false;
 
-        if (!string.IsNullOrWhiteSpace(_preparedSourceFilter)
-            && !string.Equals(spell.Source, _preparedSourceFilter, StringComparison.OrdinalIgnoreCase))
+        if (!string.IsNullOrWhiteSpace(State.Prepared.Source)
+            && !string.Equals(spell.Source, State.Prepared.Source, StringComparison.OrdinalIgnoreCase))
             return false;
 
-        if (!string.IsNullOrWhiteSpace(_preparedSchoolFilter)
-            && !string.Equals(spell.School, _preparedSchoolFilter, StringComparison.OrdinalIgnoreCase))
+        if (!string.IsNullOrWhiteSpace(State.Prepared.School)
+            && !string.Equals(spell.School, State.Prepared.School, StringComparison.OrdinalIgnoreCase))
             return false;
-        if (!MatchesCastingTimeFilter(spell.CastingTime, _preparedCastingTimeFilter))
-            return false;
-
-        if (_preparedRitualOnly && !spell.IsRitual)
+        if (!MatchesCastingTimeFilter(spell.CastingTime, State.Prepared.CastingTime))
             return false;
 
-        if (_preparedConcentrationOnly && !spell.IsConcentration)
+        if (State.Prepared.RitualOnly && !spell.IsRitual)
+            return false;
+
+        if (State.Prepared.ConcentrationOnly && !spell.IsConcentration)
             return false;
 
         return true;
@@ -1055,37 +1034,37 @@
 
     private bool MatchesCastableSpellFilter(MagicSpellListEntryModel spell)
     {
-        if (!string.IsNullOrWhiteSpace(_castableSearchText))
+        if (!string.IsNullOrWhiteSpace(State.Castable.SearchText))
         {
             bool matchesText =
-                spell.Name.Contains(_castableSearchText, StringComparison.OrdinalIgnoreCase) ||
+                spell.Name.Contains(State.Castable.SearchText, StringComparison.OrdinalIgnoreCase) ||
                 (!string.IsNullOrWhiteSpace(spell.Source) &&
-                 spell.Source.Contains(_castableSearchText, StringComparison.OrdinalIgnoreCase));
+                 spell.Source.Contains(State.Castable.SearchText, StringComparison.OrdinalIgnoreCase));
 
             if (!matchesText) return false;
         }
 
-        if (!string.IsNullOrWhiteSpace(_castableLevelFilter) &&
-            int.TryParse(_castableLevelFilter, out int levelFilter) &&
+        if (!string.IsNullOrWhiteSpace(State.Castable.Level) &&
+            int.TryParse(State.Castable.Level, out int levelFilter) &&
             spell.Level != levelFilter)
         {
             return false;
         }
 
-        if (!string.IsNullOrWhiteSpace(_castableSourceFilter)
-            && !string.Equals(spell.Source, _castableSourceFilter, StringComparison.OrdinalIgnoreCase))
+        if (!string.IsNullOrWhiteSpace(State.Castable.Source)
+            && !string.Equals(spell.Source, State.Castable.Source, StringComparison.OrdinalIgnoreCase))
             return false;
 
-        if (!string.IsNullOrWhiteSpace(_castableSchoolFilter)
-            && !string.Equals(spell.School, _castableSchoolFilter, StringComparison.OrdinalIgnoreCase))
+        if (!string.IsNullOrWhiteSpace(State.Castable.School)
+            && !string.Equals(spell.School, State.Castable.School, StringComparison.OrdinalIgnoreCase))
             return false;
-        if (!MatchesCastingTimeFilter(spell.CastingTime, _castableCastingTimeFilter))
-            return false;
-
-        if (_castableRitualOnly && !spell.IsRitual)
+        if (!MatchesCastingTimeFilter(spell.CastingTime, State.Castable.CastingTime))
             return false;
 
-        if (_castableConcentrationOnly && !spell.IsConcentration)
+        if (State.Castable.RitualOnly && !spell.IsRitual)
+            return false;
+
+        if (State.Castable.ConcentrationOnly && !spell.IsConcentration)
             return false;
 
         return true;
@@ -1095,8 +1074,8 @@
         => MagicCastingTimeClassifier.Matches(castingTime, filter);
 
     private bool LevelShouldRemainVisible(int level)
-        => !string.IsNullOrWhiteSpace(_preparedLevelFilter)
-           && int.TryParse(_preparedLevelFilter, out int levelFilter)
+        => !string.IsNullOrWhiteSpace(State.Prepared.Level)
+           && int.TryParse(State.Prepared.Level, out int levelFilter)
            && level == levelFilter;
 
     private bool IsPreparationDisabled(MagicSpellListEntryModel spell)
@@ -1185,6 +1164,17 @@
             ? MagicSpellSelectionAccess.Granted
             : entry.SelectionAccess;
         string source = FirstNonEmpty(entry.AccessSource, entry.GrantedBy, group.Label);
+        if (entry.ResolvedAccessPaths is { Count: > 0 } paths)
+        {
+            var labels = paths.Select(p => string.Join(" \u00b7 ", new[] {
+                p.SourceLabel, p.Ability,
+                p.CanUseSpellSlots ? "Spell slots allowed" : "",
+                p.FreeUses is > 0 ? $"{p.FreeUses}/{p.Recharge}" : "",
+                p.SlotUses is > 0 ? $"Slot casting: {p.SlotUses}/{p.Recharge}" : "",
+                p.Note
+            }.Where(v => !string.IsNullOrWhiteSpace(v))));
+            return (string.Join("; ", labels), "magic-spell-badge-granted");
+        }
 
         return access switch
         {
@@ -1310,7 +1300,11 @@
             _ => "Available",
         };
 
-        return AppendSource(label, path.SourceLabel);
+        return string.Join(" \u00b7 ", new[] { AppendSource(label, path.SourceLabel), path.Ability,
+            path.CanUseSpellSlots ? "Spell slots allowed" : "",
+            path.FreeUses is > 0 ? $"{path.FreeUses}/{path.Recharge}" : "",
+            path.SlotUses is > 0 ? $"Slot casting: {path.SlotUses}/{path.Recharge}" : "", path.Note
+        }.Where(value => !string.IsNullOrWhiteSpace(value)));
     }
 
     private static string GetAccessPathBadgeClass(MagicSpellAccessKind kind) => kind switch

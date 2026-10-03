@@ -7,6 +7,7 @@
 using Builder.Core;
 using Builder.Data;
 using Builder.Data.Elements;
+using Builder.Presentation.Services.Sources;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -16,10 +17,21 @@ namespace Builder.Presentation.Models.Sources;
 public class SourceItem : ObservableObject
 {
   private bool? _isChecked;
+  private bool _allowUnchecking = true;
 
   public Source Source { get; }
 
-  public bool AllowUnchecking { get; set; }
+  public bool AllowUnchecking
+  {
+    get => this._allowUnchecking && this.Parent?.AllowUnchecking != false
+      && !RequiredContentPolicy.IsRequiredSource(this.Source.Name, this.Source.Id);
+    set
+    {
+      this._allowUnchecking = value;
+      if (!this.AllowUnchecking) this.SetIsChecked(true, false, true);
+      this.OnPropertyChanged(nameof(AllowUnchecking));
+    }
+  }
 
   public List<ElementHeader> Elements { get; set; }
 
@@ -27,14 +39,13 @@ public class SourceItem : ObservableObject
   {
     this.Source = source;
     this.Elements = new List<ElementHeader>();
-    this.AllowUnchecking = true;
+    if (!this.AllowUnchecking) this._isChecked = true;
   }
 
   public void SetParent(SourcesGroup parent)
   {
     this.Parent = parent;
-    if (this.AllowUnchecking)
-      this.AllowUnchecking = parent.AllowUnchecking;
+    if (!this.AllowUnchecking) this.SetIsChecked(true, false, true);
     this.OnPropertyChanged("AllowUnchecking");
   }
 
@@ -48,6 +59,7 @@ public class SourceItem : ObservableObject
 
   public void SetIsChecked(bool? value, bool updateChildren, bool updateParent)
   {
+    if (!this.AllowUnchecking) value = true;
     bool? nullable = value;
     bool? isChecked = this._isChecked;
     if (nullable.GetValueOrDefault() == isChecked.GetValueOrDefault() & nullable.HasValue == isChecked.HasValue)

@@ -80,8 +80,10 @@ public static class CharacterContext
         CharacterLoadCompatibilityService.PrepareForCharacterLoad();
         await tab.File.Load();
         tab.Character = CharacterManager.Current.Character;
+        CharacterLoadCompatibilityService.RestoreEquippedSlots(tab.Character);
         BuildService.ReapplyCustomFeatures(tab.File);
         BuildService.NormalizeSelectionState();
+        CharacterManager.Current.ReprocessCharacter();
     }
 
     /// <summary>
@@ -168,11 +170,15 @@ public static class CharacterContext
 
         // 4. Re-point the tab's cached Character at the freshly-loaded singleton character.
         incoming.Character = CharacterManager.Current.Character;
+        // File.Load restores item flags, but the app must rebuild the inventory slot references
+        // before armor-dependent statistics can be calculated, just as on the initial load.
+        CharacterLoadCompatibilityService.RestoreEquippedSlots(incoming.Character);
 
         // 5. Re-apply custom features (Extras-tab feats/spells/ASIs). They live outside the standard
         //    build, so file.Load doesn't restore them; without this their granted content (e.g. feat
         //    spells) silently disappears on tab swap. Reads the persisted <custom-features> list.
         BuildService.ReapplyCustomFeatures(incoming.File);
         BuildService.NormalizeSelectionState();
+        CharacterManager.Current.ReprocessCharacter();
     }
 }

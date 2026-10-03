@@ -29,6 +29,36 @@ Current focus:
   before broad loader rewrites
 - preserve stable choice identity across builder rows and `.dnd5e` save/load
   so same-label choices do not drift between app sessions
+- adopt Aurora ID alone as canonical element identity after the content cleanup, silently
+  ignore harmless identical declarations, and preserve distinct references through
+  selection/save/load; see [the identity plan](element-identity-feasibility.md)
+- allow `user/local` content to be cached in SQLite as a separate override layer,
+  preserving the authoritative base and avoiding full rebuilds for local edits
+- persist explicit correction metadata in the local artifact and database; allow
+  unmodified companion elements to follow authoritative updates while marked
+  corrections remain pinned until direct review or verified published-match
+  acceptance; see [the override policy](local-correction-policy.md)
+- capture authoritative download evidence and automatically accept complete
+  matching corrections/groups after successful import; disk-only matches and
+  partial/differing upstream repairs remain protected for review
+- automatically retire a local file and its override cache once no marked
+  corrections remain and its full effective content matches an imported
+  authoritative update; retain any still-unique local content
+- first correction lifecycle implementation: embedded v1 metadata, a separate
+  SQLite mirror of originals and effective content, protected refreshes, explicit
+  review API, and recoverable retirement; see [implementation notes](local-correction-implementation.md)
+- six known hotfix files explicitly annotated from archived originals, with ten
+  protected operations and file-scoped runtime suppression; see
+  [the deployment record](hotfix-metadata-annotation-2026-09-13.md)
+- keep [the Translator handoff](../../5eApiTranslator/docs/aurora-translator-data-handoff.md) current as each
+  data feature lands; [remaining UI/migration estimates](content-migration-estimates.md)
+  separate implementation effort from library extraction and platform validation
+- neutral review/provenance records and read-only canonical classification now
+  exist in `Builder.Data`; production adapters and reference scanning remain pending
+- resolve content in app/CLI preparation before the SQLite writer receives it;
+  reuse AuroraXMLHelper diagnostics and repair previews through adapters, preserving
+  its manual suggestions without automatically applying ID-regeneration placeholders;
+  see [the preparation contract](content-preparation-contract.md)
 
 Next slice:
 
@@ -40,6 +70,63 @@ Next slice:
   selects, grants, and starting equipment reconstruction
 - begin a "content repair suggestion" layer that can propose Aurora element XML
   fixes without mutating user content automatically
+- for users with Advanced options enabled, surface ID conflicts detected during
+  database sync in a compact diff/resolution window inside the builder; show source
+  provenance, complete definition differences, and affected references before
+  applying a repair as a persistent local hotfix
+- consider reusing Constellations/Aurora XMLHelper/Aurora Studio conflict-resolution
+  logic for that window; keep larger authoring workflows in those tools while
+  supporting small repairs directly in the builder, and flag local corrections
+  for retirement once verified fetched upstream content incorporates and accepts
+  the complete fix, retaining review for unverified or differing outcomes
+
+### Import workflow backlog (queued 2026-09-25)
+
+These improvements are planned, not implemented. The current unsafe-fallback guard
+stops loading when raw XML would undo persisted import decisions; snapshot recovery
+is the next priority.
+
+- [ ] **Recover from the last validated content snapshot.** Preserve retained and
+  rejected definitions, skipped operations, and local correction decisions when new
+  runtime content cannot load. Tell the user that recent changes were not applied.
+  If the saved snapshot cannot be validated, retain the explicit failure rather than
+  guessing. Cover cold starts, failed refreshes, and successful recovery after repair.
+- [ ] **Provide one Update Content workflow.** Coordinate downloading, importing,
+  runtime validation, and activation through one operation with clear stage progress.
+  Keep the working catalog usable until the replacement passes validation, and defer
+  activation while character tabs are open. Coordinate simultaneous requests so
+  downloads and imports do not race over changing inputs.
+- [ ] **Make import issues actionable.** Group related issues by file/source and
+  distinguish unavailable content, retained previous definitions, provisional choices,
+  and metadata notices. Provide a copyable report and targeted retry of failed
+  downloads without discarding successful downloads or rewriting user content.
+- [ ] **Expose safe cancellation.** Connect the existing download/import cancellation
+  tokens to the UI. Preserve completed downloads and the working database, define
+  the point after which activation must finish, and report cancellation separately
+  from failure. Cover cancellation before and during import and subsequent retry.
+
+## Shared Importer Integration
+
+The versioned `Aurora.Content` / `Aurora.Content.Contracts` integration and retirement
+of the copied importer are complete; see [the split and verification record](translator-library-split-plan.md).
+Lights consumes immutable packages from `vendor/nuget`, pinned in `AuroraContent.props`;
+pushing Translator alone does not update this consumer.
+
+- [x] **Consume the committed 0.8.1 packages** (local uptake completed 2026-09-25).
+  Both release packages from Translator commit `ce612682dc1bcb69027a3ef1527b6d3cac78e79b`
+  are vendored with verified hashes and clean-source provenance. The pin is updated,
+  test/app dependencies are restored, and 104 focused import/loader tests passed.
+  See [the uptake record](content-library-0.8.1-uptake.md). This is not an app release.
+- [ ] **Release and install the updated app, then refresh its database.** Rebuild the
+  platform release with the 0.8.1 dependency and refresh installed databases to data
+  version 15 through Settings > Content > Refresh Database. An XML download alone
+  cannot update the importer embedded in an installed app.
+- Validate import and SQLite loading on Android and Mac with actual platform runs.
+  Normal loading remains SQLite-backed; keep progress, cancellation, multiple
+  content directories, and platform-safe file access covered as integration evolves.
+- Keep source availability, display ordering, and definition-conflict policy distinct.
+  Use the shared library's current schema/data contract instead of duplicating a
+  separate compatibility contract in Lights.
 
 ## MAUI
 
@@ -65,6 +152,21 @@ Current position:
 - continue supporting it as a parallel client
 - preserve cross-compatibility for character/content data
 - avoid large new feature investments unless they are compatibility-critical
+
+## Character Journal / Quest Tracking (Later)
+
+- add structured, date-stamped session-log entries instead of requiring players
+  to maintain chronology inside the two existing free-form note fields
+- add quest records with a title, status, objectives, important NPCs and
+  locations, rewards, and free-form notes
+- allow log entries to be added, edited, removed, searched, and optionally
+  linked to one or more quests while retaining their original session dates
+- keep the existing `<quest>` character-file field reserved for
+  `Inventory.QuestItems`; store journal and quest records in a separate,
+  versioned model
+- design persistence, migration, and export in the shared layer first so
+  Reflections and future Web support round-trip the same data without dropping
+  legacy notes
 
 ## Aurora.Web Phase 0
 

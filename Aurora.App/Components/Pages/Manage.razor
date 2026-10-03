@@ -1,4 +1,4 @@
-@page "/manage"
+﻿@page "/manage"
 @implements IDisposable
 @inject CharacterTabService Tabs
 @inject ISnackbar Snackbar
@@ -27,8 +27,7 @@
                                   InfoModel="@null"
                                   SourceGroups="@SourceGroups"
                                   ShowDefaultActions="true"
-                                  OnToggleCategory="ToggleCategoryAsync"
-                                  OnToggleGroup="ToggleGroupAsync"
+                                  OnToggleNode="ToggleNodeAsync"
                                   OnToggleItem="ToggleSourceAsync"
                                   OnLoadDefaults="LoadDefaultAsync"
                                   OnSaveDefaults="SaveAsDefault" />
@@ -116,7 +115,7 @@
     private EditableCharacterInfoModel? _infoModel;
     private bool _optionSaving;
     private IReadOnlyList<SourceRestrictionGroupModel> SourceGroups =>
-        CharacterManager.Current.SourcesManager.SourceGroups.Select(ToGroupModel).ToList();
+        SourceRestrictionModelMapper.ToGroupModels(CharacterManager.Current.SourcesManager);
 
     protected override void OnInitialized()
     {
@@ -181,17 +180,6 @@
         return Task.CompletedTask;
     }
 
-    private async Task ToggleGroupInternal(SourcesGroup group)
-    {
-        if (!group.AllowUnchecking)
-        {
-            Snackbar.Add("That source group is required and can't be disabled.", Severity.Info, cfg => cfg.VisibleStateDuration = 2500);
-            return;
-        }
-        group.SetIsChecked(group.IsChecked == true ? false : (bool?)true, updateChildren: true);
-        await ApplyAndPersistRestrictions();
-    }
-
     private async Task ToggleSourceInternal(SourceItem item)
     {
         if (!item.AllowUnchecking)
@@ -210,29 +198,55 @@
             Snackbar.Add("Source restrictions cannot be changed because there is no active character.", Severity.Warning, cfg => cfg.VisibleStateDuration = 2500);
             return;
         }
-        using var scope = await CharacterContext.EnterAsync(tab);
+        IReadOnlyList<string> cleared;
+        using (var scope = await CharacterContext.EnterAsync(tab))
+        {
+            CharacterManager.Current.SourcesManager.ApplyRestrictions(reprocess: true);
+            // Restricting a source also takes back what it gave this character: its picks are
+            // cleared here and its grants are suppressed by the grant policy.
+            cleared = RestrictedSelectionSweep.ClearRestrictedSelections();
+            if (!await PersistSourceRestrictionsAsync(tab)) return;
+        }
 
-        CharacterManager.Current.SourcesManager.ApplyRestrictions(reprocess: true);
-        if (!await PersistSourceRestrictionsAsync(tab)) return;
+        await SettleAfterRestrictionChangeAsync(tab, cleared);
         _ = MarkDirty();
 
         StateHasChanged();
     }
 
-
-    private async Task ToggleGroupAsync(string groupId)
+    /// <summary>
+    /// Writes the character and reloads it so cleared choices come back as picks to make again,
+    /// with the engine settled from the saved state rather than from an edited in-memory one.
+    /// </summary>
+    private async Task SettleAfterRestrictionChangeAsync(CharacterTab tab, IReadOnlyList<string> cleared)
     {
-        SourcesGroup? group = CharacterManager.Current.SourcesManager.SourceGroups
-            .FirstOrDefault(candidate => string.Equals(candidate.Name, groupId, StringComparison.Ordinal));
-        if (group is not null)
+        if (cleared.Count == 0)
         {
-            await ToggleGroupInternal(group);
+            using var scope = await CharacterContext.EnterAsync(tab);
+            BuildService.ResnapTab(tab);
+            return;
         }
-        else
+
+        string? error = await BuildService.SaveTabAsync(tab);
+        if (error != null)
         {
-            Snackbar.Add("That source group could not be found.", Severity.Warning, cfg => cfg.VisibleStateDuration = 2500);
+            Snackbar.Add($"Sources changed, but the character could not be saved: {error}", Severity.Error,
+                cfg => cfg.VisibleStateDuration = 9000);
+            return;
         }
+
+        using (var scope = await CharacterContext.EnterAsync(tab))
+        {
+            await CharacterContext.ReloadFromDiskAsync(tab);
+            BuildService.ResnapTab(tab);
+        }
+        LoadFromActiveTab();
+
+        string choices = cleared.Count == 1 ? "choice" : "choices";
+        Snackbar.Add($"{cleared.Count} {choices} need picking again: {string.Join(", ", cleared.Take(4))}" +
+            (cleared.Count > 4 ? "…" : ""), Severity.Info, cfg => cfg.VisibleStateDuration = 9000);
     }
+
 
     private async Task ToggleSourceAsync(string sourceId)
     {
@@ -249,17 +263,18 @@
         }
     }
 
-    private async Task ToggleCategoryAsync(SourceRestrictionCategoryToggle toggle)
+    /// <summary>A category or publisher row: every source under it moves together, in one save.</summary>
+    private async Task ToggleNodeAsync(SourceRestrictionNodeToggle toggle)
     {
         List<SourceItem> matchingSources = CharacterManager.Current.SourcesManager.SourceGroups
             .SelectMany(group => group.Sources)
-            .Where(item => item.AllowUnchecking && ClassifySource(item) == toggle.Category)
+            .Where(item => item.AllowUnchecking && toggle.SourceIds.Contains(item.Source.Id, StringComparer.Ordinal))
             .ToList();
 
         if (matchingSources.Count == 0)
         {
             Snackbar.Add(
-                "No optional sources are available in that category.",
+                "No optional sources are available under that heading.",
                 Severity.Info,
                 cfg => cfg.VisibleStateDuration = 2500);
             return;
@@ -278,10 +293,15 @@
             Snackbar.Add("Default sources cannot be loaded because there is no active character.", Severity.Warning, cfg => cfg.VisibleStateDuration = 2500);
             return;
         }
-        using var scope = await CharacterContext.EnterAsync(tab);
+        IReadOnlyList<string> cleared;
+        using (var scope = await CharacterContext.EnterAsync(tab))
+        {
+            CharacterManager.Current.SourcesManager.LoadDefaults();
+            cleared = RestrictedSelectionSweep.ClearRestrictedSelections();
+            if (!await PersistSourceRestrictionsAsync(tab)) return;
+        }
 
-        CharacterManager.Current.SourcesManager.LoadDefaults();
-        if (!await PersistSourceRestrictionsAsync(tab)) return;
+        await SettleAfterRestrictionChangeAsync(tab, cleared);
         _ = MarkDirty();
 
         StateHasChanged();
@@ -337,30 +357,6 @@
         snap.Notes1 = model.Notes1;
         snap.Notes2 = model.Notes2;
     }
-
-    private static SourceRestrictionGroupModel ToGroupModel(SourcesGroup group) =>
-        new(
-            group.Name,
-            group.Name,
-            group.Underline,
-            group.AllowUnchecking,
-            group.IsChecked,
-            group.Sources.Select(item => new SourceRestrictionItemModel(
-                item.Source.Id,
-                item.Source.Name ?? string.Empty,
-                item.IsChecked,
-                item.AllowUnchecking,
-                !item.AllowUnchecking,
-                ClassifySource(item))).ToList());
-
-    private static SourceRestrictionCategory? ClassifySource(SourceItem item) =>
-        SourceRestrictionCategoryClassifier.Classify(
-            item.Source.IsOfficialContent,
-            item.Source.IsThirdPartyContent,
-            item.Source.IsHomebrewContent,
-            item.Source.Author,
-            item.Source.Name,
-            item.Source.ReleaseDate);
 
     private async Task<bool> PersistSourceRestrictionsAsync(CharacterTab tab)
     {

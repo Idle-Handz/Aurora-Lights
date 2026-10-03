@@ -49,7 +49,10 @@ public static class SelectionRuleRegistrationService
             element.Id.Equals(source.Id, StringComparison.OrdinalIgnoreCase) &&
             !ReferenceEquals(element, current));
 
-        if (alreadyOwned && !source.AllowDuplicate)
+        if (alreadyOwned && !source.AllowDuplicate && (source.Type != "Spell" || ownedElements.Any(element =>
+            element.Id == source.Id && !ReferenceEquals(element, current)
+            && SpellAcquisitionResolver.SameSelectionDomain(SpellAcquisitionResolver.AcquisitionRule(element), selectionRule,
+                ownedElements.ToArray(), manager.GetSpellcastingInformations().ToArray()))))
         {
             throw new InvalidOperationException(
                 $"'{source.Name}' is already selected and cannot be selected again.");
@@ -58,8 +61,7 @@ public static class SelectionRuleRegistrationService
         // A repeated selection needs its own acquisition record. Reusing the content
         // singleton would overwrite the first slot's SelectRule association.
         ElementBase toRegister = alreadyOwned
-            ? DataManager.Current.ElementsCollection.GetFresh(source.Id)
-                ?? throw new InvalidOperationException($"Could not create a separate selection instance for '{source.Name}'.")
+            ? CloneSelectionElement(source)
             : source;
 
         // Validate first, then remove the previous slot value. A rejected replacement must
@@ -67,8 +69,8 @@ public static class SelectionRuleRegistrationService
         if (currentIsOwned)
             manager.UnregisterElement(current!);
 
-        toRegister.Aquisition.WasSelected = true;
-        toRegister.Aquisition.SelectRule = selectionRule;
+        toRegister.Aquisition = new AquisitionInfo();
+        toRegister.Aquisition.SelectedBy(selectionRule);
         manager.RegisterElement(toRegister);
 
         if (selectionRule.Attributes.Type.Equals("Background Feature", StringComparison.OrdinalIgnoreCase) &&
@@ -84,6 +86,38 @@ public static class SelectionRuleRegistrationService
         }
 
         registrations[key] = toRegister;
+    }
+
+    public static ElementBase CloneSelectionElement(ElementBase source)
+    {
+        // GetFresh erases the runtime type, including AllowMultipleElements overrides.
+        // Copy definition properties without copying the acquired character graph.
+        ElementBase copy;
+        try
+        {
+            copy = (ElementBase)Activator.CreateInstance(source.GetType())!;
+        }
+        catch (MissingMethodException ex)
+        {
+            throw new InvalidOperationException(
+                $"Could not create a separate selection instance for '{source.Name}'.", ex);
+        }
+
+        foreach (var property in source.GetType().GetProperties())
+            if (property.GetSetMethod() is not null && property.GetIndexParameters().Length == 0)
+                property.SetValue(copy, property.GetValue(source));
+        ElementProvenance.CopyTo(source, copy);
+        copy.RuleElements = new ElementBaseCollection();
+        copy.SelectionRuleListItems = new();
+        copy.Aquisition = new AquisitionInfo();
+        copy.Rules = source.Rules.Select(rule => rule.Copy()).ToList();
+        foreach (var rule in copy.GetSelectRules()) rule.RenewIdentifier();
+        // The progression manager adds and removes spellcasting sections by UniqueIdentifier, so
+        // a shared instance means the second copy never registers one and removing either copy
+        // takes the section away from both.
+        if (copy.SpellcastingInformation is { } spellcasting)
+            copy.SpellcastingInformation = spellcasting.CloneForSelection();
+        return copy;
     }
 
     public static void ClearRegisteredElement(

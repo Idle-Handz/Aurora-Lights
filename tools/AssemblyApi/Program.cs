@@ -93,9 +93,10 @@ internal static class ApiSurfaceFormatter
             foreach (MethodInfo method in type.GetMethods(DeclaredMembers)
                          .Where(method => !method.IsSpecialName && IsExternallyVisible(method)))
             {
-                members.Add(FormatMethod(method));
-                members.AddRange(FormatGenericConstraints(method.GetGenericArguments())
-                    .Select(constraint => $"  {constraint}"));
+                // Keep constraints attached to their method rather than sorting them
+                // independently, which could hide a constraint moved to another method.
+                string constraints = string.Join("; ", FormatGenericConstraints(method.GetGenericArguments()));
+                members.Add(FormatMethod(method) + (constraints.Length == 0 ? string.Empty : $" [{constraints}]"));
             }
 
             foreach (string member in members.Order(StringComparer.Ordinal))
@@ -223,7 +224,12 @@ internal static class ApiSurfaceFormatter
         string genericArguments = method.IsGenericMethodDefinition
             ? $"<{string.Join(",", method.GetGenericArguments().Select(argument => argument.Name))}>"
             : string.Empty;
-        string attributes = method.GetCustomAttributesData()
+        // Current Roslyn marks the kickoff method of every async method [DebuggerStepThrough]; the
+        // compiler that produced the legacy oracles did not. That is a debugging aid, not part of the
+        // API, so it only counts where it was written in source — on a method that is not async.
+        bool isAsync = method.GetCustomAttributesData()
+            .Any(attribute => attribute.AttributeType == typeof(AsyncStateMachineAttribute));
+        string attributes = !isAsync && method.GetCustomAttributesData()
             .Any(attribute => attribute.AttributeType == typeof(System.Diagnostics.DebuggerStepThroughAttribute))
             ? " [DebuggerStepThrough]"
             : string.Empty;

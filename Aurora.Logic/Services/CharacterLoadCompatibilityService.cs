@@ -77,7 +77,7 @@ public static class CharacterLoadCompatibilityService
                 else if (string.IsNullOrEmpty(location))
                 {
                     try { item.Activate(equip: true, attune: item.IsAttuned); }
-                    catch { }
+                    catch (Exception ex) { Logger.Exception(ex, nameof(RestoreEquippedSlots)); }
                 }
             }
 
@@ -86,6 +86,34 @@ public static class CharacterLoadCompatibilityService
         catch (Exception ex)
         {
             Logger.Exception(ex, nameof(RestoreEquippedSlots));
+        }
+    }
+
+    /// <summary>
+    /// Registers the equipment elements that were active when the character was saved.
+    /// CharacterFile.Load restores the item's IsEquipped/IsAttuned flags first, while the
+    /// inventory slot references are rebuilt by <see cref="RestoreEquippedSlots"/> later.
+    /// Registering the active elements at this point keeps the load-time element-count
+    /// validation faithful to the saved character without raising UI-only slot events.
+    /// </summary>
+    public static void RegisterLoadedEquipmentElements(Character? character)
+    {
+        if (character == null)
+            return;
+
+        foreach (var item in character.Inventory.Items)
+        {
+            if (!item.IsEquipped && !item.IsAttuned)
+                continue;
+
+            try
+            {
+                item.Activate(equip: item.IsEquipped, attune: item.IsAttuned);
+            }
+            catch (Exception ex)
+            {
+                Logger.Exception(ex, nameof(RegisterLoadedEquipmentElements));
+            }
         }
     }
 }

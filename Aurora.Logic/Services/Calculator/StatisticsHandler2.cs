@@ -76,7 +76,7 @@ public class StatisticsHandler2
     return input1;
   }
 
-  public StatisticValuesGroupCollection CreateSeed(int level, CharacterManager characterManager)
+  public StatisticValuesGroupCollection CreateSeed(int level, CharacterManager characterManager, Companion companion = null)
   {
     AuroraStatisticStrings statisticStrings = new AuroraStatisticStrings();
     StatisticValuesGroupCollection seed = new StatisticValuesGroupCollection();
@@ -99,7 +99,7 @@ public class StatisticsHandler2
     }
     if (characterManager.Status.HasCompanion)
     {
-      Companion companion = characterManager.Character.Companion;
+      companion ??= characterManager.Character.Companion;
       if (companion?.Element != null)
       {
         StatisticValuesGroup group = new StatisticValuesGroup("companion:proficiency");
@@ -137,17 +137,28 @@ public class StatisticsHandler2
     return input1;
   }
 
+  public StatisticValuesGroupCollection CalculateCompanionValues(Companion companion, ElementBaseCollection elements, int level)
+  {
+    return CalculateValues(elements, CreateSeed(level, _manager, companion), -1, false, companion);
+  }
+
   private StatisticValuesGroupCollection CalculateValues(
     ElementBaseCollection elements,
     StatisticValuesGroupCollection seed = null,
     int atLevel = -1,
-    bool setProperties = true)
+    bool setProperties = true,
+    Companion companion = null)
   {
     if (this._interpreter == null)
       this._interpreter = new ExpressionInterpreter();
-    List<StatisticRule> list1 = CharacterManager.Current.GetStatisticRules2().ToList<StatisticRule>();
+    // Only CalculateCompanionValues names a companion; that pass wants this creature's groups
+    // and nothing else, so it must not redo the character-wide work the primary pass just did.
+    bool companionOnly = companion != null;
+    companion ??= _manager.Character.Companion;
+    var companionScope = companion.Element == null ? null : CompanionRuleScope.For(companion.Element, elements);
+    List<StatisticRule> list1 = CharacterManager.Current.GetStatisticRules2(companionScope).ToList<StatisticRule>();
     if (atLevel > 0)
-      list1 = CharacterManager.Current.GetStatisticRulesAtLevel(atLevel).ToList<StatisticRule>();
+      list1 = CharacterManager.Current.GetStatisticRulesAtLevel(atLevel, companionScope).ToList<StatisticRule>();
     foreach (StatisticRule statisticRule in list1.ToList<StatisticRule>())
     {
       if (statisticRule.Attributes.HasEquipmentConditions && !this._interpreter.EvaluateEquippedExpression(statisticRule.Attributes.Equipped))
@@ -214,7 +225,7 @@ public class StatisticsHandler2
     abilities1.Intelligence.AdditionalScore = groups1.GetValue(strings.Intelligence);
     abilities1.Wisdom.AdditionalScore = groups1.GetValue(strings.Wisdom);
     abilities1.Charisma.AdditionalScore = groups1.GetValue(strings.Charisma);
-    AbilitiesCollection abilities2 = this._manager.Character.Companion.Abilities;
+    AbilitiesCollection abilities2 = companion.Abilities;
     abilities2.Strength.AdditionalScore = groups1.GetValue("companion:strength");
     abilities2.Dexterity.AdditionalScore = groups1.GetValue("companion:dexterity");
     abilities2.Constitution.AdditionalScore = groups1.GetValue("companion:constitution");
@@ -370,8 +381,11 @@ public class StatisticsHandler2
       group2.Merge(group4);
       group3.Merge(groups1.GetGroup(spellcastingInformation.GetSpellSaveStatisticName(), false));
     }
-    foreach (StatisticRule rule in this._manager.GetStatisticRules().Where<StatisticRule>((Func<StatisticRule, bool>) (rule => rule.Attributes.Level <= this._manager.Character.Level && rule.Attributes.Inline)).ToList<StatisticRule>())
-      this.SetInlineValue(rule);
+    // Inline values are written onto the elements themselves, so re-running this once per extra
+    // companion rewrites character-wide state that the primary pass already settled.
+    if (!companionOnly)
+      foreach (StatisticRule rule in this._manager.GetStatisticRules().Where<StatisticRule>((Func<StatisticRule, bool>) (rule => rule.Attributes.Level <= this._manager.Character.Level && rule.Attributes.Inline)).ToList<StatisticRule>())
+        this.SetInlineValue(rule);
     if (setProperties)
       this.StatisticValues = groups1;
     return groups1;

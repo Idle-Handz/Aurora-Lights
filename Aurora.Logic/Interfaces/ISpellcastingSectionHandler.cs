@@ -35,4 +35,8 @@ public interface ISpellcastingSectionHandler
     /// </summary>
     IReadOnlyCollection<string> GetPreparedIds(string spellcastingName)
         => Array.Empty<string>();
+    IReadOnlyCollection<string> GetPreparedIds(Builder.Data.Elements.SpellcastingInformation profile)
+        => GetPreparedIds(profile.Name);
+    void UnsetPrepareSpell(Builder.Data.Elements.SpellcastingInformation profile, string elementId)
+        => UnsetPrepareSpell(profile.Name, elementId);
 }

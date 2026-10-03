@@ -5,6 +5,10 @@
 // Assembly location: C:\Program Files (x86)\Aurora\Aurora Character Builder\Aurora Builder.exe
 
 using Builder.Core;
+using Builder.Data;
+using Builder.Data.Elements;
+using System.Collections.Generic;
+using System.Linq;
 using Builder.Presentation.Models.Collections;
 using Builder.Presentation.Models.Equipment;
 using Builder.Presentation.Models.Helpers;
@@ -56,7 +60,6 @@ public sealed class Character : ObservableObject
     this.Skills = new SkillsCollection(this.Abilities);
     this.SavingThrows = new SavingThrowCollection(this.Abilities);
     this.Inventory = new CharacterInventory();
-    this.Companion = new Companion();
     this.AttacksSection = new AttacksSection();
   }
 
@@ -68,7 +71,27 @@ public sealed class Character : ObservableObject
 
   public CharacterInventory Inventory { get; }
 
-  public Companion Companion { get; }
+  private readonly Companion _emptyCompanion = new Companion();
+  private readonly List<Companion> _companions = new List<Companion>();
+
+  public IReadOnlyList<Companion> Companions => _companions;
+
+  // The legacy sheet/view models still use the last companion as their primary.
+  public Companion Companion => _companions.LastOrDefault() ?? _emptyCompanion;
+
+  internal void SynchronizeCompanions(IEnumerable<ElementBase> elements)
+  {
+    var active = elements.OfType<CompanionElement>().ToList();
+    var existing = _companions.ToArray();
+    _companions.Clear();
+    foreach (var element in active)
+      _companions.Add(existing.FirstOrDefault(c => ReferenceEquals(c.Element, element)) ?? new Companion(element));
+    // Companion is a computed property, so bindings to Character.Companion.* resolve once and
+    // then keep whichever instance they first saw. Without this they stay on the empty
+    // companion for the life of the view when a creature is acquired or replaced.
+    if (!existing.SequenceEqual(_companions))
+      this.OnPropertyChanged(nameof(Companions), nameof(Companion));
+  }
 
   public string PlayerName
   {
@@ -254,7 +277,11 @@ public sealed class Character : ObservableObject
     this.ConditionalSavingThrowsField.Clear(true);
     this.MulticlassSpellcasterLevel = 0;
     this.MulticlassSpellSlots.Clear();
-    this.Companion.Reset();
+    bool hadCompanions = _companions.Count > 0;
+    _companions.Clear();
+    _emptyCompanion.Reset();
+    if (hadCompanions)
+      this.OnPropertyChanged(nameof(Companions), nameof(Companion));
     this.Notes1 = "";
     this.Notes2 = "";
   }

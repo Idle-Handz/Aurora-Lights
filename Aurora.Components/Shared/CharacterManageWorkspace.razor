@@ -1,4 +1,4 @@
-<div class="character-manage-workspace">
+﻿<div class="character-manage-workspace">
     @if (InfoModel is null && SourceGroups.Count == 0)
     {
         <p class="character-manage-empty">@EmptyMessage</p>
@@ -31,15 +31,14 @@
             <header class="character-manage-header">
                 <div>
                     <h2>Sources</h2>
-                    <p>Review which source groups and books are currently enabled for the active character.</p>
+                    <p>Review which sources this character may use. Switch a category, a publisher, or a single book.</p>
                 </div>
             </header>
 
             <SourceRestrictionsEditor Groups="SourceGroups"
                                       Busy="Busy"
                                       ShowDefaultActions="ShowDefaultActions"
-                                      OnToggleCategory="OnToggleCategory"
-                                      OnToggleGroup="OnToggleGroup"
+                                      OnToggleNode="OnToggleNode"
                                       OnToggleItem="OnToggleItem"
                                       OnLoadDefaults="OnLoadDefaults"
                                       OnSaveDefaults="OnSaveDefaults" />
@@ -67,10 +66,7 @@
     public EventCallback OnInfoChanged { get; set; }
 
     [Parameter]
-    public EventCallback<SourceRestrictionCategoryToggle> OnToggleCategory { get; set; }
-
-    [Parameter]
-    public EventCallback<string> OnToggleGroup { get; set; }
+    public EventCallback<SourceRestrictionNodeToggle> OnToggleNode { get; set; }
 
     [Parameter]
     public EventCallback<string> OnToggleItem { get; set; }

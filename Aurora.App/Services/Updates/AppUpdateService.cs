@@ -35,7 +35,10 @@ public sealed class AppUpdateService : GithubReleaseChannelService
                 if (SemVer.TryParse(AppInfo.Current.VersionString, out v))
                     return v;
             }
-            catch { }
+            catch (Exception ex)
+            {
+                DebugLogService.Instance.LogException(ex, "AppUpdateService.CurrentVersion");
+            }
             return default; // 0.0.0 — anything newer wins, which fails safe ("update available").
         }
     }

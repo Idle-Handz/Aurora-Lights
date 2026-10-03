@@ -1,4 +1,4 @@
-using Aurora.Tests.Helpers;
+﻿using Aurora.Tests.Helpers;
 using Builder.Data;
 using Builder.Data.Rules;
 using Builder.Presentation;
@@ -475,6 +475,74 @@ public sealed class BuildSelectionOptionResolverTests : IAsyncLifetime
             .Which.IsCurrentSelection.Should().BeFalse();
         options.Should().ContainSingle(option => option.Id == "2")
             .Which.IsCurrentSelection.Should().BeTrue();
+    }
+
+    /// <summary>
+    /// The same thing published in two rulesets is one thing to a character: the 2014 and 2024
+    /// Player's Handbooks share 358 spell names, 38 feat names and 12 class names in this catalog.
+    /// Both printings stay in the picker - which one to take is the player's call - but once one is
+    /// held the other stops being selectable.
+    /// </summary>
+    [Fact]
+    public async Task ResolveOptions_DisablesAnotherPrintingOfAHeldName()
+    {
+        if (!ContentFixture.SkipIfUnavailable(_output)) return;
+
+        await CreateEmptyCharacterAsync();
+        var rule = CreateSelectRule("Feat", "Feat");
+        var (first, second) = FindTwinOptions(rule);
+        if (first is null || second is null)
+        {
+            _output.WriteLine("[SKIP] no two feats of one name survive as separate options here.");
+            return;
+        }
+
+        var held = DataManager.Current.ElementsCollection.GetElement(first.Id);
+        held.Should().NotBeNull();
+        CharacterManager.Current.RegisterElement(held!);
+        CharacterManager.Current.ReprocessCharacter();
+
+        var options = BuildSelectionOptionResolver.ResolveOptions(rule, number: 1);
+        options.Should().Contain(option => option.Id == second.Id, "the other printing is still offered");
+        options.Single(option => option.Id == second.Id).IsDisabled.Should().BeTrue(
+            "holding one printing of a name means the character already has that feat");
+        options.Where(option => !string.Equals(option.Name, first.Name, StringComparison.OrdinalIgnoreCase))
+            .Should().Contain(option => !option.IsDisabled, "unrelated feats stay selectable");
+    }
+
+    [Fact]
+    public async Task ResolveOptions_LetsTheSlotBeingEditedSwapRulesets()
+    {
+        if (!ContentFixture.SkipIfUnavailable(_output)) return;
+
+        var handler = await CreateEmptyCharacterAsync();
+        var rule = CreateSelectRule("Feat", "Feat");
+        var (first, second) = FindTwinOptions(rule);
+        if (first is null || second is null)
+        {
+            _output.WriteLine("[SKIP] no two feats of one name survive as separate options here.");
+            return;
+        }
+
+        var held = DataManager.Current.ElementsCollection.GetElement(first.Id);
+        CharacterManager.Current.RegisterElement(held!);
+        handler.SetRegisteredElement(rule, first.Id);
+        CharacterManager.Current.ReprocessCharacter();
+
+        var options = BuildSelectionOptionResolver.ResolveOptions(rule, number: 1);
+
+        options.Single(option => option.Id == first.Id).IsCurrentSelection.Should().BeTrue();
+        options.Single(option => option.Id == second.Id).IsDisabled.Should().BeFalse(
+            "swapping this pick for the other ruleset's printing replaces it rather than doubling it");
+    }
+
+    /// <summary>Two options of one name that survive option de-duplication, or nulls.</summary>
+    private static (BuildSelectionOption? First, BuildSelectionOption? Second) FindTwinOptions(SelectRule rule)
+    {
+        var group = BuildSelectionOptionResolver.ResolveOptions(rule, number: 1)
+            .GroupBy(option => option.Name, StringComparer.OrdinalIgnoreCase)
+            .FirstOrDefault(candidate => candidate.Count() > 1);
+        return group is null ? (null, null) : (group.First(), group.Skip(1).First());
     }
 
     private static async Task<TestSelectionRuleExpanderHandler> CreateEmptyCharacterAsync()

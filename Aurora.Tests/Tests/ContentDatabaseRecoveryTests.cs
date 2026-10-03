@@ -1,4 +1,4 @@
-using Aurora.Importer;
+using Aurora.Content.Preparation;
 using Microsoft.Data.Sqlite;
 
 namespace Aurora.Tests.Tests;
@@ -45,7 +45,7 @@ public sealed class ContentDatabaseRecoveryTests
 
             File.Exists(recoveredPath + "-journal").Should().BeTrue();
 
-            using var recovered = AuroraContentImporter.OpenReadableConnection(recoveredPath);
+            using var recovered = ContentDatabase.OpenReadableConnection(recoveredPath);
             using var query = recovered.CreateCommand();
             query.CommandText = "SELECT COUNT(*) FROM probe WHERE value = 1;";
             query.ExecuteScalar().Should().Be(200L);

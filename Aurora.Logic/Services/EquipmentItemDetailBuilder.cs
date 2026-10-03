@@ -1,3 +1,4 @@
+using Builder.Core.Logging;
 using Builder.Data;
 using Builder.Presentation.Models;
 using Builder.Presentation.Utilities;
@@ -96,8 +97,9 @@ public static class EquipmentItemDetailBuilder
                     return sheetDescription;
             }
         }
-        catch
+        catch (Exception ex)
         {
+            Logger.Exception(ex, $"EquipmentItemDetailBuilder.GetDescription sheet description for '{element.Id}'");
         }
 
         try
@@ -109,8 +111,9 @@ public static class EquipmentItemDetailBuilder
                     .Trim();
             }
         }
-        catch
+        catch (Exception ex)
         {
+            Logger.Exception(ex, $"EquipmentItemDetailBuilder.GetDescription for '{element.Id}'");
         }
 
         return string.Empty;

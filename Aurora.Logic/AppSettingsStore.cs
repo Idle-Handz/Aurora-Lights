@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 // Cross-platform replacement for Builder.Presentation.Properties.Settings
 // (System.Configuration / Properties.Settings.Default is .NET Framework only)
 //
@@ -34,6 +34,16 @@ public sealed class AppSettingsStore
 
     private static readonly string SettingsPath =
         Path.Combine(SettingsDirectory, "settings.json");
+
+    private string _settingsPath = SettingsPath;
+
+    public AppSettingsStore() { }
+
+    /// <summary>Uses a separate settings file, for hosts such as tests and rehearsal tools.</summary>
+    public AppSettingsStore(string settingsPath)
+    {
+        _settingsPath = Path.GetFullPath(settingsPath);
+    }
 
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {
@@ -121,9 +131,23 @@ public sealed class AppSettingsStore
     public bool ShellWindowState { get; set; } = false;
     public bool Bundle { get; set; } = false;
     public bool CharacterSheetOpenOnSave { get; set; } = false;
-    public bool ApplyDefaultSourceRestrictionsOnNewCharacter { get; set; } = false;
     public bool SheetStartSpellCardsOnNewPage { get; set; } = false;
     public string DefaultSourceRestrictions { get; set; } = "";
+
+    /// <summary>
+    /// Lets a refresh leave out a content file it cannot use — one whose XML cannot be read, or one
+    /// that redefines an element another file already defines differently — instead of refusing the
+    /// whole refresh over it. The files are listed in Settings until they are fixed. Turn this off
+    /// to have a refresh stop at the first such file.
+    /// </summary>
+    public bool SkipUnusableContentOnRefresh { get; set; } = true;
+
+    /// <summary>
+    /// Set once the sources a user had switched off in the content database have been copied into
+    /// <see cref="DefaultSourceRestrictions"/>. The catalog always loads in full; restrictions decide
+    /// what a character sees.
+    /// </summary>
+    public bool SourcePreferencesSeeded { get; set; } = false;
 
 
     // ----------------------------------------------------------------
@@ -134,15 +158,22 @@ public sealed class AppSettingsStore
     /// Loads settings from disk. Returns defaults if the file does not
     /// exist or cannot be read (e.g. first launch or corrupt file).
     /// </summary>
-    public static AppSettingsStore Load()
+    public static AppSettingsStore Load() => Load(SettingsPath);
+
+    public static AppSettingsStore Load(string settingsPath)
     {
+        var settings = new AppSettingsStore(settingsPath);
         try
         {
-            if (File.Exists(SettingsPath))
+            if (File.Exists(settings._settingsPath))
             {
-                string json = File.ReadAllText(SettingsPath);
-                return JsonSerializer.Deserialize<AppSettingsStore>(json, SerializerOptions)
-                       ?? new AppSettingsStore();
+                string json = File.ReadAllText(settings._settingsPath);
+                var loaded = JsonSerializer.Deserialize<AppSettingsStore>(json, SerializerOptions);
+                if (loaded is not null)
+                {
+                    loaded._settingsPath = settings._settingsPath;
+                    return loaded;
+                }
             }
         }
         catch (Exception ex)
@@ -152,7 +183,7 @@ public sealed class AppSettingsStore
                 $"[AppSettingsStore] Failed to load settings: {ex.Message}");
         }
 
-        return new AppSettingsStore();
+        return settings;
     }
 
     /// <summary>
@@ -163,9 +194,9 @@ public sealed class AppSettingsStore
     {
         try
         {
-            Directory.CreateDirectory(SettingsDirectory);
+            Directory.CreateDirectory(Path.GetDirectoryName(_settingsPath)!);
             string json = JsonSerializer.Serialize(this, SerializerOptions);
-            File.WriteAllText(SettingsPath, json);
+            File.WriteAllText(_settingsPath, json);
         }
         catch (Exception ex)
         {
@@ -181,7 +212,7 @@ public sealed class AppSettingsStore
     /// </summary>
     public void Reload()
     {
-        AppSettingsStore fresh = Load();
+        AppSettingsStore fresh = Load(_settingsPath);
 
         Accent = fresh.Accent;
         Theme = fresh.Theme;

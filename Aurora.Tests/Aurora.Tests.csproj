@@ -23,8 +23,9 @@
     <ProjectReference Include="..\Aurora.Documents\Aurora.Documents.csproj" />
     <ProjectReference Include="..\Aurora.Logic\Aurora.Logic.csproj" />
     <ProjectReference Include="..\Aurora.Components\Aurora.Components.csproj" />
-    <ProjectReference Include="..\Aurora.Importer\Aurora.Importer.csproj" />
     <ProjectReference Include="..\Aurora.Web\Aurora.Web.csproj" />
+    <ProjectReference Include="..\Aurora.DataIntegration\Aurora.DataIntegration.csproj" />
+    <ProjectReference Include="..\Aurora.PdfImport\Aurora.PdfImport.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -40,31 +41,46 @@
 
   <!-- Embed minimal test character XML as a resource -->
   <ItemGroup>
+    <Content Include="..\tests\LegacyOracles\Builder.Data.dll" Link="LegacyOracles\Builder.Data.dll" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\tests\LegacyOracles\Aurora.Documents.dll" Link="LegacyOracles\Aurora.Documents.dll" CopyToOutputDirectory="PreserveNewest" />
     <EmbeddedResource Include="Fixtures\*.dnd5e" />
     <Content Include="Fixtures\Characters\*.dnd5e" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Fixtures\ChoiceIdentity\*.json" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Fixtures\ParityScenarios\*.json" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Fixtures\SpellcastingProfiles\*.xml" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Fixtures\CorrectionMetadata\*.xml" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <!-- Update-service source files live in Aurora.App (MAUI target). Link the pure-.NET ones here
        so we can test parsing, channel filtering, and comparison logic without pulling in MAUI.
-       DebugLogService, GithubReleasesClient, UpdateAvailability, and GithubReleaseChannelService
-       have no MAUI dependencies; AppUpdateService does (Velopack/AppInfo) so it is not linked.
-       Test helpers in GithubUpdateChannelTests cover the logic via concrete subclasses. -->
+       GithubReleasesClient, UpdateAvailability, and GithubReleaseChannelService have no MAUI
+       dependencies; AppUpdateService does (Velopack/AppInfo) so it is not linked.
+       Test helpers in GithubUpdateChannelTests cover the logic via concrete subclasses.
+       DebugLogService comes from the Aurora.DataIntegration project reference. -->
   <ItemGroup>
     <Compile Include="..\Aurora.App\Services\Updates\SemVer.cs" Link="Linked\SemVer.cs" />
-    <Compile Include="..\Aurora.App\Services\DebugLogService.cs" Link="Linked\DebugLogService.cs" />
     <Compile Include="..\Aurora.App\Services\Updates\GithubReleasesClient.cs" Link="Linked\GithubReleasesClient.cs" />
     <Compile Include="..\Aurora.App\Services\Updates\UpdateAvailability.cs" Link="Linked\UpdateAvailability.cs" />
     <Compile Include="..\Aurora.App\Services\Updates\GithubReleaseChannelService.cs" Link="Linked\GithubReleaseChannelService.cs" />
+    <Compile Include="..\Aurora.App\Services\MauiSpellcastingSectionHandler.cs" Link="Linked\MauiSpellcastingSectionHandler.cs" />
     <Compile Include="..\Aurora.App\Services\EquipmentService.cs" Link="Linked\EquipmentService.cs" />
     <Compile Include="..\Aurora.App\Services\CharacterFileWriteCoordinator.cs" Link="Linked\CharacterFileWriteCoordinator.cs" />
     <Compile Include="..\Aurora.App\Services\CompendiumService.cs" Link="Linked\CompendiumService.cs" />
+    <Compile Include="..\Aurora.App\Services\ContentDoctorService.cs" Link="Linked\ContentDoctorService.cs" />
+    <Compile Include="..\Aurora.App\Services\ContentService.cs" Link="Linked\ContentService.cs" />
     <Compile Include="..\Aurora.App\Services\AttackReminderCharacterService.cs" Link="Linked\AttackReminderCharacterService.cs" />
     <Compile Include="..\Aurora.App\Services\SessionAttackReminderService.cs" Link="Linked\SessionAttackReminderService.cs" />
     <Compile Include="..\Aurora.App\Services\SessionState.cs" Link="Linked\SessionState.cs" />
     <Compile Include="..\Aurora.App\Services\SessionStore.cs" Link="Linked\SessionStore.cs" />
+    <!-- Exercise the app's actual refresh/preload lifecycle without a MAUI window. -->
+    <Compile Include="..\Aurora.App\Services\CharacterService.cs" Link="Linked\CharacterService.cs" />
+    <Compile Include="..\Aurora.App\Services\CharacterContext.cs" Link="Linked\CharacterContext.cs" />
+    <Compile Include="..\Aurora.App\Services\CharacterTabModel.cs" Link="Linked\CharacterTabModel.cs" />
+    <Compile Include="..\Aurora.App\Services\CharacterTabService.cs" Link="Linked\CharacterTabService.cs" />
+    <Compile Include="..\Aurora.App\Services\CharacterSnapshot.cs" Link="Linked\CharacterSnapshot.cs" />
+    <Compile Include="..\Aurora.App\Services\CharacterFileSaveExtensions.cs" Link="Linked\CharacterFileSaveExtensions.cs" />
+    <Compile Include="..\Aurora.App\Services\BuildService*.cs" Link="Linked\%(Filename)%(Extension)" />
+    <Compile Include="..\Aurora.App\Services\StartingEquipmentDataLoader.cs" Link="Linked\StartingEquipmentDataLoader.cs" />
   </ItemGroup>
 
 </Project>

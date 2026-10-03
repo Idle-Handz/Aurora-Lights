@@ -22,7 +22,16 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
     <NoWarn>$(NoWarn);CS8618;CS0618;CS0612</NoWarn>
+    <!-- Local correction handling while loading XML comes from the dependency-free contracts
+         package, shared with Aurora.Content. Legacy inherits only this package. -->
+    <AuroraContentContractsOnly>true</AuroraContentContractsOnly>
   </PropertyGroup>
+
+  <Import Project="..\AuroraContent.props" />
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Aurora.Tests" />
+  </ItemGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <Optimize>false</Optimize>
@@ -77,6 +86,9 @@
     <EmbeddedResource Include="Resources\Gallery\**\*.jpg" />
     <EmbeddedResource Include="Resources\Gallery\**\*.png" />
     <EmbeddedResource Include="Resources\card-bg.jpg" />
+    <EmbeddedResource Include="..\Aurora.Lights\resources\default-portrait.png"
+                      Link="Resources\default-portrait.png"
+                      LogicalName="Builder.Presentation.Resources.default-portrait.png" />
     <EmbeddedResource Include="Resources\Sheets\**\*.pdf" />
   </ItemGroup>
 

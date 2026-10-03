@@ -1,3 +1,4 @@
+﻿using Builder.Core.Logging;
 using Builder.Data;
 using Builder.Data.Elements;
 using Builder.Data.Rules;
@@ -106,12 +107,12 @@ public static class BuildSelectionOptionResolver
             }
 
             bool isSpellRule = string.Equals(rule.Attributes.Type, "Spell", StringComparison.OrdinalIgnoreCase);
-            IReadOnlySet<string> ownedNonRepeatableElementIds = GetOwnedNonRepeatableElementIds(rule);
+            OwnedSelections owned = GetOwnedNonRepeatableSelections(rule, currentSelectionId);
             List<BuildSelectionOption> options = BuildElementOptions(
                 elements,
                 isSpellRule,
                 currentSelectionId,
-                ownedNonRepeatableElementIds,
+                owned,
                 settings);
 
             if (options.Count == 0 && isSpellRule)
@@ -120,7 +121,7 @@ public static class BuildSelectionOptionResolver
                     SpellFallbackOptions(rule, baseCollection, settings.SpellAccessMap),
                     isSpellRule: true,
                     currentSelectionId,
-                    ownedNonRepeatableElementIds,
+                    owned,
                     settings);
             }
 
@@ -132,7 +133,7 @@ public static class BuildSelectionOptionResolver
                     FilterBySupportsCaseInsensitive(rule.Attributes.Supports, baseCollection),
                     isSpellRule: false,
                     currentSelectionId,
-                    ownedNonRepeatableElementIds,
+                    owned,
                     settings);
             }
 
@@ -143,7 +144,7 @@ public static class BuildSelectionOptionResolver
                     settings.ElementFallbackProvider(rule),
                     isSpellRule,
                     currentSelectionId,
-                    ownedNonRepeatableElementIds,
+                    owned,
                     settings);
 
                 if (fallback.Count > 0)
@@ -158,31 +159,58 @@ public static class BuildSelectionOptionResolver
         }
     }
 
-    private static HashSet<string> GetOwnedNonRepeatableElementIds(SelectRule rule)
+    /// <summary>
+    /// What the character already holds for this rule, by id and - where a name identifies one
+    /// thing - by name. The pick being edited is left out of the names, so it can still be swapped
+    /// for the other ruleset's version of itself.
+    /// </summary>
+    private static OwnedSelections GetOwnedNonRepeatableSelections(SelectRule rule, string? currentSelectionId)
     {
+        var empty = new OwnedSelections(
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase),
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase));
         try
         {
             if (SelectionRuleTypePolicy.AllowsStackedSelections(rule.Attributes.Type))
-                return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                return empty;
 
-            return CharacterManager.Current.GetElements()
-                .Where(element =>
+            var elements = CharacterManager.Current.GetElements().ToArray();
+            var profiles = CharacterManager.Current.GetSpellcastingInformations().ToArray();
+            var owned = elements.Where(element =>
                     element.Type.Equals(rule.Attributes.Type, StringComparison.Ordinal) &&
-                    !element.AllowDuplicate)
-                .Select(element => element.Id)
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                    !element.AllowDuplicate && (element.Type != "Spell" || SpellAcquisitionResolver.SameSelectionDomain(
+                        SpellAcquisitionResolver.AcquisitionRule(element), rule, elements, profiles)))
+                .ToArray();
+
+            var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (SelectionRuleTypePolicy.EnforcesUniqueNames(rule.Attributes.Type))
+            {
+                foreach (var element in owned.Where(element =>
+                    !string.Equals(element.Id, currentSelectionId, StringComparison.OrdinalIgnoreCase) &&
+                    !string.IsNullOrWhiteSpace(element.Name)))
+                {
+                    names.Add(element.Name);
+                }
+            }
+
+            return new OwnedSelections(
+                owned.Select(element => element.Id).ToHashSet(StringComparer.OrdinalIgnoreCase), names);
         }
         catch
         {
-            return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            return empty;
         }
     }
+
+    private readonly record struct OwnedSelections(
+        IReadOnlySet<string> Ids,
+        IReadOnlySet<string> Names);
 
     private static List<BuildSelectionOption> BuildElementOptions(
         IEnumerable<ElementBase> elements,
         bool isSpellRule,
         string? currentSelectionId,
-        IReadOnlySet<string> ownedNonRepeatableElementIds,
+        OwnedSelections owned,
         BuildSelectionOptionResolverSettings settings)
     {
         return OrderElementOptions(
@@ -193,7 +221,7 @@ public static class BuildSelectionOptionResolver
                         element,
                         isSpellRule,
                         currentSelectionId,
-                        ownedNonRepeatableElementIds,
+                        owned,
                         settings)),
                 isSpellRule)
             .ToList();
@@ -211,7 +239,7 @@ public static class BuildSelectionOptionResolver
         ElementBase element,
         bool isSpellRule,
         string? currentSelectionId,
-        IReadOnlySet<string> ownedNonRepeatableElementIds,
+        OwnedSelections owned,
         BuildSelectionOptionResolverSettings settings)
     {
         BuildSelectionOptionSortMetadata? metadata = settings.SortMetadataSelector?.Invoke(element);
@@ -233,7 +261,9 @@ public static class BuildSelectionOptionResolver
                 element.Id,
                 element.AllowDuplicate,
                 currentSelectionId,
-                ownedNonRepeatableElementIds),
+                owned.Ids,
+                element.Name,
+                owned.Names),
             IsCurrentSelection: isCurrentSelection,
             DescriptionMarkup: isSpellRule ? string.Empty : GetRawDescription(element));
     }
@@ -401,7 +431,7 @@ public static class BuildSelectionOptionResolver
             : firstWord;
     }
 
-    private static string ExpandDynamicSpellcastingSupports(SelectRule rule)
+    internal static string ExpandDynamicSpellcastingSupports(SelectRule rule)
     {
         string expression = rule.Attributes.Supports ?? string.Empty;
         if (!expression.Contains("$(spellcasting:list)", StringComparison.OrdinalIgnoreCase)
@@ -465,38 +495,8 @@ public static class BuildSelectionOptionResolver
 
     private static SpellcastingInformation? ResolveSpellcastingInformation(SelectRule rule)
     {
-        string? profileName = rule.Attributes.ContainsSpellcastingName()
-            ? rule.Attributes.SpellcastingName
-            : null;
-
-        try
-        {
-            SpellcastingInformation? active = CharacterManager.Current
-                .GetSpellcastingInformations()
-                .FirstOrDefault(candidate =>
-                    !candidate.IsExtension &&
-                    (string.IsNullOrWhiteSpace(profileName) ||
-                     candidate.Name.Equals(profileName, StringComparison.OrdinalIgnoreCase)));
-            if (active is not null)
-                return active;
-        }
-        catch
-        {
-        }
-
-        string? ownerId = rule.ElementHeader?.Id;
-        if (string.IsNullOrWhiteSpace(ownerId))
-            return null;
-
-        ElementBase? owner = DataManager.Current.ElementsCollection
-            .FirstOrDefault(element => element.Id.Equals(ownerId, StringComparison.OrdinalIgnoreCase));
-        if (owner?.HasSpellcastingInformation != true)
-            return null;
-
-        return string.IsNullOrWhiteSpace(profileName) ||
-               owner.SpellcastingInformation.Name.Equals(profileName, StringComparison.OrdinalIgnoreCase)
-            ? owner.SpellcastingInformation
-            : null;
+        return SpellAcquisitionResolver.ResolveProfile(rule, CharacterManager.Current.GetElements().ToArray(),
+            CharacterManager.Current.GetSpellcastingInformations().ToArray());
     }
 
     private static IReadOnlyList<int> ResolveSpellSlotLevels(
@@ -521,8 +521,9 @@ public static class BuildSelectionOptionResolver
             if (levels.Count > 0)
                 return levels;
         }
-        catch
+        catch (Exception ex)
         {
+            Logger.Exception(ex, nameof(ResolveSpellSlotLevels));
         }
 
         // Match legacy Aurora's no-slot sentinel: no real spell has level 99.
@@ -584,8 +585,9 @@ public static class BuildSelectionOptionResolver
                     if (stats.GetValue(info.GetSlotStatisticName(level)) > 0)
                         maxLevel = level;
                 }
-                catch
+                catch (Exception ex)
                 {
+                    Logger.Exception(ex, nameof(ResolveMaxCastableSpellLevel));
                 }
             }
 
@@ -658,8 +660,9 @@ public static class BuildSelectionOptionResolver
             if (!string.IsNullOrWhiteSpace(raw))
                 return ElementDescriptionGenerator.GeneratePlainDescription(raw).Trim();
         }
-        catch
+        catch (Exception ex)
         {
+            Logger.Exception(ex, nameof(GetFeatureDescription));
         }
 
         return string.Empty;

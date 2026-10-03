@@ -1,3 +1,4 @@
+﻿using Aurora.Components.Models;
 using System.Xml;
 using Builder.Presentation;
 using Builder.Presentation.Models;
@@ -201,12 +202,10 @@ public static class CharacterFileSaveExtensions
                     if (section is null || !section.IsPreparedCaster || section.SpellLevels.Count == 0)
                         continue;
 
-                    // Build lookups by both Id and Name so we can match against whatever the XML uses.
-                    var preparedById = section.SpellLevels.SelectMany(lvl => lvl.Spells)
-                        .Where(s => !string.IsNullOrEmpty(s.Id))
-                        .ToDictionary(s => s.Id, s => s.IsPrepared, StringComparer.OrdinalIgnoreCase);
-                    var preparedByName = section.SpellLevels.SelectMany(lvl => lvl.Spells)
-                        .ToDictionary(s => s.Name, s => s.IsPrepared, StringComparer.OrdinalIgnoreCase);
+                    // Look up by both Id and Name so we can match whatever the XML records.
+                    var sectionSpells = section.SpellLevels.SelectMany(lvl => lvl.Spells).ToList();
+                    var preparedById = PreparedSpellLookup.ById(sectionSpells, s => s.Id, s => s.IsPrepared);
+                    var preparedByName = PreparedSpellLookup.ByName(sectionSpells, s => s.Name, s => s.IsPrepared);
 
                     var spellsNode = spellcasting["spells"];
                     if (spellsNode == null) continue;

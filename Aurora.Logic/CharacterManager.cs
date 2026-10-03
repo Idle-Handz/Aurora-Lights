@@ -1,4 +1,4 @@
-// Decompiled with JetBrains decompiler
+﻿// Decompiled with JetBrains decompiler
 // Type: Builder.Presentation.CharacterManager
 // Assembly: Aurora Builder, Version=1.0.166.7407, Culture=neutral, PublicKeyToken=null
 // MVID: 09D35420-8FA0-4A71-9A21-FF952C48F8A3
@@ -50,7 +50,8 @@ public sealed class CharacterManager
   private ElementBaseCollection? _elementsCache;
 #pragma warning restore CS8632
   private bool _elementsCacheDirty = true;
-  private bool _suppressSetCharacterDetails = false;
+  private bool _isResettingCharacter = false;
+  private int _selectionRemovalDepth;
 
   private CharacterManager()
   {
@@ -71,7 +72,32 @@ public sealed class CharacterManager
 
   private void _progressionManager_SelectionRuleRemoved(object sender, SelectRule e)
   {
-    this._eventAggregator.Send<CharacterManagerSelectionRuleDeleted>(new CharacterManagerSelectionRuleDeleted(e));
+    // Selections live as progression roots, not beneath the element that owns
+    // their choice. The legacy UI unregisters them on this event; headless hosts
+    // need the same cleanup even when there is no expander control.
+    _selectionRemovalDepth++;
+    try
+    {
+      this._eventAggregator.Send<CharacterManagerSelectionRuleDeleted>(new CharacterManagerSelectionRuleDeleted(e));
+      var progressions = new[] { this._progressionManager }
+        .Concat(this.ClassProgressionManagers.Cast<ProgressionManager>()).ToArray();
+      foreach (var progression in progressions)
+      {
+        foreach (var selected in progression.Elements.Where(element =>
+          element.Aquisition.WasSelected && ReferenceEquals(element.Aquisition.SelectRule, e)).ToArray())
+        {
+          // Nested rule deletion can already have removed another selected root.
+          if (progression.Elements.Contains(selected)) this.UnregisterElement(selected);
+        }
+      }
+      for (int slot = 1; slot <= Math.Max(1, e.Attributes.Number); slot++)
+        SelectionRuleExpanderContext.Current?.ClearRegisteredElement(e, slot);
+    }
+    finally
+    {
+      _selectionRemovalDepth--;
+      _elementsCacheDirty = true;
+    }
   }
 
   private void _progressionManager_SpellcastingSectionCreated(
@@ -258,7 +284,7 @@ public sealed class CharacterManager
     foreach (ProgressionManager progressionManager3 in (Collection<ClassProgressionManager>) this.ClassProgressionManagers)
       progressionManager3.ProcessExistingElements();
     _elementsCacheDirty = true;
-    if (!_suppressSetCharacterDetails)
+    if (!_isResettingCharacter)
       this.SetCharacterDetails();
     this._eventAggregator.Send<CharacterManagerElementRegistered>(new CharacterManagerElementRegistered(element));
     this._eventAggregator.Send<CharacterManagerElementsUpdated>(new CharacterManagerElementsUpdated(element, CharacterManagerUpdateReason.ElementRegistered));
@@ -349,17 +375,25 @@ public sealed class CharacterManager
         this._progressionManager.Elements.Remove(element);
         break;
     }
-    this._progressionManager.ProcessExistingElements();
-    foreach (ProgressionManager progressionManager5 in (Collection<ClassProgressionManager>) this.ClassProgressionManagers)
-      progressionManager5.ProcessExistingElements();
     _elementsCacheDirty = true;
-    if (!_suppressSetCharacterDetails)
+    // A full reset discards the entire outgoing graph. Re-evaluating it between
+    // removals can recreate grants and resolve old definitions against a newly
+    // loaded catalog. Keep normal edit-time re-evaluation outside that teardown.
+    // Likewise, finish removing a choice's selections before evaluating its owner.
+    if (!_isResettingCharacter && _selectionRemovalDepth == 0)
+    {
+      this._progressionManager.ProcessExistingElements();
+      foreach (ProgressionManager progressionManager5 in (Collection<ClassProgressionManager>) this.ClassProgressionManagers)
+        progressionManager5.ProcessExistingElements();
+    }
+    _elementsCacheDirty = true;
+    if (!_isResettingCharacter && _selectionRemovalDepth == 0)
       this.SetCharacterDetails();
     this._eventAggregator.Send<CharacterManagerElementUnregistered>(new CharacterManagerElementUnregistered(element));
     this._eventAggregator.Send<CharacterManagerElementsUpdated>(new CharacterManagerElementsUpdated(element, CharacterManagerUpdateReason.ElementUnregistered));
     if (element.Type == "Race" || element.Type == "Sub Race" || element.Type == "Class" || element.Type == "Multiclass" || element.Type == "Archetype" || element.Type == "Level")
       this._eventAggregator.Send<CharacterBuildChangedEvent>(new CharacterBuildChangedEvent(this.Character));
-    if (this.Status.IsLoaded && ApplicationContext.Current.Settings.GenerateSheetOnCharacterChangedRegistered)
+    if (_selectionRemovalDepth == 0 && this.Status.IsLoaded && ApplicationContext.Current.Settings.GenerateSheetOnCharacterChangedRegistered)
       this.GenerateCharacterSheet();
     return element;
   }
@@ -369,7 +403,7 @@ public sealed class CharacterManager
     Logger.Info("creating a new character");
     Stopwatch sw = Stopwatch.StartNew();
     Logger.Info("unregister all remaining elements");
-    _suppressSetCharacterDetails = true;
+    _isResettingCharacter = true;
     try
     {
       foreach (ClassProgressionManager progressionManager in (Collection<ClassProgressionManager>) this.ClassProgressionManagers)
@@ -383,7 +417,7 @@ public sealed class CharacterManager
     }
     finally
     {
-      _suppressSetCharacterDetails = false;
+      _isResettingCharacter = false;
     }
     _elementsCacheDirty = true;
     this._progressionManager.ProgressionLevel = 0;
@@ -399,8 +433,8 @@ public sealed class CharacterManager
         break;
     }
     SelectionRuleExpanderContext.Current.RemoveAllExpanders();
-    if (ApplicationContext.Current.Settings.ApplyDefaultSourceRestrictionsOnNewCharacter)
-      this.SourcesManager.LoadDefaults();
+    // A brand new character has not chosen its own restrictions, so it starts from the defaults.
+    this.SourcesManager.LoadDefaults();
     this.Character.ResetEntryFields();
     this.Status.HasCompanion = false;
     if (initializeFirstLevel)
@@ -726,6 +760,8 @@ public sealed class CharacterManager
 
   private void SetCharacterDetails()
   {
+    this.Character.SynchronizeCompanions(this.GetElements());
+    this.Status.HasCompanion = this.Character.Companions.Count > 0;
     int progressionLevel = this._progressionManager.ProgressionLevel;
     if (this.StatisticsCalculator == null)
       this.StatisticsCalculator = new StatisticsHandler2(this);
@@ -974,7 +1010,14 @@ public sealed class CharacterManager
     else
       this.Status.HasMulticlassSpellSlots = false;
     if (this.Status.HasCompanion)
-      this.Character.Companion.Statistics.Update(values);
+    {
+      foreach (var companion in this.Character.Companions)
+      {
+        var companionValues = ReferenceEquals(companion, this.Character.Companion)
+          ? values : this.StatisticsCalculator.CalculateCompanionValues(companion, this.GetElements(), progressionLevel);
+        companion.Statistics.Update(companionValues);
+      }
+    }
     this.Character.Inventory.CalculateWeight();
     CharacterManager.Current.Status.HasChanges = true;
   }
@@ -1034,6 +1077,8 @@ public sealed class CharacterManager
     }
   }
 
+  internal void InvalidateElementCache() => _elementsCacheDirty = true;
+
   public ElementBaseCollection GetElements()
   {
     if (!_elementsCacheDirty && _elementsCache != null)
@@ -1069,21 +1114,21 @@ public sealed class CharacterManager
     return (IEnumerable<ElementBase>) proficiencyList;
   }
 
-  public IEnumerable<StatisticRule> GetStatisticRules2()
+  public IEnumerable<StatisticRule> GetStatisticRules2(Func<ElementBase, bool> companionScope = null)
   {
     List<StatisticRule> statisticRules2 = new List<StatisticRule>();
-    statisticRules2.AddRange(this._progressionManager.GetStatisticRules());
+    statisticRules2.AddRange(this._progressionManager.GetStatisticRules(companionScope: companionScope));
     foreach (ClassProgressionManager progressionManager in (Collection<ClassProgressionManager>) this.ClassProgressionManagers)
-      statisticRules2.AddRange(progressionManager.GetStatisticRules());
+      statisticRules2.AddRange(progressionManager.GetStatisticRules(companionScope: companionScope));
     return (IEnumerable<StatisticRule>) statisticRules2;
   }
 
-  public IEnumerable<StatisticRule> GetStatisticRulesAtLevel(int level)
+  public IEnumerable<StatisticRule> GetStatisticRulesAtLevel(int level, Func<ElementBase, bool> companionScope = null)
   {
     List<StatisticRule> statisticRulesAtLevel = new List<StatisticRule>();
-    statisticRulesAtLevel.AddRange(this._progressionManager.GetStatisticRulesAtLevel(level));
+    statisticRulesAtLevel.AddRange(this._progressionManager.GetStatisticRulesAtLevel(level, companionScope));
     foreach (ClassProgressionManager progressionManager in (Collection<ClassProgressionManager>) this.ClassProgressionManagers)
-      statisticRulesAtLevel.AddRange(progressionManager.GetStatisticRulesAtLevel(level));
+      statisticRulesAtLevel.AddRange(progressionManager.GetStatisticRulesAtLevel(level, companionScope));
     return (IEnumerable<StatisticRule>) statisticRulesAtLevel;
   }
 
@@ -1117,6 +1162,15 @@ public sealed class CharacterManager
     ISpellcastingSectionHandler current = SpellcastingSectionContext.Current;
     foreach (SpellcastingInformation spellcastingInformation in this.GetSpellcastingInformations().Where<SpellcastingInformation>((Func<SpellcastingInformation, bool>) (x => !x.IsExtension)))
     {
+      if (current?.GetSpellcasterSectionViewModel(spellcastingInformation.UniqueIdentifier) is null)
+      {
+        var preparedIds = current?.GetPreparedIds(spellcastingInformation) ?? Array.Empty<string>();
+        preparedSpells.AddRange(preparedIds.Select(id => DataManager.Current.ElementsCollection.GetElement(id)).OfType<Spell>());
+        preparedSpells.AddRange(SpellAcquisitionResolver.Resolve(this.GetElements(), this.GetSpellcastingInformations())
+          .Where(a => a.ProfileKey == SpellAcquisitionResolver.ProfileKey(spellcastingInformation) && a.IsAlwaysPrepared)
+          .Select(a => a.Spell).OfType<Spell>());
+        continue;
+      }
       foreach (SelectionElement selectionElement in (IEnumerable<SelectionElement>) (current?.GetSpellcasterSectionViewModel(spellcastingInformation.UniqueIdentifier)?.KnownSpells ?? Enumerable.Empty<SelectionElement>()).Where<SelectionElement>((Func<SelectionElement, bool>) (x => x.IsChosen)).OrderBy<SelectionElement, int>((Func<SelectionElement, int>) (x => x.Element.AsElement<Spell>().Level)).ThenBy<SelectionElement, string>((Func<SelectionElement, string>) (x => x.Element.Name)))
       {
         Spell spell = selectionElement.Element.AsElement<Spell>();

@@ -61,7 +61,6 @@ public sealed class SettingsPageState
 {
     public int ActiveSettingsTabIndex { get; set; }
     public int ActiveContentTabIndex { get; set; }
-    public string PackageSearch { get; set; } = string.Empty;
 }
 
 public sealed class BuildPageState

@@ -1,0 +1,1 @@
+Content downloads that were being silently skipped now arrive: refreshing no longer reports nothing to do while installed files sit behind the published version, which could leave content months out of date and characters missing everything a stale file defined.

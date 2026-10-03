@@ -99,6 +99,7 @@
 
 @code {
     [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public IReadOnlySet<string> OwnedElementIds { get; set; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
     private List<string> _categories = [];
     private string _category = "";
@@ -129,7 +130,12 @@
     private void RunSearch()
     {
         if (string.IsNullOrWhiteSpace(_category)) { _results = []; return; }
-        _results = EquipmentService.SearchCustomFeatures(_category, _search).ToList();
+        _results = EquipmentService.SearchCustomFeatures(_category, _search, OwnedElementIds).ToList();
+        if (!_results.Any(r => r.Id == _selectedId))
+        {
+            _selectedId = null;
+            _selected = null;
+        }
     }
 
     private void SelectResult(ItemSearchResult r)

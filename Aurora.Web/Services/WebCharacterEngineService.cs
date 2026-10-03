@@ -1,3 +1,4 @@
+﻿using Builder.Core.Logging;
 using Builder.Data;
 using Builder.Data.Elements;
 using Builder.Data.Rules;
@@ -249,48 +250,18 @@ public sealed class WebCharacterEngineService
         }
     }
 
-    public async Task<WebCharacterSourceState> ToggleSourceGroupAsync(
+    /// <summary>A category or publisher row in the sources tree: its sources move together.</summary>
+    public async Task<WebCharacterSourceState> ToggleSourceNodeAsync(
         PhaseZeroSessionWorkspace workspace,
         string relativePath,
-        string groupId)
-    {
-        await _operationLock.WaitAsync();
-        try
-        {
-            SourcesGroup? group = CharacterManager.Current.SourcesManager.SourceGroups
-                .FirstOrDefault(candidate => string.Equals(candidate.Name, groupId, StringComparison.Ordinal));
-            if (group is null)
-            {
-                throw new InvalidOperationException("The requested source group was not found.");
-            }
-
-            if (group.AllowUnchecking)
-            {
-                group.SetIsChecked(group.IsChecked == true ? false : (bool?)true, updateChildren: true);
-                ApplyAndPersistSourceRestrictions(workspace, relativePath);
-            }
-
-            return new WebCharacterSourceState(
-                BuildSourceGroups(),
-                "Source restrictions updated for the current browser session.");
-        }
-        finally
-        {
-            _operationLock.Release();
-        }
-    }
-
-    public async Task<WebCharacterSourceState> ToggleSourceCategoryAsync(
-        PhaseZeroSessionWorkspace workspace,
-        string relativePath,
-        SourceRestrictionCategoryToggle toggle)
+        SourceRestrictionNodeToggle toggle)
     {
         await _operationLock.WaitAsync();
         try
         {
             List<SourceItem> matchingSources = CharacterManager.Current.SourcesManager.SourceGroups
                 .SelectMany(group => group.Sources)
-                .Where(item => item.AllowUnchecking && ClassifySource(item) == toggle.Category)
+                .Where(item => item.AllowUnchecking && toggle.SourceIds.Contains(item.Source.Id, StringComparer.Ordinal))
                 .ToList();
 
             foreach (SourceItem item in matchingSources)
@@ -1054,6 +1025,10 @@ public sealed class WebCharacterEngineService
 
         InventoryItemFactory.InvalidateSearchIndex();
         await DataManager.Current.InitializeElementDataAsync();
+        // The engine lists sources from a snapshot taken when CharacterManager.Current is first
+        // touched, which can predate this load. Rebuild it so the session's Manage page offers the
+        // sources that were just loaded.
+        CharacterManager.Current.SourcesManager.Refresh();
         await InventoryItemFactory.PrecomputeSearchIndexAsync();
     }
 
@@ -1400,8 +1375,9 @@ public sealed class WebCharacterEngineService
                         currentName = (string?)((dynamic)current).Name;
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
+                    Logger.Exception(ex, "WebCharacterEngineService.BuildMagicRuleSelectionGroups current selection");
                 }
 
                 string label = rule.Attributes.Number > 1
@@ -1599,8 +1575,9 @@ public sealed class WebCharacterEngineService
                 }
             }
         }
-        catch
+        catch (Exception ex)
         {
+            Logger.Exception(ex, $"WebCharacterEngineService.GetDescription sheet description for '{element.Id}'");
         }
 
         try
@@ -1610,8 +1587,9 @@ public sealed class WebCharacterEngineService
                 return ElementDescriptionGenerator.GeneratePlainDescription(element.Description).Trim();
             }
         }
-        catch
+        catch (Exception ex)
         {
+            Logger.Exception(ex, $"WebCharacterEngineService.GetDescription for '{element.Id}'");
         }
 
         return string.Empty;
@@ -1642,8 +1620,9 @@ public sealed class WebCharacterEngineService
                 spellAttack = attack >= 0 ? $"+{attack}" : attack.ToString();
             }
         }
-        catch
+        catch (Exception ex)
         {
+            Logger.Exception(ex, "WebCharacterEngineService.BuildMagicModel DC/attack");
         }
 
         bool preparedCaster = spellInfo?.Prepare ?? false;
@@ -1822,21 +1801,19 @@ public sealed class WebCharacterEngineService
             RefreshPreparedCounts(magic);
             MagicSpellAccessClassifier.Apply(magic);
         }
-        catch
+        catch (Exception ex)
         {
+            Logger.Exception(ex, $"WebCharacterEngineService.ApplyPersistedMagicState for '{absolutePath}'");
         }
     }
 
     private static void CopyPersistedMagicState(MagicOverviewModel source, MagicOverviewModel target)
     {
-        Dictionary<string, bool> preparedById = source.SpellLevels
-            .SelectMany(level => level.Spells)
-            .Where(spell => !string.IsNullOrWhiteSpace(spell.Id))
-            .ToDictionary(spell => spell.Id, spell => spell.IsPrepared, StringComparer.OrdinalIgnoreCase);
-
-        Dictionary<string, bool> preparedByName = source.SpellLevels
-            .SelectMany(level => level.Spells)
-            .ToDictionary(spell => spell.Name, spell => spell.IsPrepared, StringComparer.OrdinalIgnoreCase);
+        var sourceSpells = source.SpellLevels.SelectMany(level => level.Spells).ToList();
+        Dictionary<string, bool> preparedById =
+            PreparedSpellLookup.ById(sourceSpells, spell => spell.Id, spell => spell.IsPrepared);
+        Dictionary<string, bool> preparedByName =
+            PreparedSpellLookup.ByName(sourceSpells, spell => spell.Name, spell => spell.IsPrepared);
 
         foreach (MagicSpellListEntryModel spell in target.SpellLevels.SelectMany(level => level.Spells))
         {
@@ -1892,13 +1869,11 @@ public sealed class WebCharacterEngineService
         XmlDocument document = new();
         document.Load(absolutePath);
 
-        Dictionary<string, bool> preparedById = magic.SpellLevels
-            .SelectMany(level => level.Spells)
-            .Where(spell => !string.IsNullOrWhiteSpace(spell.Id))
-            .ToDictionary(spell => spell.Id, spell => spell.IsPrepared, StringComparer.OrdinalIgnoreCase);
-        Dictionary<string, bool> preparedByName = magic.SpellLevels
-            .SelectMany(level => level.Spells)
-            .ToDictionary(spell => spell.Name, spell => spell.IsPrepared, StringComparer.OrdinalIgnoreCase);
+        var magicSpells = magic.SpellLevels.SelectMany(level => level.Spells).ToList();
+        Dictionary<string, bool> preparedById =
+            PreparedSpellLookup.ById(magicSpells, spell => spell.Id, spell => spell.IsPrepared);
+        Dictionary<string, bool> preparedByName =
+            PreparedSpellLookup.ByName(magicSpells, spell => spell.Name, spell => spell.IsPrepared);
 
         XmlNode? buildNode = document.DocumentElement?["build"];
         XmlNode? magicNode = buildNode?["magic"];
@@ -2083,12 +2058,18 @@ public sealed class WebCharacterEngineService
             string components = string.Empty;
             string duration = string.Empty;
 
-            try { level = (int)spell.Level; } catch { }
-            try { subtitle = (string)(spell.Underline ?? string.Empty); } catch { }
-            try { castingTime = (string)(spell.CastingTime ?? string.Empty); } catch { }
-            try { range = (string)(spell.Range ?? string.Empty); } catch { }
-            try { duration = (string)(spell.Duration ?? string.Empty); } catch { }
-            try { components = (string)spell.GetComponentsString(); } catch { }
+            try { level = (int)spell.Level; }
+            catch (Exception ex) { Logger.Exception(ex, $"WebCharacterEngineService.BuildMagicSpellDetail level for '{id}'"); }
+            try { subtitle = (string)(spell.Underline ?? string.Empty); }
+            catch (Exception ex) { Logger.Exception(ex, $"WebCharacterEngineService.BuildMagicSpellDetail subtitle for '{id}'"); }
+            try { castingTime = (string)(spell.CastingTime ?? string.Empty); }
+            catch (Exception ex) { Logger.Exception(ex, $"WebCharacterEngineService.BuildMagicSpellDetail casting time for '{id}'"); }
+            try { range = (string)(spell.Range ?? string.Empty); }
+            catch (Exception ex) { Logger.Exception(ex, $"WebCharacterEngineService.BuildMagicSpellDetail range for '{id}'"); }
+            try { duration = (string)(spell.Duration ?? string.Empty); }
+            catch (Exception ex) { Logger.Exception(ex, $"WebCharacterEngineService.BuildMagicSpellDetail duration for '{id}'"); }
+            try { components = (string)spell.GetComponentsString(); }
+            catch (Exception ex) { Logger.Exception(ex, $"WebCharacterEngineService.BuildMagicSpellDetail components for '{id}'"); }
 
             string body = string.Empty;
             string rawDescription = string.Empty;
@@ -2102,8 +2083,9 @@ public sealed class WebCharacterEngineService
                     descriptionHtml = MagicDescriptionFormatter.FromAuroraHtml(rawDescription);
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                Logger.Exception(ex, $"WebCharacterEngineService.BuildMagicSpellDetail description for '{id}'");
             }
 
             if (string.IsNullOrEmpty(castingTime) && string.IsNullOrEmpty(range))
@@ -2310,8 +2292,9 @@ public sealed class WebCharacterEngineService
                 }
             }
         }
-        catch
+        catch (Exception ex)
         {
+            Logger.Exception(ex, "WebCharacterEngineService.CollectSpellLevels slot totals");
         }
 
         int maxSlot = 0;
@@ -2387,8 +2370,9 @@ public sealed class WebCharacterEngineService
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                Logger.Exception(ex, $"WebCharacterEngineService.CollectPreparedCasterSpellLevels always-prepared check for '{element.Id}'");
             }
         }
 
@@ -2531,8 +2515,7 @@ public sealed class WebCharacterEngineService
     private static string ResolveWorkspaceFile(PhaseZeroSessionWorkspace workspace, string relativePath)
     {
         string absolutePath = Path.GetFullPath(Path.Combine(workspace.WorkspacePath, relativePath));
-        string root = Path.GetFullPath(workspace.WorkspacePath);
-        if (!absolutePath.StartsWith(root, StringComparison.OrdinalIgnoreCase))
+        if (!PathContainment.IsPathWithinDirectory(workspace.WorkspacePath, absolutePath))
             throw new InvalidOperationException("Requested file is outside the current session workspace.");
 
         return absolutePath;

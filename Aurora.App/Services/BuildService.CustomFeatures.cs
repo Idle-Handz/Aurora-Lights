@@ -14,9 +14,28 @@ namespace Aurora.App.Services;
 
 public static partial class BuildService
 {
+    /// <summary>Captures ownership for the Extras picker from the correct character tab.</summary>
+    public static async Task<IReadOnlySet<string>> GetCustomFeatureOwnedIdsAsync(CharacterTab tab)
+    {
+        using var scope = await CharacterContext.EnterAsync(tab);
+        return GetCustomFeatureOwnedIds(tab.File);
+    }
+
+    private static HashSet<string> GetCustomFeatureOwnedIds(CharacterFile? file)
+    {
+        var owned = CharacterManager.Current.GetElements()
+            .Select(e => e.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (string id in file?.LoadCustomFeatures() ?? [])
+        {
+            var element = ResolveCustomFeatureElement(id);
+            owned.Add(element == null ? id : EquipmentService.ResolveCustomFeatureTarget(element).Id);
+        }
+        return owned;
+    }
+
     /// <summary>
     /// Adds a custom-feature proxy (an "Additional …" feat/spell/feature/etc. or a Supernatural
-    /// Gift) to the active character and activates it so its granted content applies, then
+    /// Gift) or companion to the active character and activates its content, then
     /// reprocesses, re-snaps, and saves. Returns null on success or an error message.
     /// </summary>
     public static async Task<string?> AddCustomFeatureAsync(CharacterTab tab, string elementId)
@@ -26,7 +45,7 @@ public static partial class BuildService
         {
             try
             {
-                var proxy = DataManager.Current.ElementsCollection.GetElement(elementId);
+                var proxy = ResolveCustomFeatureElement(elementId);
                 if (proxy == null) return "That feature could not be found.";
 
                 // "Additional X" proxies wrap the real feat/spell/feature; resolve the underlying
@@ -34,13 +53,12 @@ public static partial class BuildService
                 // themselves. See EquipmentService.ResolveCustomFeatureTarget.
                 var target = EquipmentService.ResolveCustomFeatureTarget(proxy);
                 string targetId = target.Id ?? elementId;
-                bool repeatable = EquipmentService.IsRepeatableCustomFeature(target)
-                                  || EquipmentService.IsRepeatableCustomFeature(proxy);
+                bool repeatable = EquipmentService.IsRepeatableCustomFeature(target);
 
                 var file = tab.File;
                 var list = file?.LoadCustomFeatures() ?? [];
-                if (!repeatable && list.Contains(targetId, StringComparer.OrdinalIgnoreCase))
-                    return (string?)null;
+                if (!EquipmentService.CanAddCustomFeature(proxy, GetCustomFeatureOwnedIds(file)))
+                    return $"'{target.Name}' is already on this character and cannot be added again.";
 
                 // Ability-score elements are the exception to the normal fresh-copy rule. The legacy
                 // engine counts repeated registration of the shared ASI instance, while GetFresh()
@@ -52,7 +70,7 @@ public static partial class BuildService
                     StringComparison.OrdinalIgnoreCase);
                 if (repeatable && !isAbilityScoreIncrease)
                 {
-                    toRegister = DataManager.Current.ElementsCollection.GetFresh(targetId) ?? target;
+                    toRegister = SelectionRuleRegistrationService.CloneSelectionElement(target);
                 }
 
                 CharacterManager.Current.RegisterElement(toRegister);
@@ -91,7 +109,7 @@ public static partial class BuildService
         var result = new List<(string, string, string)>();
         foreach (var id in file.LoadCustomFeatures())
         {
-            var el = DataManager.Current.ElementsCollection.GetElement(id);
+            var el = ResolveCustomFeatureElement(id);
             var target = el == null ? null : EquipmentService.ResolveCustomFeatureTarget(el);
             result.Add((id, target?.Name ?? el?.Name ?? id, target?.Type ?? el?.Type ?? ""));
         }
@@ -102,7 +120,9 @@ public static partial class BuildService
     /// Re-registers the character's custom features (the persisted &lt;custom-features&gt; ids) into the
     /// freshly-loaded CharacterManager so their granted content (spells, etc.) takes effect again.
     /// CharacterFile.Save rebuilds only the standard build, so a directly-registered custom feature is
-    /// NOT round-tripped by a normal load — it must be re-applied here. Call once after each character
+    /// NOT round-tripped by a normal load — it must be re-applied here. Companions have their own
+    /// serialized roots and are already restored; the instance count below avoids adding them twice.
+    /// Call once after each character
     /// load. Idempotent: a feature already present as our (blank-acquisition) instance is skipped, so a
     /// duplicate call is harmless. Mirrors <see cref="AddCustomFeatureAsync"/>'s registration.
     /// </summary>
@@ -119,19 +139,23 @@ public static partial class BuildService
         foreach (var group in ids.GroupBy(id => id, StringComparer.OrdinalIgnoreCase))
         {
             string id = group.Key;
-            var proxy = DataManager.Current.ElementsCollection.GetElement(id);
+            var proxy = ResolveCustomFeatureElement(id);
             if (proxy == null) continue;
 
             var target = EquipmentService.ResolveCustomFeatureTarget(proxy);
             string targetId = target.Id ?? id;
-            bool repeatable = EquipmentService.IsRepeatableCustomFeature(target)
-                              || EquipmentService.IsRepeatableCustomFeature(proxy);
+            bool repeatable = EquipmentService.IsRepeatableCustomFeature(target);
 
             bool isAbilityScoreIncrease = string.Equals(
                 target.Type,
                 "Ability Score Improvement",
                 StringComparison.OrdinalIgnoreCase);
-            var existingMatches = cm.GetElements().Where(e => e.Id == targetId).ToList();
+            var existingMatches = cm.GetElements().Where(e =>
+                string.Equals(e.Id, targetId, StringComparison.OrdinalIgnoreCase)).ToList();
+            // Older Extras lists may also name a feature now supplied by progression.
+            // Keep that acquisition intact instead of registering the same grant again.
+            if (!repeatable && existingMatches.Count > 0)
+                continue;
             int ownedBaseline = existingMatches.Any(e =>
                 e.Aquisition.WasGranted || e.Aquisition.WasSelected) ? 1 : 0;
             int existingCustomCount = isAbilityScoreIncrease
@@ -148,7 +172,9 @@ public static partial class BuildService
                 // repeated registration of the shared instance because that is what the engine counts.
                 var toRegister = target;
                 if (repeatable && !isAbilityScoreIncrease)
-                    toRegister = DataManager.Current.ElementsCollection.GetFresh(targetId) ?? target;
+                {
+                    toRegister = SelectionRuleRegistrationService.CloneSelectionElement(target);
+                }
 
                 cm.RegisterElement(toRegister);
                 any = true;
@@ -170,17 +196,17 @@ public static partial class BuildService
             try
             {
                 var cm = CharacterManager.Current;
-                var proxy = DataManager.Current.ElementsCollection.GetElement(elementId);
+                var proxy = ResolveCustomFeatureElement(elementId);
                 var target = proxy == null ? null : EquipmentService.ResolveCustomFeatureTarget(proxy);
                 string targetId = target?.Id ?? elementId;
 
                 // Repeated ASIs share one engine instance, so remove the last registration and leave
                 // the first (owned) occurrence intact. Other custom copies retain blank acquisition.
-                var matches = cm.GetElements().Where(e => e.Id == targetId).ToList();
-                var el = matches.Count > 1
+                var matches = cm.GetElements().Where(e =>
+                    string.Equals(e.Id, targetId, StringComparison.OrdinalIgnoreCase)).ToList();
+                var el = target?.Type == "Ability Score Improvement" && matches.Count > 1
                     ? matches.Last()
-                    : matches.FirstOrDefault(e => !e.Aquisition.WasGranted && !e.Aquisition.WasSelected)
-                         ?? matches.FirstOrDefault();
+                    : matches.LastOrDefault(e => !e.Aquisition.WasGranted && !e.Aquisition.WasSelected);
                 if (el != null)
                 {
                     bool preserveAcquisition = matches.Count > 1;
@@ -218,4 +244,15 @@ public static partial class BuildService
             catch (Exception ex) { return DebugLogService.Catch(ex, "BuildService.RemoveCustomFeatureAsync"); }
         });
     }
+
+    /// <summary>
+    /// Looks a custom-feature element up by id, building its spell proxy category first if the id
+    /// names one. Those proxies are created on demand, so a saved or picked id can reference one
+    /// that the catalog has not been asked for yet.
+    /// </summary>
+    private static Builder.Data.ElementBase? ResolveCustomFeatureElement(string? id)
+    {
+        return SpellProxyCatalog.ResolveOrBuild(DataManager.Current.ElementsCollection, id);
+    }
+
 }

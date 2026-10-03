@@ -21,18 +21,29 @@ The main architectural goal is to keep this project as client-neutral as possibl
 
 - the legacy WPF app
 - the MAUI app
-- a future `Aurora.Web` host
+- the `Aurora.Web` host
 
 Recent cleanup in this project includes:
 
-- removal of the `Aurora.Presentation.dll` dependency
+- removal of the WPF presentation dependency from this shared layer
 - removal of shared `System.Drawing` usage
 - replacement of direct `Process.Start(...)` usage with a launcher abstraction
 - path handling fixes so shared content loading no longer assumes Windows path separators
 
-## Important Constraint
+## Source Ownership And Dependencies
 
-This project still carries some historical baggage from the legacy codebase, including decompiled code and a handful of seams that were originally designed around WPF-era assumptions. Those seams are being moved behind shared abstractions incrementally rather than through one large rewrite.
+This project and its first-party dependencies (`Builder.Core`, `Builder.Data`,
+and `Aurora.Documents`) are maintained and built from source in this repository.
+The original Aurora binaries are test-only compatibility fixtures under
+`tests/LegacyOracles`, not build or runtime dependencies of this project.
+Third-party references, including DynamicExpresso, iTextSharp, and NuGet
+packages, remain declared in `Aurora.Logic.csproj`.
+
+Some source originated through reconstruction of the legacy application and
+still preserves WPF-era assumptions. That history describes the source's
+provenance, not a dependency on an external legacy implementation. Those seams
+are being moved behind shared abstractions incrementally. See
+[source ownership and legacy compatibility](../docs/LEGACY_RESTORATION.md).
 
 ## Expected Responsibility Split
 

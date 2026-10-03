@@ -47,7 +47,7 @@ internal sealed class MauiCharacterSheetGenerator : ICharacterSheetGenerator
         var sheet = new CharacterSheetEx();
         sheet.Configuration.IncludeBackgroundPage    = Preferences.Default.Get(UserPreferencesService.KeyBackgroundPage, defaultValue: true);
         sheet.Configuration.IncludeEquipmentPage     = Preferences.Default.Get(UserPreferencesService.KeyEquipmentPage,  defaultValue: true);
-        sheet.Configuration.IncludeSpellcastingPage    = spellInfos.Any();
+        sheet.Configuration.IncludeSpellcastingPage    = spellInfos.Any() || elements.Any(e => e.Type == "Spell");
 #pragma warning disable CS0618 // IsEditable backs form-fillable behavior in the shared generator
         sheet.Configuration.IsEditable                 = Preferences.Default.Get(UserPreferencesService.KeyEditableSheet, defaultValue: false);
 #pragma warning restore CS0618
@@ -71,11 +71,46 @@ internal sealed class MauiCharacterSheetGenerator : ICharacterSheetGenerator
         sheet.EquipmentSheetExportContent =
             new ExportContentGenerator(cm, sheet.Configuration).GetEquipmentContent();
 
-        // Spellcasting pages
-        var addedSpells = new List<string>();
+        // Spellcasting pages. The spell list is de-duplicated by element id where it is built,
+        // so two printings of one name both appear, exactly as the character holds them.
         foreach (var info in spellInfos)
             sheet.SpellcastingPageExportContentCollection.Add(
-                BuildSpellcastingPage(cm, stats, info, addedSpells));
+                BuildSpellcastingPage(cm, stats, info));
+
+        foreach (var group in SpellAcquisitionResolver.Resolve(elements, spellInfos)
+            .Where(a => a.IsFeature || a.FreeUses > 0 || a.Preparation == SpellPreparation.RitualOnly)
+            .Where(a => a.Preparation != SpellPreparation.ListOnly)
+            .GroupBy(a => (a.OriginId, a.Ability)))
+        {
+            var page = new CharacterSheetSpellcastingPageExportContent
+            {
+                SpellcastingClass = group.First().OriginName,
+                Ability = group.Key.Ability,
+                PrepareCount = "N/A"
+            };
+            foreach (var acquisition in group)
+            {
+                if (acquisition.Spell is not Spell spell || spell.Level is < 0 or > 9) continue;
+                var limits = string.Join("; ", new[] {
+                    acquisition.Slots == SpellSlotPermission.Any ? "May use available spell slots" : "",
+                    acquisition.SlotUses is > 0 ? $"{acquisition.SlotUses}/{acquisition.Recharge}, requires {acquisition.Profile?.Name} spell slot" : "",
+                    acquisition.FreeUses is > 0 ? $"{acquisition.FreeUses}/{acquisition.Recharge} without a slot" : "",
+                    acquisition.Diagnostic
+                }.Where(t => t.Length > 0));
+                GetSpellsProperty(page, spell.Level).Spells.Add(new CharacterSheetSpellcastingPageExportContent.SpellExportContent
+                {
+                    Name = spell.Name, Level = spell.Level.ToString(), School = spell.MagicSchool ?? "",
+                    CastingTime = spell.CastingTime ?? "", Range = spell.Range ?? "", Duration = spell.Duration ?? "",
+                    Components = spell.GetComponentsString(), Subtitle = limits,
+                    Description = limits + "\n" + ElementDescriptionGenerator.GeneratePlainDescription(spell.Description ?? ""),
+                    AlwaysPrepared = acquisition.IsAlwaysPrepared,
+                    IsPrepared = acquisition.IsAlwaysPrepared || spell.Level == 0,
+                    Ritual = acquisition.Preparation == SpellPreparation.RitualOnly && spell.IsRitual,
+                    Concentration = spell.IsConcentration
+                });
+            }
+            sheet.SpellcastingPageExportContentCollection.Add(page);
+        }
 
         // Populate card collections if the corresponding pages are enabled.
         if (sheet.Configuration.IncludeSpellcards)
@@ -497,8 +532,7 @@ internal sealed class MauiCharacterSheetGenerator : ICharacterSheetGenerator
     private static CharacterSheetSpellcastingPageExportContent BuildSpellcastingPage(
         CharacterManager cm,
         Builder.Presentation.Services.Calculator.StatisticValuesGroupCollection stats,
-        SpellcastingInformation info,
-        List<string> addedSpells)
+        SpellcastingInformation info)
     {
         var page = new CharacterSheetSpellcastingPageExportContent();
         page.SpellcastingClass = info.Name;
@@ -515,12 +549,17 @@ internal sealed class MauiCharacterSheetGenerator : ICharacterSheetGenerator
                     ? pm.GetElements().FirstOrDefault(x => x.Type == "Archetype")?.Name
                     : null) ?? "";
         }
-        catch { }
+        catch (Exception ex)
+        {
+            DebugLogService.Instance.LogException(ex, $"MauiCharacterSheetGenerator archetype for '{info.Name}'");
+        }
 
         // Stats
         page.Ability      = info.AbilityName;
-        try { page.AttackBonus = stats.GetValue(info.GetSpellcasterSpellAttackStatisticName()).ToValueString(); } catch { }
-        try { page.Save        = stats.GetValue(info.GetSpellcasterSpellSaveStatisticName()).ToString(); } catch { }
+        try { page.AttackBonus = stats.GetValue(info.GetSpellcasterSpellAttackStatisticName()).ToValueString(); }
+        catch (Exception ex) { DebugLogService.Instance.LogException(ex, $"MauiCharacterSheetGenerator attack bonus for '{info.Name}'"); }
+        try { page.Save        = stats.GetValue(info.GetSpellcasterSpellSaveStatisticName()).ToString(); }
+        catch (Exception ex) { DebugLogService.Instance.LogException(ex, $"MauiCharacterSheetGenerator save DC for '{info.Name}'"); }
         page.PrepareCount = info.Prepare
             ? stats.GetValue(info.GetPrepareAmountStatisticName()).ToString()
             : "N/A";
@@ -533,7 +572,8 @@ internal sealed class MauiCharacterSheetGenerator : ICharacterSheetGenerator
         {
             var levelProp = GetSpellsProperty(page, lvl);
             levelProp.Level = lvl;
-            try { levelProp.AvailableSlots = stats.GetValue(info.GetSlotStatisticName(lvl)); } catch { }
+            try { levelProp.AvailableSlots = stats.GetValue(info.GetSlotStatisticName(lvl)); }
+            catch (Exception ex) { DebugLogService.Instance.LogException(ex, $"MauiCharacterSheetGenerator slot count level {lvl} for '{info.Name}'"); }
         }
         if (cm.Status.HasMulticlassSpellSlots)
         {
@@ -551,18 +591,18 @@ internal sealed class MauiCharacterSheetGenerator : ICharacterSheetGenerator
 
         // Collect prepared/always-prepared IDs
         var preparedIds = new HashSet<string>(
-            SpellcastingSectionContext.Current?.GetPreparedIds(info.Name) ?? Array.Empty<string>(),
+            SpellcastingSectionContext.Current?.GetPreparedIds(info) ?? Array.Empty<string>(),
             StringComparer.OrdinalIgnoreCase);
         var alwaysPreparedIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var e in cm.GetElements().Where(e => e.Type == "Spell"))
-        {
-            if (IsAlwaysPreparedSpell(e) && !string.IsNullOrWhiteSpace(e.Id))
-                alwaysPreparedIds.Add(e.Id);
-        }
+        var acquisitions = SpellAcquisitionResolver.Resolve(cm.GetElements(), cm.GetSpellcastingInformations())
+            .Where(a => a.ProfileKey == SpellAcquisitionResolver.ProfileKey(info)
+                && a.Preparation is not (SpellPreparation.ListOnly or SpellPreparation.Feature or SpellPreparation.RitualOnly)).ToList();
+        foreach (var a in acquisitions.Where(a => a.IsAlwaysPrepared)) alwaysPreparedIds.Add(a.Spell.Id);
 
         // Spell list: registered elements of type Spell
-        var registeredSpells = cm.GetElements()
-            .Where(e => e.Type == "Spell")
+        var registeredSpells = acquisitions.Select(a => a.Spell)
+            .Concat(preparedIds.Select(id => DataManager.Current.ElementsCollection.GetElement(id)).OfType<Spell>())
+            .DistinctBy(e => e.Id)
             .Select(e => (Element: e, Level: GetSpellLevel(e)))
             .Where(t => t.Level >= 0)
             .OrderBy(t => t.Level).ThenBy(t => t.Element.Name)
@@ -590,9 +630,11 @@ internal sealed class MauiCharacterSheetGenerator : ICharacterSheetGenerator
                 castingTime = sp.CastingTime ?? "";
                 range       = sp.Range       ?? "";
                 duration    = sp.Duration    ?? "";
-                try { components = sp.GetComponentsString() ?? ""; } catch { }
+                try { components = sp.GetComponentsString() ?? ""; }
+                catch (Exception ex) { DebugLogService.Instance.LogException(ex, $"MauiCharacterSheetGenerator components for '{sp.Id}'"); }
                 subtitle    = sp.Underline   ?? "";
-                try { description = ElementDescriptionGenerator.GeneratePlainDescription(sp.Description ?? ""); } catch { }
+                try { description = ElementDescriptionGenerator.GeneratePlainDescription(sp.Description ?? ""); }
+                catch (Exception ex) { DebugLogService.Instance.LogException(ex, $"MauiCharacterSheetGenerator description for '{sp.Id}'"); }
                 isRitual = sp.IsRitual;
                 isConc   = sp.IsConcentration;
                 school   = sp.MagicSchool   ?? "";
@@ -615,7 +657,6 @@ internal sealed class MauiCharacterSheetGenerator : ICharacterSheetGenerator
                 Concentration = isConc,
             };
 
-            addedSpells.Add(spell.Name ?? "");
             GetSpellsProperty(page, level).Spells.Add(entry);
         }
 
@@ -652,8 +693,9 @@ internal sealed class MauiCharacterSheetGenerator : ICharacterSheetGenerator
             if (spell.Aquisition.WasSelected && HasPreparedSetter(spell.Aquisition.SelectRule.Setters))
                 return true;
         }
-        catch
+        catch (Exception ex)
         {
+            DebugLogService.Instance.LogException(ex, $"MauiCharacterSheetGenerator.IsAlwaysPreparedSpell for '{spell.Id}'");
         }
 
         return false;

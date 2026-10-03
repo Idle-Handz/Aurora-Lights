@@ -112,7 +112,8 @@ public sealed record MagicKnownSpellEntryModel(
     string CastingTime = "",
     string GrantedBy = "",
     MagicSpellSelectionAccess SelectionAccess = MagicSpellSelectionAccess.Unknown,
-    string AccessSource = "");
+    string AccessSource = "",
+    IReadOnlyList<MagicSpellAccessPathModel>? ResolvedAccessPaths = null);
 
 public sealed class MagicSpellListEntryModel
 {
@@ -126,6 +127,7 @@ public sealed class MagicSpellListEntryModel
     public bool IsPrepared { get; set; }
     public bool IsAlwaysPrepared { get; set; }
     public bool IsCantrip { get; set; }
+    public bool HasResolvedOwnership { get; set; }
     public MagicSpellDisplayState DisplayState { get; set; }
     public IReadOnlyList<MagicSpellAccessPathModel> AccessPaths { get; set; } = [];
     public string CastingTime { get; set; } = string.Empty;
@@ -258,7 +260,13 @@ public sealed record MagicSpellAccessPathModel(
     string CastingSectionId,
     string SourceLabel,
     bool CanCastNormally,
-    bool CanCastAsRitual);
+    bool CanCastAsRitual,
+    bool CanUseSpellSlots = false,
+    string Ability = "",
+    int? FreeUses = null,
+    string Recharge = "",
+    string Note = "",
+    int? SlotUses = null);
 
 public sealed class MagicSpellLevelModel
 {

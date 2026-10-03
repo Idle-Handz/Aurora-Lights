@@ -1,0 +1,22 @@
+<Project>
+  <!-- Imported by projects that consume the shared content library. AuroraContentVersion is the
+       single pin; tools/update-content-library.ps1 updates it. Projects that need only the
+       dependency-free correction contracts set AuroraContentContractsOnly=true before importing
+       (Aurora.Logic, which Aurora.Legacy gets them through; Legacy never imports this file itself).
+       Build with -p:UseLocalContentLibrary=true to use the sibling AuroraTranslator checkout
+       instead of the vendored package (override its location with AuroraContentSource). -->
+  <PropertyGroup>
+    <AuroraContentVersion>0.9.0</AuroraContentVersion>
+    <AuroraContentSource Condition="'$(AuroraContentSource)' == ''">$(MSBuildThisFileDirectory)..\5eApiTranslator</AuroraContentSource>
+    <AuroraContentProject Condition="'$(AuroraContentContractsOnly)' == 'true'">Aurora.Content.Contracts</AuroraContentProject>
+    <AuroraContentProject Condition="'$(AuroraContentProject)' == ''">Aurora.Content</AuroraContentProject>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(UseLocalContentLibrary)' != 'true'">
+    <PackageReference Include="$(AuroraContentProject)" Version="[$(AuroraContentVersion)]" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(UseLocalContentLibrary)' == 'true'">
+    <ProjectReference Include="$(AuroraContentSource)\$(AuroraContentProject)\$(AuroraContentProject).csproj" />
+  </ItemGroup>
+</Project>

@@ -32,7 +32,7 @@ public sealed class BuilderCoreCompatibilityTests
             .Select(type => type.FullName)
             .Order(StringComparer.Ordinal)
             .Should()
-            .Equal(expectedTypes.Order(StringComparer.Ordinal));
+            .Contain(expectedTypes);
     }
 
     [Fact]

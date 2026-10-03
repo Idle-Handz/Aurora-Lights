@@ -461,10 +461,12 @@
         }
     </MudTabPanel>
 
-    @* Companion (only if a companion is active) *@
-    @if (_snap.HasCompanion && _snap.Companion is { } comp)
+    @if (_snap.HasCompanion)
     {
-        <MudTabPanel Text="Companion">
+        <MudTabPanel Text="Companions">
+          @foreach (var comp in _snap.Companions)
+          {
+            <section style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--mud-palette-divider);">
             <div class="section-label" style="margin-bottom: 4px;">@comp.Name</div>
             @if (!string.IsNullOrEmpty(comp.TypeLine))
             {
@@ -582,6 +584,8 @@
                     }
                 }
             }
+            </section>
+          }
         </MudTabPanel>
     }
 

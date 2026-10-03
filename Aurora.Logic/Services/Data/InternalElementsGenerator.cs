@@ -27,6 +27,17 @@ public class InternalElementsGenerator
     return string.Format(format, (object) str).ToUpperInvariant();
   }
 
+  /// <summary>
+  /// Teaches the alias table what each generated proxy used to be called. A save refers to the
+  /// proxy, not the definition underneath it, so an alias on the definition only reaches the save
+  /// if the proxy id derived from the old name forwards too. The id is derived exactly as
+  /// <see cref="GenerateInternalId"/> derives the current one.
+  /// </summary>
+  private void ForwardGeneratedProxyIds(ElementBase element, string splitSection, string format) =>
+    ElementIdAliases.ForwardGeneratedIds(element.Id, savedId => savedId.Contains(splitSection)
+      ? string.Format(format, (object) (((IEnumerable<string>) Regex.Split(savedId, splitSection)).LastOrDefault<string>() ?? "")).ToUpperInvariant()
+      : null);
+
   public List<ElementBase> GenerateInternalFeats(IEnumerable<ElementBase> content)
   {
     List<ElementBase> internalFeats = new List<ElementBase>();
@@ -47,6 +58,7 @@ public class InternalElementsGenerator
         {
           string upperInvariant = (list2.FirstOrDefault<Source>((Func<Source, bool>) (x => x.Name.Equals(element.Source)))?.Abbreviation ?? "").ToUpperInvariant();
           string internalId = this.GenerateInternalId((ElementBase) element, "_FEAT_", $"ID_{upperInvariant}_INTERNAL_ITEM_FEAT_PROXY_{{0}}");
+          this.ForwardGeneratedProxyIds((ElementBase) element, "_FEAT_", $"ID_{upperInvariant}_INTERNAL_ITEM_FEAT_PROXY_{{0}}");
           Item obj1 = new Item();
           obj1.ElementHeader = new ElementHeader($"Additional {element.Type}, {element.Name}", "Item", element.Source, internalId);
           Item obj2 = obj1;
@@ -98,6 +110,7 @@ public class InternalElementsGenerator
         {
           string upperInvariant = (list2.FirstOrDefault<Source>((Func<Source, bool>) (x => x.Name.Equals(element.Source)))?.Abbreviation ?? "").ToUpperInvariant();
           string internalId = this.GenerateInternalId((ElementBase) element, splitSection, $"ID_{upperInvariant}_INTERNAL_ITEM_LANGUAGE_PROXY{splitSection}{{0}}");
+          this.ForwardGeneratedProxyIds((ElementBase) element, splitSection, $"ID_{upperInvariant}_INTERNAL_ITEM_LANGUAGE_PROXY{splitSection}{{0}}");
           Item obj1 = new Item();
           obj1.ElementHeader = new ElementHeader($"Additional {element.Type}, {element.Name}", "Item", element.Source, internalId);
           Item obj2 = obj1;
@@ -149,6 +162,7 @@ public class InternalElementsGenerator
         {
           string upperInvariant = (list2.FirstOrDefault<Source>((Func<Source, bool>) (x => x.Name.Equals(element.Source)))?.Abbreviation ?? "").ToUpperInvariant();
           string internalId = this.GenerateInternalId((ElementBase) element, splitSection, $"ID_{upperInvariant}_INTERNAL_ITEM_PROFICIENCY_PROXY{splitSection}{{0}}");
+          this.ForwardGeneratedProxyIds((ElementBase) element, splitSection, $"ID_{upperInvariant}_INTERNAL_ITEM_PROFICIENCY_PROXY{splitSection}{{0}}");
           string str1 = $"Skill Proficiency ({element.Name})";
           string str2 = element.Name;
           if (element.HasSupports && element.Supports.Contains("Skill"))
@@ -204,6 +218,7 @@ public class InternalElementsGenerator
         {
           string upperInvariant = (list2.FirstOrDefault<Source>((Func<Source, bool>) (x => x.Name.Equals(element.Source)))?.Abbreviation ?? "").ToUpperInvariant();
           string internalId = this.GenerateInternalId(element, splitSection, $"ID_{upperInvariant}_INTERNAL_ITEM_PROXY{splitSection}{{0}}");
+          this.ForwardGeneratedProxyIds(element, splitSection, $"ID_{upperInvariant}_INTERNAL_ITEM_PROXY{splitSection}{{0}}");
           Item obj1 = new Item();
           obj1.ElementHeader = new ElementHeader($"Additional {element.Type}, {element.Name}", "Item", element.Source, internalId);
           Item obj2 = obj1;
@@ -234,15 +249,37 @@ public class InternalElementsGenerator
     return internalAsi;
   }
 
-  public List<ElementBase> GenerateInternalSpells(IEnumerable<ElementBase> content)
+  /// <summary>
+  /// The spellcasting list names the spell proxies are generated across, with the unnamed list
+  /// first. Deriving these without building any proxy is what lets the proxies themselves be
+  /// built on demand; see <see cref="SpellProxyCatalog"/>.
+  /// </summary>
+  public List<string> GetSpellcastingListNames(IEnumerable<ElementBase> content)
+  {
+    List<string> names = content == null
+      ? new List<string>()
+      : content.Where<ElementBase>((Func<ElementBase, bool>) (x => x.HasSpellcastingInformation && !x.SpellcastingInformation.IsExtension && !x.SpellcastingInformation.ElementHeader.Id.Equals("ID_WOTC_UA20170313_CLASS_FEATURE_MYSTIC_PSIONICS"))).Select<ElementBase, SpellcastingInformation>((Func<ElementBase, SpellcastingInformation>) (x => x.SpellcastingInformation)).ToList<SpellcastingInformation>().Select<SpellcastingInformation, string>((Func<SpellcastingInformation, string>) (x => x.Name)).Distinct<string>().ToList<string>();
+    names.Insert(0, "");
+    return names;
+  }
+
+  /// <summary>
+  /// One proxy item per spell per spellcasting list. That cross product is 79,032 items for the
+  /// shipped catalog, so <paramref name="includeList"/> narrows it to the lists actually wanted;
+  /// passing null keeps the whole product.
+  /// </summary>
+  public List<ElementBase> GenerateInternalSpells(IEnumerable<ElementBase> content, Func<string, bool> includeList = null)
   {
     List<ElementBase> internalSpells = new List<ElementBase>();
     if (content == null)
       return internalSpells;
     List<Spell> list1 = content.Where<ElementBase>((Func<ElementBase, bool>) (x => x.Type.Equals("Spell"))).Cast<Spell>().ToList<Spell>();
     List<Source> list2 = content.Where<ElementBase>((Func<ElementBase, bool>) (x => x.Type.Equals("Source"))).Cast<Source>().ToList<Source>();
-    List<string> list3 = content.Where<ElementBase>((Func<ElementBase, bool>) (x => x.HasSpellcastingInformation && !x.SpellcastingInformation.IsExtension && !x.SpellcastingInformation.ElementHeader.Id.Equals("ID_WOTC_UA20170313_CLASS_FEATURE_MYSTIC_PSIONICS"))).Select<ElementBase, SpellcastingInformation>((Func<ElementBase, SpellcastingInformation>) (x => x.SpellcastingInformation)).ToList<SpellcastingInformation>().Select<SpellcastingInformation, string>((Func<SpellcastingInformation, string>) (x => x.Name)).Distinct<string>().ToList<string>();
-    list3.Insert(0, "");
+    List<string> list3 = this.GetSpellcastingListNames(content);
+    if (includeList != null)
+      list3 = list3.Where<string>(includeList).ToList<string>();
+    if (list3.Count == 0)
+      return internalSpells;
     foreach (Spell spell in list1)
     {
       Spell element = spell;
@@ -262,6 +299,7 @@ public class InternalElementsGenerator
           foreach (string str in list3)
           {
             string internalId = this.GenerateInternalId((ElementBase) element, splitSection, $"ID_{upperInvariant}_INTERNAL_ITEM_{str.Replace(" ", "_")}_SPELL_PROXY{splitSection}{{0}}");
+            this.ForwardGeneratedProxyIds((ElementBase) element, splitSection, $"ID_{upperInvariant}_INTERNAL_ITEM_{str.Replace(" ", "_")}_SPELL_PROXY{splitSection}{{0}}");
             string name = $"Additional {element.Type}, {element.Name}";
             if (!string.IsNullOrWhiteSpace(str))
               name = $"Additional {str} {element.Type}, {element.Name}";

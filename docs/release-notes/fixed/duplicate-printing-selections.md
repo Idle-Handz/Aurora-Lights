@@ -1,0 +1,1 @@
+Choice lists prevent duplicate same-name selections for non-repeatable spells, feats, classes, subclasses, races, and backgrounds, while keeping separate spellcasting acquisitions distinct and allowing an existing choice to be replaced.

@@ -1,0 +1,709 @@
+{
+  "id_only_duplicate_groups_after_exclusion": 1587,
+  "different_source_groups": 1501,
+  "same_source_groups": 86,
+  "different_source_groups_equal_except_source_attribute": 1501,
+  "source_label_pairs": [
+    {
+      "sources": [
+        "The Book of Beasts",
+        "The Book of Xellarant"
+      ],
+      "groups": 1501
+    }
+  ],
+  "same_source_file_groups": [
+    {
+      "paths": [
+        "unearthed-arcana\\20200204.xml",
+        "unearthed-arcana\\20200206.xml"
+      ],
+      "count": 28,
+      "identical": 25,
+      "elements": [
+        {
+          "id": "ID_WOTC_SOURCE_UNEARTHED_ARCANA_20200206",
+          "name": "Unearthed Arcana: Subclasses, Part 2",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_UA20200206_ARCHETYPE_BARD_COLLEGE_OF_CREATION",
+          "name": "College of Creation",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_UA20200206_ARCHETYPE_FEATURE_CREATION_NOTE_OF_POTENTIAL",
+          "name": "Note of Potential",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_UA20200206_ARCHETYPE_FEATURE_CREATION_ANIMATING_PERFORMANCE",
+          "name": "Animating Performance",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_UA20200206_ARCHETYPE_FEATURE_CREATION_PERFORMANCE_OF_CREATION",
+          "name": "Performance of Creation",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_UA20200206_ARCHETYPE_FEATURE_CREATION_NOTE_OF_DESTRUCTION",
+          "name": "Note of Destruction",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_UA20200206_ARCHETYPE_FEATURE_CREATION_NOTE_OF_PROTECTION",
+          "name": "Note of Protection",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_UA20200206_ARCHETYPE_FEATURE_CREATION_NOTE_OF_INGENUITY",
+          "name": "Note of Ingenuity",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_UA20200206_COMPANION_BARD_DANCING_ITEM",
+          "name": "Dancing Item (Large)",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_UA20200206_COMPANION_BARD_DANCING_ITEM_MEDIUM",
+          "name": "Dancing Item (Medium)",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_UA20200206_COMPANION_BARD_DANCING_ITEM_SMALL",
+          "name": "Dancing Item (Small)",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_UA20200206_COMPANION_BARD_DANCING_ITEM_TINY",
+          "name": "Dancing Item (Tiny)",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_UA20200206_COMPANION_TRAIT_DANCING_ITEM_ENDLESS_WALTZ",
+          "name": "Endless Waltz",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_UA20200206_COMPANION_TRAIT_DANCING_ITEM_IMMUTABLE_FORM",
+          "name": "Immutable Form",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_UA20200206_COMPANION_ACTION_DANCING_ITEM_FORCE_EMPOWERED_SLAM",
+          "name": "Force-Empowered Slam",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_UA20200206_ARCHETYPE_CLERIC_UNITY_DOMAIN",
+          "name": "Unity Domain",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_UA20200206_ARCHETYPE_FEATURE_UNITY_DOMAIN_SPELLS",
+          "name": "Domain Spells",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_UA20200206_ARCHETYPE_FEATURE_UNITY_EMBOLDENING_BOND",
+          "name": "Emboldening Bond",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_UA20200206_ARCHETYPE_FEATURE_UNITY_CD_SHARED_BURDEN",
+          "name": "Channel Divinity: Shared Burden",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_UA20200206_ARCHETYPE_FEATURE_UNITY_PROTECTIVE_BOND",
+          "name": "Protective Bond",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_UA20200206_ARCHETYPE_FEATURE_UNITY_POTENT_SPELLCASTING",
+          "name": "Potent Spellcasting",
+          "identical": false
+        },
+        {
+          "id": "ID_WOTC_UA20200206_ARCHETYPE_FEATURE_UNITY_ENDURING_UNITY",
+          "name": "Enduring Unity",
+          "identical": false
+        },
+        {
+          "id": "ID_WOTC_UA20200206_ARCHETYPE_SORCERER_CLOCKWORK_SOUL",
+          "name": "Clockwork Soul",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_UA20200206_ARCHETYPE_FEATURE_CLOCKWORK_CLOCKWORK_MAGIC",
+          "name": "Clockwork Magic",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_UA20200206_ARCHETYPE_FEATURE_CLOCKWORK_RESTORE_BALANCE",
+          "name": "Restore Balance",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_UA20200206_ARCHETYPE_FEATURE_CLOCKWORK_BULWARK_OF_LAW",
+          "name": "Bulwark of Law",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_UA20200206_ARCHETYPE_FEATURE_CLOCKWORK_TRANCE_OF_ORDER",
+          "name": "Trance of Order",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_UA20200206_ARCHETYPE_FEATURE_CLOCKWORK_CLOCKWORK_CAVALCADE",
+          "name": "Clockwork Cavalcade",
+          "identical": false
+        }
+      ]
+    },
+    {
+      "paths": [
+        "supplements\\tashas-cauldron-of-everything\\optional-class-features.xml",
+        "the-book-of-xellarant\\class-ranger-revised.xml"
+      ],
+      "count": 17,
+      "identical": 4,
+      "elements": [
+        {
+          "id": "ID_WOTC_TCOE_CLASS_FEATURE_RANGER_DEFT_EXPLORER",
+          "name": "Deft Explorer",
+          "identical": false
+        },
+        {
+          "id": "ID_WOTC_TCOE_ITEM_OCF_RANGER_DEFT_EXPLORER",
+          "name": "Ranger, LV01: Deft Explorer",
+          "identical": false
+        },
+        {
+          "id": "ID_WOTC_TCOE_CLASS_FEATURE_RANGER_DEFT_EXPLORER_CANNY",
+          "name": "Canny",
+          "identical": false
+        },
+        {
+          "id": "ID_WOTC_TCOE_CLASS_FEATURE_RANGER_DEFT_EXPLORER_ROVING",
+          "name": "Roving",
+          "identical": false
+        },
+        {
+          "id": "ID_WOTC_TCOE_CLASS_FEATURE_RANGER_DEFT_EXPLORER_TIRELESS",
+          "name": "Tireless",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_TCOE_CLASS_FEATURE_RANGER_FAVORED_FOE",
+          "name": "Favored Foe",
+          "identical": false
+        },
+        {
+          "id": "ID_WOTC_TCOE_ITEM_OCF_RANGER_FAVORED_FOE",
+          "name": "Ranger, LV01: Favored Foe",
+          "identical": false
+        },
+        {
+          "id": "ID_WOTC_TCOE_CLASS_FEATURE_RANGER_ADDITIONAL_RANGER_SPELLS",
+          "name": "Additional Ranger Spells",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_TCOE_ITEM_OCF_RANGER_ADDITIONAL_RANGER_SPELLS",
+          "name": "Ranger, LV02: Additional Ranger Spells",
+          "identical": false
+        },
+        {
+          "id": "ID_WOTC_TCOE_CLASS_FEATURE_RANGER_SPELLCASTING_FOCUS",
+          "name": "Spellcasting Focus (Ranger)",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_TCOE_ITEM_OCF_RANGER_SPELLCASTING_FOCUS",
+          "name": "Ranger, LV02: Spellcasting Focus",
+          "identical": false
+        },
+        {
+          "id": "ID_WOTC_TCOE_CLASS_FEATURE_RANGER_PRIMAL_AWARENESS",
+          "name": "Primal Awareness",
+          "identical": false
+        },
+        {
+          "id": "ID_WOTC_TCOE_ITEM_OCF_RANGER_PRIMAL_AWARENESS",
+          "name": "Ranger, LV03: Primal Awareness",
+          "identical": false
+        },
+        {
+          "id": "ID_WOTC_TCOE_CLASS_FEATURE_RANGER_MARTIAL_VERSATILITY",
+          "name": "Martial Versatility (Ranger)",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_TCOE_ITEM_OCF_RANGER_MARTIAL_VERSATILITY",
+          "name": "Ranger, LV04: Martial Versatility",
+          "identical": false
+        },
+        {
+          "id": "ID_WOTC_TCOE_CLASS_FEATURE_RANGER_NATURES_VEIL",
+          "name": "Nature's Veil",
+          "identical": false
+        },
+        {
+          "id": "ID_WOTC_TCOE_ITEM_OCF_RANGER_NATURES_VEIL",
+          "name": "Ranger, LV10: Nature's Veil",
+          "identical": false
+        }
+      ]
+    },
+    {
+      "paths": [
+        "supplements\\fizbans-treasury-of-dragons\\ranger-drakewarden.xml",
+        "the-book-of-xellarant\\ranger-drakewarden.xml"
+      ],
+      "count": 15,
+      "identical": 11,
+      "elements": [
+        {
+          "id": "ID_WOTC_FTOD_ARCHETYPE_RANGER_DRAKEWARDEN",
+          "name": "Drakewarden",
+          "identical": false
+        },
+        {
+          "id": "ID_WOTC_FTOD_ARCHETYPE_FEATURE_DRAKEWARDEN_DRACONIC_GIFT",
+          "name": "Draconic Gift",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_FTOD_ARCHETYPE_FEATURE_DRAKEWARDEN_DRAKE_COMPANION",
+          "name": "Drake Companion",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_FTOD_ARCHETYPE_FEATURE_DRAKEWARDEN_BOND_OF_FANG_AND_SCALE",
+          "name": "Bond of Fang and Scale",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_FTOD_ARCHETYPE_FEATURE_DRAKEWARDEN_DRAKES_BREATH",
+          "name": "Drake\u2019s Breath",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_FTOD_ARCHETYPE_FEATURE_DRAKEWARDEN_PERFECTED_BOND",
+          "name": "Perfected Bond",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_FTOD_COMPANION_DRAKEWARDEN_DRAKE_COMPANION_SMALL",
+          "name": "Drake Companion",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_FTOD_COMPANION_DRAKEWARDEN_DRAKE_COMPANION_MEDIUM",
+          "name": "Drake Companion",
+          "identical": false
+        },
+        {
+          "id": "ID_WOTC_FTOD_COMPANION_DRAKEWARDEN_DRAKE_COMPANION_LARGE",
+          "name": "Drake Companion",
+          "identical": false
+        },
+        {
+          "id": "ID_WOTC_FTOD_COMPANION_TRAIT_DRAKEWARDEN_DRACONIC_ESSENCE",
+          "name": "Draconic Essence",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_FTOD_COMPANION_ACTION_DRAKEWARDEN_BITE",
+          "name": "Bite",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_FTOD_COMPANION_ACTION_DRAKEWARDEN_MAGIC_FANG",
+          "name": "Magic Fang",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_FTOD_COMPANION_ACTION_DRAKEWARDEN_EMPOWERED_BITE",
+          "name": "Empowered Bite",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_FTOD_COMPANION_REACTION_DRAKEWARDEN_INFUSED_STRIKES",
+          "name": "Infused Strikes",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_FTOD_INFORMATION_DRAKE_COMPANION",
+          "name": "Drake Companion",
+          "identical": false
+        }
+      ]
+    },
+    {
+      "paths": [
+        "core\\players-handbook\\class-ranger.xml",
+        "the-book-of-xellarant\\class-ranger-revised.xml"
+      ],
+      "count": 7,
+      "identical": 0,
+      "elements": [
+        {
+          "id": "ID_WOTC_CLASSFEATURE_RANGER_FIGHTING_STYLE",
+          "name": "Fighting Style",
+          "identical": false
+        },
+        {
+          "id": "ID_WOTC_CLASSFEATURE_RANGER_SPELLCASTING",
+          "name": "Spellcasting",
+          "identical": false
+        },
+        {
+          "id": "ID_WOTC_CLASSFEATURE_RANGER_RANGER_ARCHETYPE",
+          "name": "Ranger Archetype",
+          "identical": false
+        },
+        {
+          "id": "ID_WOTC_CLASSFEATURE_RANGER_ASI",
+          "name": "Ability Score Improvement",
+          "identical": false
+        },
+        {
+          "id": "ID_WOTC_CLASSFEATURE_RANGER_EXTRA_ATTACK",
+          "name": "Extra Attack",
+          "identical": false
+        },
+        {
+          "id": "ID_WOTC_CLASSFEATURE_RANGER_FERAL_SENSES",
+          "name": "Feral Senses",
+          "identical": false
+        },
+        {
+          "id": "ID_WOTC_CLASSFEATURE_RANGER_FOE_SLAYER",
+          "name": "Foe Slayer",
+          "identical": false
+        }
+      ]
+    },
+    {
+      "paths": [
+        "unearthed-arcana\\20170116.xml",
+        "unearthed-arcana\\20170117.xml"
+      ],
+      "count": 7,
+      "identical": 5,
+      "elements": [
+        {
+          "id": "ID_WOTC_UA_ARCHETYPE_PRIMEVAL_GUARDIAN",
+          "name": "Primeval Guardian",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_UA_ARCHETYPE_FEATURE_PRIMEVAL_GUARDIAN_MAGIC",
+          "name": "Primeval Guardian Magic",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_UA_ARCHETYPE_FEATURE_PRIMEVAL_GUARDIAN_GUARDIAN_SOUL",
+          "name": "Guardian Soul",
+          "identical": false
+        },
+        {
+          "id": "ID_WOTC_UA_ARCHETYPE_FEATURE_PRIMEVAL_GUARDIAN_PIERCING_THORNS",
+          "name": "Piercing Thorns",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_UA_ARCHETYPE_FEATURE_PRIMEVAL_GUARDIAN_ANCIENT_FORTITUDE",
+          "name": "Ancient Fortitude",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_UA_ARCHETYPE_FEATURE_PRIMEVAL_GUARDIAN_ROOTED_DEFENSE",
+          "name": "Rooted Defense",
+          "identical": true
+        },
+        {
+          "id": "ID_WOTC_UA_ARCHETYPE_FEATURE_PRIMEVAL_GUARDIAN_GUARDIAN_AURA",
+          "name": "Guardian Aura",
+          "identical": false
+        }
+      ]
+    },
+    {
+      "paths": [
+        "third-party\\genuine-fantasy-press\\forgotten-secrets\\items.xml"
+      ],
+      "count": 2,
+      "identical": 0,
+      "elements": [
+        {
+          "id": "ID_GFP_COFSA_MAGIC_ITEM_WONDROUS_ITEM_CIMBALOM_OF_DAZD",
+          "name": "Cimbalom of Dazd",
+          "identical": false
+        },
+        {
+          "id": "ID_GFP_COFSA_MAGIC_ITEM_WONDROUS_ITEM_ANCIENT_HEART_STRENGTH_TWO",
+          "name": "Ancient Heart (Strength +2)",
+          "identical": false
+        }
+      ]
+    },
+    {
+      "paths": [
+        "core\\dungeon-masters-guide-2024\\items-staffs.xml",
+        "supplements\\xanathars-guide-to-everything\\items-wondrous.xml"
+      ],
+      "count": 1,
+      "identical": 0,
+      "elements": [
+        {
+          "id": "ID_WOTC_XGTE_MAGIC_ITEM_STAFF_OF_FLOWERS",
+          "name": "Staff of Flowers",
+          "identical": false
+        }
+      ]
+    },
+    {
+      "paths": [
+        "core\\dungeon-masters-guide-2024\\items-weapons.xml"
+      ],
+      "count": 1,
+      "identical": 0,
+      "elements": [
+        {
+          "id": "ID_WOTC_DMG24_MAGIC_ITEM_AMMUNITION_ADAMANTINE",
+          "name": "Adamantine Ammunition",
+          "identical": false
+        }
+      ]
+    },
+    {
+      "paths": [
+        "core\\players-handbook\\background-noble.xml",
+        "the-book-of-xellarant\\vigilante-background.xml"
+      ],
+      "count": 1,
+      "identical": 1,
+      "elements": [
+        {
+          "id": "ID_BACKGROUND_FEATURE_POSITIONOFPRIVILEGE",
+          "name": "Feature: Position of Privilege",
+          "identical": true
+        }
+      ]
+    },
+    {
+      "paths": [
+        "core\\players-handbook-2024\\rogue-thief.xml"
+      ],
+      "count": 1,
+      "identical": 1,
+      "elements": [
+        {
+          "id": "ID_INTERNAL_PHB24_FEATURE_REPLACEMENT_ROGUE_THIEF_SUPREME_SNEAK_STEALTH_ATTACK",
+          "name": "Supreme Sneak: Stealth Attack Feature Replacement",
+          "identical": true
+        }
+      ]
+    },
+    {
+      "paths": [
+        "reddit\\reddit-unearthed-arcana\\arcane-artillery\\guns.xml"
+      ],
+      "count": 1,
+      "identical": 0,
+      "elements": [
+        {
+          "id": "ID_RDDT_AA_MUSKETBALL",
+          "name": "Musketball (20)",
+          "identical": false
+        }
+      ]
+    },
+    {
+      "paths": [
+        "reddit\\reddit-unearthed-arcana\\blazing-dawn-players-companion\\fighter-devout.xml"
+      ],
+      "count": 1,
+      "identical": 0,
+      "elements": [
+        {
+          "id": "ID_JONOMAN3000_ARCHETYPE_FEATURE_DEVOUT_ZEALOTS_DEVOTION_",
+          "name": "Defender of Kin",
+          "identical": false
+        }
+      ]
+    },
+    {
+      "paths": [
+        "ryokos-guide-to-the-yokai-realms\\creatures-of-the-yokai-realms.xml"
+      ],
+      "count": 1,
+      "identical": 1,
+      "elements": [
+        {
+          "id": "ID_RGTTYR_INFORMATION_ASPECT_OF_ASHURA",
+          "name": "Aspect of Ashura",
+          "identical": true
+        }
+      ]
+    },
+    {
+      "paths": [
+        "ryokos-guide-to-the-yokai-realms\\race-tatsumi.xml"
+      ],
+      "count": 1,
+      "identical": 0,
+      "elements": [
+        {
+          "id": "ID_RGTTYR_RACIAL_TRAIT_TATSUMI_RYUJIN_CLOUDSTEP",
+          "name": "Cloudstep",
+          "identical": false
+        }
+      ]
+    },
+    {
+      "paths": [
+        "supplements\\sword-coast-adventurers-guide\\background-factionagent.xml",
+        "the-book-of-xellarant\\shadow-agent-background.xml"
+      ],
+      "count": 1,
+      "identical": 1,
+      "elements": [
+        {
+          "id": "ID_SCAG_BACKGROUND_FACTION_AGENT_SAFE_HAVEN",
+          "name": "Feature: Safe Haven",
+          "identical": true
+        }
+      ]
+    },
+    {
+      "paths": [
+        "unearthed-arcana\\20170313.xml"
+      ],
+      "count": 1,
+      "identical": 1,
+      "elements": [
+        {
+          "id": "ID_WOTC_UA20170313_SPELL_MYSTIC_CROWN_OF_DISGUST",
+          "name": "Crown of Disgust",
+          "identical": true
+        }
+      ]
+    }
+  ],
+  "split_examples": [
+    {
+      "id": "ID_XELLARANT_COMPANION_HOMUNCULUS",
+      "definitions": [
+        {
+          "path": "supplements\\the-book-of-xellarant\\creatures.xml",
+          "name": "Homunculus",
+          "type": "Companion",
+          "source": "The Book of Xellarant"
+        },
+        {
+          "path": "the-book-of-xellarant\\creatures.xml",
+          "name": "Homunculus",
+          "type": "Companion",
+          "source": "The Book of Beasts"
+        }
+      ],
+      "equal_except_source": true
+    },
+    {
+      "id": "ID_XELLARANT_COMPANION_TRAIT_HOMUNCULUS_TELEPATHIC_BOND",
+      "definitions": [
+        {
+          "path": "supplements\\the-book-of-xellarant\\creatures.xml",
+          "name": "Telepathic Bond",
+          "type": "Companion Trait",
+          "source": "The Book of Xellarant"
+        },
+        {
+          "path": "the-book-of-xellarant\\creatures.xml",
+          "name": "Telepathic Bond",
+          "type": "Companion Trait",
+          "source": "The Book of Beasts"
+        }
+      ],
+      "equal_except_source": true
+    },
+    {
+      "id": "ID_XELLARANT_COMPANION_ACTION_HOMUNCULUS_BITE",
+      "definitions": [
+        {
+          "path": "supplements\\the-book-of-xellarant\\creatures.xml",
+          "name": "Bite",
+          "type": "Companion Action",
+          "source": "The Book of Xellarant"
+        },
+        {
+          "path": "the-book-of-xellarant\\creatures.xml",
+          "name": "Bite",
+          "type": "Companion Action",
+          "source": "The Book of Beasts"
+        }
+      ],
+      "equal_except_source": true
+    },
+    {
+      "id": "ID_XELLARANT_COMPANION_LEMURE",
+      "definitions": [
+        {
+          "path": "supplements\\the-book-of-xellarant\\creatures.xml",
+          "name": "Lemure",
+          "type": "Companion",
+          "source": "The Book of Xellarant"
+        },
+        {
+          "path": "the-book-of-xellarant\\creatures.xml",
+          "name": "Lemure",
+          "type": "Companion",
+          "source": "The Book of Beasts"
+        }
+      ],
+      "equal_except_source": true
+    },
+    {
+      "id": "ID_XELLARANT_COMPANION_TRAIT_LEMURE_DEVIL_S_SIGHT",
+      "definitions": [
+        {
+          "path": "supplements\\the-book-of-xellarant\\creatures.xml",
+          "name": "Devil's Sight",
+          "type": "Companion Trait",
+          "source": "The Book of Xellarant"
+        },
+        {
+          "path": "the-book-of-xellarant\\creatures.xml",
+          "name": "Devil's Sight",
+          "type": "Companion Trait",
+          "source": "The Book of Beasts"
+        }
+      ],
+      "equal_except_source": true
+    },
+    {
+      "id": "ID_XELLARANT_COMPANION_TRAIT_LEMURE_HELLISH_REJUVENATION",
+      "definitions": [
+        {
+          "path": "supplements\\the-book-of-xellarant\\creatures.xml",
+          "name": "Hellish Rejuvenation",
+          "type": "Companion Trait",
+          "source": "The Book of Xellarant"
+        },
+        {
+          "path": "the-book-of-xellarant\\creatures.xml",
+          "name": "Hellish Rejuvenation",
+          "type": "Companion Trait",
+          "source": "The Book of Beasts"
+        }
+      ],
+      "equal_except_source": true
+    }
+  ]
+}

@@ -101,6 +101,12 @@ public static class MagicSpellAccessClassifier
     {
         foreach ((MagicKnownSpellGroupModel group, MagicKnownSpellEntryModel entry) in selections)
         {
+            if (entry.ResolvedAccessPaths is not null)
+            {
+                foreach (var resolved in entry.ResolvedAccessPaths)
+                    candidates.Add(new AccessCandidate(entry.SpellId, entry.CurrentName!, entry.SpellLevel, resolved));
+                continue;
+            }
             MagicSpellSelectionAccess access = group.ReadOnlyGroup
                 ? MagicSpellSelectionAccess.Granted
                 : entry.SelectionAccess;
@@ -125,7 +131,7 @@ public static class MagicSpellAccessClassifier
                     MagicSpellAccessKind.Granted,
                     castingSectionId,
                     source,
-                    CanCastNormally: true,
+                    CanCastNormally: entry.SpellLevel == 0,
                     CanCastAsRitual: false),
                 MagicSpellSelectionAccess.RitualBook when entry.IsRitual => new(
                     MagicSpellAccessKind.RitualBook,
@@ -138,6 +144,8 @@ public static class MagicSpellAccessClassifier
 
             if (path is not null)
             {
+                if (access is MagicSpellSelectionAccess.Known or MagicSpellSelectionAccess.AlwaysPrepared)
+                    path = path with { CanUseSpellSlots = entry.SpellLevel > 0 };
                 candidates.Add(new AccessCandidate(entry.SpellId, entry.CurrentName!, entry.SpellLevel, path));
             }
         }
@@ -149,7 +157,7 @@ public static class MagicSpellAccessClassifier
         IReadOnlyList<(MagicKnownSpellGroupModel Group, MagicKnownSpellEntryModel Entry)> localSelections,
         bool hasRitualBookAccess)
     {
-        if (section.IsPreparedCaster || spell.IsCantrip)
+        if (spell.HasResolvedOwnership || section.IsPreparedCaster || spell.IsCantrip)
         {
             return;
         }
@@ -223,7 +231,7 @@ public static class MagicSpellAccessClassifier
             }
         }
         else if (!ritualBookOnly
-                 && (localSelections.Count > 0 || !hasAnyMatchingSelection))
+                 && (spell.HasResolvedOwnership || localSelections.Count > 0 || !hasAnyMatchingSelection))
         {
             AddCandidate(candidates, spell, new MagicSpellAccessPathModel(
                 MagicSpellAccessKind.Known,
@@ -292,7 +300,10 @@ public static class MagicSpellAccessClassifier
         ICollection<AccessCandidate> candidates,
         MagicSpellListEntryModel spell,
         MagicSpellAccessPathModel path) =>
-        candidates.Add(new AccessCandidate(spell.Id, spell.Name, spell.Level, path));
+        candidates.Add(new AccessCandidate(spell.Id, spell.Name, spell.Level, path with
+        {
+            CanUseSpellSlots = spell.Level > 0 && path.CanCastNormally
+        }));
 
     private static bool Matches(MagicKnownSpellEntryModel entry, MagicSpellListEntryModel spell)
     {

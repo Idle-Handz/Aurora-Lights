@@ -1,4 +1,4 @@
-@page "/manage"
+﻿@page "/manage"
 @inject WebCharacterSessionService CharacterSession
 
 <PageTitle>Manage</PageTitle>
@@ -23,8 +23,7 @@
                                       Busy="_busy"
                                       ShowDefaultActions="false"
                                       OnInfoChanged="MarkDirty"
-                                      OnToggleCategory="ToggleCategoryAsync"
-                                      OnToggleGroup="ToggleGroupAsync"
+                                      OnToggleNode="ToggleNodeAsync"
                                       OnToggleItem="ToggleItemAsync">
                 <Actions>
                     <button class="action-link primary" @onclick="SaveAsync" disabled="@(!_dirty || _busy)">Save Session Changes</button>
@@ -126,34 +125,13 @@
         }
     }
 
-    private async Task ToggleGroupAsync(string groupId)
+    private async Task ToggleNodeAsync(SourceRestrictionNodeToggle toggle)
     {
         _busy = true;
         _failed = false;
         try
         {
-            WebCharacterSourceState state = await CharacterSession.ToggleCurrentSourceGroupAsync(groupId);
-            _sourceGroups = state.Groups;
-            _statusMessage = state.StatusMessage;
-        }
-        catch (Exception ex)
-        {
-            _failed = true;
-            _statusMessage = ex.Message;
-        }
-        finally
-        {
-            _busy = false;
-        }
-    }
-
-    private async Task ToggleCategoryAsync(SourceRestrictionCategoryToggle toggle)
-    {
-        _busy = true;
-        _failed = false;
-        try
-        {
-            WebCharacterSourceState state = await CharacterSession.ToggleCurrentSourceCategoryAsync(toggle);
+            WebCharacterSourceState state = await CharacterSession.ToggleCurrentSourceNodeAsync(toggle);
             _sourceGroups = state.Groups;
             _statusMessage = state.StatusMessage;
         }

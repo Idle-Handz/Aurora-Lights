@@ -1,0 +1,69 @@
+
+  Builder.Core -> C:\Users\Ralla\source\repos\Aurora-Lights\Builder.Core\bin\Debug\net10.0\Builder.Core.dll
+  Builder.Data -> C:\Users\Ralla\source\repos\Aurora-Lights\Builder.Data\bin\Debug\net10.0\Builder.Data.dll
+  Aurora.Documents -> C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.Documents\bin\Debug\net10.0\Aurora.Documents.dll
+  Aurora.Logic -> C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.Logic\bin\Debug\net10.0\Aurora.Logic.dll
+  Aurora.Components -> C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.Components\bin\Debug\net10.0\Aurora.Components.dll
+  Aurora.Web -> C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.Web\bin\Debug\net10.0\Aurora.Web.dll
+  Aurora.DataIntegration -> C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.DataIntegration\bin\Debug\net10.0\Aurora.DataIntegration.dll
+  Aurora.PdfImport -> C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.PdfImport\bin\Debug\net10.0\Aurora.PdfImport.dll
+C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.Tests\Tests\RestrictedSelectionSweepTests.cs(66,40): warning CS8629: Nullable value type may be null. [C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.Tests\Aurora.Tests.csproj]
+C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.Tests\Tests\ContentDatabaseTrustTests.cs(43,79): warning xUnit1031: Test methods should not use blocking task operations, as they can cause deadlocks. Use an async test method and await instead. (https://xunit.net/xunit.analyzers/rules/xUnit1031) [C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.Tests\Aurora.Tests.csproj]
+C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.Tests\Tests\ContentDatabaseTrustTests.cs(113,92): warning xUnit1031: Test methods should not use blocking task operations, as they can cause deadlocks. Use an async test method and await instead. (https://xunit.net/xunit.analyzers/rules/xUnit1031) [C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.Tests\Aurora.Tests.csproj]
+  Aurora.Tests -> C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.Tests\bin\Debug\net10.0\Aurora.Tests.dll
+Test run for C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.Tests\bin\Debug\net10.0\Aurora.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+[xUnit.net 00:00:04.83]     Aurora.Tests.Tests.RecentUpdateReviewFallbackReproTests.PreparedLoadFailureMustNotReplaceARetainedDefinitionWithRejectedXml [FAIL]
+  Failed Aurora.Tests.Tests.RecentUpdateReviewFallbackReproTests.PreparedLoadFailureMustNotReplaceARetainedDefinitionWithRejectedXml [3 s]
+  Error Message:
+   Expected manager.ElementsCollection.GetElement(id)!.Name to be "Original retained" with a length of 17 because falling back must not discard the importer's preserved working definition, but "Conflicting B" has a length of 13, differs near "Con" (index 0).
+  Stack Trace:
+     at FluentAssertions.Execution.XUnit2TestFramework.Throw(String message)
+   at FluentAssertions.Execution.TestFrameworkProvider.Throw(String message)
+   at FluentAssertions.Execution.DefaultAssertionStrategy.HandleFailure(String message)
+   at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)
+   at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)
+   at FluentAssertions.Primitives.StringEqualityValidator.ValidateAgainstLengthDifferences()
+   at FluentAssertions.Primitives.StringValidator.Validate()
+   at FluentAssertions.Primitives.StringAssertions`1.Be(String expected, String because, Object[] becauseArgs)
+   at Aurora.Tests.Tests.RecentUpdateReviewFallbackReproTests.PreparedLoadFailureMustNotReplaceARetainedDefinitionWithRejectedXml() in C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.Tests\Tests\RecentUpdateReviewReproTests.cs:line 81
+--- End of stack trace from previous location ---
+  Standard Output Messages:
+ Prepared load failure: XmlException: Unexpected end of file while parsing Name has occurred. Line 1, position 19.
+ After fallback: Conflicting B
+
+
+[xUnit.net 00:00:05.26]     Aurora.Tests.Tests.RecentUpdateReviewSearchReproTests.MatchingAnAncestorShouldShowItsBooks(query: "Wizards of the Coast") [FAIL]
+[xUnit.net 00:00:05.27]     Aurora.Tests.Tests.RecentUpdateReviewSearchReproTests.MatchingAnAncestorShouldShowItsBooks(query: "5e official") [FAIL]
+  Failed Aurora.Tests.Tests.RecentUpdateReviewSearchReproTests.MatchingAnAncestorShouldShowItsBooks(query: "Wizards of the Coast") [426 ms]
+  Error Message:
+   Expected cut.FindAll("button.source-restrictions-item").Select(row => row.TextContent.Trim()) {empty} to contain "Player's Handbook" because a matching publisher or category should reveal its sources.
+  Stack Trace:
+     at FluentAssertions.Execution.XUnit2TestFramework.Throw(String message)
+   at FluentAssertions.Execution.TestFrameworkProvider.Throw(String message)
+   at FluentAssertions.Execution.DefaultAssertionStrategy.HandleFailure(String message)
+   at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)
+   at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)
+   at FluentAssertions.Execution.AssertionScope.FailWith(String message, Object[] args)
+   at FluentAssertions.Collections.GenericCollectionAssertions`3.Contain(T expected, String because, Object[] becauseArgs)
+   at Aurora.Tests.Tests.RecentUpdateReviewSearchReproTests.MatchingAnAncestorShouldShowItsBooks(String query) in C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.Tests\Tests\RecentUpdateReviewReproTests.cs:line 30
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+  Failed Aurora.Tests.Tests.RecentUpdateReviewSearchReproTests.MatchingAnAncestorShouldShowItsBooks(query: "5e official") [8 ms]
+  Error Message:
+   Expected cut.FindAll("button.source-restrictions-item").Select(row => row.TextContent.Trim()) {empty} to contain "Player's Handbook" because a matching publisher or category should reveal its sources.
+  Stack Trace:
+     at FluentAssertions.Execution.XUnit2TestFramework.Throw(String message)
+   at FluentAssertions.Execution.TestFrameworkProvider.Throw(String message)
+   at FluentAssertions.Execution.DefaultAssertionStrategy.HandleFailure(String message)
+   at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)
+   at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)
+   at FluentAssertions.Execution.AssertionScope.FailWith(String message, Object[] args)
+   at FluentAssertions.Collections.GenericCollectionAssertions`3.Contain(T expected, String because, Object[] becauseArgs)
+   at Aurora.Tests.Tests.RecentUpdateReviewSearchReproTests.MatchingAnAncestorShouldShowItsBooks(String query) in C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.Tests\Tests\RecentUpdateReviewReproTests.cs:line 30
+   at InvokeStub_RecentUpdateReviewSearchReproTests.MatchingAnAncestorShouldShowItsBooks(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+Results File: C:\Users\Ralla\source\repos\Aurora-Lights\artifacts\review-2026-09-25\review-reproductions.trx
+
+Failed!  - Failed:     3, Passed:     0, Skipped:     0, Total:     3, Duration: 4 s - Aurora.Tests.dll (net10.0)

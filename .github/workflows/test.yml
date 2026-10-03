@@ -5,7 +5,7 @@ on:
     paths:
       - 'Aurora.App/**'
       - 'Aurora.Components/**'
-      - 'Aurora.Importer/**'
+      - 'Aurora.DataIntegration/**'
       - 'Aurora.Logic/**'
       - 'Aurora.PdfImport/**'
       - 'Aurora.Presentation.Tests/**'
@@ -17,6 +17,9 @@ on:
       - 'Aurora.Presentation/**'
       - 'docs/release-notes/**'
       - 'lib/**'
+      - 'AuroraContent.props'
+      - 'nuget.config'
+      - 'vendor/nuget/**'
       - 'tests/**'
       - 'tools/AssemblyApi/**'
       - 'tools/WpfAssemblyApi/**'
@@ -30,7 +33,7 @@ on:
     paths:
       - 'Aurora.App/**'
       - 'Aurora.Components/**'
-      - 'Aurora.Importer/**'
+      - 'Aurora.DataIntegration/**'
       - 'Aurora.Logic/**'
       - 'Aurora.PdfImport/**'
       - 'Aurora.Presentation.Tests/**'
@@ -42,6 +45,9 @@ on:
       - 'Aurora.Presentation/**'
       - 'docs/release-notes/**'
       - 'lib/**'
+      - 'AuroraContent.props'
+      - 'nuget.config'
+      - 'vendor/nuget/**'
       - 'tests/**'
       - 'tools/AssemblyApi/**'
       - 'tools/WpfAssemblyApi/**'
@@ -81,7 +87,11 @@ jobs:
           dotnet test Aurora.Tests/Aurora.Tests.csproj -c Release --no-restore
           dotnet test Aurora.Presentation.Tests/Aurora.Presentation.Tests.csproj -c Release --no-restore
 
-      - name: Verify restored legacy API parity
+      - name: Test legacy API compatibility comparison
+        shell: pwsh
+        run: .\tools\legacy-restoration\Test-ApiCompatibility.ps1
+
+      - name: Verify required legacy API compatibility (additions allowed)
         shell: pwsh
         run: |
           .\tools\legacy-restoration\Compare-RestoredAssemblyApi.ps1 -Configuration Release -OracleAssembly .\tests\LegacyOracles\Builder.Core.dll -RestoredAssembly .\Builder.Core\bin\Release\net10.0\Builder.Core.dll

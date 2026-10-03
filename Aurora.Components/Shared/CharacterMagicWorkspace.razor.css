@@ -596,6 +596,12 @@
 }
 
 @media (max-width: 900px) {
+    /* The page scrolls on phones. Keep all spell groups in its content height
+       instead of shrinking the workspace to the space left above navigation. */
+    .character-magic-workspace {
+        flex: none;
+    }
+
     .magic-layout,
     .magic-known-row,
     .magic-prop-row {

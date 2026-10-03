@@ -4,12 +4,14 @@
 // MVID: 09D35420-8FA0-4A71-9A21-FF952C48F8A3
 // Assembly location: C:\Program Files (x86)\Aurora\Aurora Character Builder\Aurora Builder.exe
 
+using Builder.Presentation.Services;
 using Builder.Core.Events;
 using Builder.Core.Logging;
 using Builder.Data;
 using Builder.Data.Elements;
 using Builder.Data.Extensions;
 using Builder.Data.Files;
+using LocalCorrectionDocument = Aurora.Content.Contracts.LocalCorrectionDocument;
 using Builder.Data.Rules;
 using Builder.Data.Strings;
 using Builder.Presentation.Events.Data;
@@ -254,7 +256,20 @@ public sealed class DataManager
         else
         {
           ElementBaseCollection applicationElements = new ElementBaseCollection();
-          XmlDocument xmlDocument = await DataManager.CreateXmlDocument(file.FullName);
+          var correction = LocalCorrectionDocument.ForRuntime(file.FullName);
+          string originPath = correction == null ? file.FullName : LocalCorrectionDocument.ResolveSourcePath(
+            LocalCorrectionDocument.FindContentRoot(file.FullName), correction.SourcePath);
+          XmlDocument xmlDocument;
+          if (correction != null)
+          {
+            xmlDocument = new XmlDocument();
+            xmlDocument.LoadXml(correction.EffectiveXml);
+            ef = new ElementsFile(correction.EffectiveXml);
+            ef.Load(correction.EffectiveXml);
+            foreach (var obsolete in coreElements.Where(e => LocalCorrectionDocument.IsSuppressedFromFile(
+              e.Id, ElementProvenance.GetContentFilePath(e), originPath, correction.SuppressedIds)).ToList()) coreElements.Remove(obsolete);
+          }
+          else xmlDocument = await DataManager.CreateXmlDocument(file.FullName);
           AuroraXmlCompatibilityRepair.RepairDocument(xmlDocument);
           ObservableCollection<XmlNode> elementNodes = ef.ElementNodes;
           if (xmlDocument.DocumentElement != null)
@@ -266,7 +281,9 @@ public sealed class DataManager
               ElementHeader header = elementParser.ParseElementHeader(elementNode);
               if (elementParser.ParserType != header.Type)
                 elementParser = elementParserCollection.FirstOrDefault<ElementParser>((Func<ElementParser, bool>) (p => p.ParserType == header.Type)) ?? defaultParser;
-              applicationElements.Add(elementParser.ParseElement(elementNode));
+              var parsedElement = elementParser.ParseElement(elementNode);
+              ElementProvenance.SetContentFilePath(parsedElement, originPath);
+              applicationElements.Add(parsedElement);
             }
           }
           foreach (ElementBase elementBase1 in (Collection<ElementBase>) applicationElements)
@@ -288,6 +305,9 @@ public sealed class DataManager
       }
       catch (ElementsFileLoadException ex)
       {
+        if (LocalCorrectionDocument.FindContentRoot(file.FullName) != null &&
+            LocalCorrectionDocument.HasMetadata(File.ReadAllText(file.FullName)))
+          throw new InvalidDataException("Local correction could not be loaded; existing content must be preserved.", ex);
         Logger.Warning(ex.Message);
         Logger.Exception((Exception) ex, nameof (InitializeElementDataAsync));
         ex.Data.Add((object) "filename", (object) file.FullName);
@@ -295,6 +315,9 @@ public sealed class DataManager
       }
       catch (Exception ex)
       {
+        if (LocalCorrectionDocument.FindContentRoot(file.FullName) != null &&
+            LocalCorrectionDocument.HasMetadata(File.ReadAllText(file.FullName)))
+          throw new InvalidDataException("Local correction could not be evaluated; existing content must be preserved.", ex);
         Logger.Warning("'{0}' in parsing {1}", (object) ex.GetType(), (object) file.FullName);
         Logger.Exception(ex, nameof (InitializeElementDataAsync));
         ex.Data.Add((object) "filename", (object) file.FullName);
@@ -441,6 +464,7 @@ public sealed class DataManager
               Debugger.Break();
           }
           ElementBase elementBase3 = original1.Copy<ElementBase>();
+          ElementProvenance.CopyTo(original1, elementBase3);
           string str1 = $"ID_INTERNAL_CLASS_FEATURE_ASI_{num}_{name.ToUpperInvariant()}";
           if (!ElementsHelper.ValidateID(str1))
             str1 = ElementsHelper.SanitizeID(str1);
@@ -456,6 +480,7 @@ public sealed class DataManager
           elementBase3.IncludeInCompendium = false;
           elements.Add(elementBase3);
           ElementBase elementBase4 = original2.Copy<ElementBase>();
+          ElementProvenance.CopyTo(original2, elementBase4);
           string str2 = $"ID_INTERNAL_CLASS_FEATURE_FEAT_{num}_{name.ToUpperInvariant()}";
           if (!ElementsHelper.ValidateID(str2))
             str2 = ElementsHelper.SanitizeID(str2);
@@ -583,17 +608,18 @@ public sealed class DataManager
   /// Resolves internal support tags, synthesizes multiclass and ASI feature elements,
   /// generates spell scrolls and internal derived elements, then fires the populated event.
   /// </summary>
-  public void RunPostProcessing()
+  public void RunPostProcessing(ElementBaseCollection collection = null, bool includeResources = true, bool publish = true)
   {
+    collection ??= this.ElementsCollection;
     List<ElementParser> parsers = ElementParserFactory.GetParsers().ToList<ElementParser>();
 
     // Load embedded resource elements (Level, internal templates, etc.) that are not in
     // the custom content folder and therefore not in the SQLite DB.
     var existingIds = new HashSet<string>(
-      this.ElementsCollection.Select<ElementBase, string>((Func<ElementBase, string>) (e => e.Id)),
+      collection.Select<ElementBase, string>((Func<ElementBase, string>) (e => e.Id)),
       StringComparer.OrdinalIgnoreCase);
     ElementParser resourceParser = new ElementParser();
-    foreach (XmlDocument resourceDoc in this.LoadElementDocumentsFromResource())
+    foreach (XmlDocument resourceDoc in includeResources ? this.LoadElementDocumentsFromResource() : new List<XmlDocument>())
     {
       if (resourceDoc.DocumentElement == null) continue;
       AuroraXmlCompatibilityRepair.RepairDocument(resourceDoc);
@@ -608,7 +634,7 @@ public sealed class DataManager
             resourceParser = parsers.FirstOrDefault<ElementParser>((Func<ElementParser, bool>) (p => p.ParserType == header.Type)) ?? new ElementParser();
           ElementBase element = resourceParser.ParseElement(elementNode);
           if (existingIds.Add(element.Id))
-            this.ElementsCollection.Add(element);
+            collection.Add(element);
         }
         catch (Exception ex)
         {
@@ -618,11 +644,11 @@ public sealed class DataManager
     }
 
     // Resolve ID_INTERNAL_SUPPORT_* tags to their display names.
-    List<ElementBase> supportElements = this.ElementsCollection
+    List<ElementBase> supportElements = collection
       .Where<ElementBase>((Func<ElementBase, bool>) (x => x.Type.Equals("Support")))
       .ToList<ElementBase>();
 
-    foreach (ElementBase el in (Collection<ElementBase>) this.ElementsCollection)
+    foreach (ElementBase el in (Collection<ElementBase>) collection)
     {
       List<string> toAdd = new List<string>();
       foreach (string tag in el.Supports)
@@ -643,7 +669,7 @@ public sealed class DataManager
     }
 
     // Synthesize multiclass elements and per-class ASI/Feat features.
-    IEnumerable<ElementBase> classFeatures = this.ElementsCollection
+    IEnumerable<ElementBase> classFeatures = collection
       .Where<ElementBase>((Func<ElementBase, bool>) (x => x.Type == "Class Feature"));
     ElementBase asiAbilityTemplate = classFeatures
       .FirstOrDefault<ElementBase>((Func<ElementBase, bool>) (x => x.Id.StartsWith("ID_INTERNAL_TEMPLATE_CLASS_FEATURE_ABILITY_4")));
@@ -653,7 +679,7 @@ public sealed class DataManager
     List<string> processedClassNames = new List<string>();
     int[] asiLevels = new int[] { 4, 6, 8, 10, 12, 14, 16, 18, 19 };
 
-    foreach (Class @class in this.ElementsCollection
+    foreach (Class @class in collection
       .Where<ElementBase>((Func<ElementBase, bool>) (x => x.Type == "Class"))
       .Cast<Class>().ToList<Class>())
     {
@@ -662,7 +688,7 @@ public sealed class DataManager
         ElementBase mc = parsers
           .FirstOrDefault<ElementParser>((Func<ElementParser, bool>) (x => x.ParserType == "Multiclass"))
           .ParseElement(@class.ElementNode);
-        this.ElementsCollection.Add(mc);
+        collection.Add(mc);
         @class.Requirements = @class.HasRequirements
           ? $"({@class.Requirements})&&!{mc.Id}"
           : "!" + mc.Id;
@@ -686,6 +712,7 @@ public sealed class DataManager
           if (asiAbilityTemplate != null)
           {
             ElementBase copy = asiAbilityTemplate.Copy<ElementBase>();
+            ElementProvenance.CopyTo(asiAbilityTemplate, copy);
             string id = $"ID_INTERNAL_CLASS_FEATURE_ASI_{level}_{className.ToUpperInvariant()}";
             if (!ElementsHelper.ValidateID(id)) id = ElementsHelper.SanitizeID(id);
             copy.ElementHeader = new ElementHeader(
@@ -705,6 +732,7 @@ public sealed class DataManager
           if (asiFeatTemplate != null)
           {
             ElementBase copy = asiFeatTemplate.Copy<ElementBase>();
+            ElementProvenance.CopyTo(asiFeatTemplate, copy);
             string id = $"ID_INTERNAL_CLASS_FEATURE_FEAT_{level}_{className.ToUpperInvariant()}";
             if (!ElementsHelper.ValidateID(id)) id = ElementsHelper.SanitizeID(id);
             copy.ElementHeader = new ElementHeader(
@@ -722,37 +750,51 @@ public sealed class DataManager
             asiElements.Add(copy);
           }
         }
-        this.ElementsCollection.AddRange((IEnumerable<ElementBase>) asiElements);
+        collection.AddRange((IEnumerable<ElementBase>) asiElements);
         processedClassNames.Add(@class.Name);
       }
     }
 
     // Generate spell scrolls.
     SpellScrollContentGenerator scrollGen = new SpellScrollContentGenerator();
-    ElementBase scrollTemplate = this.ElementsCollection
+    ElementBase scrollTemplate = collection
       .FirstOrDefault<ElementBase>((Func<ElementBase, bool>) (x => x.Id.Equals("ID_WOTC_DMG_MAGIC_ITEM_SPELL_SCROLL_CANTRIP")));
     MagicItemElement magicTemplate = scrollTemplate as MagicItemElement;
     List<ElementBase> scrolls = scrollGen.Generate(
-      (IEnumerable<ElementBase>) this.ElementsCollection, magicTemplate);
-    this.ElementsCollection.AddRange((IEnumerable<ElementBase>) scrolls);
+      (IEnumerable<ElementBase>) collection, magicTemplate);
+    collection.AddRange((IEnumerable<ElementBase>) scrolls);
 
     // Generate internal derived elements.
     InternalElementsGenerator internalGen = new InternalElementsGenerator();
-    this.ElementsCollection.AddRange(
-      (IEnumerable<ElementBase>) internalGen.GenerateInternalFeats((IEnumerable<ElementBase>) this.ElementsCollection));
-    this.ElementsCollection.AddRange(
-      (IEnumerable<ElementBase>) internalGen.GenerateInternalLanguages((IEnumerable<ElementBase>) this.ElementsCollection));
-    this.ElementsCollection.AddRange(
-      (IEnumerable<ElementBase>) internalGen.GenerateInternalProficiency((IEnumerable<ElementBase>) this.ElementsCollection));
-    this.ElementsCollection.AddRange(
-      (IEnumerable<ElementBase>) internalGen.GenerateInternalAsi((IEnumerable<ElementBase>) this.ElementsCollection));
-    this.ElementsCollection.AddRange(
-      (IEnumerable<ElementBase>) internalGen.GenerateInternalSpells((IEnumerable<ElementBase>) this.ElementsCollection));
+    collection.AddRange(
+      (IEnumerable<ElementBase>) internalGen.GenerateInternalFeats((IEnumerable<ElementBase>) collection));
+    collection.AddRange(
+      (IEnumerable<ElementBase>) internalGen.GenerateInternalLanguages((IEnumerable<ElementBase>) collection));
+    collection.AddRange(
+      (IEnumerable<ElementBase>) internalGen.GenerateInternalProficiency((IEnumerable<ElementBase>) collection));
+    collection.AddRange(
+      (IEnumerable<ElementBase>) internalGen.GenerateInternalAsi((IEnumerable<ElementBase>) collection));
+    // The spell proxies are a cross product of every spell and every spellcasting list - 79,032
+    // items for the shipped catalog. Their only consumer is the "Add Custom Feature" picker, so
+    // they are built per category when something first asks, not on every launch. Only a run over
+    // the live catalog primes it; the database loader post-processes a candidate it copies from
+    // afterwards, and primes the real collection itself once that copy is in place.
+    if (!SpellProxyCatalog.Enabled)
+      collection.AddRange(
+        (IEnumerable<ElementBase>) internalGen.GenerateInternalSpells((IEnumerable<ElementBase>) collection));
+    else if (object.ReferenceEquals(collection, this.ElementsCollection))
+      SpellProxyCatalog.Prime(collection, internalGen.GetSpellcastingListNames((IEnumerable<ElementBase>) collection), (IEnumerable<string>) null);
     if (Debugger.IsAttached || ApplicationContext.Current.IsInDeveloperMode)
-      this.ElementsCollection.AddRange(
-        (IEnumerable<ElementBase>) internalGen.GenerateInternalIgnore((IEnumerable<ElementBase>) this.ElementsCollection));
+      collection.AddRange(
+        (IEnumerable<ElementBase>) internalGen.GenerateInternalIgnore((IEnumerable<ElementBase>) collection));
 
-    this.InitializeItemDetails(this.ElementsCollection);
+    this.InitializeItemDetails(collection);
+    if (!publish) return;
+    this.NotifyElementsLoaded();
+  }
+
+  public void NotifyElementsLoaded()
+  {
     this.IsElementsCollectionPopulated = true;
     this._eventAggregator.Send<ElementsCollectionPopulatedEvent>(new ElementsCollectionPopulatedEvent());
   }

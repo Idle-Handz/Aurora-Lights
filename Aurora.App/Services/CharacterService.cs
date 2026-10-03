@@ -1,4 +1,4 @@
-using Builder.Core.Events;
+﻿using Builder.Core.Events;
 using Builder.Presentation;
 using Builder.Presentation.Events.Shell;
 using Builder.Presentation.Models;
@@ -29,6 +29,7 @@ public sealed class CharacterService :
 {
     private bool _directoriesInitialized;
     private bool _elementsInitialized;
+    private string? _loadedContentDirectory;
     private readonly SemaphoreSlim _elementLock  = new(1, 1);
 
     // ── Character list cache ────────────────────────────────────────────────
@@ -133,6 +134,18 @@ public sealed class CharacterService :
             DbLoadResult dbResult = await DbElementLoader.TryLoadAsync(DataManager.Current.ElementsCollection);
             if (!dbResult.Success)
             {
+                if (DataManager.Current.ElementsCollection.Count > 0)
+                {
+                    // A failed refresh can retain a working catalog only for its own folder. Never
+                    // make the old folder's catalog reusable after a switch: _loadedContentDirectory
+                    // is set only on success, so after a switch it still names the folder we left.
+                    // With no record at all there is nothing to contradict, and refusing a catalog
+                    // that is already loaded would leave the app unable to start rather than safer.
+                    _elementsInitialized = _loadedContentDirectory is null || string.Equals(_loadedContentDirectory,
+                        DataManager.Current.UserDocumentsCustomElementsDirectory, StringComparison.OrdinalIgnoreCase);
+                    throw new InvalidDataException($"Content reload failed; the previous working elements were preserved. {dbResult.FailureReason}");
+                }
+                ContentDatabaseService.ValidateRawXmlFallback(dbResult.DatabasePath, dbResult.FailureReason);
                 await DataManager.Current.InitializeElementDataAsync();
                 ElementLoadSource = "XML fallback";
                 ElementLoadSummary = $"Loaded baseline content from XML. SQLite reason: {dbResult.FailureReason ?? "unknown"}";
@@ -154,6 +167,10 @@ public sealed class CharacterService :
             ElementLoadSkippedElements = dbResult.SkippedElementCount;
 
             InventoryItemFactory.InvalidateSearchIndex();
+            // Sources are loaded now, so switched-off packages can become default restrictions.
+            SourcePreferenceSeed.SeedDefaultRestrictions(ElementLoadDatabasePath);
+            RefreshEngineSourceList();
+            _loadedContentDirectory = DataManager.Current.UserDocumentsCustomElementsDirectory;
             _elementsInitialized = true;
             _ = WarmEquipmentSearchIndexAsync();
 
@@ -172,6 +189,26 @@ public sealed class CharacterService :
         finally
         {
             _elementLock.Release();
+        }
+    }
+
+    /// <summary>
+    /// The engine lists sources from a snapshot of the catalog taken when CharacterManager.Current
+    /// is first touched, which can happen before this load finishes and always happens before a
+    /// refresh replaces the catalog. Rebuild it here so the Manage tab offers the sources that were
+    /// just loaded instead of whatever the catalog held at that moment - an empty list, if nothing
+    /// had loaded yet.
+    /// </summary>
+    private static void RefreshEngineSourceList()
+    {
+        try
+        {
+            CharacterManager.Current.SourcesManager.Refresh();
+        }
+        catch (Exception ex)
+        {
+            // Content is loaded either way; only the restriction list would be out of date.
+            DebugLogService.Instance.LogException(ex, "CharacterService.RefreshEngineSourceList");
         }
     }
 
@@ -206,6 +243,13 @@ public sealed class CharacterService :
     /// </summary>
     public async Task ReloadElementsAsync()
     {
+        // Catalog objects are also held by the loaded character graph. Serialize
+        // refresh with character loads/edits and invalidate both preload and tab
+        // context state before replacing them, even if the reload subsequently fails.
+        // Otherwise reopening the same file skips Load() and mixes old/new grants.
+        using var scope = await CharacterContext.EnterForLoadAsync();
+        CurrentCharacter = null;
+        CurrentCharacterFile = null;
         await _elementLock.WaitAsync();
         try
         {
@@ -216,7 +260,6 @@ public sealed class CharacterService :
             ElementLoadDatabasePath = null;
             InventoryItemFactory.InvalidateSearchIndex();
             StartingEquipmentDataLoader.Invalidate();
-            XmlContentFallbackService.Invalidate();
             ElementLoadSchemaVersion = null;
             ElementLoadDataVersion = null;
             ElementLoadImporterVersion = null;
@@ -403,6 +446,10 @@ public sealed class CharacterService :
                     BuildService.ReapplyCustomFeatures(file);
                     BuildService.NormalizeSelectionState();
 
+                    // The file's first calculation runs before equipped slot references
+                    // are restored. Re-evaluate armor conditions before publishing the snapshot.
+                    CharacterManager.Current!.ReprocessCharacter();
+
                     CurrentCharacter     = character;
                     CurrentCharacterFile = file;
 
@@ -410,9 +457,14 @@ public sealed class CharacterService :
                     if (!string.IsNullOrEmpty(file.FilePath))
                         Preferences.Default.Set("app.mru_character", file.FilePath);
                 }
-                return (result.Success,
-                        result.Success ? string.Empty
-                            : $"⚠ Partial load: {result.Message}\n\nElements loaded: {ElementCount}\n{_initDiagnostic}\nCustom dir: {CustomElementsDirectory}");
+                if (!result.Success)
+                {
+                    // The detail and the load diagnostics belong in the log, where they can be read
+                    // and copied; the toast only has to say what was lost and where to look.
+                    DebugLogService.Instance.Warn($"Partial character load: {file.FileName}",
+                        $"{result.Message}\n\nElements loaded: {ElementCount}\n{_initDiagnostic}\nCustom dir: {CustomElementsDirectory}");
+                }
+                return (result.Success, result.Success ? string.Empty : PartialLoadReport.Describe(result));
             }
             catch (Exception ex)
             {
@@ -523,16 +575,23 @@ public sealed class CharacterService :
             string safeName = string.Concat(character.Name
                 .Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
             string path = DataManager.Current.GetCombinedCharacterFilePath(safeName);
-
-            // Avoid clobbering an existing file.
-            if (File.Exists(path))
-            {
-                string ts = DateTime.Now.ToString("yyyyMMdd-HHmmss");
-                path = DataManager.Current.GetCombinedCharacterFilePath($"{safeName}_{ts}");
-            }
-
+            // Reserve the name before the atomic writer replaces it. Checking File.Exists and
+            // falling back to a timestamp can overwrite a previous character from the same second.
+            using (var reservation = CreateAvailableCharacterFile(path))
+                path = reservation.Name;
             var file = new CharacterFile(path);
-            file.Save(character);
+            file.RefreshKnownDiskStamp();
+            try
+            {
+                file.Save(character);
+            }
+            catch
+            {
+                // Preserve anything another writer put at this path after the reservation.
+                if (!file.HasExternalFileChanges() && new FileInfo(path).Length == 0)
+                    DeleteFailedCharacterFile(path);
+                throw;
+            }
 
             CurrentCharacter     = character;
             CurrentCharacterFile = file;
@@ -582,29 +641,58 @@ public sealed class CharacterService :
 
         EnsureDirectoriesInitialized();
 
+        string? createdPath = null;
         try
         {
             string destDir  = DataManager.Current.UserDocumentsRootDirectory;
-            string destPath = Path.Combine(destDir, picked.FileName);
-
-            if (File.Exists(destPath))
-            {
-                var ts   = DateTime.Now.ToString("yyyyMMdd-HHmmss");
-                var stem = Path.GetFileNameWithoutExtension(picked.FileName);
-                destPath = Path.Combine(destDir, $"{stem}_{ts}.dnd5e");
-            }
+            string destPath = Path.Combine(destDir, Path.GetFileName(picked.FileName));
 
             // OpenReadAsync works with both plain file paths and Android content:// URIs.
             using var src  = await picked.OpenReadAsync();
-            using var dest = File.Create(destPath);
+            using var dest = CreateAvailableCharacterFile(destPath);
+            createdPath = dest.Name;
             await src.CopyToAsync(dest);
 
-            return (new CharacterFile(destPath), null);
+            return (new CharacterFile(createdPath), null);
         }
         catch (Exception ex)
         {
+            if (createdPath != null)
+                DeleteFailedCharacterFile(createdPath);
             DebugLogService.Instance.LogException(ex, "CharacterService.ImportCharacterFromFileAsync");
             return (null, $"Failed to import file: {ex.Message}");
+        }
+    }
+
+    private static FileStream CreateAvailableCharacterFile(string preferredPath)
+    {
+        string directory = Path.GetDirectoryName(preferredPath)!;
+        string stem = Path.GetFileNameWithoutExtension(preferredPath);
+        string extension = Path.GetExtension(preferredPath);
+        for (int number = 1; ; number++)
+        {
+            string candidate = number == 1
+                ? preferredPath
+                : Path.Combine(directory, $"{stem}_{number}{extension}");
+            try
+            {
+                // CreateNew is the collision check and reservation together: concurrent imports
+                // cannot truncate a name another import has already claimed.
+                return new FileStream(candidate, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+            }
+            catch (IOException) when (File.Exists(candidate))
+            {
+                // Try the next suffix only for an occupied path; surface other I/O failures.
+            }
+        }
+    }
+
+    private static void DeleteFailedCharacterFile(string path)
+    {
+        try { File.Delete(path); }
+        catch (Exception ex)
+        {
+            DebugLogService.Instance.LogException(ex, "CharacterService.DeleteFailedCharacterFile");
         }
     }
 
@@ -663,7 +751,7 @@ public sealed class CharacterService :
     {
         path = string.IsNullOrWhiteSpace(path)
             ? null
-            : path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            : Path.TrimEndingDirectorySeparator(path);
 
         if (path != null && !Directory.Exists(path))
         {
@@ -675,6 +763,12 @@ public sealed class CharacterService :
         ApplicationContext.Current.Settings.Save();
         DataManager.Current.InitializeDirectories();
         InvalidateFileListCache();
+        // The selected folder also owns the content catalog. A character load while
+        // Settings is refreshing it must not reuse the previous folder's preload.
+        _elementsInitialized = false;
+        _initDiagnostic = null;
+        CurrentCharacter = null;
+        CurrentCharacterFile = null;
         return null;
     }
 

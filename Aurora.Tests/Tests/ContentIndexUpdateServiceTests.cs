@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Net;
 using Builder.Presentation.Services.Content;
 
@@ -252,6 +252,153 @@ public sealed class ContentIndexUpdateServiceTests
         };
 
     private sealed record RecordedRequest(string Url, IReadOnlyList<string> IfNoneMatch, DateTimeOffset? IfModifiedSince);
+
+    /// <summary>
+    /// The cache records what the server sent, not what is on disk. When a local file stops
+    /// matching it - an interrupted write, a restore from a backup, a copy from somewhere older -
+    /// sending the cached validators makes the server answer "not modified" and the stale file can
+    /// never catch up. This happened for real: an index cached in June still described the current
+    /// file on the server, while the copy on disk was the May revision, so content updates
+    /// reported "nothing to do" indefinitely.
+    /// </summary>
+    [Theory]
+    [InlineData("stale")]
+    [InlineData("earlier")]
+    public async Task UpdateAsync_refetches_when_the_cached_entry_no_longer_describes_the_local_file(string restoredId)
+    {
+        string root = CreateTempDirectory();
+        try
+        {
+            File.WriteAllText(
+                Path.Combine(root, "core.index"),
+                """
+                <index>
+                  <files>
+                    <file name="book.xml" url="https://example.test/book.xml" />
+                  </files>
+                </index>
+                """);
+
+            var handler = new SequenceHandler();
+            handler.Respond(
+                "https://example.test/book.xml",
+                Ok("<elements id=\"current\" />", etag: "\"current\""),
+                // A real server: it answers 304 to the validator it issued, and only sends the
+                // file to a request that does not claim to hold it already.
+                request => request.Headers.IfNoneMatch.Any(tag => tag.ToString() == "\"current\"")
+                    ? new HttpResponseMessage(HttpStatusCode.NotModified)
+                    : Ok("<elements id=\"current\" />", etag: "\"current\"")(request));
+
+            var service = new ContentIndexUpdateService(new HttpClient(handler));
+            var request = new ContentIndexUpdateRequest(root, new[] { "core.index" });
+
+            await service.UpdateAsync(request);
+            string downloaded = Path.Combine(root, "core", "book.xml");
+            File.Exists(downloaded).Should().BeTrue();
+
+            // The file drifts away from what the cache describes.
+            File.WriteAllText(downloaded, $"<elements id=\"{restoredId}\" />");
+
+            ContentIndexUpdateResult result = await service.UpdateAsync(request);
+
+            File.ReadAllText(downloaded).Should().Contain("current",
+                "the cached entry no longer describes this file, so it must be fetched again");
+            result.UpdatedFileCount.Should().Be(1);
+            handler.Requests.Last().IfNoneMatch.Should().BeEmpty(
+                "claiming to hold content the file does not have is what made the server answer 304");
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task UpdateAsync_does_not_treat_an_uncached_local_write_time_as_a_server_validator()
+    {
+        string root = CreateTempDirectory();
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "core.index"),
+                "<index><files><file name='book.xml' url='https://example.test/book.xml'/></files></index>");
+            Directory.CreateDirectory(Path.Combine(root, "core"));
+            string book = Path.Combine(root, "core", "book.xml");
+            File.WriteAllText(book, "<elements id='restored' />");
+            var handler = new SequenceHandler();
+            handler.Respond("https://example.test/book.xml", request =>
+                request.Headers.IfModifiedSince.HasValue
+                    ? new HttpResponseMessage(HttpStatusCode.NotModified)
+                    : Ok("<elements id='current' />")(request));
+            using var client = new HttpClient(handler);
+
+            var result = await new ContentIndexUpdateService(client).UpdateAsync(new(root, ["core.index"]));
+
+            result.UpdatedFileCount.Should().Be(1);
+            File.ReadAllText(book).Should().Contain("current");
+            handler.Requests.Single().IfModifiedSince.Should().BeNull();
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Theory]
+    [InlineData("book.xml", "<elements><element")]
+    [InlineData("child.index", "<index><files>")]
+    [InlineData("child.index", "<html><body>Temporary server error</body></html>")]
+    public async Task UpdateAsync_preserves_existing_content_when_a_download_is_not_valid_xml_or_index(
+        string filename, string invalidDownload)
+    {
+        string root = CreateTempDirectory();
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "core.index"),
+                $"<index><files><file name='{filename}' url='https://example.test/content'/></files></index>");
+            Directory.CreateDirectory(Path.Combine(root, "core"));
+            string destination = Path.Combine(root, "core", filename);
+            string original = filename.EndsWith(".index") ? "<index />" : "<elements id='good' />";
+            File.WriteAllText(destination, original);
+            var handler = new SequenceHandler();
+            handler.Respond("https://example.test/content", Ok(invalidDownload, etag: "\"invalid\""));
+            using var client = new HttpClient(handler);
+
+            var result = await new ContentIndexUpdateService(client).UpdateAsync(new(root, ["core.index"]));
+
+            result.Updated.Should().BeFalse();
+            result.FailedFileCount.Should().Be(1);
+            File.ReadAllText(destination).Should().Be(original);
+            Directory.GetFiles(root, "*.json", SearchOption.AllDirectories).Should().BeEmpty();
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public async Task UpdateAsync_does_not_delete_protected_corrections_listed_as_obsolete()
+    {
+        string root = CreateTempDirectory();
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "core.index"),
+                "<index><files><obsolete name='fix.xml'/><obsolete name='old.xml'/></files></index>");
+            Directory.CreateDirectory(Path.Combine(root, "core"));
+            const string baseline = "<elements><element name='Old' type='Item' source='Test' id='ID_FIX'/></elements>";
+            string protectedXml = Aurora.Content.Contracts.LocalCorrectionDocument.Create(
+                baseline.Replace("name='Old'", "name='Fixed'"), baseline, "source.xml",
+                [new Aurora.Content.Contracts.LocalCorrection("fix", "replace", "ID_FIX", null, null, "review-pending")]);
+            string protectedPath = Path.Combine(root, "core", "fix.xml");
+            string obsoletePath = Path.Combine(root, "core", "old.xml");
+            File.WriteAllText(protectedPath, protectedXml);
+            File.WriteAllText(obsoletePath, "<elements />");
+            using var client = new HttpClient(new SequenceHandler());
+
+            var result = await new ContentIndexUpdateService(client).UpdateAsync(new(root, ["core.index"]));
+
+            File.Exists(protectedPath).Should().BeTrue("correction protection also applies to automatic deletion");
+            File.ReadAllText(protectedPath).Should().Be(protectedXml);
+            File.Exists(obsoletePath).Should().BeFalse();
+            result.FailedFileCount.Should().Be(1);
+            result.UpdatedFileCount.Should().Be(1);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
 
     private sealed class SequenceHandler : HttpMessageHandler
     {

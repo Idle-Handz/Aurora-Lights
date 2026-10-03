@@ -148,7 +148,7 @@ jobs:
         run: |
           dotnet restore Aurora.Components/Aurora.Components.csproj
           dotnet restore Aurora.Logic/Aurora.Logic.csproj
-          dotnet restore Aurora.Importer/Aurora.Importer.csproj
+          dotnet restore Aurora.DataIntegration/Aurora.DataIntegration.csproj
           dotnet restore Aurora.PdfImport/Aurora.PdfImport.csproj
 
       - name: Publish (win-x64)
@@ -244,7 +244,7 @@ jobs:
         run: |
           dotnet restore Aurora.Components/Aurora.Components.csproj
           dotnet restore Aurora.Logic/Aurora.Logic.csproj
-          dotnet restore Aurora.Importer/Aurora.Importer.csproj
+          dotnet restore Aurora.DataIntegration/Aurora.DataIntegration.csproj
           dotnet restore Aurora.PdfImport/Aurora.PdfImport.csproj
 
       - name: Publish (win-arm64)
@@ -581,6 +581,7 @@ jobs:
 
           gh release create "$VERSION" \
             --repo "$REPO" \
+            --target "$GITHUB_SHA" \
             --title "Aurora Lights $VERSION" \
             "${RELEASE_FLAGS[@]}" \
             "artifacts/android-arm64/aurora-android-arm64.apk" \

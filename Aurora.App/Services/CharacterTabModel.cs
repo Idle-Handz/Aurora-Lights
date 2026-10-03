@@ -1,3 +1,4 @@
+using Aurora.Components.Models;
 using Builder.Presentation;
 using Builder.Presentation.Models;
 
@@ -27,6 +28,9 @@ public sealed class CharacterTab
 
     /// <summary>Session state (HP, spell slots, custom resources, etc.) for this character.</summary>
     public SessionState Session { get; set; } = new();
+
+    /// <summary>Magic filters and selected view for the lifetime of this open character.</summary>
+    public MagicWorkspaceState MagicWorkspace { get; } = new();
 
     /// <summary>
     /// True while the character is loading in the background (eager-navigation mode).

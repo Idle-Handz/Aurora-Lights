@@ -1,7 +1,7 @@
 # Aurora.Presentation
 
-This project is the source restoration of the production
-`tests/LegacyOracles/Aurora.Presentation.dll` WPF assembly.
+This project is the maintained, project-owned WPF implementation of `Aurora.Presentation`.
+Production consumers build it from local source through project references.
 
 The initial source intentionally preserves the original namespaces, public API,
 assembly version, dependency-property behavior, event triggers, resource
@@ -11,3 +11,7 @@ behavior changes remain reviewable.
 
 The original binary remains in `tests/LegacyOracles` as a test-only restoration
 oracle. Production projects consume this source project.
+The oracle is required only for explicit legacy comparison checks, not normal
+builds or source-native tests. Third-party WPF dependencies remain declared in
+`Aurora.Presentation.csproj`. See
+[source ownership and legacy compatibility](../docs/LEGACY_RESTORATION.md).

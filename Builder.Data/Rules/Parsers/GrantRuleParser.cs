@@ -20,10 +20,9 @@ public class GrantRuleParser : RuleParser
 			switch (attribute.Name)
 			{
 			case "id":
-				grantRule.Attributes.Name = attribute.Value;
-				continue;
 			case "name":
-				grantRule.Attributes.Name = attribute.Value;
+				// Normalize reference padding for lookup; leave the source XML and definition IDs intact.
+				grantRule.Attributes.Name = attribute.Value.Trim();
 				continue;
 			case "type":
 				grantRule.Attributes.Type = attribute.Value;
@@ -41,6 +40,7 @@ public class GrantRuleParser : RuleParser
 				grantRule.Setters.Add(new ElementSetters.Setter("prepared", attribute.Value));
 				continue;
 			}
+			grantRule.PreservedAttributes[attribute.Name] = attribute.Value;
 			Logger.Warning("unable to parse [" + attribute.Name + ":" + attribute.Value + "] attribute on the " + grantRule.RuleName + " rule in [" + grantRule.ElementHeader.Name + "]");
 		}
 		grantRule.Setters.AddRange(base.ParseSetters(ruleNode, elementHeader));

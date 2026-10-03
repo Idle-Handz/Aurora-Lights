@@ -1,3 +1,4 @@
+﻿using Builder.Presentation.Services.Sources;
 // Decompiled with JetBrains decompiler
 // Type: Builder.Presentation.Services.Sources.SourcesManager
 // Assembly: Aurora Builder, Version=1.0.166.7407, Culture=neutral, PublicKeyToken=null
@@ -28,6 +29,7 @@ public class SourcesManager : ISourceRestrictionsProvider
   public const string ThirdPartyGroupName = "Third Party";
   public const string HomebrewGroupName = "Homebrew";
   public const string UndefinedSources = "Undefined Sources";
+  public const string RequiredGroupName = "Required builder sources";
 
   public SourcesManager() => this.InitializeSources();
 
@@ -42,40 +44,8 @@ public class SourcesManager : ISourceRestrictionsProvider
   public void ApplyRestrictions(bool reprocess = false)
   {
     this.RestrictedSources.Clear();
-    foreach (SourcesGroup sourceGroup in (Collection<SourcesGroup>) this.SourceGroups)
-    {
-      if (sourceGroup.AllowUnchecking)
-      {
-        bool? isChecked1 = sourceGroup.IsChecked;
-        bool flag1 = true;
-        if (!(isChecked1.GetValueOrDefault() == flag1 & isChecked1.HasValue))
-        {
-          isChecked1 = sourceGroup.IsChecked;
-          bool flag2 = false;
-          if (isChecked1.GetValueOrDefault() == flag2 & isChecked1.HasValue)
-          {
-            foreach (SourceItem source in (Collection<SourceItem>) sourceGroup.Sources)
-            {
-              isChecked1 = source.IsChecked;
-              bool flag3 = true;
-              if (!(isChecked1.GetValueOrDefault() == flag3 & isChecked1.HasValue))
-                this.RestrictedSources.Add(source);
-            }
-          }
-          isChecked1 = sourceGroup.IsChecked;
-          if (!isChecked1.HasValue)
-          {
-            foreach (SourceItem sourceItem in sourceGroup.Sources.Where<SourceItem>((Func<SourceItem, bool>) (x =>
-            {
-              bool? isChecked2 = x.IsChecked;
-              bool flag4 = false;
-              return isChecked2.GetValueOrDefault() == flag4 & isChecked2.HasValue;
-            })))
-              this.RestrictedSources.Add(sourceItem);
-          }
-        }
-      }
-    }
+    foreach (SourceItem source in this.GetUncheckedSources())
+      this.RestrictedSources.Add(source);
     ApplicationContext.Current.SendStatusMessage("Your source restrictions have been updated.");
     this.OnSourceRestrictionsApplied();
     if (!reprocess)
@@ -105,12 +75,45 @@ public class SourcesManager : ISourceRestrictionsProvider
     return (IEnumerable<string>) restrictedElementIds;
   }
 
+  /// <summary>
+  /// Rebuilds the list from the catalog as it stands now. The list is a snapshot taken when this
+  /// manager is constructed, which for <see cref="CharacterManager.Current"/> is whenever something
+  /// first touches the singleton - possibly before content has finished loading, which leaves every
+  /// source missing, and always before a content refresh replaces the catalog. The manager itself is
+  /// kept so that anything listening to <see cref="SourceRestrictionsApplied"/> stays attached, and
+  /// whatever is restricted now is re-applied to the rebuilt list.
+  /// </summary>
+  public void Refresh()
+  {
+    List<string> restricted = this.RestrictedSources.Select<SourceItem, string>((Func<SourceItem, string>) (x => x.Source.Id)).ToList<string>();
+    this.RestrictedSources.Clear();
+    this.SourceItems.Clear();
+    this.SourceGroups.Clear();
+    this.InitializeSources();
+    if (restricted.Count > 0)
+      this.Load((IEnumerable<string>) restricted);
+  }
+
   private void InitializeSources()
   {
     foreach (SourceItem sourceItem in DataManager.Current.ElementsCollection.Where<ElementBase>((Func<ElementBase, bool>) (x => x.Type.Equals("Source", StringComparison.OrdinalIgnoreCase))).Cast<Source>().OrderBy<Source, string>((Func<Source, string>) (x => x.ReleaseDate)).ThenBy<Source, string>((Func<Source, string>) (x => x.Name)).Select<Source, SourceItem>((Func<Source, SourceItem>) (x => new SourceItem(x.Copy<Source>()))))
       this.SourceItems.Add(sourceItem);
+    // Internal/Core often have only source labels, without their own Source declaration.
+    // Show the infrastructure actually present in the catalog instead of hiding those labels.
+    foreach (string name in DataManager.Current.ElementsCollection.Select(element => element.Source)
+      .Where(name => RequiredContentPolicy.IsRequiredSource(name)).Select(name => name.Trim())
+      .Distinct(StringComparer.OrdinalIgnoreCase))
+    {
+      if (!this.SourceItems.Any(item => string.Equals(item.Source.Name?.Trim(), name, StringComparison.OrdinalIgnoreCase)))
+        this.SourceItems.Add(new SourceItem(new Source
+        {
+          ElementHeader = new ElementHeader(name, "Source", name, name),
+          Description = "<p>Required builder infrastructure. Always enabled.</p>"
+        }));
+    }
     foreach (SourcesGroup group in this.CreateGroups())
       this.SourceGroups.Add(group);
+    Logger.Info("sources: listing {0} source(s) from {1} element(s)", (object) this.SourceItems.Count, (object) DataManager.Current.ElementsCollection.Count);
   }
 
   private IEnumerable<SourcesGroup> CreateGroups()
@@ -122,15 +125,15 @@ public class SourcesManager : ISourceRestrictionsProvider
     SourcesGroup sourcesGroup4 = new SourcesGroup("Third Party");
     SourcesGroup sourcesGroup5 = new SourcesGroup("Homebrew");
     SourcesGroup undefinedGroup = new SourcesGroup("Undefined Sources");
-    // "internal" and "core" are Aurora system sources, not user-facing content packages.
-    // GetUndefinedSourceNames already excludes them from the Undefined group; mirror that
-    // here so they don't surface in Third Party or Homebrew groups either.
-    string[] systemSources = { "internal", "core" };
+    SourcesGroup requiredGroup = new SourcesGroup(RequiredGroupName, allowUnchecking: false);
     Queue<SourceItem> source1 = new Queue<SourceItem>();
     foreach (SourceItem sourceItem in (Collection<SourceItem>) this.SourceItems)
     {
-      if (systemSources.Contains(sourceItem.Source.Name, StringComparer.OrdinalIgnoreCase))
+      if (RequiredContentPolicy.IsRequiredSource(sourceItem.Source.Name, sourceItem.Source.Id))
+      {
+        requiredGroup.Sources.Add(sourceItem);
         continue;
+      }
       if (sourceItem.Source.IsOfficialContent)
       {
         if (sourceItem.Source.IsAdventureLeagueContent)
@@ -155,7 +158,7 @@ public class SourcesManager : ISourceRestrictionsProvider
       SourceItem sourceItem = source1.Dequeue();
       if (sourceItem.Source.IsCoreContent)
       {
-        sourceItem.AllowUnchecking = false;
+        // Core rulebooks remain selectable; only builder infrastructure is mandatory.
         sourceItemList1.Add(sourceItem);
       }
       else if (sourceItem.Source.IsSupplementContent)
@@ -169,6 +172,8 @@ public class SourcesManager : ISourceRestrictionsProvider
       sourcesGroup1.Sources.Add(sourceItem);
     foreach (SourceItem sourceItem in sourceItemList3)
       sourcesGroup1.Sources.Add(sourceItem);
+    if (requiredGroup.Sources.Any())
+      groups.Add(requiredGroup);
     groups.Add(sourcesGroup1);
     if (sourcesGroup2.Sources.Any<SourceItem>())
       groups.Add(sourcesGroup2);
@@ -204,14 +209,13 @@ public class SourcesManager : ISourceRestrictionsProvider
 
   private IEnumerable<string> GetUndefinedSourceNames(SourcesGroup undefinedGroup)
   {
-    string[] source1 = new string[2]{ "internal", "core" };
     IEnumerable<ElementBase> elementBases = DataManager.Current.ElementsCollection.Where<ElementBase>((Func<ElementBase, bool>) (x => !x.Type.Equals("Source") && !x.Type.Equals("Internal") && !x.Type.Equals("Core") && !x.Type.Equals("Ability Score Improvement") && !x.Type.Equals("Level") && !x.Type.Equals("Multiclass") && !x.Type.Equals("Skill") && !x.Type.Equals("Support")));
     List<string> list = this.SourceItems.Select<SourceItem, string>((Func<SourceItem, string>) (x => x.Source.Name)).ToList<string>();
     List<string> source2 = new List<string>();
     foreach (ElementBase elementBase in elementBases)
     {
       string elementSourceName = elementBase.Source;
-      if (!((IEnumerable<string>) source1).Contains<string>(elementSourceName, (IEqualityComparer<string>) StringComparer.OrdinalIgnoreCase))
+      if (!RequiredContentPolicy.IsRequiredSource(elementSourceName))
       {
         this.SourceItems.FirstOrDefault<SourceItem>((Func<SourceItem, bool>) (x => x.Source.Name.Equals(elementSourceName, StringComparison.OrdinalIgnoreCase)))?.Elements.Add(elementBase.ElementHeader);
         if (!source2.Contains<string>(elementSourceName, (IEqualityComparer<string>) StringComparer.OrdinalIgnoreCase) && !list.Contains<string>(elementSourceName, (IEqualityComparer<string>) StringComparer.OrdinalIgnoreCase))
@@ -250,7 +254,13 @@ public class SourcesManager : ISourceRestrictionsProvider
     {
       string sourceRestrictions = ApplicationContext.Current.Settings.DefaultSourceRestrictions;
       if (string.IsNullOrWhiteSpace(sourceRestrictions))
+      {
+        // No defaults configured means every source is allowed, which is still a rule: anything
+        // the previously loaded character restricted has to be released rather than left standing.
+        if (this.RestrictedSources.Count > 0)
+          this.ClearRestrictions();
         return;
+      }
       this.Load((IEnumerable<string>) sourceRestrictions.Split(','));
     }
     catch (Exception ex)
@@ -262,39 +272,15 @@ public class SourcesManager : ISourceRestrictionsProvider
 
   public void StoreDefaults()
   {
-    List<string> values = new List<string>();
-    foreach (SourcesGroup sourceGroup in (Collection<SourcesGroup>) this.SourceGroups)
-    {
-      if (sourceGroup.AllowUnchecking)
-      {
-        bool? isChecked1 = sourceGroup.IsChecked;
-        bool flag1 = true;
-        if (!(isChecked1.GetValueOrDefault() == flag1 & isChecked1.HasValue))
-        {
-          isChecked1 = sourceGroup.IsChecked;
-          bool flag2 = false;
-          if (isChecked1.GetValueOrDefault() == flag2 & isChecked1.HasValue)
-          {
-            foreach (SourceItem source in (Collection<SourceItem>) sourceGroup.Sources)
-              values.Add(source.Source.Id);
-          }
-          isChecked1 = sourceGroup.IsChecked;
-          if (!isChecked1.HasValue)
-          {
-            foreach (SourceItem sourceItem in sourceGroup.Sources.Where<SourceItem>((Func<SourceItem, bool>) (x =>
-            {
-              bool? isChecked2 = x.IsChecked;
-              bool flag3 = false;
-              return isChecked2.GetValueOrDefault() == flag3 & isChecked2.HasValue;
-            })))
-              values.Add(sourceItem.Source.Id);
-          }
-        }
-      }
-    }
-    ApplicationContext.Current.Settings.DefaultSourceRestrictions = string.Join(",", (IEnumerable<string>) values);
+    ApplicationContext.Current.Settings.DefaultSourceRestrictions =
+      string.Join(",", this.GetUncheckedSources().Select(source => source.Source.Id));
     ApplicationContext.Current.SendStatusMessage("Your default source restrictions have been saved.");
   }
+
+  private IEnumerable<SourceItem> GetUncheckedSources() => this.SourceGroups
+    .Where(group => group.AllowUnchecking)
+    .SelectMany(group => group.Sources)
+    .Where(source => source.AllowUnchecking && source.IsChecked == false);
 
   public IEnumerable<ElementBase> GetOrderedElements(IEnumerable<ElementBase> elements)
   {

@@ -174,9 +174,9 @@
         Tabs.TabsChanged -= OnTabsChanged;
     }
 
-    private void MarkDirty()
+    private void MarkDirty(CharacterTab? editedTab = null)
     {
-        if (Tabs.ActiveTab is { } tab)
+        if ((editedTab ?? Tabs.ActiveTab) is { } tab)
         {
             Tabs.MarkDirty(tab);
         }
@@ -202,7 +202,8 @@
 
     private async Task OpenGearSlotDialog(GearSlot slot)
     {
-        if (Tabs.ActiveTab is not { Character: { } character, File: { } file, Snapshot: { } snap })
+        var tab = Tabs.ActiveTab;
+        if (tab is not { Character: { } character, File: { } file, Snapshot: { } snap })
         {
             WarnUnavailable("Equipment cannot be changed because there is no active character.");
             return;
@@ -220,13 +221,14 @@
 
         if (result is { Canceled: false, Data: GearPickerResult pick })
         {
-            var tab = Tabs.ActiveTab;
-            if (tab is null)
+            if (_disposed || !ReferenceEquals(tab, Tabs.ActiveTab))
             {
                 WarnUnavailable("That gear change could not be applied because the character tab is no longer active.");
                 return;
             }
             using var scope = await CharacterContext.EnterAsync(tab);
+            if (_disposed || !ReferenceEquals(tab, Tabs.ActiveTab)) return;
+            character = tab.Character!;
 
             bool ok = pick.IsNew
                 ? EquipmentService.AddAndEquipToSlot(character, slot, pick.ElementId!)
@@ -240,7 +242,7 @@
 
             RefreshEquipment();
             if (!await PersistInventoryAsync(tab, character)) return;
-            MarkDirty();
+            MarkDirty(tab);
             StateHasChanged();
         }
     }
@@ -254,11 +256,13 @@
             return;
         }
         using var scope = await CharacterContext.EnterAsync(tab);
+        if (_disposed || !ReferenceEquals(tab, Tabs.ActiveTab)) return;
+        character = tab.Character!;
 
         EquipmentService.UnequipSlot(character, slot);
         RefreshEquipment();
         if (!await PersistInventoryAsync(tab, character)) return;
-        MarkDirty();
+        MarkDirty(tab);
         StateHasChanged();
     }
 
@@ -283,6 +287,8 @@
             ItemTemplateOptions? templateOptions;
             using (var queryScope = await CharacterContext.EnterAsync(tab))
             {
+                if (_disposed || !ReferenceEquals(tab, Tabs.ActiveTab)) return;
+                character = tab.Character!;
                 templateOptions = EquipmentService.GetItemTemplateOptions(character, pick.ElementId);
             }
 
@@ -325,6 +331,8 @@
             }
 
             using var scope = await CharacterContext.EnterAsync(tab);
+            if (_disposed || !ReferenceEquals(tab, Tabs.ActiveTab)) return;
+            character = tab.Character!;
             var added = EquipmentService.AddItem(
                 character,
                 pick.ElementId,
@@ -338,7 +346,7 @@
 
             RefreshEquipment();
             if (!await PersistInventoryAsync(tab, character)) return;
-            MarkDirty();
+            MarkDirty(tab);
             StateHasChanged();
         }
     }
@@ -363,10 +371,12 @@
         if (confirmed != true) return;
 
         using var scope = await CharacterContext.EnterAsync(tab);
+        if (_disposed || !ReferenceEquals(tab, Tabs.ActiveTab)) return;
+        character = tab.Character!;
         EquipmentService.RemoveItem(character, identifier);
         RefreshEquipment();
         if (!await PersistInventoryAsync(tab, character)) return;
-        MarkDirty();
+        MarkDirty(tab);
         StateHasChanged();
     }
 
@@ -400,6 +410,8 @@
         if (confirmed != true) return;
 
         using var scope = await CharacterContext.EnterAsync(tab);
+        if (_disposed || !ReferenceEquals(tab, Tabs.ActiveTab)) return;
+        character = tab.Character!;
         var result = EquipmentService.ExtractPack(character, identifier);
 
         if (result.Added.Count == 0)
@@ -413,7 +425,7 @@
 
         RefreshEquipment();
         if (!await PersistInventoryAsync(tab, character)) return;
-        MarkDirty();
+        MarkDirty(tab);
 
         if (result.Success)
         {
@@ -439,11 +451,13 @@
             return;
         }
         using var scope = await CharacterContext.EnterAsync(tab);
+        if (_disposed || !ReferenceEquals(tab, Tabs.ActiveTab)) return;
+        character = tab.Character!;
 
         EquipmentService.SetAmount(character, change.Identifier, change.Amount);
         RefreshEquipment();
         if (!await PersistInventoryAsync(tab, character)) return;
-        MarkDirty();
+        MarkDirty(tab);
         // No explicit StateHasChanged here: this — and the sibling Toggle*/ChangeCoin/ChangeNote
         // handlers — runs via the child workspace's EventCallback, which re-renders this
         // component automatically once the handler completes.
@@ -458,6 +472,8 @@
             return;
         }
         using var scope = await CharacterContext.EnterAsync(tab);
+        if (_disposed || !ReferenceEquals(tab, Tabs.ActiveTab)) return;
+        character = tab.Character!;
 
         var item = FindLiveItem(identifier);
         if (item is null)
@@ -489,7 +505,7 @@
 
         RefreshEquipment();
         if (!await PersistInventoryAsync(tab, character)) return;
-        MarkDirty();
+        MarkDirty(tab);
     }
 
     private async Task ToggleAttunedAsync(string identifier)
@@ -501,6 +517,8 @@
             return;
         }
         using var scope = await CharacterContext.EnterAsync(tab);
+        if (_disposed || !ReferenceEquals(tab, Tabs.ActiveTab)) return;
+        character = tab.Character!;
 
         var item = FindLiveItem(identifier);
         if (item is null)
@@ -516,7 +534,7 @@
 
         RefreshEquipment();
         if (!await PersistInventoryAsync(tab, character)) return;
-        MarkDirty();
+        MarkDirty(tab);
     }
 
     private async Task ToggleVersatileWieldAsync(string identifier)
@@ -528,6 +546,8 @@
             return;
         }
         using var scope = await CharacterContext.EnterAsync(tab);
+        if (_disposed || !ReferenceEquals(tab, Tabs.ActiveTab)) return;
+        character = tab.Character!;
 
         var item = FindLiveItem(identifier);
         if (item is null || item.Item?.HasVersatile != true || !item.IsEquipped)
@@ -545,7 +565,7 @@
 
         RefreshEquipment();
         if (!await PersistInventoryAsync(tab, character)) return;
-        MarkDirty();
+        MarkDirty(tab);
     }
 
     private RefactoredEquipmentItem? FindLiveItem(string identifier) =>
@@ -628,7 +648,19 @@
 
     private async Task OpenStartingEquipmentAsync()
     {
-        var agg = await StartingEquipmentService.GetAllAsync();
+        var tab = Tabs.ActiveTab;
+        if (tab is not { Character: { } character, File: { } file })
+        {
+            WarnUnavailable("Starting equipment could not be applied because there is no active character.");
+            return;
+        }
+        StartingEquipmentAggregate agg;
+        using (var queryScope = await CharacterContext.EnterAsync(tab))
+        {
+            if (_disposed || !ReferenceEquals(tab, Tabs.ActiveTab)) return;
+            agg = await StartingEquipmentService.GetAllAsync();
+        }
+        if (_disposed || !ReferenceEquals(tab, Tabs.ActiveTab)) return;
 
         var parameters = new DialogParameters
         {
@@ -641,14 +673,15 @@
         if (result is not { Canceled: false, Data: StartingEquipmentResult se })
             return;
 
-        var tab = Tabs.ActiveTab;
-        if (tab is not { Character: { } character, File: { } file })
+        if (_disposed || !ReferenceEquals(tab, Tabs.ActiveTab))
         {
-            WarnUnavailable("Starting equipment could not be applied because there is no active character.");
+            WarnUnavailable("Starting equipment could not be applied because the active character changed.");
             return;
         }
 
         using var scope = await CharacterContext.EnterAsync(tab);
+        if (_disposed || !ReferenceEquals(tab, Tabs.ActiveTab)) return;
+        character = tab.Character!;
 
         var unresolvedItems = new List<string>();
         foreach (var (id, count, name) in se.Items)
@@ -686,7 +719,7 @@
         if (!await PersistStartingEquipmentAsync(tab, character))
             return;
 
-        MarkDirty();
+        MarkDirty(tab);
         StateHasChanged();
     }
 
@@ -734,6 +767,8 @@
 
     private async Task EditItemAsync(string identifier)
     {
+        var tab = Tabs.ActiveTab;
+        if (tab is not { Character: { } character }) return;
         var liveItem = FindLiveItem(identifier);
         if (liveItem is null)
         {
@@ -755,20 +790,23 @@
 
         if (result is { Canceled: false, Data: EquipmentItemEditResult edit })
         {
-            var tab = Tabs.ActiveTab;
-            if (tab is not { Character: { } character, File: { } file })
+            if (_disposed || !ReferenceEquals(tab, Tabs.ActiveTab))
             {
                 WarnUnavailable("Changes could not be saved because the character tab is no longer active.");
                 return;
             }
             using var scope = await CharacterContext.EnterAsync(tab);
+            if (_disposed || !ReferenceEquals(tab, Tabs.ActiveTab)) return;
+            character = tab.Character!;
 
+            liveItem = FindLiveItem(identifier);
+            if (liveItem is null) return;
             liveItem.AlternativeName = edit.AlternativeName;
             liveItem.Notes           = edit.Notes;
 
             RefreshEquipment(reprocess: false);
             if (!await PersistInventoryAsync(tab, character)) return;
-            MarkDirty();
+            MarkDirty(tab);
             StateHasChanged();
         }
     }
@@ -812,11 +850,12 @@
 
     private async Task<bool> PersistStartingEquipmentAsync(CharacterTab tab, Builder.Presentation.Models.Character character)
     {
+        var snapshot = tab.Snapshot;
         var result = await CharacterFileWriteCoordinator.WriteAsync(
             tab.FileSaveSemaphore,
             tab.File,
             "Starting equipment",
-            () => tab.File.SaveInventoryItems(character) && (_snap is null || tab.File.SaveCurrency(_snap)));
+            () => tab.File.SaveInventoryItems(character) && (snapshot is null || tab.File.SaveCurrency(snapshot)));
 
         return await HandleCharacterFileWriteResultAsync(
             tab,

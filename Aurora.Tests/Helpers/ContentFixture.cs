@@ -1,4 +1,4 @@
-using Builder.Presentation;
+﻿using Builder.Presentation;
 using Builder.Presentation.Models;
 using Builder.Presentation.Services;
 using Builder.Presentation.Services.Data;
@@ -69,6 +69,7 @@ public static class ContentFixture
             CharacterLoadCompatibilityService.PrepareForCharacterLoad();
             CharacterManager.Current.File = new CharacterFile(
                 Path.Combine(Path.GetTempPath(), $"aurora-test-{Guid.NewGuid():N}.dnd5e"));
+            EnsureSourcesReflectTheCatalog();
         }
     }
 
@@ -83,6 +84,23 @@ public static class ContentFixture
         output?.WriteLine($"[FAIL] Aurora content database unavailable — {_failReason ?? "not initialised"}.");
         throw new XunitException(
             $"Aurora content database unavailable: {_failReason ?? "not initialised"}.");
+    }
+
+    /// <summary>
+    /// The engine's SourcesManager reads the catalog once, when CharacterManager.Current is first
+    /// touched. A test that touches it before content finished loading would leave every source list
+    /// empty for the rest of the run, so anything about restrictions would quietly find nothing to
+    /// restrict. The app rebuilds it after every load (CharacterService.RefreshEngineSourceList);
+    /// tests run in any order, so do the same here, through the same engine call.
+    /// </summary>
+    private static void EnsureSourcesReflectTheCatalog()
+    {
+        var sources = CharacterManager.Current.SourcesManager;
+        if (sources.SourceItems.Count > 0) return;
+        if (!DataManager.Current.ElementsCollection.Any(element =>
+                element.Type.Equals("Source", StringComparison.OrdinalIgnoreCase))) return;
+
+        sources.Refresh();
     }
 
     public static string GetCharacterFixturePath(string fileName) =>

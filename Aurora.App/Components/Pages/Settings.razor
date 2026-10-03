@@ -1,7 +1,12 @@
-@page "/settings"
+﻿@page "/settings"
 @implements IDisposable
-@using Aurora.Importer
+@using Aurora.Content
+@using Aurora.Content.Preparation
 @using Builder.Presentation
+@using Builder.Presentation.Models.Sources
+@using Builder.Presentation.Services.Sources
+@using Builder.Presentation.Services.Data
+@using Aurora.Components.Models
 @using System.Text
 @inject ContentDatabaseService ContentDb
 @inject ContentService Content
@@ -307,170 +312,31 @@
 
         <MudTabs Elevation="0" Rounded="false" ApplyEffectsToContainer="true" PanelClass="pt-3" @bind-ActivePanelIndex="ActiveContentTabIndex">
 
-            <!-- ── Data sub-tab ───────────────────────────────────────────────── -->
-            <MudTabPanel Text="Data">
-
-                <div class="pref-section">
-                    <div class="section-label">Database</div>
-                    <div class="pref-row-desc" style="margin-bottom: 16px;">
-                        Manage the installed content database and keep it in sync with your content directory.
-                        The database file is stored inside that content directory, so changing the
-                        character storage root also changes which database is used.
-                    </div>
-
-                    <div style="margin-bottom: 12px;">
-                        <div class="pref-row-title" style="margin-bottom: 4px;">Content directory</div>
-                        <div style="font-family: monospace; font-size: 12px; color: var(--mud-palette-text-secondary); word-break: break-all;">
-                            @(string.IsNullOrWhiteSpace(ContentDb.ContentDirectory) ? "(not available)" : ContentDb.ContentDirectory)
-                        </div>
-                    </div>
-
-                    <div style="margin-bottom: 12px;">
-                        <div class="pref-row-title" style="margin-bottom: 4px;">Database path</div>
-                        <div style="font-family: monospace; font-size: 12px; color: var(--mud-palette-text-secondary); word-break: break-all;">
-                            @(ContentDb.DatabasePath ?? "(not available)")
-                        </div>
-                    </div>
-
-                    <div style="margin-bottom: 16px;">
-                        <div class="pref-row-title" style="margin-bottom: 4px;">Status</div>
-                        @if (ContentDb.SyncState == ContentDatabaseSyncState.Syncing)
-                        {
-                            <div style="color: var(--mud-palette-primary); font-size: 13px;">
-                                @(ContentDb.Progress?.PhaseLabel ?? "Syncing...")
-                            </div>
-                            <MudProgressLinear Indeterminate="false"
-                                               Value="@SyncPercent"
-                                               Min="0" Max="100"
-                                               Color="Color.Primary"
-                                               Class="mt-2" />
-                        }
-                        else if (_checkingStale)
-                        {
-                            <div style="color: var(--mud-palette-text-secondary); font-size: 13px;">Checking for changes…</div>
-                        }
-                        else if (_reloadingElements)
-                        {
-                            <div style="color: var(--mud-palette-text-secondary); font-size: 13px;">Refreshing database...</div>
-                        }
-                        else if (!string.IsNullOrWhiteSpace(ContentDb.LastReadFailure))
-                        {
-                            <div style="color: var(--mud-palette-warning); font-size: 13px;">
-                                Database read failed: @ContentDb.LastReadFailure
-                            </div>
-                        }
-                        else if (ContentDb.LastResult != null)
-                        {
-                            <div style="color: @(ContentDb.LastResult.Success ? "var(--mud-palette-success)" : "var(--mud-palette-error)"); font-size: 13px;">
-                                @ContentDb.LastResult.Summary
-                            </div>
-                        }
-                        else if (ContentDb.IsStale)
-                        {
-                            <div style="color: var(--mud-palette-warning); font-size: 13px;">Database is out of date. Refresh Database to sync and refresh element data.</div>
-                        }
-                        else if (_stalenessChecked)
-                        {
-                            <div style="color: var(--mud-palette-success); font-size: 13px;">Database is up to date.</div>
-                        }
-                        else
-                        {
-                            <div style="font-size: 13px; color: var(--mud-palette-text-disabled);">Not checked yet.</div>
-                        }
-                    </div>
-
-                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                        <MudButton Variant="Variant.Outlined"
-                                   Color="Color.Default"
-                                   Size="Size.Small"
-                                   Disabled="@(ContentDb.SyncState == ContentDatabaseSyncState.Syncing || _checkingStale)"
-                                   OnClick="CheckStaleAsync">
-                            @(_checkingStale ? "Checking…" : "Check for Changes")
-                        </MudButton>
-                        <MudButton Variant="Variant.Filled"
-                                   Color="Color.Primary"
-                                   Size="Size.Small"
-                                   Disabled="@(_reloadingElements || ContentDb.SyncState == ContentDatabaseSyncState.Syncing || string.IsNullOrWhiteSpace(ContentDb.ContentDirectory) || Tabs.Tabs.Count > 0)"
-                                   OnClick="RefreshDatabaseAsync">
-                            @(_reloadingElements ? "Refreshing..." : "Refresh Database")
-                        </MudButton>
-                    </div>
-
-                    @if (Tabs.Tabs.Count > 0 && !string.IsNullOrWhiteSpace(ContentDb.ContentDirectory))
-                    {
-                        <MudAlert Severity="Severity.Info" Class="mt-4" Dense="true">
-                            Close all character tabs before refreshing the database so loaded characters do not keep stale element references.
-                        </MudAlert>
-                    }
-                </div>
-
-            </MudTabPanel>
-
             <!-- ── Sources sub-tab ────────────────────────────────────────────── -->
             <MudTabPanel Text="Sources">
 
                 <div class="pref-section" style="margin-bottom: 24px;">
-                    <div class="section-label">Sources</div>
+                    <div class="section-label">Default source restrictions</div>
                     <div class="pref-row-desc" style="margin-bottom: 10px;">
-                        Enable or disable individual content sources. Disabled sources are excluded
-                        from element resolution. Refresh the database after making changes for them to take effect.
+                        All installed content is always loaded. These defaults decide which sources a
+                        character may use whenever it has not chosen its own: new characters start from
+                        them, and so does any older file that never recorded restrictions. A character
+                        that has its own keeps them &mdash; edit those on its Manage tab, where Load
+                        Default brings it back to what you set here. Builder infrastructure stays enabled.
                     </div>
-                    @{
-                        var packages = ContentDb.GetPackages();
-                        IReadOnlyList<ContentPackageInfo> filteredPackages = string.IsNullOrWhiteSpace(PackageSearch)
-                            ? packages
-                            : packages.Where(p =>
-                                p.PackageName.Contains(PackageSearch, StringComparison.OrdinalIgnoreCase) ||
-                                p.PackageKey.Contains(PackageSearch, StringComparison.OrdinalIgnoreCase) ||
-                                p.PackageKind.Contains(PackageSearch, StringComparison.OrdinalIgnoreCase)).ToList();
-                    }
-                    @if (packages.Count == 0)
+
+                    @if (DefaultSourceGroups.Count == 0)
                     {
                         <div style="font-size: 13px; color: var(--mud-palette-text-disabled);">
-                            No sources found. Refresh Database first to index installed content.
+                            No sources found. Refresh the database to index installed content.
                         </div>
                     }
                     else
                     {
-                        <MudTextField @bind-Value="PackageSearch"
-                                      Placeholder="Search sources…"
-                                      Adornment="Adornment.Start"
-                                      AdornmentIcon="@Icons.Material.Filled.Search"
-                                      Clearable="true"
-                                      Immediate="true"
-                                      Variant="Variant.Outlined"
-                                      Margin="Margin.Dense"
-                                      Class="mb-3" />
-                        @if (!filteredPackages.Any())
-                        {
-                            <div style="font-size: 13px; color: var(--mud-palette-text-disabled);">No sources match your search.</div>
-                        }
-                        else
-                        {
-                            <div style="display: flex; flex-direction: column; gap: 4px; max-height: 320px; overflow-y: auto;">
-                                @foreach (var pkg in filteredPackages)
-                                {
-                                    var p = pkg;
-                                    <div style="display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 6px; background: var(--mud-palette-background-grey);">
-                                        <MudSwitch Value="p.IsEnabled"
-                                                   ValueChanged="@((bool v) => TogglePackageAsync(p.Id, v))"
-                                                   Color="Color.Primary"
-                                                   Style="margin: 0;" />
-                                        <span style="font-size: 13px; color: var(--mud-palette-text-primary); flex: 1;">@p.PackageName</span>
-                                        <MudChip T="string" Size="Size.Small"
-                                                 Style="@($"background: {KindColor(p.PackageKind)}22; color: {KindColor(p.PackageKind)}; font-size: 11px; height: 20px; border-radius: 4px;")">
-                                            @p.PackageKind
-                                        </MudChip>
-                                    </div>
-                                }
-                            </div>
-                            @if (filteredPackages.Count < packages.Count)
-                            {
-                                <div style="font-size: 12px; color: var(--mud-palette-text-disabled); margin-top: 6px;">
-                                    Showing @filteredPackages.Count of @packages.Count sources.
-                                </div>
-                            }
-                        }
+                        <SourceRestrictionsEditor Groups="DefaultSourceGroups"
+                                                  Busy="_defaultSourcesBusy"
+                                                  OnToggleNode="ToggleDefaultNodeAsync"
+                                                  OnToggleItem="ToggleDefaultSourceAsync" />
                     }
                 </div>
 
@@ -644,6 +510,128 @@
                         </MudAlert>
                     }
 
+                </div>
+
+            </MudTabPanel>
+
+            <!-- ── Data sub-tab ───────────────────────────────────────────────── -->
+            <MudTabPanel Text="Data">
+
+                <div class="pref-section">
+                    <div class="section-label">Database</div>
+                    <div class="pref-row-desc" style="margin-bottom: 16px;">
+                        Manage the installed content database and keep it in sync with your content directory.
+                        The database file is stored inside that content directory, so changing the
+                        character storage root also changes which database is used.
+                    </div>
+
+                    <div style="margin-bottom: 12px;">
+                        <div class="pref-row-title" style="margin-bottom: 4px;">Content directory</div>
+                        <div style="font-family: monospace; font-size: 12px; color: var(--mud-palette-text-secondary); word-break: break-all;">
+                            @(string.IsNullOrWhiteSpace(ContentDb.ContentDirectory) ? "(not available)" : ContentDb.ContentDirectory)
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 12px;">
+                        <div class="pref-row-title" style="margin-bottom: 4px;">Database path</div>
+                        <div style="font-family: monospace; font-size: 12px; color: var(--mud-palette-text-secondary); word-break: break-all;">
+                            @(ContentDb.DatabasePath ?? "(not available)")
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 16px; overflow-wrap: anywhere;">
+                        <div class="pref-row-title" style="margin-bottom: 4px;">Status</div>
+                        @if (ContentDb.SyncState == ContentDatabaseSyncState.Syncing || _checkingStale || _reloadingElements)
+                        {
+                            <div role="status" aria-live="polite" style="display: flex; align-items: center; gap: 8px; color: var(--mud-palette-primary); font-size: 13px;">
+                                @if (!DatabaseProgressIndeterminate)
+                                {
+                                    @* CSS animation keeps activity visible between library callbacks and long SQL operations. *@
+                                    <MudProgressCircular Indeterminate="true" Size="Size.Small" Color="Color.Primary" aria-hidden="true" />
+                                }
+                                @DatabaseProgressLabel
+                            </div>
+                            <MudProgressLinear Indeterminate="@DatabaseProgressIndeterminate"
+                                               Value="@SyncPercent"
+                                               Min="0" Max="100"
+                                               Color="Color.Primary"
+                                               aria-label="Content database progress"
+                                               Class="mt-2" />
+                            @if (ContentDb.SyncState == ContentDatabaseSyncState.Syncing && ContentDb.Progress?.CurrentFile is { Length: > 0 } currentFile)
+                            {
+                                <div class="pref-row-desc" style="overflow-wrap: anywhere; margin-top: 4px;">@currentFile</div>
+                            }
+                        }
+                        else if (!string.IsNullOrWhiteSpace(ContentDb.LastReadFailure))
+                        {
+                            <div style="color: var(--mud-palette-warning); font-size: 13px;">
+                                Database read failed: @ContentDb.LastReadFailure
+                            </div>
+                        }
+                        else if (ContentDb.LastResult != null)
+                        {
+                            <div style="color: @(ContentDb.LastResult.Success ? "var(--mud-palette-success)" : "var(--mud-palette-error)"); font-size: 13px;">
+                                @ContentDb.LastResult.Summary
+                            </div>
+                        }
+                        else if (ContentDb.IsStale)
+                        {
+                            <div style="color: var(--mud-palette-warning); font-size: 13px;">Database is out of date. Refresh Database to sync and refresh element data.</div>
+                        }
+                        else if (_stalenessChecked)
+                        {
+                            <div style="color: var(--mud-palette-success); font-size: 13px;">Database is up to date.</div>
+                        }
+                        else
+                        {
+                            <div style="font-size: 13px; color: var(--mud-palette-text-disabled);">Not checked yet.</div>
+                        }
+                    </div>
+
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <MudButton Variant="Variant.Outlined"
+                                   Color="Color.Default"
+                                   Size="Size.Small"
+                                   Disabled="@(ContentDb.SyncState == ContentDatabaseSyncState.Syncing || _checkingStale || _reloadingElements)"
+                                   OnClick="CheckStaleAsync">
+                            @(_checkingStale ? "Checking…" : "Check for Changes")
+                        </MudButton>
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   Size="Size.Small"
+                                   Disabled="@(_reloadingElements || _checkingStale || ContentDb.SyncState == ContentDatabaseSyncState.Syncing || string.IsNullOrWhiteSpace(ContentDb.ContentDirectory) || Tabs.Tabs.Count > 0)"
+                                   OnClick="RefreshDatabaseAsync">
+                            @(_reloadingElements ? "Refreshing..." : "Refresh Database")
+                        </MudButton>
+                    </div>
+
+                    <div class="pref-row-desc" style="margin-top: 10px;">
+                        Local corrections are reviewed in <MudLink Href="/content-doctor">Content Doctor</MudLink>.
+                    </div>
+
+                    <div class="pref-row" style="margin-top: 14px;">
+                        <div class="pref-row-text">
+                            <div class="pref-row-title">Skip content files that can't be imported</div>
+                            <div class="pref-row-desc">
+                                Import as much usable content as possible and list what was left out in
+                                Content Doctor. AuroraLegacy replaces overlapping archived aurorabuilder
+                                definitions. Where more than one file defines an element, the declaration
+                                Aurora Builder would load last wins and the alternatives are kept for review.
+                                Unreadable files and invalid append operations are skipped. Correction errors still
+                                stop activation. Turn this off to stop on unreadable files, invalid appends, or new unresolved collisions.
+                            </div>
+                        </div>
+                        <MudSwitch Value="SkipUnusableContent"
+                                   ValueChanged="@((bool v) => SetSkipUnusableContent(v))"
+                                   Color="Color.Primary" />
+                    </div>
+
+                    @if (Tabs.Tabs.Count > 0 && !string.IsNullOrWhiteSpace(ContentDb.ContentDirectory))
+                    {
+                        <MudAlert Severity="Severity.Info" Class="mt-4" Dense="true">
+                            Close all character tabs before refreshing the database so loaded characters do not keep stale element references.
+                        </MudAlert>
+                    }
                 </div>
 
             </MudTabPanel>
@@ -1019,13 +1007,13 @@
                 <div class="section-label">Database Diagnostics</div>
 
                 @{
-                    var dbMeta = ContentDb.GetMetadata();
+                    var dbMeta = _dbMetadata;
                 }
                 @if (dbMeta != null)
                 {
                     <div style="margin-bottom: 16px;">
                         <div class="pref-row-title" style="margin-bottom: 4px;">Database metadata</div>
-                        <div class="pref-row-desc">Schema v@dbMeta.SchemaVersion, data v@dbMeta.DataVersion, importer @dbMeta.ImporterVersion</div>
+                        <div class="pref-row-desc">Schema v@(dbMeta.SchemaVersion), data v@(dbMeta.DataVersion), importer @dbMeta.ImporterVersion</div>
                         <div class="pref-row-desc">Built: @FormatUtc(dbMeta.BuiltUtc)</div>
                         <div class="pref-row-desc">Indexed files: @dbMeta.SourceFileCount, elements: @dbMeta.ElementCount</div>
                     </div>
@@ -1191,6 +1179,7 @@
     private bool _reloadingElements;
     private bool _needsContentReload;
     private ContentDatabaseHealthReport? _dbHealth;
+    private ContentDatabaseMetadata? _dbMetadata;
     private ContentDatabaseParityReport? _dbParity;
     private bool _dirBusy;
     private string? _dirError;
@@ -1207,12 +1196,6 @@
     {
         get => PageState.Settings.ActiveContentTabIndex;
         set => PageState.Settings.ActiveContentTabIndex = value;
-    }
-
-    private string PackageSearch
-    {
-        get => PageState.Settings.PackageSearch;
-        set => PageState.Settings.PackageSearch = value ?? string.Empty;
     }
 
     protected override void OnParametersSet()
@@ -1395,30 +1378,108 @@
     }
 #endif
 
-    private async Task TogglePackageAsync(long packageId, bool enabled)
-    {
-        string? error = await ContentDb.SetPackageEnabledAsync(packageId, enabled);
-        if (error != null)
-        {
-            Snackbar.Add(
-                $"Could not update content source: {error}",
-                Severity.Error,
-                cfg => cfg.VisibleStateDuration = 8000);
-            return;
-        }
+    // ── Content that could not be imported ───────────────────────────────
 
-        _needsContentReload = true;
+    private static bool SkipUnusableContent =>
+        ApplicationContext.Current.Settings.SkipUnusableContentOnRefresh;
+
+    private void SetSkipUnusableContent(bool enabled)
+    {
+        ApplicationContext.Current.Settings.SkipUnusableContentOnRefresh = enabled;
+        ApplicationContext.Current.Settings.Save();
         StateHasChanged();
     }
 
-    private static string KindColor(string kind) => kind switch
+
+    // ── Default source restrictions ──────────────────────────────────────
+    // Edited against their own SourcesManager so toggling defaults never disturbs the
+    // restrictions of the character currently loaded in the engine singleton.
+    private SourcesManager? _defaultSources;
+    private bool _defaultSourcesBusy;
+
+    private SourcesManager DefaultSources
     {
-        "core" => "#a6e3a1",
-        "official" => "#89b4fa",
-        "third-party" => "#fab387",
-        "homebrew" => "#cba6f7",
-        _ => "#6c7086",
-    };
+        get
+        {
+            if (_defaultSources is null)
+            {
+                _defaultSources = new SourcesManager();
+                _defaultSources.LoadDefaults();
+            }
+            return _defaultSources;
+        }
+    }
+
+    private IReadOnlyList<SourceRestrictionGroupModel> DefaultSourceGroups =>
+        DataManager.Current.ElementsCollection.Count == 0
+            ? []
+            : SourceRestrictionModelMapper.ToGroupModels(DefaultSources);
+
+    private Task ToggleDefaultSourceAsync(string sourceId)
+    {
+        SourceItem? item = DefaultSources.SourceGroups
+            .SelectMany(group => group.Sources)
+            .FirstOrDefault(candidate => string.Equals(candidate.Source.Id, sourceId, StringComparison.Ordinal));
+        if (item is null) return NotifyMissingSource("source");
+        if (!item.AllowUnchecking) return NotifyRequiredSource();
+        item.SetIsChecked(item.IsChecked != true, updateChildren: true, updateParent: true);
+        return StoreDefaultRestrictions();
+    }
+
+    /// <summary>A category or publisher row: every source under it moves together, in one save.</summary>
+    private Task ToggleDefaultNodeAsync(SourceRestrictionNodeToggle toggle)
+    {
+        List<SourceItem> matching = DefaultSources.SourceGroups
+            .SelectMany(group => group.Sources)
+            .Where(item => item.AllowUnchecking && toggle.SourceIds.Contains(item.Source.Id, StringComparer.Ordinal))
+            .ToList();
+        if (matching.Count == 0)
+        {
+            Snackbar.Add("No optional sources are available under that heading.", Severity.Info,
+                cfg => cfg.VisibleStateDuration = 2500);
+            return Task.CompletedTask;
+        }
+        foreach (SourceItem item in matching)
+            item.SetIsChecked(toggle.IsEnabled, updateChildren: true, updateParent: true);
+        return StoreDefaultRestrictions();
+    }
+
+    private Task StoreDefaultRestrictions()
+    {
+        _defaultSourcesBusy = true;
+        try
+        {
+            DefaultSources.ApplyRestrictions();
+            DefaultSources.StoreDefaults();
+            ApplicationContext.Current.Settings.Save();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Could not save the default source restrictions: {ex.Message}", Severity.Error,
+                cfg => cfg.VisibleStateDuration = 8000);
+            DebugLogService.Catch(ex, "Settings.StoreDefaultRestrictions");
+        }
+        finally
+        {
+            _defaultSourcesBusy = false;
+        }
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private Task NotifyMissingSource(string what)
+    {
+        Snackbar.Add($"That source {what} could not be found.", Severity.Warning,
+            cfg => cfg.VisibleStateDuration = 2500);
+        return Task.CompletedTask;
+    }
+
+    private Task NotifyRequiredSource()
+    {
+        Snackbar.Add("That source is required and can't be disabled.", Severity.Info,
+            cfg => cfg.VisibleStateDuration = 2500);
+        return Task.CompletedTask;
+    }
 
     private void OnStateChanged() => _ = InvokeAsync(async () =>
     {
@@ -1433,22 +1494,19 @@
     });
     private void OnContentChanged() => InvokeAsync(StateHasChanged);
 
-    private int SyncPercent
-    {
-        get
-        {
-            var p = ContentDb.Progress;
-            if (p == null || p.FilesTotal == 0) return 0;
-            return p.Phase switch
-            {
-                Aurora.Importer.AuroraImportPhase.Scanning => (int)(p.FilesScanned * 50.0 / p.FilesTotal),
-                Aurora.Importer.AuroraImportPhase.Importing => 50 + (int)(p.FilesScanned * 40.0 / Math.Max(1, p.FilesTotal)),
-                Aurora.Importer.AuroraImportPhase.Resolving => 90,
-                Aurora.Importer.AuroraImportPhase.Complete => 100,
-                _ => 0
-            };
-        }
-    }
+    private bool DatabaseProgressIndeterminate =>
+        ContentDb.SyncState != ContentDatabaseSyncState.Syncing ||
+        ContentDb.Progress is not { FilesTotal: > 0 } ||
+        ContentDb.Progress.IsIndeterminate ||
+        ContentDb.Progress.Phase == AuroraImportPhase.Complete;
+
+    private string DatabaseProgressLabel => ContentDb.SyncState == ContentDatabaseSyncState.Syncing
+        ? ContentDb.Progress?.Phase == AuroraImportPhase.Complete
+            ? "Finalizing database…"
+            : ContentDb.Progress?.PhaseLabel ?? "Preparing content…"
+        : _checkingStale ? "Checking for changes…" : "Refreshing and loading content…";
+
+    private int SyncPercent => ContentDb.Progress?.Percentage ?? 0;
 
     private async Task CheckStaleAsync()
     {
@@ -1486,6 +1544,8 @@
             {
                 _needsContentReload = false;
                 _stalenessChecked = true;
+                // Sources may have come or gone with the reload; rebuild the defaults tree from them.
+                _defaultSources = null;
                 await RefreshDatabaseDiagnosticsAsync();
                 Snackbar.Add("Database refreshed.", Severity.Success);
             }
@@ -1546,11 +1606,16 @@
 
     private async Task RefreshDatabaseDiagnosticsAsync()
     {
-        var health = await Task.Run(() => ContentDb.GetHealthReport());
+        // Never query SQLite from a progress render. Keep the previous diagnostics visible
+        // while syncing and replace them together after the new database is available.
+        var diagnostics = await Task.Run(() => (
+            Health: ContentDb.GetHealthReport(),
+            Metadata: ContentDb.GetMetadata()));
         if (_disposed)
             return;
 
-        _dbHealth = health;
+        _dbHealth = diagnostics.Health;
+        _dbMetadata = diagnostics.Metadata;
     }
 
     private static Severity ParitySeverity(ContentDatabaseParityReport report) => report.Status switch
@@ -1810,8 +1875,8 @@
             _dirError = Characters.ApplyCustomCharactersDirectory(chosen);
             if (_dirError == null)
             {
-                HandleContentRootChanged();
-                Snackbar.Add($"Characters folder set to: {chosen}", Severity.Success,
+                await HandleContentRootChangedAsync();
+                if (_dirError == null) Snackbar.Add($"Characters folder set to: {chosen}", Severity.Success,
                     cfg => cfg.VisibleStateDuration = 4000);
             }
         }
@@ -1822,50 +1887,56 @@
         }
     }
 
-    private Task UseExternalStorageAsync()
+    private async Task UseExternalStorageAsync()
     {
         _dirError = null;
         string? path = CharacterService.GetAndroidExternalStoragePath();
         if (path == null)
         {
             _dirError = "External storage path is not available on this device.";
-            return Task.CompletedTask;
+            return;
         }
         _dirError = Characters.ApplyCustomCharactersDirectory(path);
         if (_dirError == null)
         {
-            HandleContentRootChanged();
-            Snackbar.Add("Switched to external storage. Files are now accessible from the Files app.",
+            await HandleContentRootChangedAsync();
+            if (_dirError == null) Snackbar.Add("Switched to external storage. Files are now accessible from the Files app.",
                 Severity.Success, cfg => cfg.VisibleStateDuration = 5000);
         }
         StateHasChanged();
-        return Task.CompletedTask;
     }
 
-    private Task ResetCharactersDirAsync()
+    private async Task ResetCharactersDirAsync()
     {
         _dirError = Characters.ApplyCustomCharactersDirectory(null);
         if (_dirError == null)
         {
-            HandleContentRootChanged();
-            Snackbar.Add("Characters folder reset to default.", Severity.Success,
+            await HandleContentRootChangedAsync();
+            if (_dirError == null) Snackbar.Add("Characters folder reset to default.", Severity.Success,
                 cfg => cfg.VisibleStateDuration = 3000);
         }
         StateHasChanged();
-        return Task.CompletedTask;
     }
 
-    private void HandleContentRootChanged()
+    private async Task HandleContentRootChangedAsync()
     {
+        _dirBusy = true;
         ContentDb.NotifyContentDirectoryChanged();
         _stalenessChecked = false;
         _dbParity = null;
         _needsContentReload = true;
-        _ = InvokeAsync(async () =>
+        StateHasChanged();
+        try
         {
+            _dirError = await Content.ReloadContentAsync();
+            _needsContentReload = _dirError != null;
             await RefreshDatabaseDiagnosticsAsync();
+        }
+        finally
+        {
+            _dirBusy = false;
             StateHasChanged();
-        });
+        }
     }
 
     public void Dispose()

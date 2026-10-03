@@ -22,6 +22,88 @@ public static class EquipmentService
         "Tool", "Mount", "Vehicle", "Pack", "Gear", "Adventuring Gear"
     };
 
+    private static readonly HashSet<string> ArcaneFocusIds = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "ID_WOTC_PHB_ITEM_CRYSTAL", "ID_WOTC_PHB_ITEM_ORB", "ID_WOTC_PHB_ITEM_ROD",
+        "ID_WOTC_PHB_ITEM_STAFF", "ID_WOTC_PHB_ITEM_WAND",
+        "ID_WOTC_PHB24_ITEM_ARCANE_FOCUS_CRYSTAL", "ID_WOTC_PHB24_ITEM_ARCANE_FOCUS_ORB",
+        "ID_WOTC_PHB24_ITEM_ARCANE_FOCUS_ROD", "ID_WOTC_PHB24_ITEM_ARCANE_FOCUS_WAND",
+    };
+
+    private static readonly HashSet<string> DruidicFocusIds = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "ID_WOTC_PHB_ITEM_SPRIGOFMISTLETOE", "ID_WOTC_PHB_ITEM_TOTEM",
+        "ID_WOTC_PHB_ITEM_WOODENSTAFF",      "ID_WOTC_PHB_ITEM_YEWWAND",
+        "ID_WOTC_PHB24_ITEM_DRUIDIC_FOCUS_SPRIG_OF_MISTLETOE",
+        "ID_WOTC_PHB24_ITEM_DRUIDIC_FOCUS_YEW_WAND",
+    };
+
+    private static readonly HashSet<string> HolySymbolIds = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "ID_WOTC_PHB_ITEM_AMULET", "ID_WOTC_PHB_ITEM_EMBLEM", "ID_WOTC_PHB_ITEM_RELIQUARY",
+        "ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_AMULET", "ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_EMBLEM",
+        "ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_RELIQUARY",
+    };
+
+    private static readonly HashSet<string> MusicalInstrumentIds = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "ID_WOTC_SRD_INSTRUMENT_BAGPIPES", "ID_WOTC_SRD_INSTRUMENT_DRUM",
+        "ID_WOTC_SRD_INSTRUMENT_DULCIMER", "ID_WOTC_SRD_INSTRUMENT_FLUTE",
+        "ID_WOTC_SRD_INSTRUMENT_HORN",     "ID_WOTC_SRD_INSTRUMENT_LUTE",
+        "ID_WOTC_SRD_INSTRUMENT_LYRE",     "ID_WOTC_SRD_INSTRUMENT_PANFLUTE",
+        "ID_WOTC_SRD_INSTRUMENT_SHAWM",    "ID_WOTC_SRD_INSTRUMENT_VIOL",
+        "ID_WOTC_PHB24_INSTRUMENT_BAGPIPES", "ID_WOTC_PHB24_INSTRUMENT_DRUM",
+        "ID_WOTC_PHB24_INSTRUMENT_DULCIMER", "ID_WOTC_PHB24_INSTRUMENT_FLUTE",
+        "ID_WOTC_PHB24_INSTRUMENT_HORN",     "ID_WOTC_PHB24_INSTRUMENT_LUTE",
+        "ID_WOTC_PHB24_INSTRUMENT_LYRE",     "ID_WOTC_PHB24_INSTRUMENT_PANFLUTE",
+        "ID_WOTC_PHB24_INSTRUMENT_SHAWM",    "ID_WOTC_PHB24_INSTRUMENT_VIOL",
+    };
+
+    private static readonly HashSet<string> ArtisanToolIds = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "ID_WOTC_PHB_ITEM_TOOL_ALCHEMISTS_SUPPLIES",
+        "ID_WOTC_PHB_ITEM_TOOL_BREWERS_SUPPLIES",
+        "ID_WOTC_PHB_ITEM_TOOL_CALLIGRAPHERS_SUPPLIES",
+        "ID_WOTC_PHB_ITEM_TOOL_CARPENTERS_TOOLS",
+        "ID_WOTC_PHB_ITEM_TOOL_CARTOGRAPHERS_TOOLS",
+        "ID_WOTC_PHB_ITEM_TOOL_COBBLERS_TOOLS",
+        "ID_WOTC_PHB_ITEM_TOOL_COOKS_UTENSILS",
+        "ID_WOTC_PHB_ITEM_TOOL_GLASSBLOWERS_TOOLS",
+        "ID_WOTC_PHB_ITEM_TOOL_JEWELERS_TOOLS",
+        "ID_WOTC_PHB_ITEM_TOOL_LEATHERWORKERS_TOOLS",
+        "ID_WOTC_PHB_ITEM_TOOL_MASONS_TOOLS",
+        "ID_WOTC_PHB_ITEM_TOOL_PAINTERS_SUPPLIES",
+        "ID_WOTC_PHB_ITEM_TOOL_POTTERS_TOOLS",
+        "ID_WOTC_PHB_ITEM_TOOL_SMITHS_TOOLS",
+        "ID_WOTC_PHB_ITEM_TOOL_TINKERS_TOOLS",
+        "ID_WOTC_PHB_ITEM_TOOL_WEAVERS_TOOLS",
+        "ID_WOTC_PHB_ITEM_TOOL_WOODCARVERS_TOOLS",
+        "ID_WOTC_PHB24_ITEM_TOOL_ALCHEMISTS_SUPPLIES",
+        "ID_WOTC_PHB24_ITEM_TOOL_BREWERS_SUPPLIES",
+        "ID_WOTC_PHB24_ITEM_TOOL_CALLIGRAPHERS_SUPPLIES",
+        "ID_WOTC_PHB24_ITEM_TOOL_CARPENTERS_TOOLS",
+        "ID_WOTC_PHB24_ITEM_TOOL_COBBLERS_TOOLS",
+        "ID_WOTC_PHB24_ITEM_TOOL_COOKS_UTENSILS",
+        "ID_WOTC_PHB24_ITEM_TOOL_GLASSBLOWERS_TOOLS",
+        "ID_WOTC_PHB24_ITEM_TOOL_JEWELERS_TOOLS",
+        "ID_WOTC_PHB24_ITEM_TOOL_LEATHERWORKERS_TOOLS",
+        "ID_WOTC_PHB24_ITEM_TOOL_MASONS_TOOLS",
+        "ID_WOTC_PHB24_ITEM_TOOL_PAINTERS_SUPPLIES",
+        "ID_WOTC_PHB24_ITEM_TOOL_POTTERS_TOOLS",
+        "ID_WOTC_PHB24_ITEM_TOOL_SMITHS_TOOLS",
+        "ID_WOTC_PHB24_ITEM_TOOL_TINKERS_TOOLS",
+        "ID_WOTC_PHB24_ITEM_TOOL_WEAVERS_TOOLS",
+        "ID_WOTC_PHB24_ITEM_TOOL_WOODCARVERS_TOOLS",
+    };
+
+    private static readonly HashSet<string> GamingSetIds = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "ID_WOTC_PHB24_ITEM_TOOL_DICE_SET",
+        "ID_WOTC_PHB24_ITEM_TOOL_DRAGONCHESS_SET",
+        "ID_WOTC_PHB24_ITEM_TOOL_PLAYING_CARDS_SET",
+        "ID_WOTC_PHB24_ITEM_TOOL_THREE_DRAGON_ANTE_SET",
+    };
+
     private static readonly IReadOnlyDictionary<string, IReadOnlyList<ExtractionRecipeEntry>> SupplementalExtractionRecipes =
         new Dictionary<string, IReadOnlyList<ExtractionRecipeEntry>>(StringComparer.OrdinalIgnoreCase)
         {
@@ -153,98 +235,28 @@ public static class EquipmentService
 
             // Arcane focus items have no <supports> — matched by known element IDs.
             "arcane focus" => DataManager.Current.ElementsCollection.Where(e =>
-                new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-                {
-                    "ID_WOTC_PHB_ITEM_CRYSTAL", "ID_WOTC_PHB_ITEM_ORB", "ID_WOTC_PHB_ITEM_ROD",
-                    "ID_WOTC_PHB_ITEM_STAFF", "ID_WOTC_PHB_ITEM_WAND",
-                    "ID_WOTC_PHB24_ITEM_ARCANE_FOCUS_CRYSTAL", "ID_WOTC_PHB24_ITEM_ARCANE_FOCUS_ORB",
-                    "ID_WOTC_PHB24_ITEM_ARCANE_FOCUS_ROD", "ID_WOTC_PHB24_ITEM_ARCANE_FOCUS_WAND",
-                }.Contains(e.Id) || HasSetterValue(e, "container", "Arcane Focus")),
+                ArcaneFocusIds.Contains(e.Id) || HasSetterValue(e, "container", "Arcane Focus")),
 
             // Druidic focus items have no <supports> — matched by known element IDs.
             "druidic focus" => DataManager.Current.ElementsCollection.Where(e =>
-                new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-                {
-                    "ID_WOTC_PHB_ITEM_SPRIGOFMISTLETOE", "ID_WOTC_PHB_ITEM_TOTEM",
-                    "ID_WOTC_PHB_ITEM_WOODENSTAFF",      "ID_WOTC_PHB_ITEM_YEWWAND",
-                    "ID_WOTC_PHB24_ITEM_DRUIDIC_FOCUS_SPRIG_OF_MISTLETOE",
-                    "ID_WOTC_PHB24_ITEM_DRUIDIC_FOCUS_YEW_WAND",
-                }.Contains(e.Id) || HasSetterValue(e, "container", "Druidic Focus")),
+                DruidicFocusIds.Contains(e.Id) || HasSetterValue(e, "container", "Druidic Focus")),
 
             "holy symbol" => DataManager.Current.ElementsCollection.Where(e =>
-                new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-                {
-                    "ID_WOTC_PHB_ITEM_AMULET", "ID_WOTC_PHB_ITEM_EMBLEM", "ID_WOTC_PHB_ITEM_RELIQUARY",
-                    "ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_AMULET", "ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_EMBLEM",
-                    "ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_RELIQUARY",
-                }.Contains(e.Id) || HasSetterValue(e, "container", "Holy Symbol")),
+                HolySymbolIds.Contains(e.Id) || HasSetterValue(e, "container", "Holy Symbol")),
 
             "spellcasting focus" => DataManager.Current.ElementsCollection.Where(e =>
                 HasSetterValue(e, "category", "Spellcasting Focus")),
 
             // Musical instruments have no <supports> — matched by known element IDs.
             "musical instrument" => DataManager.Current.ElementsCollection.Where(e =>
-                new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-                {
-                    "ID_WOTC_SRD_INSTRUMENT_BAGPIPES", "ID_WOTC_SRD_INSTRUMENT_DRUM",
-                    "ID_WOTC_SRD_INSTRUMENT_DULCIMER", "ID_WOTC_SRD_INSTRUMENT_FLUTE",
-                    "ID_WOTC_SRD_INSTRUMENT_HORN",     "ID_WOTC_SRD_INSTRUMENT_LUTE",
-                    "ID_WOTC_SRD_INSTRUMENT_LYRE",     "ID_WOTC_SRD_INSTRUMENT_PANFLUTE",
-                    "ID_WOTC_SRD_INSTRUMENT_SHAWM",    "ID_WOTC_SRD_INSTRUMENT_VIOL",
-                    "ID_WOTC_PHB24_INSTRUMENT_BAGPIPES", "ID_WOTC_PHB24_INSTRUMENT_DRUM",
-                    "ID_WOTC_PHB24_INSTRUMENT_DULCIMER", "ID_WOTC_PHB24_INSTRUMENT_FLUTE",
-                    "ID_WOTC_PHB24_INSTRUMENT_HORN",     "ID_WOTC_PHB24_INSTRUMENT_LUTE",
-                    "ID_WOTC_PHB24_INSTRUMENT_LYRE",     "ID_WOTC_PHB24_INSTRUMENT_PANFLUTE",
-                    "ID_WOTC_PHB24_INSTRUMENT_SHAWM",    "ID_WOTC_PHB24_INSTRUMENT_VIOL",
-                }.Contains(e.Id) || HasSetterValue(e, "category", "Musical Instruments")),
+                MusicalInstrumentIds.Contains(e.Id) || HasSetterValue(e, "category", "Musical Instruments")),
 
             // Artisan's tools have no <supports> — matched by known element IDs.
             "artisan's tools" => DataManager.Current.ElementsCollection.Where(e =>
-                new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-                {
-                    "ID_WOTC_PHB_ITEM_TOOL_ALCHEMISTS_SUPPLIES",
-                    "ID_WOTC_PHB_ITEM_TOOL_BREWERS_SUPPLIES",
-                    "ID_WOTC_PHB_ITEM_TOOL_CALLIGRAPHERS_SUPPLIES",
-                    "ID_WOTC_PHB_ITEM_TOOL_CARPENTERS_TOOLS",
-                    "ID_WOTC_PHB_ITEM_TOOL_CARTOGRAPHERS_TOOLS",
-                    "ID_WOTC_PHB_ITEM_TOOL_COBBLERS_TOOLS",
-                    "ID_WOTC_PHB_ITEM_TOOL_COOKS_UTENSILS",
-                    "ID_WOTC_PHB_ITEM_TOOL_GLASSBLOWERS_TOOLS",
-                    "ID_WOTC_PHB_ITEM_TOOL_JEWELERS_TOOLS",
-                    "ID_WOTC_PHB_ITEM_TOOL_LEATHERWORKERS_TOOLS",
-                    "ID_WOTC_PHB_ITEM_TOOL_MASONS_TOOLS",
-                    "ID_WOTC_PHB_ITEM_TOOL_PAINTERS_SUPPLIES",
-                    "ID_WOTC_PHB_ITEM_TOOL_POTTERS_TOOLS",
-                    "ID_WOTC_PHB_ITEM_TOOL_SMITHS_TOOLS",
-                    "ID_WOTC_PHB_ITEM_TOOL_TINKERS_TOOLS",
-                    "ID_WOTC_PHB_ITEM_TOOL_WEAVERS_TOOLS",
-                    "ID_WOTC_PHB_ITEM_TOOL_WOODCARVERS_TOOLS",
-                    "ID_WOTC_PHB24_ITEM_TOOL_ALCHEMISTS_SUPPLIES",
-                    "ID_WOTC_PHB24_ITEM_TOOL_BREWERS_SUPPLIES",
-                    "ID_WOTC_PHB24_ITEM_TOOL_CALLIGRAPHERS_SUPPLIES",
-                    "ID_WOTC_PHB24_ITEM_TOOL_CARPENTERS_TOOLS",
-                    "ID_WOTC_PHB24_ITEM_TOOL_COBBLERS_TOOLS",
-                    "ID_WOTC_PHB24_ITEM_TOOL_COOKS_UTENSILS",
-                    "ID_WOTC_PHB24_ITEM_TOOL_GLASSBLOWERS_TOOLS",
-                    "ID_WOTC_PHB24_ITEM_TOOL_JEWELERS_TOOLS",
-                    "ID_WOTC_PHB24_ITEM_TOOL_LEATHERWORKERS_TOOLS",
-                    "ID_WOTC_PHB24_ITEM_TOOL_MASONS_TOOLS",
-                    "ID_WOTC_PHB24_ITEM_TOOL_PAINTERS_SUPPLIES",
-                    "ID_WOTC_PHB24_ITEM_TOOL_POTTERS_TOOLS",
-                    "ID_WOTC_PHB24_ITEM_TOOL_SMITHS_TOOLS",
-                    "ID_WOTC_PHB24_ITEM_TOOL_TINKERS_TOOLS",
-                    "ID_WOTC_PHB24_ITEM_TOOL_WEAVERS_TOOLS",
-                    "ID_WOTC_PHB24_ITEM_TOOL_WOODCARVERS_TOOLS",
-                }.Contains(e.Id)),
+                ArtisanToolIds.Contains(e.Id)),
 
             "gaming set" => DataManager.Current.ElementsCollection.Where(e =>
-                new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-                {
-                    "ID_WOTC_PHB24_ITEM_TOOL_DICE_SET",
-                    "ID_WOTC_PHB24_ITEM_TOOL_DRAGONCHESS_SET",
-                    "ID_WOTC_PHB24_ITEM_TOOL_PLAYING_CARDS_SET",
-                    "ID_WOTC_PHB24_ITEM_TOOL_THREE_DRAGON_ANTE_SET",
-                }.Contains(e.Id)),
+                GamingSetIds.Contains(e.Id)),
 
             _ => DataManager.Current.ElementsCollection.Where(e =>
                 ItemTypes.Contains(e.Type) &&
@@ -603,7 +615,7 @@ public static class EquipmentService
     /// <summary>
     /// Categories surfaced by the "Add Custom Feature" picker: Aurora's engine-generated
     /// "Additional …" proxies (one hidden Item per addable feat / spell / language /
-    /// proficiency / feature, etc.) plus Supernatural Gifts. Ordinary equipment is excluded —
+    /// proficiency / feature, etc.), Supernatural Gifts, and companion templates. Ordinary equipment is excluded —
     /// that belongs in the inventory picker.
     /// </summary>
     public static IReadOnlyList<string> GetCustomFeatureCategories()
@@ -611,16 +623,20 @@ public static class EquipmentService
         var cats = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var e in DataManager.Current.ElementsCollection)
         {
-            if (!ItemTypes.Contains(e.Type)) continue;
             var cat = GetCustomFeatureCategory(e);
             if (cat != null) cats.Add(cat);
         }
+        // The spell proxy categories are offered before anything builds them, so the picker lists
+        // them without the catalog carrying 79,032 items it may never be asked for.
+        foreach (var cat in SpellProxyCatalog.Categories) cats.Add(cat);
         return cats.ToList();
     }
 
     /// <summary>Returns the custom-feature category for an element, or null if it isn't one.</summary>
     private static string? GetCustomFeatureCategory(Builder.Data.ElementBase e)
     {
+        if (e is Builder.Data.Elements.CompanionElement) return "Companions";
+        if (!ItemTypes.Contains(e.Type)) return null;
         var name = e.Name ?? "";
         if (name.StartsWith("Additional ", StringComparison.OrdinalIgnoreCase))
         {
@@ -639,11 +655,18 @@ public static class EquipmentService
     /// description is taken from the underlying granted element (the proxy's own description is just
     /// engine boilerplate about gaining a benefit).
     /// </summary>
-    public static IReadOnlyList<ItemSearchResult> SearchCustomFeatures(string category, string query)
+    public static IReadOnlyList<ItemSearchResult> SearchCustomFeatures(
+        string category, string query, IReadOnlySet<string>? ownedElementIds = null)
     {
+        // Build this category's spell proxies if they are not in the catalog yet. One category is
+        // 2,136 items against 79,032 for every category at once, and it happens once per session.
+        SpellProxyCatalog.EnsureCategory(category);
+
         IEnumerable<Builder.Data.ElementBase> source = DataManager.Current.ElementsCollection.Where(e =>
-            ItemTypes.Contains(e.Type) &&
             string.Equals(GetCustomFeatureCategory(e), category, StringComparison.OrdinalIgnoreCase));
+
+        if (ownedElementIds != null)
+            source = source.Where(e => CanAddCustomFeature(e, ownedElementIds));
 
         if (!string.IsNullOrWhiteSpace(query))
             source = source.Where(e => (e.Name ?? "").Contains(query, StringComparison.OrdinalIgnoreCase));
@@ -688,17 +711,17 @@ public static class EquipmentService
 
     public static bool IsRepeatableCustomFeature(Builder.Data.ElementBase element)
     {
-        if (element.AllowMultipleElements)
-            return true;
+        // AllowMultipleElements permits different definitions of a type (e.g. several feats).
+        // Only AllowDuplicate permits repeating the same grant. Inventory stackability and
+        // a proxy's settings must not override the granted definition's restriction.
+        return ResolveCustomFeatureTarget(element).AllowDuplicate;
+    }
 
-        if (!element.ElementSetters.ContainsSetter("stackable"))
-            return false;
-
-        string? value = element.ElementSetters.GetSetter("stackable")?.Value;
-        return string.IsNullOrWhiteSpace(value)
-               || value.Equals("true", StringComparison.OrdinalIgnoreCase)
-               || value.Equals("1", StringComparison.OrdinalIgnoreCase)
-               || value.Equals("yes", StringComparison.OrdinalIgnoreCase);
+    public static bool CanAddCustomFeature(
+        Builder.Data.ElementBase element, IReadOnlySet<string> ownedElementIds)
+    {
+        var target = ResolveCustomFeatureTarget(element);
+        return IsRepeatableCustomFeature(target) || !ownedElementIds.Contains(target.Id);
     }
 
     private static string CleanCustomFeatureName(string name, string category)
@@ -826,33 +849,26 @@ public static class EquipmentService
 
     private static bool IsElementCompatibleWithSlot(Builder.Data.ElementBase e, GearSlot slot)
     {
-        try
+        // Most catalog entries are not equipment. Typed access avoids a caught dynamic-binding
+        // exception for every spell/feature, and ordinal comparisons avoid per-item lowercase sets.
+        if (e is not Builder.Data.Elements.Item item || e.Type is not ("Armor" or "Weapon"))
+            return false;
+
+        bool HasSlot(string value) => item.Slots?.Contains(value, StringComparer.OrdinalIgnoreCase) == true;
+        bool IsSlot(string value) => string.Equals(item.Slot, value, StringComparison.OrdinalIgnoreCase);
+
+        return slot switch
         {
-            dynamic d = e;
-            string slotVal  = ((string?)d.Slot  ?? "").ToLower();
-            var slotsRaw    = (IEnumerable<string>?)d.Slots ?? [];
-            var slots       = slotsRaw.Select(s => s.ToLower()).ToHashSet();
-
-            return slot switch
-            {
-                GearSlot.Armor    => e.Type == "Armor"
-                                     && (slots.Contains("armor") || slots.Contains("body")
-                                         || slotVal == "armor"  || slotVal == "body"),
-
-                GearSlot.MainHand => e.Type == "Weapon"
-                                     && (slots.Contains("onehand") || slots.Contains("twohand")
-                                         || slots.Contains("primary")
-                                         || slotVal is "onehand" or "twohand"),
-
-                GearSlot.OffHand  => (e.Type == "Weapon"
-                                         && (slots.Contains("onehand") || slots.Contains("secondary")))
-                                     || (e.Type == "Armor"
-                                         && (slots.Contains("secondary")
-                                             || slotVal.Contains("secondary"))),
-                _ => false,
-            };
-        }
-        catch { return false; }
+            GearSlot.Armor => e.Type == "Armor"
+                && (HasSlot("armor") || HasSlot("body") || IsSlot("armor") || IsSlot("body")),
+            GearSlot.MainHand => e.Type == "Weapon"
+                && (HasSlot("onehand") || HasSlot("twohand") || HasSlot("primary")
+                    || IsSlot("onehand") || IsSlot("twohand")),
+            GearSlot.OffHand => (e.Type == "Weapon" && (HasSlot("onehand") || HasSlot("secondary")))
+                || (e.Type == "Armor" && (HasSlot("secondary")
+                    || item.Slot?.Contains("secondary", StringComparison.OrdinalIgnoreCase) == true)),
+            _ => false,
+        };
     }
 
     // ── Description helper ────────────────────────────────────────────────────────
@@ -867,14 +883,20 @@ public static class EquipmentService
                 if (!string.IsNullOrEmpty(sd)) return sd;
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            DebugLogService.Instance.LogException(ex, $"EquipmentService.GetDescription sheet description for '{e.Id}'");
+        }
         try
         {
             if (!string.IsNullOrWhiteSpace(e.Description))
                 return Builder.Presentation.Utilities.ElementDescriptionGenerator
                     .GeneratePlainDescription(e.Description).Trim();
         }
-        catch { }
+        catch (Exception ex)
+        {
+            DebugLogService.Instance.LogException(ex, $"EquipmentService.GetDescription for '{e.Id}'");
+        }
         return "";
     }
 

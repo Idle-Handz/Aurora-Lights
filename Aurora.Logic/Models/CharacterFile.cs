@@ -1,4 +1,4 @@
-// Decompiled with JetBrains decompiler
+﻿// Decompiled with JetBrains decompiler
 // Type: Builder.Presentation.Models.CharacterFile
 // Assembly: Aurora Builder, Version=1.0.166.7407, Culture=neutral, PublicKeyToken=null
 // MVID: 09D35420-8FA0-4A71-9A21-FF952C48F8A3
@@ -59,6 +59,10 @@ public class CharacterFile : ObservableObject
     private const string DisplayPropertiesLocalPortrait = "local-portrait";
     private const string DisplayPropertiesBase64Portrait = "base64-portrait";
     private XmlDocument _document;
+    private readonly Dictionary<XmlNode, string> _deferredChildElements = new();
+    private readonly Dictionary<XmlNode, ElementBase> _deferredSelectionOwners = new();
+    private UnresolvedCharacterBuild _unresolvedBuild;
+    private readonly HashSet<SelectRule> _savedSelectionRules = new();
     private string _filepath;
     private bool _isInitialized;
     private bool _isNew;
@@ -225,6 +229,8 @@ public class CharacterFile : ObservableObject
         try
         {
             this.IsInitialized = false;
+            this.DisplayPortraitFilePath = string.Empty;
+            this.DisplayPortraitBase64 = string.Empty;
             this._document = CharacterFileIo.LoadXmlDocument(this._filepath, out this._lastKnownDiskStamp);
             XmlElement xmlElement1 = this._document["character"];
             XmlElement xmlElement2 = xmlElement1?["display-properties"];
@@ -261,8 +267,8 @@ public class CharacterFile : ObservableObject
                             case "portrait":
                                 try
                                 {
-                                    this.DisplayPortraitFilePath = childNode["local"].GetInnerText();
-                                    this.DisplayPortraitBase64 = childNode["base64"].GetInnerText();
+                                    this.DisplayPortraitFilePath = childNode["local"]?.InnerText ?? string.Empty;
+                                    this.DisplayPortraitBase64 = childNode["base64"]?.InnerText ?? string.Empty;
                                     continue;
                                 }
                                 catch (Exception ex)
@@ -293,6 +299,8 @@ public class CharacterFile : ObservableObject
                     Logger.Warning("unhandled display property element {0} in character file '{1}'", (object)childNode.Name, (object)this._filepath);
                 }
                 this.FileName = new FileInfo(this._filepath).Name;
+                if (string.IsNullOrWhiteSpace(this.DisplayPortraitFilePath))
+                    this.DisplayPortraitFilePath = this._document.SelectSingleNode("character/build/appearance/portrait")?.InnerText;
                 this.SaveRemotePortrait();
                 this.IsInitialized = true;
             }
@@ -362,6 +370,14 @@ public class CharacterFile : ObservableObject
 
     private void BuildDocument(Character character)
     {
+        if (string.IsNullOrWhiteSpace(character.PortraitFilename) ||
+            ((!System.IO.File.Exists(character.PortraitFilename) || new FileInfo(character.PortraitFilename).Length == 0) &&
+             CharacterPortraits.GetFileName(character.PortraitFilename) == CharacterPortraits.DefaultFileName &&
+             string.IsNullOrWhiteSpace(this.DisplayPortraitBase64)))
+        {
+            character.PortraitFilename = CharacterPortraits.EnsureDefaultPortrait();
+        }
+        XmlElement previousRoot = this._document?.DocumentElement;
         this._document = new XmlDocument();
         XmlNode parentNode = this._document.AppendChild(this._document.CreateNode(XmlNodeType.Element, nameof(character), (string)null));
         Dictionary<string, string> attributesDictionary = new Dictionary<string, string>()
@@ -377,14 +393,48 @@ public class CharacterFile : ObservableObject
         parentNode.AppendChild(this.CreateDisplayPropertiesNode(character));
         parentNode.AppendChild((XmlNode)this._document.CreateComment(" build data "));
         parentNode.AppendChild(this.CreateBuildNode(character));
+        if (_unresolvedBuild != null)
+        {
+            var rebuilt = System.Xml.Linq.XElement.Parse(parentNode["build"].OuterXml);
+            _unresolvedBuild.MergeInto(rebuilt, CharacterManager.Current.GetElements().Select(e => e.Id));
+            var preserved = new XmlDocument();
+            preserved.LoadXml(rebuilt.ToString());
+            parentNode.ReplaceChild(this._document.ImportNode(preserved.DocumentElement, true), parentNode["build"]);
+        }
         parentNode.AppendChild((XmlNode)this._document.CreateComment(" restricted sources "));
         parentNode.AppendChild(this.CreateRestrictedSourcesNode());
+        this.PreserveUnrecognizedRootNodes(previousRoot, parentNode);
+    }
+
+    /// <summary>
+    /// Carries root-level nodes this writer does not produce over from the file that was loaded, so
+    /// saving from one client keeps data another client stores there (for example Reflections'
+    /// &lt;custom-features&gt;). Nodes this writer emits are rebuilt from the character and are not copied.
+    /// </summary>
+    private void PreserveUnrecognizedRootNodes(XmlElement previousRoot, XmlNode rebuiltRoot)
+    {
+        if (previousRoot == null)
+            return;
+        HashSet<string> written = rebuiltRoot.ChildNodes.Cast<XmlNode>()
+            .Where(node => node.NodeType == XmlNodeType.Element)
+            .Select(node => node.Name)
+            .ToHashSet(StringComparer.Ordinal);
+        foreach (XmlNode node in previousRoot.ChildNodes.Cast<XmlNode>()
+            .Where(node => node.NodeType == XmlNodeType.Element && !written.Contains(node.Name)).ToList())
+        {
+            Logger.Info("preserving unrecognized character node " + node.Name);
+            rebuiltRoot.AppendChild(this._document.ImportNode(node, true));
+        }
     }
 
     public async Task<CharacterFile.LoadResult> Load() => await this.Load(this._filepath);
 
     public async Task<CharacterFile.LoadResult> Load(string filepath)
     {
+        _deferredChildElements.Clear();
+        _deferredSelectionOwners.Clear();
+        _unresolvedBuild = null;
+        _savedSelectionRules.Clear();
         int currentProgress = 0;
         int progressMax = 8;
         await this.SendCharacterLoadingScreenProgressUpdate(currentProgress.IsPercetageOf(progressMax));
@@ -446,15 +496,19 @@ public class CharacterFile : ObservableObject
         if (int32 != availablePoints)
             Logger.Warning("availablePoints ({0}) differs from the calculatedAvailablePoints ({1})", (object)int32, (object)availablePoints);
         XmlNode sourcesNode = (XmlNode)this._document.DocumentElement["sources"];
+        ++currentProgress;
+        await this.SendCharacterLoadingScreenProgressUpdate(currentProgress.IsPercetageOf(progressMax));
+        await this.SendCharacterLoadingScreenStatusUpdate("Setting Source Restrictions");
         if (sourcesNode != null)
-        {
-            ++currentProgress;
-            await this.SendCharacterLoadingScreenProgressUpdate(currentProgress.IsPercetageOf(progressMax));
-            await this.SendCharacterLoadingScreenStatusUpdate("Setting Source Restrictions");
             this.ReadRestrictedSourcesNodes(sourcesNode);
-        }
         else
-            Logger.Warning("no sources in " + this.FileName);
+        {
+            // Every character follows some rule about what content it may use. A file that never
+            // recorded one of its own falls back to the configured defaults, so that whichever
+            // character was loaded before this one cannot decide what this one is allowed to see.
+            Logger.Warning("no sources in " + this.FileName + "; applying the default source restrictions");
+            CharacterManager.Current.SourcesManager.LoadDefaults();
+        }
         ++currentProgress;
         await this.SendCharacterLoadingScreenProgressUpdate(currentProgress.IsPercetageOf(progressMax));
         await this.SendCharacterLoadingScreenStatusUpdate("preparing character");
@@ -475,7 +529,7 @@ public class CharacterFile : ObservableObject
                 ++optionCount;
                 await this.SendCharacterLoadingScreenStatusUpdate("applying character options");
                 string attributeValue2 = elementNode.GetAttributeValue("id");
-                ElementBase element = DataManager.Current.ElementsCollection.GetElement(attributeValue2);
+                ElementBase element = ElementIdAliases.Resolve(DataManager.Current.ElementsCollection, attributeValue2);
                 if (element != null)
                     CharacterManager.Current.RegisterElement(element);
                 else
@@ -507,7 +561,13 @@ public class CharacterFile : ObservableObject
                             await this.ReadChildElements(elementNode, (ElementBase)element);
                         }
                         else
-                            CharacterManager.Current.LevelUpMulti(DataManager.Current.ElementsCollection.GetElement(elementNode.GetAttributeValue("class")).AsElement<Multiclass>());
+                        {
+                            var multiclass = ElementIdAliases.Resolve(DataManager.Current.ElementsCollection, elementNode.GetAttributeValue("class"));
+                            if (multiclass != null)
+                                CharacterManager.Current.LevelUpMulti(multiclass.AsElement<Multiclass>());
+                            else
+                                CharacterManager.Current.RegisterElement(element);
+                        }
                     }
                     else
                         CharacterManager.Current.LevelUpMain();
@@ -525,7 +585,7 @@ public class CharacterFile : ObservableObject
             string attributeValue3 = elementNode.GetAttributeValue("type");
             if (attributeValue3 == "Level" || attributeValue3 == "Option")
             {
-                ElementBase element = DataManager.Current.ElementsCollection.GetElement(elementNode.GetAttributeValue("id"));
+                ElementBase element = ElementIdAliases.Resolve(DataManager.Current.ElementsCollection, elementNode.GetAttributeValue("id"));
                 await this.ReadChildElements(elementNode, element);
                 if (elementNode.ContainsAttribute("rndhp"))
                 {
@@ -538,7 +598,6 @@ public class CharacterFile : ObservableObject
         int result2;
         character.Experience = int.TryParse(inputNode["experience"].GetInnerText(), out result2) ? result2 : 0;
         this.ReadDefensesNode(buildNode, character);
-        this.ReadCompanionNode(buildNode, character);
         await this.SendCharacterLoadingScreenStatusUpdate("Writing Background");
         if (!character.BackgroundStory.EqualsOriginalContent(inputNode["backstory"].GetInnerText()))
             character.BackgroundStory.Content = inputNode["backstory"].GetInnerText();
@@ -562,7 +621,7 @@ public class CharacterFile : ObservableObject
                     XmlNode node3 = node2.NonCommentChildNodes().FirstOrDefault<XmlNode>((Func<XmlNode, bool>)(x => x.Name.Equals("spells")));
                     if (node3 != null)
                     {
-                        foreach (XmlNode node4 in node3.NonCommentChildNodes().Where<XmlNode>((Func<XmlNode, bool>)(x => x.Name.Equals("spell") && x.ContainsAttribute("prepared"))))
+                        foreach (XmlNode node4 in node3.NonCommentChildNodes().Where<XmlNode>((Func<XmlNode, bool>)(x => x.Name.Equals("spell") && x.ContainsAttribute("prepared") && x.GetAttributeValue("prepared").Equals("true", StringComparison.OrdinalIgnoreCase))))
                             SpellcastingSectionContext.Current.SetPrepareSpell(information, node4.GetAttributeValue("id"));
                     }
                 }
@@ -588,11 +647,31 @@ public class CharacterFile : ObservableObject
             foreach (XmlNode node6 in xmlNode4.ChildNodes.Cast<XmlNode>().Where<XmlNode>((Func<XmlNode, bool>)(x => x.Name.Equals("item"))))
             {
                 string attributeValue5 = node6.GetAttributeValue("id");
-                ElementBase element = DataManager.Current.ElementsCollection.GetElement(attributeValue5);
+                // ResolveOrBuild, not GetElement: a saved item can name a spell proxy, and those are
+                // built on demand, so a plain lookup would report one as a lost element.
+                ElementBase element = SpellProxyCatalog.ResolveOrBuild(
+                    DataManager.Current.ElementsCollection, attributeValue5);
                 if (element == null && attributeValue5.Contains("ID_WOTC_ITEM"))
                     element = DataManager.Current.ElementsCollection.GetElement(attributeValue5.Replace("ID_WOTC_ITEM", "ID_WOTC_PHB_ITEM"));
                 if (element == null && attributeValue5.Contains("ID_WOTC_WEAPON"))
                     element = DataManager.Current.ElementsCollection.GetElement(attributeValue5.Replace("ID_WOTC_WEAPON", "ID_WOTC_PHB_WEAPON"));
+                if (element == null && ElementIdAliases.TryGetTarget(attributeValue5, out string aliasedItemId))
+                    element = DataManager.Current.ElementsCollection.GetElement(aliasedItemId);
+                if (element == null)
+                {
+                    var savedProxies = elementsNode.ChildNodes.Cast<XmlNode>()
+                        .Where(n => ReadOptionalAttribute(n, "id") == attributeValue5)
+                        .Select(n => SavedGrantRecovery.FindEquivalentProxy(System.Xml.Linq.XElement.Parse(n.OuterXml))).ToArray();
+                    if (savedProxies.Length > 0 && savedProxies.All(e => e != null) && savedProxies.Select(e => e.Id).Distinct().Count() == 1)
+                        element = savedProxies[0];
+                    if (element != null)
+                    {
+                        Logger.Info("restoring generated proxy {0} as {1} from its saved grant", attributeValue5, element.Id);
+                        foreach (XmlNode savedNode in buildNode.SelectNodes(".//*[@id]"))
+                            if (ReadOptionalAttribute(savedNode, "id") == attributeValue5)
+                                savedNode.Attributes["id"].Value = element.Id;
+                    }
+                }
                 if (element == null)
                 {
                     Logger.Warning("unable to add " + node6.GetAttributeValue("name"));
@@ -665,6 +744,7 @@ public class CharacterFile : ObservableObject
             if (attributeValue6 == "Weapon" || attributeValue6 == "Armor" || attributeValue6 == "Item" || attributeValue6 == "Magic Item")
             {
                 string id = childNode.GetAttributeValue("id");
+                id = ElementIdAliases.Resolve(DataManager.Current.ElementsCollection, id)?.Id ?? id;
                 List<RefactoredEquipmentItem> items = character.Inventory.Items.Where<RefactoredEquipmentItem>((Func<RefactoredEquipmentItem, bool>)(x => x.Item.Id.Equals(id))).ToList<RefactoredEquipmentItem>();
                 if (items.Count > 0)
                 {
@@ -678,78 +758,94 @@ public class CharacterFile : ObservableObject
                 }
                 else
                 {
-                    ElementBase element = DataManager.Current.ElementsCollection.GetElement(id);
+                    ElementBase element = ElementIdAliases.Resolve(DataManager.Current.ElementsCollection, id);
                     await this.ReadChildElements(childNode, element);
                     index = 0;
                 }
                 items = (List<RefactoredEquipmentItem>)null;
             }
         }
+        CharacterLoadCompatibilityService.RegisterLoadedEquipmentElements(character);
+        // Extras companions are independent roots. Load them here so their rules and
+        // children participate in validation, including when reopening outside MAUI.
+        foreach (XmlNode node in elementsNode.SelectNodes("element[@type='Companion' and @custom='true']"))
+        {
+            var template = ElementIdAliases.Resolve(DataManager.Current.ElementsCollection, node.GetAttributeValue("id"));
+            if (template is not CompanionElement) continue;
+            var companion = SelectionRuleRegistrationService.CloneSelectionElement(template);
+            CharacterManager.Current.RegisterElement(companion);
+            await this.ReadChildElements(node, companion);
+        }
+        await ReplayDeferredChildElements();
+        this.ReadCompanionNode(buildNode, character);
+        // Legacy initialized defaults in its selection controls. Recover an old direct
+        // grant only where current content explicitly offers that same eligible default.
+        var savedGrantIds = elementsNode.SelectNodes(".//element[@id and not(@registered)]")
+            .Cast<XmlNode>().Select(n => n.GetAttributeValue("id")).ToHashSet(StringComparer.Ordinal);
+        if (SavedSelectionRecovery.RestoreSavedDefaults(savedGrantIds, _savedSelectionRules) > 0)
+            await ReplayDeferredChildElements();
         ++currentProgress;
         await this.SendCharacterLoadingScreenProgressUpdate(currentProgress.IsPercetageOf(progressMax));
         await this.SendCharacterLoadingScreenStatusUpdate("performing validation");
-        int elementCountBeforeDuplicateNormalization = CharacterManager.Current.GetElements().Count;
-        int duplicateElementCountDelta = 0;
+        var beforeNormalization = CharacterManager.Current.GetElements().Select(e => e.Id).ToArray();
         int duplicateProgressionStateRemoved = CharacterManager.Current.NormalizeDuplicateProgressionState();
         if (duplicateProgressionStateRemoved > 0)
         {
-            int elementCountAfterDuplicateNormalization = CharacterManager.Current.GetElements().Count;
-            duplicateElementCountDelta = Math.Max(0, elementCountBeforeDuplicateNormalization - elementCountAfterDuplicateNormalization);
-            Logger.Warning(
+            Logger.Info(
                 "normalized {0} duplicate progression element(s) while loading {1}",
                 (object)duplicateProgressionStateRemoved,
                 (object)this.FileName);
         }
-        int elementSaveCount = Convert.ToInt32(((XmlNode)buildNode["sum"] ?? throw new NullReferenceException("sumNode not found on " + this._filepath)).GetAttributeValue("element-count"));
-        int expectedElementSaveCount = elementSaveCount;
-        if (duplicateElementCountDelta > 0 && elementCountBeforeDuplicateNormalization == elementSaveCount)
+        // Final eligibility is known only after race, background, and their grants
+        // have all loaded. Never retain legacy racial ASIs beside a background ASI
+        // when the content rules have deactivated their originating choice.
+        var removedAsiChoices = AbilityScoreSelectionCleanup.Normalize();
+        if (removedAsiChoices.Count > 0)
         {
-            expectedElementSaveCount = Math.Max(0, elementSaveCount - duplicateElementCountDelta);
-            Logger.Warning(
-                "adjusted saved element count from {0} to {1} after duplicate progression normalization",
-                (object)elementSaveCount,
-                (object)expectedElementSaveCount);
+            Logger.Info("removed inactive ability-score selections while loading {0}: {1}",
+                this.FileName, string.Join(", ", removedAsiChoices.Select(e => e.ElementId)));
         }
-        int count1 = CharacterManager.Current.GetElements().Count;
-        if (expectedElementSaveCount != count1)
+        var afterNormalization = CharacterManager.Current.GetElements().Select(e => e.Id).ToArray();
+        // Compare actual identities and occurrences. Extra grants must neither
+        // trigger an error nor offset a missing character-used element.
+        var savedBuild = new System.Xml.Linq.XElement("build",
+            System.Xml.Linq.XElement.Parse(elementsNode.OuterXml),
+            buildNode["sum"] == null ? null : System.Xml.Linq.XElement.Parse(buildNode["sum"].OuterXml));
+        var missing = CharacterLoadValidation.FindMissing(savedBuild, afterNormalization, beforeNormalization, afterNormalization);
+        for (int attempt = 0; missing.Count > 0 && attempt < 10; attempt++)
         {
-            int difference = expectedElementSaveCount - count1;
-            Logger.Warning($"the sum of the saved elements ({expectedElementSaveCount}) differs from the sum that is loaded ({count1})");
-            bool validCount = false;
-            for (int count = 0; count < 10; ++count)
-            {
-                await Task.Delay(250);
-                if (expectedElementSaveCount == CharacterManager.Current.GetElements().Count)
-                {
-                    validCount = true;
-                    break;
-                }
-                Logger.Info("waiting for trailing elements to be registered ");
-            }
-            if (validCount)
-            {
-                sw.Stop();
-                Logger.Warning($"{character} loaded in {sw.ElapsedMilliseconds}ms");
-            }
-            else
-            {
-                sw.Stop();
-                Logger.Warning($"{character} loaded in {sw.ElapsedMilliseconds}ms without all elements ({difference})");
-            }
-            if (difference > 0)
-            {
-                await this.SendCharacterLoadingScreenProgressUpdate(100);
-                await this.SendCharacterLoadingScreenStatusUpdate("E10A", false);
-                return new CharacterFile.LoadResult(false, $"character not fully prepared, {difference} item{(difference > 1 ? (object)"(s)" : (object)"")} could not be set");
-            }
+            await Task.Delay(250);
+            await ReplayDeferredChildElements();
+            missing = CharacterLoadValidation.FindMissing(savedBuild,
+                CharacterManager.Current.GetElements().Select(e => e.Id), beforeNormalization, afterNormalization);
+        }
+        _deferredChildElements.Clear();
+        _deferredSelectionOwners.Clear();
+        var (lost, restricted) = CharacterLoadValidation.SplitRestricted(missing,
+            BuildSourceRestrictionSnapshot.CaptureCurrent(),
+            id => DataManager.Current.ElementsCollection.FirstOrDefault(e => e.Id.Equals(id, StringComparison.Ordinal)));
+        if (restricted.Count > 0)
+            Logger.Info("{0} left out {1} saved element(s) from sources it restricts: {2}", this.FileName,
+                restricted.Count, string.Join("; ", restricted.Select(e => e.Id)));
+        missing = lost;
+        var preservedBuild = System.Xml.Linq.XElement.Parse(buildNode.OuterXml);
+        var unavailableItems = (preservedBuild.Element("equipment")?.Descendants("item") ?? [])
+            .Select(n => (string)n.Attribute("id")).Where(id =>
+                !string.IsNullOrWhiteSpace(id) && ElementIdAliases.Resolve(DataManager.Current.ElementsCollection, id) == null);
+        _unresolvedBuild = new UnresolvedCharacterBuild(preservedBuild,
+            missing.Select(e => e.Id).Concat(unavailableItems), CharacterManager.Current.GetElements().Select(e => e.Id));
+        if (missing.Count > 0)
+        {
+            string details = string.Join("; ", missing.Select(e => $"{e.Id} (missing {e.Count}; {e.SavedPath})"));
+            Logger.Warning("{0} is missing saved character elements after loading: {1}", this.FileName, details);
             await this.SendCharacterLoadingScreenProgressUpdate(100);
-            await this.SendCharacterLoadingScreenStatusUpdate("E10B");
-            return new CharacterFile.LoadResult(true);
+            await this.SendCharacterLoadingScreenStatusUpdate("E10A", false);
+            return new CharacterFile.LoadResult(false, "Saved character elements could not be restored: " + details, missing);
         }
         await this.SendCharacterLoadingScreenProgressUpdate(100);
         await this.SendCharacterLoadingScreenStatusUpdate("E10B");
         sw.Stop();
-        Logger.Warning($"{character} loaded in {sw.ElapsedMilliseconds}ms");
+        Logger.Info($"{character} loaded in {sw.ElapsedMilliseconds}ms");
         return new CharacterFile.LoadResult(true, "E10B");
     }
 
@@ -797,11 +893,12 @@ public class CharacterFile : ObservableObject
         XmlNode node8 = this._document.CreateNode(XmlNodeType.Element, "portrait", (string)null);
         node8.AppendChild((XmlNode)this._document.CreateElement("companion")).InnerText = character.Companion.Portrait.ToString();
         node8.AppendChild((XmlNode)this._document.CreateElement("local")).InnerText = character.PortraitFilename;
-        Path.GetFileName(character.PortraitFilename);
+        this.DisplayPortraitFilePath = character.PortraitFilename;
         if (System.IO.File.Exists(character.PortraitFilename))
         {
+            this.DisplayPortraitBase64 = Convert.ToBase64String(System.IO.File.ReadAllBytes(character.PortraitFilename));
             XmlNode node9 = this._document.CreateNode(XmlNodeType.Element, "base64", (string)null);
-            XmlCDataSection cdataSection = this._document.CreateCDataSection(Convert.ToBase64String(System.IO.File.ReadAllBytes(character.PortraitFilename)));
+            XmlCDataSection cdataSection = this._document.CreateCDataSection(this.DisplayPortraitBase64);
             node9.AppendChild((XmlNode)cdataSection);
             node8.AppendChild(node9);
         }
@@ -914,7 +1011,20 @@ public class CharacterFile : ObservableObject
             }
         }
         this.WriteDefensesNode(node1, character);
+        foreach (var companion in character.Companions.Where(c =>
+            !c.Element.Aquisition.WasGranted && !c.Element.Aquisition.WasSelected))
+        {
+            var node = node2.AppendChild(this._document.CreateElement("element"));
+            node.AppendAttribute("type", "Companion");
+            node.AppendAttribute("name", companion.Element.Name);
+            node.AppendAttribute("id", companion.Element.Id);
+            node.AppendAttribute("custom", "true");
+            this.CreateRuleNodes(companion.Element, node);
+        }
         this.WriteCompanionNode(node1, character);
+        var companionsNode = node1.AppendChild(this._document.CreateElement("companions"));
+        foreach (var companion in character.Companions)
+            WriteCompanionNode(companionsNode, companion);
         node1.AppendChild(this.CreateEquipmentNode());
         node1.AppendChild(this.CreateSumNode());
         node1.AppendChild(this.CreateMagicNode());
@@ -1441,23 +1551,14 @@ public class CharacterFile : ObservableObject
     {
         var spells = allSpells.Cast<Spell>().ToList();
 
-        // Spells granted via a grant rule whose "spellcasting" setter matches this class.
-        var granted = spells.Where(s =>
-            s.Aquisition.WasGranted &&
-            s.Aquisition.GrantRule.Setters.ContainsSetter("spellcasting") &&
-            s.Aquisition.GrantRule.Setters.GetSetter("spellcasting").Value
-                .Equals(info.Name, StringComparison.OrdinalIgnoreCase)).ToList();
-
-        // Spells selected via a select rule whose SpellcastingName matches this class.
-        var selected = spells.Where(s =>
-            s.Aquisition.WasSelected &&
-            s.Aquisition.SelectRule.Attributes.ContainsSpellcastingName() &&
-            s.Aquisition.SelectRule.Attributes.SpellcastingName
-                .Equals(info.Name, StringComparison.OrdinalIgnoreCase)).ToList();
+        var acquisitions = SpellAcquisitionResolver.Resolve(CharacterManager.Current.GetElements(),
+            CharacterManager.Current.GetSpellcastingInformations())
+            .Where(a => a.ProfileKey == SpellAcquisitionResolver.ProfileKey(info)
+                && a.Preparation is not (SpellPreparation.ListOnly or SpellPreparation.Feature or SpellPreparation.RitualOnly)).ToList();
 
         // Prepared IDs (non-always-prepared spells the user marked). Supplied via interface
         // so no dependency on the concrete MAUI handler type.
-        IReadOnlyCollection<string> preparedIds = handler?.GetPreparedIds(info.Name)
+        IReadOnlyCollection<string> preparedIds = handler?.GetPreparedIds(info)
             ?? Array.Empty<string>();
 
         // Warn about registered spells whose acquisition type is neither granted nor selected —
@@ -1466,12 +1567,11 @@ public class CharacterFile : ObservableObject
             Logger.Warning("BuildMauiKnownSpells: spell '{0}' has unknown acquisition type for class '{1}' — skipped", s.Id, info.Name);
 
         var emittedIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var s in granted.Concat(selected).GroupBy(x => x.Id).Select(g => g.First()))
+        foreach (var group in acquisitions.GroupBy(a => a.Spell.Id))
         {
+            var s = group.First().Spell;
             emittedIds.Add(s.Id);
-            bool isChosen = s.Aquisition.WasGranted
-                ? s.Aquisition.GrantRule.IsAlwaysPrepared()
-                : s.Aquisition.SelectRule.IsAlwaysPrepared();
+            bool isChosen = group.Any(a => a.IsAlwaysPrepared);
             if (!isChosen && info.Prepare)
                 isChosen = preparedIds.Contains(s.Id);
             yield return new SelectionElement((ElementBase)s) { IsChosen = isChosen };
@@ -1486,7 +1586,7 @@ public class CharacterFile : ObservableObject
             foreach (var id in preparedIds)
             {
                 if (emittedIds.Contains(id)) continue;
-                var element = DataManager.Current.ElementsCollection.GetElement(id);
+                var element = ElementIdAliases.Resolve(DataManager.Current.ElementsCollection, id);
                 if (element is Spell preparedSpell)
                     yield return new SelectionElement((ElementBase)preparedSpell) { IsChosen = true };
             }
@@ -1499,6 +1599,7 @@ public class CharacterFile : ObservableObject
         var current2 = SpellcastingSectionContext.Current;
         List<ElementBase> list = current1.GetElements().Where<ElementBase>((Func<ElementBase, bool>)(x => x.Type.Equals("Spell"))).ToList<ElementBase>();
         int count = list.Count;
+        var resolvedSpells = SpellAcquisitionResolver.Resolve(current1.GetElements(), current1.GetSpellcastingInformations());
         XmlElement element1 = this._document.CreateElement("magic");
         int num;
         if (current1.Status.HasMulticlass)
@@ -1554,7 +1655,7 @@ public class CharacterFile : ObservableObject
                 XmlNode xmlNode2 = parentNode1.AppendChild((XmlNode)this._document.CreateElement("spells"));
                 IEnumerable<SelectionElement> knownSpells = viewModel != null
                     ? (IEnumerable<SelectionElement>)viewModel.KnownSpells
-                    : BuildMauiKnownSpells(list, spellcastingInformation, current2);
+                    : BuildMauiKnownSpells(resolvedSpells.Select(a => a.Spell), spellcastingInformation, current2);
                 foreach (SelectionElement selectionElement in knownSpells
                     .OrderByDescending<SelectionElement, bool>((Func<SelectionElement, bool>)(x => x.IsChosen))
                     .ThenBy<SelectionElement, int>((Func<SelectionElement, int>)(x => x.Element.AsElement<Spell>().Level))
@@ -1585,7 +1686,7 @@ public class CharacterFile : ObservableObject
                                 selectionElement.IsChosen = flag2;
                             if (selectionElement.IsChosen)
                                 element2.AppendAttribute("prepared", selectionElement.IsChosen ? "true" : "false");
-                            if (flag1)
+                            if (resolvedSpells.Any(a => a.Spell.Id == spell.Id && a.ProfileKey == SpellAcquisitionResolver.ProfileKey(spellcastingInformation) && a.IsAlwaysPrepared))
                                 element2.AppendAttribute("always-prepared", "true");
                         }
                         if (flag1)
@@ -1669,8 +1770,13 @@ public class CharacterFile : ObservableObject
 
     private XmlNode WriteCompanionNode(XmlNode parentNode, Character character)
     {
-        Companion companion = character.Companion;
+        return WriteCompanionNode(parentNode, character.Companion);
+    }
+
+    private XmlNode WriteCompanionNode(XmlNode parentNode, Companion companion)
+    {
         XmlNode parentNode1 = parentNode.AppendChild(this._document.CreateNode(XmlNodeType.Element, "companion", (string)null));
+        if (companion.Element != null) parentNode1.AppendAttribute("id", companion.Element.Id);
         parentNode1.AppendAttribute("name", companion.CompanionName.Content);
         XmlNode parentNode2 = parentNode1.AppendChild(this._document.CreateNode(XmlNodeType.Element, "attributes", (string)null));
         foreach (AbilityItem abilityItem in companion.Abilities.GetCollection())
@@ -1689,14 +1795,57 @@ public class CharacterFile : ObservableObject
 
     private void ReadCompanionNode(XmlNode parentNode, Character character)
     {
+        if (parentNode["companions"] is { } companionsNode)
+        {
+            var available = character.Companions.ToList();
+            int matched = 0;
+            foreach (XmlNode node in companionsNode.SelectNodes("companion"))
+            {
+                // The saved id may since have been renamed, so read it the way every other
+                // saved id here is read rather than requiring it to still be current.
+                string savedId = ElementIdAliases.Resolve(DataManager.Current.ElementsCollection,
+                    node.GetAttributeValue("id"))?.Id ?? node.GetAttributeValue("id");
+                var match = available.FirstOrDefault(c => c.Element.Id == savedId);
+                if (match == null)
+                {
+                    Logger.Warning("no active companion matches the saved record {0}; its name and portrait are not restored",
+                        (object)node.GetAttributeValue("id"));
+                    continue;
+                }
+                ReadCompanionDetails(node, match);
+                available.Remove(match);
+                ++matched;
+            }
+            // Only the per-companion records can carry more than one creature, so prefer them.
+            // If none match, the legacy record still needs its own identity check below.
+            if (matched > 0)
+                return;
+        }
         XmlNode node1 = parentNode.ChildNodes.Cast<XmlNode>().FirstOrDefault<XmlNode>((Func<XmlNode, bool>)(x => x.Name.Equals("companion")));
         if (node1 == null)
             return;
         Companion companion = character.Companion;
+        string legacyId = ReadOptionalAttribute(node1, "id");
+        if (!string.IsNullOrWhiteSpace(legacyId))
+        {
+            string resolvedId = ElementIdAliases.Resolve(DataManager.Current.ElementsCollection, legacyId)?.Id ?? legacyId;
+            companion = character.Companions.LastOrDefault(c => c.Element.Id == resolvedId);
+            if (companion == null)
+            {
+                Logger.Warning("no active companion matches the legacy record {0}; its name and portrait are not restored", (object)legacyId);
+                return;
+            }
+        }
+        // Older legacy records have no ID and describe the primary companion.
+        ReadCompanionDetails(node1, companion);
+    }
+
+    private static void ReadCompanionDetails(XmlNode node1, Companion companion)
+    {
         if (!companion.CompanionName.EqualsOriginalContent(node1.GetAttributeValue("name")))
             companion.CompanionName.Content = node1.GetAttributeValue("name");
         XmlNode node2 = node1.ChildNodes.Cast<XmlNode>().FirstOrDefault<XmlNode>((Func<XmlNode, bool>)(x => x.Name.Equals("portrait")));
-        if (!node2.HasAttributes() || !node2.GetAttributeValue("location").Equals("local") || companion.Portrait.EqualsOriginalContent(node2.GetInnerText()))
+        if (node2 == null || !node2.HasAttributes() || !node2.GetAttributeValue("location").Equals("local") || companion.Portrait.EqualsOriginalContent(node2.GetInnerText()))
             return;
         companion.Portrait.Content = node2.GetInnerText();
     }
@@ -1754,7 +1903,13 @@ public class CharacterFile : ObservableObject
 
     private void ReadAppearanceNode(XmlNode appearanceNode, Character character)
     {
-        character.PortraitFilename = appearanceNode["portrait"].GetInnerText();
+        string savedPortrait = appearanceNode["portrait"]?.InnerText;
+        // Display initialization has already restored an embedded portrait or
+        // supplied the default. Use its local path when the saved path is absent
+        // or belongs to a different machine.
+        character.PortraitFilename = System.IO.File.Exists(savedPortrait) && new FileInfo(savedPortrait).Length > 0
+            ? savedPortrait
+            : this.DisplayPortraitFilePath;
         character.AgeField.Content = appearanceNode["age"].GetInnerText();
         character.HeightField.Content = appearanceNode["height"].GetInnerText();
         character.WeightField.Content = appearanceNode["weight"].GetInnerText();
@@ -1770,6 +1925,7 @@ public class CharacterFile : ObservableObject
             if (childNode.ContainsAttribute("registered"))
             {
                 string registeredElementId = childNode.GetAttributeValue("registered");
+                registeredElementId = ElementIdAliases.Resolve(DataManager.Current.ElementsCollection, registeredElementId)?.Id ?? registeredElementId;
                 if (!string.IsNullOrWhiteSpace(registeredElementId))
                 {
                     string type = childNode.GetAttributeValue("type");
@@ -1802,71 +1958,39 @@ public class CharacterFile : ObservableObject
                                 SelectionRuleExpanderContext.Current.SetRegisteredElement(listRule, registeredElementId, hasNumber ? number : 1);
                                 continue;
                             }
-                            if (hasNumber)
+                            int slot = hasNumber ? number : 1;
+                            var candidates = element.GetSelectRules().Where(x =>
+                                x.Attributes.Type == type && x.Attributes.Name == name &&
+                                (!hasNumber || x.Attributes.Number >= number)).ToList();
+                            listRule = ResolveSavedSelectRule(candidates, ReadOptionalAttribute(childNode, "checksum"),
+                                registeredElementId, slot, savedChoiceRowKey, savedChoiceKey, savedSelectId);
+                            if (listRule == null)
+                                listRule = SavedSelectionRecovery.FindRenamedRule(element, type, registeredElementId, slot);
+                            if (listRule == null || !await AwaitExpanderCreationAsync(listRule, slot))
                             {
-                                string existingChecksum = childNode.GetAttributeValue("checksum");
-                                List<SelectRule> list = element.GetSelectRules().Where<SelectRule>((Func<SelectRule, bool>)(x => x.Attributes.Type == type && x.Attributes.Number > 1 && x.Attributes.Name == name)).ToList<SelectRule>();
-                                listRule = ResolveSavedSelectRule(list, existingChecksum, registeredElementId, number, savedChoiceRowKey, savedChoiceKey, savedSelectId);
-                                if (listRule != null)
-                                {
-                                    if (await CharacterFile.AwaitExpanderCreationAsync(listRule, number))
-                                    {
-                                        if (isRetrained)
-                                            SelectionRuleExpanderContext.Current.RetrainSpellExpander(listRule, number, retrainLevel);
-                                        SelectionRuleExpanderContext.Current.SetRegisteredElement(listRule, registeredElementId, number);
-                                        listRule = (SelectRule)null;
-                                    }
-                                    else
-                                        continue;
-                                }
-                                else
-                                    continue;
+                                // Equipment choices are read before the equipped item
+                                // activates its rules. Retry against that same instance.
+                                if (element != null) _deferredSelectionOwners[elementNode] = element;
+                                continue;
                             }
-                            else
-                            {
-                                List<SelectRule> list = element.GetSelectRules().Where<SelectRule>((Func<SelectRule, bool>)(x => x.Attributes.Type == type && x.Attributes.Name == name)).ToList<SelectRule>();
-                                int count = list.Count;
-                                if (list.Count != 1 && childNode.ContainsAttribute("checksum"))
-                                {
-                                    string existingChecksum = childNode.GetAttributeValue("checksum");
-                                    listRule = ResolveSavedSelectRule(list, existingChecksum, registeredElementId, 1, savedChoiceRowKey, savedChoiceKey, savedSelectId);
-                                    if (listRule == null)
-                                        continue;
-                                    if (!await CharacterFile.AwaitExpanderCreationAsync(listRule))
-                                        break;
-                                    if (isRetrained)
-                                        SelectionRuleExpanderContext.Current.RetrainSpellExpander(listRule, 1, retrainLevel);
-                                    SelectionRuleExpanderContext.Current.SetRegisteredElement(listRule, registeredElementId);
-                                    listRule = (SelectRule)null;
-                                }
-                                else
-                                {
-                                    listRule = element.GetSelectRules().FirstOrDefault<SelectRule>((Func<SelectRule, bool>)(x => x.Attributes.Type == type && x.Attributes.Name == name));
-                                    if (listRule == null && Debugger.IsAttached)
-                                        Debugger.Break();
-                                    if (!await CharacterFile.AwaitExpanderCreationAsync(listRule))
-                                        break;
-                                    if (isRetrained)
-                                        SelectionRuleExpanderContext.Current.RetrainSpellExpander(listRule, 1, retrainLevel);
-                                    SelectionRuleExpanderContext.Current.SetRegisteredElement(listRule, registeredElementId);
-                                    listRule = (SelectRule)null;
-                                }
-                            }
+                            if (isRetrained)
+                                SelectionRuleExpanderContext.Current.RetrainSpellExpander(listRule, slot, retrainLevel);
+                            _savedSelectionRules.Add(listRule);
+                            SelectionRuleExpanderContext.Current.SetRegisteredElement(listRule, registeredElementId, slot);
                             Logger.Debug("--Registered:" + registeredElementId);
                             if (!CharacterManager.Current.Elements.Any<ElementBase>((Func<ElementBase, bool>)(x => x.Id == registeredElementId)))
                             {
-                                Logger.Warning("--not yet registered!" + registeredElementId);
+                                Logger.Debug("selection registration pending: " + registeredElementId);
                                 await Task.Delay(500);
-                                if (!CharacterManager.Current.Elements.Any<ElementBase>((Func<ElementBase, bool>)(x => x.Id == registeredElementId)))
-                                    Logger.Warning("--not yet registered!" + registeredElementId);
-                                else
-                                    Logger.Warning("--yep! after 500ms it is now registered!" + registeredElementId);
                             }
                             ElementBase element1 = CharacterManager.Current.Elements.LastOrDefault<ElementBase>((Func<ElementBase, bool>)(x => x.Id == registeredElementId));
                             if (element1 != null)
+                            {
+                                _deferredChildElements.Remove(childNode);
                                 await this.ReadChildElements(childNode, element1);
+                            }
                             else
-                                Logger.Warning("unable to get element from character elements: {0}", (object)registeredElementId);
+                                _deferredChildElements[childNode] = registeredElementId;
                         }
                         catch (Exception ex)
                         {
@@ -1879,13 +2003,56 @@ public class CharacterFile : ObservableObject
             else
             {
                 string id = childNode.GetAttributeValue("id");
+                id = ElementIdAliases.Resolve(DataManager.Current.ElementsCollection, id)?.Id ?? id;
                 if (string.IsNullOrWhiteSpace(id) && Debugger.IsAttached)
                     Debugger.Break();
                 ElementBase element2 = CharacterManager.Current.GetElements().LastOrDefault<ElementBase>((Func<ElementBase, bool>)(x => x.Id == id));
+                if (element2 == null && SavedGrantRecovery.FindEquivalentGrant(element, id) is { } equivalent)
+                {
+                    Logger.Info("restoring equivalent grant {0} as {1} under {2}", id, equivalent.Id, element.Id);
+                    childNode.Attributes["id"].Value = equivalent.Id;
+                    // Move only this occurrence in the saved summary. Other owners may
+                    // still grant the old, independently available definition.
+                    var summary = this._document.SelectNodes("/character/build/sum/element").Cast<XmlNode>()
+                        .FirstOrDefault(n => ReadOptionalAttribute(n, "id") == id);
+                    if (summary != null) summary.Attributes["id"].Value = equivalent.Id;
+                    element2 = equivalent;
+                }
                 if (element2 != null)
+                {
+                    _deferredChildElements.Remove(childNode);
                     await this.ReadChildElements(childNode, element2);
+                }
                 else
-                    Logger.Warning("unable to get element from character elements: {0}", (object)id);
+                    _deferredChildElements[childNode] = id;
+            }
+        }
+    }
+
+    private async Task ReplayDeferredChildElements()
+    {
+        // Each saved node is replayed at most once after its parent becomes
+        // available. Replaying can expose another deferred descendant.
+        var replayed = new HashSet<XmlNode>();
+        var replayedSelections = new HashSet<XmlNode>();
+        while (true)
+        {
+            var owned = CharacterManager.Current.GetElements();
+            foreach (var (node, owner) in _deferredSelectionOwners.ToArray())
+            {
+                if (!owned.Any(e => ReferenceEquals(e, owner)) || !replayedSelections.Add(node)) continue;
+                _deferredSelectionOwners.Remove(node);
+                await ReadChildElements(node, owner);
+            }
+            var available = CharacterManager.Current.GetElements().GroupBy(e => e.Id)
+                .ToDictionary(g => g.Key, g => g.Last(), StringComparer.Ordinal);
+            var ready = _deferredChildElements.Where(p => !replayed.Contains(p.Key) && available.ContainsKey(p.Value)).ToArray();
+            if (ready.Length == 0) return;
+            foreach (var (node, id) in ready)
+            {
+                _deferredChildElements.Remove(node);
+                replayed.Add(node);
+                await ReadChildElements(node, available[id]);
             }
         }
     }
@@ -2119,15 +2286,33 @@ public class CharacterFile : ObservableObject
     {
         try
         {
-            if (System.IO.File.Exists(this.DisplayPortraitFilePath))
+            if (System.IO.File.Exists(this.DisplayPortraitFilePath) &&
+                new FileInfo(this.DisplayPortraitFilePath).Length > 0)
                 return;
-            string str = Path.Combine(DataManager.Current.UserDocumentsPortraitsDirectory, Path.GetFileName(this.DisplayPortraitFilePath));
-            if (System.IO.File.Exists(str))
+            string filename = CharacterPortraits.GetFileName(this.DisplayPortraitFilePath);
+            if (string.IsNullOrWhiteSpace(this.DisplayPortraitBase64) &&
+                (string.IsNullOrWhiteSpace(this.DisplayPortraitFilePath) || filename == CharacterPortraits.DefaultFileName))
+            {
+                this.DisplayPortraitFilePath = CharacterPortraits.EnsureDefaultPortrait();
+                this.DisplayPortraitBase64 = Convert.ToBase64String(System.IO.File.ReadAllBytes(this.DisplayPortraitFilePath));
+                return;
+            }
+            // A portable character can contain image bytes without a local name.
+            // Retain that image rather than replacing it with the default.
+            if (string.IsNullOrWhiteSpace(filename) && !string.IsNullOrWhiteSpace(this.DisplayPortraitBase64))
+            {
+                byte[] bytes = Convert.FromBase64String(this.DisplayPortraitBase64);
+                filename = "portrait-" + Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes)) + ".png";
+            }
+            string str = Path.Combine(DataManager.Current.UserDocumentsPortraitsDirectory, filename);
+            if (System.IO.File.Exists(str) && new FileInfo(str).Length > 0)
             {
                 this.DisplayPortraitFilePath = str;
             }
             else
             {
+                if (string.IsNullOrWhiteSpace(this.DisplayPortraitBase64))
+                    return;
                 GalleryUtilities.SaveBase64AsImage(this.DisplayPortraitBase64, str);
                 this.DisplayPortraitFilePath = str;
             }
@@ -2154,10 +2339,18 @@ public class CharacterFile : ObservableObject
 
         public string Message { get; }
 
-        public LoadResult(bool success, string message = "")
+        /// <summary>
+        /// What could not be restored, so a caller can report it its own way instead of taking the
+        /// message apart again. Empty unless the load was partial.
+        /// </summary>
+        public IReadOnlyList<Builder.Presentation.Services.CharacterLoadValidation.MissingElement> Missing { get; }
+
+        public LoadResult(bool success, string message = "",
+            IReadOnlyList<Builder.Presentation.Services.CharacterLoadValidation.MissingElement> missing = null)
         {
             this.Success = success;
             this.Message = message;
+            this.Missing = missing ?? new List<Builder.Presentation.Services.CharacterLoadValidation.MissingElement>();
         }
     }
 }

@@ -1,0 +1,277 @@
+@page "/content-doctor"
+@using Aurora.App.Services
+@using Aurora.Content
+@inject ContentDoctorService Doctor
+@inject ISnackbar Snackbar
+
+<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+    <MudText Typo="Typo.h5">Content Doctor</MudText>
+    <MudButton Variant="Variant.Outlined" Color="Color.Default" StartIcon="@Icons.Material.Filled.Refresh"
+               OnClick="Reload" Disabled="_loading">Re-check</MudButton>
+</div>
+
+<MudText Typo="Typo.h6" Class="mb-1">Override files</MudText>
+<MudText Typo="Typo.body2" Class="mb-4">
+    Override files keep a local copy of a content file so a correction can be applied to it. When the
+    people who publish that content adopt the same fix, the correction stops doing anything &mdash;
+    clearing it here is what eventually lets the override file retire itself.
+</MudText>
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+else if (_files.Count == 0)
+{
+    <MudAlert Severity="Severity.Normal">
+        No override files. Nothing is correcting installed content.
+    </MudAlert>
+}
+else
+{
+    @foreach (OverrideFileModel file in _files)
+    {
+        <MudPaper Class="pa-4 mb-3" Elevation="1">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                <div>
+                    <MudText Typo="Typo.subtitle1">@file.DisplayName</MudText>
+                    @if (!string.IsNullOrEmpty(file.SourcePath))
+                    {
+                        <MudText Typo="Typo.caption">corrects @file.SourcePath</MudText>
+                    }
+                </div>
+                <MudChip T="string" Size="Size.Small" Color="@StatusColour(file)">@file.Status</MudChip>
+            </MudStack>
+
+            @if (file.Problem is not null)
+            {
+                <MudAlert Severity="Severity.Warning" Dense="true" Class="mt-3">@file.Problem</MudAlert>
+            }
+            else if (file.CanRetire)
+            {
+                <MudAlert Severity="Severity.Success" Dense="true" Class="mt-3">
+                    Every correction here has been accepted and the content matches upstream. The next
+                    content refresh will retire this file.
+                </MudAlert>
+            }
+
+            @if (file.Corrections.Count > 0)
+            {
+                <MudSimpleTable Dense="true" Hover="true" Class="mt-3">
+                    <thead>
+                        <tr>
+                            <th>Correction</th>
+                            <th>Operation</th>
+                            <th>Element</th>
+                            <th>State</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (OverrideCorrectionModel correction in file.Corrections)
+                        {
+                            <tr>
+                                <td>@correction.Key</td>
+                                <td>@correction.Operation</td>
+                                <td>
+                                    <MudText Typo="Typo.caption">@correction.TargetId</MudText>
+                                    @if (!string.IsNullOrWhiteSpace(correction.ReplacementId))
+                                    {
+                                        <MudText Typo="Typo.caption">&rarr; @correction.ReplacementId</MudText>
+                                    }
+                                </td>
+                                <td>
+                                    <MudChip T="string" Size="Size.Small" Color="@CorrectionColour(correction)">
+                                        @correction.Summary
+                                    </MudChip>
+                                </td>
+                                <td style="text-align: right;">
+                                    @if (correction.Incorporated && !correction.Accepted)
+                                    {
+                                        <MudButton Size="Size.Small" Variant="Variant.Filled" Color="Color.Primary"
+                                                   Disabled="_busy"
+                                                   OnClick="@(() => Accept(file, correction))">Accept upstream</MudButton>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </MudSimpleTable>
+            }
+        </MudPaper>
+    }
+}
+
+<MudText Typo="Typo.h6" Class="mt-8 mb-1">Conflicting definitions</MudText>
+<MudText Typo="Typo.body2" Class="mb-4">
+    Element IDs that more than one file declares. Aurora Builder gives the ID to whichever file it
+    loads last, so a book published later overrides an earlier one on purpose. What is set aside is
+    kept here so you can see it rather than having to work it out.
+</MudText>
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+else if (_conflicts.Count == 0)
+{
+    <MudAlert Severity="Severity.Success">
+        No element ID is declared by more than one file.
+    </MudAlert>
+}
+else
+{
+    <MudText Typo="Typo.body2" Class="mb-2">
+        @_conflicts.Count element@(_conflicts.Count == 1 ? "" : "s") declared more than once.
+    </MudText>
+    @foreach (ContentConflictModel conflict in _conflicts)
+    {
+        <MudPaper Class="pa-4 mb-3" Elevation="1">
+            <MudText Typo="Typo.subtitle1">@conflict.Name</MudText>
+            <MudText Typo="Typo.caption">@conflict.TypeName &middot; @conflict.AuroraId</MudText>
+            <MudSimpleTable Dense="true" Class="mt-3">
+                <tbody>
+                    @foreach (ConflictDeclarationModel declaration in conflict.Declarations)
+                    {
+                        <tr>
+                            <td style="width: 1%; white-space: nowrap;">
+                                <MudChip T="string" Size="Size.Small"
+                                         Color="@(declaration.IsWinner ? Color.Success : Color.Default)">
+                                    @(declaration.IsWinner ? "In use" : "Set aside")
+                                </MudChip>
+                            </td>
+                            <td>
+                                <MudText Typo="Typo.body2">@declaration.PackageName</MudText>
+                                <MudText Typo="Typo.caption">@declaration.RelativePath</MudText>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </MudSimpleTable>
+        </MudPaper>
+    }
+}
+
+<MudText Typo="Typo.h6" Class="mt-8 mb-1">Content that was left out</MudText>
+<MudText Typo="Typo.body2" Class="mb-4">
+    Files and operations the last refresh could not use. These stay listed until the problem is
+    fixed and the database is refreshed again.
+</MudText>
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+else
+{
+    @if (_superseded > 0)
+    {
+        <MudAlert Severity="Severity.Info" Dense="true" Class="mb-2">
+            @_superseded archived definition@(_superseded == 1 ? "" : "s") replaced by AuroraLegacy.
+            The import record keeps their provenance.
+        </MudAlert>
+    }
+    @if (_skipped.Count == 0)
+    {
+        <MudAlert Severity="Severity.Success">Every content file was imported.</MudAlert>
+    }
+    else
+    {
+        <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-2">
+            @_skipped.Count content issue@(_skipped.Count == 1 ? "" : "s")
+            need@(_skipped.Count == 1 ? "s" : "") attention.
+        </MudAlert>
+        @foreach (ContentImportSkip skip in _skipped.Take(_showAll ? _skipped.Count : 30))
+        {
+            <MudPaper Class="pa-3 mb-2" Elevation="0" Outlined="true">
+                <MudText Typo="Typo.body2"><strong>@skip.RelativePath</strong> &mdash; @Reason(skip.Kind)</MudText>
+                <MudText Typo="Typo.caption" Style="font-family: monospace; word-break: break-word;">@skip.Detail</MudText>
+                @if (!string.IsNullOrWhiteSpace(skip.RelatedPath))
+                {
+                    <MudText Typo="Typo.caption">Related definition: @skip.RelatedPath</MudText>
+                }
+            </MudPaper>
+        }
+        @if (_skipped.Count > 30)
+        {
+            <MudButton OnClick="@(() => _showAll = !_showAll)">
+                @(_showAll ? "Show fewer" : $"Show all {_skipped.Count}")
+            </MudButton>
+        }
+    }
+}
+
+@code {
+    private IReadOnlyList<OverrideFileModel> _files = [];
+    private IReadOnlyList<ContentConflictModel> _conflicts = [];
+    private IReadOnlyList<ContentImportSkip> _skipped = [];
+    private int _superseded;
+    private bool _showAll;
+    private bool _loading = true;
+    private bool _busy;
+
+    protected override async Task OnInitializedAsync() => await Reload();
+
+    private async Task Reload()
+    {
+        _loading = true;
+        StateHasChanged();
+        var loaded = await Task.Run(() =>
+            (Files: Doctor.LoadOverrideFiles(), Conflicts: Doctor.LoadConflicts(),
+             Skipped: Doctor.LoadSkippedContent()));
+        _files = loaded.Files;
+        _conflicts = loaded.Conflicts;
+        // A superseded definition is AuroraLegacy replacing an archived one, which is the
+        // policy working rather than a problem to fix; count it apart from the rest.
+        _superseded = loaded.Skipped.Count(s => s.Kind == "superseded-definition");
+        _skipped = loaded.Skipped.Where(s => s.Kind != "superseded-definition").ToList();
+        _loading = false;
+    }
+
+    private async Task Accept(OverrideFileModel file, OverrideCorrectionModel correction)
+    {
+        _busy = true;
+        try
+        {
+            await Task.Run(() => Doctor.AcceptCorrection(file, correction));
+            Snackbar.Add($"Cleared {correction.Key}. Refresh content to rebuild the database.", Severity.Success);
+            await Reload();
+        }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
+        {
+            // The hashes captured when the list was read no longer match, or the file cannot be
+            // written. Re-read so the reader is deciding from what is actually on disk.
+            Snackbar.Add(ex.Message, Severity.Error);
+            await Reload();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private static Color StatusColour(OverrideFileModel file) =>
+        file.Problem is not null ? Color.Warning
+        : file.CanRetire ? Color.Success
+        : file.IncorporatedCount > 0 ? Color.Primary
+        : Color.Default;
+
+    private static Color CorrectionColour(OverrideCorrectionModel correction) =>
+        correction.Accepted ? Color.Success
+        : correction.Incorporated ? Color.Primary
+        : Color.Default;
+
+    private static string Reason(string kind) => kind switch
+    {
+        "unreadable" => "the file could not be read; previously imported definitions were kept where available.",
+        "definition-collision" => "more than one file defines this element; the one Aurora Builder loads last is in use and the alternatives are kept for review.",
+        "superseded-definition" => "AuroraLegacy supplied the successor definition.",
+        "classification" => "it was imported without inferring a publisher; review its Source metadata.",
+        "conflict" => "it defines an element another file already defines differently; the declaration loaded last is the one in use.",
+        "definition-conflict" => "this element ID is unavailable because its definitions conflict and none was selected. The rest of the file was imported.",
+        "correction" => "an earlier refresh left this correction file out; correction errors now stop a refresh to protect working content.",
+        "append" => "one of its append operations could not be applied; the rest of the file was imported.",
+        "alias" => "a forwarding address it declared was refused; the rest of the file was imported.",
+        _ => "it was left out of the last refresh.",
+    };
+}

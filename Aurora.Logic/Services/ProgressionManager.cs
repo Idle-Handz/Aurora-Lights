@@ -1,4 +1,4 @@
-﻿// Decompiled with JetBrains decompiler
+// Decompiled with JetBrains decompiler
 // Type: Builder.Presentation.Services.ProgressionManager
 // Assembly: Aurora Builder, Version=1.0.166.7407, Culture=neutral, PublicKeyToken=null
 // MVID: 09D35420-8FA0-4A71-9A21-FF952C48F8A3
@@ -61,17 +61,17 @@ public class ProgressionManager
     return (IEnumerable<ElementBase>) childElements;
   }
 
-  public IEnumerable<StatisticRule> GetStatisticRules(bool applyLevelRequirement = true)
+  public IEnumerable<StatisticRule> GetStatisticRules(bool applyLevelRequirement = true, Func<ElementBase, bool> companionScope = null)
   {
-    List<StatisticRule> list = this.GetElements().Where<ElementBase>((Func<ElementBase, bool>) (e => e.ContainsStatisticRules)).SelectMany<ElementBase, StatisticRule>((Func<ElementBase, IEnumerable<StatisticRule>>) (e => e.GetStatisticRules())).Where<StatisticRule>((Func<StatisticRule, bool>) (x => !x.Attributes.Inline)).Select<StatisticRule, StatisticRule>((Func<StatisticRule, StatisticRule>) (x => x.Copy<StatisticRule>())).ToList<StatisticRule>();
+    List<StatisticRule> list = this.GetElements().Where<ElementBase>((Func<ElementBase, bool>) (e => e.ContainsStatisticRules)).SelectMany<ElementBase, StatisticRule>((Func<ElementBase, IEnumerable<StatisticRule>>) (e => e.GetStatisticRules().Where(r => companionScope == null || !r.Attributes.Name.StartsWith("companion:", StringComparison.OrdinalIgnoreCase) || companionScope(e)))).Where<StatisticRule>((Func<StatisticRule, bool>) (x => !x.Attributes.Inline)).Select<StatisticRule, StatisticRule>((Func<StatisticRule, StatisticRule>) (x => x.Copy<StatisticRule>())).ToList<StatisticRule>();
     if (applyLevelRequirement)
       list = list.Where<StatisticRule>((Func<StatisticRule, bool>) (x => x.Attributes.Level <= this.ProgressionLevel)).ToList<StatisticRule>();
     return (IEnumerable<StatisticRule>) list;
   }
 
-  public IEnumerable<StatisticRule> GetStatisticRulesAtLevel(int level)
+  public IEnumerable<StatisticRule> GetStatisticRulesAtLevel(int level, Func<ElementBase, bool> companionScope = null)
   {
-    List<StatisticRule> list = this.GetElements().Where<ElementBase>((Func<ElementBase, bool>) (e => e.ContainsStatisticRules)).SelectMany<ElementBase, StatisticRule>((Func<ElementBase, IEnumerable<StatisticRule>>) (e => e.GetStatisticRules())).Where<StatisticRule>((Func<StatisticRule, bool>) (x => !x.Attributes.Inline)).Select<StatisticRule, StatisticRule>((Func<StatisticRule, StatisticRule>) (x => x.Copy<StatisticRule>())).ToList<StatisticRule>();
+    List<StatisticRule> list = this.GetElements().Where<ElementBase>((Func<ElementBase, bool>) (e => e.ContainsStatisticRules)).SelectMany<ElementBase, StatisticRule>((Func<ElementBase, IEnumerable<StatisticRule>>) (e => e.GetStatisticRules().Where(r => companionScope == null || !r.Attributes.Name.StartsWith("companion:", StringComparison.OrdinalIgnoreCase) || companionScope(e)))).Where<StatisticRule>((Func<StatisticRule, bool>) (x => !x.Attributes.Inline)).Select<StatisticRule, StatisticRule>((Func<StatisticRule, StatisticRule>) (x => x.Copy<StatisticRule>())).ToList<StatisticRule>();
     int num = level;
     int progressionLevel = this.ProgressionLevel;
     Func<StatisticRule, bool> predicate = (Func<StatisticRule, bool>) (x => x.Attributes.Level <= level);
@@ -86,14 +86,20 @@ public class ProgressionManager
     return (IEnumerable<StatisticRule>) list;
   }
 
-  public void Process(ElementBase element) => this.ProcessElement(element, this.ProgressionLevel);
+  public void Process(ElementBase element)
+  {
+    // The caller may just have attached this root. Rules must see it immediately.
+    CharacterManager.Current.InvalidateElementCache();
+    this.ProcessElement(element, this.ProgressionLevel);
+  }
 
   public void Clean(ElementBase element) => this.CleanElement(element);
 
   public void ProcessExistingElements()
   {
-    foreach (ElementBase element in (Collection<ElementBase>) this.Elements)
-      this.ProcessElement(element, this.ProgressionLevel);
+    // Losing a choice can remove other selected roots, including nested choices.
+    foreach (ElementBase element in this.Elements.ToArray())
+      if (this.Elements.Contains(element)) this.ProcessElement(element, this.ProgressionLevel);
   }
 
   public int NormalizeDuplicateProgressionState()
@@ -112,12 +118,14 @@ public class ProgressionManager
           {
             this.CleanElement(existing);
             this.Elements.Remove(existing);
+            CharacterManager.Current.InvalidateElementCache();
             topLevelElements[duplicateKey] = element;
           }
           else
           {
             this.CleanElement(element);
             this.Elements.Remove(element);
+            CharacterManager.Current.InvalidateElementCache();
           }
           ++removed;
           continue;
@@ -150,12 +158,14 @@ public class ProgressionManager
       {
         this.CleanElement(existing);
         parent.RuleElements.Remove(existing);
+        CharacterManager.Current.InvalidateElementCache();
         childElements[duplicateKey] = child;
       }
       else
       {
         this.CleanElement(child);
         parent.RuleElements.Remove(child);
+        CharacterManager.Current.InvalidateElementCache();
       }
       ++removed;
     }
@@ -179,7 +189,13 @@ public class ProgressionManager
     {
       "element",
       id,
-      type
+      type,
+      element.Type == "Spell" ? element.Aquisition.GetParentHeader()?.Id ?? "" : "",
+      element.Type == "Spell" && element.Aquisition.WasSelected ? element.Aquisition.SelectRule.UniqueIdentifier : "",
+      // Each equipped item owns independent choices (for example companion proxies).
+      // Their rule identifiers are renewed when the inventory instances are created.
+      element is Item && element.ContainsSelectRules
+        ? string.Join(",", element.GetSelectRules().Select(rule => rule.UniqueIdentifier)) : ""
     });
   }
 
@@ -278,12 +294,22 @@ public class ProgressionManager
       if (element1.Aquisition.WasGranted)
       {
         GrantRule grantRule = element1.Aquisition.GrantRule;
-        if (!grantRule.Attributes.MeetsLevelRequirement(currentLevel))
+        if (GrantPolicyContext.IsSuppressed(element1, grantRule))
+        {
+          // The host no longer allows this element (a source the character restricts, say).
+          // Clearing the restriction re-grants it, because this runs on every reprocess.
+          Logger.Info("\tungranting: {0} suppressed by the host grant policy", (object) element1);
+          this.CleanElement(element1);
+          element.RuleElements.Remove(element1);
+          CharacterManager.Current.InvalidateElementCache();
+        }
+        else if (!grantRule.Attributes.MeetsLevelRequirement(currentLevel))
         {
           this.CleanSelectionRules(element1);
           this.CleanGrantRules(element1);
           Logger.Info("\tungranting: {0} after losing level requirements", (object) element1);
           element.RuleElements.Remove(element1);
+          CharacterManager.Current.InvalidateElementCache();
         }
         else
         {
@@ -301,6 +327,7 @@ public class ProgressionManager
               this.CleanGrantRules(element1);
               Logger.Info("\tungranting: {0} after losing requirements", (object) element1);
               element.RuleElements.Remove(element1);
+              CharacterManager.Current.InvalidateElementCache();
             }
           }
           if (element1.HasRequirements)
@@ -308,9 +335,10 @@ public class ProgressionManager
             ElementBaseCollection elements = CharacterManager.Current.GetElements();
             if (!this._interpreter.EvaluateElementRequirementsExpression(element1.Requirements, elements.Select<ElementBase, string>((Func<ElementBase, string>) (x => x.Id))))
             {
-              Logger.Warning("\tungranting: {0} after losing element requirements", (object) element1);
+              Logger.Info("\tungranting: {0} after losing element requirements", (object) element1);
               this.CleanElement(element1);
               element.RuleElements.Remove(element1);
+              CharacterManager.Current.InvalidateElementCache();
             }
           }
         }
@@ -356,6 +384,11 @@ public class ProgressionManager
               continue;
             }
           }
+          if (GrantPolicyContext.IsSuppressed(element2, rule))
+          {
+            Logger.Debug("\tnot granting: {0} suppressed by the host grant policy", (object) element2);
+            continue;
+          }
           element2.RuleElements.Any<ElementBase>();
           if (element.RuleElements.ContainsRuleElement(element2, rule))
           {
@@ -364,6 +397,7 @@ public class ProgressionManager
           else
           {
             element.RuleElements.Add(element2);
+            CharacterManager.Current.InvalidateElementCache();
             element2.Aquisition.GrantedBy(rule);
             flag = true;
             Logger.Debug("\tgranted: {0}", (object) element2);
@@ -434,9 +468,11 @@ public class ProgressionManager
         Logger.Info("\tungranting: {0}", (object) ruleElement2);
       }
       ruleElement1.RuleElements.Clear();
+      CharacterManager.Current.InvalidateElementCache();
       Logger.Info("\tungranting: {0}", (object) ruleElement1);
     }
     element.RuleElements.Clear();
+    CharacterManager.Current.InvalidateElementCache();
   }
 
   private void CleanSpellcastingInformation(ElementBase element)

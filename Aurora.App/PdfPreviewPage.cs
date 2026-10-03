@@ -175,7 +175,10 @@ internal sealed class PdfPreviewPage : ContentPage
                 PresentQuickLookPreview(_tempPdfPath);
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            DebugLogService.Instance.LogException(ex, "PdfPreviewPage QuickLook preview");
+        }
 #endif
     }
 

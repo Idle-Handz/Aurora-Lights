@@ -98,7 +98,7 @@ public static partial class BuildService
             {
                 foreach (var rule in group.Rules)
                 {
-                    if (rule.CurrentName == null)
+                    if (rule.CurrentName == null && !rule.IsOptional)
                     {
                         next = new BuildGuidanceTarget(
                             BuildGuidanceActionKind.Selection,
@@ -114,7 +114,7 @@ public static partial class BuildService
 
         foreach (var entry in asi)
         {
-            if (entry.CurrentName == null)
+            if (entry.CurrentName == null && !entry.IsOptional)
             {
                 next = new BuildGuidanceTarget(
                     BuildGuidanceActionKind.Selection,
@@ -287,7 +287,7 @@ public static partial class BuildService
 
         // Overflow tabs — one per unrecognised type, alphabetical
         foreach (var (typeName, entries) in overflowEntries.OrderBy(kv => kv.Key))
-            tabs.Add(new BuildTabGroup(typeName, [new SelectionRuleGroup("", Sort(entries))], entries.Count(e => e.CurrentName == null)));
+            tabs.Add(new BuildTabGroup(typeName, [new SelectionRuleGroup("", Sort(entries))], entries.Count(e => e.CurrentName == null && !e.IsOptional)));
 
         return tabs;
     }
@@ -453,50 +453,10 @@ public static partial class BuildService
 
     private static void ClearStaleSelectedAbilityScoreElements(List<string> invalidated)
     {
-        var cm = CharacterManager.Current;
-        var activeRuleIds = cm.SelectionRules
-            .Select(rule => rule.UniqueIdentifier)
-            .Where(id => !string.IsNullOrWhiteSpace(id))
-            .ToHashSet(StringComparer.Ordinal);
-
-        foreach (var element in cm.GetElements().ToList())
-        {
-            if (!element.Type.Equals("Ability Score Improvement", StringComparison.OrdinalIgnoreCase))
-                continue;
-            if (!element.Aquisition.WasSelected)
-                continue;
-
-            var selectedRule = element.Aquisition.SelectRule;
-            if (selectedRule == null)
-                continue;
-
-            var selectedRuleId = selectedRule.UniqueIdentifier;
-            if (!string.IsNullOrWhiteSpace(selectedRuleId) && activeRuleIds.Contains(selectedRuleId))
-                continue;
-
-            int slot = FindRegisteredSelectionSlot(selectedRule, element);
-            bool cleared = false;
-            try
-            {
-                cm.UnregisterElement(element);
-                if (slot > 0)
-                    SelectionRuleExpanderContext.Current?.ClearRegisteredElement(selectedRule, slot);
-                cleared = true;
-            }
-            catch (Exception ex)
-            {
-                DebugLogService.Instance.LogException(
-                    ex,
-                    "BuildService.ClearStaleSelectedAbilityScoreElements");
-            }
-
-            if (cleared)
-            {
-                invalidated.Add(slot > 0
-                    ? BuildSelectionLabel(selectedRule, slot)
-                    : (selectedRule.Attributes.Name ?? selectedRule.Attributes.Type ?? "Ability Score Improvement"));
-            }
-        }
+        foreach (var removed in AbilityScoreSelectionCleanup.Normalize())
+            invalidated.Add(removed.Slot > 0
+                ? BuildSelectionLabel(removed.Rule, removed.Slot)
+                : (removed.Rule.Attributes.Name ?? removed.Rule.Attributes.Type ?? "Ability Score Improvement"));
     }
 
     private static int FindRegisteredSelectionSlot(SelectRule rule, ElementBase element)
@@ -537,41 +497,8 @@ public static partial class BuildService
     /// Returns the tab label and rule label of the first unfilled required SelectionRule,
     /// or null when everything is complete for the current level.
     /// </summary>
-    public static BuildGuidanceTarget? GetNextRequiredStep()
-    {
-        var (tabs, asi, next) = GetBuildData(preferClassFirst: false);
-        if (next != null)
-            return next;
-
-        foreach (var tab in tabs)
-        {
-            foreach (var group in tab.RuleGroups)
-            {
-                foreach (var rule in group.Rules)
-                {
-                    if (rule.CurrentName == null)
-                        return new BuildGuidanceTarget(
-                            BuildGuidanceActionKind.Selection,
-                            tab.Label,
-                            rule.Label,
-                            rule.EntryKey,
-                            TargetLabel: $"{tab.Label} tab");
-                }
-            }
-        }
-        // Check ASI entries last
-        foreach (var entry in asi)
-        {
-            if (entry.CurrentName == null)
-                return new BuildGuidanceTarget(
-                    BuildGuidanceActionKind.Selection,
-                    "Ability Scores",
-                    entry.Label,
-                    entry.EntryKey,
-                    TargetLabel: "Ability Scores tab");
-        }
-        return null;
-    }
+    public static BuildGuidanceTarget? GetNextRequiredStep() =>
+        GetBuildData(preferClassFirst: false).NextStep;
 
     private static int CountUnresolved(IEnumerable<SelectionRuleGroup> groups) =>
         groups.SelectMany(g => g.Rules).Count(r => r.CurrentName == null && !r.IsOptional);

@@ -1,5 +1,7 @@
-using Aurora.Importer;
+using Aurora.App.Services;
+using Aurora.Content;
 
+// Developer utility: import a content folder into a database exactly as the app does.
 var contentDir = args.Length > 0 ? args[0]
     : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Personal),
                    "5e Character Builder", "custom");
@@ -12,31 +14,33 @@ Console.WriteLine($"Content : {contentDir}");
 Console.WriteLine($"Database: {dbPath}");
 Console.WriteLine();
 
-bool stale = AuroraContentImporter.IsStale(contentDir, dbPath);
-Console.WriteLine(stale ? "Database is stale — running full import..." : "Database is current — running incremental import...");
+Console.WriteLine(ContentDatabaseReader.IsStale([contentDir], dbPath)
+    ? "Database needs an import."
+    : "Database is current; importing anyway.");
 Console.WriteLine();
 
 var sw = System.Diagnostics.Stopwatch.StartNew();
+var progress = new Progress<ContentImportProgress>(p =>
+    Console.Write("\r  [" + p.Phase.ToString().PadRight(10) + "]  "
+        + p.Completed.ToString().PadLeft(6) + "/" + p.Total.ToString().PadRight(6) + "   "));
 
-var progress = new Progress<AuroraImportProgress>(p =>
+try
 {
-    Console.Write($"\r  [{p.Phase,-10}]  {p.FilesScanned,4}/{p.FilesTotal,-4} files   ");
-});
-
-var result = AuroraContentImporter.Import(contentDir, dbPath, progress);
-sw.Stop();
-
-Console.WriteLine();
-Console.WriteLine();
-
-if (result.Success)
-{
+    var result = await ContentImport.ImportAsync(contentDir, dbPath, progress,
+        onDiagnostic: Console.Error.WriteLine);
+    sw.Stop();
+    Console.WriteLine();
+    Console.WriteLine();
     Console.WriteLine($"Import succeeded in {sw.Elapsed.TotalSeconds:F1}s");
-    Console.WriteLine($"  {result.Summary}");
+    Console.WriteLine($"  {result.ElementsWritten} elements from {result.FilesChanged} changed file(s), "
+        + $"{result.FilesUnchanged} unchanged.");
 }
-else
+catch (Exception error)
 {
+    sw.Stop();
+    Console.WriteLine();
+    Console.WriteLine();
     Console.WriteLine($"Import FAILED after {sw.Elapsed.TotalSeconds:F1}s");
-    Console.WriteLine($"  Error: {result.ErrorMessage}");
+    Console.WriteLine($"  {error.Message}");
     Environment.Exit(1);
 }

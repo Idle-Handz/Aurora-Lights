@@ -1,0 +1,1 @@
+This build includes Aurora.Content 0.9.0 and uses content data version 17. After installing the updated app, close character tabs and use Settings > Content > Data > Refresh Database to migrate an older database and refresh it from installed XML. Downloading content alone does not update the importer; no app-data reset is needed.

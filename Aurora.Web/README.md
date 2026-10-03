@@ -42,5 +42,5 @@ anonymous session.
 
 ## Current Constraints
 
-- the shared Aurora runtime still relies on process-wide singletons, so `Aurora.Web` currently serializes character-engine operations behind a server-side lock
-- this is acceptable for an early Phase 0 proof-of-concept, but it is not the final multi-user shape
+- the shared Aurora runtime still relies on process-wide singletons, so `Aurora.Web` serializes character-engine operations and permits only one browser circuit to own an active character at a time
+- another circuit is refused while that ownership is active, preventing silent cross-session character access; true concurrent multi-user hosting still requires a session-local engine runtime

@@ -11,13 +11,13 @@ namespace Aurora.Tests.Tests;
 public sealed class BuilderDataCompatibilityTests
 {
     [Fact]
-    public void RestoredAssembly_PreservesLegacyIdentityAndExportedTypeCount()
+    public void RestoredAssembly_PreservesLegacyIdentityAndRequiredExportedTypes()
     {
         var assembly = typeof(ElementBase).Assembly;
 
         assembly.GetName().Name.Should().Be("Builder.Data");
         assembly.GetName().Version.Should().Be(new Version(1, 0, 110, 7407));
-        assembly.GetExportedTypes().Should().HaveCount(140);
+        LegacyTypeContract.AssertRequiredTypes(assembly);
     }
 
     [Fact]

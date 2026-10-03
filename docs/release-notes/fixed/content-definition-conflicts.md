@@ -1,0 +1,1 @@
+When two content files define the same element ID, the database now keeps the definition Aurora Builder would have used and records the alternatives for review, rather than leaving the element unavailable; a file that cannot be read still preserves the working database instead of replacing a definition with nothing.

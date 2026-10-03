@@ -1,0 +1,540 @@
+[
+  {
+    "id": "ID_GFP_COFSA_MAGIC_ITEM_WONDROUS_ITEM_CIMBALOM_OF_DAZD",
+    "name": "Cimbalom of Dazd",
+    "type": "Magic Item",
+    "source": "The Compendium of Forgotten Secrets",
+    "path": "third-party\\genuine-fantasy-press\\forgotten-secrets\\items.xml",
+    "info": "<info>\n\t\t<name>Wonderous Items</name>\n\t\t<update version=\"0.0.1\">\n\t\t\t<file name=\"items.xml\" url=\"https://raw.githubusercontent.com/aurorabuilder/elements/master/third-party/genuine-fantasy-press/forgotten-secrets/items.xml\" />\n\t\t</update>\n\t</info>\n\t",
+    "sources": [
+      {
+        "path": "third-party\\genuine-fantasy-press\\forgotten-secrets\\source.xml",
+        "id": "ID_GFP_SOURCE_FORGOTTEN_SECRETS",
+        "setters": [
+          [
+            "abbreviation",
+            "COFSA"
+          ],
+          [
+            "url",
+            "https://drive.google.com/file/d/1g1Yr215cfNyijpPiJotezUBgU_Mj-cLE/view"
+          ],
+          [
+            "author",
+            "Genuine Fantasy Press"
+          ],
+          [
+            "release",
+            "20181017"
+          ]
+        ]
+      }
+    ],
+    "xml": "<element name=\"Cimbalom of Dazd\" type=\"Magic Item\" source=\"The Compendium of Forgotten Secrets\" id=\"ID_GFP_COFSA_MAGIC_ITEM_WONDROUS_ITEM_CIMBALOM_OF_DAZD\">\n\t\t<description>\n\t\t\t<p>This musical instrument consists of a table-like structure covered by thin metal strings that are struck with small mallets to produce sound. It is decorated with symbols of storms and rain. It can be shrunk to the size of a fist or returned to full size by speaking a command word as a bonus action. When played by someone with proficiency in a string or percussion instrument, the magic within has a transformative effect. While playing the cimbalom, you cause the effects of the control weather spell, though you must use your action to continue playing in order to maintain concentration. While you are playing this instrument, you are immune to any disruptive effects or damage caused by the weather.</p>\n\t\t</description>\n\t\t<setters>\n\t\t\t<set name=\"category\">Wondrous Items</set>\n\t\t\t<set name=\"cost\" currency=\"gp\">0</set>\n\t\t\t<set name=\"weight\" lb=\"0\">0 lb.</set>\n\t\t\t<set name=\"type\">Wondrous Item</set>\n\t\t\t<set name=\"rarity\">Very Rare</set>\n\t\t\t<set name=\"attunement\">true</set>\n\t\t\t<set name=\"slot\">onehand</set>\n\t\t</setters>\n\t</element>\n\t",
+    "lines": [
+      756
+    ],
+    "sqlite_element_ids": [
+      16578
+    ]
+  },
+  {
+    "id": "ID_GFP_COFSA_MAGIC_ITEM_WONDROUS_ITEM_CIMBALOM_OF_DAZD",
+    "name": "Kaba Gaida of Nevihta",
+    "type": "Magic Item",
+    "source": "The Compendium of Forgotten Secrets",
+    "path": "third-party\\genuine-fantasy-press\\forgotten-secrets\\items.xml",
+    "info": "<info>\n\t\t<name>Wonderous Items</name>\n\t\t<update version=\"0.0.1\">\n\t\t\t<file name=\"items.xml\" url=\"https://raw.githubusercontent.com/aurorabuilder/elements/master/third-party/genuine-fantasy-press/forgotten-secrets/items.xml\" />\n\t\t</update>\n\t</info>\n\t",
+    "sources": [
+      {
+        "path": "third-party\\genuine-fantasy-press\\forgotten-secrets\\source.xml",
+        "id": "ID_GFP_SOURCE_FORGOTTEN_SECRETS",
+        "setters": [
+          [
+            "abbreviation",
+            "COFSA"
+          ],
+          [
+            "url",
+            "https://drive.google.com/file/d/1g1Yr215cfNyijpPiJotezUBgU_Mj-cLE/view"
+          ],
+          [
+            "author",
+            "Genuine Fantasy Press"
+          ],
+          [
+            "release",
+            "20181017"
+          ]
+        ]
+      }
+    ],
+    "xml": "<element name=\"Kaba Gaida of Nevihta\" type=\"Magic Item\" source=\"The Compendium of Forgotten Secrets\" id=\"ID_GFP_COFSA_MAGIC_ITEM_WONDROUS_ITEM_CIMBALOM_OF_DAZD\">\n\t\t<description>\n\t\t\t<p>This bagpipe-like instrument was made using the bones and organs of a blue dragon. When played by someone with proficiency in a woodwind instrument, it enhances their spellcasting. While playing the kaba gaida, spells you cast that deal lightning or thunder damage are cast as though using a spell slot of one level higher. Additionally, you can cast gust of wind at will without expending a spell slot. Charisma is your spellcasting ability for this spell.</p>\n\t\t\t<div class=\"reference\">\n\t\t\t\t<div element=\"ID_PHB_SPELL_GUST_OF_WIND\" />\n\t\t\t</div>\n\t\t</description>\n\t\t<setters>\n\t\t\t<set name=\"category\">Wondrous Items</set>\n\t\t\t<set name=\"cost\" currency=\"gp\">0</set>\n\t\t\t<set name=\"weight\" lb=\"0\">0 lb.</set>\n\t\t\t<set name=\"type\">Wondrous Item</set>\n\t\t\t<set name=\"rarity\">Very Rare</set>\n\t\t\t<set name=\"attunement\">true</set>\n\t\t\t<set name=\"slot\">onehand</set>\n\t\t</setters>\n\t</element>\n\t",
+    "lines": [
+      786
+    ],
+    "sqlite_element_ids": [
+      16580
+    ]
+  },
+  {
+    "id": "ID_GFP_COFSA_MAGIC_ITEM_WONDROUS_ITEM_ANCIENT_HEART_STRENGTH_TWO",
+    "name": "Ancient Heart (Strength +2)",
+    "type": "Magic Item",
+    "source": "The Compendium of Forgotten Secrets",
+    "path": "third-party\\genuine-fantasy-press\\forgotten-secrets\\items.xml",
+    "info": "<info>\n\t\t<name>Wonderous Items</name>\n\t\t<update version=\"0.0.1\">\n\t\t\t<file name=\"items.xml\" url=\"https://raw.githubusercontent.com/aurorabuilder/elements/master/third-party/genuine-fantasy-press/forgotten-secrets/items.xml\" />\n\t\t</update>\n\t</info>\n\t",
+    "sources": [
+      {
+        "path": "third-party\\genuine-fantasy-press\\forgotten-secrets\\source.xml",
+        "id": "ID_GFP_SOURCE_FORGOTTEN_SECRETS",
+        "setters": [
+          [
+            "abbreviation",
+            "COFSA"
+          ],
+          [
+            "url",
+            "https://drive.google.com/file/d/1g1Yr215cfNyijpPiJotezUBgU_Mj-cLE/view"
+          ],
+          [
+            "author",
+            "Genuine Fantasy Press"
+          ],
+          [
+            "release",
+            "20181017"
+          ]
+        ]
+      }
+    ],
+    "xml": "<element name=\"Ancient Heart (Strength +2)\" type=\"Magic Item\" source=\"The Compendium of Forgotten Secrets\" id=\"ID_GFP_COFSA_MAGIC_ITEM_WONDROUS_ITEM_ANCIENT_HEART_STRENGTH_TWO\">\n\t\t<compendium display=\"false\" />\n\t\t<description>\n\t\t\t<p>This is the heart of an elder being, pulsing with eldritch power and quivering with unnatural intent. You can consume it as an action. Roll a d6. You can increase one of your ability scores by a number of points equal to half the result (rounded down) and increase the maximum by the same amount. If you roll a 2, you die, your corpse is transformed into an unspeakable creature of CR 20 or greater, and you cannot be resurrected.</p>\n\t\t</description>\n\t\t<setters>\n\t\t\t<set name=\"category\">Wondrous Items</set>\n\t\t\t<set name=\"cost\" currency=\"gp\">0</set>\n\t\t\t<set name=\"weight\" lb=\"0\">0 lb.</set>\n\t\t\t<set name=\"type\">Wondrous Item</set>\n\t\t\t<set name=\"rarity\">Legendary</set>\n\t\t\t<set name=\"slot\">misc</set>\n\t\t\t\n\t\t</setters>\n\t\t<rules>\n\t\t\t<stat name=\"strength\" value=\"2\" />\n\t\t\t<stat name=\"strength:max\" value=\"2\" />\n\t\t</rules>\n\t</element>\n\t",
+    "lines": [
+      835
+    ],
+    "sqlite_element_ids": [
+      16583
+    ]
+  },
+  {
+    "id": "ID_GFP_COFSA_MAGIC_ITEM_WONDROUS_ITEM_ANCIENT_HEART_STRENGTH_TWO",
+    "name": "Ancient Heart (Strength +3)",
+    "type": "Magic Item",
+    "source": "The Compendium of Forgotten Secrets",
+    "path": "third-party\\genuine-fantasy-press\\forgotten-secrets\\items.xml",
+    "info": "<info>\n\t\t<name>Wonderous Items</name>\n\t\t<update version=\"0.0.1\">\n\t\t\t<file name=\"items.xml\" url=\"https://raw.githubusercontent.com/aurorabuilder/elements/master/third-party/genuine-fantasy-press/forgotten-secrets/items.xml\" />\n\t\t</update>\n\t</info>\n\t",
+    "sources": [
+      {
+        "path": "third-party\\genuine-fantasy-press\\forgotten-secrets\\source.xml",
+        "id": "ID_GFP_SOURCE_FORGOTTEN_SECRETS",
+        "setters": [
+          [
+            "abbreviation",
+            "COFSA"
+          ],
+          [
+            "url",
+            "https://drive.google.com/file/d/1g1Yr215cfNyijpPiJotezUBgU_Mj-cLE/view"
+          ],
+          [
+            "author",
+            "Genuine Fantasy Press"
+          ],
+          [
+            "release",
+            "20181017"
+          ]
+        ]
+      }
+    ],
+    "xml": "<element name=\"Ancient Heart (Strength +3)\" type=\"Magic Item\" source=\"The Compendium of Forgotten Secrets\" id=\"ID_GFP_COFSA_MAGIC_ITEM_WONDROUS_ITEM_ANCIENT_HEART_STRENGTH_TWO\">\n\t\t<compendium display=\"false\" />\n\t\t<description>\n\t\t\t<p>This is the heart of an elder being, pulsing with eldritch power and quivering with unnatural intent. You can consume it as an action. Roll a d6. You can increase one of your ability scores by a number of points equal to half the result (rounded down) and increase the maximum by the same amount. If you roll a 3, you die, your corpse is transformed into an unspeakable creature of CR 30 or greater, and you cannot be resurrected.</p>\n\t\t</description>\n\t\t<setters>\n\t\t\t<set name=\"category\">Wondrous Items</set>\n\t\t\t<set name=\"cost\" currency=\"gp\">0</set>\n\t\t\t<set name=\"weight\" lb=\"0\">0 lb.</set>\n\t\t\t<set name=\"type\">Wondrous Item</set>\n\t\t\t<set name=\"rarity\">Legendary</set>\n\t\t\t<set name=\"slot\">misc</set>\n\t\t\t\n\t\t</setters>\n\t\t<rules>\n\t\t\t<stat name=\"strength\" value=\"3\" />\n\t\t\t<stat name=\"strength:max\" value=\"3\" />\n\t\t</rules>\n\t</element>\n\t",
+    "lines": [
+      854
+    ],
+    "sqlite_element_ids": [
+      16584
+    ]
+  },
+  {
+    "id": "ID_WOTC_XGTE_MAGIC_ITEM_STAFF_OF_FLOWERS",
+    "name": "Staff of Flowers",
+    "type": "Magic Item",
+    "source": "Xanathar\u2019s Guide to Everything",
+    "path": "core\\dungeon-masters-guide-2024\\items-staffs.xml",
+    "info": "<info>\n\t\t<name>Staffs</name>\n\t\t<description>Magical Staffs from the Dungeon Master\u2019s Guide (2024)</description>\n\t\t<update version=\"0.0.2\">\n\t\t\t<file name=\"items-staffs.xml\" url=\"https://raw.githubusercontent.com/AuroraLegacy/elements/master/core/dungeon-masters-guide-2024/items/items-staffs.xml\" />\n\t\t</update>\n\t</info>\n\n\t",
+    "sources": [
+      {
+        "path": "supplements\\xanathars-guide-to-everything\\source.xml",
+        "id": "ID_WOTC_SOURCE_XANATHARS_GUIDE_TO_EVERYTHING",
+        "setters": [
+          [
+            "abbreviation",
+            "XGTE"
+          ],
+          [
+            "url",
+            "http://dnd.wizards.com/products/tabletop-games/rpg-products/xanathars-guide-everything"
+          ],
+          [
+            "author",
+            "Wizards of the Coast"
+          ],
+          [
+            "release",
+            "20171121"
+          ]
+        ]
+      }
+    ],
+    "xml": "<element name=\"Staff of Flowers\" type=\"Magic Item\" source=\"Xanathar\u2019s Guide to Everything\" id=\"ID_WOTC_XGTE_MAGIC_ITEM_STAFF_OF_FLOWERS\">\t\t\n\t\t<description>\n\t\t\t<p>This wooden staff has 10 charges. While holding it, you can take a Magic action to expend 1 charge from the staff and cause a flower to sprout from a patch of earth or soil within 5 feet of yourself, or from the staff itself. Unless you choose a specific kind of flower, the staff creates a mild-scented daisy. The flower is harmless and nonmagical, and it grows or withers as a normal flower would.</p>\n\t\t\t<p class=\"indent\"><b><i>Regaining Charges.</i></b> The staff regains 1d6 + 4 expended charges daily at dawn. If you expend the last charge, roll 1d20. On a 1, the staff turns into flower petals and is lost forever.</p>\n\t\t</description>\n\t\t<setters>\n\t\t\t<set name=\"keywords\">charges, recharge, dawn, magic action, action</set>\n\t\t\t<set name=\"category\">Magic Weapons</set>\n\t\t\t<set name=\"type\" addition=\"Staff\">Weapon</set>\n\t\t\t<set name=\"weapon\">Quarterstaff</set>\n\t\t\t<set name=\"rarity\">Common</set>\n\t\t\t<set name=\"cost\" currency=\"gp\">100</set>\n\t\t\t<set name=\"weight\" lb=\"4\">4 lb.</set>\n\t\t\t<set name=\"charges\">10</set>\n\t\t</setters>\n\t</element>\n\n\t",
+    "lines": [
+      292
+    ],
+    "sqlite_element_ids": [
+      28257
+    ]
+  },
+  {
+    "id": "ID_WOTC_XGTE_MAGIC_ITEM_STAFF_OF_FLOWERS",
+    "name": "Staff of Flowers",
+    "type": "Magic Item",
+    "source": "Xanathar\u2019s Guide to Everything",
+    "path": "supplements\\xanathars-guide-to-everything\\items-wondrous.xml",
+    "info": "<info>\n\t\t<name>Wondrous Items</name>\n\t\t<update version=\"0.0.7\">\n\t\t\t<file name=\"items-wondrous.xml\" url=\"https://raw.githubusercontent.com/AuroraLegacy/elements/master/supplements/xanathars-guide-to-everything/items/items-wondrous.xml\" />\n\t\t</update>\n\t</info>\n\n\t",
+    "sources": [
+      {
+        "path": "supplements\\xanathars-guide-to-everything\\source.xml",
+        "id": "ID_WOTC_SOURCE_XANATHARS_GUIDE_TO_EVERYTHING",
+        "setters": [
+          [
+            "abbreviation",
+            "XGTE"
+          ],
+          [
+            "url",
+            "http://dnd.wizards.com/products/tabletop-games/rpg-products/xanathars-guide-everything"
+          ],
+          [
+            "author",
+            "Wizards of the Coast"
+          ],
+          [
+            "release",
+            "20171121"
+          ]
+        ]
+      }
+    ],
+    "xml": "<element name=\"Staff of Flowers\" type=\"Magic Item\" source=\"Xanathar\u2019s Guide to Everything\" id=\"ID_WOTC_XGTE_MAGIC_ITEM_STAFF_OF_FLOWERS\">\t\t\n\t\t<description>\n\t\t\t<p>This wooden staff has 10 charges. While holding it, you can use an action to expend 1 charge from the staff and cause a flower to sprout from a patch of earth or soil within 5 feet of you, or from the staff itself. Unless you choose a specific kind of flower, the staff creates a mildscented daisy. The flower is harmless and nonmagical, and it grows or withers as a normal flower would.</p>\n\t\t\t<p class=\"indent\">The staff regains 1d6 + 4 expended charges daily at dawn. If you expend the last charge, roll a d20. On a 1, the staff turns into flower petals and is lost forever.</p>\n\t\t</description>\n\t\t<setters>\n\t\t\t<set name=\"category\">Staffs</set>\n\t\t\t<set name=\"cost\" currency=\"gp\">0</set>\n\t\t\t<set name=\"weight\" lb=\"4\">4 lb.</set>\n\t\t\t<set name=\"type\">Staff</set>\n\t\t\t<set name=\"rarity\">Common</set>\n\t\t\t<set name=\"slot\">onehand</set>\n\t\t\t<set name=\"weapon\">Quarterstaff</set>\n\t\t\t<set name=\"charges\">10</set>\n\t\t</setters>\n\t</element>\n\t",
+    "lines": [
+      512
+    ],
+    "sqlite_element_ids": [
+      24030
+    ]
+  },
+  {
+    "id": "ID_WOTC_DMG24_MAGIC_ITEM_AMMUNITION_ADAMANTINE",
+    "name": "Adamantine Ammunition",
+    "type": "Magic Item",
+    "source": "Dungeon Master\u2019s Guide (2024)",
+    "path": "core\\dungeon-masters-guide-2024\\items-weapons.xml",
+    "info": "<info>\n\t\t<name>Weapons</name>\n\t\t<description>Magical Weapons from the Dungeon Master\u2019s Guide (2024)</description>\n\t\t<update version=\"0.0.2\">\n\t\t\t<file name=\"items-weapons.xml\" url=\"https://raw.githubusercontent.com/AuroraLegacy/elements/master/core/dungeon-masters-guide-2024/items/items-weapons.xml\" />\n\t\t</update>\n\t</info>\n\n\t",
+    "sources": [
+      {
+        "path": "core\\dungeon-masters-guide-2024\\source.xml",
+        "id": "ID_WOTC_SOURCE_DUNGEON_MASTERS_GUIDE_2024",
+        "setters": [
+          [
+            "abbreviation",
+            "DMG24"
+          ],
+          [
+            "url",
+            "https://marketplace.dndbeyond.com/core-rules/3710000"
+          ],
+          [
+            "author",
+            "Wizards of the Coast"
+          ],
+          [
+            "release",
+            "20241112"
+          ]
+        ]
+      }
+    ],
+    "xml": "<element name=\"Adamantine Ammunition\" type=\"Magic Item\" source=\"Dungeon Master\u2019s Guide (2024)\" id=\"ID_WOTC_DMG24_MAGIC_ITEM_AMMUNITION_ADAMANTINE\">\n\t\t<description>\n\t\t\t<p>This piece of ammunition is made of adamantine, one of the hardest substances in existence. Whenever this weapon or piece of ammunition hits an object, the hit is a Critical Hit.</p>\n\t\t</description>\n\t\t<setters>\n\t\t\t<set name=\"keywords\">arrow, bolt, bullet</set>\n\t\t\t<set name=\"category\">Ammunition</set>\n\t\t\t<set name=\"type\" addition=\"Any Ammunition\">Weapon</set>\n\t\t\t<set name=\"rarity\">Uncommon</set>\n\t\t\t<set name=\"cost\" currency=\"gp\">400</set>\n\t\t\t<set name=\"name-format\">Adamantine {{parent}}</set>\n\t\t\t<set name=\"stackable\">true</set>\n\t\t</setters>\n\t</element>\n\n\t",
+    "lines": [
+      25
+    ],
+    "sqlite_element_ids": [
+      28270
+    ]
+  },
+  {
+    "id": "ID_WOTC_DMG24_MAGIC_ITEM_AMMUNITION_ADAMANTINE",
+    "name": "Walloping Ammunition",
+    "type": "Magic Item",
+    "source": "Dungeon Master\u2019s Guide (2024)",
+    "path": "core\\dungeon-masters-guide-2024\\items-weapons.xml",
+    "info": "<info>\n\t\t<name>Weapons</name>\n\t\t<description>Magical Weapons from the Dungeon Master\u2019s Guide (2024)</description>\n\t\t<update version=\"0.0.2\">\n\t\t\t<file name=\"items-weapons.xml\" url=\"https://raw.githubusercontent.com/AuroraLegacy/elements/master/core/dungeon-masters-guide-2024/items/items-weapons.xml\" />\n\t\t</update>\n\t</info>\n\n\t",
+    "sources": [
+      {
+        "path": "core\\dungeon-masters-guide-2024\\source.xml",
+        "id": "ID_WOTC_SOURCE_DUNGEON_MASTERS_GUIDE_2024",
+        "setters": [
+          [
+            "abbreviation",
+            "DMG24"
+          ],
+          [
+            "url",
+            "https://marketplace.dndbeyond.com/core-rules/3710000"
+          ],
+          [
+            "author",
+            "Wizards of the Coast"
+          ],
+          [
+            "release",
+            "20241112"
+          ]
+        ]
+      }
+    ],
+    "xml": "<element name=\"Walloping Ammunition\" type=\"Magic Item\" source=\"Dungeon Master\u2019s Guide (2024)\" id=\"ID_WOTC_DMG24_MAGIC_ITEM_AMMUNITION_ADAMANTINE\">\n\t\t<description>\n\t\t\t<p>A creature hit by this ammunition must succeed on a DC 10 Strength saving throw or have the Prone condition.</p>\n\t\t</description>\n\t\t<setters>\n\t\t\t<set name=\"keywords\">strength, saving throw, save, prone, condition</set>\n\t\t\t<set name=\"category\">Ammunition</set>\n\t\t\t<set name=\"type\" addition=\"Any Ammunition\">Weapon</set>\n\t\t\t<set name=\"rarity\">Uncommon</set>\n\t\t\t<set name=\"cost\" currency=\"gp\">400</set>\n\t\t\t<set name=\"name-format\">Walloping {{parent}}</set>\n\t\t\t<set name=\"stackable\">true</set>\n\t\t</setters>\n\t</element>\n\n\t",
+    "lines": [
+      1332
+    ],
+    "sqlite_element_ids": [
+      28337
+    ]
+  },
+  {
+    "id": "ID_RDDT_AA_MUSKETBALL",
+    "name": "Musketball (20)",
+    "type": "Item",
+    "source": "Arcane Artillery",
+    "path": "reddit\\reddit-unearthed-arcana\\arcane-artillery\\guns.xml",
+    "info": "<info>\n\t\t<name>Guns</name>\n\t\t<update version=\"0.0.1\">\n\t\t\t<file name=\"guns.xml\" url=\"https://raw.githubusercontent.com/community-elements/elements-reddit/master/reddit/reddit-unearthed-arcana/arcane-artillery/guns.xml\" />\n\t\t</update>\n\t</info>\n\n\t",
+    "sources": [
+      {
+        "path": "reddit\\reddit-unearthed-arcana\\arcane-artillery\\infra.xml",
+        "id": "ID_RDDT_AA_SOURCE_ARCANEARTILLERY",
+        "setters": [
+          [
+            "abbreviation",
+            "AA"
+          ],
+          [
+            "url",
+            "https://www.reddit.com/r/UnearthedArcana/comments/73wjd5/arcane_artillery_the_complete_collection_guns_in/"
+          ],
+          [
+            "author",
+            "/u/ZowJr"
+          ]
+        ]
+      }
+    ],
+    "xml": "<element name=\"Musketball (20)\" type=\"Item\" source=\"Arcane Artillery\" id=\"ID_RDDT_AA_MUSKETBALL\">\n\t\t<description>\n\t\t\t<p>Musketballs are used in primitive firearms without the scatter property.</p>\n\t\t</description>\n\t\t<setters>\n\t\t\t<set name=\"category\">Ammunition</set>\n\t\t\t<set name=\"cost\" currency=\"gp\">2</set>\n\t\t\t<set name=\"weight\" lb=\"1\">1 lb.</set>\n\t\t\t<set name=\"type\">Ammunition</set>\n\t\t\t<set name=\"stackable\">true</set>\n\t\t</setters>\n\t</element>\n\t\n\t",
+    "lines": [
+      571
+    ],
+    "sqlite_element_ids": [
+      5009
+    ]
+  },
+  {
+    "id": "ID_RDDT_AA_MUSKETBALL",
+    "name": "Musketball",
+    "type": "Item",
+    "source": "Arcane Artillery",
+    "path": "reddit\\reddit-unearthed-arcana\\arcane-artillery\\guns.xml",
+    "info": "<info>\n\t\t<name>Guns</name>\n\t\t<update version=\"0.0.1\">\n\t\t\t<file name=\"guns.xml\" url=\"https://raw.githubusercontent.com/community-elements/elements-reddit/master/reddit/reddit-unearthed-arcana/arcane-artillery/guns.xml\" />\n\t\t</update>\n\t</info>\n\n\t",
+    "sources": [
+      {
+        "path": "reddit\\reddit-unearthed-arcana\\arcane-artillery\\infra.xml",
+        "id": "ID_RDDT_AA_SOURCE_ARCANEARTILLERY",
+        "setters": [
+          [
+            "abbreviation",
+            "AA"
+          ],
+          [
+            "url",
+            "https://www.reddit.com/r/UnearthedArcana/comments/73wjd5/arcane_artillery_the_complete_collection_guns_in/"
+          ],
+          [
+            "author",
+            "/u/ZowJr"
+          ]
+        ]
+      }
+    ],
+    "xml": "<element name=\"Musketball\" type=\"Item\" source=\"Arcane Artillery\" id=\"ID_RDDT_AA_MUSKETBALL\">\n\t\t<description>\n\t\t\t<p>Musketballs are used in primitive firearms without the scatter property.</p>\n\t\t</description>\n\t\t<setters>\n\t\t\t<set name=\"category\">Ammunition</set>\n\t\t\t<set name=\"cost\" currency=\"sp\">1</set>\n\t\t\t<set name=\"weight\" lb=\"0.05\">1/20 lb.</set>\n\t\t\t<set name=\"type\">Ammunition</set>\n\t\t\t<set name=\"stackable\">true</set>\n\t\t</setters>\n\t</element>\n\t\n\t",
+    "lines": [
+      584
+    ],
+    "sqlite_element_ids": [
+      5010
+    ]
+  },
+  {
+    "id": "ID_JONOMAN3000_ARCHETYPE_FEATURE_DEVOUT_ZEALOTS_DEVOTION_",
+    "name": "Defender of Kin",
+    "type": "Archetype Feature",
+    "source": "Blazing Dawn Player\u2019s Companion",
+    "path": "reddit\\reddit-unearthed-arcana\\blazing-dawn-players-companion\\fighter-devout.xml",
+    "info": "<info>\n        <name>Devout Martial Archetype</name>\n        <update version=\"0.0.1\">\n            <file name=\"fighter-devout.xml\" url=\"https://raw.githubusercontent.com/community-elements/elements-reddit/master/reddit/reddit-unearthed-arcana/blazing-dawn-players-companion/fighter-devout.xml\" />\n        </update>\n    </info>\n    \n    ",
+    "sources": [
+      {
+        "path": "reddit\\reddit-unearthed-arcana\\blazing-dawn-players-companion\\source.xml",
+        "id": "ID_JONOMAN3000_BDPC_SOURCE_BLAZING_DAWN_PLAYERS_COMPANION",
+        "setters": [
+          [
+            "abbreviation",
+            "BDPC"
+          ],
+          [
+            "url",
+            "https://drive.google.com/file/d/1QW0PNuxZlYRsc7wqYICyeguoKVc52df3/view"
+          ],
+          [
+            "author",
+            "Jonoman3000"
+          ],
+          [
+            "release",
+            "20200812"
+          ]
+        ]
+      }
+    ],
+    "xml": "<element name=\"Defender of Kin\" type=\"Archetype Feature\" source=\"Blazing Dawn Player\u2019s Companion\" id=\"ID_JONOMAN3000_ARCHETYPE_FEATURE_DEVOUT_ZEALOTS_DEVOTION_\">\n                <description>\n                    <p>You devote yourself towards defending your allies. While this feature lasts, you can use your bonus action to rally a creature other than you that is within 5 feet of you. You roll your zealotry die, and the targeted creature gains temporary hit points equal to the number rolled. These temporary hit points last until the start of your next turn.</p>\n                </description>\n                <sheet usage=\"Zealot\u2019s Devotion\" action=\"Bonus Action\">\n                    <description>You can rally a creature other than you that is within 5 feet of you. You roll your zealotry die, and the targeted creature gains temporary hit points equal to the number rolled. These temporary hit points last until the start of your next turn.</description>\n                </sheet>\n            </element>\n            ",
+    "lines": [
+      59
+    ],
+    "sqlite_element_ids": [
+      5342
+    ]
+  },
+  {
+    "id": "ID_JONOMAN3000_ARCHETYPE_FEATURE_DEVOUT_ZEALOTS_DEVOTION_",
+    "name": "Slayer of Foes",
+    "type": "Archetype Feature",
+    "source": "Blazing Dawn Player\u2019s Companion",
+    "path": "reddit\\reddit-unearthed-arcana\\blazing-dawn-players-companion\\fighter-devout.xml",
+    "info": "<info>\n        <name>Devout Martial Archetype</name>\n        <update version=\"0.0.1\">\n            <file name=\"fighter-devout.xml\" url=\"https://raw.githubusercontent.com/community-elements/elements-reddit/master/reddit/reddit-unearthed-arcana/blazing-dawn-players-companion/fighter-devout.xml\" />\n        </update>\n    </info>\n    \n    ",
+    "sources": [
+      {
+        "path": "reddit\\reddit-unearthed-arcana\\blazing-dawn-players-companion\\source.xml",
+        "id": "ID_JONOMAN3000_BDPC_SOURCE_BLAZING_DAWN_PLAYERS_COMPANION",
+        "setters": [
+          [
+            "abbreviation",
+            "BDPC"
+          ],
+          [
+            "url",
+            "https://drive.google.com/file/d/1QW0PNuxZlYRsc7wqYICyeguoKVc52df3/view"
+          ],
+          [
+            "author",
+            "Jonoman3000"
+          ],
+          [
+            "release",
+            "20200812"
+          ]
+        ]
+      }
+    ],
+    "xml": "<element name=\"Slayer of Foes\" type=\"Archetype Feature\" source=\"Blazing Dawn Player\u2019s Companion\" id=\"ID_JONOMAN3000_ARCHETYPE_FEATURE_DEVOUT_ZEALOTS_DEVOTION_\">\n                <description>\n                    <p>You devote yourself towards slaying your enemies. If you hit a creature with an attack while this feature lasts, you can use your bonus action to empower that attack. You roll your zealotry die, and add it to the attack\u2019s damage roll.</p>\n                </description>\n                <sheet usage=\"Zealot\u2019s Devotion\" action=\"Bonus Action\">\n                    <description>If you hit a creature with an attack while this feature lasts, you can empower that attack. You roll your zealotry die, and add it to the attack\u2019s damage roll.</description>\n                </sheet>\n            </element>\n        ",
+    "lines": [
+      67
+    ],
+    "sqlite_element_ids": [
+      5343
+    ]
+  },
+  {
+    "id": "ID_RGTTYR_RACIAL_TRAIT_TATSUMI_RYUJIN_CLOUDSTEP",
+    "name": "Cloudstep",
+    "type": "Racial Trait",
+    "source": "Ryoko's Guide to the Yokai Realms",
+    "path": "ryokos-guide-to-the-yokai-realms\\race-tatsumi.xml",
+    "info": "<info>\n        <name>Tatsumi</name>\n        <update version=\"0.1.0\">\n            <file name=\"race-tatsumi.xml\" url=\"https://raw.githubusercontent.com/StrangeMeta/homebrew/main/ryokos-guide-to-the-yokai-realms/Races/race-tatsumi.xml\" />\n        </update>\n    </info>\n\n    ",
+    "sources": [
+      {
+        "path": "ryokos-guide-to-the-yokai-realms\\source.xml",
+        "id": "ID_LT_SOURCE_RYOKOS_GUIDE_TO_THE_YOKAI_REALMS",
+        "setters": [
+          [
+            "abbreviation",
+            "RGTTYR"
+          ],
+          [
+            "url",
+            "https://loottavern.com/product-category/ryoko-guide/"
+          ],
+          [
+            "author",
+            "Loot Tavern"
+          ],
+          [
+            "release",
+            "20250404"
+          ]
+        ]
+      }
+    ],
+    "xml": "<element name=\"Cloudstep\" type=\"Racial Trait\" source=\"Ryoko's Guide to the Yokai Realms\" id=\"ID_RGTTYR_RACIAL_TRAIT_TATSUMI_RYUJIN_CLOUDSTEP\">\n        <description>\n            <p>As a bonus action, you can conjure a small cloud under your feet. You gain a fly speed equal to your walking speed for the next 10 minutes, but moving through the air in this way counts as difficult terrain. Once you use this trait, you can\u2019t do so again until you finish a long rest.</p>\n        </description>\n        <sheet usage=\"1/Long Rest\">\n            <description>As a bonus action, you can conjure a small cloud under your feet. You gain a fly speed equal to your walking speed for the next 10 minutes, but moving through the air in this way counts as difficult terrain. Once you use this trait, you can\u2019t do so again until you finish a long rest.</description>\n        </sheet>\n    </element>\n    ",
+    "lines": [
+      272
+    ],
+    "sqlite_element_ids": [
+      6735
+    ]
+  },
+  {
+    "id": "ID_RGTTYR_RACIAL_TRAIT_TATSUMI_RYUJIN_CLOUDSTEP",
+    "name": "Heartening Breath",
+    "type": "Racial Trait",
+    "source": "Ryoko's Guide to the Yokai Realms",
+    "path": "ryokos-guide-to-the-yokai-realms\\race-tatsumi.xml",
+    "info": "<info>\n        <name>Tatsumi</name>\n        <update version=\"0.1.0\">\n            <file name=\"race-tatsumi.xml\" url=\"https://raw.githubusercontent.com/StrangeMeta/homebrew/main/ryokos-guide-to-the-yokai-realms/Races/race-tatsumi.xml\" />\n        </update>\n    </info>\n\n    ",
+    "sources": [
+      {
+        "path": "ryokos-guide-to-the-yokai-realms\\source.xml",
+        "id": "ID_LT_SOURCE_RYOKOS_GUIDE_TO_THE_YOKAI_REALMS",
+        "setters": [
+          [
+            "abbreviation",
+            "RGTTYR"
+          ],
+          [
+            "url",
+            "https://loottavern.com/product-category/ryoko-guide/"
+          ],
+          [
+            "author",
+            "Loot Tavern"
+          ],
+          [
+            "release",
+            "20250404"
+          ]
+        ]
+      }
+    ],
+    "xml": "<element name=\"Heartening Breath\" type=\"Racial Trait\" source=\"Ryoko's Guide to the Yokai Realms\" id=\"ID_RGTTYR_RACIAL_TRAIT_TATSUMI_RYUJIN_CLOUDSTEP\">\n        <description>\n            <p>You can use your action to exhale a warming, spiralling burst of magical energy in a 30-foot cone. You and a number of creatures of your choice in that area up to your proficiency bonus can add 1d4 to attack rolls and to ability checks and saving throws that use their {{tatsumi-colour:ability}} for 1 minute, or until you lose concentration (as if concentrating on a spell). You can use this trait a number of times equal to your proficiency bonus, and you regain all expended uses when you finish a long rest.</p>\n        </description>\n        <sheet usage=\"{{proficiency}}/Long Rest\">\n            <description>You can use your action to exhale a warming, spiralling burst of magical energy in a 30-foot cone. You and a number of creatures of your choice in that area up to your proficiency bonus can add 1d4 to attack rolls and to ability checks and saving throws that use their {{tatsumi-colour:ability}} for 1 minute, or until you lose concentration (as if concentrating on a spell).</description>\n        </sheet>\n    </element>\n    ",
+    "lines": [
+      280
+    ],
+    "sqlite_element_ids": [
+      6736
+    ]
+  }
+]

@@ -1,0 +1,339 @@
+{
+  "scope": "Primary custom directory only; no additional configured directories or embedded resources scanned. XML comparison ignores attribute order and surrounding whitespace, preserves child order; not proof of semantic equivalence.",
+  "databases": [
+    {
+      "path": "C:\\Users\\Ralla\\source\\repos\\5eApiTranslator\\artifacts\\spellcasting-audit\\first-party.sqlite",
+      "metadata": {
+        "singleton_id": 1,
+        "schema_version": 1,
+        "data_version": 11,
+        "importer_version": "AuroraTranslator/1.0",
+        "built_utc": "2026-09-12T20:01:45.4530927Z",
+        "source_file_count": 649,
+        "element_count": 11648,
+        "content_root_hash": null
+      },
+      "rows_and_distinct_ids": [
+        11648,
+        11645
+      ],
+      "case_only_collision_groups": 0,
+      "duplicate_id_groups": 3
+    },
+    {
+      "path": "C:\\Users\\Ralla\\Documents\\5e Character Builder\\custom\\aurora-elements.sqlite",
+      "metadata": {
+        "singleton_id": 1,
+        "schema_version": 1,
+        "data_version": 10,
+        "importer_version": "0.8.4.0",
+        "built_utc": "2026-09-12 03:14:29",
+        "source_file_count": 1188,
+        "element_count": 22593,
+        "content_root_hash": "D9EEB1BF6BE5A5B2B269D852657AD25E"
+      },
+      "rows_and_distinct_ids": [
+        22593,
+        20911
+      ],
+      "case_only_collision_groups": 0,
+      "duplicate_id_groups": 1682
+    }
+  ],
+  "unique_index_trials": [
+    {
+      "path": "C:\\Users\\Ralla\\source\\repos\\5eApiTranslator\\artifacts\\spellcasting-audit\\first-party.sqlite",
+      "in_memory_unique_index_result": "UNIQUE constraint failed: elements.aurora_id"
+    },
+    {
+      "path": "C:\\Users\\Ralla\\Documents\\5e Character Builder\\custom\\aurora-elements.sqlite",
+      "in_memory_unique_index_result": "UNIQUE constraint failed: elements.aurora_id"
+    }
+  ],
+  "xml": {
+    "root": "C:\\Users\\Ralla\\Documents\\5e Character Builder\\custom",
+    "files_scanned": 1188,
+    "parse_errors": [],
+    "element_rows": 22596,
+    "distinct_ids": 20914
+  },
+  "duplicate_id_groups": 1682,
+  "structurally_identical_groups": 69,
+  "cross_type_duplicate_groups": 0,
+  "top_duplicate_locations": [
+    {
+      "locations": [
+        "supplements/the-book-of-xellarant",
+        "the-book-of-xellarant/creatures.xml"
+      ],
+      "groups": 1501
+    },
+    {
+      "locations": [
+        "the-book-of-xellarant/efa-class.xml",
+        "user/local"
+      ],
+      "groups": 58
+    },
+    {
+      "locations": [
+        "core/players-handbook-2024",
+        "user/local"
+      ],
+      "groups": 37
+    },
+    {
+      "locations": [
+        "unearthed-arcana/20200204.xml",
+        "unearthed-arcana/20200206.xml"
+      ],
+      "groups": 28
+    },
+    {
+      "locations": [
+        "supplements/tashas-cauldron-of-everything",
+        "the-book-of-xellarant/class-ranger-revised.xml"
+      ],
+      "groups": 17
+    },
+    {
+      "locations": [
+        "supplements/fizbans-treasury-of-dragons",
+        "the-book-of-xellarant/ranger-drakewarden.xml"
+      ],
+      "groups": 15
+    },
+    {
+      "locations": [
+        "core/players-handbook",
+        "the-book-of-xellarant/class-ranger-revised.xml"
+      ],
+      "groups": 7
+    },
+    {
+      "locations": [
+        "unearthed-arcana/20170116.xml",
+        "unearthed-arcana/20170117.xml"
+      ],
+      "groups": 7
+    },
+    {
+      "locations": [
+        "reddit/reddit-unearthed-arcana"
+      ],
+      "groups": 2
+    },
+    {
+      "locations": [
+        "third-party/genuine-fantasy-press"
+      ],
+      "groups": 2
+    },
+    {
+      "locations": [
+        "core/dungeon-masters-guide-2024",
+        "supplements/xanathars-guide-to-everything"
+      ],
+      "groups": 1
+    },
+    {
+      "locations": [
+        "core/dungeon-masters-guide-2024"
+      ],
+      "groups": 1
+    }
+  ],
+  "examples": [
+    {
+      "id": "ID_WOTC_XGTE_MAGIC_ITEM_STAFF_OF_FLOWERS",
+      "count": 2,
+      "structurally_identical": false,
+      "definitions": [
+        {
+          "path": "core\\dungeon-masters-guide-2024\\items-staffs.xml",
+          "name": "Staff of Flowers",
+          "type": "Magic Item",
+          "source": "Xanathar\u2019s Guide to Everything"
+        },
+        {
+          "path": "supplements\\xanathars-guide-to-everything\\items-wondrous.xml",
+          "name": "Staff of Flowers",
+          "type": "Magic Item",
+          "source": "Xanathar\u2019s Guide to Everything"
+        }
+      ],
+      "differing_child_sections": [
+        "description",
+        "setters"
+      ]
+    },
+    {
+      "id": "ID_WOTC_DMG24_MAGIC_ITEM_AMMUNITION_ADAMANTINE",
+      "count": 2,
+      "structurally_identical": false,
+      "definitions": [
+        {
+          "path": "core\\dungeon-masters-guide-2024\\items-weapons.xml",
+          "name": "Adamantine Ammunition",
+          "type": "Magic Item",
+          "source": "Dungeon Master\u2019s Guide (2024)"
+        },
+        {
+          "path": "core\\dungeon-masters-guide-2024\\items-weapons.xml",
+          "name": "Walloping Ammunition",
+          "type": "Magic Item",
+          "source": "Dungeon Master\u2019s Guide (2024)"
+        }
+      ],
+      "differing_child_sections": [
+        "description",
+        "setters"
+      ]
+    },
+    {
+      "id": "ID_WOTC_CLASSFEATURE_RANGER_FIGHTING_STYLE",
+      "count": 2,
+      "structurally_identical": false,
+      "definitions": [
+        {
+          "path": "core\\players-handbook\\class-ranger.xml",
+          "name": "Fighting Style",
+          "type": "Class Feature",
+          "source": "Player\u2019s Handbook"
+        },
+        {
+          "path": "the-book-of-xellarant\\class-ranger-revised.xml",
+          "name": "Fighting Style",
+          "type": "Class Feature",
+          "source": "Player\u2019s Handbook"
+        }
+      ],
+      "differing_child_sections": [
+        "requirements"
+      ]
+    },
+    {
+      "id": "ID_WOTC_CLASSFEATURE_RANGER_SPELLCASTING",
+      "count": 2,
+      "structurally_identical": false,
+      "definitions": [
+        {
+          "path": "core\\players-handbook\\class-ranger.xml",
+          "name": "Spellcasting",
+          "type": "Class Feature",
+          "source": "Player\u2019s Handbook"
+        },
+        {
+          "path": "the-book-of-xellarant\\class-ranger-revised.xml",
+          "name": "Spellcasting",
+          "type": "Class Feature",
+          "source": "Player\u2019s Handbook"
+        }
+      ],
+      "differing_child_sections": [
+        "description",
+        "requirements",
+        "rules",
+        "sheet"
+      ]
+    },
+    {
+      "id": "ID_INTERNAL_PHB24_FEATURE_REPLACEMENT_ROGUE_THIEF_SUPREME_SNEAK_STEALTH_ATTACK",
+      "count": 2,
+      "structurally_identical": true,
+      "definitions": [
+        {
+          "path": "core\\players-handbook-2024\\rogue-thief.xml",
+          "name": "Supreme Sneak: Stealth Attack Feature Replacement",
+          "type": "Grants",
+          "source": "Internal"
+        },
+        {
+          "path": "core\\players-handbook-2024\\rogue-thief.xml",
+          "name": "Supreme Sneak: Stealth Attack Feature Replacement",
+          "type": "Grants",
+          "source": "Internal"
+        }
+      ],
+      "differing_child_sections": []
+    }
+  ],
+  "same_name_type_description_but_other_children_differ_groups": 381,
+  "same_label_examples": [
+    [
+      {
+        "id": "ID_VISION_DARKVISION",
+        "path": "core\\ALE.xml"
+      },
+      {
+        "id": "ID_VISION_LESSER_DARKVISION",
+        "path": "core\\internal.xml"
+      }
+    ],
+    [
+      {
+        "id": "ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_STRENGTH_INCREASE_1",
+        "path": "core\\internal.xml"
+      },
+      {
+        "id": "ID_WOTC_WGTE_RACIAL_TRAIT_WARFORGED_ENVOY_STRENGTH",
+        "path": "third-party\\dms-guild\\wayfinders-guide-to-eberron\\race-warforged.xml"
+      },
+      {
+        "id": "ID_WOTC_PSK_ASI_AETHERBORN_STRENGTH",
+        "path": "unearthed-arcana\\planeshift\\race-aetherborn.xml"
+      }
+    ],
+    [
+      {
+        "id": "ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_DEXTERITY_INCREASE_1",
+        "path": "core\\internal.xml"
+      },
+      {
+        "id": "ID_WOTC_WGTE_RACIAL_TRAIT_WARFORGED_ENVOY_DEXTERITY",
+        "path": "third-party\\dms-guild\\wayfinders-guide-to-eberron\\race-warforged.xml"
+      },
+      {
+        "id": "ID_WOTC_PSK_ASI_AETHERBORN_DEXTERITY",
+        "path": "unearthed-arcana\\planeshift\\race-aetherborn.xml"
+      }
+    ],
+    [
+      {
+        "id": "ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_CONSTITUTION_INCREASE_1",
+        "path": "core\\internal.xml"
+      },
+      {
+        "id": "ID_WOTC_WGTE_RACIAL_TRAIT_WARFORGED_ENVOY_CONSTITUTION",
+        "path": "third-party\\dms-guild\\wayfinders-guide-to-eberron\\race-warforged.xml"
+      },
+      {
+        "id": "ID_WOTC_PSK_ASI_AETHERBORN_CONSTITUTION",
+        "path": "unearthed-arcana\\planeshift\\race-aetherborn.xml"
+      }
+    ],
+    [
+      {
+        "id": "ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_INTELLIGENCE_INCREASE_1",
+        "path": "core\\internal.xml"
+      },
+      {
+        "id": "ID_WOTC_WGTE_RACIAL_TRAIT_WARFORGED_ENVOY_INTELLIGENCE",
+        "path": "third-party\\dms-guild\\wayfinders-guide-to-eberron\\race-warforged.xml"
+      },
+      {
+        "id": "ID_WOTC_PSK_ASI_AETHERBORN_INTELLIGENCE",
+        "path": "unearthed-arcana\\planeshift\\race-aetherborn.xml"
+      }
+    ]
+  ],
+  "revised_pair_identity_sweep": {
+    "source_key_used": "Exact source attribute string, not resolved Source element ID",
+    "excluded_user_local_declarations": 209,
+    "remaining_declarations": 22387,
+    "distinct_id_source_pairs": 22301,
+    "duplicate_pair_groups": 86,
+    "structurally_identical_pair_groups": 50,
+    "missing_source_declarations": 0
+  }
+}

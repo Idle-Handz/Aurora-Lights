@@ -113,6 +113,17 @@ test("compileReleaseNotes includes only fragments added after the previous tag",
         "\n",
       ),
     );
+
+    // The requested release tree, not today's checkout/index, owns its fragments.
+    assert.equal(
+      compileReleaseNotes({ repositoryRoot, from: "(none)", to: "v1.0.0" }),
+      ["## What’s new", "", "### Fixed", "", "- An already published fix.", ""].join("\n"),
+    );
+    writeFileSync(join(fixedDirectory, "new.md"), "Uncommitted future wording.\n", "utf8");
+    assert.equal(
+      compileReleaseNotes({ repositoryRoot, from: "v1.0.0", to: "HEAD" }),
+      ["## What’s new", "", "### Fixed", "", "- A newly added fix.", ""].join("\n"),
+    );
   } finally {
     rmSync(repositoryRoot, { recursive: true, force: true });
   }

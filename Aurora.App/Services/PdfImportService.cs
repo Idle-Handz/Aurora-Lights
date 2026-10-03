@@ -419,7 +419,8 @@ public sealed class PdfImportService
             {
                 result.ImportDiagnostics.Add(
                     $"Note: {statName} could not be harmonized ({ex.Message}); setting base score to {targetFinal} directly.");
-                try { ability.BaseScore = Math.Max(1, targetFinal); } catch { }
+                try { ability.BaseScore = Math.Max(1, targetFinal); }
+                catch (Exception fallbackEx) { DebugLogService.Instance.LogException(fallbackEx, $"PdfImportService.HarmonizeAbilityScores fallback for '{statName}'"); }
             }
         }
     }

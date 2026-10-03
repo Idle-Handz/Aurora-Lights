@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Platform-neutral content database and loading services shared by Aurora Reflections,
+       its tests and rehearsal tools. Never referenced by Aurora.Legacy. -->
+  <Import Project="..\AuroraContent.props" />
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Aurora.App.Services</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Aurora.Logic\Aurora.Logic.csproj" />
+    <ProjectReference Include="..\Aurora.Components\Aurora.Components.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Aurora.Reflections" />
+    <InternalsVisibleTo Include="Aurora.Tests" />
+    <InternalsVisibleTo Include="ContentDatabaseRehearsal" />
+  </ItemGroup>
+
+</Project>

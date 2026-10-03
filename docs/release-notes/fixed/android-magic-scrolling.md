@@ -1,0 +1,1 @@
+Long spell lists now scroll clear of the bottom navigation on phones, including characters whose spells come from feats or features. Database refresh errors also wrap long file paths and identifiers to keep the full message readable on narrow screens.

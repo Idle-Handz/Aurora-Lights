@@ -126,7 +126,10 @@ public static partial class BuildService
                         spellId = regEl.Id;
                     }
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    DebugLogService.Instance.LogException(ex, "BuildService.GetSelectionRuleEntries spell level lookup");
+                }
 
                 string ruleType = rule.Attributes.Type ?? "Spell";
                 string ruleName = rule.Attributes.Name ?? ruleType;
@@ -402,7 +405,10 @@ public static partial class BuildService
                             cm.UnregisterElement(stale);
                             SelectionRuleExpanderContext.Current?.ClearRegisteredElement(r, n);
                         }
-                        catch { }
+                        catch (Exception ex)
+                        {
+                            DebugLogService.Instance.LogException(ex, $"BuildService.ValidateSelections unregister stale '{stale.Id}'");
+                        }
                         string staleLabel = r.Attributes.Number > 1
                             ? $"{r.Attributes.Name ?? r.Attributes.Type} ({n})"
                             : (r.Attributes.Name ?? r.Attributes.Type);
@@ -437,7 +443,10 @@ public static partial class BuildService
                         // dataset, or an unrecognised supports expression like "Custom Race Language").
                         // Validation is meaningless in this case — preserve the user's selection
                         // rather than silently clearing a choice that was valid when it was made.
-                        if (validIds.Count == 0)
+                        // A pick from a source the character restricts is different: it is known to
+                        // be disallowed, so it is cleared and surfaced as a choice to make again.
+                        if (validIds.Count == 0 &&
+                            BuildSourceRestrictionSnapshot.CaptureCurrent().Allows(registered))
                             continue;
 
                         DebugLogService.Instance.Log(LogLevel.Warning,
@@ -450,7 +459,10 @@ public static partial class BuildService
                             cm.UnregisterElement(registered);
                             SelectionRuleExpanderContext.Current?.ClearRegisteredElement(r, n);
                         }
-                        catch { }
+                        catch (Exception ex)
+                        {
+                            DebugLogService.Instance.LogException(ex, $"BuildService.ValidateSelections unregister invalid '{registered.Id}'");
+                        }
 
                         string label = r.Attributes.Number > 1
                             ? $"{r.Attributes.Name ?? r.Attributes.Type} ({n})"
@@ -663,7 +675,7 @@ public static partial class BuildService
             // Session state lives in a JSON sidecar (SessionStore), so a full save can't drop
             // it any more. Refreshing it here keeps the sidecar in step with the character file
             // and makes any save-to-a-new-path carry the session along automatically.
-            SessionStore.Save(targetFile.FilePath, tab.Session);
+            SessionStore.SaveRequired(targetFile.FilePath, tab.Session);
 
             if (tab.Snapshot != null && !targetFile.SaveTextEdits(tab.Snapshot))
                 throw new InvalidOperationException("Character save completed, but snapshot-backed edits could not be patched into the file.");
@@ -730,7 +742,10 @@ public static partial class BuildService
                     description,
                     GetFeatureDescriptionHtml(e, description));
             }
-            catch { }
+            catch (Exception ex)
+            {
+                DebugLogService.Instance.LogException(ex, $"BuildService feat lookup for '{e.Id}'");
+            }
         }
 
         return cm.ClassProgressionManagers
@@ -784,7 +799,10 @@ public static partial class BuildService
             if (!string.IsNullOrWhiteSpace(raw))
                 return ElementDescriptionGenerator.GeneratePlainDescription(raw).Trim();
         }
-        catch { }
+        catch (Exception ex)
+        {
+            DebugLogService.Instance.LogException(ex, "BuildService.GetFeatureDescription");
+        }
         return "";
     }
 
@@ -883,7 +901,10 @@ public static partial class BuildService
                     descriptionHtml = MagicDescriptionFormatter.FromAuroraHtml(rawDescription);
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                DebugLogService.Instance.LogException(ex, $"BuildService spell description for '{id}'");
+            }
 
             // If structured fields came back empty, fall back to parsing "Key: Value" lines
             // from the description (some content packs embed them inline).
@@ -1196,22 +1217,6 @@ public sealed record BuildGuidanceTarget(
     string StepLabel,
     string? EntryKey,
     string TargetLabel);
-
-public sealed record ElementOption(
-    string Id,
-    string Name,
-    string Description,
-    string Source = "",
-    string Requirements = "",
-    int SpellLevel = 0,
-    string School = "",
-    bool IsRitual = false,
-    bool IsConcentration = false,
-    DateTimeOffset? SourceReleaseDate = null,
-    DateTimeOffset? SourceFileModifiedUtc = null,
-    bool IsDisabled = false,
-    bool IsCurrentSelection = false,
-    string DescriptionHtml = "");
 
 /// <summary>A class the character can level up: its element id (Class or Multiclass), display name,
 /// current level in that class, and whether it's the main class.</summary>

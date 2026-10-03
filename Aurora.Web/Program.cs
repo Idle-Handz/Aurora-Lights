@@ -12,6 +12,7 @@ builder.Services.AddOptions<PhaseZeroSessionOptions>()
     .Bind(builder.Configuration.GetSection(PhaseZeroSessionOptions.SectionName));
 builder.Services.AddSingleton<BaselineContentCatalogService>();
 builder.Services.AddSingleton<WebCharacterEngineService>();
+builder.Services.AddSingleton<WebCharacterEngineSessionGuard>();
 builder.Services.AddScoped<PhaseZeroSessionWorkspaceService>();
 builder.Services.AddScoped<WebContentCatalogService>();
 builder.Services.AddScoped<WebCharacterSessionService>();

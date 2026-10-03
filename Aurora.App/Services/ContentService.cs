@@ -2,7 +2,6 @@ using Builder.Data.Files;
 using Builder.Presentation;
 using Builder.Presentation.Services.Content;
 using Builder.Presentation.Services.Data;
-using System.Text.RegularExpressions;
 
 namespace Aurora.App.Services;
 
@@ -16,14 +15,11 @@ public enum ContentUpdateOutcome { Updated, UpToDate, Failed }
 /// </summary>
 public sealed class ContentService
 {
-    private static readonly Regex IndexUrlAttributeRegex = new(
-        @"(?i)(\burl\s*=\s*[""'])http://",
-        RegexOptions.Compiled);
-
     private readonly CharacterService _characters;
     private readonly CharacterTabService _tabs;
     private readonly ContentDatabaseService _contentDb;
     private readonly CompendiumService _compendium;
+    private readonly ContentIndexUpdateService _indexUpdater;
     private readonly SemaphoreSlim _startupRefreshLock = new(1, 1);
     private readonly SemaphoreSlim _contentUpdateLock = new(1, 1);
     private bool _startupRefreshAttempted;
@@ -33,11 +29,22 @@ public sealed class ContentService
         CharacterTabService tabs,
         ContentDatabaseService contentDb,
         CompendiumService compendium)
+        : this(characters, tabs, contentDb, compendium, new ContentIndexUpdateService())
+    {
+    }
+
+    internal ContentService(
+        CharacterService characters,
+        CharacterTabService tabs,
+        ContentDatabaseService contentDb,
+        CompendiumService compendium,
+        ContentIndexUpdateService indexUpdater)
     {
         _characters = characters;
         _tabs = tabs;
         _contentDb = contentDb;
         _compendium = compendium;
+        _indexUpdater = indexUpdater;
     }
 
     // ── Additional custom directories ─────────────────────────────────────────
@@ -71,7 +78,7 @@ public sealed class ContentService
     /// </summary>
     public void AddDirectory(string path)
     {
-        path = path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        path = Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));
         var list = ApplicationContext.Current.Settings.AdditionalCustomDirectories;
         if (list.Any(d => d.Equals(path, StringComparison.OrdinalIgnoreCase))) return;
         if (path.Equals(BuiltInCustomDirectory, StringComparison.OrdinalIgnoreCase)) return;
@@ -129,7 +136,7 @@ public sealed class ContentService
             if (indexFile is null)
                 return (false, "Failed to download index file — server returned no content.");
 
-            string savePath = Path.Combine(GetBuiltInCustomDirectory(), indexFile.Info.UpdateFilename);
+            string savePath = ResolveInstalledIndexPath(GetBuiltInCustomDirectory(), indexFile.Info.UpdateFilename);
             indexFile.SaveContent(new FileInfo(savePath));
 
             Changed?.Invoke();
@@ -175,19 +182,15 @@ public sealed class ContentService
 
         try
         {
-            // Patch any http:// URLs inside installed index files before the DLL reads them.
-            // Android blocks cleartext HTTP; index files saved by the WPF app or authored
-            // with http:// URLs would otherwise fail silently on Android 9+.
-            UpgradeIndexFileProtocols(dir);
-
-            var updater = new ContentIndexUpdateService();
-            var progress = new Progress<ContentIndexUpdateProgress>(update =>
+            // The updater upgrades request URLs to HTTPS. Keep the publisher's index bytes
+            // intact: rewriting them makes unchanged downloads look like new content.
+            var progress = new InlineProgress(update =>
             {
                 ContentUpdatedFileCount = update.UpdatedFileCount;
                 UpdateContentCheckStatus(update.StatusMessage, update.ProgressPercentage);
             });
 
-            ContentIndexUpdateResult result = await updater.UpdateAsync(
+            ContentIndexUpdateResult result = await _indexUpdater.UpdateAsync(
                     new ContentIndexUpdateRequest(dir, indexNames),
                     progress)
                 .ConfigureAwait(false);
@@ -195,6 +198,8 @@ public sealed class ContentService
             string duration = FormatDuration(result.Duration);
             ContentUpdateProgress = 100;
             ContentUpdatedFileCount = result.UpdatedFileCount;
+            if (result.Updated)
+                ContentReloadPending = true;
 
             string checkedSummary = $"Checked {result.CheckedEntryCount} content entries across {result.IndexFileCount} index file(s) in {duration}";
             string failureSuffix = result.FailedFileCount > 0
@@ -240,7 +245,7 @@ public sealed class ContentService
         try
         {
             string dir = GetBuiltInCustomDirectory();
-            string path = Path.Combine(dir, filename);
+            string path = ResolveInstalledIndexPath(dir, filename);
             if (File.Exists(path))
             {
                 File.Delete(path);
@@ -277,14 +282,22 @@ public sealed class ContentService
             // MD5-based staleness check; only pay for the full incremental import if it
             // actually changed. Run the catalog/hash scan off the UI thread.
             bool isStale = await Task.Run(() => _contentDb.CheckIsStale());
+            string? refreshWarning = null;
             if (isStale)
-                await _contentDb.SyncAsync();
+            {
+                var result = await _contentDb.SyncAsync();
+                if (!result.Success)
+                {
+                    if (!DbElementLoader.IsAvailable) return result.ErrorMessage ?? "Content sync failed; existing elements were preserved.";
+                    refreshWarning = result.ErrorMessage ?? "Database refresh failed.";
+                }
+            }
 
             _tabs.CloseAllTabs();
             await _characters.ReloadElementsAsync();
             _compendium.InvalidateCache(rebuildInBackground: true);
-            ClearContentReloadPending();
-            return null;
+            if (refreshWarning == null) ClearContentReloadPending();
+            return refreshWarning == null ? null : refreshWarning + " Runtime content was reloaded using the existing database and current local XML; primary database updates remain pending.";
         }
         catch (Exception ex)
         {
@@ -349,27 +362,6 @@ public sealed class ContentService
         Changed?.Invoke();
     }
 
-    /// <summary>
-    /// Rewrites http:// to https:// in all url= attributes of every .index file under
-    /// <paramref name="directory"/>. Best-effort; individual failures are silently skipped.
-    /// </summary>
-    private static void UpgradeIndexFileProtocols(string directory)
-    {
-        if (!Directory.Exists(directory)) return;
-        foreach (string path in Directory.EnumerateFiles(directory, "*.index", SearchOption.AllDirectories))
-        {
-            try
-            {
-                string text = File.ReadAllText(path);
-                if (!text.Contains("http://", StringComparison.Ordinal)) continue;
-                string upgraded = IndexUrlAttributeRegex.Replace(text, "$1https://");
-                if (upgraded != text)
-                    File.WriteAllText(path, upgraded);
-            }
-            catch { }
-        }
-    }
-
     private static IReadOnlyList<string> GetInstalledIndexNames(string directory)
     {
         if (!Directory.Exists(directory)) return [];
@@ -377,6 +369,26 @@ public sealed class ContentService
                         .Select(Path.GetFileName)
                         .Where(n => n != null)
                         .ToList()!;
+    }
+
+    internal static string ResolveInstalledIndexPath(string directory, string filename)
+    {
+        // The update filename is supplied by downloaded XML. Installation and removal
+        // both accept one .index basename, never a publisher-selected filesystem path.
+        if (string.IsNullOrWhiteSpace(filename) ||
+            filename.IndexOfAny(['/', '\\', ':']) >= 0 ||
+            filename.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 ||
+            !filename.EndsWith(".index", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidDataException("An installed source must have a .index filename without a directory path.");
+        return Path.Combine(Path.GetFullPath(directory), filename);
+    }
+
+    // Progress<T> posts callbacks asynchronously. Updating service state inline ensures
+    // a late progress callback cannot replace the completed result; UI subscribers marshal
+    // Changed themselves, just as they do for the background startup check.
+    private sealed class InlineProgress(Action<ContentIndexUpdateProgress> report) : IProgress<ContentIndexUpdateProgress>
+    {
+        public void Report(ContentIndexUpdateProgress value) => report(value);
     }
 
     private void UpdateContentCheckStatus(string? statusMessage, int? progressPercentage)

@@ -1,11 +1,12 @@
-using Aurora.Importer;
+using Aurora.Content.Preparation;
+using Aurora.Content;
 
 namespace Aurora.Tests.Tests;
 
 public sealed class ContentDatabaseTrustTests
 {
     [Fact]
-    public void Import_ClassifiesListChoicesAndRecoversLegacyNameAttributeGrants()
+    public void Import_ClassifiesListChoicesAndResolvesLegacyNameAttributeGrants()
     {
         string tempDirectory = Path.Combine(
             Path.GetTempPath(),
@@ -39,52 +40,46 @@ public sealed class ContentDatabaseTrustTests
                 </elements>
                 """);
 
-            AuroraContentImporter.Import(tempDirectory, sqlitePath);
+            ContentImport.ImportAsync(tempDirectory, sqlitePath).GetAwaiter().GetResult();
 
-            ContentDatabaseHealthReport health = AuroraContentImporter.GetHealthReport(sqlitePath)
+            ContentDatabaseHealthReport health = ContentDatabaseReader.ReadHealth(sqlitePath)
                 ?? throw new InvalidOperationException("Expected a content database health report.");
 
-            health.ActionableUnresolvedLinks.Should().Be(0);
-            health.ClassifiedUnresolvedLinks.Should().Be(1);
-            health.SourceIntegrityIssues.Should().Be(3);
-            health.BlockingIssueCount.Should().Be(0);
-            health.ManualReviewIssueCount.Should().Be(0);
-            health.AutoRecoveredIssueCount.Should().Be(3);
-            health.ExpectedIssueCount.Should().Be(1);
-            health.Status.Should().Be(ContentDatabaseHealthStatus.Healthy);
-            health.Groups.Should().Contain(group =>
-                group.Area == "unresolved-link"
-                && group.Impact == ContentDatabaseTrustImpact.Expected
-                && group.Status == "runtime-resource"
-                && group.Reason == "embedded-resource-overlay"
-                && group.Count == 1);
+            // Carrying the target id in the name attribute is still reported for review, but the
+            // reference itself resolves: whitespace around an id names the same element.
+            health.SourceIntegrityIssues.Should().Be(2);
             health.Groups.Should().Contain(group =>
                 group.Area == "source-integrity"
                 && group.Impact == ContentDatabaseTrustImpact.AutoRecovered
                 && group.Reason == "grant-target-id-in-name-attribute"
                 && group.Count == 2);
+            // What remains unresolved is the archetype's class, inferred from its supports tag,
+            // which the library tracks as a gap.
+            health.ActionableUnresolvedLinks.Should().Be(1);
             health.Groups.Should().Contain(group =>
-                group.Area == "source-integrity"
-                && group.Impact == ContentDatabaseTrustImpact.AutoRecovered
-                && group.Reason == "duplicate-element-signature-in-file"
+                group.Area == "unresolved-link"
+                && group.Kind == "archetype-parent"
                 && group.Count == 1);
             health.Samples.Should().Contain(sample =>
                 sample.Area == "source-integrity"
                 && sample.Reason == "grant-target-id-in-name-attribute"
                 && sample.Owner == "ID_TEST_BACKGROUND");
 
-            using (var connection = AuroraContentImporter.OpenReadableConnection(sqlitePath))
+            using (var connection = ContentDatabase.OpenReadableConnection(sqlitePath))
             {
                 QueryScalar(connection, "SELECT option_kind FROM select_items;")
                     .Should().Be("text-choice");
+                // The reference is stored without its padding, so it matches the element it names.
                 QueryScalar(connection, "SELECT target_aurora_id FROM grants WHERE grant_type = 'Proficiency';")
                     .Should().Be("ID_TEST_PROFICIENCY");
                 QueryScalar(connection, "SELECT COUNT(*) FROM grants WHERE target_element_id IS NOT NULL;")
-                    .Should().Be(1L);
+                    .Should().Be(1L, "the padded reference reaches the proficiency it names");
+                // The archetype's class is inferred from its supports tag; that inference is a
+                // tracked gap in the library, so the link stays unresolved and visible.
                 QueryScalar(connection, "SELECT COUNT(*) FROM archetypes WHERE parent_class_element_id IS NOT NULL;")
-                    .Should().Be(1L);
-                QueryScalar(connection, "SELECT diagnostic_reason FROM v_unresolved_loader_link_diagnostics;")
-                    .Should().Be("embedded-resource-overlay");
+                    .Should().Be(0L);
+                QueryScalar(connection, "SELECT COUNT(*) FROM v_unresolved_loader_link_diagnostics WHERE diagnostic_status = 'actionable';")
+                    .Should().Be(1L, "only the archetype parent is left for review");
             }
         }
         finally
@@ -95,7 +90,7 @@ public sealed class ContentDatabaseTrustTests
     }
 
     [Fact]
-    public void Import_KeepsConflictingDuplicateElementIdsAsManualReview()
+    public void FirstImport_ReportsConflictingIdsAsUnavailable()
     {
         string tempDirectory = Path.Combine(
             Path.GetTempPath(),
@@ -115,19 +110,15 @@ public sealed class ContentDatabaseTrustTests
                 </elements>
                 """);
 
-            AuroraContentImporter.Import(tempDirectory, sqlitePath);
+            var result = ContentImport.ImportAsync(tempDirectory, sqlitePath).GetAwaiter().GetResult();
 
-            ContentDatabaseHealthReport health = AuroraContentImporter.GetHealthReport(sqlitePath)
-                ?? throw new InvalidOperationException("Expected a content database health report.");
-
-            health.ManualReviewIssueCount.Should().Be(1);
-            health.AutoRecoveredIssueCount.Should().Be(0);
-            health.Status.Should().Be(ContentDatabaseHealthStatus.Warning);
-            health.Groups.Should().Contain(group =>
-                group.Area == "source-integrity"
-                && group.Impact == ContentDatabaseTrustImpact.ManualReview
-                && group.Reason == "duplicate-element-id-in-file"
-                && group.Count == 1);
+            result.Skipped.Should().ContainSingle().Which.Kind.Should().Be("definition-conflict");
+            ContentDatabaseReader.ReadUnavailableIds(sqlitePath).Should().ContainSingle()
+                .Which.Should().Be("ID_TEST_DUPLICATE_ITEM");
+            using var connection = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={sqlitePath};Pooling=False");
+            connection.Open();
+            Convert.ToInt64(QueryScalar(connection, "SELECT COUNT(*) FROM elements")).Should().Be(0,
+                "two different definitions of one id are resolved by review, not by picking one");
         }
         finally
         {
