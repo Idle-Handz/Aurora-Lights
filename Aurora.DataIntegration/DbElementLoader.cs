@@ -263,6 +263,8 @@ internal static class DbElementLoader
             return DbLoadResult.NotAvailable(dbPath, "Database file is empty.");
 
         var previousLookups = _lookups;
+        using var aliases = ElementIdAliases.BeginScope();
+        Action? restoreAliases = null;
         PendingLookups.Value = new LookupState();
         var previousElements = target.ToList();
         var restoreFallback = XmlContentFallbackService.CaptureRestore();
@@ -272,6 +274,7 @@ internal static class DbElementLoader
         {
             DebugLogService.Instance.Info("DbElementLoader: loading elements from DB.", dbPath);
             var candidate = new ElementBaseCollection();
+            HashSet<string>? unavailableIds = null;
             DbLoadResult result = await Task.Run(() => LoadFromDb(dbPath, candidate));
             if (result.Success && runPostProcessing)
             {
@@ -282,6 +285,7 @@ internal static class DbElementLoader
                 // make a deliberately unavailable identity usable again.
                 var unavailable = ContentDatabaseReader.ReadUnavailableIds(dbPath)
                     .Select(id => id.Trim()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                unavailableIds = unavailable;
                 foreach (var element in candidate.Where(element => unavailable.Contains(element.Id.Trim())).ToArray())
                     candidate.Remove(element);
                 DebugLogService.Instance.Info(
@@ -300,6 +304,12 @@ internal static class DbElementLoader
                 committed = true;
                 if (runPostProcessing)
                 {
+                    // Post-processing ran over the candidate; the proxies it defers are built later
+                    // and must be built into this collection, honouring the same exclusions the
+                    // sweep above applied to the eagerly generated ones.
+                    if (SpellProxyCatalog.Enabled)
+                        SpellProxyCatalog.Prime(target,
+                            new InternalElementsGenerator().GetSpellcastingListNames(target), unavailableIds);
                     _lookups = PendingLookups.Value!;
                     if (_lookups.PublishFallback is { } publishFallback)
                     {
@@ -307,6 +317,7 @@ internal static class DbElementLoader
                         _lookups.PublishFallback = null;
                     }
                     else XmlContentFallbackService.Invalidate();
+                    restoreAliases = aliases.Publish();
                     DataManager.Current.NotifyElementsLoaded();
                 }
             }
@@ -319,6 +330,7 @@ internal static class DbElementLoader
             {
                 _lookups = previousLookups;
                 restoreFallback();
+                restoreAliases?.Invoke();
             }
             if (replacingTarget)
             {
@@ -709,12 +721,20 @@ internal static class DbElementLoader
     {
         var map = new Dictionary<string, ElementSortMetadata>(StringComparer.OrdinalIgnoreCase);
         string contentRoot = ContentDatabaseService.GetContentDirectory();
+        // Many elements share one source file/book. Read each timestamp and parse each release
+        // once per load; a later refresh still sees changed files and dates.
+        var fileDates = new Dictionary<string, DateTimeOffset?>(StringComparer.Ordinal);
+        var releaseDates = new Dictionary<string, DateTimeOffset?>(StringComparer.Ordinal);
 
         foreach (var element in elements)
         {
-            DateTimeOffset? fileModifiedUtc = TryGetSourceFileModifiedUtc(contentRoot, element.SourceFileRelativePath);
+            if (!fileDates.TryGetValue(element.SourceFileRelativePath, out DateTimeOffset? fileModifiedUtc))
+                fileDates[element.SourceFileRelativePath] = fileModifiedUtc = TryGetSourceFileModifiedUtc(contentRoot, element.SourceFileRelativePath);
+            string releaseText = element.SourceReleaseText ?? string.Empty;
+            if (!releaseDates.TryGetValue(releaseText, out DateTimeOffset? releaseDate))
+                releaseDates[releaseText] = releaseDate = TryParseSourceReleaseDate(element.SourceReleaseText);
             map[MakeElementSortMetadataKey(element.AuroraId, element.Source)] = new ElementSortMetadata(
-                SourceReleaseDate: TryParseSourceReleaseDate(element.SourceReleaseText),
+                SourceReleaseDate: releaseDate,
                 SourceFileModifiedUtc: fileModifiedUtc,
                 SourceReleaseText: element.SourceReleaseText);
         }

@@ -13,6 +13,8 @@ public sealed class PhaseZeroSessionWorkspaceService
     private readonly ILogger<PhaseZeroSessionWorkspaceService> _logger;
     private PhaseZeroSessionWorkspace? _workspace;
 
+    public int MaxFileCount => _options.MaxFileCount;
+
     public PhaseZeroSessionWorkspaceService(
         IWebHostEnvironment environment,
         IOptions<PhaseZeroSessionOptions> options,

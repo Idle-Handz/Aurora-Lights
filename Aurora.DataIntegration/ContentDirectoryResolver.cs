@@ -24,7 +24,7 @@ internal static class ContentDirectoryResolver
         if (string.IsNullOrWhiteSpace(path))
             return;
 
-        string normalized = Path.GetFullPath(path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+        string normalized = Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));
         if (!Directory.Exists(normalized))
             return;
 

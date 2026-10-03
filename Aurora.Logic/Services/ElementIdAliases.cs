@@ -21,6 +21,67 @@ public static class ElementIdAliases
 {
     private static IReadOnlyDictionary<string, string> forwarding =
         new Dictionary<string, string>(StringComparer.Ordinal);
+    private static readonly AsyncLocal<AliasScope?> Pending = new();
+
+    private static AliasScope? ActiveScope
+    {
+        get
+        {
+            var scope = Pending.Value;
+            // Queued notifications may carry the loading ExecutionContext past its lifetime.
+            while (scope is { IsDisposed: true }) scope = scope.Previous;
+            return scope;
+        }
+    }
+
+    private static IReadOnlyDictionary<string, string> Current
+    {
+        get => ActiveScope?.Aliases ?? Volatile.Read(ref forwarding);
+        set
+        {
+            if (ActiveScope is { } scope) scope.Aliases = value;
+            else Volatile.Write(ref forwarding, value);
+        }
+    }
+
+    /// <summary>
+    /// Stages catalog aliases, including generated proxies, in the current asynchronous flow.
+    /// Other readers keep the live catalog's aliases until the completed load is published.
+    /// </summary>
+    public static AliasScope BeginScope() => new();
+
+    public sealed class AliasScope : IDisposable
+    {
+        private readonly AliasScope? _previous;
+        private volatile bool _disposed;
+        internal IReadOnlyDictionary<string, string> Aliases;
+        internal bool IsDisposed => _disposed;
+        internal AliasScope? Previous => _previous;
+
+        internal AliasScope()
+        {
+            _previous = Pending.Value;
+            Aliases = Current;
+            Pending.Value = this;
+        }
+
+        /// <summary>Publishes a completed catalog and returns a rollback for its activation.</summary>
+        public Action Publish()
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            var published = Aliases;
+            var previous = Interlocked.Exchange(ref forwarding, published);
+            // A later successful load must not be undone by an older activation's rollback.
+            return () => Interlocked.CompareExchange(ref forwarding, previous, published);
+        }
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+            Pending.Value = _previous;
+            _disposed = true;
+        }
+    }
 
     /// <summary>Replaces the known aliases, normally right after a catalog is loaded.</summary>
     public static void Set(IEnumerable<KeyValuePair<string, string>> aliases)
@@ -32,26 +93,26 @@ public static class ElementIdAliases
             if (string.Equals(saved, target, StringComparison.Ordinal)) continue;
             map[saved.Trim()] = target.Trim();
         }
-        forwarding = map;
+        Current = map;
     }
 
-    public static void Clear() => forwarding = new Dictionary<string, string>(StringComparer.Ordinal);
+    public static void Clear() => Current = new Dictionary<string, string>(StringComparer.Ordinal);
 
-    public static int Count => forwarding.Count;
+    public static int Count => Current.Count;
 
     // Generated proxies are forwarding addresses for the same underlying definition.
     // Derive their old IDs only from explicit aliases; never infer equivalence by name.
     internal static void ForwardGeneratedIds(string targetId, Func<string, string?> generateId)
     {
-        var additions = forwarding.Keys.Where(saved => TryGetTarget(saved, out string target) && target == targetId)
+        var additions = Current.Keys.Where(saved => TryGetTarget(saved, out string target) && target == targetId)
             .Select(saved => generateId(saved)).Where(id => id is not null).ToArray();
         if (additions.Length == 0) return;
         string? generatedTarget = generateId(targetId);
         if (generatedTarget is null) return;
-        var map = new Dictionary<string, string>(forwarding, StringComparer.Ordinal);
+        var map = new Dictionary<string, string>(Current, StringComparer.Ordinal);
         foreach (string? saved in additions)
             if (saved != generatedTarget) map.TryAdd(saved!, generatedTarget);
-        forwarding = map;
+        Current = map;
     }
 
     /// <summary>The id an old reference now points at, following a short chain if one exists.</summary>
@@ -60,10 +121,11 @@ public static class ElementIdAliases
         targetId = "";
         if (string.IsNullOrWhiteSpace(savedId)) return false;
         string current = savedId.Trim();
+        var aliases = Current;
         // A rename of a rename is ordinary; a cycle is not, so give up rather than spin.
         for (int hop = 0; hop < 8; hop++)
         {
-            if (!forwarding.TryGetValue(current, out string? next)) return hop > 0;
+            if (!aliases.TryGetValue(current, out string? next)) return hop > 0;
             if (string.Equals(next, savedId.Trim(), StringComparison.Ordinal)) return false;
             current = targetId = next;
         }
@@ -77,8 +139,12 @@ public static class ElementIdAliases
     public static ElementBase? Resolve(ElementBaseCollection collection, string? savedId)
     {
         if (collection == null || string.IsNullOrWhiteSpace(savedId)) return null;
-        var element = collection.GetElement(savedId);
+        // A spell proxy is built when something first asks for its category, so a saved character
+        // naming one directly misses until that happens. ResolveOrBuild builds it rather than
+        // letting the element be reported as lost; only a proxy-shaped id can trigger that.
+        var element = Data.SpellProxyCatalog.ResolveOrBuild(collection, savedId);
         if (element != null) return element;
-        return TryGetTarget(savedId, out string target) ? collection.GetElement(target) : null;
+        return TryGetTarget(savedId, out string target)
+            ? Data.SpellProxyCatalog.ResolveOrBuild(collection, target) : null;
     }
 }

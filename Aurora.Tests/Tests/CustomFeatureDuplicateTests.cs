@@ -14,6 +14,38 @@ namespace Aurora.Tests.Tests;
 public sealed class CustomFeatureDuplicateTests
 {
     [Theory]
+    [InlineData("Companion")]
+    [InlineData("Feat")]
+    [InlineData("Language")]
+    [InlineData("Test Specialty")]
+    [InlineData("Ability Score Improvement")]
+    public Task OptionalChoicesDoNotKeepBuildGuidanceOpen(string type) =>
+        WithCharacter((manager, file, tab) =>
+        {
+            manager.Character.Abilities.Strength.BaseScore = 12;
+            var owner = Parse($"""
+                <element name="Optional Training" type="Feat Feature" source="Test" id="ID_EXTRAS_OPTIONAL_TRAINING">
+                  <rules><select type="{type}" name="Optional Specialty" optional="true" /></rules>
+                </element>
+                """).Construct<FeatFeature>();
+            Add(owner);
+            manager.RegisterElement(owner);
+
+            var data = BuildService.GetBuildData(preferClassFirst: false);
+            data.Tabs.SelectMany(buildTab => buildTab.RuleGroups).SelectMany(group => group.Rules)
+                .Concat(data.AsiEntries).Should().Contain(entry => entry.Label == "Optional Specialty" && entry.IsOptional);
+            data.Tabs.Sum(buildTab => buildTab.UnresolvedCount).Should().Be(0);
+            data.NextStep.Should().BeNull("an optional choice is not a required build step");
+            BuildService.GetNextRequiredStep().Should().BeNull();
+
+            manager.SelectionRules.Single(rule => rule.Attributes.Name == "Optional Specialty").Attributes.Optional = false;
+            var requiredStep = BuildService.GetBuildData(preferClassFirst: false).NextStep;
+            requiredStep.Should().NotBeNull();
+            requiredStep!.StepLabel.Should().Be("Optional Specialty", "the same unfilled choice still needs guidance when required");
+            return Task.CompletedTask;
+        });
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public Task PickerAndRegistrationRejectRepeatedExtrasWithoutChangingTheSave(bool companion) =>

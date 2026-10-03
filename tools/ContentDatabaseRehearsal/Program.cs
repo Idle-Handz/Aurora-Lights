@@ -22,6 +22,9 @@ Directory.CreateDirectory(output);
 var context = new RehearsalContext(caseRoot);
 if (args.Length > 2 && mode is not ("characters" or "characters-after-reload" or "characters-edit-background" or "legacy-xml-load")) context.Settings.AdditionalCustomDirectories.Add(Path.GetFullPath(args[2]));
 Builder.Presentation.ApplicationContext.SetCurrent(context);
+// Lets a measurement compare lazy spell proxies against the old build-everything behavior.
+if (Environment.GetEnvironmentVariable("REHEARSAL_EAGER_SPELL_PROXIES") == "1")
+    SpellProxyCatalog.Enabled = false;
 string primary = Path.Combine(caseRoot, "custom");
 SetPath(nameof(DataManager.UserDocumentsRootDirectory), caseRoot);
 SetPath(nameof(DataManager.UserDocumentsCustomElementsDirectory), primary);

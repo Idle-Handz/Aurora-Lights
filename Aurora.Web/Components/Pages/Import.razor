@@ -1,5 +1,6 @@
 @page "/import"
 @inject PhaseZeroSessionWorkspaceService SessionWorkspace
+@inject WebCharacterSessionService CharacterSession
 
 <PageTitle>Import</PageTitle>
 
@@ -15,6 +16,7 @@
         <label class="upload-label" for="phase0-upload">Select files</label>
         <InputFile id="phase0-upload"
                    OnChange="ImportFilesAsync"
+                   disabled="@_busy"
                    multiple
                    accept=".xml,.zip,.dnd5e" />
         <div class="upload-hint">Supported: `.xml`, `.zip`, `.dnd5e`</div>
@@ -139,6 +141,7 @@
 
     private async Task ImportFilesAsync(InputFileChangeEventArgs args)
     {
+        if (_busy) return;
         _busy = true;
         _failed = false;
         _message = null;
@@ -146,7 +149,7 @@
 
         try
         {
-            var result = await SessionWorkspace.ImportFilesAsync(args.GetMultipleFiles());
+            var result = await SessionWorkspace.ImportFilesAsync(args.GetMultipleFiles(SessionWorkspace.MaxFileCount));
             _workspace = result.Workspace;
             _warnings = result.Warnings.ToList();
             _message = $"Imported {result.ImportedFiles} file(s), discovered {result.DiscoveredElements} element header(s), and indexed {result.DistinctElementTypes} element type(s).";
@@ -171,6 +174,7 @@
 
         try
         {
+            CharacterSession.ClearCurrentCharacter();
             await SessionWorkspace.ClearAsync();
             _workspace = await SessionWorkspace.GetWorkspaceAsync();
             _message = "Session workspace cleared.";

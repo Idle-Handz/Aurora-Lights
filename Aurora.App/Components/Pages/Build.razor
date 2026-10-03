@@ -956,12 +956,21 @@ else if (_workflowSuggestion != null)
 
         _saving = true;
         StateHasChanged();
-        var options = await Task.Run(() => BuildService.GetOptions(entry.Rule, entry.Number));
-        var diagnostics = SelectionRuleDiagnosticService.ExplainEmptyOptions(
-            entry.Rule,
-            entry.Number,
-            options.Count);
-        _saving = false;
+        IReadOnlyList<ElementOption> options;
+        IReadOnlyList<SelectionRuleDiagnostic> diagnostics;
+        try
+        {
+            using var scope = await CharacterContext.EnterAsync(tab);
+            if (_disposed || !ReferenceEquals(tab, Tabs.ActiveTab)) return;
+            options = await Task.Run(() => BuildService.GetOptions(entry.Rule, entry.Number));
+            diagnostics = SelectionRuleDiagnosticService.ExplainEmptyOptions(
+                entry.Rule, entry.Number, options.Count);
+        }
+        finally
+        {
+            _saving = false;
+        }
+        if (_disposed || !ReferenceEquals(tab, Tabs.ActiveTab)) return;
         StateHasChanged();
 
         var parameters = new DialogParameters

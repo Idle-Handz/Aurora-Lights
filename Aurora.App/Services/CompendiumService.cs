@@ -187,7 +187,7 @@ public sealed class CompendiumService
         }
 
         // Loaded elements fill in anything the DB doesn't cover yet (e.g. spells not yet imported).
-        foreach (var entry in BuildCatalogFromLoadedElements())
+        foreach (var entry in BuildCatalogFromLoadedElements(merged))
             merged.TryAdd(entry.Id, entry);
 
         return merged.Values
@@ -791,12 +791,23 @@ LIMIT 1;
             : new CompendiumLinkedEntryModel(id, name, type, descriptionHtml);
     }
 
-    private static IReadOnlyList<CompendiumEntryModel> BuildCatalogFromLoadedElements()
+    private static IReadOnlyList<CompendiumEntryModel> BuildCatalogFromLoadedElements(
+        IReadOnlyDictionary<string, CompendiumEntryModel> databaseEntries)
     {
         if (!DataManager.Current.IsElementsCollectionPopulated)
             return [];
 
-        return DataManager.Current.ElementsCollection
+        return BuildCatalogFromLoadedElements(DataManager.Current.ElementsCollection, databaseEntries);
+    }
+
+    internal static IReadOnlyList<CompendiumEntryModel> BuildCatalogFromLoadedElements(
+        IEnumerable<object> elements,
+        IReadOnlyDictionary<string, CompendiumEntryModel> databaseEntries)
+    {
+        return elements
+            // DB winners already supply these entries. Avoid reflection, description parsing,
+            // search-key allocation and sorting for loaded copies that the merge will discard.
+            .Where(element => element is not null && !databaseEntries.ContainsKey(GetString(element, "Id")))
             .Where(ShouldInclude)
             .Select(ToEntry)
             .OrderBy(entry => CompendiumFilter.TypeOrder(entry.Type))

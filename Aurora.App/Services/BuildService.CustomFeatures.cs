@@ -27,7 +27,7 @@ public static partial class BuildService
             .Select(e => e.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
         foreach (string id in file?.LoadCustomFeatures() ?? [])
         {
-            var element = DataManager.Current.ElementsCollection.GetElement(id);
+            var element = ResolveCustomFeatureElement(id);
             owned.Add(element == null ? id : EquipmentService.ResolveCustomFeatureTarget(element).Id);
         }
         return owned;
@@ -45,7 +45,7 @@ public static partial class BuildService
         {
             try
             {
-                var proxy = DataManager.Current.ElementsCollection.GetElement(elementId);
+                var proxy = ResolveCustomFeatureElement(elementId);
                 if (proxy == null) return "That feature could not be found.";
 
                 // "Additional X" proxies wrap the real feat/spell/feature; resolve the underlying
@@ -109,7 +109,7 @@ public static partial class BuildService
         var result = new List<(string, string, string)>();
         foreach (var id in file.LoadCustomFeatures())
         {
-            var el = DataManager.Current.ElementsCollection.GetElement(id);
+            var el = ResolveCustomFeatureElement(id);
             var target = el == null ? null : EquipmentService.ResolveCustomFeatureTarget(el);
             result.Add((id, target?.Name ?? el?.Name ?? id, target?.Type ?? el?.Type ?? ""));
         }
@@ -139,7 +139,7 @@ public static partial class BuildService
         foreach (var group in ids.GroupBy(id => id, StringComparer.OrdinalIgnoreCase))
         {
             string id = group.Key;
-            var proxy = DataManager.Current.ElementsCollection.GetElement(id);
+            var proxy = ResolveCustomFeatureElement(id);
             if (proxy == null) continue;
 
             var target = EquipmentService.ResolveCustomFeatureTarget(proxy);
@@ -196,7 +196,7 @@ public static partial class BuildService
             try
             {
                 var cm = CharacterManager.Current;
-                var proxy = DataManager.Current.ElementsCollection.GetElement(elementId);
+                var proxy = ResolveCustomFeatureElement(elementId);
                 var target = proxy == null ? null : EquipmentService.ResolveCustomFeatureTarget(proxy);
                 string targetId = target?.Id ?? elementId;
 
@@ -244,4 +244,15 @@ public static partial class BuildService
             catch (Exception ex) { return DebugLogService.Catch(ex, "BuildService.RemoveCustomFeatureAsync"); }
         });
     }
+
+    /// <summary>
+    /// Looks a custom-feature element up by id, building its spell proxy category first if the id
+    /// names one. Those proxies are created on demand, so a saved or picked id can reference one
+    /// that the catalog has not been asked for yet.
+    /// </summary>
+    private static Builder.Data.ElementBase? ResolveCustomFeatureElement(string? id)
+    {
+        return SpellProxyCatalog.ResolveOrBuild(DataManager.Current.ElementsCollection, id);
+    }
+
 }

@@ -7,6 +7,40 @@ namespace Aurora.Tests.Tests;
 public sealed class CharacterMagicWorkspaceTests : BunitContext
 {
     [Fact]
+    public async Task KnownSpellDoubleClickAwaitsSelectionCallback()
+    {
+        var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        string? selectedId = null;
+        var model = new MagicOverviewModel
+        {
+            KnownSpellGroups =
+            [
+                new MagicKnownSpellGroupModel("Wizard", "wizard",
+                    [new MagicKnownSpellEntryModel("spell-choice", "Known spell", "Shield")])
+            ]
+        };
+        var cut = Render<CharacterMagicWorkspace>(parameters => parameters
+            .Add(p => p.Model, model)
+            .Add(p => p.OnChangeKnownSpell, async (string id) =>
+            {
+                selectedId = id;
+                await completion.Task;
+            }));
+
+        Task dispatch = cut.Find(".magic-known-row").DoubleClickAsync(new());
+        try
+        {
+            selectedId.Should().Be("spell-choice");
+            dispatch.IsCompleted.Should().BeFalse("the selection is still in progress");
+        }
+        finally
+        {
+            completion.SetResult();
+            await dispatch;
+        }
+    }
+
+    [Fact]
     public void AllTabShowsCantripsAndPreparedSpellsOnly()
     {
         var cut = Render<CharacterMagicWorkspace>(parameters => parameters

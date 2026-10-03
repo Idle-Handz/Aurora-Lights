@@ -647,7 +647,10 @@ public class CharacterFile : ObservableObject
             foreach (XmlNode node6 in xmlNode4.ChildNodes.Cast<XmlNode>().Where<XmlNode>((Func<XmlNode, bool>)(x => x.Name.Equals("item"))))
             {
                 string attributeValue5 = node6.GetAttributeValue("id");
-                ElementBase element = DataManager.Current.ElementsCollection.GetElement(attributeValue5);
+                // ResolveOrBuild, not GetElement: a saved item can name a spell proxy, and those are
+                // built on demand, so a plain lookup would report one as a lost element.
+                ElementBase element = SpellProxyCatalog.ResolveOrBuild(
+                    DataManager.Current.ElementsCollection, attributeValue5);
                 if (element == null && attributeValue5.Contains("ID_WOTC_ITEM"))
                     element = DataManager.Current.ElementsCollection.GetElement(attributeValue5.Replace("ID_WOTC_ITEM", "ID_WOTC_PHB_ITEM"));
                 if (element == null && attributeValue5.Contains("ID_WOTC_WEAPON"))

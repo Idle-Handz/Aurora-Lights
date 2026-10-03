@@ -17,13 +17,15 @@ namespace Microsoft.Maui.Storage
     }
     public sealed class FileResult
     {
-        public string FileName => throw new NotSupportedException();
-        public Task<Stream> OpenReadAsync() => throw new NotSupportedException();
+        public string FileName { get; init; } = "";
+        public Func<Task<Stream>> OpenRead { get; init; } = () => throw new NotSupportedException();
+        public Task<Stream> OpenReadAsync() => OpenRead();
     }
     public sealed class FilePicker
     {
         public static FilePicker Default { get; } = new();
-        public Task<FileResult?> PickAsync(PickOptions options) => throw new NotSupportedException();
+        public Func<PickOptions, Task<FileResult?>> Pick { get; set; } = _ => throw new NotSupportedException();
+        public Task<FileResult?> PickAsync(PickOptions options) => Pick(options);
     }
 }
 

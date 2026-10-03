@@ -1,0 +1,1 @@
+Optional build choices no longer block completion guidance, spell double-click selection waits for completion, and JSON/web imports handle optional fields, starting classes, configured upload limits and session clearing correctly.
