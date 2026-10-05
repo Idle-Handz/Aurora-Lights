@@ -1,15 +1,28 @@
 @page "/content-doctor"
+@implements IDisposable
 @using Aurora.App.Services
 @using Aurora.Content
 @inject ContentDoctorService Doctor
+@inject ContentDatabaseService ContentDb
 @inject ISnackbar Snackbar
 
 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
     <MudText Typo="Typo.h5">Content Doctor</MudText>
     <MudButton Variant="Variant.Outlined" Color="Color.Default" StartIcon="@Icons.Material.Filled.Refresh"
-               OnClick="Reload" Disabled="_loading">Re-check</MudButton>
+               OnClick="Reload" Disabled="@(_loading || _busy || _databaseRefreshing)">Re-check</MudButton>
 </div>
 
+@if (_databaseRefreshing)
+{
+    <MudAlert Severity="Severity.Info">Content is being refreshed. Import diagnostics will update when it finishes.</MudAlert>
+}
+else if (_problem is not null)
+{
+    <MudAlert Severity="Severity.Warning">@_problem</MudAlert>
+    <MudLink Href="/settings?tab=content">Open content settings</MudLink>
+}
+else
+{
 <MudText Typo="Typo.h6" Class="mb-1">Override files</MudText>
 <MudText Typo="Typo.body2" Class="mb-4">
     Override files keep a local copy of a content file so a correction can be applied to it. When the
@@ -24,7 +37,7 @@
 else if (_files.Count == 0)
 {
     <MudAlert Severity="Severity.Normal">
-        No override files. Nothing is correcting installed content.
+        The last import recorded no managed override files.
     </MudAlert>
 }
 else
@@ -102,11 +115,11 @@ else
     }
 }
 
-<MudText Typo="Typo.h6" Class="mt-8 mb-1">Conflicting definitions</MudText>
+<MudText Typo="Typo.h6" Class="mt-8 mb-1">Duplicate element IDs</MudText>
 <MudText Typo="Typo.body2" Class="mb-4">
-    Element IDs that more than one file declares. Aurora Builder gives the ID to whichever file it
-    loads last, so a book published later overrides an earlier one on purpose. What is set aside is
-    kept here so you can see it rather than having to work it out.
+    Element IDs declared by more than one file in the last import. The importer records which
+    definition it selected using the content load order and correction rules. Duplicate IDs can
+    be intentional overrides; review the selected definition and its alternatives here.
 </MudText>
 
 @if (_loading)
@@ -116,7 +129,7 @@ else
 else if (_conflicts.Count == 0)
 {
     <MudAlert Severity="Severity.Success">
-        No element ID is declared by more than one file.
+        The last import recorded no duplicate element IDs.
     </MudAlert>
 }
 else
@@ -152,10 +165,10 @@ else
     }
 }
 
-<MudText Typo="Typo.h6" Class="mt-8 mb-1">Content that was left out</MudText>
+<MudText Typo="Typo.h6" Class="mt-8 mb-1">Import issues and notices</MudText>
 <MudText Typo="Typo.body2" Class="mb-4">
-    Files and operations the last refresh could not use. These stay listed until the problem is
-    fixed and the database is refreshed again.
+    Files, operations, and metadata notices recorded by the last refresh. These stay listed until
+    the problem is fixed and the database is refreshed again.
 </MudText>
 
 @if (_loading)
@@ -173,7 +186,7 @@ else
     }
     @if (_skipped.Count == 0)
     {
-        <MudAlert Severity="Severity.Success">Every content file was imported.</MudAlert>
+        <MudAlert Severity="Severity.Success">The last import recorded no other content issues.</MudAlert>
     }
     else
     {
@@ -200,6 +213,7 @@ else
         }
     }
 }
+}
 
 @code {
     private IReadOnlyList<OverrideFileModel> _files = [];
@@ -209,38 +223,94 @@ else
     private bool _showAll;
     private bool _loading = true;
     private bool _busy;
+    private string? _problem;
+    private bool _disposed;
+    private bool _databaseRefreshing;
+    private CancellationTokenSource? _loadCancellation;
 
-    protected override async Task OnInitializedAsync() => await Reload();
+    protected override async Task OnInitializedAsync()
+    {
+        ContentDb.StateChanged += OnDatabaseStateChanged;
+        _databaseRefreshing = ContentDb.SyncState == ContentDatabaseSyncState.Syncing;
+        if (!_databaseRefreshing) await Reload();
+    }
+
+    private void OnDatabaseStateChanged()
+    {
+        if (_disposed) return;
+        bool syncing = ContentDb.SyncState == ContentDatabaseSyncState.Syncing;
+        _ = InvokeAsync(async () =>
+        {
+            if (_disposed) return;
+            if (syncing)
+            {
+                if (_databaseRefreshing) return;
+                _databaseRefreshing = true;
+                _loadCancellation?.Cancel();
+            }
+            else
+            {
+                _databaseRefreshing = false;
+                await Reload();
+            }
+            if (!_disposed) StateHasChanged();
+        });
+    }
 
     private async Task Reload()
     {
+        if (_disposed || _databaseRefreshing) return;
+        _loadCancellation?.Cancel();
+        using var cancellation = new CancellationTokenSource();
+        _loadCancellation = cancellation;
         _loading = true;
+        _problem = null;
+        _showAll = false;
         StateHasChanged();
-        var loaded = await Task.Run(() =>
-            (Files: Doctor.LoadOverrideFiles(), Conflicts: Doctor.LoadConflicts(),
-             Skipped: Doctor.LoadSkippedContent()));
-        _files = loaded.Files;
-        _conflicts = loaded.Conflicts;
-        // A superseded definition is AuroraLegacy replacing an archived one, which is the
-        // policy working rather than a problem to fix; count it apart from the rest.
-        _superseded = loaded.Skipped.Count(s => s.Kind == "superseded-definition");
-        _skipped = loaded.Skipped.Where(s => s.Kind != "superseded-definition").ToList();
-        _loading = false;
+        try
+        {
+            var loaded = await Task.Run(() => Doctor.Load(cancellation.Token), cancellation.Token);
+            if (_disposed || cancellation.IsCancellationRequested) return;
+            _problem = loaded.Problem;
+            _files = loaded.Files;
+            _conflicts = loaded.Conflicts;
+            // Successor selection is expected; preserve its provenance separately.
+            _superseded = loaded.Skipped.Count(s => s.Kind == "superseded-definition");
+            _skipped = loaded.Skipped.Where(s => s.Kind != "superseded-definition").ToList();
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { }
+        catch (Exception ex)
+        {
+            if (_disposed || cancellation.IsCancellationRequested) return;
+            DebugLogService.Catch(ex, "ContentDoctor.Reload");
+            _problem = $"Content diagnostics could not be loaded. {ex.Message}";
+        }
+        finally
+        {
+            if (ReferenceEquals(_loadCancellation, cancellation))
+            {
+                _loadCancellation = null;
+                _loading = false;
+            }
+        }
     }
 
     private async Task Accept(OverrideFileModel file, OverrideCorrectionModel correction)
     {
+        if (_disposed || _busy || _loading || _databaseRefreshing) return;
         _busy = true;
         try
         {
             await Task.Run(() => Doctor.AcceptCorrection(file, correction));
+            if (_disposed) return;
             Snackbar.Add($"Cleared {correction.Key}. Refresh content to rebuild the database.", Severity.Success);
             await Reload();
         }
-        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or System.Xml.XmlException)
         {
             // The hashes captured when the list was read no longer match, or the file cannot be
             // written. Re-read so the reader is deciding from what is actually on disk.
+            if (_disposed) return;
             Snackbar.Add(ex.Message, Severity.Error);
             await Reload();
         }
@@ -248,6 +318,13 @@ else
         {
             _busy = false;
         }
+    }
+
+    public void Dispose()
+    {
+        _disposed = true;
+        ContentDb.StateChanged -= OnDatabaseStateChanged;
+        _loadCancellation?.Cancel();
     }
 
     private static Color StatusColour(OverrideFileModel file) =>
@@ -264,10 +341,10 @@ else
     private static string Reason(string kind) => kind switch
     {
         "unreadable" => "the file could not be read; previously imported definitions were kept where available.",
-        "definition-collision" => "more than one file defines this element; the one Aurora Builder loads last is in use and the alternatives are kept for review.",
+        "definition-collision" => "more than one file defines this element; the import decision and alternatives are kept for review.",
         "superseded-definition" => "AuroraLegacy supplied the successor definition.",
         "classification" => "it was imported without inferring a publisher; review its Source metadata.",
-        "conflict" => "it defines an element another file already defines differently; the declaration loaded last is the one in use.",
+        "conflict" => "it defines an element another file defines differently; review the import decision and related definition.",
         "definition-conflict" => "this element ID is unavailable because its definitions conflict and none was selected. The rest of the file was imported.",
         "correction" => "an earlier refresh left this correction file out; correction errors now stop a refresh to protect working content.",
         "append" => "one of its append operations could not be applied; the rest of the file was imported.",

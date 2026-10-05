@@ -170,9 +170,10 @@ public sealed class ContentDoctorServiceTests : IDisposable
     }
 
     [Fact]
-    public void AnAbsentOrOlderDatabaseReportsNoConflictsRatherThanFailing()
+    public void AnAbsentOrOlderDatabaseReportsUnavailableDiagnosticsRatherThanAnEmptySuccess()
     {
-        ContentDoctorService.ReadConflicts(Path.Combine(root, "missing.sqlite")).Should().BeEmpty();
+        ContentDoctorService.ReadSnapshot(Path.Combine(root, "missing.sqlite")).Problem
+            .Should().Contain("No content database");
 
         string empty = Path.Combine(root, "empty.sqlite");
         using (var connection = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={empty};Pooling=False"))
@@ -183,6 +184,47 @@ public sealed class ContentDoctorServiceTests : IDisposable
             command.ExecuteNonQuery();
         }
 
-        ContentDoctorService.ReadConflicts(empty).Should().BeEmpty("a database built before duplicates were kept has no such view");
+        ContentDoctorService.ReadSnapshot(empty).Problem.Should().Contain("could not be read",
+            "an older database cannot prove that no overrides, conflicts or skipped files exist");
+    }
+
+    [Fact]
+    public void ACorruptDatabaseCannotReportHealthyEmptyDiagnostics()
+    {
+        string db = Path.Combine(root, "corrupt.sqlite");
+        File.WriteAllText(db, "This is not a SQLite database.");
+
+        ContentDoctorService.ReadSnapshot(db).Problem.Should().Contain("could not be read");
+    }
+
+    [Fact]
+    public void MalformedCorrectionXmlIsAnIndividualFileProblem()
+    {
+        File.WriteAllText(Upstream, Baseline);
+        WriteOverride();
+        File.WriteAllText(Override, File.ReadAllText(Override).Replace("</elements>", ""));
+
+        ContentDoctorService.Evaluate(Override).Problem.Should().NotBeNullOrWhiteSpace();
+    }
+
+    [Fact]
+    public async Task SnapshotReadsTheCurrentImportAndHonorsCancellation()
+    {
+        File.WriteAllText(Upstream, Baseline);
+        WriteOverride();
+        File.WriteAllText(Path.Combine(root, "broken.xml"), "<elements><element");
+        string db = Path.Combine(root, "content.sqlite");
+        await Aurora.Content.ContentImport.ImportAsync(root, db, skipUnusableContent: true);
+
+        ContentDoctorSnapshot snapshot = ContentDoctorService.ReadSnapshot(db);
+
+        snapshot.Problem.Should().BeNull();
+        snapshot.Files.Should().ContainSingle().Which.Corrections.Should().ContainSingle();
+        snapshot.Skipped.Should().Contain(s => s.RelativePath == "broken.xml" && s.Kind == "unreadable");
+
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        Action load = () => ContentDoctorService.ReadSnapshot(db, cancellation.Token);
+        load.Should().Throw<OperationCanceledException>();
     }
 }

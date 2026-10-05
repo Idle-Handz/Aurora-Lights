@@ -14,18 +14,19 @@
     <MudNavLink Href="/compendium" Icon="@Icons.Material.Filled.MenuBook">
         Compendium
     </MudNavLink>
-    <MudNavLink Href="/content-doctor" Icon="@Icons.Material.Filled.HealthAndSafety"
-                Style="@(Prefs.DevMode ? "" : "opacity: 0.4; pointer-events: none;")">
-        Content Doctor
-    </MudNavLink>
-    <MudNavLink Href="/console" Icon="@Icons.Material.Filled.Terminal"
-                Style="@(Prefs.DevMode ? "" : "opacity: 0.4; pointer-events: none;")">
-        Console
-        @if (DebugLog.Entries.Any(e => e.Level == LogLevel.Error))
-        {
-            <span class="nav-error-indicator">●</span>
-        }
-    </MudNavLink>
+    @if (Prefs.DevMode)
+    {
+        <MudNavLink Href="/content-doctor" Icon="@Icons.Material.Filled.HealthAndSafety">
+            Content Doctor
+        </MudNavLink>
+        <MudNavLink Href="/console" Icon="@Icons.Material.Filled.Terminal">
+            Console
+            @if (DebugLog.Entries.Any(e => e.Level == LogLevel.Error))
+            {
+                <span class="nav-error-indicator">●</span>
+            }
+        </MudNavLink>
+    }
 
     @* ── Per-character (only shown when a character is open) ── *@
     @if (Tabs.ActiveTab != null)

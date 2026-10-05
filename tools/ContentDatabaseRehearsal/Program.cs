@@ -67,6 +67,11 @@ try
         case "reload-check": result = await ReloadRehearsal.Run(caseRoot); success = true; break;
         case "failure-check": result = await ReloadRehearsal.Run(caseRoot, false); success = true; break;
         case "fallback-check": result = FallbackRegressionChecks.Run(); success = true; break;
+        case "legacy-append-audit":
+            var appendAudit = LegacyAppendAudit.Run(caseRoot);
+            result = appendAudit;
+            success = appendAudit.Success;
+            break;
         case "profile-projection":
             using (var connection = ContentDatabase.OpenReadableConnection(Path.Combine(primary, ContentDatabaseService.DatabaseFileName)))
             {
@@ -151,13 +156,8 @@ try
             success = true;
             break;
         case "parity":
-            // Avoid InitializeDirectories, which also touches the user's AppData.
-            var method = typeof(ContentDatabaseParityService).GetMethod("LoadXmlSnapshotAsync", BindingFlags.NonPublic | BindingFlags.Static)!;
-            var task = (Task)method.Invoke(null, [CancellationToken.None])!;
-            await task;
-            object xmlResult = task.GetType().GetProperty("Result")!.GetValue(task)!;
-            var xmlType = xmlResult.GetType();
-            var xmlElements = (ElementBaseCollection)xmlType.GetProperty("Elements")!.GetValue(xmlResult)!;
+            // Use the same independent prepared-XML snapshot as the in-app diagnostic.
+            var xmlElements = await Task.Run(() => ContentDatabaseParityService.LoadXmlSnapshot(CancellationToken.None));
             var dbElements = new ElementBaseCollection();
             var dbResult = await DbElementLoader.TryLoadSnapshotAsync(dbElements);
             var missingDb = xmlElements.Select(e => e.Id).Except(dbElements.Select(e => e.Id), StringComparer.Ordinal).ToArray();
@@ -167,8 +167,8 @@ try
                 Aurora.Content.Contracts.LocalCorrectionDocument.Fingerprint(System.Xml.Linq.XElement.Parse(e.ElementNode.OuterXml)) !=
                 Aurora.Content.Contracts.LocalCorrectionDocument.Fingerprint(System.Xml.Linq.XElement.Parse(x.ElementNode.OuterXml)))
                 .Select(e => e.Id).ToArray();
-            bool xmlSuccess = (bool)xmlType.GetProperty("Success")!.GetValue(xmlResult)!;
-            result = new { xmlSuccess, xmlFailure = xmlType.GetProperty("FailureReason")!.GetValue(xmlResult), dbResult,
+            const bool xmlSuccess = true;
+            result = new { xmlSuccess, xmlFailure = (string?)null, dbResult,
                 xmlCount = xmlElements.Count, dbCount = dbElements.Count, missingDb, missingXml, differences };
             success = xmlSuccess && dbResult.Success && missingDb.Length == 0 && missingXml.Length == 0 && differences.Length == 0;
             break;
