@@ -204,6 +204,7 @@ public sealed class ContentDatabaseService
     /// </summary>
     public async Task<AuroraImportResult> SyncAsync(CancellationToken cancellationToken = default)
     {
+        using var trace = ContentLoadTrace.Begin("database.sync");
         await _lock.WaitAsync(cancellationToken);
         try
         {
@@ -236,7 +237,12 @@ public sealed class ContentDatabaseService
             // activation and retirement. Give it the real primary root; secondary
             // roots are composed from XML by the runtime reader.
             string contentDirectory = ContentDirectory;
-            var result = await Task.Run(() => ImportAsync(contentDirectory, dbPath, cancellationToken), cancellationToken);
+            _tracedPhase = null;
+            var result = await Task.Run(async () =>
+            {
+                using var importTrace = ContentLoadTrace.Begin("database.import-worker");
+                return await ImportAsync(contentDirectory, dbPath, cancellationToken);
+            }, cancellationToken);
 
             LastResult = result;
             IsStale    = !result.Success;
@@ -289,8 +295,15 @@ public sealed class ContentDatabaseService
             classificationIssues: imported.Skipped.Count(skip => skip.Kind == "classification"));
     }
 
+    private ContentImportPhase? _tracedPhase;
+
     private void ReportProgress(ContentImportProgress p)
     {
+        if (ContentLoadTrace.Sink is not null && _tracedPhase != p.Phase)
+        {
+            _tracedPhase = p.Phase;
+            ContentLoadTrace.Mark($"import-phase={p.Phase} completed={p.Completed} total={p.Total}");
+        }
         Progress = MapProgress(p);
         StateChanged?.Invoke();
     }

@@ -124,7 +124,9 @@ public sealed class CharacterService :
     private async Task EnsureElementsLoadedAsync()
     {
         if (_elementsInitialized) return;
-        await _elementLock.WaitAsync();
+        using var preloadTrace = ContentLoadTrace.Begin("content.preload");
+        using (ContentLoadTrace.Begin("content.wait-load-lock"))
+            await _elementLock.WaitAsync();
         try
         {
             if (_elementsInitialized) return;
@@ -146,7 +148,8 @@ public sealed class CharacterService :
                     throw new InvalidDataException($"Content reload failed; the previous working elements were preserved. {dbResult.FailureReason}");
                 }
                 ContentDatabaseService.ValidateRawXmlFallback(dbResult.DatabasePath, dbResult.FailureReason);
-                await DataManager.Current.InitializeElementDataAsync();
+                using (ContentLoadTrace.Begin("content.xml-fallback"))
+                    await DataManager.Current.InitializeElementDataAsync();
                 ElementLoadSource = "XML fallback";
                 ElementLoadSummary = $"Loaded baseline content from XML. SQLite reason: {dbResult.FailureReason ?? "unknown"}";
             }
@@ -168,7 +171,8 @@ public sealed class CharacterService :
 
             InventoryItemFactory.InvalidateSearchIndex();
             // Sources are loaded now, so switched-off packages can become default restrictions.
-            SourcePreferenceSeed.SeedDefaultRestrictions(ElementLoadDatabasePath);
+            using (ContentLoadTrace.Begin("content.seed-source-preferences"))
+                SourcePreferenceSeed.SeedDefaultRestrictions(ElementLoadDatabasePath);
             RefreshEngineSourceList();
             _loadedContentDirectory = DataManager.Current.UserDocumentsCustomElementsDirectory;
             _elementsInitialized = true;
@@ -195,6 +199,7 @@ public sealed class CharacterService :
     /// </summary>
     private static void RefreshEngineSourceList()
     {
+        using var sourceTrace = ContentLoadTrace.Begin("content.rebuild-sources");
         try
         {
             CharacterManager.Current.SourcesManager.Refresh();
@@ -237,6 +242,7 @@ public sealed class CharacterService :
     /// </summary>
     public async Task ReloadElementsAsync()
     {
+        using var reloadTrace = ContentLoadTrace.Begin("content.reload-elements");
         // Catalog objects are also held by the loaded character graph. Serialize
         // refresh with character loads/edits and invalidate both preload and tab
         // context state before replacing them, even if the reload subsequently fails.

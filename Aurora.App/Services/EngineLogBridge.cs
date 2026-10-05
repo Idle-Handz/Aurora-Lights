@@ -18,7 +18,12 @@ internal sealed class EngineLogBridge : ILogger
 {
     public void Debug(string message, params object[] args) { /* too chatty for the Console */ }
 
-    public void Info(string message, params object[] args) { /* dropped to keep the Console focused */ }
+    public void Info(string message, params object[] args)
+    {
+        // Sparse loader phases go only to the optional device trace, not the Console.
+        if (ContentLoadTrace.Sink is not null && message.StartsWith("[content-phase] ", StringComparison.Ordinal))
+            ContentLoadTrace.Mark(Format(message, args));
+    }
 
     public void Warning(string message, params object[] args)
     {

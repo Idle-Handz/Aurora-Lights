@@ -209,6 +209,7 @@ internal static class DbElementLoader
 
     private static async Task<DbLoadResult> TryLoadInternalAsync(ElementBaseCollection target, bool runPostProcessing)
     {
+        using var loadTrace = ContentLoadTrace.Begin("catalog.load");
         string? dbPath = DbPath;
         if (dbPath is null)
             return DbLoadResult.NotAvailable(null, "Content database path is not initialized.");
@@ -232,14 +233,23 @@ internal static class DbElementLoader
             DebugLogService.Instance.Info("DbElementLoader: loading elements from DB.", dbPath);
             var candidate = new ElementBaseCollection();
             HashSet<string>? unavailableIds = null;
-            DbLoadResult result = await Task.Run(() => LoadFromDb(dbPath, candidate));
+            DbLoadResult result = await Task.Run(() =>
+            {
+                using var readTrace = ContentLoadTrace.Begin("catalog.read-worker");
+                return LoadFromDb(dbPath, candidate);
+            });
             if (result.Success && runPostProcessing)
             {
                 // Every successful read is the current prepared contract. Runtime XML and built-ins
                 // were already composed there, including deliberate exclusions; never replay them.
-                await Task.Run(() => DataManager.Current.RunPostProcessing(candidate, includeResources: false, publish: false));
+                await Task.Run(() =>
+                {
+                    using var postTrace = ContentLoadTrace.Begin("catalog.postprocess-worker");
+                    DataManager.Current.RunPostProcessing(candidate, includeResources: false, publish: false);
+                });
                 // Post-processing also synthesizes internal elements. Their generated IDs cannot
                 // make a deliberately unavailable identity usable again.
+                using var filterTrace = ContentLoadTrace.Begin("catalog.filter-unavailable");
                 var unavailable = ContentDatabaseReader.ReadUnavailableIds(dbPath)
                     .Select(id => id.Trim()).ToHashSet(StringComparer.OrdinalIgnoreCase);
                 unavailableIds = unavailable;
@@ -255,6 +265,7 @@ internal static class DbElementLoader
             }
             if (result.Success)
             {
+                using var publishTrace = ContentLoadTrace.Begin("catalog.publish");
                 replacingTarget = true;
                 target.Clear();
                 target.AddRange(candidate);

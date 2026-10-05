@@ -277,11 +277,17 @@ public sealed class ContentService
     /// </summary>
     public async Task<string?> ReloadContentAsync()
     {
+        using var refreshTrace = ContentLoadTrace.Begin("refresh");
         try
         {
             // MD5-based staleness check; only pay for the full incremental import if it
             // actually changed. Run the catalog/hash scan off the UI thread.
-            bool isStale = await Task.Run(() => _contentDb.CheckIsStale());
+            bool isStale = await Task.Run(() =>
+            {
+                using var staleTrace = ContentLoadTrace.Begin("refresh.check-stale-worker");
+                return _contentDb.CheckIsStale();
+            });
+            ContentLoadTrace.Mark(isStale ? "refresh.database-stale" : "refresh.database-current");
             string? refreshWarning = null;
             if (isStale)
             {
@@ -295,7 +301,8 @@ public sealed class ContentService
 
             _tabs.CloseAllTabs();
             await _characters.ReloadElementsAsync();
-            _compendium.InvalidateCache(rebuildInBackground: true);
+            using (ContentLoadTrace.Begin("refresh.schedule-compendium"))
+                _compendium.InvalidateCache(rebuildInBackground: true);
             if (refreshWarning == null) ClearContentReloadPending();
             return refreshWarning == null ? null : refreshWarning + " Runtime content was reloaded using the existing database and current local XML; primary database updates remain pending.";
         }

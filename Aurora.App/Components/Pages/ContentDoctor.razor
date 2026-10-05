@@ -134,10 +134,16 @@ else if (_conflicts.Count == 0)
 }
 else
 {
-    <MudText Typo="Typo.body2" Class="mb-2">
-        @_conflicts.Count element@(_conflicts.Count == 1 ? "" : "s") declared more than once.
-    </MudText>
-    @foreach (ContentConflictModel conflict in _conflicts)
+    <div class="mb-2" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+        <MudText Typo="Typo.body2">
+            Showing @ConflictStart.ToString("N0")&ndash;@ConflictEnd.ToString("N0") of @_conflicts.Count.ToString("N0")
+        </MudText>
+        <div>
+            <MudButton OnClick="@(() => ChangeConflictPage(-1))" Disabled="@(_conflictPage == 0)">Previous</MudButton>
+            <MudButton OnClick="@(() => ChangeConflictPage(1))" Disabled="@(ConflictEnd >= _conflicts.Count)">Next</MudButton>
+        </div>
+    </div>
+    @foreach (ContentConflictModel conflict in _conflicts.Skip(_conflictPage * ConflictPageSize).Take(ConflictPageSize))
     {
         <MudPaper Class="pa-4 mb-3" Elevation="1">
             <MudText Typo="Typo.subtitle1">@conflict.Name</MudText>
@@ -216,6 +222,7 @@ else
 }
 
 @code {
+    private const int ConflictPageSize = 25;
     private IReadOnlyList<OverrideFileModel> _files = [];
     private IReadOnlyList<ContentConflictModel> _conflicts = [];
     private IReadOnlyList<ContentImportSkip> _skipped = [];
@@ -223,10 +230,15 @@ else
     private bool _showAll;
     private bool _loading = true;
     private bool _busy;
+    private int _conflictPage;
+    private long? _pendingRenderStart;
     private string? _problem;
     private bool _disposed;
     private bool _databaseRefreshing;
     private CancellationTokenSource? _loadCancellation;
+
+    private int ConflictStart => _conflicts.Count == 0 ? 0 : _conflictPage * ConflictPageSize + 1;
+    private int ConflictEnd => Math.Min((_conflictPage + 1) * ConflictPageSize, _conflicts.Count);
 
     protected override async Task OnInitializedAsync()
     {
@@ -247,6 +259,7 @@ else
                 if (_databaseRefreshing) return;
                 _databaseRefreshing = true;
                 _loadCancellation?.Cancel();
+                _pendingRenderStart = null;
             }
             else
             {
@@ -263,13 +276,20 @@ else
         _loadCancellation?.Cancel();
         using var cancellation = new CancellationTokenSource();
         _loadCancellation = cancellation;
+        using var loadTrace = ContentLoadTrace.Begin("doctor.load");
         _loading = true;
         _problem = null;
+        _conflictPage = 0;
         _showAll = false;
+        _pendingRenderStart = null;
         StateHasChanged();
         try
         {
-            var loaded = await Task.Run(() => Doctor.Load(cancellation.Token), cancellation.Token);
+            var loaded = await Task.Run(() =>
+            {
+                using var workerTrace = ContentLoadTrace.Begin("doctor.snapshot-worker");
+                return Doctor.Load(cancellation.Token);
+            }, cancellation.Token);
             if (_disposed || cancellation.IsCancellationRequested) return;
             _problem = loaded.Problem;
             _files = loaded.Files;
@@ -277,6 +297,7 @@ else
             // Successor selection is expected; preserve its provenance separately.
             _superseded = loaded.Skipped.Count(s => s.Kind == "superseded-definition");
             _skipped = loaded.Skipped.Where(s => s.Kind != "superseded-definition").ToList();
+            MarkRenderPending();
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { }
         catch (Exception ex)
@@ -293,6 +314,31 @@ else
                 _loading = false;
             }
         }
+    }
+
+    private void ChangeConflictPage(int direction)
+    {
+        int lastPage = Math.Max(0, (_conflicts.Count - 1) / ConflictPageSize);
+        int page = Math.Clamp(_conflictPage + direction, 0, lastPage);
+        if (page == _conflictPage) return;
+        _conflictPage = page;
+        MarkRenderPending();
+    }
+
+    private void MarkRenderPending()
+    {
+        if (ContentLoadTrace.Sink is null) return;
+        _pendingRenderStart = System.Diagnostics.Stopwatch.GetTimestamp();
+        ContentLoadTrace.Mark($"doctor.render-pending overrides={_files.Count} conflicts={_conflicts.Count} " +
+            $"visibleConflicts={ConflictEnd - ConflictStart + (_conflicts.Count == 0 ? 0 : 1)} skipped={_skipped.Count} page={_conflictPage + 1}");
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (_disposed || _loading || _pendingRenderStart is not { } start) return;
+        _pendingRenderStart = null;
+        ContentLoadTrace.Mark($"doctor.render-complete page={_conflictPage + 1} " +
+            $"elapsedMs={System.Diagnostics.Stopwatch.GetElapsedTime(start).TotalMilliseconds:F1}");
     }
 
     private async Task Accept(OverrideFileModel file, OverrideCorrectionModel correction)
@@ -325,6 +371,7 @@ else
         _disposed = true;
         ContentDb.StateChanged -= OnDatabaseStateChanged;
         _loadCancellation?.Cancel();
+        _pendingRenderStart = null;
     }
 
     private static Color StatusColour(OverrideFileModel file) =>

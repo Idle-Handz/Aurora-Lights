@@ -106,15 +106,22 @@ public sealed class ContentDoctorService
             // Keep all imported evidence on the same database snapshot during a concurrent refresh.
             using var transaction = connection.BeginTransaction(deferred: true);
             IReadOnlyList<string> paths = ReadKnownOverridePaths(connection, transaction, cancellationToken);
-            IReadOnlyList<ContentConflictModel> conflicts = ReadConflicts(connection, cancellationToken, transaction);
-            IReadOnlyList<ContentImportSkip> skipped = ReadSkippedContent(connection, transaction, cancellationToken);
+            IReadOnlyList<ContentConflictModel> conflicts;
+            using (ContentLoadTrace.Begin("doctor.conflicts-worker"))
+                conflicts = ReadConflicts(connection, cancellationToken, transaction);
+            IReadOnlyList<ContentImportSkip> skipped;
+            using (ContentLoadTrace.Begin("doctor.skipped-worker"))
+                skipped = ReadSkippedContent(connection, transaction, cancellationToken);
             transaction.Commit();
 
             var files = new List<OverrideFileModel>();
-            foreach (string path in paths)
+            using (ContentLoadTrace.Begin("doctor.overrides-worker"))
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                files.Add(Evaluate(path));
+                foreach (string path in paths)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    files.Add(Evaluate(path));
+                }
             }
 
             return new(files.OrderByDescending(file => file.IncorporatedCount)
