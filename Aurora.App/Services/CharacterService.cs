@@ -174,16 +174,10 @@ public sealed class CharacterService :
             _elementsInitialized = true;
             _ = WarmEquipmentSearchIndexAsync();
 
-            var testId = "ID_WOTC_MOTM_RACE_GOBLIN";
-            var testElement = DataManager.Current.ElementsCollection.GetElement(testId);
-            string customDiagnostic = testElement != null
-                ? $"Custom elements OK (e.g. {testId} found)"
-                : $"⚠ Custom elements MISSING — {testId} not in collection. " +
-                  $"Custom dir: {DataManager.Current.UserDocumentsCustomElementsDirectory}";
             string schemaDiagnostic = ElementLoadSchemaVersion.HasValue
                 ? $"Schema version: {ElementLoadSchemaVersion.Value}"
                 : "Schema version: unknown";
-            _initDiagnostic = $"{ElementLoadSummary}\n{schemaDiagnostic}\n{customDiagnostic}";
+            _initDiagnostic = $"{ElementLoadSummary}\n{schemaDiagnostic}";
             LoadingProgressChanged?.Invoke();
         }
         finally

@@ -11,20 +11,8 @@ using System.Xml;
 namespace Aurora.App.Services;
 
 /// <summary>
-/// Loads Aurora element data from a pre-built SQLite database, bypassing the XML parsing
-/// pipeline in <see cref="DataManager.InitializeElementDataAsync"/>.
-///
-/// Strategy: bulk-load all element tables from the DB, reconstruct minimal XmlNodes per
-/// element (id/name/type/source attributes + supports + requirements + description + sheet
-/// + type-specific setters + spellcasting + multiclass + rules), then feed each node through
-/// the existing <see cref="ElementParser"/> pipeline exactly as DataManager does. Then overlay
-/// local custom/user XML before calling <see cref="DataManager.RunPostProcessing"/> so local
-/// scratch/homebrew content works without rebuilding the SQLite database.
-///
-/// Known DB schema gaps:
-///   - No general element_setters table; types not covered by a typed subtype table will have
-///     empty setters and may parse as plain ElementBase rather than a subclass.
-///</summary>
+/// Reports whether the prepared SQLite catalog could be reconstructed completely.
+/// </summary>
 public sealed record DbLoadResult(
     bool Success,
     string? DatabasePath,
@@ -102,6 +90,11 @@ public sealed record DbLoadResult(
         new(true, databasePath, elementCount, skippedElementCount, schemaVersion, dataVersion, importerVersion, builtUtc, sourceFileCount, contentRootHash, null, [], []);
 }
 
+/// <summary>
+/// Composes complete prepared XML definitions with built-ins and current runtime XML,
+/// parses them with the legacy element parsers, and publishes only a complete catalog.
+/// Normalized database tables provide metadata, not reconstructed game mechanics.
+/// </summary>
 internal static class DbElementLoader
 {
     private static readonly string[] RequiredTables =
@@ -200,45 +193,9 @@ internal static class DbElementLoader
         $"{auroraId ?? string.Empty}\u001f{sourceName ?? string.Empty}";
 
     /// <summary>
-    /// Returns the set of source book names that appear in the resolved elements cache,
-    /// i.e. only names from enabled content packages. Returns an empty set if the DB is
-    /// unavailable or the query fails.
-    /// </summary>
-    public static async Task<HashSet<string>> LoadEnabledSourceNamesAsync()
-    {
-        string? dbPath = DbPath;
-        if (dbPath is null || !File.Exists(dbPath))
-            return [];
-
-        return await Task.Run(() =>
-        {
-            try
-            {
-                using var conn = ContentDatabase.OpenReadableConnection(dbPath);
-                using var cmd = conn.CreateCommand();
-                cmd.CommandText = @"
-                    SELECT DISTINCT sb.name
-                    FROM source_books sb
-                    JOIN elements e ON e.source_book_id = sb.source_book_id
-                    JOIN resolved_elements_cache rec ON rec.winning_element_id = e.element_id
-                    WHERE sb.name IS NOT NULL AND sb.name <> '';";
-                using var r = cmd.ExecuteReader();
-                var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                while (r.Read())
-                    names.Add(r.GetString(0));
-                return names;
-            }
-            catch
-            {
-                return [];
-            }
-        });
-    }
-
-    /// <summary>
     /// Attempts to populate <paramref name="target"/> from the SQLite database.
-    /// Returns a detailed result object; callers can automatically fall back to XML when
-    /// <see cref="DbLoadResult.Success"/> is <c>false</c>.
+    /// Returns a detailed result object. A caller must validate persisted exclusions before
+    /// using raw XML fallback when <see cref="DbLoadResult.Success"/> is <c>false</c>.
     /// </summary>
     public static async Task<DbLoadResult> TryLoadAsync(ElementBaseCollection target)
     {
@@ -294,7 +251,7 @@ internal static class DbElementLoader
             }
             else if (!result.Success)
             {
-                DebugLogService.Instance.Warn("DbElementLoader: falling back to XML.", result.Summary);
+                DebugLogService.Instance.Warn("DbElementLoader: prepared catalog could not be loaded.", result.Summary);
             }
             if (result.Success)
             {
@@ -363,25 +320,6 @@ internal static class DbElementLoader
         string Source,
         string SourceFileRelativePath,
         string? SourceReleaseText);
-    private record TextRow(long ElementId, string Kind, int Ordinal, int? Level, bool? Display,
-        string? AltText, string? ActionText, string? UsageText, string Body);
-    private record GrantRow(long ElementId, string OwnerKind, string GrantType,
-        string? TargetId, string? Name, int? Level, string? SpellcastingName, bool? IsPrepared, string? Requirements);
-    private record SelectRow(long ElementId, string OwnerKind, string SelectType, string Name,
-        string? Supports, int? Level, int Number, string? Default, bool Optional,
-        string? SpellcastingName, string? RawXml, string? Requirements);
-    private record StatRow(long ElementId, string OwnerKind, string StatName, string? Value,
-        string? Bonus, string? Equipped, int? Level, bool Inline, string? Alt, string? Requirements);
-    private record SpellcastingRow(long ElementId, string ProfileName, string? Ability,
-        bool IsExtended, bool? Prepare, bool? AllowReplace, string? ListText, string? ExtendText,
-        XmlElement? RawProfile = null);
-    private record SpellRow(long ElementId, int Level, string? School, string? CastingTime,
-        string? Range, string? Duration, bool HasVerbal, bool HasSomatic, bool HasMaterial,
-        string? Material, bool IsConcentration, bool IsRitual);
-    private record ClassRow(long ElementId, string? HitDie, string? ShortText);
-    private record MulticlassRow(long ClassElementId, string? MulticlassId,
-        string? Prerequisite, string? Requirements, string? Proficiencies);
-    private record SetterRow(string Name, string? Value, IReadOnlyList<(string Key, string? Val)> Attributes);
     private sealed record MetadataRow(
         int SchemaVersion,
         int DataVersion,
@@ -439,152 +377,20 @@ internal static class DbElementLoader
         return LoadPreparedCatalog(conn, dbPath, metadata, target);
     }
 
-    private static void AppendSummaryContent(XmlDocument doc, XmlElement desc, IEnumerable<TextRow> summaryRows)
-    {
-        foreach (var summary in summaryRows)
-        {
-            if (string.IsNullOrWhiteSpace(summary.Body)) continue;
-            try
-            {
-                XmlDocumentFragment frag = doc.CreateDocumentFragment();
-                frag.InnerXml = summary.Body;
-                desc.AppendChild(frag);
-            }
-            catch (XmlException)
-            {
-                XmlElement p = doc.CreateElement("p");
-                p.InnerText = summary.Body;
-                desc.AppendChild(p);
-            }
-        }
-    }
-
-    private static void AppendSet(XmlDocument doc, XmlElement parent, string name, string value)
-    {
-        XmlElement set = doc.CreateElement("set");
-        set.SetAttribute("name", name);
-        set.InnerText = value;
-        parent.AppendChild(set);
-    }
-
-    private static void AppendRules(
-        XmlDocument doc, XmlElement rulesNode, long elementId, string ownerKind,
-        Dictionary<long, List<GrantRow>> grantsMap,
-        Dictionary<long, List<SelectRow>> selectsMap,
-        Dictionary<long, List<StatRow>> statsMap)
-    {
-        if (grantsMap.TryGetValue(elementId, out var grants))
-        {
-            foreach (var g in grants.Where(r => r.OwnerKind == ownerKind))
-            {
-                XmlElement grant = doc.CreateElement("grant");
-                grant.SetAttribute("type", g.GrantType);
-                if (!string.IsNullOrEmpty(g.TargetId))
-                    grant.SetAttribute("id", g.TargetId);
-                if (!string.IsNullOrEmpty(g.Name))
-                    grant.SetAttribute("name", g.Name);
-                if (g.Level.HasValue)
-                    grant.SetAttribute("level", g.Level.Value.ToString());
-                if (!string.IsNullOrEmpty(g.SpellcastingName))
-                    grant.SetAttribute("spellcasting", g.SpellcastingName);
-                if (g.IsPrepared.HasValue)
-                    grant.SetAttribute("prepared", g.IsPrepared.Value ? "true" : "false");
-                if (!string.IsNullOrEmpty(g.Requirements))
-                    grant.SetAttribute("requirements", g.Requirements);
-                rulesNode.AppendChild(grant);
-            }
-        }
-
-        if (selectsMap.TryGetValue(elementId, out var selects))
-        {
-            foreach (var s in selects.Where(r => r.OwnerKind == ownerKind))
-            {
-                XmlElement sel = CreateRuleElementFromRawXml(doc, s.RawXml, "select")
-                    ?? doc.CreateElement("select");
-                sel.SetAttribute("type", s.SelectType);
-                sel.SetAttribute("name", s.Name);
-                if (!string.IsNullOrEmpty(s.Supports))
-                    sel.SetAttribute("supports", s.Supports);
-                if (s.Level.HasValue)
-                    sel.SetAttribute("level", s.Level.Value.ToString());
-                if (s.Number != 1)
-                    sel.SetAttribute("number", s.Number.ToString());
-                if (!string.IsNullOrEmpty(s.Default))
-                    sel.SetAttribute("default", s.Default);
-                if (s.Optional)
-                    sel.SetAttribute("optional", "true");
-                if (!string.IsNullOrEmpty(s.SpellcastingName))
-                    sel.SetAttribute("spellcasting", s.SpellcastingName);
-                if (!string.IsNullOrEmpty(s.Requirements))
-                    sel.SetAttribute("requirements", s.Requirements);
-                rulesNode.AppendChild(sel);
-            }
-        }
-
-        if (statsMap.TryGetValue(elementId, out var stats))
-        {
-            foreach (var st in stats.Where(r => r.OwnerKind == ownerKind))
-            {
-                XmlElement stat = doc.CreateElement("stat");
-                stat.SetAttribute("name", st.StatName);
-                if (!string.IsNullOrEmpty(st.Value))
-                    stat.SetAttribute("value", st.Value);
-                if (!string.IsNullOrEmpty(st.Bonus))
-                    stat.SetAttribute("bonus", st.Bonus);
-                if (!string.IsNullOrEmpty(st.Equipped))
-                    stat.SetAttribute("equipped", st.Equipped);
-                if (st.Level.HasValue)
-                    stat.SetAttribute("level", st.Level.Value.ToString());
-                if (st.Inline)
-                    stat.SetAttribute("inline", "true");
-                if (!string.IsNullOrEmpty(st.Alt))
-                    stat.SetAttribute("alt", st.Alt);
-                if (!string.IsNullOrEmpty(st.Requirements))
-                    stat.SetAttribute("requirements", st.Requirements);
-                rulesNode.AppendChild(stat);
-            }
-        }
-    }
-
-    private static XmlElement? CreateRuleElementFromRawXml(XmlDocument doc, string? rawXml, string expectedName)
-    {
-        if (string.IsNullOrWhiteSpace(rawXml))
-            return null;
-
-        try
-        {
-            XmlDocument rawDocument = new();
-            rawDocument.LoadXml(rawXml);
-            if (rawDocument.DocumentElement == null ||
-                !rawDocument.DocumentElement.Name.Equals(expectedName, StringComparison.OrdinalIgnoreCase))
-                return null;
-
-            return (XmlElement)doc.ImportNode(rawDocument.DocumentElement, deep: true);
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
     // ── DB queries ───────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Loads the forwarding addresses content declared for ids it renamed. Absent in databases
-    /// built before aliases existed, which simply means nothing forwards.
+    /// Loads forwarding addresses for renamed content. The current data contract requires
+    /// this table; a read failure must reject the candidate instead of silently losing aliases.
     /// </summary>
     private static void LoadElementAliases(SqliteConnection conn)
     {
         var aliases = new List<KeyValuePair<string, string>>();
-        try
-        {
-            using var cmd = conn.CreateCommand();
-            cmd.CommandText = "SELECT saved_aurora_id, target_aurora_id FROM content_element_aliases";
-            using var reader = cmd.ExecuteReader();
-            while (reader.Read())
-                aliases.Add(new(reader.GetString(0), reader.GetString(1)));
-        }
-        catch (SqliteException) { aliases.Clear(); }
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT saved_aurora_id, target_aurora_id FROM content_element_aliases";
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read())
+            aliases.Add(new(reader.GetString(0), reader.GetString(1)));
         ElementIdAliases.Set(aliases);
     }
 
