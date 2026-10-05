@@ -47,6 +47,22 @@
     <NoWarn>$(NoWarn);CS8618</NoWarn>
   </PropertyGroup>
 
+  <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
+    <!-- Avoid the Mono concurrent-GC crash reproduced during full content refresh.
+         See docs/android-gc-investigation-2026-10-03.txt for evidence and tradeoffs. -->
+    <AndroidEnvironment Include="Platforms\Android\gc.env"
+                        Condition="'$(AuroraDiagnosticConcurrentGC)' != 'true'" />
+    <AndroidEnvironment Include="Platforms\Android\gc-concurrent.env"
+                        Condition="'$(AuroraDiagnosticConcurrentGC)' == 'true'" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(AuroraAndroidDiagnostics)' == 'true' AND $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
+    <DefineConstants>$(DefineConstants);AURORA_ANDROID_DIAGNOSTICS</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(AuroraAndroidDiagnostics)' == 'true' AND $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
+    <AndroidEnvironment Include="Platforms\Android\diagnostics.env" />
+  </ItemGroup>
+
   <ItemGroup>
     <!-- App Icon -->
     <MauiIcon Include="Resources\AppIcon\appicon.png" />

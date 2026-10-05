@@ -18,11 +18,37 @@ namespace Aurora.App;
         ConfigChanges.Density)]
 public class MainActivity : MauiAppCompatActivity
 {
+#if AURORA_ANDROID_DIAGNOSTICS
+    private AndroidResponsivenessProbe? _probe;
+#endif
     protected override void OnCreate(Bundle? savedInstanceState)
     {
         base.OnCreate(savedInstanceState);
         // Android 15 (SDK 35) forces edge-to-edge. Calling this explicitly tells the WebView
         // to report real system-bar heights via env(safe-area-inset-*) in CSS.
         WindowCompat.SetDecorFitsSystemWindows(Window!, false);
+#if AURORA_ANDROID_DIAGNOSTICS
+        _probe = new AndroidResponsivenessProbe();
+#endif
     }
+
+#if AURORA_ANDROID_DIAGNOSTICS
+    protected override void OnResume()
+    {
+        base.OnResume();
+        _probe?.SetForeground(true);
+    }
+
+    protected override void OnPause()
+    {
+        _probe?.SetForeground(false);
+        base.OnPause();
+    }
+
+    protected override void OnDestroy()
+    {
+        _probe?.Dispose();
+        base.OnDestroy();
+    }
+#endif
 }
