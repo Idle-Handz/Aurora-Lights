@@ -1,0 +1,1 @@
+Characters can now keep several companions at once, each with its own name, portrait and calculated statistics, and the Extras tab can add any creature template from your installed content as a companion regardless of class.

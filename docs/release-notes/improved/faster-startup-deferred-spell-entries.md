@@ -1,0 +1,1 @@
+Starting the app is faster and uses noticeably less memory: the per-class "Additional Spell" entries offered by Add Custom Feature are now built the first time you open one of those categories instead of on every launch.
