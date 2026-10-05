@@ -86,6 +86,7 @@ public static class BuildSelectionOptionResolver
                 .Where(element => element.Type.Equals(rule.Attributes.Type));
 
             IEnumerable<ElementBase> elements;
+            bool supportsEvaluationFailed = false;
             if (!rule.Attributes.ContainsSupports())
             {
                 elements = baseCollection;
@@ -98,10 +99,11 @@ public static class BuildSelectionOptionResolver
                     elements = interpreter.EvaluateSupportsExpression<ElementBase>(
                         supportsExpression,
                         baseCollection,
-                        rule.Attributes.SupportsElementIdRange());
+                        rule.Attributes.SupportsElementIdRange()).ToList();
                 }
                 catch
                 {
+                    supportsEvaluationFailed = true;
                     elements = SpellFallbackOptions(rule, baseCollection, settings.SpellAccessMap);
                 }
             }
@@ -115,7 +117,10 @@ public static class BuildSelectionOptionResolver
                 owned,
                 settings);
 
-            if (options.Count == 0 && isSpellRule)
+            // An evaluated expression may correctly exclude every candidate. Recovery must
+            // not turn its negation, conjunction, or source-filtered empty result into a union.
+            bool allowFallback = !rule.Attributes.ContainsSupports() || supportsEvaluationFailed;
+            if (options.Count == 0 && isSpellRule && allowFallback)
             {
                 options = BuildElementOptions(
                     SpellFallbackOptions(rule, baseCollection, settings.SpellAccessMap),
@@ -126,7 +131,7 @@ public static class BuildSelectionOptionResolver
             }
 
             if (options.Count == 0
-                && rule.Attributes.ContainsSupports()
+                && supportsEvaluationFailed
                 && !isSpellRule)
             {
                 options = BuildElementOptions(
@@ -138,7 +143,7 @@ public static class BuildSelectionOptionResolver
             }
 
             List<BuildSelectionOption> deduplicated = DeduplicateOptions(options);
-            if (deduplicated.Count == 0 && settings.ElementFallbackProvider is not null)
+            if (deduplicated.Count == 0 && allowFallback && settings.ElementFallbackProvider is not null)
             {
                 List<BuildSelectionOption> fallback = BuildElementOptions(
                     settings.ElementFallbackProvider(rule),
