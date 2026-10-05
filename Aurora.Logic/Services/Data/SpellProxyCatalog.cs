@@ -66,6 +66,29 @@ public static class SpellProxyCatalog
         }
     }
 
+    // Loading prepares private elements first; retain the active proxy state if activation fails.
+    internal static Action CaptureRestore()
+    {
+        lock (Gate)
+        {
+            var catalog = _catalog;
+            var listNames = _listNames;
+            var unavailable = _unavailable;
+            var materialized = Materialized.ToArray();
+            return () =>
+            {
+                lock (Gate)
+                {
+                    _catalog = catalog;
+                    _listNames = listNames;
+                    _unavailable = unavailable;
+                    Materialized.Clear();
+                    Materialized.UnionWith(materialized);
+                }
+            };
+        }
+    }
+
     /// <summary>The picker category each spellcasting list is offered under.</summary>
     public static string CategoryFor(string listName) =>
         string.IsNullOrWhiteSpace(listName) ? "Additional Spell" : $"Additional {listName} Spell";
