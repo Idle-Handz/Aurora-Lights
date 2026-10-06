@@ -26,6 +26,7 @@ public sealed record OverrideCorrectionModel(
 
     public string Summary => Accepted ? "Accepted upstream"
         : Incorporated ? "Upstream has adopted this"
+        : string.Equals(State, "approved-local", StringComparison.Ordinal) ? "Approved locally"
         : "Still needed";
 }
 
@@ -44,9 +45,12 @@ public sealed record OverrideFileModel(
     IReadOnlyList<OverrideCorrectionModel> Corrections,
     string? Problem)
 {
-    public int IncorporatedCount => Corrections.Count(c => c.Incorporated && !c.Accepted);
+    public bool IsDisabled { get; init; }
+
+    public int IncorporatedCount => IsDisabled ? 0 : Corrections.Count(c => c.Incorporated && !c.Accepted);
 
     public string Status => Problem is not null ? "Cannot be read"
+        : IsDisabled ? "Disabled"
         : CanRetire ? "Ready to retire"
         : IncorporatedCount > 0 ? $"{IncorporatedCount} ready to clear"
         : "In use";
@@ -159,9 +163,18 @@ public sealed class ContentDoctorService
     /// Clears one correction by recording that upstream now carries it. The file is rewritten, so
     /// the content database is a refresh behind until the next import.
     /// </summary>
-    public void AcceptCorrection(OverrideFileModel file, OverrideCorrectionModel correction) =>
+    public void AcceptCorrection(OverrideFileModel file, OverrideCorrectionModel correction)
+    {
+        // The model is presentation state. Check the real XML so an old or altered model
+        // cannot authorize accepting a disabled correction; the writer still checks both hashes.
+        var current = ContentCorrectionEditor.Read(file.FilePath);
+        if (IsDisabled(current.LocalXml))
+            throw new InvalidDataException("Enable the local correction file before accepting its corrections.");
+        if (current.LocalHash != file.LocalHash || current.UpstreamHash != file.UpstreamHash)
+            throw new IOException("Content changed since review. Review the correction again before accepting it.");
         LocalCorrectionDocument.AcceptUpstream(
             file.FilePath, file.LocalHash, file.UpstreamHash, [correction.Key]);
+    }
 
     /// <summary>
     /// The content folder: the one the content database sits in. Paths the database records for a content
@@ -353,14 +366,15 @@ public sealed class ContentDoctorService
             var corrections = evaluation.Corrections
                 .Select(correction => new OverrideCorrectionModel(
                     correction.Key, correction.Operation, correction.TargetId, correction.ReplacementId,
-                    correction.State, IsIncorporated(evaluation, correction.Key), correction.Reason))
+                    correction.State, evaluation.IncorporatedKeys.Contains(correction.Key), correction.Reason))
                 .ToList();
 
             return new(path, Relative(root, path), Relative(root, source), evaluation.CanRetire,
                 LocalCorrectionDocument.FileFingerprint(path),
                 File.Exists(source) ? LocalCorrectionDocument.FileFingerprint(source) : string.Empty,
                 corrections,
-                File.Exists(source) ? null : "The upstream file it corrects is not installed.");
+                File.Exists(source) ? null : "The upstream file it corrects is not installed.")
+            { IsDisabled = IsDisabled(evaluation.LocalXml) };
         }
         catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or XmlException)
         {
@@ -368,14 +382,8 @@ public sealed class ContentDoctorService
         }
     }
 
-    /// <summary>
-    /// The evaluator reports one reason per unaccepted correction, prefixed with its key. A reason
-    /// saying the fix was incorporated is the signal that upstream no longer needs the correction.
-    /// </summary>
-    private static bool IsIncorporated(LocalCorrectionEvaluation evaluation, string key) =>
-        evaluation.ReviewReasons.Any(reason =>
-            reason.StartsWith(key + ":", StringComparison.Ordinal) &&
-            reason.Contains("incorporated", StringComparison.OrdinalIgnoreCase));
+    private static bool IsDisabled(string localXml) =>
+        bool.TryParse((string?)LocalCorrectionDocument.Parse(localXml).Root!.Attribute("ignore"), out bool ignored) && ignored;
 
     private static string Relative(string root, string path)
     {

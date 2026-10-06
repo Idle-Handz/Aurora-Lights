@@ -73,6 +73,94 @@ public sealed class ContentDoctorServiceTests : IDisposable
         file.Status.Should().Be("1 ready to clear");
     }
 
+    [Fact]
+    public void AnApprovedLocalCorrectionIsRecognizedWithoutOfferingToClearIt()
+    {
+        File.WriteAllText(Upstream, Baseline);
+        WriteOverride();
+        var approved = LocalCorrectionDocument.ApproveLocal(
+            File.ReadAllText(Override), Baseline, ["fix"]);
+        File.WriteAllText(Override, approved.LocalXml);
+
+        OverrideFileModel file = ContentDoctorService.Evaluate(Override);
+
+        file.Problem.Should().BeNull();
+        file.Corrections[0].State.Should().Be("approved-local");
+        file.Corrections[0].Summary.Should().Be("Approved locally");
+        file.Corrections[0].Incorporated.Should().BeFalse();
+        file.IncorporatedCount.Should().Be(0);
+        file.CanRetire.Should().BeFalse();
+    }
+
+    [Fact]
+    public void AnApprovedLocalCorrectionAlreadyInUpstreamCanStillBeCleared()
+    {
+        File.WriteAllText(Upstream, Corrected);
+        WriteOverride();
+        var approved = LocalCorrectionDocument.ApproveLocal(
+            File.ReadAllText(Override), Corrected, ["fix"]);
+        File.WriteAllText(Override, approved.LocalXml);
+        approved.ReviewReasons.Should().BeEmpty("local approval suppresses pending-review messages");
+        var service = new ContentDoctorService(new ContentDatabaseService());
+
+        OverrideFileModel before = ContentDoctorService.Evaluate(Override);
+
+        before.Corrections[0].State.Should().Be("approved-local");
+        before.Corrections[0].Incorporated.Should().BeTrue();
+        before.Corrections[0].Summary.Should().Be("Upstream has adopted this");
+        before.Status.Should().Be("1 ready to clear");
+        service.AcceptCorrection(before, before.Corrections[0]);
+
+        OverrideFileModel after = ContentDoctorService.Evaluate(Override);
+        after.Corrections[0].Accepted.Should().BeTrue();
+        after.Corrections[0].Summary.Should().Be("Accepted upstream");
+        after.IncorporatedCount.Should().Be(0);
+        after.CanRetire.Should().BeTrue();
+        File.Exists(Override).Should().BeTrue("acceptance leaves retirement to a separate import");
+    }
+
+    [Fact]
+    public void ADisabledIncorporatedCorrectionIsNotOfferedForClearingAndRejectsAnAlteredModel()
+    {
+        File.WriteAllText(Upstream, Corrected);
+        WriteOverride();
+        var local = LocalCorrectionDocument.Parse(File.ReadAllText(Override));
+        local.Root!.SetAttributeValue("ignore", true);
+        File.WriteAllText(Override, local.ToString(System.Xml.Linq.SaveOptions.DisableFormatting));
+        string originalXml = File.ReadAllText(Override);
+        var service = new ContentDoctorService(new ContentDatabaseService());
+
+        OverrideFileModel file = ContentDoctorService.Evaluate(Override);
+
+        file.Problem.Should().BeNull();
+        file.IsDisabled.Should().BeTrue();
+        file.Corrections[0].Incorporated.Should().BeTrue("incorporation remains a fact even while the file is disabled");
+        file.IncorporatedCount.Should().Be(0, "disabled corrections are not ready to clear");
+        file.Status.Should().Be("Disabled");
+        Action clear = () => service.AcceptCorrection(file with { IsDisabled = false }, file.Corrections[0]);
+        clear.Should().Throw<InvalidDataException>().WithMessage("*Enable the local correction file*");
+        File.ReadAllText(Override).Should().Be(originalXml);
+    }
+
+    [Fact]
+    public void ACorrectionDisabledAfterReviewCannotBeCleared()
+    {
+        File.WriteAllText(Upstream, Corrected);
+        WriteOverride();
+        OverrideFileModel reviewed = ContentDoctorService.Evaluate(Override);
+        reviewed.IsDisabled.Should().BeFalse();
+        var local = LocalCorrectionDocument.Parse(File.ReadAllText(Override));
+        local.Root!.SetAttributeValue("ignore", true);
+        File.WriteAllText(Override, local.ToString(System.Xml.Linq.SaveOptions.DisableFormatting));
+        string disabledXml = File.ReadAllText(Override);
+        var service = new ContentDoctorService(new ContentDatabaseService());
+
+        Action clear = () => service.AcceptCorrection(reviewed, reviewed.Corrections[0]);
+
+        clear.Should().Throw<InvalidDataException>().WithMessage("*Enable the local correction file*");
+        File.ReadAllText(Override).Should().Be(disabledXml);
+    }
+
     /// <summary>
     /// The whole point of clearing: once nothing is left doing work, the file can retire itself on
     /// the next content refresh rather than sitting there forever.

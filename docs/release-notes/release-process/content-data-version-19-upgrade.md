@@ -1,0 +1,1 @@
+This build includes Aurora.Content 0.11.0 and content data version 19; after installing it, close character tabs and use Settings > Content > Data > Refresh Database to rebuild an older database from installed XML with the updated correction review rules.

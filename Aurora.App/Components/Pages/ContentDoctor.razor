@@ -100,7 +100,7 @@ else
                                     </MudChip>
                                 </td>
                                 <td style="text-align: right;">
-                                    @if (correction.Incorporated && !correction.Accepted)
+                                    @if (!file.IsDisabled && correction.Incorporated && !correction.Accepted)
                                     {
                                         <MudButton Size="Size.Small" Variant="Variant.Filled" Color="Color.Primary"
                                                    Disabled="_busy"
