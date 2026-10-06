@@ -33,6 +33,73 @@ public sealed class ContentServiceUpdateTests
             .Should().Be(Path.Combine(root, "The Book of Xellarant.index"));
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DisabledStartupMakesNoRequestsButManualChecksStillWork(bool enabledWhenQueued)
+    {
+        TestApplicationContextInstaller.EnsureInstalled();
+        var settings = ApplicationContext.Current.Settings;
+        string originalRoot = settings.DocumentsRootDirectory;
+        string root = Path.Combine(Path.GetTempPath(), "Aurora.Tests", Guid.NewGuid().ToString("N"));
+        string custom = Path.Combine(root, "custom");
+        Directory.CreateDirectory(Path.Combine(custom, "source"));
+        byte[] indexBytes = Encoding.UTF8.GetBytes("""
+            <index>
+              <info><update><file name="source.index" url="https://example.test/source.index" /></update></info>
+              <files><file name="book.xml" url="https://example.test/book.xml" /></files>
+            </index>
+            """);
+        var handler = new PublishedContentHandler(indexBytes)
+        {
+            BookXml = "<elements><info><name>Available update</name></info></elements>"
+        };
+        using var client = new HttpClient(handler);
+        string bookPath = Path.Combine(custom, "source", "book.xml");
+        await File.WriteAllBytesAsync(Path.Combine(custom, "source.index"), indexBytes);
+        await File.WriteAllTextAsync(bookPath, "<elements />");
+
+        try
+        {
+            settings.DocumentsRootDirectory = root;
+            var characters = new CharacterService();
+            var database = new ContentDatabaseService();
+            var service = new ContentService(characters, new CharacterTabService(), database,
+                new CompendiumService(database, characters), new ContentIndexUpdateService(client));
+            int notifications = 0;
+            service.ContentDownloaded += _ => notifications++;
+
+            bool enabled = enabledWhenQueued;
+            Func<Task> queuedStartup = () => service.RunStartupContentRefreshAsync(() => enabled);
+            enabled = false;
+            await queuedStartup();
+
+            handler.Requests.Should().BeEmpty();
+            File.ReadAllText(bookPath).Should().Be("<elements />");
+            notifications.Should().Be(0);
+            service.ContentReloadPending.Should().BeFalse();
+            service.ContentUpdateStartedUtc.Should().BeNull();
+            service.StartupAutoDownloadEnabled.Should().BeFalse();
+            service.StartupContentUpdateStatus.Should().Be("Skipped: auto-download was disabled.");
+            service.LastContentUpdateTrigger.Should().BeNull();
+
+            var manual = await service.CheckForUpdatesAsync();
+            manual.Outcome.Should().Be(ContentUpdateOutcome.Updated);
+            handler.Requests.Should().HaveCount(2);
+            File.ReadAllText(bookPath).Should().Be(handler.BookXml);
+            service.ContentReloadPending.Should().BeTrue();
+            service.LastContentUpdateTrigger.Should().Be("Manual");
+            service.StartupContentUpdateStatus.Should().Be("Skipped: auto-download was disabled.");
+            notifications.Should().Be(0, "manual checks must not raise the startup notification");
+        }
+        finally
+        {
+            settings.DocumentsRootDirectory = originalRoot;
+            DataManager.Current.InitializeDirectories();
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     [Fact]
     public async Task StartupChecksPreservePublishedIndexesAndOnlyNotifyForRealChanges()
     {
@@ -79,7 +146,7 @@ public sealed class ContentServiceUpdateTests
             for (int launch = 0; launch < 2; launch++)
             {
                 var service = NewStartupService();
-                await service.RunStartupContentRefreshAsync();
+                await service.RunStartupContentRefreshAsync(() => true);
                 service.ContentUpdatedFileCount.Should().Be(0);
                 service.ContentReloadPending.Should().BeFalse();
                 notifications.Should().Be(0);
@@ -90,8 +157,10 @@ public sealed class ContentServiceUpdateTests
             // Suppressing a false update must not suppress a real content download.
             handler.BookXml = "<elements><info><name>Updated book</name></info></elements>";
             var changed = NewStartupService();
-            await changed.RunStartupContentRefreshAsync();
+            await changed.RunStartupContentRefreshAsync(() => true);
             changed.ContentReloadPending.Should().BeTrue();
+            changed.StartupAutoDownloadEnabled.Should().BeTrue();
+            changed.LastContentUpdateTrigger.Should().Be("Startup");
             notifications.Should().Be(1);
             File.ReadAllText(bookPath).Should().Be(handler.BookXml);
             File.ReadAllBytes(indexPath).Should().Equal(indexBytes);

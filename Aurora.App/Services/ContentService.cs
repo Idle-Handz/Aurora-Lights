@@ -72,6 +72,11 @@ public sealed class ContentService
     public DateTimeOffset? ContentUpdateStartedUtc { get; private set; }
     public DateTimeOffset? ContentUpdateCompletedUtc { get; private set; }
 
+    // Retain launch evidence separately from the bounded console and later manual checks.
+    public bool? StartupAutoDownloadEnabled { get; private set; }
+    public string StartupContentUpdateStatus { get; private set; } = "Not evaluated this session.";
+    public string? LastContentUpdateTrigger { get; private set; }
+
     /// <summary>
     /// Adds a directory to the additional custom content paths and persists the change.
     /// No-op if the path is already in the list or is the built-in custom directory.
@@ -117,7 +122,7 @@ public sealed class ContentService
     /// <summary>
     /// Downloads an .index file from <paramref name="url"/> and saves it to the
     /// built-in custom directory. Does not download content files — call
-    /// <see cref="CheckForUpdatesAsync"/> afterwards.
+    /// <see cref="CheckForUpdatesAsync()"/> afterwards.
     /// </summary>
     public async Task<(bool Success, string Message)> FetchIndexAsync(string url)
     {
@@ -152,12 +157,17 @@ public sealed class ContentService
     /// <summary>
     /// Checks all installed .index trees, downloading or refreshing referenced XML content files.
     /// </summary>
-    public async Task<(ContentUpdateOutcome Outcome, string Message)> CheckForUpdatesAsync()
+    public Task<(ContentUpdateOutcome Outcome, string Message)> CheckForUpdatesAsync() =>
+        CheckForUpdatesAsync("Manual");
+
+    private async Task<(ContentUpdateOutcome Outcome, string Message)> CheckForUpdatesAsync(string trigger)
     {
         string dir = GetBuiltInCustomDirectory();
         IReadOnlyList<string> indexNames = GetInstalledIndexNames(dir);
         if (indexNames.Count == 0)
         {
+            LastContentUpdateTrigger = trigger;
+            ContentUpdateStartedUtc = DateTimeOffset.UtcNow;
             ContentUpdateStatus = "No installed .index sources found.";
             ContentUpdateProgress = null;
             ContentUpdateSourceCount = 0;
@@ -170,6 +180,7 @@ public sealed class ContentService
         if (!await _contentUpdateLock.WaitAsync(0).ConfigureAwait(false))
             return (ContentUpdateOutcome.UpToDate, "A content source update check is already running.");
 
+        LastContentUpdateTrigger = trigger;
         var started = DateTimeOffset.UtcNow;
         IsCheckingContentUpdates = true;
         ContentUpdateStartedUtc = started;
@@ -182,6 +193,7 @@ public sealed class ContentService
 
         try
         {
+            DebugLogService.Instance.Info($"Content update started: {trigger}; {indexNames.Count} installed source(s).");
             // The updater upgrades request URLs to HTTPS. Keep the publisher's index bytes
             // intact: rewriting them makes unchanged downloads look like new content.
             var progress = new InlineProgress(update =>
@@ -331,7 +343,11 @@ public sealed class ContentService
     /// decides how to surface it (today: a snackbar with a Reload action when no dirty tab
     /// would be lost, otherwise a passive "open Settings" prompt).
     /// </summary>
-    public async Task RunStartupContentRefreshAsync()
+    /// <param name="autoDownloadEnabled">
+    /// Reads the current startup preference on the worker, immediately before the check.
+    /// Passing a reader instead of a captured value also respects changes made while queued.
+    /// </param>
+    public async Task RunStartupContentRefreshAsync(Func<bool> autoDownloadEnabled)
     {
         await _startupRefreshLock.WaitAsync().ConfigureAwait(false);
         try
@@ -340,7 +356,17 @@ public sealed class ContentService
                 return;
 
             _startupRefreshAttempted = true;
-            var (outcome, _) = await CheckForUpdatesAsync().ConfigureAwait(false);
+            StartupAutoDownloadEnabled = autoDownloadEnabled();
+            StartupContentUpdateStatus = StartupAutoDownloadEnabled.Value
+                ? "Started: auto-download was enabled."
+                : "Skipped: auto-download was disabled.";
+            DebugLogService.Instance.Info($"Startup content update: {StartupContentUpdateStatus}");
+            if (!StartupAutoDownloadEnabled.Value)
+                return;
+
+            var (outcome, message) = await CheckForUpdatesAsync("Startup").ConfigureAwait(false);
+            StartupContentUpdateStatus = $"{outcome}: {message}";
+            DebugLogService.Instance.Info($"Startup content update: {StartupContentUpdateStatus}");
             if (outcome == ContentUpdateOutcome.Updated)
             {
                 ContentReloadPending = true;
@@ -350,6 +376,7 @@ public sealed class ContentService
         }
         catch (Exception ex)
         {
+            StartupContentUpdateStatus = $"Failed: {ex.Message}";
             // CheckForUpdatesAsync already catches its own exceptions and returns Failed,
             // so this is belt-and-braces against anything escaping the event handlers.
             DebugLogService.Catch(ex, "ContentService.RunStartupContentRefreshAsync");

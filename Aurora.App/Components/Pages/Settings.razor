@@ -1033,10 +1033,10 @@
                 @if (_dbHealth != null)
                 {
                     <div style="margin-bottom: 16px;">
-                        <div class="pref-row-title" style="margin-bottom: 6px;">Database health</div>
+                        <div class="pref-row-title" style="margin-bottom: 6px;">Content trust</div>
                         <div class="pref-row-desc" style="margin-bottom: 6px;">
-                            Checks normalized database records and import diagnostics. Prepared XML loading and
-                            definition comparisons are checked separately; these counts do not certify Legacy behavior.
+                            Problems recorded during the last database refresh, grouped by source file.
+                            After correcting a file, refresh the database to update these results.
                         </div>
                         <MudAlert Severity="@HealthSeverity(_dbHealth)"
                                   Dense="true"
@@ -1044,38 +1044,67 @@
                                   Class="mb-2">
                             @HealthSummary(_dbHealth)
                         </MudAlert>
-                        <div class="pref-row-desc">
-                            Blocking: @_dbHealth.BlockingIssueCount
-                            · Manual review: @_dbHealth.ManualReviewIssueCount
-                            · Auto-recovered: @_dbHealth.AutoRecoveredIssueCount
-                            · Expected: @_dbHealth.ExpectedIssueCount
-                        </div>
-                        <div class="pref-row-desc">Actionable unresolved links: @_dbHealth.ActionableUnresolvedLinks</div>
-                        <div class="pref-row-desc">Classified unresolved links: @_dbHealth.ClassifiedUnresolvedLinks</div>
-                        <div class="pref-row-desc">Source integrity issues: @_dbHealth.SourceIntegrityIssues</div>
-                        <div class="pref-row-desc">Missing spell rows: @_dbHealth.MissingResolvedSpellRows</div>
-                        <div class="pref-row-desc">Missing item rows: @_dbHealth.MissingResolvedItemRows</div>
-                        <div class="pref-row-desc">Missing companion rows: @_dbHealth.MissingResolvedCompanionRows</div>
-                        @if (_dbHealth.Groups.Count > 0)
+                        @foreach (var file in _dbHealth.Samples.Where(sample => NeedsAttention(sample.Impact))
+                            .GroupBy(sample => sample.FilePath)
+                            .OrderBy(file => file.Min(sample => TrustImpactOrder(sample.Impact)))
+                            .ThenBy(file => file.Key, StringComparer.OrdinalIgnoreCase))
                         {
-                            <div class="pref-row-title" style="margin-top: 10px; margin-bottom: 4px;">Diagnostic categories</div>
-                            @foreach (var group in _dbHealth.Groups.OrderBy(group => TrustImpactOrder(group.Impact)).Take(12))
-                            {
-                                <div class="pref-row-desc">
-                                    @TrustImpactLabel(group.Impact): @HealthGroupLabel(group): @group.Count
+                            <section class="content-problem-file @(file.Any(sample => sample.Impact == ContentDatabaseTrustImpact.Blocking) ? "has-errors" : "needs-review")">
+                                <div class="pref-row-title content-problem-path">
+                                    @(string.IsNullOrWhiteSpace(file.Key) ? "Source file unavailable" : file.Key)
                                 </div>
-                            }
+                                @foreach (var sample in file.OrderBy(sample => TrustImpactOrder(sample.Impact)))
+                                {
+                                    <div class="content-problem">
+                                        <div>
+                                            <strong class="@(sample.Impact == ContentDatabaseTrustImpact.Blocking ? "content-error-label" : "content-review-label")">@TrustImpactLabel(sample.Impact):</strong>
+                                            @HealthIssueExplanation(sample)
+                                        </div>
+                                        @if (!string.IsNullOrWhiteSpace(sample.Owner))
+                                        {
+                                            <div class="pref-row-desc">Element: <code>@sample.Owner</code></div>
+                                        }
+                                        @if (sample.Area == "unresolved-link" && !string.IsNullOrWhiteSpace(sample.Key))
+                                        {
+                                            <div class="pref-row-desc">Missing target: <code>@sample.Key</code></div>
+                                        }
+                                        else if (sample.Reason == "duplicate-element-id-in-file")
+                                        {
+                                            <div class="pref-row-desc">Repeated ID: <code>@sample.Key</code></div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(sample.Text) && sample.Text != sample.Key)
+                                        {
+                                            <details class="content-problem-detail">
+                                                <summary>Rule details</summary>
+                                                <code>@sample.Text</code>
+                                            </details>
+                                        }
+                                    </div>
+                                }
+                            </section>
                         }
-                        @if (_dbHealth.Samples.Count > 0)
+                        @if (_dbHealth.AutoRecoveredIssueCount > 0 || _dbHealth.ExpectedIssueCount > 0)
                         {
-                            <div class="pref-row-title" style="margin-top: 10px; margin-bottom: 4px;">Review samples</div>
-                            @foreach (var sample in _dbHealth.Samples.OrderBy(sample => TrustImpactOrder(sample.Impact)).Take(8))
-                            {
-                                <div class="pref-row-desc" style="font-family: monospace;">
-                                    @HealthSampleLabel(sample)
-                                </div>
-                            }
+                            <details class="content-information">
+                                <summary>Informational — @_dbHealth.AutoRecoveredIssueCount auto-recovered, @_dbHealth.ExpectedIssueCount expected</summary>
+                                <div class="pref-row-desc">These findings do not require corrections. The importer handled the recovered findings and classified the expected links.</div>
+                                @foreach (var group in _dbHealth.Groups.Where(group => !NeedsAttention(group.Impact))
+                                    .OrderBy(group => TrustImpactOrder(group.Impact)).ThenBy(group => group.FilePath))
+                                {
+                                    <div class="pref-row-desc">@TrustImpactLabel(group.Impact): @HealthGroupLabel(group) (@group.Count)</div>
+                                }
+                            </details>
                         }
+                        <details class="content-information">
+                            <summary>Database check details</summary>
+                            <div class="pref-row-desc">Checks normalized records and import diagnostics. Prepared XML loading and definition comparisons are checked separately; this check does not certify Legacy behavior.</div>
+                            <div class="pref-row-desc">Actionable unresolved links: @_dbHealth.ActionableUnresolvedLinks</div>
+                            <div class="pref-row-desc">Classified unresolved links: @_dbHealth.ClassifiedUnresolvedLinks</div>
+                            <div class="pref-row-desc">Source integrity issues: @_dbHealth.SourceIntegrityIssues</div>
+                            <div class="pref-row-desc">Missing spell rows: @_dbHealth.MissingResolvedSpellRows</div>
+                            <div class="pref-row-desc">Missing item rows: @_dbHealth.MissingResolvedItemRows</div>
+                            <div class="pref-row-desc">Missing companion rows: @_dbHealth.MissingResolvedCompanionRows</div>
+                        </details>
                     </div>
                 }
 
@@ -1728,14 +1757,34 @@
     private static string HealthSummary(ContentDatabaseHealthReport health) => health.Status switch
     {
         ContentDatabaseHealthStatus.Healthy
-            => health.AutoRecoveredIssueCount > 0 || health.ExpectedIssueCount > 0
-                ? $"The database check found no blocking or manual-review diagnostics. {health.AutoRecoveredIssueCount} issue(s) were auto-recovered and {health.ExpectedIssueCount} expected diagnostic(s) were classified."
-                : "The database check found no blocking or manual-review diagnostics.",
+            => "No blocking errors or findings requiring manual review.",
         ContentDatabaseHealthStatus.Warning
-            => $"The database check found {health.ManualReviewIssueCount} manual-review diagnostic(s), with no blocking database diagnostics.",
+            => $"{health.ManualReviewIssueCount} finding(s) need manual review. No blocking errors.",
         ContentDatabaseHealthStatus.Error
-            => $"The database check found {health.BlockingIssueCount} blocking diagnostic(s). Review the details and refresh content after corrections.",
+            => $"{health.BlockingIssueCount} blocking error(s), {health.ManualReviewIssueCount} finding(s) needing manual review. See the affected files below.",
         _ => "Content health is unavailable."
+    };
+
+    private static bool NeedsAttention(ContentDatabaseTrustImpact impact) =>
+        impact is ContentDatabaseTrustImpact.Blocking or ContentDatabaseTrustImpact.ManualReview;
+
+    private static string HealthIssueExplanation(ContentDatabaseHealthIssueSample sample) => sample.Area switch
+    {
+        "unresolved-link" => sample.Kind switch
+        {
+            "grant" => "A granted element could not be found. Correct the target ID or install its source content.",
+            "extract-item" => "An equipment pack item could not be found. Correct the target ID or install its source content.",
+            _ => $"A {sample.Kind} reference could not be resolved. Check its target and source content."
+        },
+        "projection" => $"This {sample.Kind} is missing its database record. Refresh content; if it persists, review the source definition.",
+        _ => sample.Reason switch
+        {
+            "blank-grant-target-id" => "A grant rule has no target ID. Specify the element it should grant.",
+            "blank-select-type" => "A selection rule has no content type. Specify the type it should select.",
+            "blank-stat-name" => "A stat rule has no name. Specify the statistic it should change.",
+            "duplicate-element-id-in-file" => "This file declares the same ID more than once. Compare the definitions and correct or distinguish them.",
+            _ => sample.Reason
+        }
     };
 
     private static string TrustImpactLabel(ContentDatabaseTrustImpact impact) => impact switch
@@ -1760,7 +1809,7 @@
         string file = string.IsNullOrWhiteSpace(group.FilePath) ? "" : $" in {group.FilePath}";
         return group.Area switch
         {
-            "unresolved-link" => $"{group.Status}/{group.Reason} {group.Kind}",
+            "unresolved-link" => $"{group.Status}/{group.Reason} {group.Kind}{file}",
             "source-integrity" => $"{group.Reason}{file}",
             _ => $"{group.Area}/{group.Reason}{file}"
         };
@@ -1794,6 +1843,19 @@
         var sb = new StringBuilder();
         sb.AppendLine("Aurora content diagnostics");
         sb.AppendLine($"Generated: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC");
+        sb.AppendLine($"App: {Microsoft.Maui.ApplicationModel.AppInfo.Current.VersionString} (build {Microsoft.Maui.ApplicationModel.AppInfo.Current.BuildString})");
+
+        sb.AppendLine();
+        sb.AppendLine("Content downloads (current session)");
+        sb.AppendLine($"Auto-download preference now: {Prefs.AutoDownloadContentOnStartup}");
+        sb.AppendLine($"Auto-download preference at startup check: {Content.StartupAutoDownloadEnabled?.ToString() ?? "Not evaluated"}");
+        sb.AppendLine($"Startup decision/result: {Content.StartupContentUpdateStatus}");
+        sb.AppendLine($"Last download check trigger: {Content.LastContentUpdateTrigger ?? "None"}");
+        sb.AppendLine($"Last check started: {Content.ContentUpdateStartedUtc?.ToUniversalTime().ToString("O") ?? "None"}");
+        sb.AppendLine($"Last check completed: {Content.ContentUpdateCompletedUtc?.ToUniversalTime().ToString("O") ?? "None"}");
+        sb.AppendLine($"Last check result: {Content.ContentUpdateStatus ?? "None"}");
+        sb.AppendLine($"Files updated: {Content.ContentUpdatedFileCount}");
+        sb.AppendLine($"Database refresh pending: {Content.ContentReloadPending}");
 
         if (!string.IsNullOrWhiteSpace(_diagnosticsProblem))
             sb.AppendLine($"Diagnostics unavailable: {_diagnosticsProblem}");

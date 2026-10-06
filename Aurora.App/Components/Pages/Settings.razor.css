@@ -1,0 +1,48 @@
+.content-problem-file {
+    margin: 12px 0;
+    padding: 12px 16px;
+    border: 1px solid var(--mud-palette-lines-default);
+    border-left: 4px solid var(--mud-palette-warning);
+    border-radius: 6px;
+}
+
+.content-problem-file.has-errors {
+    border-left-color: var(--mud-palette-error);
+}
+
+.content-problem-path {
+    overflow-wrap: anywhere;
+}
+
+.content-problem {
+    margin-top: 12px;
+    font-size: 0.875rem;
+}
+
+.content-problem + .content-problem {
+    border-top: 1px solid var(--mud-palette-lines-default);
+    padding-top: 12px;
+}
+
+.content-problem code {
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
+
+.content-error-label {
+    color: var(--mud-palette-error);
+}
+
+.content-review-label {
+    color: var(--mud-palette-warning);
+}
+
+.content-information {
+    margin-top: 16px;
+}
+
+.content-information summary,
+.content-problem-detail summary {
+    cursor: pointer;
+    padding: 6px 0;
+}

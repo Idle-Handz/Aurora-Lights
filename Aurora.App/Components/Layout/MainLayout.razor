@@ -334,8 +334,7 @@
             await ApplyBrowserThemeAsync();
             try { await JS.InvokeVoidAsync("AuroraShortcuts.register", _selfRef); } catch { }
             NotifyAppUpdateIfAvailable();
-            if (Prefs.AutoDownloadContentOnStartup)
-                _ = Task.Run(Content.RunStartupContentRefreshAsync);
+            _ = Task.Run(() => Content.RunStartupContentRefreshAsync(() => Prefs.AutoDownloadContentOnStartup));
         }
     }
 
