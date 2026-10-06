@@ -90,6 +90,7 @@ usable, but it should not be read as a claim of complete desktop parity.
 | Item notes and customization | Established: includes legacy item management details. | Available: item edit workflow, notes, and treasure or quest notes. | Partial: notes and core item state can be changed. |
 | Starting equipment | Established. | Available: dedicated starting equipment workflow. | Not yet. |
 | Extract equipment packs | Established. | Available: packs such as an explorer's pack can be replaced by their component items. | Not yet. |
+| Shop: browse, buy, add, and sell | Established: the equipment page's category picker with a BUY command; there is no sell. | Available: a Shop page organised by department and category, with search, rarity, source, and price filters, buy with change from the purse, free add, selling at a chosen rate, and magic templates built onto a chosen base. | Not yet: the shop screen is a shared component and needs a browser host page. |
 | Containers and inventory storage | Established. | Not yet: the modern inventory is intentionally simpler today. | Not yet. |
 
 ## Spellcasting

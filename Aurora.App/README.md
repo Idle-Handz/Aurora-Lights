@@ -13,7 +13,7 @@ from `Aurora.Components`, and MAUI-specific services for native platform seams.
 
 - MAUI host and bootstrap code
 - Blazor routing and layouts
-- page components for character building, equipment, compendium, sheet,
+- page components for character building, equipment, shop, compendium, sheet,
   preferences, updates, and session flows
 - MAUI-specific launcher, dialog, preference, file-picker, PDF-preview, and
   update services

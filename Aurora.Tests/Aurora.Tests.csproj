@@ -64,7 +64,12 @@
     <Compile Include="..\Aurora.App\Services\Updates\GithubReleaseChannelService.cs" Link="Linked\GithubReleaseChannelService.cs" />
     <Compile Include="..\Aurora.App\Services\MauiSpellcastingSectionHandler.cs" Link="Linked\MauiSpellcastingSectionHandler.cs" />
     <Compile Include="..\Aurora.App\Services\EquipmentService.cs" Link="Linked\EquipmentService.cs" />
+    <Compile Include="..\Aurora.App\Services\InventoryItemAdder.cs" Link="Linked\InventoryItemAdder.cs" />
+    <Compile Include="..\Aurora.App\Services\ShopCatalogService.cs" Link="Linked\ShopCatalogService.cs" />
+    <Compile Include="..\Aurora.App\Services\ShopTransactionService.cs" Link="Linked\ShopTransactionService.cs" />
     <Compile Include="..\Aurora.App\Services\CharacterFileWriteCoordinator.cs" Link="Linked\CharacterFileWriteCoordinator.cs" />
+    <Compile Include="..\Aurora.App\Services\CharacterFileWriteHandler.cs" Link="Linked\CharacterFileWriteHandler.cs" />
+    <Compile Include="..\Aurora.App\Services\InventorySync.cs" Link="Linked\InventorySync.cs" />
     <Compile Include="..\Aurora.App\Services\CompendiumService.cs" Link="Linked\CompendiumService.cs" />
     <Compile Include="..\Aurora.App\Services\ContentDoctorService.cs" Link="Linked\ContentDoctorService.cs" />
     <Compile Include="..\Aurora.App\Services\ContentService.cs" Link="Linked\ContentService.cs" />

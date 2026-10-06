@@ -31,17 +31,23 @@
     return;
 }
 
-@if (CanAssignStartingEquipment)
-{
-    <div class="se-page-header">
+<div class="se-page-header">
+    @if (CanAssignStartingEquipment)
+    {
         <MudButton Variant="Variant.Outlined"
                    StartIcon="@Icons.Material.Filled.Inventory2"
                    Size="Size.Small"
                    OnClick="OpenStartingEquipmentAsync">
             Starting Equipment
         </MudButton>
-    </div>
-}
+    }
+    <MudButton Variant="Variant.Outlined"
+               StartIcon="@Icons.Material.Filled.Storefront"
+               Size="Size.Small"
+               Href="/shop">
+        Shop
+    </MudButton>
+</div>
 
 <CharacterEquipmentWorkspace Model="@EquipmentModel"
                              OnAddItem="OpenAddItemDialog"
@@ -115,8 +121,15 @@
         };
     }
 
+    // Reports and recovers from file writes the same way the Shop does; see CharacterFileWriteHandler.
+    private CharacterFileWriteHandler _writer = null!;
+
     protected override void OnInitialized()
     {
+        _writer = new CharacterFileWriteHandler(
+            (message, severity, milliseconds) =>
+                Snackbar.Add(message, severity, cfg => cfg.VisibleStateDuration = milliseconds),
+            DebugLog.LogException);
         Tabs.TabsChanged += OnTabsChanged;
         try
         {
@@ -575,8 +588,7 @@
     private void RefreshEquipment(bool reprocess = true)
     {
         if (Tabs.ActiveTab is not { Character: { } character, Snapshot: { } snap }) return;
-        if (reprocess) CharacterManager.Current.ReprocessCharacter();
-        snap.RefreshEquipmentFromCharacter(character);
+        InventorySync.Refresh(snap, character, reprocess);
         _snap = snap;
         RefreshGearNames();
         BuildEquipmentModel();
@@ -686,19 +698,11 @@
         var unresolvedItems = new List<string>();
         foreach (var (id, count, name) in se.Items)
         {
-            bool added = EquipmentService.AddItem(character, id, count);
+            // The name goes in with the add, so every row a quantity becomes carries it and a named
+            // stack only ever grows from the same name.
+            bool added = EquipmentService.AddItem(character, id, count, alternativeName: name);
             if (!added)
-            {
                 unresolvedItems.Add(DescribeStartingEquipmentItem(id, count, name));
-                continue;
-            }
-
-            if (!string.IsNullOrEmpty(name))
-            {
-                var liveItem = character.Inventory.Items.LastOrDefault();
-                if (liveItem != null)
-                    liveItem.AlternativeName = name;
-            }
         }
 
         DepositStartingCoins(character, se);
@@ -833,74 +837,39 @@
         await DialogService.ShowAsync<ItemDetailDialog>("", parameters);
     }
 
-    private async Task<bool> PersistInventoryAsync(CharacterTab tab, Builder.Presentation.Models.Character character)
-    {
-        var result = await CharacterFileWriteCoordinator.WriteAsync(
-            tab.FileSaveSemaphore,
-            tab.File,
-            "Inventory",
-            () => tab.File.SaveInventoryItems(character));
-
-        return await HandleCharacterFileWriteResultAsync(
+    private Task<bool> PersistInventoryAsync(CharacterTab tab, Builder.Presentation.Models.Character character) =>
+        _writer.WriteAsync(
             tab,
-            result,
-            "Inventory changed in memory, but could not be written to the character file yet.",
-            "The character file changed on disk. Reloaded the character instead of overwriting those changes.");
-    }
+            new CharacterFileWrite(
+                Operation: "Inventory",
+                Write: () => tab.File.SaveInventoryItems(character),
+                FailureMessage: "Inventory changed in memory, but could not be written to the character file yet.",
+                ExternalChangeMessage: "The character file changed on disk. Reloaded the character instead of overwriting those changes.",
+                ReloadFailedAction: "making more equipment changes",
+                LogContext: "Equipment.PersistCharacterFile"),
+            ShowReloadedCharacterAsync);
 
-    private async Task<bool> PersistStartingEquipmentAsync(CharacterTab tab, Builder.Presentation.Models.Character character)
+    private Task<bool> PersistStartingEquipmentAsync(CharacterTab tab, Builder.Presentation.Models.Character character)
     {
         var snapshot = tab.Snapshot;
-        var result = await CharacterFileWriteCoordinator.WriteAsync(
-            tab.FileSaveSemaphore,
-            tab.File,
-            "Starting equipment",
-            () => tab.File.SaveInventoryItems(character) && (snapshot is null || tab.File.SaveCurrency(snapshot)));
-
-        return await HandleCharacterFileWriteResultAsync(
+        return _writer.WriteAsync(
             tab,
-            result,
-            "Starting equipment was applied in memory, but some changes could not be written to the character file yet.",
-            "The character file changed on disk. Reloaded the character instead of applying starting equipment over those changes.");
+            new CharacterFileWrite(
+                Operation: "Starting equipment",
+                Write: () => tab.File.SaveInventoryItems(character) && (snapshot is null || tab.File.SaveCurrency(snapshot)),
+                FailureMessage: "Starting equipment was applied in memory, but some changes could not be written to the character file yet.",
+                ExternalChangeMessage: "The character file changed on disk. Reloaded the character instead of applying starting equipment over those changes.",
+                ReloadFailedAction: "making more equipment changes",
+                LogContext: "Equipment.PersistCharacterFile"),
+            ShowReloadedCharacterAsync);
     }
 
-    private async Task<bool> HandleCharacterFileWriteResultAsync(
-        CharacterTab tab,
-        CharacterFileWriteResult result,
-        string failureMessage,
-        string externalChangeMessage)
+    // After a reload replaced the character, rebuild the page from the reloaded tab, as a tab change does.
+    private Task ShowReloadedCharacterAsync()
     {
-        if (result.Succeeded)
-            return true;
-
-        if (result.IsExternalChange)
-        {
-            Snackbar.Add(externalChangeMessage, Severity.Warning, cfg => cfg.VisibleStateDuration = 7000);
-            await ReloadAfterExternalChangeAsync(tab);
-            return false;
-        }
-
-        if (result.Exception is not null)
-            DebugLog.LogException(result.Exception, "Equipment.PersistCharacterFile");
-
-        Snackbar.Add($"{failureMessage} {result.Message}", Severity.Warning, cfg => cfg.VisibleStateDuration = 7000);
-        return true;
-    }
-
-    private async Task ReloadAfterExternalChangeAsync(CharacterTab tab)
-    {
-        try
-        {
-            await CharacterContext.ReloadFromDiskAsync(tab);
-            BuildService.ResnapTab(tab);
-            LoadFromActiveTab();
-            StateHasChanged();
-        }
-        catch (Exception ex)
-        {
-            DebugLog.LogException(ex, "Equipment.ReloadAfterExternalChangeAsync");
-            Snackbar.Add("The character file changed on disk, but Reflections could not reload it automatically. Close and reopen the character before making more equipment changes.", Severity.Error, cfg => cfg.VisibleStateDuration = 9000);
-        }
+        LoadFromActiveTab();
+        StateHasChanged();
+        return Task.CompletedTask;
     }
 
     private void WarnUnavailable(string message) =>

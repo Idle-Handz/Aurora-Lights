@@ -171,6 +171,27 @@
         </div>
 
         <div class="pref-section" style="margin-top: 24px;">
+            <div class="section-label">Shop</div>
+
+            <div class="pref-row">
+                <div class="pref-row-text">
+                    <div class="pref-row-title">Ignore electrum</div>
+                    <div class="pref-row-desc">
+                        When on (the default), the Shop never gives you electrum as change or when you sell:
+                        a 1 cp purchase paid with a gold piece comes back as gold, silver, and copper.
+                        Turn it off if your table uses electrum and you want change and sale proceeds made
+                        with it too. Electrum a character already carries is spent like any other coin
+                        either way.
+                    </div>
+                </div>
+                <MudSwitch Value="Prefs.ShopIgnoreElectrum"
+                           ValueChanged="@((bool v) => Prefs.ShopIgnoreElectrum = v)"
+                           Color="Color.Primary"
+                           aria-label="Ignore electrum in the Shop" />
+            </div>
+        </div>
+
+        <div class="pref-section" style="margin-top: 24px;">
             <div class="section-label">Character Storage</div>
 
             <div style="margin-bottom: 12px;">

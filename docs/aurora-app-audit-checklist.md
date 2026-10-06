@@ -50,7 +50,7 @@ Still clearly open:
 
 ### Priority 2 - High Value After Core Parity
 
-- Improve `Equipment` parity around buy flows, inventory organization, containers, and encumbrance visibility.
+- Improve `Equipment` parity around inventory organization, containers, and encumbrance visibility. Buy flows are now covered by the `Shop` page.
 - Make `Sheet` feel more like a full workspace instead of primarily an export utility.
 - Strengthen content/source discoverability across `Settings`, `Manage`, and `Compendium`.
 - Add folder-picking UX and less technical onboarding for additional content and `.index` sources.
@@ -128,8 +128,10 @@ Current state:
 - core usability is decent
 - add/equip/remove/change-quantity flows are present
 
+Recently added:
+- the `Shop` page: browse by department and category, buy (with change from the purse), add for free, and sell
+
 Still open:
-- buy flows versus add flows
 - richer inventory organization
 - containers / storage concepts
 - better carry / encumbrance visibility

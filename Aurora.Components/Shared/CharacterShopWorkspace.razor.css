@@ -1,0 +1,1093 @@
+/* The shop answers to its own width (container queries), not the window's: it sits beside a nav drawer
+   that opens and closes, so the viewport says little about the room it actually has. */
+
+.shop-host {
+    container: shop / inline-size;
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+}
+
+.shop {
+    --shop-surface: var(--mud-palette-surface, var(--aurora-surface, #313244));
+    --shop-background: var(--mud-palette-background, var(--aurora-background, #1e1e2e));
+    --shop-border: var(--mud-palette-lines-inputs, var(--aurora-surface-raised, #45475a));
+    --shop-text: var(--mud-palette-text-primary, var(--aurora-text-primary, #cdd6f4));
+    --shop-muted: var(--mud-palette-text-secondary, var(--aurora-text-secondary, #a6adc8));
+    --shop-faint: var(--mud-palette-text-disabled, var(--aurora-text-disabled, #6c7086));
+    --shop-accent: var(--mud-palette-primary, var(--aurora-primary, #89b4fa));
+    --shop-on-accent: var(--aurora-on-accent, #11111b);
+    --shop-danger: var(--aurora-danger, #f38ba8);
+    --shop-success: var(--aurora-success, #a6e3a1);
+    --shop-info: var(--aurora-info, #89dceb);
+    --shop-secondary: var(--aurora-secondary, #cba6f7);
+    --shop-orange: var(--aurora-orange, #fab387);
+    --shop-radius: 0.85rem;
+
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    gap: 0.75rem;
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    color: var(--shop-text);
+}
+
+.shop button,
+.shop input,
+.shop select {
+    font: inherit;
+}
+
+.shop button:focus-visible,
+.shop input:focus-visible,
+.shop select:focus-visible {
+    outline: 2px solid var(--shop-accent);
+    outline-offset: 2px;
+}
+
+.shop-visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ── Header: title, purse, buy/sell switch ───────────────────────────────── */
+
+.shop-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 0.75rem 1.25rem;
+}
+
+.shop-title {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.shop-tagline {
+    margin: 0.15rem 0 0;
+    font-size: 0.85rem;
+    color: var(--shop-muted);
+}
+
+.shop-wallet {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: flex-end;
+    gap: 0.35rem 0.6rem;
+    padding: 0.5rem 0.8rem;
+    border: 1px solid var(--shop-border);
+    border-radius: var(--shop-radius);
+    background: var(--shop-surface);
+}
+
+.shop-coin {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.2rem;
+}
+
+.shop-coin-amount {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.shop-coin-unit {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--shop-faint);
+}
+
+.shop-wallet-total,
+.shop-wallet-empty {
+    padding-left: 0.6rem;
+    border-left: 1px solid var(--shop-border);
+    font-size: 0.8rem;
+    color: var(--shop-muted);
+}
+
+.shop-wallet-empty {
+    padding-left: 0;
+    border-left: 0;
+}
+
+.shop-mode {
+    display: inline-flex;
+    padding: 0.2rem;
+    border: 1px solid var(--shop-border);
+    border-radius: 999px;
+    background: var(--shop-surface);
+}
+
+.shop-mode-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 2.25rem;
+    padding: 0 1.1rem;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--shop-muted);
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.shop-mode-button:hover {
+    color: var(--shop-text);
+}
+
+.shop-mode-button.is-active {
+    background: var(--shop-accent);
+    color: var(--shop-on-accent);
+}
+
+.shop-mode-count {
+    min-width: 1.35rem;
+    padding: 0 0.35rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, currentColor 18%, transparent);
+    font-size: 0.72rem;
+    text-align: center;
+}
+
+/* ── Search, sort, filters ───────────────────────────────────────────────── */
+
+.shop-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.6rem 0.75rem;
+}
+
+.shop-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex: 1 1 18rem;
+    min-width: 0;
+}
+
+.shop-search > svg {
+    position: absolute;
+    left: 0.7rem;
+    width: 1.2rem;
+    height: 1.2rem;
+    fill: var(--shop-faint);
+    pointer-events: none;
+}
+
+.shop-search input {
+    width: 100%;
+    min-height: 2.5rem;
+    padding: 0 2.4rem 0 2.5rem;
+    border: 1px solid var(--shop-border);
+    border-radius: 999px;
+    background: var(--shop-background);
+    color: var(--shop-text);
+}
+
+.shop-search input::-webkit-search-cancel-button {
+    display: none;
+}
+
+.shop-search .shop-icon-button {
+    position: absolute;
+    right: 0.25rem;
+}
+
+.shop-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+}
+
+.shop-field > span {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--shop-faint);
+}
+
+.shop-field select,
+.shop-field input {
+    min-height: 2.5rem;
+    padding: 0 0.7rem;
+    border: 1px solid var(--shop-border);
+    border-radius: 0.65rem;
+    background: var(--shop-background);
+    color: var(--shop-text);
+    color-scheme: var(--aurora-color-scheme, dark);
+}
+
+.shop-field--block {
+    width: 100%;
+}
+
+.shop-filter-toggle {
+    display: none;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 2.5rem;
+    padding: 0 0.9rem;
+    border: 1px solid var(--shop-border);
+    border-radius: 999px;
+    background: var(--shop-surface);
+    color: var(--shop-text);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.shop-filter-toggle svg {
+    width: 1.1rem;
+    height: 1.1rem;
+    fill: currentColor;
+}
+
+.shop-badge {
+    min-width: 1.2rem;
+    padding: 0 0.3rem;
+    border-radius: 999px;
+    background: var(--shop-accent);
+    color: var(--shop-on-accent);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+.shop-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.6rem 1rem;
+}
+
+.shop-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-height: 2.5rem;
+    font-size: 0.88rem;
+    cursor: pointer;
+}
+
+.shop-toggle input {
+    width: 1.1rem;
+    height: 1.1rem;
+    accent-color: var(--shop-accent);
+}
+
+.shop-link-button {
+    min-height: 2.5rem;
+    padding: 0 0.4rem;
+    border: 0;
+    background: transparent;
+    color: var(--shop-accent);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.shop-link-button:hover {
+    text-decoration: underline;
+}
+
+/* ── Body: departments | list | details ──────────────────────────────────── */
+
+.shop-body {
+    display: grid;
+    grid-template-columns: 15rem minmax(0, 1fr) minmax(21rem, 25rem);
+    grid-template-areas: "rail list detail";
+    gap: 1rem;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.shop-rail {
+    grid-area: rail;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 0.15rem;
+}
+
+.shop-rail-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    min-width: 0;
+}
+
+.shop-rail-title {
+    margin: 0;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--shop-faint);
+}
+
+.shop-rail-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+}
+
+.shop-rail-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+    min-height: 2.5rem;
+    padding: 0.3rem 0.7rem;
+    border: 1px solid transparent;
+    border-radius: 0.65rem;
+    background: transparent;
+    color: var(--shop-text);
+    text-align: left;
+    cursor: pointer;
+}
+
+.shop-rail-item:hover {
+    background: color-mix(in srgb, var(--shop-accent) 8%, transparent);
+}
+
+.shop-rail-item.is-active {
+    border-color: color-mix(in srgb, var(--shop-accent) 60%, var(--shop-border));
+    background: color-mix(in srgb, var(--shop-accent) 14%, transparent);
+    font-weight: 700;
+}
+
+.shop-rail-name {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.shop-count {
+    flex: 0 0 auto;
+    font-size: 0.75rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--shop-faint);
+}
+
+.shop-list-pane {
+    grid-area: list;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    min-width: 0;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 0.15rem;
+}
+
+.shop-crumbs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.25rem 1rem;
+}
+
+.shop-crumb-path {
+    font-weight: 700;
+}
+
+.shop-result-count {
+    font-size: 0.8rem;
+    color: var(--shop-muted);
+}
+
+.shop-chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.shop-chip-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 2.1rem;
+    padding: 0 0.8rem;
+    border: 1px solid var(--shop-border);
+    border-radius: 999px;
+    background: var(--shop-surface);
+    color: var(--shop-text);
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.shop-chip-button:hover {
+    border-color: var(--shop-accent);
+}
+
+.shop-chip-button.is-active {
+    border-color: var(--shop-accent);
+    background: var(--shop-accent);
+    color: var(--shop-on-accent);
+    font-weight: 700;
+}
+
+.shop-chip-button.is-active .shop-count {
+    color: inherit;
+}
+
+/* ── The list ────────────────────────────────────────────────────────────── */
+
+.shop-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.shop-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 4.5rem minmax(5.5rem, auto);
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.65rem 0.85rem;
+    border: 1px solid var(--shop-border);
+    border-radius: var(--shop-radius);
+    background: var(--shop-surface);
+    color: var(--shop-text);
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.shop-row:hover {
+    border-color: var(--shop-accent);
+    background: color-mix(in srgb, var(--shop-accent) 6%, var(--shop-surface));
+}
+
+.shop-row.is-selected {
+    border-color: var(--shop-accent);
+    background: color-mix(in srgb, var(--shop-accent) 14%, var(--shop-surface));
+    box-shadow: inset 3px 0 0 var(--shop-accent);
+}
+
+.shop-row-main {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+}
+
+.shop-row-name {
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.shop-row-qty {
+    margin-left: 0.3rem;
+    font-weight: 600;
+    color: var(--shop-muted);
+}
+
+.shop-row-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem 0.4rem;
+    font-size: 0.8rem;
+    color: var(--shop-muted);
+}
+
+.shop-row-detail {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.shop-row-weight {
+    font-size: 0.82rem;
+    text-align: right;
+    color: var(--shop-muted);
+    white-space: nowrap;
+}
+
+.shop-row-price {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.shop-row-price.is-muted {
+    font-weight: 500;
+    color: var(--shop-faint);
+}
+
+.shop-row-price.is-unaffordable {
+    color: var(--shop-danger);
+}
+
+.shop-more {
+    display: flex;
+    justify-content: center;
+    padding: 0.4rem 0 0.8rem;
+}
+
+/* ── Chips ───────────────────────────────────────────────────────────────── */
+
+.shop-chip {
+    --chip: var(--shop-muted);
+    display: inline-flex;
+    align-items: center;
+    padding: 0.05rem 0.5rem;
+    border: 1px solid color-mix(in srgb, var(--chip) 55%, var(--shop-border));
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--chip) 12%, transparent);
+    color: color-mix(in srgb, var(--chip) 80%, var(--shop-text));
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1.5;
+    white-space: nowrap;
+}
+
+.shop-chip--common { --chip: var(--shop-muted); }
+.shop-chip--uncommon { --chip: var(--shop-success); }
+.shop-chip--rare { --chip: var(--shop-info); }
+.shop-chip--very-rare { --chip: var(--shop-secondary); }
+.shop-chip--legendary { --chip: var(--shop-orange); }
+.shop-chip--artifact,
+.shop-chip--unique { --chip: var(--shop-danger); }
+.shop-chip--attune { --chip: var(--shop-secondary); }
+.shop-chip--equipped { --chip: var(--shop-accent); }
+.shop-chip--owned { --chip: var(--shop-success); }
+
+/* ── Details and the order panel ─────────────────────────────────────────── */
+
+.shop-detail {
+    grid-area: detail;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    border: 1px solid var(--shop-border);
+    border-radius: var(--shop-radius);
+    background: var(--shop-surface);
+}
+
+.shop-detail-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    height: 100%;
+    padding: 1.5rem;
+    text-align: center;
+    color: var(--shop-muted);
+}
+
+.shop-detail-head {
+    position: relative;
+    flex: 0 0 auto;
+    padding: 0.9rem 1rem 0.7rem;
+    border-bottom: 1px solid var(--shop-border);
+}
+
+.shop-detail-name {
+    margin: 0 2.25rem 0.4rem 0;
+    font-size: 1.15rem;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+}
+
+.shop-detail-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.shop-detail-source {
+    margin-top: 0.45rem;
+    font-size: 0.78rem;
+    color: var(--shop-faint);
+}
+
+.shop-detail-close {
+    display: none;
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+}
+
+.shop-detail-body {
+    flex: 1 1 auto;
+    min-height: 4rem;
+    overflow-y: auto;
+    padding: 0.8rem 1rem;
+}
+
+.shop-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+    gap: 0.5rem 1rem;
+    margin: 0 0 0.9rem;
+}
+
+.shop-stat dt {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--shop-faint);
+}
+
+.shop-stat dd {
+    margin: 0.1rem 0 0;
+    overflow-wrap: anywhere;
+}
+
+.shop-description {
+    font-size: 0.92rem;
+}
+
+.shop-muted {
+    margin: 0;
+    color: var(--shop-muted);
+}
+
+.shop-notice {
+    margin: 0.5rem 0 0;
+    padding: 0.55rem 0.7rem;
+    border: 1px solid color-mix(in srgb, var(--shop-orange) 55%, var(--shop-border));
+    border-radius: 0.65rem;
+    background: color-mix(in srgb, var(--shop-orange) 10%, transparent);
+    font-size: 0.85rem;
+}
+
+.shop-order {
+    display: flex;
+    flex-direction: column;
+    flex: 0 0 auto;
+    gap: 0.65rem;
+    padding: 0.8rem 1rem 1rem;
+    border-top: 1px solid var(--shop-border);
+    background: color-mix(in srgb, var(--shop-background) 40%, var(--shop-surface));
+}
+
+.shop-order-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 0.75rem 1rem;
+}
+
+.shop-qty {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.shop-qty-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--shop-faint);
+}
+
+.shop-qty-controls {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.shop-qty-controls input {
+    width: 4rem;
+    min-height: 2.5rem;
+    padding: 0 0.4rem;
+    border: 1px solid var(--shop-border);
+    border-radius: 0.65rem;
+    background: var(--shop-background);
+    color: var(--shop-text);
+    text-align: center;
+    color-scheme: var(--aurora-color-scheme, dark);
+}
+
+.shop-summary {
+    display: grid;
+    grid-auto-flow: column;
+    gap: 0.25rem 1.1rem;
+    margin: 0;
+}
+
+.shop-summary dt {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--shop-faint);
+}
+
+.shop-summary dd {
+    margin: 0.1rem 0 0;
+    font-variant-numeric: tabular-nums;
+}
+
+.shop-summary-total {
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+.shop-problem {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--shop-orange);
+}
+
+.shop-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.shop-actions .shop-button {
+    flex: 1 1 8rem;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+
+.shop-button,
+.shop-icon-button {
+    border: 1px solid var(--shop-border);
+    background: var(--shop-surface);
+    color: var(--shop-text);
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.shop-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 2.6rem;
+    padding: 0 1.1rem;
+    border-radius: 999px;
+    font-weight: 700;
+}
+
+.shop-button:hover:not(:disabled),
+.shop-icon-button:hover:not(:disabled) {
+    border-color: var(--shop-accent);
+    background: color-mix(in srgb, var(--shop-accent) 10%, var(--shop-surface));
+}
+
+.shop-button--primary {
+    border-color: var(--shop-accent);
+    background: var(--shop-accent);
+    color: var(--shop-on-accent);
+}
+
+.shop-button--primary:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--shop-accent) 85%, white);
+}
+
+.shop-icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    border-radius: 999px;
+    font-size: 1.15rem;
+    line-height: 1;
+}
+
+.shop-icon-button svg {
+    width: 1.15rem;
+    height: 1.15rem;
+    fill: currentColor;
+}
+
+.shop-search .shop-icon-button {
+    width: 2rem;
+    height: 2rem;
+    border-color: transparent;
+    background: transparent;
+}
+
+.shop button:disabled,
+.shop input:disabled,
+.shop select:disabled {
+    cursor: default;
+    opacity: 0.5;
+}
+
+/* ── States ──────────────────────────────────────────────────────────────── */
+
+.shop-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 2.5rem 1rem;
+    text-align: center;
+    color: var(--shop-muted);
+}
+
+.shop-state p {
+    margin: 0;
+}
+
+.shop-state-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--shop-text);
+}
+
+.shop-state--error {
+    color: var(--shop-danger);
+}
+
+.shop-spinner {
+    width: 1.75rem;
+    height: 1.75rem;
+    border: 3px solid var(--shop-border);
+    border-top-color: var(--shop-accent);
+    border-radius: 50%;
+    animation: shop-spin 0.8s linear infinite;
+}
+
+@keyframes shop-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.shop-backdrop {
+    display: none;
+}
+
+/* ── Medium widths: departments become a strip above the list ────────────── */
+
+@container shop (max-width: 1100px) {
+    .shop-body {
+        grid-template-columns: minmax(0, 1fr) minmax(20rem, 24rem);
+        grid-template-rows: auto minmax(0, 1fr);
+        grid-template-areas:
+            "rail rail"
+            "list detail";
+    }
+
+    .shop-rail {
+        overflow: visible;
+        gap: 0.5rem;
+        padding-right: 0;
+    }
+
+    .shop-rail-section {
+        flex-direction: row;
+        align-items: center;
+        gap: 0.6rem;
+    }
+
+    .shop-rail-title {
+        flex: 0 0 auto;
+        max-width: 8rem;
+    }
+
+    .shop-rail-list {
+        flex-direction: row;
+        flex: 1 1 auto;
+        gap: 0.4rem;
+        padding-bottom: 0.2rem;
+        overflow-x: auto;
+        scrollbar-width: thin;
+    }
+
+    .shop-rail-item {
+        flex: 0 0 auto;
+        min-height: 2.25rem;
+        border-color: var(--shop-border);
+        border-radius: 999px;
+        background: var(--shop-surface);
+        white-space: nowrap;
+    }
+}
+
+/* ── Compact widths: filters fold away; the toolbar and header stack ─────── */
+
+@container shop (max-width: 900px) {
+    .shop-filter-toggle {
+        display: inline-flex;
+    }
+
+    .shop-filters {
+        display: none;
+        padding: 0.7rem 0.8rem;
+        border: 1px solid var(--shop-border);
+        border-radius: var(--shop-radius);
+        background: var(--shop-surface);
+    }
+
+    .shop-filters.is-open {
+        display: flex;
+    }
+
+    .shop-header {
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .shop-wallet {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        justify-content: flex-start;
+    }
+}
+
+/* ── Narrow widths: one column, details become a sheet over the list ─────── */
+
+@container shop (max-width: 760px) {
+    .shop-body {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto minmax(0, 1fr);
+        grid-template-areas:
+            "rail"
+            "list";
+    }
+
+    .shop-rail-section {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.3rem;
+    }
+
+    .shop-rail-title {
+        max-width: none;
+    }
+
+    .shop-detail {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 30;
+        max-height: 88%;
+        border-radius: 1.1rem 1.1rem 0 0;
+        box-shadow: 0 -0.5rem 1.75rem var(--aurora-shadow-hover-color, rgba(0, 0, 0, 0.4));
+        /* Parked below the list and out of sight until something is selected; no border so an
+           empty sheet leaves no hairline behind. */
+        border-width: 0;
+        transform: translateY(105%);
+        visibility: hidden;
+        transition: transform 0.2s ease, visibility 0s linear 0.2s;
+    }
+
+    .shop--selected .shop-detail {
+        border-width: 1px;
+        transform: none;
+        visibility: visible;
+        transition: transform 0.2s ease;
+    }
+
+    .shop-detail-empty {
+        display: none;
+    }
+
+    .shop-detail-close {
+        display: inline-flex;
+    }
+
+    .shop--selected .shop-backdrop {
+        display: block;
+        position: absolute;
+        inset: 0;
+        z-index: 20;
+        border: 0;
+        background: rgba(0, 0, 0, 0.45);
+    }
+
+    .shop-row {
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .shop-row-weight {
+        display: none;
+    }
+
+    .shop-mode {
+        justify-self: end;
+    }
+
+    .shop-title {
+        font-size: 1.15rem;
+    }
+
+    .shop-tagline {
+        display: none;
+    }
+}
+
+@container shop (max-width: 420px) {
+    /* Two columns, with the long "after" balance on its own line: a single stack of three eats the
+       sheet's height and leaves the rules text almost no room. */
+    .shop-summary {
+        grid-auto-flow: row;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        width: 100%;
+    }
+
+    .shop-summary > div:nth-child(3):last-child {
+        grid-column: 1 / -1;
+    }
+
+    .shop-mode-button {
+        padding: 0 0.8rem;
+    }
+}
+
+@media (pointer: coarse) {
+    .shop-rail-item,
+    .shop-chip-button {
+        min-height: 2.75rem;
+    }
+
+    .shop-icon-button {
+        width: 2.75rem;
+        height: 2.75rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .shop-detail,
+    .shop-row,
+    .shop-spinner {
+        transition: none;
+        animation: none;
+    }
+}

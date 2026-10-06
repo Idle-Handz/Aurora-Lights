@@ -1,0 +1,319 @@
+@page "/shop"
+@implements IDisposable
+@inject CharacterTabService Tabs
+@inject ShopCatalogService ShopCatalog
+@inject ISnackbar Snackbar
+@inject DebugLogService DebugLog
+@inject UserPreferencesService Prefs
+@using Aurora.App.Services
+@using Builder.Presentation
+@using Builder.Presentation.Services
+
+@if (_initError is not null)
+{
+    <div class="page-error-box" style="margin-top: 24px;">
+        <div class="page-error-title">The shop failed to open.</div>
+        <pre class="page-error-detail">@_initError</pre>
+        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-2">
+            This error has been captured. Enable Dev Mode in
+            <MudLink Href="/preferences">Preferences</MudLink> then open the
+            <MudLink Href="/console">Console</MudLink> for details.
+        </MudText>
+    </div>
+}
+else if (Tabs.ActiveTab is null)
+{
+    <div style="margin-top: 24px;">
+        <MudText Color="Color.Secondary">No character loaded. Open a character from the <MudLink Href="/">Characters</MudLink> page.</MudText>
+    </div>
+}
+else if (Tabs.ActiveTab.IsLoading)
+{
+    <div style="margin-top: 24px;">
+        <MudText Color="Color.Secondary">Loading character&hellip;</MudText>
+    </div>
+}
+else
+{
+    <CharacterShopWorkspace Catalog="@_catalog"
+                            Inventory="@_inventory"
+                            OwnedCounts="@_owned"
+                            Wallet="@_wallet"
+                            CoinOptions="@Prefs.ShopCoinOptions"
+                            Detail="@_detail"
+                            Loading="@_loading"
+                            ErrorMessage="@_loadError"
+                            Busy="@_busy"
+                            OnSelectItem="LoadDetailAsync"
+                            OnPurchase="PurchaseAsync"
+                            OnSell="SellAsync" />
+}
+
+@code {
+    private IReadOnlyList<ShopItemModel> _catalog = [];
+    private IReadOnlyList<ShopInventoryEntryModel> _inventory = [];
+    private IReadOnlyDictionary<string, int> _owned = new Dictionary<string, int>();
+    private CoinPurse _wallet;
+    private ShopItemDetailModel? _detail;
+    private BuildSourceRestrictionSnapshot _restrictions = BuildSourceRestrictionSnapshot.Empty;
+
+    private bool _loading = true;
+    private bool _busy;
+    private bool _disposed;
+    private string? _loadError;
+    private string? _initError;
+
+    // The tab this page last loaded for, so the TabsChanged that every MarkDirty raises does not
+    // reload (and clear the selection) after each purchase.
+    private CharacterTab? _tab;
+    private bool _tabWasLoading;
+    private int _detailVersion;
+    private int _loadVersion;
+
+    private CharacterFileWriteHandler _writer = null!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _writer = new CharacterFileWriteHandler(
+            (message, severity, milliseconds) =>
+                Snackbar.Add(message, severity, cfg => cfg.VisibleStateDuration = milliseconds),
+            DebugLog.LogException);
+        Tabs.TabsChanged += OnTabsChanged;
+        try
+        {
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _initError = $"{ex.GetType().Name}: {ex.Message}\n\n{ex.StackTrace}";
+            DebugLog.LogException(ex, "Shop.OnInitialized");
+        }
+    }
+
+    public void Dispose()
+    {
+        _disposed = true;
+        Tabs.TabsChanged -= OnTabsChanged;
+    }
+
+    private void OnTabsChanged()
+    {
+        if (_disposed)
+            return;
+
+        _ = InvokeAsync(async () =>
+        {
+            if (_disposed)
+                return;
+
+            var active = Tabs.ActiveTab;
+            bool tabChanged = !ReferenceEquals(active, _tab);
+            bool finishedLoading = _tabWasLoading && active is { IsLoading: false };
+            _tabWasLoading = active?.IsLoading == true;
+
+            if (tabChanged || finishedLoading)
+            {
+                try
+                {
+                    await LoadAsync();
+                }
+                catch (Exception ex)
+                {
+                    DebugLog.LogException(ex, "Shop.OnTabsChanged");
+                    _loadError = "The shop could not be loaded for this character.";
+                    _loading = false;
+                }
+            }
+
+            StateHasChanged();
+        });
+    }
+
+    // ── Loading ──────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Reads the character's purse, pack and source restrictions, then the catalog they limit. The
+    /// engine objects are read inside the tab's context scope, as every other page does, because the
+    /// restrictions and the inventory live on the singleton the scope swaps per tab.
+    /// </summary>
+    private async Task LoadAsync()
+    {
+        int version = ++_loadVersion;
+        var tab = Tabs.ActiveTab;
+        _tab = tab;
+        _tabWasLoading = tab?.IsLoading == true;
+        _detail = null;
+        _detailVersion++;
+
+        if (tab is not { IsLoading: false, Character: not null, File: not null })
+        {
+            _catalog = [];
+            _inventory = [];
+            _owned = new Dictionary<string, int>();
+            _wallet = default;
+            _loading = false;
+            return;
+        }
+
+        _loading = true;
+        _loadError = null;
+        StateHasChanged();
+
+        try
+        {
+            using (var scope = await CharacterContext.EnterAsync(tab))
+            {
+                if (_disposed || version != _loadVersion || !ReferenceEquals(tab, Tabs.ActiveTab))
+                    return;
+
+                ReadCharacterSide(tab.Character!);
+                _restrictions = BuildSourceRestrictionSnapshot.CaptureCurrent();
+            }
+
+            var catalog = await ShopCatalog.GetCatalogAsync(_restrictions);
+            if (_disposed || version != _loadVersion)
+                return;
+
+            _catalog = catalog;
+        }
+        catch (Exception ex)
+        {
+            DebugLog.LogException(ex, "Shop.LoadAsync");
+            _loadError = "The shop catalog could not be loaded. Check the content sources in Settings.";
+        }
+        finally
+        {
+            if (version == _loadVersion)
+                _loading = false;
+        }
+    }
+
+    private void ReadCharacterSide(Builder.Presentation.Models.Character character)
+    {
+        _wallet = ShopCatalogService.GetPurse(character);
+        _inventory = ShopCatalogService.GetInventory(character);
+        _owned = ShopCatalogService.GetOwnedCounts(character);
+    }
+
+    private async Task LoadDetailAsync(string itemId)
+    {
+        var tab = Tabs.ActiveTab;
+        int version = ++_detailVersion;
+        _detail = null;
+        if (tab is not { Character: not null })
+            return;
+
+        try
+        {
+            // Resolving a magic template's compatible bases evaluates the engine's support
+            // expressions, so this runs inside the character's scope.
+            using var scope = await CharacterContext.EnterAsync(tab);
+            if (_disposed || version != _detailVersion || !ReferenceEquals(tab, Tabs.ActiveTab))
+                return;
+
+            _detail = ShopCatalog.GetDetail(itemId, tab.Character, _restrictions);
+        }
+        catch (Exception ex)
+        {
+            DebugLog.LogException(ex, $"Shop.LoadDetail({itemId})");
+            Snackbar.Add("That item's details could not be loaded.", Severity.Warning);
+        }
+    }
+
+    // ── Transactions ─────────────────────────────────────────────────────────
+
+    // The preference is read when the transaction runs, the same value the workspace quoted with.
+    private Task PurchaseAsync(ShopPurchaseRequest request) =>
+        RunTransactionAsync(character => ShopTransactionService.Purchase(character, request, Prefs.ShopCoinOptions));
+
+    private Task SellAsync(ShopSaleRequest request) =>
+        RunTransactionAsync(character => ShopTransactionService.Sell(character, request, Prefs.ShopCoinOptions));
+
+    /// <summary>
+    /// Runs a purchase or sale under the character's scope, then refreshes the snapshot and writes the
+    /// inventory and coins to the file, the same sequence the Equipment page follows after any change.
+    /// The service refuses before it changes anything, so a refusal skips the write entirely.
+    /// </summary>
+    private async Task RunTransactionAsync(Func<Builder.Presentation.Models.Character, ShopTransactionResult> transact)
+    {
+        if (_busy)
+            return;
+
+        var tab = Tabs.ActiveTab;
+        if (tab is not { Character: not null, File: not null })
+        {
+            Snackbar.Add("The shop cannot be used because there is no active character.", Severity.Warning, cfg => cfg.VisibleStateDuration = 2500);
+            return;
+        }
+
+        _busy = true;
+        StateHasChanged();
+        try
+        {
+            ShopTransactionResult result;
+            bool persisted = true;
+            using (var scope = await CharacterContext.EnterAsync(tab))
+            {
+                if (_disposed || !ReferenceEquals(tab, Tabs.ActiveTab))
+                {
+                    Snackbar.Add("That could not be completed because the active character changed.", Severity.Warning);
+                    return;
+                }
+
+                var character = tab.Character!;
+                result = transact(character);
+                if (result.Succeeded)
+                {
+                    InventorySync.Refresh(tab.Snapshot, character);
+                    persisted = await _writer.WriteAsync(tab, ShopWrite(tab, character), () => RefreshAfterReload(tab));
+                    if (persisted)
+                        Tabs.MarkDirty(tab);
+                }
+
+                // After a reload the character object was replaced and already re-read.
+                if (persisted)
+                    ReadCharacterSide(character);
+            }
+
+            if (!persisted)
+                return;
+
+            Snackbar.Add(
+                result.Message,
+                result.Succeeded ? Severity.Success : Severity.Warning,
+                cfg => cfg.VisibleStateDuration = result.Succeeded ? 3500 : 5000);
+        }
+        catch (Exception ex)
+        {
+            DebugLog.LogException(ex, "Shop.RunTransaction");
+            Snackbar.Add("That could not be completed. Check the console for details.", Severity.Error);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    // ── Persistence (shared with the Equipment page; see CharacterFileWriteHandler) ──
+
+    private static CharacterFileWrite ShopWrite(CharacterTab tab, Builder.Presentation.Models.Character character)
+    {
+        var snapshot = tab.Snapshot;
+        return new CharacterFileWrite(
+            Operation: "Shop transaction",
+            Write: () => tab.File.SaveInventoryItems(character) && (snapshot is null || tab.File.SaveCurrency(snapshot)),
+            FailureMessage: "The change was made in memory, but could not be written to the character file yet.",
+            ExternalChangeMessage: "The character file changed on disk. Reloaded the character instead of overwriting those changes.",
+            ReloadFailedAction: "making more equipment changes",
+            LogContext: "Shop.PersistCharacterFile");
+    }
+
+    // The reload replaced the character object, so read the purse and pack from the new one.
+    private Task RefreshAfterReload(CharacterTab tab)
+    {
+        if (tab.Character is { } character)
+            ReadCharacterSide(character);
+        _detail = null;
+        return Task.CompletedTask;
+    }
+}

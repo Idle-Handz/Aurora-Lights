@@ -55,6 +55,11 @@
             </MudNavLink>
         </MudTooltip>
         <MudTooltip Text="@(_loading ? "Loading character…" : "")" Placement="Placement.Right" Delay="300" Style="display:block">
+            <MudNavLink Href="/shop" Icon="@Icons.Material.Filled.Storefront" Disabled="_loading">
+                Shop
+            </MudNavLink>
+        </MudTooltip>
+        <MudTooltip Text="@(_loading ? "Loading character…" : "")" Placement="Placement.Right" Delay="300" Style="display:block">
             <MudNavLink Href="/session" Icon="@Icons.Material.Filled.Favorite" Disabled="_loading">
                 Session
             </MudNavLink>

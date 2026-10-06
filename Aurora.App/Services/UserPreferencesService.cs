@@ -1,3 +1,4 @@
+using Aurora.Components.Models;
 using Builder.Presentation;
 
 namespace Aurora.App.Services;
@@ -286,6 +287,24 @@ public sealed class UserPreferencesService
         get => Preferences.Default.Get(KeyStartFeatureCardsOnNewPage, defaultValue: false);
         set => Preferences.Default.Set(KeyStartFeatureCardsOnNewPage, value);
     }
+
+    // ── Shop ──────────────────────────────────────────────────────────────────
+
+    private const string KeyShopIgnoreElectrum = "shop.ignore_electrum";
+
+    /// <summary>
+    /// When true the Shop never hands out electrum as change or sale proceeds. Many tables do not use
+    /// the coin; turn this off to make change and proceeds in electrum too. Electrum a character
+    /// already carries is spent like any other coin either way. Default: true.
+    /// </summary>
+    public bool ShopIgnoreElectrum
+    {
+        get => Preferences.Default.Get(KeyShopIgnoreElectrum, defaultValue: true);
+        set => Preferences.Default.Set(KeyShopIgnoreElectrum, value);
+    }
+
+    /// <summary>The shop's coin options as the current preferences set them.</summary>
+    public ShopCoinOptions ShopCoinOptions => new(UseElectrum: !ShopIgnoreElectrum);
 
     // ── Update channels ───────────────────────────────────────────────────────
     //

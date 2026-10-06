@@ -120,6 +120,13 @@ public static class EquipmentService
     // ── General inventory ───────────────────────────────────────────────────────
 
     /// <summary>
+    /// True for the element types that can sit in a character's inventory. Shared with the shop so
+    /// it lists exactly what the inventory picker would.
+    /// </summary>
+    public static bool IsInventoryItemType(string? type) =>
+        type is not null && ItemTypes.Contains(type);
+
+    /// <summary>
     /// Searches all loaded elements for those that can be added to inventory.
     /// Returns at most 200 results ordered by name.
     /// </summary>
@@ -337,30 +344,40 @@ public static class EquipmentService
 
     /// <summary>
     /// Adds an item to inventory by element ID. Magic armor and weapon templates
-    /// require the ID of a compatible base item.
+    /// require the ID of a compatible base item. See <see cref="InventoryItemAdder"/> for how a
+    /// quantity becomes rows: stackable items join a stack, everything else is one row per unit.
     /// </summary>
     public static bool AddItem(
         Character character,
         string elementId,
         int amount = 1,
-        string? baseElementId = null)
+        string? baseElementId = null,
+        string? alternativeName = null) =>
+        AddItemDetailed(character, elementId, amount, baseElementId, alternativeName) is not null;
+
+    /// <summary>
+    /// <see cref="AddItem"/>, returning what was added so a caller can reach the rows it created or the
+    /// stack it grew. Null, with the inventory unchanged, when the item could not be added.
+    /// </summary>
+    public static PreparedInventoryAdd? AddItemDetailed(
+        Character character,
+        string elementId,
+        int amount = 1,
+        string? baseElementId = null,
+        string? alternativeName = null)
     {
         var element = DataManager.Current.ElementsCollection.GetElement(elementId);
-        if (element == null) return false;
+        if (element == null) return null;
 
         try
         {
-            var item = CreateInventoryItem(
-                character,
-                element,
-                amount,
-                baseElementId: baseElementId);
-            if (item == null) return false;
-
-            character.Inventory.Items.Add(item);
-            return true;
+            return InventoryItemAdder.Add(character, element, amount, baseElementId, alternativeName);
         }
-        catch { return false; }
+        catch (Exception ex)
+        {
+            DebugLogService.Instance.LogException(ex, $"EquipmentService.AddItem '{elementId}'");
+            return null;
+        }
     }
 
     /// <summary>Returns true when an inventory item can be expanded into component items.</summary>
@@ -396,8 +413,9 @@ public static class EquipmentService
         var packName = pack.DisplayName ?? pack.Name ?? "pack";
         var added = new List<EquipmentPackComponent>();
         var missing = new List<string>();
-        var pending = new List<PendingExtractedItem>();
+        var pending = new List<(EquipmentPackComponent Component, PreparedInventoryAdd Add)>();
 
+        // Work out every component before adding any, so one that cannot be resolved leaves the pack whole.
         foreach (var entry in GetExtractionRecipe(pack))
         {
             var element = DataManager.Current.ElementsCollection.GetElement(entry.ElementId);
@@ -407,48 +425,28 @@ public static class EquipmentService
                 continue;
             }
 
-            var component = new EquipmentPackComponent(
-                entry.ElementId,
-                entry.Amount,
-                entry.AlternativeName ?? element.Name);
-            RefactoredEquipmentItem? existingStack = null;
-            RefactoredEquipmentItem? newItem = null;
-
-            if (IsStackableElement(element))
-            {
-                existingStack = character.Inventory.Items.FirstOrDefault(item =>
-                    string.Equals(item.Item?.Id, element.Id, StringComparison.OrdinalIgnoreCase) &&
-                    string.Equals(
-                        NormalizeAlternativeName(item.AlternativeName),
-                        NormalizeAlternativeName(entry.AlternativeName),
-                        StringComparison.OrdinalIgnoreCase));
-            }
-
-            if (existingStack == null)
-            {
-                newItem = CreateInventoryItem(character, element, entry.Amount, entry.AlternativeName);
-            }
-
-            if (existingStack == null && newItem == null)
+            var prepared = InventoryItemAdder.Prepare(
+                character, element, entry.Amount, alternativeName: entry.AlternativeName);
+            if (prepared == null)
             {
                 missing.Add(entry.ElementId);
                 continue;
             }
 
-            pending.Add(new PendingExtractedItem(component, existingStack, newItem));
+            var component = new EquipmentPackComponent(
+                entry.ElementId,
+                entry.Amount,
+                entry.AlternativeName ?? element.Name);
+            pending.Add((component, prepared));
         }
 
         if (missing.Count > 0)
             return new EquipmentPackExtractionResult(false, packName, [], missing);
 
-        foreach (var item in pending)
+        foreach (var (component, prepared) in pending)
         {
-            if (item.ExistingStack != null)
-                item.ExistingStack.Amount += item.Component.Amount;
-            else if (item.NewItem != null)
-                character.Inventory.Items.Add(item.NewItem);
-
-            added.Add(item.Component);
+            InventoryItemAdder.Apply(character, prepared);
+            added.Add(component);
         }
 
         ConsumeOneInventoryItem(character, pack);
@@ -503,22 +501,6 @@ public static class EquipmentService
     private static bool IsExtractable(RefactoredEquipmentItem item) =>
         GetExtractionRecipe(item).Count > 0;
 
-    private static RefactoredEquipmentItem? CreateInventoryItem(
-        Character character,
-        Builder.Data.ElementBase element,
-        int amount,
-        string? alternativeName = null,
-        string? baseElementId = null)
-    {
-        var item = InventoryItemFactory.Create(character.Inventory, element, baseElementId);
-        if (item == null) return null;
-
-        item.Amount = Math.Max(1, amount);
-        if (!string.IsNullOrWhiteSpace(alternativeName))
-            item.AlternativeName = alternativeName;
-        return item;
-    }
-
     private static IReadOnlyList<ExtractionRecipeEntry> GetExtractionRecipe(RefactoredEquipmentItem item)
     {
         if (item.Item?.IsExtractable == true && item.Item.Extractables.Count > 0)
@@ -532,22 +514,6 @@ public static class EquipmentService
                SupplementalExtractionRecipes.TryGetValue(item.Item.Id, out var recipe)
             ? recipe
             : [];
-    }
-
-    private static string NormalizeAlternativeName(string? name) =>
-        string.IsNullOrWhiteSpace(name) ? "" : name.Trim();
-
-    private static bool IsStackableElement(Builder.Data.ElementBase element)
-    {
-        try
-        {
-            dynamic item = element;
-            return item.IsStackable == true;
-        }
-        catch
-        {
-            return false;
-        }
     }
 
     public static EquipmentItemDetailModel? GetItemDetail(Character character, string identifier)
@@ -599,11 +565,6 @@ public static class EquipmentService
 
         RemoveItem(character, item.Identifier);
     }
-
-    private sealed record PendingExtractedItem(
-        EquipmentPackComponent Component,
-        RefactoredEquipmentItem? ExistingStack,
-        RefactoredEquipmentItem? NewItem);
 
     private sealed record ExtractionRecipeEntry(string ElementId, int RawAmount, string? AlternativeName = null)
     {
@@ -807,9 +768,9 @@ public static class EquipmentService
     /// </summary>
     public static bool AddAndEquipToSlot(Character character, GearSlot slot, string elementId)
     {
-        if (!AddItem(character, elementId)) return false;
-        var item = character.Inventory.Items.Last();
-        return EquipToSlot(character, slot, item.Identifier);
+        var added = AddItemDetailed(character, elementId);
+        if (added is null) return false;
+        return EquipToSlot(character, slot, added.Rows[0].Identifier);
     }
 
     /// <summary>Unequips the item in the given gear slot (item stays in inventory).</summary>
