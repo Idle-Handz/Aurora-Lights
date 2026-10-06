@@ -6,6 +6,40 @@ namespace Aurora.Tests.Tests
     public sealed class CompendiumServiceTests
     {
         [Fact]
+        public void ARarityTypoIsReadAsTheRarityItWasMeantToBeSoItNeverBecomesAFilter()
+        {
+            Builder.Data.Elements.Item MagicItem(string name, string rarity)
+            {
+                var item = new Builder.Data.Elements.Item
+                {
+                    ElementHeader = new Builder.Data.ElementHeader(
+                        name, "Magic Item", "Test Source", "ID_TEST_" + name.ToUpperInvariant().Replace(' ', '_')),
+                };
+                item.ElementSetters.Add(new Builder.Data.ElementSetters.Setter("rarity", rarity));
+                return item;
+            }
+
+            IReadOnlyList<CompendiumEntryModel> entries = CompendiumService.BuildCatalogFromLoadedElements(
+                [
+                    MagicItem("Cloak One", "Vert Rare"),
+                    MagicItem("Cloak Two", "Very Rare"),
+                    MagicItem("Cloak Three", "unommon"),
+                    MagicItem("Cloak Four", "Rarity Varies"),
+                    MagicItem("Cloak Five", "Artificer Infusion"),
+                    MagicItem("Cloak Six", "Mythic"),
+                ],
+                new Dictionary<string, CompendiumEntryModel>(StringComparer.Ordinal));
+
+            entries.Single(entry => entry.Name == "Cloak One").ItemRarity.Should().Be("Very Rare");
+            entries.Single(entry => entry.Name == "Cloak Three").ItemRarity.Should().Be("Uncommon");
+            entries.Single(entry => entry.Name == "Cloak Four").ItemRarity.Should().Be("Varies");
+            entries.Single(entry => entry.Name == "Cloak Five").ItemRarity.Should().Be("Infusion");
+            entries.Single(entry => entry.Name == "Cloak Six").ItemRarity.Should().Be("Unknown");
+            CompendiumFilter.GetItemRarities(entries).Should().Equal(
+                "All", "Uncommon", "Very Rare", "Varies", "Infusion", "Unknown");
+        }
+
+        [Fact]
         public void LoadedFallbackSkipsDatabaseWinnersBeforeReadingTheirDescriptions()
         {
             var covered = new LoadedElement("ID_COVERED", "Old loaded name");

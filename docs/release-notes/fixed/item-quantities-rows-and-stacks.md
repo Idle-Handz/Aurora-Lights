@@ -1,0 +1,1 @@
+Adding more than one of an item that can be wielded, such as two daggers, now gives a separate inventory entry for each so they can be held one in each hand, while stackable items such as torches, potions and arrows join a single stack, whether they come from the Add Item picker, Starting Equipment, an extracted pack or the Shop.

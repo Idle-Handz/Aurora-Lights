@@ -68,6 +68,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<AppPageStateService>();
         builder.Services.AddSingleton<UserPreferencesService>();
         builder.Services.AddSingleton<CompendiumService>();
+        builder.Services.AddSingleton<ShopCatalogService>();
         builder.Services.AddSingleton<ContentService>();
         builder.Services.AddSingleton<ContentDoctorService>();
         builder.Services.AddSingleton<ContentDatabaseService>();

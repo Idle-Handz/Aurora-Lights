@@ -1,0 +1,1 @@
+When two identical weapons are carried, such as two daggers, the equipment page, the attacks list, the gear picker and the Shop's sell list now mark the one in the main hand "(M)" and the one in the off hand "(O)" so you can tell which is which.

@@ -1,0 +1,1 @@
+The Content Doctor page now lists rarities in the content that mean nothing, with the spelling to use and the file to change for each typo that is one letter away from a real rarity, and a short list of values nothing recognises (which show as Unknown in the filters).

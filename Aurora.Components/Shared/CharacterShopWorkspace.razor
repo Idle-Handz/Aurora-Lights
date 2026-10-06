@@ -1,0 +1,1163 @@
+@implements IDisposable
+
+<div class="shop-host">
+    <section class="shop @(HasSelection ? "shop--selected" : null)" aria-label="Shop">
+
+        <header class="shop-header">
+            <div class="shop-heading">
+                <h2 class="shop-title">Shop</h2>
+                <p class="shop-tagline">
+                    @(_mode == ShopMode.Buy
+                        ? "Everything available to this character. Buy it, or add it for free."
+                        : "Sell items from your pack at the rate you choose.")
+                </p>
+            </div>
+
+            @* Held back while loading: before the character is read the purse is empty, and "No coins"
+               (or the last character's coins) would be wrong. *@
+            <div class="shop-wallet @(Loading ? "is-pending" : null)" role="group" aria-label="Your coins" aria-hidden="@(Loading ? "true" : null)">
+                @foreach (var coin in WalletCoins)
+                {
+                    <span class="shop-coin" title="@coin.Name">
+                        <span class="shop-coin-amount">@coin.Amount.ToString("N0")</span>
+                        <span class="shop-coin-unit">@coin.Abbreviation</span>
+                    </span>
+                }
+                @if (Wallet.TotalCopper == 0)
+                {
+                    <span class="shop-wallet-empty">No coins</span>
+                }
+                else
+                {
+                    <span class="shop-wallet-total">Total @CoinPurse.FormatCopper(Wallet.TotalCopper)</span>
+                }
+            </div>
+
+            <div class="shop-mode" role="tablist" aria-label="Shop mode">
+                <button type="button" role="tab" id="shop-tab-buy"
+                        class="shop-mode-button @(_mode == ShopMode.Buy ? "is-active" : null)"
+                        aria-selected="@(_mode == ShopMode.Buy ? "true" : "false")"
+                        @onclick="() => SetMode(ShopMode.Buy)">
+                    Buy
+                </button>
+                <button type="button" role="tab" id="shop-tab-sell"
+                        class="shop-mode-button @(_mode == ShopMode.Sell ? "is-active" : null)"
+                        aria-selected="@(_mode == ShopMode.Sell ? "true" : "false")"
+                        @onclick="() => SetMode(ShopMode.Sell)">
+                    Sell @if (!Loading)
+                    {
+                        <span class="shop-mode-count">@Inventory.Count</span>
+                    }
+                </button>
+            </div>
+        </header>
+
+        <div class="shop-toolbar">
+            <label class="shop-search">
+                <span class="shop-visually-hidden">Search the shop</span>
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" /></svg>
+                <input type="search"
+                       value="@_queryText"
+                       @oninput="OnSearchInput"
+                       placeholder="@(_mode == ShopMode.Buy ? "Search items, e.g. longsword, rope, potion" : "Search your pack")"
+                       autocomplete="off"
+                       spellcheck="false" />
+                @if (_queryText.Length > 0)
+                {
+                    <button type="button" class="shop-icon-button" aria-label="Clear search" @onclick="ClearSearch">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" /></svg>
+                    </button>
+                }
+            </label>
+
+            <label class="shop-field shop-sort">
+                <span>Sort</span>
+                <select value="@_filter.Sort.ToString()" @onchange="OnSortChanged">
+                    @foreach (var option in SortOptions)
+                    {
+                        <option value="@option.Sort">@option.Label</option>
+                    }
+                </select>
+            </label>
+
+            <button type="button"
+                    class="shop-filter-toggle"
+                    aria-expanded="@(_filtersOpen ? "true" : "false")"
+                    aria-controls="shop-filters"
+                    @onclick="ToggleFilters">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z" /></svg>
+                Filters
+                @if (ActiveFilterCount > 0)
+                {
+                    <span class="shop-badge">@ActiveFilterCount</span>
+                }
+            </button>
+        </div>
+
+        <div class="shop-filters @(_filtersOpen ? "is-open" : null)" id="shop-filters">
+            @if (_rarities.Count > 1)
+            {
+                <label class="shop-field">
+                    <span>Rarity</span>
+                    <select value="@(_filter.Rarity ?? string.Empty)" @onchange="OnRarityChanged">
+                        <option value="">Any</option>
+                        @foreach (var rarity in _rarities)
+                        {
+                            <option value="@rarity">@rarity</option>
+                        }
+                    </select>
+                </label>
+            }
+            @if (_sources.Count > 1)
+            {
+                <label class="shop-field">
+                    <span>Source</span>
+                    <select value="@(_filter.Source ?? string.Empty)" @onchange="OnSourceChanged">
+                        <option value="">All sources</option>
+                        @foreach (var source in _sources)
+                        {
+                            <option value="@source">@source</option>
+                        }
+                    </select>
+                </label>
+            }
+            @if (_mode == ShopMode.Buy)
+            {
+                <label class="shop-toggle">
+                    <input type="checkbox" checked="@_filter.AffordableOnly" @onchange="e => ToggleAffordable(IsChecked(e))" />
+                    <span>I can afford it</span>
+                </label>
+            }
+            <label class="shop-toggle">
+                <input type="checkbox" checked="@_filter.PricedOnly" @onchange="e => TogglePricedOnly(IsChecked(e))" />
+                <span>@(_mode == ShopMode.Buy ? "Hide items with no price" : "Hide items with no value")</span>
+            </label>
+            @if (ActiveFilterCount > 0)
+            {
+                <button type="button" class="shop-link-button" @onclick="ClearFilters">Clear filters</button>
+            }
+        </div>
+
+        <div class="shop-body">
+            <nav class="shop-rail" aria-label="Shop departments">
+                <div class="shop-rail-section">
+                    <h3 class="shop-rail-title">Departments</h3>
+                    <div class="shop-rail-list">
+                        <button type="button"
+                                class="shop-rail-item @(_filter.Department is null ? "is-active" : null)"
+                                aria-pressed="@(_filter.Department is null ? "true" : "false")"
+                                @onclick="() => SelectDepartment(null)">
+                            <span class="shop-rail-name">All items</span>
+                            <span class="shop-count">@_scopedCount.ToString("N0")</span>
+                        </button>
+                        @foreach (var department in _departments)
+                        {
+                            var isActive = string.Equals(_filter.Department, department.Name, StringComparison.OrdinalIgnoreCase);
+                            <button type="button"
+                                    class="shop-rail-item @(isActive ? "is-active" : null)"
+                                    aria-pressed="@(isActive ? "true" : "false")"
+                                    @onclick="() => SelectDepartment(department.Name)">
+                                <span class="shop-rail-name">@department.Name</span>
+                                <span class="shop-count">@department.Count.ToString("N0")</span>
+                            </button>
+                        }
+                    </div>
+                </div>
+
+                @if (SelectedDepartment is { } selectedDepartment)
+                {
+                    <div class="shop-rail-section">
+                        <h3 class="shop-rail-title">@selectedDepartment.Name</h3>
+                        <div class="shop-rail-list">
+                            <button type="button"
+                                    class="shop-rail-item @(_filter.Category is null ? "is-active" : null)"
+                                    aria-pressed="@(_filter.Category is null ? "true" : "false")"
+                                    @onclick="() => SelectShelf(null)">
+                                <span class="shop-rail-name">Everything here</span>
+                                <span class="shop-count">@selectedDepartment.Count.ToString("N0")</span>
+                            </button>
+                            @foreach (var shelf in selectedDepartment.Shelves)
+                            {
+                                var isActive = string.Equals(_filter.Category, shelf.Name, StringComparison.OrdinalIgnoreCase);
+                                <button type="button"
+                                        class="shop-rail-item @(isActive ? "is-active" : null)"
+                                        aria-pressed="@(isActive ? "true" : "false")"
+                                        @onclick="() => SelectShelf(shelf.Name)">
+                                    <span class="shop-rail-name">@shelf.Name</span>
+                                    <span class="shop-count">@shelf.Count.ToString("N0")</span>
+                                </button>
+                            }
+                        </div>
+                    </div>
+                }
+            </nav>
+
+            <div class="shop-list-pane">
+                <div class="shop-crumbs">
+                    <span class="shop-crumb-path">@CrumbText</span>
+                    <span class="shop-result-count" role="status" aria-live="polite">
+                        @ResultCount.ToString("N0") of @_totalCount.ToString("N0") @(_totalCount == 1 ? "item" : "items")
+                    </span>
+                </div>
+
+                @if (_subtypes.Count > 1)
+                {
+                    <div class="shop-chip-row" role="group" aria-label="Narrow by type">
+                        <button type="button"
+                                class="shop-chip-button @(_filter.Subtype is null ? "is-active" : null)"
+                                aria-pressed="@(_filter.Subtype is null ? "true" : "false")"
+                                @onclick="() => SelectSubtype(null)">
+                            All
+                        </button>
+                        @foreach (var subtype in _subtypes)
+                        {
+                            var isActive = string.Equals(_filter.Subtype, subtype.Name, StringComparison.OrdinalIgnoreCase);
+                            <button type="button"
+                                    class="shop-chip-button @(isActive ? "is-active" : null)"
+                                    aria-pressed="@(isActive ? "true" : "false")"
+                                    @onclick="() => SelectSubtype(subtype.Name)">
+                                @subtype.Name <span class="shop-count">@subtype.Count</span>
+                            </button>
+                        }
+                    </div>
+                }
+
+                @if (Loading)
+                {
+                    <div class="shop-state" role="status">
+                        <div class="shop-spinner" aria-hidden="true"></div>
+                        <p>Stocking the shelves&hellip;</p>
+                    </div>
+                }
+                else if (!string.IsNullOrWhiteSpace(ErrorMessage))
+                {
+                    <div class="shop-state shop-state--error" role="alert">
+                        <p>@ErrorMessage</p>
+                    </div>
+                }
+                else if (ResultCount == 0)
+                {
+                    <div class="shop-state">
+                        <p class="shop-state-title">@EmptyTitle</p>
+                        <p>@EmptyHint</p>
+                        @if (_scopedCount > 0 && (_filter.Department is not null || _filter.Category is not null || _filter.Subtype is not null))
+                        {
+                            <button type="button" class="shop-button" @onclick="ShowAllDepartments">
+                                Show @_scopedCount.ToString("N0") @(_scopedCount == 1 ? "match" : "matches") in other departments
+                            </button>
+                        }
+                        else if (ActiveFilterCount > 0 || _filter.Query.Length > 0)
+                        {
+                            <button type="button" class="shop-button" @onclick="ClearEverything">Clear search and filters</button>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <ul class="shop-list">
+                        @foreach (var row in VisibleRows)
+                        {
+                            <li @key="row.Key">
+                                <button type="button"
+                                        class="shop-row @(row.Selected ? "is-selected" : null)"
+                                        aria-pressed="@(row.Selected ? "true" : "false")"
+                                        @onclick="() => SelectRow(row.Key)">
+                                    <span class="shop-row-main">
+                                        <span class="shop-row-name">
+                                            @row.Name
+                                            @if (row.Amount > 1)
+                                            {
+                                                <span class="shop-row-qty">&times;@row.Amount</span>
+                                            }
+                                        </span>
+                                        <span class="shop-row-meta">
+                                            @if (row.Rarity.Length > 0)
+                                            {
+                                                <span class="shop-chip @RarityClass(row.Rarity)">@row.Rarity</span>
+                                            }
+                                            @if (row.RequiresAttunement)
+                                            {
+                                                <span class="shop-chip shop-chip--attune" title="Requires attunement">Attunement</span>
+                                            }
+                                            @if (row.Equipped)
+                                            {
+                                                <span class="shop-chip shop-chip--equipped">Equipped</span>
+                                            }
+                                            @if (row.Owned > 0)
+                                            {
+                                                <span class="shop-chip shop-chip--owned" title="You already have @row.Owned">Owned &times;@row.Owned</span>
+                                            }
+                                            @if (row.Meta.Length > 0)
+                                            {
+                                                <span class="shop-row-detail">@row.Meta</span>
+                                            }
+                                        </span>
+                                    </span>
+                                    <span class="shop-row-weight" title="Weight">@row.Weight</span>
+                                    <span class="shop-row-price @(row.Unaffordable ? "is-unaffordable" : null) @(row.HasPrice ? null : "is-muted")"
+                                          title="@row.PriceTitle">
+                                        @row.PriceText
+                                        @if (row.Unaffordable)
+                                        {
+                                            <span class="shop-visually-hidden"> (you cannot afford this)</span>
+                                        }
+                                    </span>
+                                </button>
+                            </li>
+                        }
+                    </ul>
+
+                    @if (ResultCount > _visible)
+                    {
+                        <div class="shop-more">
+                            <button type="button" class="shop-button" @onclick="ShowMore">
+                                Show @Math.Min(PageSize, ResultCount - _visible) more
+                                <span class="shop-count">@((ResultCount - _visible).ToString("N0")) left</span>
+                            </button>
+                        </div>
+                    }
+                }
+            </div>
+
+            @* Escape is handled here, not on the whole workspace, so typing in the search box
+               does not send a key event to the host for every keystroke. *@
+            <aside class="shop-detail" aria-label="Item details" @onkeydown="OnKeyDown">
+                @if (_mode == ShopMode.Buy && SelectedItem is { } item)
+                {
+                    @RenderBuyPanel(item)
+                }
+                else if (_mode == ShopMode.Sell && SelectedEntry is { } entry)
+                {
+                    @RenderSellPanel(entry)
+                }
+                else
+                {
+                    <div class="shop-detail-empty">
+                        <p class="shop-state-title">@(_mode == ShopMode.Buy ? "Pick something to buy" : "Pick something to sell")</p>
+                        <p>@(_mode == ShopMode.Buy
+                            ? "Choose an item from the list to read about it and see what it costs."
+                            : "Choose an item from your pack to see what it would fetch.")</p>
+                    </div>
+                }
+            </aside>
+        </div>
+
+        @if (HasSelection)
+        {
+            <button type="button" class="shop-backdrop" aria-label="Close details" tabindex="-1" @onclick="CloseDetail"></button>
+        }
+    </section>
+</div>
+
+@code {
+    private const int PageSize = 100;
+
+    // ── Parameters ───────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Everything the shop can sell this character, already limited to the content they may use.
+    /// The workspace re-indexes only when it is handed a different list instance, so pass a new
+    /// list whenever the contents change.
+    /// </summary>
+    [Parameter] public IReadOnlyList<ShopItemModel> Catalog { get; set; } = [];
+
+    /// <summary>The character's inventory, for the Sell side. Pass a new list when it changes.</summary>
+    [Parameter] public IReadOnlyList<ShopInventoryEntryModel> Inventory { get; set; } = [];
+
+    /// <summary>How many of each catalog item the character holds, by element id.</summary>
+    [Parameter] public IReadOnlyDictionary<string, int>? OwnedCounts { get; set; }
+
+    [Parameter] public CoinPurse Wallet { get; set; }
+
+    /// <summary>
+    /// How change and sale proceeds are made, so the "after" figures match what the host will charge.
+    /// Pass the same options the host hands the transaction service.
+    /// </summary>
+    [Parameter] public ShopCoinOptions CoinOptions { get; set; }
+
+    /// <summary>The rules text and base choices for the selected item, supplied by the host once loaded.</summary>
+    [Parameter] public ShopItemDetailModel? Detail { get; set; }
+
+    [Parameter] public bool Loading { get; set; }
+
+    /// <summary>True while the host is carrying out a purchase or sale; disables the action buttons.</summary>
+    [Parameter] public bool Busy { get; set; }
+
+    [Parameter] public string? ErrorMessage { get; set; }
+
+    /// <summary>Raised with an item id when the shopper selects a catalog item, so the host can load its detail.</summary>
+    [Parameter] public EventCallback<string> OnSelectItem { get; set; }
+
+    [Parameter] public EventCallback<ShopPurchaseRequest> OnPurchase { get; set; }
+
+    [Parameter] public EventCallback<ShopSaleRequest> OnSell { get; set; }
+
+    // ── State ────────────────────────────────────────────────────────────────
+
+    private sealed record ShopRow(
+        string Key,
+        string Name,
+        string Meta,
+        string Rarity,
+        bool RequiresAttunement,
+        bool Equipped,
+        int Owned,
+        int Amount,
+        string Weight,
+        string PriceText,
+        string PriceTitle,
+        bool HasPrice,
+        bool Unaffordable,
+        bool Selected);
+
+    private sealed record CoinCell(string Name, string Abbreviation, long Amount);
+
+    private sealed record SortOption(ShopSort Sort, string Label);
+
+    private static readonly SortOption[] SortOptions =
+    [
+        new(ShopSort.Name, "Name (A–Z)"),
+        new(ShopSort.PriceLowToHigh, "Price: low to high"),
+        new(ShopSort.PriceHighToLow, "Price: high to low"),
+        new(ShopSort.Weight, "Weight"),
+        new(ShopSort.Rarity, "Rarity"),
+    ];
+
+    private ShopMode _mode = ShopMode.Buy;
+    private ShopFilterState _filter = new();
+    private string _queryText = string.Empty;
+    private CancellationTokenSource? _debounce;
+    private bool _filtersOpen;
+    private int _visible = PageSize;
+
+    private string? _selectedItemId;
+    private string? _selectedEntryId;
+    private int _quantity = 1;
+    private string _baseId = string.Empty;
+    private bool _customPrice;
+    private string _priceText = string.Empty;
+    private int _sellRate = ShopPricing.DefaultSellRatePercent;
+
+    private IReadOnlyList<ShopItemModel>? _lastCatalog;
+    private Dictionary<string, ShopItemModel> _catalogIndex = new(StringComparer.OrdinalIgnoreCase);
+    private IReadOnlyList<ShopItemModel> _catalog = [];
+    private HashSet<string> _repeatedNames = new(StringComparer.OrdinalIgnoreCase);
+    private IReadOnlyList<ShopInventoryEntryModel>? _lastInventory;
+    private Dictionary<string, ShopInventoryEntryModel> _inventoryIndex = new(StringComparer.Ordinal);
+
+    private IReadOnlyList<ShopDepartmentModel> _departments = [];
+    private IReadOnlyList<ShopShelfModel> _subtypes = [];
+    private IReadOnlyList<string> _rarities = [];
+    private IReadOnlyList<string> _sources = [];
+    private IReadOnlyList<ShopItemModel> _buyResults = [];
+    private IReadOnlyList<ShopInventoryEntryModel> _sellResults = [];
+    private int _scopedCount;
+    private int _totalCount;
+
+    // ── Derived ──────────────────────────────────────────────────────────────
+
+    private bool HasSelection => _mode == ShopMode.Buy ? SelectedItem is not null : SelectedEntry is not null;
+
+    private int ResultCount => _mode == ShopMode.Buy ? _buyResults.Count : _sellResults.Count;
+
+    // Rows are only built for the page being shown; a large library can match thousands of items.
+    private IEnumerable<ShopRow> VisibleRows => _mode == ShopMode.Buy
+        ? _buyResults.Take(_visible).Select(BuildBuyRow)
+        : _sellResults.Take(_visible).Select(BuildSellRow);
+
+    private ShopItemModel? SelectedItem =>
+        _selectedItemId is not null && _catalogIndex.TryGetValue(_selectedItemId, out var item) ? item : null;
+
+    private ShopInventoryEntryModel? SelectedEntry =>
+        _selectedEntryId is not null && _inventoryIndex.TryGetValue(_selectedEntryId, out var entry) ? entry : null;
+
+    private ShopDepartmentModel? SelectedDepartment => _filter.Department is null
+        ? null
+        : _departments.FirstOrDefault(d => string.Equals(d.Name, _filter.Department, StringComparison.OrdinalIgnoreCase));
+
+    private ShopItemDetailModel? SelectedDetail =>
+        Detail is not null && string.Equals(Detail.Id, _selectedItemId, StringComparison.OrdinalIgnoreCase) ? Detail : null;
+
+    private ShopBaseOptionModel? ChosenBase =>
+        SelectedDetail?.BaseOptions.FirstOrDefault(o => string.Equals(o.Id, _baseId, StringComparison.OrdinalIgnoreCase));
+
+    private IEnumerable<CoinCell> WalletCoins => new[]
+    {
+        new CoinCell("Platinum pieces", "pp", Wallet.Platinum),
+        new CoinCell("Gold pieces", "gp", Wallet.Gold),
+        new CoinCell("Electrum pieces", "ep", Wallet.Electrum),
+        new CoinCell("Silver pieces", "sp", Wallet.Silver),
+        new CoinCell("Copper pieces", "cp", Wallet.Copper),
+    }.Where(c => c.Amount != 0);
+
+    private int ActiveFilterCount =>
+        (string.IsNullOrWhiteSpace(_filter.Rarity) ? 0 : 1)
+        + (string.IsNullOrWhiteSpace(_filter.Source) ? 0 : 1)
+        + (_filter.AffordableOnly ? 1 : 0)
+        + (_filter.PricedOnly ? 1 : 0);
+
+    private string CrumbText
+    {
+        get
+        {
+            string root = _mode == ShopMode.Buy ? "Shop" : "Your pack";
+            if (_filter.Department is null)
+                return root;
+
+            string path = $"{root} › {_filter.Department}";
+            if (_filter.Category is not null)
+                path += $" › {_filter.Category}";
+            if (_filter.Subtype is not null)
+                path += $" › {_filter.Subtype}";
+            return path;
+        }
+    }
+
+    private string EmptyTitle => _totalCount == 0
+        ? (_mode == ShopMode.Buy ? "Nothing is for sale" : "Your pack is empty")
+        : "Nothing matches";
+
+    private string EmptyHint => _totalCount == 0
+        ? (_mode == ShopMode.Buy
+            ? "No item content is loaded, or every source is switched off for this character."
+            : "Buy or add some items, and they will show up here to sell.")
+        : "Try fewer words, or clear a filter.";
+
+    // ── Lifecycle ────────────────────────────────────────────────────────────
+
+    protected override void OnParametersSet()
+    {
+        if (!ReferenceEquals(Catalog, _lastCatalog))
+        {
+            _lastCatalog = Catalog;
+            _catalogIndex = new Dictionary<string, ShopItemModel>(StringComparer.OrdinalIgnoreCase);
+
+            // An id is what a purchase refers to and what keys a row, so a host that hands over the
+            // same id twice would otherwise crash the list the first time it is re-rendered.
+            var distinct = new List<ShopItemModel>(Catalog.Count);
+            foreach (var item in Catalog)
+            {
+                if (_catalogIndex.TryAdd(item.Id, item))
+                    distinct.Add(item);
+            }
+
+            _catalog = distinct;
+            _repeatedNames = RepeatedNames(distinct.Select(item => item.Name));
+        }
+
+        if (!ReferenceEquals(Inventory, _lastInventory))
+        {
+            _lastInventory = Inventory;
+            _inventoryIndex = new Dictionary<string, ShopInventoryEntryModel>(StringComparer.Ordinal);
+            foreach (var entry in Inventory)
+                _inventoryIndex.TryAdd(entry.Identifier, entry);
+        }
+
+        if (_selectedItemId is not null && !_catalogIndex.ContainsKey(_selectedItemId))
+            _selectedItemId = null;
+        if (_selectedEntryId is not null && !_inventoryIndex.ContainsKey(_selectedEntryId))
+            _selectedEntryId = null;
+
+        // A template with exactly one compatible base needs no choice; a base that has gone is dropped.
+        if (SelectedDetail is { } detail)
+        {
+            if (_baseId.Length > 0 && ChosenBase is null)
+                _baseId = string.Empty;
+            if (_baseId.Length == 0 && detail.BaseOptions.Count == 1)
+                _baseId = detail.BaseOptions[0].Id;
+        }
+
+        Recompute();
+    }
+
+    public void Dispose()
+    {
+        _debounce?.Cancel();
+        _debounce?.Dispose();
+    }
+
+    // ── Filtering ────────────────────────────────────────────────────────────
+
+    private void Recompute()
+    {
+        long wallet = Wallet.TotalCopper;
+
+        if (_mode == ShopMode.Buy)
+        {
+            var scoped = ShopCatalogFilter.ApplyScopedFilters(_catalog, _filter, wallet);
+            var results = ShopCatalogFilter.Apply(scoped, _filter);
+            _totalCount = _catalog.Count;
+            _scopedCount = scoped.Count;
+            _departments = ShopCatalogFilter.BuildDepartments(scoped);
+            _subtypes = _filter.Category is null
+                ? []
+                : ShopCatalogFilter.BuildSubtypes(scoped.Where(i => string.Equals(i.Category, _filter.Category, StringComparison.OrdinalIgnoreCase)));
+            _rarities = ShopCatalogFilter.BuildRarities(_catalog);
+            _sources = ShopCatalogFilter.BuildSources(_catalog);
+            _buyResults = results;
+        }
+        else
+        {
+            var scoped = ShopCatalogFilter.ApplyScopedFilters(Inventory, _filter, wallet);
+            var results = ShopCatalogFilter.Apply(scoped, _filter);
+            _totalCount = Inventory.Count;
+            _scopedCount = scoped.Count;
+            _departments = ShopCatalogFilter.BuildDepartments(scoped);
+            _subtypes = _filter.Category is null
+                ? []
+                : ShopCatalogFilter.BuildSubtypes(scoped.Where(i => string.Equals(i.Category, _filter.Category, StringComparison.OrdinalIgnoreCase)));
+            _rarities = ShopCatalogFilter.BuildRarities(Inventory);
+            _sources = ShopCatalogFilter.BuildSources(Inventory);
+            _sellResults = results;
+        }
+    }
+
+    private static HashSet<string> RepeatedNames(IEnumerable<string> names) =>
+        names.GroupBy(name => name, StringComparer.OrdinalIgnoreCase)
+            .Where(group => group.Skip(1).Any())
+            .Select(group => group.Key)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>"Dagger (Player's Handbook (2024)) — 2 gp"; the source only when another base shares the name.</summary>
+    private static string BaseOptionLabel(ShopBaseOptionModel option, HashSet<string> repeated)
+    {
+        string label = repeated.Contains(option.Name) && !string.IsNullOrWhiteSpace(option.Source)
+            ? $"{option.Name} ({option.Source})"
+            : option.Name;
+        return option.UnitPriceCopper > 0 ? $"{label} — {CoinPurse.FormatCopper(option.UnitPriceCopper)}" : label;
+    }
+
+    private ShopRow BuildBuyRow(ShopItemModel item)
+    {
+        bool showShelf = _filter.Category is null;
+        // Content repeats names across editions and sources (a 2014 and a 2024 Dagger); the source is
+        // what tells such rows apart, so it leads the line for those and stays out of the way otherwise.
+        string? source = _repeatedNames.Contains(item.Name) ? item.Source : null;
+        string meta = string.Join(" · ", new[] { source, showShelf ? item.Category : null, item.Subtype, item.Summary }
+            .Where(part => !string.IsNullOrWhiteSpace(part)));
+        int owned = OwnedCounts is not null && OwnedCounts.TryGetValue(item.Id, out int count) ? count : 0;
+
+        string priceText;
+        string priceTitle;
+        if (item.HasPrice)
+        {
+            priceText = CoinPurse.FormatCopper(item.UnitPriceCopper);
+            priceTitle = "Price each";
+        }
+        else if (item.PriceFollowsBase)
+        {
+            priceText = "Base price";
+            priceTitle = "Costs what the base item you choose costs";
+        }
+        else
+        {
+            priceText = "No price";
+            priceTitle = "No listed price; you can set one or add it for free";
+        }
+
+        return new ShopRow(
+            item.Id, item.Name, meta, item.Rarity, item.RequiresAttunement, false, owned, 0,
+            item.DisplayWeight, priceText, priceTitle, item.HasPrice,
+            item.HasPrice && item.UnitPriceCopper > Wallet.TotalCopper,
+            string.Equals(item.Id, _selectedItemId, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private ShopRow BuildSellRow(ShopInventoryEntryModel entry)
+    {
+        bool showShelf = _filter.Category is null;
+        string meta = string.Join(" · ", new[] { showShelf ? entry.Category : null, entry.Subtype }
+            .Where(part => !string.IsNullOrWhiteSpace(part)));
+        // The row stands for the whole stack, so show what the stack fetches; rounding a cheap item's
+        // share down to nothing is not the same as the item having no value.
+        long proceeds = ShopPricing.SaleProceeds(entry.UnitPriceCopper, entry.Amount, _sellRate);
+        string priceText = proceeds > 0
+            ? CoinPurse.FormatCopper(proceeds) + (entry.Amount > 1 ? " total" : string.Empty)
+            : entry.UnitPriceCopper > 0 ? "Under 1 cp" : "No value";
+        string priceTitle = proceeds > 0
+            ? $"Pays {_sellRate}% of the listed price"
+            : entry.UnitPriceCopper > 0
+                ? $"Worth less than a copper piece at {_sellRate}%; raise the sell rate or set a price"
+                : "No listed value; you can set a price";
+
+        return new ShopRow(
+            entry.Identifier, entry.Name, meta, entry.Rarity, false, entry.IsEquipped, 0, entry.Amount,
+            entry.DisplayWeight, priceText, priceTitle, proceeds > 0, false,
+            string.Equals(entry.Identifier, _selectedEntryId, StringComparison.Ordinal));
+    }
+
+    private void ResetPaging() => _visible = PageSize;
+
+    // ── Handlers: search, filters, navigation ────────────────────────────────
+
+    private async Task OnSearchInput(ChangeEventArgs args)
+    {
+        _queryText = args.Value?.ToString() ?? string.Empty;
+        _debounce?.Cancel();
+        _debounce?.Dispose();
+        var cancellation = _debounce = new CancellationTokenSource();
+
+        try
+        {
+            // Wait for a pause in typing so a hosted (remote) session is not asked to refilter per key.
+            await Task.Delay(180, cancellation.Token);
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+
+        _filter = _filter with { Query = _queryText };
+        ResetPaging();
+        Recompute();
+    }
+
+    private void ClearSearch()
+    {
+        _debounce?.Cancel();
+        _queryText = string.Empty;
+        _filter = _filter with { Query = string.Empty };
+        ResetPaging();
+        Recompute();
+    }
+
+    private void OnSortChanged(ChangeEventArgs args)
+    {
+        if (Enum.TryParse(args.Value?.ToString(), out ShopSort sort))
+            _filter = _filter with { Sort = sort };
+        Recompute();
+    }
+
+    private void OnRarityChanged(ChangeEventArgs args)
+    {
+        string? value = args.Value?.ToString();
+        _filter = _filter with { Rarity = string.IsNullOrEmpty(value) ? null : value };
+        ResetPaging();
+        Recompute();
+    }
+
+    private void OnSourceChanged(ChangeEventArgs args)
+    {
+        string? value = args.Value?.ToString();
+        _filter = _filter with { Source = string.IsNullOrEmpty(value) ? null : value };
+        ResetPaging();
+        Recompute();
+    }
+
+    private static bool IsChecked(ChangeEventArgs args) => args.Value is true;
+
+    private void ToggleAffordable(bool on)
+    {
+        _filter = _filter with { AffordableOnly = on };
+        ResetPaging();
+        Recompute();
+    }
+
+    private void TogglePricedOnly(bool on)
+    {
+        _filter = _filter with { PricedOnly = on };
+        ResetPaging();
+        Recompute();
+    }
+
+    private void ToggleFilters() => _filtersOpen = !_filtersOpen;
+
+    private void ClearFilters()
+    {
+        _filter = _filter with { Rarity = null, Source = null, AffordableOnly = false, PricedOnly = false };
+        ResetPaging();
+        Recompute();
+    }
+
+    private void ClearEverything()
+    {
+        _debounce?.Cancel();
+        _queryText = string.Empty;
+        _filter = new ShopFilterState { Sort = _filter.Sort };
+        ResetPaging();
+        Recompute();
+    }
+
+    private void ShowAllDepartments()
+    {
+        _filter = _filter with { Department = null, Category = null, Subtype = null };
+        ResetPaging();
+        Recompute();
+    }
+
+    private void SelectDepartment(string? department)
+    {
+        _filter = _filter with { Department = department, Category = null, Subtype = null };
+        ResetPaging();
+        Recompute();
+    }
+
+    private void SelectShelf(string? shelf)
+    {
+        _filter = _filter with { Category = shelf, Subtype = null };
+        ResetPaging();
+        Recompute();
+    }
+
+    private void SelectSubtype(string? subtype)
+    {
+        _filter = _filter with { Subtype = subtype };
+        ResetPaging();
+        Recompute();
+    }
+
+    private void ShowMore() => _visible += PageSize;
+
+    private void SetMode(ShopMode mode)
+    {
+        if (_mode == mode)
+            return;
+
+        _mode = mode;
+        _debounce?.Cancel();
+        _queryText = string.Empty;
+        _filter = new ShopFilterState { Sort = _filter.Sort };
+        _filtersOpen = false;
+        _selectedItemId = null;
+        _selectedEntryId = null;
+        ResetOrder();
+        ResetPaging();
+        Recompute();
+    }
+
+    private void CloseDetail()
+    {
+        _selectedItemId = null;
+        _selectedEntryId = null;
+        Recompute();
+    }
+
+    private void OnKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Escape")
+            CloseDetail();
+    }
+
+    private async Task SelectRow(string key)
+    {
+        ResetOrder();
+        if (_mode == ShopMode.Buy)
+        {
+            _selectedItemId = key;
+            Recompute();
+            await OnSelectItem.InvokeAsync(key);
+            return;
+        }
+
+        _selectedEntryId = key;
+        Recompute();
+    }
+
+    private void ResetOrder()
+    {
+        _quantity = 1;
+        _baseId = string.Empty;
+        _customPrice = false;
+        _priceText = string.Empty;
+    }
+
+    // ── Order panels ─────────────────────────────────────────────────────────
+
+    private long? OverrideCopper(bool forceInput) =>
+        _customPrice || forceInput ? ShopPricing.ParseGold(_priceText) ?? 0 : null;
+
+    private void OnQuantityChanged(ChangeEventArgs args, int max)
+    {
+        int parsed = int.TryParse(args.Value?.ToString(), out int value) ? value : 1;
+        SetQuantity(parsed, max);
+    }
+
+    private void SetQuantity(int value, int max) => _quantity = Math.Clamp(value, 1, Math.Max(1, max));
+
+    private void OnBaseChanged(ChangeEventArgs args) => _baseId = args.Value?.ToString() ?? string.Empty;
+
+    private void OnPriceChanged(ChangeEventArgs args) => _priceText = args.Value?.ToString() ?? string.Empty;
+
+    private void OnCustomPriceToggled(ChangeEventArgs args) => _customPrice = IsChecked(args);
+
+    private void OnRateChanged(ChangeEventArgs args)
+    {
+        if (int.TryParse(args.Value?.ToString(), out int rate))
+            _sellRate = rate;
+        Recompute();
+    }
+
+    private Task Purchase(ShopItemModel item, bool free, bool forceInput)
+    {
+        var request = new ShopPurchaseRequest(
+            item.Id,
+            _baseId.Length > 0 ? _baseId : null,
+            _quantity,
+            free ? null : OverrideCopper(forceInput),
+            free);
+        return OnPurchase.InvokeAsync(request);
+    }
+
+    private Task Sell(ShopInventoryEntryModel entry, bool forceInput) =>
+        OnSell.InvokeAsync(new ShopSaleRequest(entry.Identifier, _quantity, _sellRate, OverrideCopper(forceInput)));
+
+    private static string RarityClass(string rarity) => "shop-chip--" + rarity.ToLowerInvariant().Replace(' ', '-');
+
+    private RenderFragment RenderBuyPanel(ShopItemModel item) => __builder =>
+    {
+        var detail = SelectedDetail;
+        bool awaitingBases = item.IsTemplate && detail is null;
+        var chosenBase = ChosenBase;
+        bool listedHasPrice = ShopQuotes.ForPurchase(item, chosenBase, _quantity, null, Wallet, CoinOptions).HasPrice;
+        // With nothing to charge, the shopper has to say what the lot costs; a template waits for its base first.
+        bool forceInput = !listedHasPrice && (!item.IsTemplate || chosenBase is not null);
+        var quote = ShopQuotes.ForPurchase(item, chosenBase, _quantity, OverrideCopper(forceInput), Wallet, CoinOptions);
+        int owned = OwnedCounts is not null && OwnedCounts.TryGetValue(item.Id, out int count) ? count : 0;
+
+        <div class="shop-detail-head">
+            <button type="button" class="shop-icon-button shop-detail-close" aria-label="Close details" @onclick="CloseDetail">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" /></svg>
+            </button>
+            <h3 class="shop-detail-name">@item.Name</h3>
+            <div class="shop-detail-tags">
+                <span class="shop-chip">@item.Category@(item.Subtype.Length > 0 ? " · " + item.Subtype : string.Empty)</span>
+                @if (item.Rarity.Length > 0)
+                {
+                    <span class="shop-chip @RarityClass(item.Rarity)">@item.Rarity</span>
+                }
+                @if (item.RequiresAttunement)
+                {
+                    <span class="shop-chip shop-chip--attune">Requires attunement</span>
+                }
+                @if (owned > 0)
+                {
+                    <span class="shop-chip shop-chip--owned">Owned &times;@owned</span>
+                }
+            </div>
+            @if (item.Source.Length > 0)
+            {
+                <div class="shop-detail-source">@item.Source</div>
+            }
+        </div>
+
+        <div class="shop-detail-body">
+            @if (detail is not null && detail.Stats.Count > 0)
+            {
+                <dl class="shop-stats">
+                    @foreach (var stat in detail.Stats)
+                    {
+                        <div class="shop-stat">
+                            <dt>@stat.Label</dt>
+                            <dd>@stat.Value</dd>
+                        </div>
+                    }
+                </dl>
+            }
+
+            @if (detail is null)
+            {
+                <p class="shop-muted" role="status">Loading details&hellip;</p>
+            }
+            else if (!string.IsNullOrWhiteSpace(detail.DescriptionHtml) || !string.IsNullOrWhiteSpace(detail.PlainDescription))
+            {
+                <RichDescription Html="@detail.DescriptionHtml" PlainText="@detail.PlainDescription" Class="shop-description" />
+            }
+            else
+            {
+                <p class="shop-muted">No description available.</p>
+            }
+        </div>
+
+        <div class="shop-order">
+            @if (item.IsTemplate)
+            {
+                <label class="shop-field shop-field--block">
+                    <span>Base item</span>
+                    <select value="@_baseId" @onchange="OnBaseChanged" disabled="@(awaitingBases || Busy)">
+                        <option value="">@(awaitingBases ? "Loading…" : "Choose a base…")</option>
+                        @if (detail is not null)
+                        {
+                            var repeatedBases = RepeatedNames(detail.BaseOptions.Select(option => option.Name));
+                            @foreach (var option in detail.BaseOptions)
+                            {
+                                <option value="@option.Id">@BaseOptionLabel(option, repeatedBases)</option>
+                            }
+                        }
+                    </select>
+                </label>
+            }
+
+            <div class="shop-order-row">
+                <div class="shop-qty">
+                    <span class="shop-qty-label" id="shop-qty-label">Quantity</span>
+                    <div class="shop-qty-controls" role="group" aria-labelledby="shop-qty-label">
+                        <button type="button" class="shop-icon-button" aria-label="One fewer" disabled="@(Busy || _quantity <= 1)" @onclick="() => SetQuantity(_quantity - 1, ShopPricing.MaxQuantity)">&minus;</button>
+                        <input type="number" min="1" max="@ShopPricing.MaxQuantity" value="@_quantity" disabled="@Busy"
+                               aria-label="Quantity" @onchange="e => OnQuantityChanged(e, ShopPricing.MaxQuantity)" />
+                        <button type="button" class="shop-icon-button" aria-label="One more" disabled="@(Busy || _quantity >= ShopPricing.MaxQuantity)" @onclick="() => SetQuantity(_quantity + 1, ShopPricing.MaxQuantity)">+</button>
+                    </div>
+                </div>
+
+                <dl class="shop-summary">
+                    <div>
+                        <dt>@(item.IsTemplate && chosenBase is null ? "Price" : "Each")</dt>
+                        <dd>@PriceLabel(quote.UnitCopper, item.IsTemplate && chosenBase is null)</dd>
+                    </div>
+                    <div>
+                        <dt>Total</dt>
+                        <dd class="shop-summary-total">@(quote.HasPrice ? CoinPurse.FormatCopper(quote.TotalCopper) : "—")</dd>
+                    </div>
+                    <div>
+                        <dt>After buying</dt>
+                        <dd>@(quote.CanBuy ? CoinPurse.FormatCopper(quote.After.TotalCopper) : "—")</dd>
+                    </div>
+                </dl>
+            </div>
+
+            @if (listedHasPrice)
+            {
+                <label class="shop-toggle">
+                    <input type="checkbox" checked="@_customPrice" disabled="@Busy" @onchange="OnCustomPriceToggled" />
+                    <span>Set my own price</span>
+                </label>
+            }
+            @if (_customPrice || forceInput)
+            {
+                <label class="shop-field shop-field--block">
+                    <span>@(forceInput ? "Price for the whole lot (gp), no price is listed" : "Price for the whole lot (gp)")</span>
+                    <input type="number" min="0" step="0.01" inputmode="decimal" value="@_priceText" disabled="@Busy"
+                           placeholder="e.g. 25 or 0.5" @onchange="OnPriceChanged" />
+                </label>
+            }
+
+            @if (quote.Problem is not null)
+            {
+                <p class="shop-problem" role="status">@quote.Problem</p>
+            }
+
+            <div class="shop-actions">
+                <button type="button" class="shop-button shop-button--primary"
+                        disabled="@(Busy || !quote.CanBuy)"
+                        @onclick="() => Purchase(item, free: false, forceInput)">
+                    Buy@(quote.CanBuy ? " · " + CoinPurse.FormatCopper(quote.TotalCopper) : string.Empty)
+                </button>
+                <button type="button" class="shop-button"
+                        disabled="@(Busy || !quote.CanAddFree)"
+                        title="Add it to your inventory without spending any coins"
+                        @onclick="() => Purchase(item, free: true, forceInput)">
+                    Add free
+                </button>
+            </div>
+        </div>
+    };
+
+    private RenderFragment RenderSellPanel(ShopInventoryEntryModel entry) => __builder =>
+    {
+        bool forceInput = entry.UnitPriceCopper <= 0;
+        var quote = ShopQuotes.ForSale(entry, _quantity, _sellRate, OverrideCopper(forceInput), Wallet, CoinOptions);
+        int max = Math.Max(1, entry.Amount);
+
+        <div class="shop-detail-head">
+            <button type="button" class="shop-icon-button shop-detail-close" aria-label="Close details" @onclick="CloseDetail">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" /></svg>
+            </button>
+            <h3 class="shop-detail-name">@entry.Name</h3>
+            <div class="shop-detail-tags">
+                <span class="shop-chip">@entry.Category@(entry.Subtype.Length > 0 ? " · " + entry.Subtype : string.Empty)</span>
+                @if (entry.Rarity.Length > 0)
+                {
+                    <span class="shop-chip @RarityClass(entry.Rarity)">@entry.Rarity</span>
+                }
+                @if (entry.IsEquipped)
+                {
+                    <span class="shop-chip shop-chip--equipped">Equipped</span>
+                }
+            </div>
+            @if (entry.Source.Length > 0)
+            {
+                <div class="shop-detail-source">@entry.Source</div>
+            }
+        </div>
+
+        <div class="shop-detail-body">
+            <dl class="shop-stats">
+                <div class="shop-stat"><dt>You own</dt><dd>@entry.Amount</dd></div>
+                <div class="shop-stat"><dt>Listed value</dt><dd>@(entry.HasValue ? CoinPurse.FormatCopper(entry.UnitPriceCopper) + " each" : "None")</dd></div>
+                @if (!string.IsNullOrWhiteSpace(entry.DisplayWeight) && entry.DisplayWeight != "—")
+                {
+                    <div class="shop-stat"><dt>Weight</dt><dd>@entry.DisplayWeight</dd></div>
+                }
+            </dl>
+            @if (entry.IsEquipped)
+            {
+                <p class="shop-notice">This item is equipped. Selling it takes it off first.</p>
+            }
+        </div>
+
+        <div class="shop-order">
+            <div class="shop-order-row">
+                <div class="shop-qty">
+                    <span class="shop-qty-label" id="shop-qty-label">Quantity</span>
+                    <div class="shop-qty-controls" role="group" aria-labelledby="shop-qty-label">
+                        <button type="button" class="shop-icon-button" aria-label="One fewer" disabled="@(Busy || _quantity <= 1)" @onclick="() => SetQuantity(_quantity - 1, max)">&minus;</button>
+                        <input type="number" min="1" max="@max" value="@_quantity" disabled="@Busy"
+                               aria-label="Quantity" @onchange="e => OnQuantityChanged(e, max)" />
+                        <button type="button" class="shop-icon-button" aria-label="One more" disabled="@(Busy || _quantity >= max)" @onclick="() => SetQuantity(_quantity + 1, max)">+</button>
+                    </div>
+                </div>
+
+                <dl class="shop-summary">
+                    <div>
+                        <dt>You receive</dt>
+                        <dd class="shop-summary-total">@(quote.HasValue ? CoinPurse.FormatCopper(quote.ProceedsCopper) : "—")</dd>
+                    </div>
+                    <div>
+                        <dt>After selling</dt>
+                        <dd>@(quote.HasValue ? CoinPurse.FormatCopper(quote.After.TotalCopper) : "—")</dd>
+                    </div>
+                </dl>
+            </div>
+
+            <label class="shop-field shop-field--block">
+                <span>Sell rate</span>
+                <select value="@_sellRate" disabled="@Busy" @onchange="OnRateChanged">
+                    @foreach (int rate in ShopPricing.SellRatePresets.OrderByDescending(r => r))
+                    {
+                        <option value="@rate">@rate% of listed value@(rate == ShopPricing.DefaultSellRatePercent ? " (standard)" : string.Empty)</option>
+                    }
+                </select>
+            </label>
+
+            @if (!forceInput)
+            {
+                <label class="shop-toggle">
+                    <input type="checkbox" checked="@_customPrice" disabled="@Busy" @onchange="OnCustomPriceToggled" />
+                    <span>Set my own price</span>
+                </label>
+            }
+            @if (_customPrice || forceInput)
+            {
+                <label class="shop-field shop-field--block">
+                    <span>@(forceInput ? "Price for the whole lot (gp), no value is listed" : "Price for the whole lot (gp)")</span>
+                    <input type="number" min="0" step="0.01" inputmode="decimal" value="@_priceText" disabled="@Busy"
+                           placeholder="e.g. 25 or 0.5" @onchange="OnPriceChanged" />
+                </label>
+            }
+
+            @if (quote.Problem is not null)
+            {
+                <p class="shop-problem" role="status">@quote.Problem</p>
+            }
+
+            <div class="shop-actions">
+                <button type="button" class="shop-button shop-button--primary"
+                        disabled="@(Busy || !quote.CanSell)"
+                        @onclick="() => Sell(entry, forceInput)">
+                    Sell@(quote.CanSell ? " · " + CoinPurse.FormatCopper(quote.ProceedsCopper) : string.Empty)
+                </button>
+            </div>
+        </div>
+    };
+
+    private static string PriceLabel(long copper, bool awaitingBase) =>
+        awaitingBase ? "Set by base item" : copper > 0 ? CoinPurse.FormatCopper(copper) : "No price";
+}

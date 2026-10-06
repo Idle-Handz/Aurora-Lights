@@ -1,0 +1,1 @@
+The Content Doctor can now write the repair for you: each content file with rarity typos has a Create override button that shows exactly what will be written, then (only when you confirm) saves a repaired copy under user/local that the importer reads at the next content refresh, leaving the original content file untouched.

@@ -318,20 +318,8 @@ public static class CompendiumFilter
         return int.TryParse(label, out int numeric) ? numeric + 1 : int.MaxValue;
     }
 
-    private static int RarityOrder(string? rarity)
-    {
-        return rarity?.Trim().ToLowerInvariant() switch
-        {
-            "common" => 0,
-            "uncommon" => 1,
-            "rare" => 2,
-            "very rare" => 3,
-            "legendary" => 4,
-            "artifact" => 5,
-            "unique" => 6,
-            _ => int.MaxValue
-        };
-    }
+    // The real rarities in rank order, then Varies, Infusion and Unknown (see RarityRepair).
+    private static int RarityOrder(string? rarity) => RarityRepair.Rank(RarityRepair.Normalize(rarity));
 
     private static int SizeOrder(string? size) =>
         size?.Trim().ToLowerInvariant() switch
