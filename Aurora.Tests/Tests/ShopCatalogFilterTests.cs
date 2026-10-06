@@ -267,10 +267,70 @@ public sealed class ShopCatalogFilterTests
     [InlineData("  uncommon ", "Uncommon")]
     [InlineData("", "")]
     [InlineData(null, "")]
-    [InlineData("Mythic", "Mythic")]
+    [InlineData("Mythic", "Unknown")]
+    [InlineData("Rarity Varies", "Varies")]
+    [InlineData("Artificer Infusion", "Infusion")]
     public void NormalizeRarity_UsesOneSpelling(string? raw, string expected)
     {
         ShopTaxonomy.NormalizeRarity(raw).Should().Be(expected);
+    }
+
+    [Theory]
+    [InlineData("Vert Rare", "Very Rare")]
+    [InlineData("Lgendary", "Legendary")]
+    [InlineData("unommon", "Uncommon")]
+    public void NormalizeRarity_ReadsAOneEditTypoAsTheRarityItMeant(string typo, string expected)
+    {
+        ShopTaxonomy.NormalizeRarity(typo).Should().Be(expected);
+        ShopTaxonomy.RarityRank(typo).Should().Be(ShopTaxonomy.RarityRank(expected));
+    }
+
+    [Fact]
+    public void BuildRarities_NeverOffersATypo_AndItsItemFiltersAsTheRealRarity()
+    {
+        var stock = new List<ShopItemModel>
+        {
+            Item("Cloak One", "Wondrous Items", "Magic Item", 0, "Vert Rare"),
+            Item("Staff Two", "Staffs", "Magic Item", 0, "Very Rare"),
+            Item("Blade Three", "Magic Weapons", "Weapon", 0, "Lgendary"),
+            Item("Boots Four", "Wondrous Items", "Magic Item", 0, "unommon"),
+            Item("Rod Five", "Rods", "Magic Item", 0, "Mythic"),
+        };
+
+        ShopCatalogFilter.BuildRarities(stock).Should().Equal("Uncommon", "Very Rare", "Legendary", "Unknown");
+
+        var state = new ShopFilterState { Rarity = "Very Rare" };
+        ShopCatalogFilter.Apply(ShopCatalogFilter.ApplyScopedFilters(stock, state, long.MaxValue), state)
+            .Select(item => item.Name).Should().Equal("Cloak One", "Staff Two");
+    }
+
+    [Fact]
+    public void BuildRarities_GroupsOddValuesIntoVariesInfusionAndUnknownAfterTheRealOnes()
+    {
+        var stock = new List<ShopItemModel>
+        {
+            Item("Plain Sword", "Weapons", "Weapon", 1500),
+            Item("Ring A", "Rings", "Magic Item", 0, "Rare"),
+            Item("Potion B", "Potions", "Magic Item", 0, "Rarity varies by potion type"),
+            Item("Wand C", "Wands", "Magic Item", 0, "Rare, Very Rare, or Legendary"),
+            Item("Infusion D", "Infusions", "Magic Item", 0, "Artificer Infusion"),
+            Item("Infusion E", "Infusions", "Magic Item", 0, "Infusion"),
+            Item("Curio F", "Curios", "Magic Item", 0, "Unknown"),
+            Item("Relic G", "Relics", "Magic Item", 0, "Mythic"),
+        };
+
+        ShopCatalogFilter.BuildRarities(stock).Should().Equal("Mundane", "Rare", "Varies", "Infusion", "Unknown");
+
+        IEnumerable<string> Named(string rarity)
+        {
+            var state = new ShopFilterState { Rarity = rarity };
+            return ShopCatalogFilter.Apply(ShopCatalogFilter.ApplyScopedFilters(stock, state, long.MaxValue), state)
+                .Select(item => item.Name);
+        }
+
+        Named("Varies").Should().Equal("Potion B", "Wand C");
+        Named("Infusion").Should().Equal("Infusion D", "Infusion E");
+        Named("Unknown").Should().Equal("Curio F", "Relic G");
     }
 
     [Fact]

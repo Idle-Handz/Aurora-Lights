@@ -94,10 +94,33 @@ public sealed class ShopCatalogService : IDisposable
         // Copy first: the collection is observable and a content load may still be appending to it.
         Builder.Data.ElementBase[] elements = DataManager.Current.ElementsCollection.ToArray();
         var entries = new List<CatalogEntry>(capacity: 2048);
+
+        // Content can declare one id more than once (the generated spell scrolls do when a spell
+        // exists under two ids that end the same way). An id is what a purchase refers to and
+        // ElementsCollection.GetElement hands back the first, so list the first and only that.
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        int duplicates = 0;
+        string? duplicateExample = null;
         foreach (Builder.Data.ElementBase element in elements)
         {
-            if (element is Item item && IsShopItem(item))
-                entries.Add(new CatalogEntry(ToModel(item), item));
+            if (element is not Item item || !IsShopItem(item))
+                continue;
+
+            if (!seen.Add(item.Id))
+            {
+                duplicates++;
+                duplicateExample ??= item.Id;
+                continue;
+            }
+
+            entries.Add(new CatalogEntry(ToModel(item), item));
+        }
+
+        if (duplicates > 0)
+        {
+            DebugLogService.Instance.Info(
+                $"Shop: listed {entries.Count} items and skipped {duplicates} repeated element ids.",
+                $"First repeated id: {duplicateExample}");
         }
 
         return entries;
@@ -202,8 +225,10 @@ public sealed class ShopCatalogService : IDisposable
                 ShopPricing.UnitPrice(
                     ShopPricing.ToCopper(baseItem.Cost, baseItem.CurrencyAbbreviation),
                     templateCopper,
-                    overridesCost)))
+                    overridesCost),
+                baseItem.Source ?? string.Empty))
             .OrderBy(option => option.Name, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(option => option.Source, StringComparer.OrdinalIgnoreCase)
             .ToList();
     }
 
@@ -222,18 +247,26 @@ public sealed class ShopCatalogService : IDisposable
     /// </summary>
     public static IReadOnlyList<ShopInventoryEntryModel> GetInventory(Character character)
     {
-        var entries = new List<ShopInventoryEntryModel>();
-        foreach (RefactoredEquipmentItem owned in character.Inventory.Items)
-        {
-            if (!owned.IncludeInEquipmentPageInventory || owned.Item is null)
-                continue;
+        var rows = character.Inventory.Items
+            .Where(owned => owned.IncludeInEquipmentPageInventory && owned.Item is not null)
+            .Select(owned => (
+                Owned: owned,
+                Name: InventoryItemAdder.StripAmountSuffix(
+                    owned.DisplayName ?? owned.Name ?? (owned.AdornerItem ?? owned.Item).Name, owned.Amount)))
+            .ToList();
 
+        // Two daggers are two rows under one name; say which is in which hand ("Dagger (M)").
+        var handLabels = HandLabels.For(rows.Select(row => (row.Owned.Identifier, row.Name, (string?)row.Owned.EquippedLocation)));
+
+        var entries = new List<ShopInventoryEntryModel>();
+        foreach (var (owned, plainName) in rows)
+        {
             Item primary = owned.AdornerItem ?? owned.Item;
             var (category, department) = ShopTaxonomy.Classify(primary.Type, primary.Category);
             string subtype = ShopTaxonomy.ClassifySubtype(
                 owned.Item.Type, owned.Item.ItemType, owned.Item.Supports, owned.Item.ArmorGroups);
             string rarity = ShopTaxonomy.NormalizeRarity(primary.Rarity);
-            string name = InventoryItemAdder.StripAmountSuffix(owned.DisplayName ?? owned.Name ?? primary.Name, owned.Amount);
+            string name = handLabels.GetValueOrDefault(owned.Identifier, plainName);
             string source = primary.Source ?? string.Empty;
 
             entries.Add(new ShopInventoryEntryModel(

@@ -111,6 +111,20 @@ else
             bool finishedLoading = _tabWasLoading && active is { IsLoading: false };
             _tabWasLoading = active?.IsLoading == true;
 
+            if (tabChanged)
+            {
+                // Clicking a tab activates it and, in the same handler, navigates to the overview, so
+                // this page is about to go. Entering the character's context from here would make the
+                // engine hydrate the incoming character (seconds of work) in the middle of that click.
+                // Drop the previous character's coins and pack now so nothing stale is shown, and load
+                // only if this page is still on screen after a moment.
+                ForgetCharacter(active);
+                StateHasChanged();
+                await Task.Delay(TabSwitchGrace);
+                if (_disposed || !ReferenceEquals(active, Tabs.ActiveTab))
+                    return;
+            }
+
             if (tabChanged || finishedLoading)
             {
                 try
@@ -130,6 +144,32 @@ else
     }
 
     // ── Loading ──────────────────────────────────────────────────────────────
+
+    // How long a newly activated tab is given to navigate this page away before the shop loads for it.
+    private static readonly TimeSpan TabSwitchGrace = TimeSpan.FromMilliseconds(600);
+
+    /// <summary>What the page reads from the engine for a character, taken in one visit to its scope.</summary>
+    private sealed record EngineSide(
+        CoinPurse Wallet,
+        IReadOnlyList<ShopInventoryEntryModel> Inventory,
+        IReadOnlyDictionary<string, int> Owned,
+        BuildSourceRestrictionSnapshot Restrictions);
+
+    /// <summary>Shows a loading shop for <paramref name="tab"/> and drops what was read for the last one.</summary>
+    private void ForgetCharacter(CharacterTab? tab)
+    {
+        _loadVersion++;
+        _tab = tab;
+        _tabWasLoading = tab?.IsLoading == true;
+        _catalog = [];
+        _inventory = [];
+        _owned = new Dictionary<string, int>();
+        _wallet = default;
+        _detail = null;
+        _detailVersion++;
+        _loadError = null;
+        _loading = true;
+    }
 
     /// <summary>
     /// Reads the character's purse, pack and source restrictions, then the catalog they limit. The
@@ -161,14 +201,27 @@ else
 
         try
         {
-            using (var scope = await CharacterContext.EnterAsync(tab))
+            // Entering the scope loads this character into the engine when another one is in it, which
+            // can take many seconds. Do that off the UI thread so the page paints its spinner first and
+            // the app stays responsive while it waits.
+            var engine = await Task.Run(async () =>
             {
-                if (_disposed || version != _loadVersion || !ReferenceEquals(tab, Tabs.ActiveTab))
-                    return;
+                using var scope = await CharacterContext.EnterAsync(tab);
+                var character = tab.Character!;
+                return new EngineSide(
+                    ShopCatalogService.GetPurse(character),
+                    ShopCatalogService.GetInventory(character),
+                    ShopCatalogService.GetOwnedCounts(character),
+                    BuildSourceRestrictionSnapshot.CaptureCurrent());
+            });
 
-                ReadCharacterSide(tab.Character!);
-                _restrictions = BuildSourceRestrictionSnapshot.CaptureCurrent();
-            }
+            if (_disposed || version != _loadVersion || !ReferenceEquals(tab, Tabs.ActiveTab))
+                return;
+
+            _wallet = engine.Wallet;
+            _inventory = engine.Inventory;
+            _owned = engine.Owned;
+            _restrictions = engine.Restrictions;
 
             var catalog = await ShopCatalog.GetCatalogAsync(_restrictions);
             if (_disposed || version != _loadVersion)

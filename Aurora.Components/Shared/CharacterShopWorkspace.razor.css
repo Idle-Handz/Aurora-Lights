@@ -97,6 +97,11 @@
     background: var(--shop-surface);
 }
 
+/* Takes up its room (so the header does not jump when the purse arrives) but shows nothing. */
+.shop-wallet.is-pending {
+    visibility: hidden;
+}
+
 .shop-coin {
     display: inline-flex;
     align-items: baseline;
@@ -591,7 +596,11 @@
     flex-direction: column;
     min-width: 0;
     min-height: 0;
-    overflow: hidden;
+    /* Never clip: when the head, rules text and order panel do not fit, the whole pane scrolls so the
+       Buy button can always be reached. */
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
     border: 1px solid var(--shop-border);
     border-radius: var(--shop-radius);
     background: var(--shop-surface);
@@ -1068,6 +1077,34 @@
 
     .shop-mode-button {
         padding: 0 0.8rem;
+    }
+}
+
+/* ── Short windows: a 1080p laptop at 150% is only ~620px tall ───────────────
+   Height is about the window, not the shop's width, so this is a media query. The filters fold away as
+   they do on narrow widths, and the details scroll as one piece instead of leaving a tiny scroll box
+   for the rules text above an order panel that is taller than the pane. */
+
+@media (max-height: 820px) {
+    .shop-filter-toggle {
+        display: inline-flex;
+    }
+
+    .shop-filters {
+        display: none;
+        padding: 0.7rem 0.8rem;
+        border: 1px solid var(--shop-border);
+        border-radius: var(--shop-radius);
+        background: var(--shop-surface);
+    }
+
+    .shop-filters.is-open {
+        display: flex;
+    }
+
+    .shop-detail-body {
+        flex: 0 0 auto;
+        overflow-y: visible;
     }
 }
 

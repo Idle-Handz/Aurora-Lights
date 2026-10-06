@@ -103,6 +103,22 @@ public sealed class CharacterShopWorkspaceTests : BunitContext
     }
 
     [Fact]
+    public void While_loading_the_purse_and_pack_count_are_held_back_rather_than_shown_empty_or_stale()
+    {
+        var loading = RenderShop(wallet: new CoinPurse(0, 0, 0, 701, 0), loading: true);
+
+        loading.Find(".shop-wallet").ClassList.Should().Contain("is-pending");
+        loading.Find(".shop-wallet").GetAttribute("aria-hidden").Should().Be("true");
+        loading.FindAll(".shop-mode-count").Should().BeEmpty();
+
+        var loaded = RenderShop(wallet: new CoinPurse(0, 0, 0, 701, 0));
+
+        loaded.Find(".shop-wallet").ClassList.Should().NotContain("is-pending");
+        loaded.Find(".shop-wallet").HasAttribute("aria-hidden").Should().BeFalse();
+        loaded.FindAll(".shop-mode-count").Should().ContainSingle();
+    }
+
+    [Fact]
     public void Narrowing_by_department_shelf_and_type_walks_down_the_shelves()
     {
         var cut = RenderShop();
@@ -135,6 +151,24 @@ public sealed class CharacterShopWorkspaceTests : BunitContext
     }
 
     [Fact]
+    public void An_id_handed_over_twice_is_listed_once_and_survives_a_re_render()
+    {
+        // Real content repeats ids; two rows keyed alike make Blazor throw as soon as the list re-renders.
+        var stock = Stock();
+        stock.Add(Item("Dagger", "Weapons", "Weapon", 200, subtype: "Simple Melee", weight: 1, source: "Second Printing"));
+        var cut = RenderShop(stock);
+
+        RowNames(cut).Should().ContainSingle(name => name == "Dagger");
+        cut.Find(".shop-result-count").TextContent.Should().Contain("8 of 8 items");
+
+        cut.Find("input[type=search]").Input("dag");
+
+        cut.WaitForAssertion(() => RowNames(cut).Should().Equal("Dagger"), TimeSpan.FromSeconds(3));
+        cut.FindAll(".shop-rail-section").First().QuerySelectorAll("button.shop-rail-item")
+            .Select(Normalised).Should().Equal("All items 1", "Weapons & Armor 1");
+    }
+
+    [Fact]
     public void A_search_with_no_matches_explains_itself_and_can_be_cleared()
     {
         var cut = RenderShop();
@@ -146,7 +180,7 @@ public sealed class CharacterShopWorkspaceTests : BunitContext
 
         cut.FindAll(".shop-state .shop-button").Single(b => b.TextContent.Contains("Clear search")).Click();
 
-        cut.FindAll("button.shop-row").Should().HaveCount(8);
+        cut.WaitForAssertion(() => cut.FindAll("button.shop-row").Should().HaveCount(8), TimeSpan.FromSeconds(3));
         cut.Find("input[type=search]").GetAttribute("value").Should().BeNullOrEmpty();
     }
 
@@ -162,7 +196,8 @@ public sealed class CharacterShopWorkspaceTests : BunitContext
         var offer = cut.FindAll(".shop-state .shop-button").Single();
         Normalised(offer).Should().Be("Show 1 match in other departments");
         offer.Click();
-        RowNames(cut).Should().Equal("Longsword");
+        // The search's debounced render can still be landing when the click returns; wait for ours.
+        cut.WaitForAssertion(() => RowNames(cut).Should().Equal("Longsword"), TimeSpan.FromSeconds(3));
     }
 
     [Fact]
@@ -361,6 +396,47 @@ public sealed class CharacterShopWorkspaceTests : BunitContext
 
         cut.Find("aside select").GetAttribute("value").Should().Be("ID_CHAIN");
         Normalised(Primary(cut)).Should().Be("Buy · 75 gp");
+    }
+
+    [Fact]
+    public void Rows_that_share_a_name_say_which_source_they_come_from()
+    {
+        // The 2014 and 2024 Daggers are different items with the same name and (here) the same price.
+        var stock = Stock();
+        stock.Add(Item("Dagger", "Weapons", "Weapon", 200, subtype: "Simple Melee", weight: 1,
+            source: "Player's Handbook (2024)", id: "ID_XPHB_DAGGER"));
+        var cut = RenderShop(stock);
+
+        string DetailLine(string name, int index = 0) => Normalised(cut.FindAll("button.shop-row")
+            .Where(b => b.QuerySelector(".shop-row-name")!.TextContent.Trim() == name)
+            .ElementAt(index).QuerySelector(".shop-row-detail")!);
+
+        var daggers = new[] { DetailLine("Dagger", 0), DetailLine("Dagger", 1) };
+        daggers.Should().ContainSingle(line => line.Contains("System Reference Document"));
+        daggers.Should().ContainSingle(line => line.Contains("Player's Handbook (2024)"));
+        DetailLine("Longsword").Should().NotContain("System Reference Document", "a name that is unique needs no source");
+    }
+
+    [Fact]
+    public void Base_items_that_share_a_name_are_told_apart_by_source()
+    {
+        var cut = RenderShop(wallet: new CoinPurse(0, 0, 0, 100, 0));
+        SelectRow(cut, "Armor, +1");
+
+        cut.Render(p => p.Add(c => c.Detail, new ShopItemDetailModel(
+            "ID_ARMOR_+1", "Armor, +1", string.Empty, string.Empty, [],
+            [
+                new ShopBaseOptionModel("ID_A", "Dagger", 200, "Player's Handbook"),
+                new ShopBaseOptionModel("ID_B", "Dagger", 200, "Player's Handbook (2024)"),
+                new ShopBaseOptionModel("ID_C", "Rapier", 2500, "Player's Handbook"),
+            ])));
+
+        cut.FindAll("aside select option").Select(o => Normalised(o)).Should().Contain(
+        [
+            "Dagger (Player's Handbook) — 2 gp",
+            "Dagger (Player's Handbook (2024)) — 2 gp",
+            "Rapier — 25 gp",
+        ]);
     }
 
     [Fact]

@@ -82,9 +82,24 @@
     private void BuildEquipmentModel()
     {
         if (_snap is null) { _equipmentModel = new EquipmentOverviewModel(); return; }
+
+        // Two daggers are two rows under one name; show which is in which hand ("Dagger (M)").
+        var handLabels = HandLabels.For(_snap.InventoryItems.Select(i => (i.Identifier, i.Name, (string?)i.EquippedLocation)));
+        string ShownName(string identifier, string name) => handLabels.GetValueOrDefault(identifier, name);
+        string AttackName(AttackEntry attack)
+        {
+            // Only a row's own name is decorated; an attack the player has renamed is left alone.
+            var row = string.IsNullOrEmpty(attack.EquipmentIdentifier)
+                ? null
+                : _snap.InventoryItems.FirstOrDefault(i => i.Identifier == attack.EquipmentIdentifier);
+            return row is not null && string.Equals(row.Name, attack.Name, StringComparison.Ordinal)
+                ? ShownName(row.Identifier, row.Name)
+                : attack.Name;
+        }
+
         _equipmentModel = new()
         {
-            Attacks = _snap.Attacks.Select(atk => new EquipmentAttackModel(atk.Name, atk.Attack, atk.Damage, atk.Range)).ToList(),
+            Attacks = _snap.Attacks.Select(atk => new EquipmentAttackModel(AttackName(atk), atk.Attack, atk.Damage, atk.Range)).ToList(),
             GearSlots =
             [
                 new("armor",     "Armor",     _armorName, _armorIdentifier),
@@ -94,7 +109,7 @@
             InventoryItems = _snap.InventoryItems
                 .Select(item => new EquipmentInventoryItemModel(
                     item.Identifier,
-                    item.Name,
+                    ShownName(item.Identifier, item.Name),
                     item.Amount,
                     item.IsStackable,
                     item.IsEquipped,

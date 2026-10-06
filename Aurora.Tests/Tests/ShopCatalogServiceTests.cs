@@ -126,7 +126,10 @@ public sealed class ShopCatalogServiceTests : IAsyncLifetime
         var rarities = (await LoadCatalogAsync()).Select(item => item.Rarity).Distinct().ToList();
 
         rarities.Should().NotContain("Very rare");
-        rarities.Should().OnlyContain(r => r.Length == 0 || ShopTaxonomy.KnownRarities.Contains(r));
+        rarities.Should().OnlyContain(r => r.Length == 0
+            || ShopTaxonomy.KnownRarities.Contains(r)
+            || RarityRepair.Groups.Contains(r),
+            "every rarity is a real one or one of the groups, never a free-form value");
     }
 
     [Fact]
@@ -206,6 +209,41 @@ public sealed class ShopCatalogServiceTests : IAsyncLifetime
         finally
         {
             DataManager.Current.ElementsCollection.Remove(odd);
+        }
+    }
+
+    [Fact]
+    public async Task Catalog_ListsARepeatedElementIdOnce_AsTheDeclarationTheEngineWouldReturn()
+    {
+        ContentFixture.SkipIfUnavailable(_output);
+
+        // Real content repeats ids (generated spell scrolls do); a purchase can only name one of them.
+        const string repeatedId = "ID_TEST_SHOP_REPEATED_ID";
+        Item Twin(string source, int cost) => new()
+        {
+            ElementHeader = new ElementHeader("Twin Lantern", "Item", source, repeatedId),
+            Category = "Adventuring Gear",
+            Cost = cost,
+            CurrencyAbbreviation = "gp",
+        };
+        var first = Twin("First Source", 5);
+        var second = Twin("Second Source", 9);
+        DataManager.Current.ElementsCollection.Add(first);
+        DataManager.Current.ElementsCollection.Add(second);
+        try
+        {
+            var catalog = await LoadCatalogAsync();
+
+            catalog.Select(item => item.Id).Should().OnlyHaveUniqueItems();
+            var listed = catalog.Should().ContainSingle(item => item.Id == repeatedId).Subject;
+            listed.Source.Should().Be("First Source");
+            listed.UnitPriceCopper.Should().Be(500);
+            DataManager.Current.ElementsCollection.GetElement(repeatedId).Should().BeSameAs(first);
+        }
+        finally
+        {
+            DataManager.Current.ElementsCollection.Remove(first);
+            DataManager.Current.ElementsCollection.Remove(second);
         }
     }
 
@@ -297,6 +335,25 @@ public sealed class ShopCatalogServiceTests : IAsyncLifetime
         owned[LongswordId].Should().Be(1);
         owned[ArmorPlusOneId].Should().Be(1);
         owned.Should().NotContainKey(ChainMailId);
+    }
+
+    [Fact]
+    public void Inventory_TellsTwoDaggersApartByTheHandTheyAreIn()
+    {
+        ContentFixture.SkipIfUnavailable(_output);
+
+        const string daggerId = "ID_WOTC_PHB_WEAPON_DAGGER";
+        var character = new Character();
+        EquipmentService.AddItem(character, daggerId, 3).Should().BeTrue();
+        var rows = character.Inventory.Items.Where(row => row.Item.Id == daggerId).ToList();
+        EquipmentService.EquipToSlot(character, GearSlot.MainHand, rows[0].Identifier).Should().BeTrue();
+        EquipmentService.EquipToSlot(character, GearSlot.OffHand, rows[1].Identifier).Should().BeTrue();
+
+        var entries = ShopCatalogService.GetInventory(character).ToDictionary(entry => entry.Identifier);
+
+        entries[rows[0].Identifier].Name.Should().Be("Dagger (M)");
+        entries[rows[1].Identifier].Name.Should().Be("Dagger (O)");
+        entries[rows[2].Identifier].Name.Should().Be("Dagger");
     }
 
     [Fact]

@@ -13,7 +13,9 @@
                 </p>
             </div>
 
-            <div class="shop-wallet" role="group" aria-label="Your coins">
+            @* Held back while loading: before the character is read the purse is empty, and "No coins"
+               (or the last character's coins) would be wrong. *@
+            <div class="shop-wallet @(Loading ? "is-pending" : null)" role="group" aria-label="Your coins" aria-hidden="@(Loading ? "true" : null)">
                 @foreach (var coin in WalletCoins)
                 {
                     <span class="shop-coin" title="@coin.Name">
@@ -42,7 +44,10 @@
                         class="shop-mode-button @(_mode == ShopMode.Sell ? "is-active" : null)"
                         aria-selected="@(_mode == ShopMode.Sell ? "true" : "false")"
                         @onclick="() => SetMode(ShopMode.Sell)">
-                    Sell <span class="shop-mode-count">@Inventory.Count</span>
+                    Sell @if (!Loading)
+                    {
+                        <span class="shop-mode-count">@Inventory.Count</span>
+                    }
                 </button>
             </div>
         </header>
@@ -435,6 +440,8 @@
 
     private IReadOnlyList<ShopItemModel>? _lastCatalog;
     private Dictionary<string, ShopItemModel> _catalogIndex = new(StringComparer.OrdinalIgnoreCase);
+    private IReadOnlyList<ShopItemModel> _catalog = [];
+    private HashSet<string> _repeatedNames = new(StringComparer.OrdinalIgnoreCase);
     private IReadOnlyList<ShopInventoryEntryModel>? _lastInventory;
     private Dictionary<string, ShopInventoryEntryModel> _inventoryIndex = new(StringComparer.Ordinal);
 
@@ -524,8 +531,18 @@
         {
             _lastCatalog = Catalog;
             _catalogIndex = new Dictionary<string, ShopItemModel>(StringComparer.OrdinalIgnoreCase);
+
+            // An id is what a purchase refers to and what keys a row, so a host that hands over the
+            // same id twice would otherwise crash the list the first time it is re-rendered.
+            var distinct = new List<ShopItemModel>(Catalog.Count);
             foreach (var item in Catalog)
-                _catalogIndex.TryAdd(item.Id, item);
+            {
+                if (_catalogIndex.TryAdd(item.Id, item))
+                    distinct.Add(item);
+            }
+
+            _catalog = distinct;
+            _repeatedNames = RepeatedNames(distinct.Select(item => item.Name));
         }
 
         if (!ReferenceEquals(Inventory, _lastInventory))
@@ -567,16 +584,16 @@
 
         if (_mode == ShopMode.Buy)
         {
-            var scoped = ShopCatalogFilter.ApplyScopedFilters(Catalog, _filter, wallet);
+            var scoped = ShopCatalogFilter.ApplyScopedFilters(_catalog, _filter, wallet);
             var results = ShopCatalogFilter.Apply(scoped, _filter);
-            _totalCount = Catalog.Count;
+            _totalCount = _catalog.Count;
             _scopedCount = scoped.Count;
             _departments = ShopCatalogFilter.BuildDepartments(scoped);
             _subtypes = _filter.Category is null
                 ? []
                 : ShopCatalogFilter.BuildSubtypes(scoped.Where(i => string.Equals(i.Category, _filter.Category, StringComparison.OrdinalIgnoreCase)));
-            _rarities = ShopCatalogFilter.BuildRarities(Catalog);
-            _sources = ShopCatalogFilter.BuildSources(Catalog);
+            _rarities = ShopCatalogFilter.BuildRarities(_catalog);
+            _sources = ShopCatalogFilter.BuildSources(_catalog);
             _buyResults = results;
         }
         else
@@ -595,10 +612,28 @@
         }
     }
 
+    private static HashSet<string> RepeatedNames(IEnumerable<string> names) =>
+        names.GroupBy(name => name, StringComparer.OrdinalIgnoreCase)
+            .Where(group => group.Skip(1).Any())
+            .Select(group => group.Key)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>"Dagger (Player's Handbook (2024)) — 2 gp"; the source only when another base shares the name.</summary>
+    private static string BaseOptionLabel(ShopBaseOptionModel option, HashSet<string> repeated)
+    {
+        string label = repeated.Contains(option.Name) && !string.IsNullOrWhiteSpace(option.Source)
+            ? $"{option.Name} ({option.Source})"
+            : option.Name;
+        return option.UnitPriceCopper > 0 ? $"{label} — {CoinPurse.FormatCopper(option.UnitPriceCopper)}" : label;
+    }
+
     private ShopRow BuildBuyRow(ShopItemModel item)
     {
         bool showShelf = _filter.Category is null;
-        string meta = string.Join(" · ", new[] { showShelf ? item.Category : null, item.Subtype, item.Summary }
+        // Content repeats names across editions and sources (a 2014 and a 2024 Dagger); the source is
+        // what tells such rows apart, so it leads the line for those and stays out of the way otherwise.
+        string? source = _repeatedNames.Contains(item.Name) ? item.Source : null;
+        string meta = string.Join(" · ", new[] { source, showShelf ? item.Category : null, item.Subtype, item.Summary }
             .Where(part => !string.IsNullOrWhiteSpace(part)));
         int owned = OwnedCounts is not null && OwnedCounts.TryGetValue(item.Id, out int count) ? count : 0;
 
@@ -941,11 +976,10 @@
                         <option value="">@(awaitingBases ? "Loading…" : "Choose a base…")</option>
                         @if (detail is not null)
                         {
+                            var repeatedBases = RepeatedNames(detail.BaseOptions.Select(option => option.Name));
                             @foreach (var option in detail.BaseOptions)
                             {
-                                <option value="@option.Id">
-                                    @option.Name@(option.UnitPriceCopper > 0 ? " — " + CoinPurse.FormatCopper(option.UnitPriceCopper) : string.Empty)
-                                </option>
+                                <option value="@option.Id">@BaseOptionLabel(option, repeatedBases)</option>
                             }
                         }
                     </select>

@@ -330,15 +330,22 @@ public static class EquipmentService
     /// <summary>
     /// Returns inventory items compatible with the given gear slot, ordered by name.
     /// </summary>
-    public static IReadOnlyList<InventoryItemOption> GetInventoryItemsForSlot(Character character, GearSlot slot) =>
-        character.Inventory.Items
+    public static IReadOnlyList<InventoryItemOption> GetInventoryItemsForSlot(Character character, GearSlot slot)
+    {
+        // Two daggers are two rows under one name; say which one already sits in a hand ("Dagger (M)")
+        // so the other hand is not given the weapon the first is holding.
+        var labels = Aurora.Components.Models.HandLabels.For(character.Inventory.Items.Select(i =>
+            (i.Identifier, i.DisplayName ?? i.Name ?? "", (string?)i.EquippedLocation)));
+
+        return character.Inventory.Items
             .Where(i => IsItemCompatibleWithSlot(i, slot))
             .OrderBy(i => i.DisplayName ?? i.Name ?? "")
             .Select(i => new InventoryItemOption(
                 i.Identifier,
-                i.DisplayName ?? i.Name ?? "",
+                labels.GetValueOrDefault(i.Identifier, i.DisplayName ?? i.Name ?? ""),
                 EquipmentItemDetailBuilder.Build(i)))
             .ToList();
+    }
 
     // ── Add / remove ─────────────────────────────────────────────────────────────
 

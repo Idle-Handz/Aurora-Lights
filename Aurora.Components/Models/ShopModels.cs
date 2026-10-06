@@ -88,7 +88,7 @@ public sealed record ShopInventoryEntryModel(
 public sealed record ShopStatModel(string Label, string Value);
 
 /// <summary>A base item a magic weapon or armor template can be built on, with the price that choice makes.</summary>
-public sealed record ShopBaseOptionModel(string Id, string Name, long UnitPriceCopper);
+public sealed record ShopBaseOptionModel(string Id, string Name, long UnitPriceCopper, string Source = "");
 
 /// <summary>The part of an item the list does not carry: its rules text, stats and any base choices.</summary>
 public sealed record ShopItemDetailModel(

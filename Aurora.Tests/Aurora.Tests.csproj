@@ -72,6 +72,7 @@
     <Compile Include="..\Aurora.App\Services\InventorySync.cs" Link="Linked\InventorySync.cs" />
     <Compile Include="..\Aurora.App\Services\CompendiumService.cs" Link="Linked\CompendiumService.cs" />
     <Compile Include="..\Aurora.App\Services\ContentDoctorService.cs" Link="Linked\ContentDoctorService.cs" />
+    <Compile Include="..\Aurora.App\Services\OverrideAuthoring.cs" Link="Linked\OverrideAuthoring.cs" />
     <Compile Include="..\Aurora.App\Services\ContentService.cs" Link="Linked\ContentService.cs" />
     <Compile Include="..\Aurora.App\Services\AttackReminderCharacterService.cs" Link="Linked\AttackReminderCharacterService.cs" />
     <Compile Include="..\Aurora.App\Services\SessionAttackReminderService.cs" Link="Linked\SessionAttackReminderService.cs" />

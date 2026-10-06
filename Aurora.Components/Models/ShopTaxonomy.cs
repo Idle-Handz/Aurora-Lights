@@ -55,9 +55,6 @@ public static class ShopTaxonomy
             .Select((entry, index) => (entry.Shelf, entry.Department, Order: index))
             .ToDictionary(entry => entry.Shelf, entry => entry, StringComparer.OrdinalIgnoreCase);
 
-    private static readonly string[] RarityOrder =
-        ["Common", "Uncommon", "Rare", "Very Rare", "Legendary", "Artifact", "Unique"];
-
     /// <summary>
     /// The shelf and department an item belongs on. <paramref name="category"/> is the content's own
     /// category; weapons and armor fall back to their element type when it is blank.
@@ -163,37 +160,21 @@ public static class ShopTaxonomy
     }
 
     /// <summary>
-    /// A rarity in one canonical spelling ("Very rare" and "Very Rare" both occur in the content),
-    /// or an empty string for mundane items.
+    /// A rarity in one canonical spelling ("Very rare" and "Very Rare" both occur in the content), with
+    /// a one-edit typo ("Vert Rare") read as the rarity it was meant to be so it never becomes a filter
+    /// of its own; an empty string for mundane items. See <see cref="RarityRepair"/>.
     /// </summary>
-    public static string NormalizeRarity(string? rarity)
-    {
-        string trimmed = rarity?.Trim() ?? string.Empty;
-        if (trimmed.Length == 0)
-            return string.Empty;
-
-        foreach (string known in RarityOrder)
-        {
-            if (string.Equals(known, trimmed, StringComparison.OrdinalIgnoreCase))
-                return known;
-        }
-
-        return trimmed;
-    }
+    public static string NormalizeRarity(string? rarity) => RarityRepair.Normalize(rarity);
 
     /// <summary>Sort position of a rarity: mundane first, then common up to artifact.</summary>
     public static int RarityRank(string? rarity)
     {
         string normalized = NormalizeRarity(rarity);
-        if (normalized.Length == 0)
-            return -1;
-
-        int index = Array.IndexOf(RarityOrder, normalized);
-        return index >= 0 ? index : RarityOrder.Length;
+        return normalized.Length == 0 ? -1 : RarityRepair.Rank(normalized);
     }
 
     /// <summary>Rarities worth offering as filters, in rank order.</summary>
-    public static IReadOnlyList<string> KnownRarities => RarityOrder;
+    public static IReadOnlyList<string> KnownRarities => RarityRepair.Known;
 
     /// <summary>Position of a department in the shop; unknown departments sort last.</summary>
     public static int DepartmentRank(string department)

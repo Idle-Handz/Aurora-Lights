@@ -67,6 +67,32 @@ public sealed class InventoryItemAdderTests : IAsyncLifetime
     }
 
     [Fact]
+    public void The_gear_picker_says_which_dagger_is_already_in_a_hand()
+    {
+        var character = NewCharacter();
+        EquipmentService.AddItem(character, DaggerId, 2).Should().BeTrue();
+        var rows = Rows(character, DaggerId).ToList();
+
+        // Nothing is held yet, so there is nothing to tell apart.
+        EquipmentService.GetInventoryItemsForSlot(character, GearSlot.MainHand)
+            .Select(option => option.Name).Should().Equal("Dagger", "Dagger");
+
+        EquipmentService.EquipToSlot(character, GearSlot.MainHand, rows[0].Identifier).Should().BeTrue();
+        var offHandChoices = EquipmentService.GetInventoryItemsForSlot(character, GearSlot.OffHand);
+
+        offHandChoices.Single(option => option.Identifier == rows[0].Identifier).Name.Should().Be("Dagger (M)");
+        offHandChoices.Single(option => option.Identifier == rows[1].Identifier).Name.Should().Be("Dagger");
+
+        EquipmentService.EquipToSlot(character, GearSlot.OffHand, rows[1].Identifier).Should().BeTrue();
+        var mainHandChoices = EquipmentService.GetInventoryItemsForSlot(character, GearSlot.MainHand);
+
+        mainHandChoices.Single(option => option.Identifier == rows[0].Identifier).Name.Should().Be("Dagger (M)");
+        mainHandChoices.Single(option => option.Identifier == rows[1].Identifier).Name.Should().Be("Dagger (O)");
+        rows.Select(row => row.DisplayName ?? row.Name).Should().OnlyContain(name => name == "Dagger",
+            "the label is only how the list shows the row, not its name on the character");
+    }
+
+    [Fact]
     public void Stackable_quantities_join_a_single_stack()
     {
         var character = NewCharacter();

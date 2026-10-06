@@ -327,7 +327,8 @@ ORDER BY e.name COLLATE NOCASE;
             int? spellLevel = reader.IsDBNull(5) ? null : reader.GetInt32(5);
             string spellSchool = reader.IsDBNull(6) ? string.Empty : reader.GetString(6);
             IReadOnlyList<string> spellClasses = SplitPipeList(reader.IsDBNull(7) ? string.Empty : reader.GetString(7));
-            string itemRarity = reader.IsDBNull(8) ? string.Empty : reader.GetString(8);
+            // A typo ("Vert Rare") or an odd value ("Rarity Varies") would otherwise become a rarity filter of its own.
+            string itemRarity = RarityRepair.Normalize(reader.IsDBNull(8) ? string.Empty : reader.GetString(8));
             bool requiresAttunement = !reader.IsDBNull(9) && reader.GetInt64(9) != 0;
             string displayWeight = reader.IsDBNull(10) ? string.Empty : reader.GetString(10);
             string displayPrice = FormatDatabaseItemPrice(
@@ -1034,7 +1035,7 @@ LIMIT 1;
         string spellComponents = isSpell ? InvokeStringMethod(element, "GetComponentsString") : string.Empty;
         bool spellConcentration = isSpell && GetBool(element, "IsConcentration") == true;
         bool spellRitual = isSpell && GetBool(element, "IsRitual") == true;
-        string itemRarity = isItemLike ? GetSetterValue(element, "rarity") : string.Empty;
+        string itemRarity = isItemLike ? RarityRepair.Normalize(GetSetterValue(element, "rarity")) : string.Empty;
         bool requiresAttunement = isItemLike && string.Equals(GetSetterValue(element, "attunement"), "true", StringComparison.OrdinalIgnoreCase);
         string displayWeight = isItemLike ? GetString(element, "DisplayWeight") : string.Empty;
         string displayPrice = isItemLike ? GetString(element, "DisplayPrice") : string.Empty;
