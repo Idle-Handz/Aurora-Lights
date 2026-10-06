@@ -10,7 +10,7 @@ using System.Reflection;
 using System.Text.Json;
 
 if (!OperatingSystem.IsWindows() || args.Length < 2)
-    throw new ArgumentException("Windows rehearsal: <scan|refresh|load|snapshot|parity> <disposable-case-directory> [secondary-directory]");
+    throw new ArgumentException("Windows rehearsal: <scan|refresh|load|snapshot|parity|ui-probe> <disposable-case-directory> [secondary-directory]");
 string mode = args[0];
 string caseRoot = Path.GetFullPath(args[1]);
 if (!File.Exists(Path.Combine(caseRoot, ".aurora-rehearsal")))
@@ -94,6 +94,12 @@ try
                 result = new { import, service.SyncState, service.Progress, metadata = service.GetMetadata() };
                 success = import.Success;
             }
+            break;
+        case "ui-probe":
+            // How long does a content load hold a single UI thread? See UiThreadProbe.
+            var probe = UiThreadProbe.Run();
+            result = probe.Report;
+            success = probe.Success;
             break;
         case "load":
         case "profile-load":
