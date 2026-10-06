@@ -1,3 +1,4 @@
+using Aurora.Components.Models;
 using Aurora.Content;
 using Aurora.Content.Contracts;
 using Microsoft.Data.Sqlite;
@@ -70,11 +71,29 @@ public sealed record ContentConflictModel(
         Declarations.Where(d => !d.IsWinner).ToList();
 }
 
+/// <summary>
+/// A value in a content file that is probably a mistake, and the fix to try. <see cref="Suggested"/> is
+/// set when the value is one edit from a known one (a rarity of "Vert Rare" is almost surely "Very
+/// Rare"); it is null for a value that is merely not recognised, which is listed but not guessed at.
+/// </summary>
+public sealed record SuggestedCorrectionModel(
+    string Field,
+    string AuroraId,
+    string Name,
+    string Source,
+    string RelativePath,
+    string Written,
+    string? Suggested)
+{
+    public bool HasSuggestion => Suggested is not null;
+}
+
 public sealed record ContentDoctorSnapshot(
     IReadOnlyList<OverrideFileModel> Files,
     IReadOnlyList<ContentConflictModel> Conflicts,
     IReadOnlyList<ContentImportSkip> Skipped,
-    string? Problem);
+    string? Problem,
+    IReadOnlyList<SuggestedCorrectionModel>? Suggestions = null);
 
 /// <summary>
 /// Reads the override files the content importer knows about and re-evaluates each one against
@@ -112,6 +131,9 @@ public sealed class ContentDoctorService
             IReadOnlyList<ContentImportSkip> skipped;
             using (ContentLoadTrace.Begin("doctor.skipped-worker"))
                 skipped = ReadSkippedContent(connection, transaction, cancellationToken);
+            IReadOnlyList<SuggestedCorrectionModel> suggestions;
+            using (ContentLoadTrace.Begin("doctor.suggestions-worker"))
+                suggestions = ReadSuggestions(connection, transaction, cancellationToken);
             transaction.Commit();
 
             var files = new List<OverrideFileModel>();
@@ -125,7 +147,7 @@ public sealed class ContentDoctorService
             }
 
             return new(files.OrderByDescending(file => file.IncorporatedCount)
-                .ThenBy(file => file.DisplayName, StringComparer.OrdinalIgnoreCase).ToList(), conflicts, skipped, null);
+                .ThenBy(file => file.DisplayName, StringComparer.OrdinalIgnoreCase).ToList(), conflicts, skipped, null, suggestions);
         }
         catch (Exception ex) when (ex is SqliteException or IOException or UnauthorizedAccessException)
         {
@@ -140,6 +162,28 @@ public sealed class ContentDoctorService
     public void AcceptCorrection(OverrideFileModel file, OverrideCorrectionModel correction) =>
         LocalCorrectionDocument.AcceptUpstream(
             file.FilePath, file.LocalHash, file.UpstreamHash, [correction.Key]);
+
+    /// <summary>
+    /// The content folder: the one the content database sits in. Paths the database records for a content
+    /// file are relative to it, and the override files the importer reads live under its user/local.
+    /// </summary>
+    public string? ContentRoot => _contentDb.DatabasePath is { } path ? Path.GetDirectoryName(path) : null;
+
+    /// <summary>
+    /// Prepares an override file for repairs that all belong to one content file, without writing
+    /// anything, so the reader can see and confirm what would be written. See <see cref="OverrideAuthoring"/>.
+    /// </summary>
+    public PlannedOverride PlanOverride(IReadOnlyList<SuggestedCorrectionModel> repairs) =>
+        OverrideAuthoring.Plan(
+            ContentRoot ?? throw new OverrideAuthoringException("No content folder is available."),
+            repairs,
+            DateOnly.FromDateTime(DateTime.Now));
+
+    /// <summary>
+    /// Writes a prepared override. The content database is a refresh behind until the next import, which
+    /// is what makes the importer read the new file.
+    /// </summary>
+    public string WriteOverride(PlannedOverride plan) => OverrideAuthoring.Write(plan);
 
     /// <summary>Internal so a test can point it at a database without resolving the app's own.</summary>
     internal static IReadOnlyList<ContentConflictModel> ReadConflicts(string dbPath)
@@ -186,6 +230,65 @@ public sealed class ContentDoctorService
                 pair.Key, names[pair.Key].Name, names[pair.Key].Type, pair.Value))
             .OrderBy(conflict => conflict.Name, StringComparer.OrdinalIgnoreCase)
             .ThenBy(conflict => conflict.AuroraId, StringComparer.Ordinal)
+            .ToList();
+    }
+
+    /// <summary>Internal so a test can point it at a database without resolving the app's own.</summary>
+    internal static IReadOnlyList<SuggestedCorrectionModel> ReadSuggestions(string dbPath)
+    {
+        using var connection = OpenReadOnly(dbPath);
+        return ReadSuggestions(connection, null, CancellationToken.None);
+    }
+
+    /// <summary>
+    /// Rarities the content wrote that mean nothing: a typo, or a value nothing recognises. Those one
+    /// edit from a real rarity come with the spelling to use; the rest are listed unguessed. A real
+    /// rarity, a "varies" value, an infusion, or the content saying "Unknown" is accepted as it is.
+    /// Only the declarations in use are read, since a set-aside copy changes nothing for anyone. A
+    /// database without the setter tables yields nothing: these are extras on top of the diagnostics,
+    /// not evidence that the content is clean.
+    /// </summary>
+    private static IReadOnlyList<SuggestedCorrectionModel> ReadSuggestions(SqliteConnection connection,
+        SqliteTransaction? transaction, CancellationToken cancellationToken)
+    {
+        var found = new List<SuggestedCorrectionModel>();
+        try
+        {
+            using var command = connection.CreateCommand();
+            command.Transaction = transaction;
+            command.CommandText = """
+                SELECT e.aurora_id, e.name, COALESCE(sb.name, ''), COALESCE(sf.relative_path, ''), se.setter_value
+                FROM resolved_elements_cache AS rec
+                JOIN elements AS e ON e.element_id = rec.winning_element_id
+                JOIN setter_scopes AS ss ON ss.owner_element_id = e.element_id AND ss.owner_kind = 'element'
+                JOIN setter_entries AS se ON se.setter_scope_id = ss.setter_scope_id
+                LEFT JOIN source_books AS sb ON sb.source_book_id = e.source_book_id
+                LEFT JOIN source_files AS sf ON sf.source_file_id = e.source_file_id
+                WHERE LOWER(se.setter_name) = 'rarity'
+                  AND TRIM(COALESCE(se.setter_value, '')) <> ''
+                """;
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                string written = reader.GetString(4).Trim();
+                if (RarityRepair.IsAccepted(written))
+                    continue;
+
+                found.Add(new("rarity", reader.GetString(0), reader.GetString(1), reader.GetString(2),
+                    reader.GetString(3), written, RarityRepair.Suggest(written)));
+            }
+        }
+        catch (SqliteException)
+        {
+            return [];
+        }
+
+        return found
+            .OrderByDescending(item => item.HasSuggestion)
+            .ThenBy(item => item.Written, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(item => item.AuroraId, StringComparer.Ordinal)
             .ToList();
     }
 

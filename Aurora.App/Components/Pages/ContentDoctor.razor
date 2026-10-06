@@ -5,6 +5,7 @@
 @inject ContentDoctorService Doctor
 @inject ContentDatabaseService ContentDb
 @inject ISnackbar Snackbar
+@inject IDialogService DialogService
 
 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
     <MudText Typo="Typo.h5">Content Doctor</MudText>
@@ -171,6 +172,98 @@ else
     }
 }
 
+<MudText Typo="Typo.h6" Class="mt-8 mb-1">Suggested corrections</MudText>
+<MudText Typo="Typo.body2" Class="mb-4">
+    Rarities in the content that mean nothing. A rarity one letter away from a real one is almost
+    certainly a typo, so the shop and compendium already read it as the real one and keep their
+    filters clean, but the file itself still says it wrongly. To fix it at the source, create an
+    override file for the content file below; it carries the repaired copy and leaves the original
+    alone. A value nothing recognises shows as Unknown in those filters. Values meaning "varies",
+    infusions, and rarities already marked Unknown are fine and are not listed.
+</MudText>
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+else if (_suggestions.Count == 0)
+{
+    <MudAlert Severity="Severity.Success">Every rarity in the content is one the app recognises.</MudAlert>
+}
+else
+{
+    @if (_fixable.Count > 0)
+    {
+        @foreach (FileRepairs file in _fixableByFile)
+        {
+            bool written = _written.TryGetValue(file.RelativePath, out string? writtenPath);
+            <MudPaper Class="pa-3 mb-3" Elevation="0" Outlined="true">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Wrap="Wrap.Wrap" Spacing="2">
+                    <div style="min-width: 0;">
+                        <MudText Typo="Typo.subtitle2" Style="word-break: break-word;">@file.RelativePath</MudText>
+                        <MudText Typo="Typo.caption">
+                            @file.Items.Count rarity @(file.Items.Count == 1 ? "typo" : "typos") in this file
+                        </MudText>
+                    </div>
+                    @if (written)
+                    {
+                        <MudChip T="string" Size="Size.Small" Color="Color.Success">Override written</MudChip>
+                    }
+                    else
+                    {
+                        <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small"
+                                   Disabled="@_busy" OnClick="@(() => CreateOverrideAsync(file))">Create override&hellip;</MudButton>
+                    }
+                </MudStack>
+
+                @foreach (SuggestedCorrectionModel suggestion in file.Items)
+                {
+                    <div class="mt-2">
+                        <MudText Typo="Typo.body2">
+                            <strong>@suggestion.Name</strong>
+                            @if (!string.IsNullOrWhiteSpace(suggestion.Source))
+                            {
+                                <span> &middot; @suggestion.Source</span>
+                            }
+                        </MudText>
+                        <MudText Typo="Typo.body2">
+                            Rarity <code>@suggestion.Written</code> &rarr; <code>@suggestion.Suggested</code>
+                        </MudText>
+                    </div>
+                }
+
+                @if (written)
+                {
+                    <MudText Typo="Typo.caption" Class="mt-2" Style="word-break: break-word;">
+                        Written to @writtenPath. The importer reads it the next time content is refreshed
+                        (<MudLink Href="/settings?tab=content">content settings</MudLink>).
+                    </MudText>
+                }
+                else
+                {
+                    <MudText Typo="Typo.caption" Class="mt-2">
+                        Creating the override leaves the original file as it is and puts the repaired copy under
+                        <code>user/local</code>, where the importer reads it.
+                    </MudText>
+                }
+            </MudPaper>
+        }
+    }
+
+    @if (_unrecognised.Count > 0)
+    {
+        <MudText Typo="Typo.body2" Class="mt-3 mb-1">
+            Not a rarity anything recognises, with no close match to suggest (shown as Unknown):
+        </MudText>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+            @foreach (var group in _unrecognised)
+            {
+                <MudChip T="string" Size="Size.Small" Color="Color.Default">@group.Written (@group.Count)</MudChip>
+            }
+        </div>
+    }
+}
+
 <MudText Typo="Typo.h6" Class="mt-8 mb-1">Import issues and notices</MudText>
 <MudText Typo="Typo.body2" Class="mb-4">
     Files, operations, and metadata notices recorded by the last refresh. These stay listed until
@@ -226,6 +319,14 @@ else
     private IReadOnlyList<OverrideFileModel> _files = [];
     private IReadOnlyList<ContentConflictModel> _conflicts = [];
     private IReadOnlyList<ContentImportSkip> _skipped = [];
+    private IReadOnlyList<SuggestedCorrectionModel> _suggestions = [];
+    private IReadOnlyList<SuggestedCorrectionModel> _fixable = [];
+    private IReadOnlyList<FileRepairs> _fixableByFile = [];
+    private readonly Dictionary<string, string> _written = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>The typos in one content file; one override covers one file.</summary>
+    private sealed record FileRepairs(string RelativePath, IReadOnlyList<SuggestedCorrectionModel> Items);
+    private IReadOnlyList<(string Written, int Count)> _unrecognised = [];
     private int _superseded;
     private bool _showAll;
     private bool _loading = true;
@@ -297,6 +398,20 @@ else
             // Successor selection is expected; preserve its provenance separately.
             _superseded = loaded.Skipped.Count(s => s.Kind == "superseded-definition");
             _skipped = loaded.Skipped.Where(s => s.Kind != "superseded-definition").ToList();
+            _suggestions = loaded.Suggestions ?? [];
+            _fixable = _suggestions.Where(s => s.HasSuggestion).ToList();
+            _fixableByFile = _fixable
+                .GroupBy(s => s.RelativePath, StringComparer.OrdinalIgnoreCase)
+                .Select(group => new FileRepairs(group.Key, group.ToList()))
+                .OrderBy(group => group.RelativePath, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            _unrecognised = _suggestions
+                .Where(s => !s.HasSuggestion)
+                .GroupBy(s => s.Written, StringComparer.OrdinalIgnoreCase)
+                .Select(group => (Written: group.First().Written, Count: group.Count()))
+                .OrderByDescending(group => group.Count)
+                .ThenBy(group => group.Written, StringComparer.OrdinalIgnoreCase)
+                .ToList();
             MarkRenderPending();
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { }
@@ -314,6 +429,58 @@ else
                 _loading = false;
             }
         }
+    }
+
+    /// <summary>
+    /// Prepares the override and shows exactly what would be written; only an explicit yes writes it. Nothing
+    /// is touched on a refusal, a cancel or a failure to prepare.
+    /// </summary>
+    private async Task CreateOverrideAsync(FileRepairs file)
+    {
+        if (_busy || _disposed) return;
+        _busy = true;
+        try
+        {
+            // Reads the content file and scans the override folder, so keep it off the UI thread.
+            PlannedOverride plan = await Task.Run(() => Doctor.PlanOverride(file.Items));
+            bool? confirmed = await DialogService.ShowMessageBox(
+                "Create an override file?",
+                ConfirmationMessage(plan),
+                yesText: "Create override",
+                cancelText: "Cancel");
+            if (confirmed != true || _disposed) return;
+
+            string path = await Task.Run(() => Doctor.WriteOverride(plan));
+            _written[file.RelativePath] = path;
+            Snackbar.Add("Override written. Refresh content for the importer to use it.", Severity.Success);
+        }
+        catch (OverrideAuthoringException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Warning, options => options.VisibleStateDuration = 10000);
+        }
+        catch (Exception ex)
+        {
+            DebugLogService.Catch(ex, "ContentDoctor.CreateOverride");
+            Snackbar.Add($"The override could not be written. {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private static MarkupString ConfirmationMessage(PlannedOverride plan)
+    {
+        static string Encode(string text) => System.Net.WebUtility.HtmlEncode(text);
+        // MudBlazor resets paragraph and list spacing, so give the message its own.
+        var items = string.Concat(plan.Repairs.Select(repair =>
+            $"<li><strong>{Encode(repair.Name)}</strong>: rarity &ldquo;{Encode(repair.Written)}&rdquo; &rarr; &ldquo;{Encode(repair.Suggested)}&rdquo;</li>"));
+        return new MarkupString(
+            "<p style='margin: 0 0 12px;'>This writes an override file with these repairs. The original content file is not changed.</p>" +
+            $"<ul style='margin: 0 0 12px; padding-left: 22px; list-style: disc;'>{items}</ul>" +
+            "<p style='margin: 0 0 4px;'>New file:</p>" +
+            $"<p style='margin: 0 0 12px;'><code style='word-break: break-all;'>{Encode(plan.OverridePath)}</code></p>" +
+            "<p style='margin: 0;'>The importer reads it the next time content is refreshed, and keeps the repairs until the people who publish this content make the same fix.</p>");
     }
 
     private void ChangeConflictPage(int direction)

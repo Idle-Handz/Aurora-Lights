@@ -169,6 +169,94 @@ public sealed class ContentDoctorServiceTests : IDisposable
         shared.SetAside.Should().ContainSingle().Which.PackageName.Should().Be("Players Handbook");
     }
 
+    /// <summary>
+    /// A rarity that means nothing is listed with the file to fix. One a single edit from a real
+    /// rarity carries the spelling to use; one nothing recognises is listed without a guess. Only
+    /// declarations actually in use count. A real rarity in any case, a "varies" value, an infusion
+    /// and the content saying "Unknown" are accepted as they are and are not findings.
+    /// </summary>
+    [Fact]
+    public void RarityTyposAreSuggestedWithTheirFileAndOtherUnknownRaritiesAreListedUnguessed()
+    {
+        string db = Path.Combine(root, "rarity.sqlite");
+        using (var connection = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={db};Pooling=False"))
+        {
+            connection.Open();
+            using var command = connection.CreateCommand();
+            command.CommandText = """
+                CREATE TABLE resolved_elements_cache (winning_element_id INTEGER);
+                CREATE TABLE elements (element_id INTEGER, aurora_id TEXT, name TEXT, source_book_id INTEGER, source_file_id INTEGER);
+                CREATE TABLE source_books (source_book_id INTEGER, name TEXT);
+                CREATE TABLE source_files (source_file_id INTEGER, relative_path TEXT);
+                CREATE TABLE setter_scopes (setter_scope_id INTEGER, owner_element_id INTEGER, owner_kind TEXT);
+                CREATE TABLE setter_entries (setter_entry_id INTEGER, setter_scope_id INTEGER, setter_name TEXT, setter_value TEXT);
+                INSERT INTO source_books VALUES (1, 'Mordenkainen''s Tome of Marvelous Magic');
+                INSERT INTO source_files VALUES (1, 'third-party/dms-guild/tome.xml'), (2, 'reddit/lost-vaults/armors.xml');
+                INSERT INTO elements VALUES
+                    (1, 'ID_TYPO_VERY', 'Cloak of Typos', 1, 1),
+                    (2, 'ID_REAL', 'Staff of Truth', 1, 1),
+                    (3, 'ID_MYTHIC', 'Relic of Whatever', 1, 1),
+                    (4, 'ID_SET_ASIDE', 'Set Aside Cloak', 1, 1),
+                    (5, 'ID_TYPO_UNCOMMON', 'Plain Armor', NULL, 2),
+                    (6, 'ID_LOWER_CASE', 'Quiet Ring', 1, 1),
+                    (7, 'ID_INFUSION', 'Enhanced Defense', 1, 1),
+                    (8, 'ID_SAYS_UNKNOWN', 'Odd Trinket', 1, 1),
+                    (9, 'ID_VARIES', 'Potion of Whatever', 1, 1),
+                    (10, 'ID_RANGE', 'Wand of Many Rarities', 1, 1);
+                INSERT INTO resolved_elements_cache VALUES (1), (2), (3), (5), (6), (7), (8), (9), (10);
+                INSERT INTO setter_scopes VALUES (1, 1, 'element'), (2, 2, 'element'), (3, 3, 'element'),
+                    (4, 4, 'element'), (5, 5, 'element'), (6, 6, 'element'), (7, 1, 'other'),
+                    (8, 7, 'element'), (9, 8, 'element'), (10, 9, 'element'), (11, 10, 'element');
+                INSERT INTO setter_entries VALUES
+                    (1, 1, 'rarity', 'Vert Rare'),
+                    (2, 2, 'rarity', 'Very Rare'),
+                    (3, 3, 'RARITY', 'Mythic'),
+                    (4, 4, 'rarity', 'Lgendary'),
+                    (5, 5, 'rarity', 'unommon'),
+                    (6, 6, 'rarity', 'very rare'),
+                    (7, 1, 'cost', '25'),
+                    (8, 7, 'rarity', 'Wrong Scope'),
+                    (9, 8, 'rarity', 'Artificer Infusion'),
+                    (10, 9, 'rarity', 'Unknown'),
+                    (11, 10, 'rarity', 'Rarity varies by potion type'),
+                    (12, 11, 'rarity', 'Rare, Very Rare, or Legendary');
+                """;
+            command.ExecuteNonQuery();
+        }
+
+        IReadOnlyList<SuggestedCorrectionModel> found = ContentDoctorService.ReadSuggestions(db);
+
+        found.Select(item => item.AuroraId).Should().Equal("ID_TYPO_UNCOMMON", "ID_TYPO_VERY", "ID_MYTHIC");
+        var typo = found.Single(item => item.AuroraId == "ID_TYPO_VERY");
+        typo.Field.Should().Be("rarity");
+        typo.Name.Should().Be("Cloak of Typos");
+        typo.Source.Should().Be("Mordenkainen's Tome of Marvelous Magic");
+        typo.RelativePath.Should().Be("third-party/dms-guild/tome.xml");
+        typo.Written.Should().Be("Vert Rare");
+        typo.Suggested.Should().Be("Very Rare");
+        found.Single(item => item.AuroraId == "ID_TYPO_UNCOMMON").Suggested.Should().Be("Uncommon");
+        found.Single(item => item.AuroraId == "ID_TYPO_UNCOMMON").Source.Should().BeEmpty("the element has no source book");
+
+        var mythic = found.Single(item => item.AuroraId == "ID_MYTHIC");
+        mythic.HasSuggestion.Should().BeFalse();
+        mythic.Written.Should().Be("Mythic");
+    }
+
+    [Fact]
+    public void ADatabaseWithoutTheSetterTablesYieldsNoSuggestionsRatherThanFailing()
+    {
+        string db = Path.Combine(root, "no-setters.sqlite");
+        using (var connection = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={db};Pooling=False"))
+        {
+            connection.Open();
+            using var command = connection.CreateCommand();
+            command.CommandText = "CREATE TABLE unrelated (x INTEGER)";
+            command.ExecuteNonQuery();
+        }
+
+        ContentDoctorService.ReadSuggestions(db).Should().BeEmpty();
+    }
+
     [Fact]
     public void AnAbsentOrOlderDatabaseReportsUnavailableDiagnosticsRatherThanAnEmptySuccess()
     {
