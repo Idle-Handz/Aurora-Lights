@@ -422,34 +422,31 @@ public sealed class CharacterService :
             LoadingStatus  = "";
             try
             {
-                // Clear prepared spell state from any previous character load.
-                CharacterLoadCompatibilityService.PrepareForCharacterLoad();
-
                 // Warm up the CharacterManager singleton on the current (non-thread-pool) thread.
                 // Its static initializer accesses ApplicationContext.Current, which is not safe to
                 // run on a Task.Run thread while element-loading background state is still active.
                 _ = CharacterManager.Current;
 
-                var result    = await Task.Run(async () => await file.Load());
-                var character = CharacterManager.Current?.Character;
+                // Hold the context lock through both hydration and final calculations. Returning
+                // to the UI between them froze the loading indicator on large characters.
+                var (result, character) = await Task.Run(async () =>
+                {
+                    CharacterLoadCompatibilityService.PrepareForCharacterLoad();
+                    var loaded = await file.Load();
+                    var current = CharacterManager.Current?.Character;
+                    if (current is not null)
+                    {
+                        // The engine restores item flags; rebuild the equipped slot references
+                        // before evaluating armor-dependent statistics.
+                        CharacterLoadCompatibilityService.RestoreEquippedSlots(current);
+                        BuildService.ReapplyCustomFeatures(file);
+                        BuildService.NormalizeSelectionState();
+                        CharacterManager.Current!.ReprocessCharacter();
+                    }
+                    return (loaded, current);
+                });
                 if (character != null)
                 {
-                    // CharacterManager sets IsEquipped/EquippedLocation on item objects but does NOT
-                    // call the inventory slot methods (EquipArmor/EquipPrimary/EquipSecondary) during
-                    // load — that was handled by the WPF InventoryViewModel. Do it here so that the
-                    // EquippedArmor/EquippedPrimary/EquippedSecondary references are non-null and
-                    // equipped state round-trips correctly between the two apps.
-                    CharacterLoadCompatibilityService.RestoreEquippedSlots(character);
-
-                    // Re-apply user-added custom features (feats/spells/ASIs from the Extras flow):
-                    // they live outside the standard build and aren't round-tripped by file.Load.
-                    BuildService.ReapplyCustomFeatures(file);
-                    BuildService.NormalizeSelectionState();
-
-                    // The file's first calculation runs before equipped slot references
-                    // are restored. Re-evaluate armor conditions before publishing the snapshot.
-                    CharacterManager.Current!.ReprocessCharacter();
-
                     CurrentCharacter     = character;
                     CurrentCharacterFile = file;
 

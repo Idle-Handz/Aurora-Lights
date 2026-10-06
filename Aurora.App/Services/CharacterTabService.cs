@@ -21,7 +21,7 @@ public sealed class CharacterTabService
 
     public IReadOnlyList<CharacterTab> Tabs => _tabs;
     public CharacterTab? ActiveTab { get; private set; }
-    public bool HasUnsavedChanges => _tabs.Any(t => t.IsDirty);
+    public bool HasUnsavedChanges => _tabs.Any(t => t.IsDirty || t.IsSaving);
 
     /// <summary>Fires whenever the tab list or active tab changes.</summary>
     public event Action? TabsChanged;
@@ -49,6 +49,7 @@ public sealed class CharacterTabService
         }
 
         var tab = new CharacterTab(file) { Character = character };
+        tab.SaveStateChanged += NotifyChanged;
         _tabs.Add(tab);
         ActiveTab = tab;
         TabsChanged?.Invoke();
@@ -71,8 +72,9 @@ public sealed class CharacterTabService
         // Only notify on the clean→dirty transition. The dirty indicator is idempotent, so
         // re-firing TabsChanged on every keystroke (e.g. typing in a notes field) just causes
         // a needless re-render fan-out across the layout, nav, and subscribed pages.
-        if (tab.IsDirty) return;
+        bool wasDirty = tab.IsDirty;
         tab.IsDirty = true;
+        if (wasDirty) return;
         TabsChanged?.Invoke();
     }
 
@@ -102,6 +104,7 @@ public sealed class CharacterTabService
         }
 
         var tab = new CharacterTab(file) { IsLoading = true };
+        tab.SaveStateChanged += NotifyChanged;
         _tabs.Add(tab);
         ActiveTab = tab;
         TabsChanged?.Invoke();
@@ -117,6 +120,12 @@ public sealed class CharacterTabService
     /// </summary>
     public void CloseAllTabs()
     {
+        if (_tabs.Any(t => t.IsSaving)) throw new InvalidOperationException("Wait for character saves to finish before closing tabs.");
+        foreach (var tab in _tabs)
+        {
+            tab.SaveStateChanged -= NotifyChanged;
+            tab.CloudSession?.Dispose();
+        }
         _tabs.Clear();
         ActiveTab = null;
         TabsChanged?.Invoke();
@@ -128,10 +137,13 @@ public sealed class CharacterTabService
     /// </summary>
     public void CloseTab(CharacterTab tab)
     {
+        if (tab.IsSaving) throw new InvalidOperationException("Wait for this character's save to finish before closing it.");
         var idx = _tabs.IndexOf(tab);
         if (idx < 0) return;
 
         _tabs.RemoveAt(idx);
+        tab.SaveStateChanged -= NotifyChanged;
+        tab.CloudSession?.Dispose();
 
         if (ActiveTab == tab)
             ActiveTab = _tabs.Count > 0 ? _tabs[Math.Max(0, idx - 1)] : null;

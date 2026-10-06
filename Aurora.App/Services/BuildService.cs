@@ -548,8 +548,18 @@ public static partial class BuildService
     /// </summary>
     public static async Task<string?> SaveTabAsync(CharacterTab tab)
     {
+        if (tab.IsSaving) return "A save is already in progress.";
+        tab.CloudNotice = null;
+        tab.IsSaving = true;
+        try { return await SaveTabCoreAsync(tab); }
+        finally { tab.IsSaving = false; }
+    }
+
+    private static async Task<string?> SaveTabCoreAsync(CharacterTab tab)
+    {
         if (tab.File == null) return "No file associated with this tab.";
         using var scope = await CharacterContext.EnterAsync(tab);
+        long editVersion = tab.EditVersion;
         string? error = null;
         await Task.Run(() =>
         {
@@ -562,7 +572,81 @@ public static partial class BuildService
                 error = DebugLogService.Catch(ex, "BuildService.SaveTabAsync");
             }
         });
+        if (error is null && tab.CloudSession is { } cloud)
+        {
+            try
+            {
+                await tab.FileSaveSemaphore.WaitAsync();
+                try
+                {
+                    await cloud.SaveAsync();
+                    tab.File.RestoreKnownDiskStamp(CharacterFileDiskStamp.Capture(tab.File.FilePath));
+                }
+                finally { tab.FileSaveSemaphore.Release(); }
+                tab.CloudSavedEditVersion = editVersion;
+                tab.CloudNotice = "Saved to Google Drive.";
+            }
+            catch (Builder.Presentation.Services.Storage.CharacterDocumentConflictException)
+            {
+                // Drive is authoritative. Preserve displaced local edits before loading its version.
+                try
+                {
+                    SaveCharacterFile(tab);
+                    await ReloadCloudFilesAsync(tab);
+                    await ReloadCloudStateAsync(tab);
+                    tab.CloudNotice = "A newer Drive save was loaded. Unsent edits were kept in the recovery folder.";
+                }
+                catch (Exception ex) { error = ex.Message; }
+            }
+            catch (Exception ex)
+            {
+                error = "Not saved to Google Drive. Your edits are kept on this device. " + ex.Message;
+            }
+        }
+        if (error is not null && tab.CloudSession is not null) tab.CloudNotice = error;
         return error;
+    }
+
+    public static async Task ReloadCloudTabAsync(CharacterTab tab)
+    {
+        if (tab.IsSaving) throw new InvalidOperationException("Wait for the current save to finish.");
+        tab.CloudNotice = null;
+        tab.IsSaving = true;
+        try
+        {
+            // Reloading an already-open Drive character also hydrates and recalculates the
+            // engine. Keep that work off the renderer, under the same character-context lock.
+            await Task.Run(async () =>
+            {
+                using var scope = await CharacterContext.EnterAsync(tab);
+                // Materialize in-memory changes so recovery includes unsaved text/build edits.
+                SaveCharacterFile(tab);
+                await ReloadCloudFilesAsync(tab);
+                await ReloadCloudStateAsync(tab);
+            });
+            tab.CloudNotice = "Loaded the current Google Drive save.";
+        }
+        finally { tab.IsSaving = false; }
+    }
+
+    private static async Task ReloadCloudStateAsync(CharacterTab tab)
+    {
+        // The authoritative download intentionally changes the disk stamp.
+        tab.File.RestoreKnownDiskStamp(null);
+        await CharacterContext.ReloadFromDiskAsync(tab);
+        tab.Session = SessionStore.Load(tab.File.FilePath);
+        tab.Snapshot = CharacterSnapshot.From(tab.Character!);
+        ResnapTab(tab);
+        tab.CloudSavedEditVersion = tab.EditVersion;
+        tab.IsDirty = false;
+        tab.CloudReloadVersion++;
+    }
+
+    private static async Task ReloadCloudFilesAsync(CharacterTab tab)
+    {
+        await tab.FileSaveSemaphore.WaitAsync();
+        try { await tab.CloudSession!.ReloadAuthoritativeAsync(); }
+        finally { tab.FileSaveSemaphore.Release(); }
     }
 
     /// <summary>

@@ -21,6 +21,12 @@ public class MainActivity : MauiAppCompatActivity
 #if AURORA_ANDROID_DIAGNOSTICS
     private AndroidResponsivenessProbe? _probe;
 #endif
+    protected override void OnActivityResult(int requestCode, Result resultCode, Android.Content.Intent? data)
+    {
+        base.OnActivityResult(requestCode, resultCode, data);
+        Services.AndroidGoogleDriveAuthorization.OnActivityResult(requestCode, resultCode, data);
+    }
+
     protected override void OnCreate(Bundle? savedInstanceState)
     {
         base.OnCreate(savedInstanceState);
@@ -45,10 +51,13 @@ public class MainActivity : MauiAppCompatActivity
         base.OnPause();
     }
 
+#endif
     protected override void OnDestroy()
     {
+        Services.AndroidGoogleDriveAuthorization.OnActivityDestroyed(this);
+#if AURORA_ANDROID_DIAGNOSTICS
         _probe?.Dispose();
+#endif
         base.OnDestroy();
     }
-#endif
 }

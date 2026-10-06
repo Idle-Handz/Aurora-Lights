@@ -1,0 +1,1 @@
+Opening a Google Drive character now shows a full-screen loading spinner until the character is ready. The Characters search box no longer takes focus automatically, and opening a tab keeps the library mounted so it does not interrupt the active Drive operation. Character restoration and final calculations run in the background, including reloads of already-open Drive characters.

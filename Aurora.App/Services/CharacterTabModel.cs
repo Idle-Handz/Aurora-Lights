@@ -1,6 +1,7 @@
 using Aurora.Components.Models;
 using Builder.Presentation;
 using Builder.Presentation.Models;
+using Builder.Presentation.Services.Storage;
 
 namespace Aurora.App.Services;
 
@@ -14,7 +15,28 @@ public sealed class CharacterTab
     public Guid Id { get; } = Guid.NewGuid();
     public CharacterFile File { get; }
     public Character? Character { get; set; }
-    public bool IsDirty { get; set; }
+    private bool _isDirty;
+    public long EditVersion { get; private set; }
+    public long CloudSavedEditVersion { get; set; }
+    public long CloudReloadVersion { get; set; }
+    public CloudCharacterSession? CloudSession { get; set; }
+    public string? CloudNotice { get; set; }
+    private bool _isSaving;
+    public event Action? SaveStateChanged;
+    public bool IsSaving
+    {
+        get => _isSaving;
+        set { _isSaving = value; SaveStateChanged?.Invoke(); }
+    }
+    public bool IsDirty
+    {
+        get => _isDirty || CloudSession?.HasPendingChanges == true;
+        set
+        {
+            if (value) EditVersion++;
+            _isDirty = value || (CloudSession is not null && CloudSavedEditVersion < EditVersion);
+        }
+    }
 
     /// <summary>
     /// Snapshot of class progression data captured at load time.

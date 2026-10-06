@@ -8,6 +8,7 @@
 @inject UserPreferencesService Prefs
 @inject PdfImportService PdfImport
 @inject AppPageStateService PageState
+@inject CloudCharacterService Cloud
 @using Builder.Presentation
 @using Builder.Presentation.Utilities
 @using Aurora.PdfImport
@@ -41,7 +42,6 @@ else
                               EmptySubMessage="@EmptySubMessage"
                               BusyMessage="@BusyMessage"
                               ShowCreateButton="true"
-                              AutoFocusSearch="true"
                               CreateButtonText="New Character"
                               DisableCreateButton="@_preloading"
                               SearchText="@PageState.Characters.SearchText"
@@ -69,11 +69,48 @@ else
                     </button>
                 </AdditionalHeaderContent>
             </CharacterBrowser>
+            <CloudSaves OnOpen="OnCloudCharacterSelected" />
         </BrowserContent>
     </CharacterLibraryShell>
 }
 
 @code {
+    private async Task OnCloudCharacterSelected((Builder.Presentation.Services.Storage.CharacterDocumentMetadata Metadata, CancellationToken Token) request)
+    {
+        var metadata = request.Metadata;
+        var existing = Tabs.Tabs.FirstOrDefault(t => t.CloudSession?.Metadata.Reference.DocumentId == metadata.Reference.DocumentId);
+        if (existing is not null)
+        {
+            await BuildService.ReloadCloudTabAsync(existing);
+            Tabs.ActivateTab(existing);
+            Tabs.NotifyChanged();
+            Nav.NavigateTo("/character");
+            return;
+        }
+
+        var session = await Cloud.OpenAsync(metadata.Reference, request.Token);
+        var file = new Builder.Presentation.Models.CharacterFile(session.FilePath);
+        var tab = Tabs.OpenLoadingTab(file);
+        tab.CloudSession = session;
+        try
+        {
+            var result = await CharSvc.LoadCharacterAsync(file);
+            if (CharSvc.CurrentCharacter is null
+                || !CharacterFileIdentity.RefersToSameFile(CharSvc.CurrentCharacterFile, file))
+                throw new InvalidOperationException(result.Message);
+            tab.Character = CharSvc.CurrentCharacter;
+            tab.Snapshot = CharacterSnapshot.From(tab.Character);
+            tab.ProgressionSnapshots = SnapshotProgressionManagers();
+            tab.Session = LoadSessionWithWarning(file);
+            tab.IsLoading = false;
+            CharacterContext.ClaimAfterLoad(tab);
+            Tabs.NotifyChanged();
+            if (!result.Success) Snackbar.Add(result.Message, Severity.Warning);
+            Nav.NavigateTo("/character");
+        }
+        catch { Tabs.CloseTab(tab); throw; }
+    }
+
     private bool _disposed;
     private List<Builder.Presentation.Models.CharacterFile> _characters = [];
     private List<CharacterBrowserEntry> _browserEntries = [];

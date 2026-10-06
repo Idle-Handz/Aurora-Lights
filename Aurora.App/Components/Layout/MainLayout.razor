@@ -43,11 +43,12 @@
                        Color="Color.Inherit"
                        title="Search compendium"
                        OnClick="NavigateToCompendiumSearch" />
-        @if (Tabs.ActiveTab?.IsDirty == true)
+        @if (Tabs.ActiveTab?.IsDirty == true || Tabs.ActiveTab?.CloudSession is not null)
         {
             <MudIconButton Icon="@Icons.Material.Filled.Save"
                            Color="Color.Primary"
                            title="Save (Ctrl+S)"
+                           Disabled="@(Tabs.ActiveTab?.IsSaving == true)"
                            OnClick="@(() => SaveActive())" />
         }
         @* Update indicator covers app releases, pending content refresh, and correction proposals.
@@ -121,7 +122,25 @@
             </div>
         }
         <MudContainer MaxWidth="MaxWidth.False" Class="app-content-container pa-4" Style="@ContentStyle">
-            <AppErrorBoundary @ref="_errorBoundary">@Body</AppErrorBoundary>
+            @if (Tabs.ActiveTab is { CloudSession: not null } cloudTab)
+            {
+                <MudPaper Class="pa-3 mb-3" Outlined="true">
+                    <div class="d-flex align-center flex-wrap gap-2">
+                        <MudIcon Icon="@Icons.Material.Filled.Cloud" />
+                        <MudText>Google Drive — @(cloudTab.IsLoading ? "Loading..." : cloudTab.IsSaving ? "Saving..." : cloudTab.IsDirty ? "Changes not yet saved to Drive" : "Cloud save loaded")</MudText>
+                        <MudButton OnClick="SaveActive" Disabled="@(cloudTab.IsSaving || cloudTab.IsLoading)">Save to Drive</MudButton>
+                        <MudButton OnClick="ReloadCloud" Disabled="@(cloudTab.IsSaving || cloudTab.IsLoading)">Load Drive Save</MudButton>
+                        <MudButton OnClick="OpenCloudRecovery" Disabled="@(cloudTab.IsSaving || cloudTab.IsLoading)">Recovery Files</MudButton>
+                    </div>
+                    @if (cloudTab.CloudNotice is not null)
+                    {
+                        <MudText Typo="Typo.body2">@cloudTab.CloudNotice</MudText>
+                    }
+                </MudPaper>
+            }
+            <div inert="@(Tabs.ActiveTab?.CloudSession is not null && Tabs.ActiveTab.IsSaving ? string.Empty : null)">
+                <AppErrorBoundary @key="PageReloadVersion" @ref="_errorBoundary">@Body</AppErrorBoundary>
+            </div>
         </MudContainer>
     </MudMainContent>
 </MudLayout>
@@ -218,6 +237,12 @@
     private DotNetObjectReference<MainLayout>? _selfRef;
     private string _compendiumQuickQuery = string.Empty;
     private string? _notifiedAppUpdateTag;
+
+    // Keep the library and its in-flight Drive operation mounted when tabs change.
+    // Character pages still remount after a cloud reload to discard cached snapshots.
+    private long PageReloadVersion => Nav.ToBaseRelativePath(Nav.Uri).Split('?', '#')[0].Length == 0
+        ? 0
+        : Tabs.ActiveTab?.CloudReloadVersion ?? 0;
 
     private string ContentStyle => Tabs.Tabs.Count > 0
         ? "--character-tabs-height: 34px;"
@@ -489,6 +514,7 @@
 
     private async Task CloseTabAsync(CharacterTab tab)
     {
+        if (tab.IsSaving) { Snackbar.Add("Wait for the save to finish.", Severity.Info); return; }
         if (tab.IsDirty)
         {
             bool? result = await DialogService.ShowMessageBox(
@@ -531,12 +557,43 @@
         if (error == null)
         {
             Tabs.MarkClean(tab);
-            Snackbar.Add("Saved.", Severity.Success);
+            Snackbar.Add(tab.CloudSession is null ? "Saved." : tab.CloudNotice ?? "Saved to Google Drive.", Severity.Success);
         }
         else
         {
             Snackbar.Add($"Save failed: {error}", Severity.Error);
         }
+    }
+
+    private async Task ReloadCloud()
+    {
+        var tab = Tabs.ActiveTab;
+        if (tab?.CloudSession is null) return;
+        try
+        {
+            await BuildService.ReloadCloudTabAsync(tab);
+            Tabs.NotifyChanged();
+            // CloudReloadVersion recreates the page's cached session/snapshot references.
+        }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+    }
+
+    private Task OpenCloudRecovery()
+    {
+        if (Tabs.ActiveTab?.CloudSession is { } cloud)
+        {
+            string directory = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(cloud.FilePath)!, "recovery");
+            System.IO.Directory.CreateDirectory(directory);
+            try
+            {
+                if (OperatingSystem.IsWindows())
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(directory) { UseShellExecute = true });
+                else
+                    Snackbar.Add("Recovery files: " + directory, Severity.Info);
+            }
+            catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+        }
+        return Task.CompletedTask;
     }
 
     private AppThemeDefinition SelectedTheme => AppThemes.Get(Prefs.Theme);
