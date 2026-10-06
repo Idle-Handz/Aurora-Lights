@@ -9,7 +9,9 @@ using System.Xml;
 /// <summary>A small executable oracle for append behavior in the actual pinned package and Legacy loader.</summary>
 internal static class LegacyAppendAudit
 {
-    internal sealed record Result(bool Success, string LibraryVersion, string FixtureDirectory,
+    internal sealed record Result(bool Success, string LibraryVersion, string FixtureDirectory, CaseResult[] Cases);
+
+    internal sealed record CaseResult(bool Success, bool HasBaseDescription, string FixtureDirectory,
         string[] LegacyFileOrder, string LegacyDescription, string PreparedDescription,
         string[] LegacyGrantOrder, string[] PreparedGrantOrder);
 
@@ -17,7 +19,19 @@ internal static class LegacyAppendAudit
     {
         // The caller requires a disposable case marker. Keep the authored fixture for review.
         string root = Path.Combine(caseRoot, "append-audit-" + Guid.NewGuid().ToString("N"));
-        string definition = "<element name='Fixture' type='Feat' source='Test' id='ID_APPEND_AUDIT'><description><p>Base</p></description></element>";
+        CaseResult[] cases =
+        [
+            RunCase(Path.Combine(root, "with-description"), hasBaseDescription: true),
+            RunCase(Path.Combine(root, "without-description"), hasBaseDescription: false)
+        ];
+        return new(cases.All(result => result.Success),
+            typeof(PreparedCatalogReader).Assembly.GetName().Version?.ToString() ?? "unknown", root, cases);
+    }
+
+    private static CaseResult RunCase(string root, bool hasBaseDescription)
+    {
+        string definition = "<element name='Fixture' type='Feat' source='Test' id='ID_APPEND_AUDIT'>" +
+            (hasBaseDescription ? "<description><p>Base</p></description>" : "") + "</element>";
         var files = new Dictionary<string, string>
         {
             ["core/base.xml"] = "<elements>" + definition + "</elements>",
@@ -47,7 +61,7 @@ internal static class LegacyAppendAudit
         {
             command.CommandText = """
                 CREATE TABLE content_preparation_metadata(singleton_id,contract_version,catalog_policy,append_policy);
-                INSERT INTO content_preparation_metadata VALUES(1,1,'unrestricted','materialized');
+                INSERT INTO content_preparation_metadata VALUES(1,2,'unrestricted','materialized');
                 CREATE TABLE content_prepared_elements(aurora_id,base_xml);
                 CREATE TABLE v_content_prepared_sources(aurora_id,file_path,relative_path,package_key,package_kind);
                 CREATE TABLE v_content_append_operations(file_path,relative_path,package_key,package_kind,ordinal,target_aurora_id,operation_xml,status);
@@ -62,8 +76,11 @@ internal static class LegacyAppendAudit
             runtimeFiles: runtimeFiles).Elements.Single().Xml);
         string[] legacyGrants = legacy.GetGrantRules().Select(rule => rule.Attributes.Id).ToArray();
         string[] preparedGrants = prepared.GetGrantRules().Select(rule => rule.Attributes.Id).ToArray();
-        return new(legacy.Description == prepared.Description && legacyGrants.SequenceEqual(preparedGrants),
-            typeof(PreparedCatalogReader).Assembly.GetName().Version?.ToString() ?? "unknown", root,
+        string expectedDescription = hasBaseDescription ? "<p>Base</p>" : "";
+        string[] expectedGrants = ["ID_SUPPLEMENT", "ID_HOMEBREW"];
+        return new(legacy.Description == expectedDescription && legacyGrants.SequenceEqual(expectedGrants) &&
+            legacy.Description == prepared.Description && legacyGrants.SequenceEqual(preparedGrants),
+            hasBaseDescription, root,
             ordered.Select(file => Path.GetRelativePath(root, file.FullName).Replace('\\', '/')).ToArray(),
             legacy.Description, prepared.Description, legacyGrants, preparedGrants);
     }
