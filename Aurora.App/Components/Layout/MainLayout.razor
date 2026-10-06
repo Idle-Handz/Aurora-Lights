@@ -127,10 +127,10 @@
                 <MudPaper Class="pa-3 mb-3" Outlined="true">
                     <div class="d-flex align-center flex-wrap gap-2">
                         <MudIcon Icon="@Icons.Material.Filled.Cloud" />
-                        <MudText>Google Drive — @(cloudTab.IsSaving ? "Saving..." : cloudTab.IsDirty ? "Changes not yet saved to Drive" : "Cloud save loaded")</MudText>
-                        <MudButton OnClick="SaveActive" Disabled="@cloudTab.IsSaving">Save to Drive</MudButton>
-                        <MudButton OnClick="ReloadCloud" Disabled="@cloudTab.IsSaving">Load Drive Save</MudButton>
-                        <MudButton OnClick="OpenCloudRecovery" Disabled="@cloudTab.IsSaving">Recovery Files</MudButton>
+                        <MudText>Google Drive — @(cloudTab.IsLoading ? "Loading..." : cloudTab.IsSaving ? "Saving..." : cloudTab.IsDirty ? "Changes not yet saved to Drive" : "Cloud save loaded")</MudText>
+                        <MudButton OnClick="SaveActive" Disabled="@(cloudTab.IsSaving || cloudTab.IsLoading)">Save to Drive</MudButton>
+                        <MudButton OnClick="ReloadCloud" Disabled="@(cloudTab.IsSaving || cloudTab.IsLoading)">Load Drive Save</MudButton>
+                        <MudButton OnClick="OpenCloudRecovery" Disabled="@(cloudTab.IsSaving || cloudTab.IsLoading)">Recovery Files</MudButton>
                     </div>
                     @if (cloudTab.CloudNotice is not null)
                     {
@@ -139,7 +139,7 @@
                 </MudPaper>
             }
             <div inert="@(Tabs.ActiveTab?.CloudSession is not null && Tabs.ActiveTab.IsSaving ? string.Empty : null)">
-                <AppErrorBoundary @key="Tabs.ActiveTab?.CloudReloadVersion" @ref="_errorBoundary">@Body</AppErrorBoundary>
+                <AppErrorBoundary @key="PageReloadVersion" @ref="_errorBoundary">@Body</AppErrorBoundary>
             </div>
         </MudContainer>
     </MudMainContent>
@@ -233,6 +233,12 @@
     private DotNetObjectReference<MainLayout>? _selfRef;
     private string _compendiumQuickQuery = string.Empty;
     private string? _notifiedAppUpdateTag;
+
+    // Keep the library and its in-flight Drive operation mounted when tabs change.
+    // Character pages still remount after a cloud reload to discard cached snapshots.
+    private long PageReloadVersion => Nav.ToBaseRelativePath(Nav.Uri).Split('?', '#')[0].Length == 0
+        ? 0
+        : Tabs.ActiveTab?.CloudReloadVersion ?? 0;
 
     private string ContentStyle => Tabs.Tabs.Count > 0
         ? "--character-tabs-height: 34px;"

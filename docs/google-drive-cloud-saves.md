@@ -184,6 +184,24 @@ phone database SHA-256 remained unchanged. A separate local character rehearsal
 reported six saved-summary choices that were not restored, so full character
 and live cross-device acceptance is still pending.
 
+## Android loading feedback verification (2026-10-06)
+
+Release-signed ARM64 build 213490464 was installed as an in-place update on the
+connected Galaxy S22 Ultra. All 33 focused character-refresh, companion,
+load-compatibility, partial-load-report, cloud-session, and cross-device tests
+passed. On-device opening of Testy McGee displayed an animated full-screen
+spinner through download and character restoration, then returned to the
+character page without opening the keyboard. Reopening the already-open Drive
+character also showed the spinner and returned successfully. No new skipped-frame messages or
+fatal errors were logged during that warm open; cold content initialization
+still produces skipped-frame messages and is not covered by that observation.
+
+The live Drive character reports 23 saved picks that could not be restored,
+including weapon proficiencies. This was reproduced both before and after this
+update and is separate from the resolved v17/v18 database compatibility error.
+This update does not repair or suppress that warning. No save was uploaded to
+Drive during these checks; full cross-device save/load acceptance remains open.
+
 ## References
 
 - [Google desktop OAuth and loopback redirects](https://developers.google.com/identity/protocols/oauth2/native-app)

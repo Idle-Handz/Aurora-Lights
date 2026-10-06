@@ -4,6 +4,15 @@
 @inject ISnackbar Snackbar
 @implements IDisposable
 
+@if (_busy && _opening)
+{
+    <div class="cloud-open-loading" role="status" aria-live="polite" aria-busy="true">
+        <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Large" />
+        <MudText Typo="Typo.h6">Opening @(_openingName)...</MudText>
+        <MudText Typo="Typo.body2">Loading your Google Drive character.</MudText>
+    </div>
+}
+
 <MudPaper Class="mt-6 pa-4" Outlined="true">
     <MudText Typo="Typo.h5">Cloud Saves</MudText>
     <MudText Typo="Typo.body2" Class="mb-3">Open and save characters in Google Drive. Drive is the main save; this device keeps a working copy.</MudText>
@@ -54,7 +63,7 @@
             </div>
         }
     }
-    @if (_busy)
+    @if (_busy && !_opening)
     {
         <MudProgressLinear Indeterminate="true" Class="my-2" />
         <MudText Typo="Typo.body2">@_status</MudText>
@@ -70,6 +79,8 @@
     [Parameter] public EventCallback<(CharacterDocumentMetadata Metadata, CancellationToken Token)> OnOpen { get; set; }
     private IReadOnlyList<CharacterDocumentMetadata> _files = [];
     private bool _busy;
+    private bool _opening;
+    private string? _openingName;
     private string? _error;
     private string _status = "";
     private CancellationTokenSource? _operation;
@@ -112,8 +123,17 @@
             Snackbar.Add("Character saved to Google Drive.", Severity.Success);
         }
     });
-    private Task Open(CharacterDocumentMetadata file) => Run("Loading Google Drive save...", async ct =>
-        await OnOpen.InvokeAsync((file, ct)));
+    private async Task Open(CharacterDocumentMetadata file)
+    {
+        if (_busy || _disposed) return;
+        _opening = true;
+        _openingName = System.IO.Path.GetFileNameWithoutExtension(file.FileName);
+        try
+        {
+            await Run("Loading Google Drive save...", async ct => await OnOpen.InvokeAsync((file, ct)));
+        }
+        finally { _opening = false; }
+    }
     private Task Disconnect() => Run("Disconnecting...", async ct =>
     {
         await Cloud.DisconnectAsync();
@@ -127,7 +147,13 @@
         _error = null;
         using var cancellation = new CancellationTokenSource();
         _operation = cancellation;
-        try { await operation(cancellation.Token); }
+        try
+        {
+            // Paint the loading state before a cached download or load can do synchronous work.
+            StateHasChanged();
+            await Task.Yield();
+            await operation(cancellation.Token);
+        }
         catch (OperationCanceledException)
         {
             if (!_disposed) _error = "Cancelled. Any unsent changes remain on this device.";

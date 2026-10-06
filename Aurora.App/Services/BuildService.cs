@@ -614,11 +614,16 @@ public static partial class BuildService
         tab.IsSaving = true;
         try
         {
-            using var scope = await CharacterContext.EnterAsync(tab);
-            // Materialize in-memory changes so recovery includes unsaved text/build edits.
-            SaveCharacterFile(tab);
-            await ReloadCloudFilesAsync(tab);
-            await ReloadCloudStateAsync(tab);
+            // Reloading an already-open Drive character also hydrates and recalculates the
+            // engine. Keep that work off the renderer, under the same character-context lock.
+            await Task.Run(async () =>
+            {
+                using var scope = await CharacterContext.EnterAsync(tab);
+                // Materialize in-memory changes so recovery includes unsaved text/build edits.
+                SaveCharacterFile(tab);
+                await ReloadCloudFilesAsync(tab);
+                await ReloadCloudStateAsync(tab);
+            });
             tab.CloudNotice = "Loaded the current Google Drive save.";
         }
         finally { tab.IsSaving = false; }
