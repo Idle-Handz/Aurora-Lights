@@ -6,6 +6,7 @@
 @using Builder.Presentation.Models.Sources
 @using Builder.Presentation.Services.Sources
 @using Builder.Presentation.Services.Data
+@using Builder.Presentation.Services.Content
 @using Aurora.Components.Models
 @using System.Text
 @inject ContentDatabaseService ContentDb
@@ -415,7 +416,8 @@
                                    Label="Auto-download content on startup" />
                         <div class="pref-row-desc" style="margin-bottom: 10px;">
                             Quietly checks installed index sources when the app launches and downloads
-                            changed XML files. A refresh prompt appears when new content arrives.
+                            changed content and correction proposals. Corrections are applied only when
+                            you choose Apply in the Corrections tab.
                         </div>
 
                         @{
@@ -485,7 +487,7 @@
                         }
                     </div>
 
-                    @if (_needsContentReload)
+                    @if (_needsContentReload || Content.ContentReloadPending)
                     {
                         <MudAlert Severity="Severity.Info" Class="mt-4" Dense="true">
                             Content changes will not take effect until the database is refreshed.
@@ -641,6 +643,119 @@
                     }
                 </div>
 
+            </MudTabPanel>
+
+            <MudTabPanel Text="@(Content.AvailableReplacementCount > 0 ? $"Corrections ({Content.AvailableReplacementCount})" : "Corrections")">
+                <div class="pref-section">
+                    <div class="correction-section-heading">
+                        <div>
+                            <div class="section-label">Content corrections</div>
+                            <div class="pref-row-desc">
+                                Review proposed fixes for your installed content. Apply saves a local correction
+                                and refreshes the database when all character tabs are closed.
+                                Not now dismisses this revision; you can review it again below, and a later
+                                revision can appear again.
+                            </div>
+                        </div>
+                        <MudButton Variant="Variant.Outlined" Size="Size.Small"
+                                   Disabled="@ReplacementActionsBusy"
+                                   OnClick="ReviewCachedReplacementsAsync">
+                            @(Content.IsReviewingReplacements ? "Reviewing..." : "Recheck downloaded proposals")
+                        </MudButton>
+                    </div>
+
+                    @if (Content.IsReviewingReplacements)
+                    {
+                        <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="my-3" />
+                    }
+                    @if (Content.AvailableReplacementCount > 1)
+                    {
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-3"
+                                   Disabled="@ReplacementActionsBusy" OnClick="ApplyAllReplacementsAsync">
+                            Apply all @Content.AvailableReplacementCount ready corrections
+                        </MudButton>
+                    }
+
+                    @if (!VisibleReplacementProposals.Any())
+                    {
+                        <div class="pref-row-desc correction-empty">
+                            No corrections need your attention. Use Check installed sources on the Sources tab
+                            to download new proposals.
+                        </div>
+                    }
+                    @foreach (var proposal in VisibleReplacementProposals)
+                    {
+                        <section @key="proposal.ProposalPath" class="correction-card @(proposal.Status == ReplacementProposalStatus.NeedsReview ? "needs-review" : "")">
+                            <div class="correction-heading">
+                                <strong>@proposal.Title</strong>
+                                <span class="correction-state">@ReplacementStatusLabel(proposal.Status)</span>
+                            </div>
+                            <p>@proposal.Summary</p>
+                            <div class="correction-source"><span>Affected file:</span> <code>@(proposal.SourcePath ?? "No matching installed file")</code></div>
+                            @if (!string.IsNullOrWhiteSpace(proposal.Detail))
+                            {
+                                <p class="correction-detail">@proposal.Detail</p>
+                            }
+                            <div class="settings-inline-actions correction-actions">
+                                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
+                                           Disabled="@(ReplacementActionsBusy || proposal.Status != ReplacementProposalStatus.Ready)"
+                                           OnClick="@(() => ApplyReplacementAsync(proposal))">Apply</MudButton>
+                                <MudButton Variant="Variant.Text" Size="Size.Small"
+                                           Disabled="@ReplacementActionsBusy"
+                                           OnClick="@(() => DismissReplacementAsync(proposal))">Not now</MudButton>
+                            </div>
+                        </section>
+                    }
+
+                    @if (OtherReplacementProposals.Any())
+                    {
+                        <details class="correction-history">
+                            <summary>Applied, dismissed, and unavailable corrections (@OtherReplacementProposals.Count())</summary>
+                            @foreach (var proposal in OtherReplacementProposals)
+                            {
+                                <section @key="proposal.ProposalPath" class="correction-card">
+                                    <div class="correction-heading">
+                                        <strong>@proposal.Title</strong>
+                                        <span class="correction-state">@ReplacementStatusLabel(proposal.Status)</span>
+                                    </div>
+                                    <p>@proposal.Summary</p>
+                                    <div class="correction-source"><span>Affected file:</span> <code>@(proposal.SourcePath ?? "No matching installed file")</code></div>
+                                    @if (!string.IsNullOrWhiteSpace(proposal.Detail))
+                                    {
+                                        <p class="correction-detail">@proposal.Detail</p>
+                                    }
+                                    @if (proposal.Status == ReplacementProposalStatus.Dismissed)
+                                    {
+                                        <MudButton Variant="Variant.Text" Size="Size.Small" Class="mt-2"
+                                                   Disabled="@ReplacementActionsBusy"
+                                                   OnClick="@(() => ReconsiderReplacementAsync(proposal))">Review again</MudButton>
+                                    }
+                                </section>
+                            }
+                        </details>
+                    }
+
+                    @if (_needsContentReload || Content.ContentReloadPending)
+                    {
+                        <MudAlert Severity="Severity.Info" Dense="true" Class="mt-4">
+                            Corrections saved locally take effect after the database is refreshed.
+                            @if (Content.HasOpenTabs)
+                            {
+                                <span> Save your changes and close all character tabs before refreshing.</span>
+                            }
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" Class="ml-3"
+                                       Disabled="@(ReplacementActionsBusy || Content.HasOpenTabs)"
+                                       OnClick="RefreshDatabaseAsync">Refresh Database</MudButton>
+                        </MudAlert>
+                    }
+                    @if (_contentStatus != null)
+                    {
+                        <MudAlert Severity="@_contentStatusSeverity" Dense="true" Class="mt-3"
+                                  ShowCloseIcon="true" CloseIconClicked="() => _contentStatus = null">
+                            @_contentStatus
+                        </MudAlert>
+                    }
+                </div>
             </MudTabPanel>
 
         </MudTabs>
@@ -836,6 +951,14 @@
         <div class="pref-section" style="margin-top: 24px;">
             <div class="section-label">Content</div>
 
+            @if (Content.AvailableReplacementCount > 0)
+            {
+                <MudAlert Severity="Severity.Info" Dense="true" Class="mb-3">
+                    @Content.AvailableReplacementCount content correction(s) are ready to review.
+                    <MudLink Href="/settings?tab=content&amp;section=corrections">Review corrections</MudLink>
+                </MudAlert>
+            }
+
             @{
                 int installedIndexCountOnUpdates = Content.InstalledIndexNames.Count;
             }
@@ -899,7 +1022,7 @@
                 </div>
             }
 
-            @if (_needsContentReload)
+            @if (_needsContentReload || Content.ContentReloadPending)
             {
                 <MudAlert Severity="Severity.Info" Class="mt-4" Dense="true">
                     Content changes will not take effect until the database is refreshed.
@@ -1210,12 +1333,16 @@
     [SupplyParameterFromQuery(Name = "tab")]
     public string? RequestedTab { get; set; }
 
+    [SupplyParameterFromQuery(Name = "section")]
+    public string? RequestedSection { get; set; }
+
     private bool _disposed;
     private string _indexUrl = "";
     private string _newDirPath = "";
     private string? _contentStatus;
     private Severity _contentStatusSeverity = Severity.Success;
     private bool _contentWorking;
+    private bool _replacementWorking;
     private bool _checkingUpdates;
     private bool _checkingReleaseChannels;
     private bool _parityRunning;
@@ -1262,6 +1389,8 @@
             "advanced" => 4,
             _ => 0
         };
+        if (ActiveSettingsTabIndex == 2 && string.Equals(RequestedSection, "corrections", StringComparison.OrdinalIgnoreCase))
+            ActiveContentTabIndex = 2;
     }
 
     protected override async Task OnInitializedAsync()
@@ -1270,7 +1399,137 @@
         Content.Changed += OnContentChanged;
         AppUpdates.Changed += OnAppUpdatesChanged;
         Prefs.DeveloperModeChanged += OnDeveloperModeChanged;
+        await ReviewCachedReplacementsAsync();
         await RefreshDatabaseDiagnosticsAsync();
+    }
+
+    private IEnumerable<ReplacementProposal> VisibleReplacementProposals =>
+        Content.ReplacementProposals.Where(p => p.Status is ReplacementProposalStatus.Ready or ReplacementProposalStatus.NeedsReview);
+
+    private IEnumerable<ReplacementProposal> OtherReplacementProposals =>
+        Content.ReplacementProposals.Where(p => p.Status is ReplacementProposalStatus.Applied or ReplacementProposalStatus.Dismissed or ReplacementProposalStatus.Unavailable);
+
+    private bool ReplacementActionsBusy => _replacementWorking || _contentWorking || _reloadingElements ||
+        Content.IsReviewingReplacements || IsCheckingInstalledSources || ContentDb.SyncState == ContentDatabaseSyncState.Syncing;
+
+    private static string ReplacementStatusLabel(ReplacementProposalStatus status) => status switch
+    {
+        ReplacementProposalStatus.Ready => "Ready to apply",
+        ReplacementProposalStatus.NeedsReview => "Needs review",
+        ReplacementProposalStatus.Applied => "Applied",
+        ReplacementProposalStatus.Dismissed => "Dismissed",
+        ReplacementProposalStatus.Unavailable => "Unavailable",
+        _ => status.ToString()
+    };
+
+    private async Task ReviewCachedReplacementsAsync()
+    {
+        if (ReplacementActionsBusy) return;
+        try
+        {
+            await Content.RefreshReplacementProposalsAsync();
+        }
+        catch (Exception ex)
+        {
+            DebugLogService.Catch(ex, "Settings.ReviewCachedReplacementsAsync");
+            _contentStatus = $"Could not review downloaded corrections: {ex.Message}";
+            _contentStatusSeverity = Severity.Error;
+        }
+    }
+
+    private Task ApplyReplacementAsync(ReplacementProposal proposal) => ApplyReplacementsAsync([proposal]);
+
+    private Task ApplyAllReplacementsAsync() => ApplyReplacementsAsync(
+        Content.ReplacementProposals.Where(p => p.Status == ReplacementProposalStatus.Ready).ToArray());
+
+    private async Task ApplyReplacementsAsync(IReadOnlyList<ReplacementProposal> proposals)
+    {
+        if (ReplacementActionsBusy || proposals.Count == 0) return;
+        _replacementWorking = true;
+        _contentWorking = true;
+        _contentStatus = null;
+        int applied = 0;
+        var failures = new List<string>();
+        try
+        {
+            foreach (var proposal in proposals)
+            {
+                var result = await Content.ApplyReplacementAsync(proposal);
+                if (result.Success) applied++;
+                else failures.Add($"{proposal.Title}: {result.Message}");
+                if (_disposed) return;
+            }
+            if (applied > 0)
+            {
+                _needsContentReload = true;
+                if (!Content.HasOpenTabs)
+                    await RefreshDatabaseAsync();
+                else
+                {
+                    _contentStatus = $"Saved {applied} correction(s). Save your changes and close all character tabs, then refresh the database to apply them.";
+                    _contentStatusSeverity = Severity.Info;
+                }
+            }
+            if (failures.Count > 0)
+            {
+                _contentStatus = string.Join(" ", new[] { _contentStatus }.Where(s => !string.IsNullOrWhiteSpace(s)).Concat(failures));
+                _contentStatusSeverity = Severity.Warning;
+            }
+        }
+        catch (Exception ex)
+        {
+            DebugLogService.Catch(ex, "Settings.ApplyReplacementsAsync");
+            _contentStatus = $"Could not finish applying corrections: {ex.Message}";
+            _contentStatusSeverity = Severity.Error;
+        }
+        finally
+        {
+            _replacementWorking = false;
+            _contentWorking = false;
+            if (!_disposed) await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task DismissReplacementAsync(ReplacementProposal proposal)
+    {
+        if (ReplacementActionsBusy) return;
+        _replacementWorking = true;
+        try
+        {
+            await Content.DismissReplacementAsync(proposal);
+        }
+        catch (Exception ex)
+        {
+            DebugLogService.Catch(ex, "Settings.DismissReplacementAsync");
+            _contentStatus = $"Could not dismiss this correction: {ex.Message}";
+            _contentStatusSeverity = Severity.Error;
+        }
+        finally
+        {
+            _replacementWorking = false;
+            if (!_disposed) await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task ReconsiderReplacementAsync(ReplacementProposal proposal)
+    {
+        if (ReplacementActionsBusy) return;
+        _replacementWorking = true;
+        try
+        {
+            await Content.ReconsiderReplacementAsync(proposal);
+        }
+        catch (Exception ex)
+        {
+            DebugLogService.Catch(ex, "Settings.ReconsiderReplacementAsync");
+            _contentStatus = $"Could not restore this correction for review: {ex.Message}";
+            _contentStatusSeverity = Severity.Error;
+        }
+        finally
+        {
+            _replacementWorking = false;
+            if (!_disposed) await InvokeAsync(StateHasChanged);
+        }
     }
 
     private void OnAppUpdatesChanged()
@@ -1611,6 +1870,12 @@
 
     private async Task RefreshDatabaseAsync()
     {
+        if (Content.HasOpenTabs)
+        {
+            _contentStatus = "Save your changes and close all character tabs before refreshing the database.";
+            _contentStatusSeverity = Severity.Info;
+            return;
+        }
         _contentWorking = true;
         _reloadingElements = true;
         _contentStatus = null;
@@ -1958,7 +2223,6 @@
             if (success)
             {
                 _indexUrl = "";
-                _needsContentReload = true;
             }
         }
         finally
@@ -1993,7 +2257,7 @@
                 ContentUpdateOutcome.UpToDate => Severity.Info,
                 _                             => Severity.Error,
             };
-            if (outcome == ContentUpdateOutcome.Updated) _needsContentReload = true;
+            _needsContentReload |= Content.ContentReloadPending;
         }
         finally
         {

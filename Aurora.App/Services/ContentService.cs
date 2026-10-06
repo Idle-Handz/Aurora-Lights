@@ -20,9 +20,15 @@ public sealed class ContentService
     private readonly ContentDatabaseService _contentDb;
     private readonly CompendiumService _compendium;
     private readonly ContentIndexUpdateService _indexUpdater;
+    private readonly ReplacementProposalService _replacements = new();
+    private readonly SemaphoreSlim _replacementLock = new(1, 1);
     private readonly SemaphoreSlim _startupRefreshLock = new(1, 1);
     private readonly SemaphoreSlim _contentUpdateLock = new(1, 1);
     private bool _startupRefreshAttempted;
+    private readonly HashSet<string> _notifiedReplacements = new(StringComparer.Ordinal);
+
+    public const string ReplacementFeedFileName = "reflections-replacements.index";
+    public const string ReplacementFeedUrl = "https://raw.githubusercontent.com/Xellarant/Reflections-Replacements/master/reflections-replacements.index";
 
     public ContentService(
         CharacterService characters,
@@ -63,6 +69,97 @@ public sealed class ContentService
         GetBuiltInCustomDirectory();
 
     public bool ContentReloadPending { get; private set; }
+
+    public IReadOnlyList<ReplacementProposal> ReplacementProposals { get; private set; } = [];
+    public bool IsReviewingReplacements { get; private set; }
+    public int AvailableReplacementCount => ReplacementProposals.Count(p => p.Status == ReplacementProposalStatus.Ready);
+    public event Action<int>? ReplacementProposalsAvailable;
+
+    /// <summary>Registers the feed once without making a network request. Removing it remains an opt-out.</summary>
+    public void EnsureReplacementFeedInstalled()
+    {
+        try
+        {
+            string root = GetBuiltInCustomDirectory();
+            string marker = Path.Combine(root, ".reflections-replacements-feed-installed");
+            if (File.Exists(marker)) return;
+            string path = Path.Combine(root, ReplacementFeedFileName);
+            if (!File.Exists(path))
+            {
+                using var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write);
+                using var writer = new StreamWriter(stream, new System.Text.UTF8Encoding(false));
+                writer.Write($"<index><info><name>Reflections Replacements</name><update version=\"0.0.0\"><file name=\"{ReplacementFeedFileName}\" url=\"{ReplacementFeedUrl}\" /></update></info><files /></index>");
+            }
+            File.WriteAllText(marker, "Registered once. Removing the index disables future feed downloads.");
+            Changed?.Invoke();
+        }
+        catch (Exception ex)
+        {
+            DebugLogService.Catch(ex, "ContentService.EnsureReplacementFeedInstalled");
+        }
+    }
+
+    /// <summary>Inspects downloaded proposals without downloading or activating content.</summary>
+    public async Task RefreshReplacementProposalsAsync()
+    {
+        await _replacementLock.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            IsReviewingReplacements = true;
+            Changed?.Invoke();
+            string root = GetBuiltInCustomDirectory();
+            string[] additionalRoots = AdditionalDirectories.ToArray();
+            ReplacementProposals = await Task.Run(() => _replacements.Scan(root, additionalRoots)).ConfigureAwait(false);
+            var ready = ReplacementProposals
+                .Where(p => p.Status == ReplacementProposalStatus.Ready)
+                .Select(p => p.Id + ":" + p.ProposalHash).ToArray();
+            bool newlyAvailable = false;
+            foreach (string identity in ready)
+                newlyAvailable |= _notifiedReplacements.Add(root + ":" + identity);
+            if (newlyAvailable)
+                ReplacementProposalsAvailable?.Invoke(AvailableReplacementCount);
+        }
+        finally
+        {
+            IsReviewingReplacements = false;
+            _replacementLock.Release();
+            Changed?.Invoke();
+        }
+    }
+
+    public async Task<(bool Success, string Message)> ApplyReplacementAsync(ReplacementProposal proposal)
+    {
+        await _contentUpdateLock.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            string root = GetBuiltInCustomDirectory();
+            string[] additionalRoots = AdditionalDirectories.ToArray();
+            var result = await Task.Run(() => _replacements.Apply(root, proposal, additionalRoots)).ConfigureAwait(false);
+            if (result.Success) ContentReloadPending = true;
+            await RefreshReplacementProposalsAsync().ConfigureAwait(false);
+            return (result.Success, result.Message);
+        }
+        catch (Exception ex)
+        {
+            DebugLogService.Catch(ex, "ContentService.ApplyReplacementAsync");
+            return (false, ex.Message);
+        }
+        finally { _contentUpdateLock.Release(); Changed?.Invoke(); }
+    }
+
+    public async Task DismissReplacementAsync(ReplacementProposal proposal)
+    {
+        string root = GetBuiltInCustomDirectory();
+        await Task.Run(() => _replacements.Dismiss(root, proposal)).ConfigureAwait(false);
+        await RefreshReplacementProposalsAsync().ConfigureAwait(false);
+    }
+
+    public async Task ReconsiderReplacementAsync(ReplacementProposal proposal)
+    {
+        string root = GetBuiltInCustomDirectory();
+        await Task.Run(() => _replacements.Reconsider(root, proposal)).ConfigureAwait(false);
+        await RefreshReplacementProposalsAsync().ConfigureAwait(false);
+    }
 
     public bool IsCheckingContentUpdates { get; private set; }
     public string? ContentUpdateStatus { get; private set; }
@@ -210,7 +307,7 @@ public sealed class ContentService
             string duration = FormatDuration(result.Duration);
             ContentUpdateProgress = 100;
             ContentUpdatedFileCount = result.UpdatedFileCount;
-            if (result.Updated)
+            if (result.UpdatedContentFileCount > 0)
                 ContentReloadPending = true;
 
             string checkedSummary = $"Checked {result.CheckedEntryCount} content entries across {result.IndexFileCount} index file(s) in {duration}";
@@ -222,10 +319,15 @@ public sealed class ContentService
                 : result.FailedFileCount > 0
                     ? $"{checkedSummary}; {result.FailedFileCount} file(s) failed."
                     : $"{checkedSummary}; content is up to date.";
+            await RefreshReplacementProposalsAsync().ConfigureAwait(false);
             Changed?.Invoke();
 
             if (result.Updated)
-                return (ContentUpdateOutcome.Updated, $"{ContentUpdateStatus} Refresh the database to apply changes.");
+                return (ContentUpdateOutcome.Updated, result.UpdatedContentFileCount > 0
+                    ? $"{ContentUpdateStatus} Refresh the database to apply content changes."
+                    : AvailableReplacementCount > 0
+                        ? $"{ContentUpdateStatus} Review downloaded corrections in Content → Corrections to apply them."
+                        : $"{ContentUpdateStatus} These downloads do not require a database refresh.");
 
             return result.FailedFileCount > 0
                 ? (ContentUpdateOutcome.Failed, ContentUpdateStatus)
@@ -277,7 +379,7 @@ public sealed class ContentService
     public bool HasOpenTabs => _tabs.Tabs.Count > 0;
 
     /// <summary>
-    /// Closes all open character tabs and reloads the element collection from disk.
+    /// Reloads the element collection from disk when no character tabs are open.
     /// Must be called on the UI thread (or via InvokeAsync) so TabsChanged fires correctly.
     /// Returns null on success or an error message on failure.
     ///
@@ -289,6 +391,8 @@ public sealed class ContentService
     /// </summary>
     public async Task<string?> ReloadContentAsync()
     {
+        if (HasOpenTabs)
+            return "Save your changes and close all character tabs before refreshing the database.";
         using var refreshTrace = ContentLoadTrace.Begin("refresh");
         try
         {
@@ -311,7 +415,14 @@ public sealed class ContentService
                 }
             }
 
-            _tabs.CloseAllTabs();
+            // A character can be opened while the database sync is awaiting disk work.
+            // Preserve it and defer the runtime reload instead of closing it implicitly.
+            if (HasOpenTabs)
+            {
+                ContentReloadPending = true;
+                Changed?.Invoke();
+                return "Database sync finished. Save your changes and close all character tabs, then refresh to load the updated content.";
+            }
             await _characters.ReloadElementsAsync();
             using (ContentLoadTrace.Begin("refresh.schedule-compendium"))
                 _compendium.InvalidateCache(rebuildInBackground: true);
@@ -356,6 +467,9 @@ public sealed class ContentService
                 return;
 
             _startupRefreshAttempted = true;
+            await RefreshReplacementProposalsAsync().ConfigureAwait(false);
+            // Cached proposal review can take time. Read the network preference afterwards
+            // so switching it off while review is running still prevents downloads.
             StartupAutoDownloadEnabled = autoDownloadEnabled();
             StartupContentUpdateStatus = StartupAutoDownloadEnabled.Value
                 ? "Started: auto-download was enabled."
@@ -367,9 +481,8 @@ public sealed class ContentService
             var (outcome, message) = await CheckForUpdatesAsync("Startup").ConfigureAwait(false);
             StartupContentUpdateStatus = $"{outcome}: {message}";
             DebugLogService.Instance.Info($"Startup content update: {StartupContentUpdateStatus}");
-            if (outcome == ContentUpdateOutcome.Updated)
+            if (outcome == ContentUpdateOutcome.Updated && ContentReloadPending)
             {
-                ContentReloadPending = true;
                 Changed?.Invoke();
                 ContentDownloaded?.Invoke("Content updates downloaded. Refresh the database to apply.");
             }

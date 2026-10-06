@@ -46,3 +46,64 @@
     cursor: pointer;
     padding: 6px 0;
 }
+
+.correction-section-heading,
+.correction-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.correction-section-heading > div {
+    flex: 1 1 360px;
+}
+
+.correction-card {
+    margin-top: 16px;
+    padding: 16px;
+    border: 1px solid var(--mud-palette-lines-default);
+    border-radius: 8px;
+}
+
+.correction-card.needs-review {
+    border-left: 4px solid var(--mud-palette-warning);
+}
+
+.correction-card p {
+    margin: 8px 0;
+    font-size: 0.875rem;
+}
+
+.correction-state {
+    font-size: 0.75rem;
+    color: var(--mud-palette-text-secondary);
+}
+
+.correction-source,
+.correction-detail {
+    font-size: 0.8125rem;
+    color: var(--mud-palette-text-secondary);
+    overflow-wrap: anywhere;
+}
+
+.correction-source code {
+    white-space: pre-wrap;
+}
+
+.correction-actions {
+    margin-top: 12px;
+}
+
+.correction-history,
+.correction-empty {
+    margin-top: 20px;
+}
+
+.correction-history summary {
+    padding: 8px 0;
+    cursor: pointer;
+    color: var(--mud-palette-text-secondary);
+    font-size: 0.875rem;
+}
