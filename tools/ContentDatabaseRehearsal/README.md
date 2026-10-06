@@ -42,6 +42,16 @@ repeating a mode.
 legacy-xml-load loads content the way Aurora Legacy does, through DataManager
 XML with no database, and opens each character to show what Legacy resolves.
 parity compares complete parsed definition XML, not just names or counts.
+Both snapshots honor preparation decisions, so this mode does not establish full
+Legacy runtime equivalence.
+
+`legacy-append-audit <case>` creates a tiny fixture under the disposable case and
+compares the pinned library's prepared projection against the actual Legacy
+`GetCustomFiles` and `AppendElements` methods. It records description handling and
+the order of grants appended by supplements and homebrew. It exits nonzero on a
+behavioral difference, retaining fixture XML and `legacy-append-audit-result.json`
+for review. It does not read installed content or require a corpus/database copy.
+
 audit.py <rehearsal-root> checks SQL integrity, identity counts, fresh/migrated
 prepared definitions and append operations, and hashes the installed inputs again.
 
@@ -140,11 +150,12 @@ python compare_projection_winners.py <dir-a> <dir-b>
 ```
 
 The comparison separates three things: ids one path has and the other does not, provenance
-labelling differing while the definition matches, and a different file winning *with* a different
-definition. Only the third is a defect; the script exits non-zero when any appears.
+labelling differing while the definition matches, and different serialized definitions (including
+when the same file wins). Missing ids and definition differences make the script exit non-zero.
 
-Expected on the installed corpus: **0 missing either way**, around **806 label-only** (mostly
-builtins Legacy never stamps with a path, plus an override file credited to itself rather than the
-file it corrects), and **1 behavioural** — `ID_INTERNAL_GRANTS_CHARACTER_BASE`, a generated builtin
-unrelated to collisions. Any other behavioural difference is a blocker. The label-only count moves
-legitimately when content changes; the behavioural count must not.
+The fingerprints cover `ElementNode`, not every parsed runtime property. Legacy can apply appends
+to its parsed supports, setters, and rules without updating that node; prepared loading materializes
+the appends into XML before parsing. A definition difference therefore needs runtime inspection
+before being called a mechanics defect. The former one-difference baseline was incomplete because
+the comparison skipped every pair with matching provenance. Use `legacy-append-audit` to check
+the specific append behaviors against parsed properties on both sides.

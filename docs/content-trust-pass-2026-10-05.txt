@@ -1,0 +1,109 @@
+Content trust pass - October 5, 2026
+
+Scope and outcome
+
+Reviewed the current Aurora.Content 0.9.0 consumer, Legacy XML loading, prepared
+catalog construction, fallback/recovery, and the app's content diagnostics.
+The trust fixes are grouped in focused commits. Existing startup, Android, catalog
+publication, and Content Doctor pagination/tracing changes remain separate.
+Installed XML, live databases, character files, and vendored packages were not
+changed. This was not an Android/device UI run or a full installed-corpus audit.
+
+Remaining Legacy compatibility findings
+
+The explicit legacy-append-audit rehearsal reproduces two differences using the
+actual DataManager.GetCustomFiles/AppendElements and pinned PreparedCatalogReader:
+
+1. Legacy orders supplements/b.xml before homebrew/a.xml. The prepared reader
+   applies those append grants in the opposite order. Declaration precedence and
+   append ordering are separate concerns; correct duplicate winners do not prove
+   that their final mechanics were composed in Legacy order.
+2. Legacy keeps the original description when an append contains a description.
+   The prepared reader adds the appended description to it.
+
+These differences remain in the shared 0.9.0 library. They need a coordinated
+library change and new package uptake; no package was rewritten locally and the
+Legacy oracle was not changed to conceal a disagreement. The fixture demonstrates
+ordering and display-content differences, not a claim that every affected grant
+sequence changes a character's statistics.
+
+Reproduction (from repository root, disposable inputs only):
+  dotnet build tools/ContentDatabaseRehearsal/ContentDatabaseRehearsal.csproj --no-restore -m:1
+  $appendCase = Join-Path $PWD 'buildtmp/content-trust-append-audit'
+  New-Item -ItemType Directory -Force -Path $appendCase | Out-Null
+  Set-Content (Join-Path $appendCase '.aurora-rehearsal') 'disposable synthetic fixture'
+  dotnet tools/ContentDatabaseRehearsal/bin/Debug/net10.0/ContentDatabaseRehearsal.dll legacy-append-audit $appendCase
+
+The audit currently exits 1 because both differences are present. Its JSON report
+is buildtmp/content-trust-append-audit/legacy-append-audit-result.json; authored
+fixture XML is retained beside it. The script is a diagnostic, not a passing
+compatibility test.
+
+Fixed findings
+
+- Parity compared only IDs and aggregate counts. It now compares complete parsed
+  definitions, including rules, supports, setters, descriptions, and list items.
+  Exact ID casing matters. Fingerprinting runs off the UI thread, cancellation
+  propagates, and the audit neither publishes a catalog nor initializes folders.
+- Health status used a library list capped at 24 source-integrity groups. Smaller
+  manual-review findings could disappear behind auto-recovered groups. The app
+  reads all groups for totals/status while retaining bounded display samples.
+- Successful diagnostic reads erased unrelated failures. Failures now clear only
+  when the corresponding operation succeeds or the content directory changes.
+- Alias read errors were swallowed. A damaged alias contract now rejects the
+  candidate and preserves the live catalog. Raw XML fallback also rejects
+  unreadable/present prepared aliases because Legacy XML loading cannot restore
+  those explicit saved-ID forwarding addresses.
+- Valid selection expressions returning no choices were widened by heuristics.
+  Successful empty results now stay empty, including negation, conjunction, spell
+  access, and host XML recovery. Existing malformed-expression recovery remains.
+- Content Doctor treated missing/older/corrupt database reads as empty success.
+  Those states now show an unavailable/error result. Malformed correction XML is
+  reported per file. Imported evidence is read in one transaction, and file edits
+  still use the existing captured-hash protection.
+- Settings/Doctor cancel or invalidate stale results on refresh/disposal and
+  release subscriptions. Diagnostic copying uses cached values and includes read
+  errors and definition differences. Developer-only navigation is hidden when off.
+- A hard-coded optional Goblin ID no longer declares all custom content missing.
+
+What remains necessary
+
+Content Doctor still supports reviewing/accepting upstreamed local corrections,
+inspecting intentional duplicate declarations, and identifying skipped content.
+The skip-unusable-content preference still controls real import behavior.
+Database health remains useful because Compendium reads normalized detail tables.
+Prepared XML/database parity remains useful for cache/definition drift, but both
+sides share preparation policy: it does not certify Legacy runtime equivalence.
+Labels and copied reports now state those limits instead of promising load safety.
+
+Removed obsolete code and diagnostics
+
+Removed the unused raw-user overlay service and MergeUnsynced path, unused
+normalized-table XML reconstruction helpers and source-name query, unreachable
+raw parity reconstruction, and obsolete XML-only-internal exception counters.
+Retained active structured equipment/list recovery and malformed-expression
+recovery. Their messages now describe indexed definitions accurately.
+
+The projection comparator formerly ignored all matching-provenance pairs. It now
+reports those XML differences too. Its output is explicitly definition evidence:
+Legacy mutates parsed properties during appends without updating ElementNode, so
+different XML fingerprints alone are not proof of different runtime mechanics.
+The historical one-difference baseline was removed for that reason.
+
+Validation
+
+The checks below ran on the working tree, including its existing uncommitted
+performance changes. Commit staging isolates the trust fixes from that work.
+
+- 79 focused Aurora.Tests tests passed, zero failed/framework-skipped, covering
+  health, aliases, fallback protection, Doctor, parity, prepared projections, and
+  selection resolution. Synthetic trust regressions do not depend on local packs.
+  Result: artifacts/content-trust-pass/content-trust-pass.trx.
+- The alias-loss regression failed before its fix and passed after it.
+- Three projection-comparator fixtures passed: same-provenance drift, identical
+  XML under different provenance, and identical inputs.
+- Windows app and rehearsal tool builds passed with existing nullable/obsolete
+  warnings. No Android deployment or interactive visual validation was performed.
+- The separate Legacy append diagnostic deliberately reports the two unresolved
+  shared-library differences above. A passing consumer test suite is not a claim
+  that those compatibility findings have been resolved.

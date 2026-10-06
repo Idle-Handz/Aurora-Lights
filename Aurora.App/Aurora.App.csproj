@@ -47,6 +47,22 @@
     <NoWarn>$(NoWarn);CS8618</NoWarn>
   </PropertyGroup>
 
+  <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
+    <!-- Avoid the Mono concurrent-GC crash reproduced during full content refresh.
+         See docs/android-gc-investigation-2026-10-03.txt for evidence and tradeoffs. -->
+    <AndroidEnvironment Include="Platforms\Android\gc.env"
+                        Condition="'$(AuroraDiagnosticConcurrentGC)' != 'true'" />
+    <AndroidEnvironment Include="Platforms\Android\gc-concurrent.env"
+                        Condition="'$(AuroraDiagnosticConcurrentGC)' == 'true'" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(AuroraAndroidDiagnostics)' == 'true' AND $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
+    <DefineConstants>$(DefineConstants);AURORA_ANDROID_DIAGNOSTICS</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(AuroraAndroidDiagnostics)' == 'true' AND $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
+    <AndroidEnvironment Include="Platforms\Android\diagnostics.env" />
+  </ItemGroup>
+
   <ItemGroup>
     <!-- App Icon -->
     <MauiIcon Include="Resources\AppIcon\appicon.png" />
@@ -75,6 +91,8 @@
     <PackageReference Include="MudBlazor" Version="7.*" />
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.0" />
+    <PackageReference Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'"
+                      Include="Xamarin.GooglePlayServices.Auth" Version="121.4.0.1" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.12" />
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.12" />
     <!-- Mac Catalyst folder selection is provided by the toolkit core essentials API. -->

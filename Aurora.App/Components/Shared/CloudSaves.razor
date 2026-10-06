@@ -9,18 +9,22 @@
     <MudText Typo="Typo.body2" Class="mb-3">Open and save characters in Google Drive. Drive is the main save; this device keeps a working copy.</MudText>
     @if (!Cloud.IsSupported)
     {
-        <MudText>Google Drive sign-in is currently available on desktop.</MudText>
+        <MudText>Google Drive sign-in is available on desktop and Android.</MudText>
     }
     else if (!Cloud.IsConfigured)
     {
         <MudAlert Severity="Severity.Info">Google Drive sign-in has not been configured for this installation.</MudAlert>
-        <MudButton OnClick="Configure" Disabled="_busy">Set up Google Drive</MudButton>
+        <MudButton OnClick="Configure" Disabled="@(_busy || !CanChangeSetup)">Set up Google Drive</MudButton>
     }
     else if (!Cloud.IsConnected)
     {
         <MudButton OnClick="Connect" Disabled="_busy" Variant="Variant.Filled" Color="Color.Primary">
             Connect Google Drive
         </MudButton>
+        @if (Cloud.UsesClientConfiguration)
+        {
+            <MudButton OnClick="Configure" Disabled="@(_busy || !CanChangeSetup)">Change Google Drive setup</MudButton>
+        }
     }
     else
     {
@@ -69,6 +73,8 @@
     private string? _error;
     private string _status = "";
     private CancellationTokenSource? _operation;
+    private bool _disposed;
+    private bool CanChangeSetup => !Cloud.IsConnected && !Tabs.Tabs.Any(t => t.CloudSession is not null);
 
     protected override async Task OnInitializedAsync()
     {
@@ -76,16 +82,22 @@
         else if (Cloud.IsConfigured && Cloud.IsSupported)
         {
             // Restore a previous connection without opening a browser. Refusal simply shows Connect.
-            try { await Cloud.ConnectAsync(interactive: false); await Refresh(); }
-            catch { }
+            await Run("Connecting to Google Drive...", async ct =>
+            {
+                try { await Cloud.ConnectAsync(interactive: false, ct); }
+                catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+                catch { return; }
+                _files = await Cloud.ListAsync(ct);
+            });
         }
     }
 
-    private Task Configure() => Run("Setting up Google Drive...", async ct =>
+    private Task Configure()
     {
-        await Cloud.ImportConfigurationAsync();
-    });
-    private Task Connect() => Run("Complete sign-in in your browser...", async ct =>
+        if (!CanChangeSetup) return Task.CompletedTask;
+        return Run("Setting up Google Drive...", ct => Cloud.ImportConfigurationAsync(ct));
+    }
+    private Task Connect() => Run("Complete Google sign-in and allow Drive access...", async ct =>
     {
         await Cloud.ConnectAsync(interactive: true, ct);
         _files = await Cloud.ListAsync(ct);
@@ -109,16 +121,27 @@
     });
     private async Task Run(string status, Func<CancellationToken, Task> operation)
     {
-        if (_busy) return;
+        if (_busy || _disposed) return;
         _busy = true;
         _status = status;
         _error = null;
-        _operation = new CancellationTokenSource();
-        try { await operation(_operation.Token); }
-        catch (OperationCanceledException) { _error = "Cancelled. Any unsent changes remain on this device."; }
-        catch (Exception ex) { _error = ex.Message; }
-        finally { _busy = false; _operation.Dispose(); _operation = null; }
+        using var cancellation = new CancellationTokenSource();
+        _operation = cancellation;
+        try { await operation(cancellation.Token); }
+        catch (OperationCanceledException)
+        {
+            if (!_disposed) _error = "Cancelled. Any unsent changes remain on this device.";
+        }
+        catch (Exception ex)
+        {
+            if (!_disposed) _error = ex.Message;
+        }
+        finally { _busy = false; _operation = null; }
     }
     private void Cancel() => _operation?.Cancel();
-    public void Dispose() { _operation?.Cancel(); }
+    public void Dispose()
+    {
+        _disposed = true;
+        _operation?.Cancel();
+    }
 }

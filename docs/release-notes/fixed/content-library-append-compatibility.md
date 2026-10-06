@@ -1,0 +1,1 @@
+Content imports now use Aurora.Content 0.10.1, restoring Legacy supplement/homebrew append order and description handling. Existing databases require a refresh; an unsafe refresh preserves the previous database and identifies content that needs repair.

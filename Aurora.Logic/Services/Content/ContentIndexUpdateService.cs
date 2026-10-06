@@ -31,7 +31,8 @@ public sealed record ContentIndexUpdateResult(
     int EstimatedEntryCount,
     int IndexFileCount,
     int FailedFileCount,
-    TimeSpan Duration);
+    TimeSpan Duration,
+    int UpdatedContentFileCount = 0);
 
 /// <summary>
 /// Updates Aurora .index content trees without depending on any UI framework.
@@ -94,7 +95,8 @@ public sealed class ContentIndexUpdateService
             EstimatedEntryCount: state.EstimatedEntryCount,
             IndexFileCount: state.IndexFileCount,
             FailedFileCount: state.FailedFileCount,
-            Duration: DateTimeOffset.UtcNow - started);
+            Duration: DateTimeOffset.UtcNow - started,
+            UpdatedContentFileCount: state.UpdatedContentFileCount);
     }
 
     private async Task ProcessIndexAsync(
@@ -479,13 +481,16 @@ public sealed class ContentIndexUpdateService
     {
         string extension = Path.GetExtension(destinationPath);
         bool isIndex = extension.Equals(".index", StringComparison.OrdinalIgnoreCase);
-        if (!isIndex && !extension.Equals(".xml", StringComparison.OrdinalIgnoreCase)) return;
+        bool isProposal = extension.Equals(".aurora-correction", StringComparison.OrdinalIgnoreCase);
+        if (!isIndex && !isProposal && !extension.Equals(".xml", StringComparison.OrdinalIgnoreCase)) return;
 
         using var stream = new MemoryStream(bytes, writable: false);
         using var reader = XmlReader.Create(stream, new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit });
         XDocument document = XDocument.Load(reader);
         if (isIndex && document.Root?.Name != "index")
             throw new InvalidDataException("The downloaded file is not an Aurora index.");
+        if (isProposal && document.Root?.Name != "elements")
+            throw new InvalidDataException("The downloaded file is not an Aurora correction proposal.");
     }
 
     private static string GetCachePath(string rootDirectory, string url)
@@ -565,6 +570,7 @@ public sealed class ContentIndexUpdateService
         public int ProcessedEntryCount { get; private set; }
         public int EstimatedEntryCount { get; private set; }
         public int UpdatedFileCount { get; private set; }
+        public int UpdatedContentFileCount { get; private set; }
         public int FailedFileCount { get; private set; }
         public int IndexFileCount { get; private set; }
 
@@ -588,7 +594,11 @@ public sealed class ContentIndexUpdateService
             lock (_gate)
             {
                 ProcessedEntryCount++;
-                if (updated) UpdatedFileCount++;
+                if (updated)
+                {
+                    UpdatedFileCount++;
+                    if (IsContentFile(fileName)) UpdatedContentFileCount++;
+                }
                 if (failed) FailedFileCount++;
             }
 
@@ -603,9 +613,16 @@ public sealed class ContentIndexUpdateService
         public void MarkLocalChange(string fileName)
         {
             lock (_gate)
+            {
                 UpdatedFileCount++;
+                if (IsContentFile(fileName)) UpdatedContentFileCount++;
+            }
             Report($"{fileName} removed as obsolete", currentFileName: fileName);
         }
+
+        // Indexes and cached proposals cannot change the active element database.
+        private static bool IsContentFile(string fileName) =>
+            Path.GetExtension(fileName).Equals(".xml", StringComparison.OrdinalIgnoreCase);
 
         public void MarkFailure(string fileName, string failure)
         {

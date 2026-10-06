@@ -1,0 +1,415 @@
+Android content refresh: likely trigger and local mitigation
+2026-10-03
+
+Conclusion
+The strongest explanation for the captured refresh crashes is a Mono garbage-
+collector defect exposed by the larger allocation workload of the shared content
+pipeline. Disabling concurrent collection allowed the previously failing v0.9.3
+scenario to finish. This is an Android runtime mitigation, not a reduction in
+content correctness checks or a rollback of the library.
+
+Likely responsible application change
+v0.8.4 used AuroraContentImporter.Import -> AuroraXmlCatalogReader.BuildCatalog
+-> AuroraSqliteImporter.Import. It already imported in process on Android.
+Commit b0cb4c1f0ea69d6e3f4075c78d13038ceaf46a01 (September 19) connected the app
+to ContentImport.ImportAsync through the new Aurora.DataIntegration project.
+That path runs LocalCorrectionSync and ContentPreparation, then the catalog
+builder and writer, then candidate validation/provenance and atomic activation.
+Later library updates extend that pipeline further.
+
+ContentPreparation.FinalizeDeclarations holds file XML documents and declaration
+records while resolving definitions and appends; finalized/provenance XML remains
+available during import. The live application catalog is also retained so a
+failed refresh can preserve working content. The prepared reader was introduced
+separately in 394b2da, and can add allocation pressure during startup/reload.
+This is a workload/lifetime change, not an inherent problem with NuGet packaging.
+
+The interval has not been fully bisected. b0cb4c1 is the likely integration point,
+not a proven first-bad commit. No standalone Settings or initial-load crash was
+reproduced in the original three-version comparison. The hypothesis does not
+establish that every reported phone crash has the same cause.
+
+Runtime evidence
+- Original x64 v0.9.0 and v0.9.3 full refreshes died with SIGSEGV on a .NET TP
+  Worker, with the same leading libmonosgen-2.0.so frame addresses. Android exit
+  history recorded APP CRASH(NATIVE), status 11, rather than a low-memory kill.
+- Mono BuildId: bfc1d82f1672c69aa866f11ccf1c730c7726fc74, local runtime 10.0.12.
+- At the fault PC 0x2c3b04, twelve instruction bytes uniquely match push_object+4
+  in the same installed runtime's libmonosgen-2.0.a. Another frame matches
+  sgen_alloc_obj_nolock. This is machine-code matching against the companion
+  archive, not complete DWARF symbolication: the symbol server did not supply
+  this build's debug file. Other frames were not independently fully resolved.
+- dotnet/runtime issue 123495 reports the same push_object/Tarjan bridge crash
+  family and was consolidated into 123537. A runtime maintainer recommended
+  testing MONO_GC_PARAMS=major=marksweep. Reports include ARM64 devices and
+  allocation-heavy XML work, but those reports alone do not prove our cause.
+  https://github.com/dotnet/runtime/issues/123495
+  https://github.com/dotnet/runtime/issues/123537
+- Extracting libxamarin-app.so from both the original x64 APK and the published
+  v0.9.3 ARM64 APK found major=marksweep-conc. The experimental APK contains only
+  major=marksweep for that setting. See gc-fix/apk-settings.json.
+
+Local change
+Aurora.App/Platforms/Android/gc.env sets MONO_GC_PARAMS=major=marksweep and is
+included as AndroidEnvironment only for the Android target. The explicit file
+was chosen because an initial trial using AndroidEnableSGenConcurrent=false
+still left marksweep-conc in the generated package; that trial was discarded.
+The actual packaged environment was verified, not just the MSBuild input.
+ARM64 project evaluation also includes the new environment item.
+
+This keeps Mono, the library version, XML inputs, correction/conflict policies,
+database schema, and activation safeguards intact. Windows and macOS do not
+include this environment file. Non-concurrent collection can increase pause
+times; it does not cure the importer's large working set. No nursery-size tuning
+or experimental CoreCLR migration is included in this fix.
+
+Controlled emulator validation
+Same isolated Android 13/API33 x64 emulator, 2 GiB RAM, same 1189 XML files and
+same v0.9.3 Release source archive as the earlier comparison. Only the explicit
+GC environment item/file changed for the successful trial. The archive was built
+with local .NET SDK 10.0.401 / Android workload 36.1.69 / Mono 10.0.12, with Release
+trimming and the project's existing AOT setting. It is not the published ARM64
+binary or a physical-device run. The emulator uses an old Android 13 preview
+image; no claim is made that it emulates a Samsung S22 Ultra.
+
+Before: v0.9.3 native crash roughly 45-49 seconds into refresh; v0.9.0 also crashed.
+After: full refresh, validation, activation, and app content reload completed;
+the UI reported 20876 elements from 1189 changed files (0 unchanged). Success
+was captured about 7m15s after the monitored refresh started. This is an upper
+bound from screenshot timing, not a precise completion benchmark. One full
+mitigated refresh was run; this is not a repeated stress-test reliability claim.
+
+Activated database: 210866176 bytes, elements=20876, source_files=1189,
+content_prepared_elements=20876, PRAGMA quick_check=ok, foreign_key_check empty.
+v0.8.4's earlier 21174 count is not a parity oracle for the newer conflict and
+preparation rules. These checks confirm structure and completion, not content
+equivalence across versions.
+
+Memory pressure remains: highest sampled refresh RSS was 1118.2 MiB and swap PSS
+901.8 MiB (different samples). The run was slow and visibly paused at times.
+The failing default-GC trial cannot provide a comparable full-refresh duration,
+so a slowdown factor attributable to the setting has not been measured.
+
+Evidence is local under buildtmp/android-ab-20261003:
+- report.txt, provenance.json, fixture-manifest.json: initial comparison.
+- v0.9.0/refresh and v0.9.3/refresh: original crashes.
+- match-native.py and native-code-matches.txt: native instruction matching.
+- gc-fix/build.log and apk-settings.json: build and packaged settings.
+- gc-fix/refresh-1 and refresh-1-cont: progress, memory, logcat, exit history.
+- gc-fix/refresh-1-cont/final.png: successful full refresh and reload.
+- gc-fix/refreshed.validation.json: read-only database checks.
+- gc-fix/post-refresh: subsequent observation; no native crash or ANR recorded.
+- gc-fix/database-restart: cold start with the newly prepared database, Settings
+  opened, 90-second observation completed with no process loss or crash/ANR log.
+
+Remaining work before release / longer-term solution
+1. Verify a release-signed ARM64 build on the user's Samsung Galaxy S22 Ultra,
+   with its actual Android/One UI version and content set. Exercise cold load,
+   Settings, full/incremental refresh, cancellation, and restart. The device
+   model makes the ARM64 runtime hypothesis relevant but does not prove it.
+2. Reduce retained XML copies in the library: stage declaration/provenance XML
+   in a temporary SQLite store indexed by ID, process XML file-by-file, and feed
+   finalized records to the writer in bounded batches. Preserve cross-file
+   conflict/correction decisions and candidate activation; do not simply bypass
+   those checks or discard the working catalog at refresh start.
+3. Measure catalog allocation/lifetimes during reload and keep expensive reads
+   off Settings renders. Profile before changing rollback/lifetime semantics.
+4. Add an installed Android Release emulator smoke test with a representative
+   corpus. Require observed completion, restart, and absence of native exits;
+   mobile browser viewport tests do not exercise this runtime.
+5. Re-evaluate this temporary GC setting when an independently validated runtime
+   update resolves the defect. A runtime migration is a larger compatibility and
+   performance exercise, not an automatic dependency bump in this patch.
+
+At the end of the original emulator investigation, no commits, PRs, release
+publication, or changes to the user's physical device had been made. Unrelated
+existing working-tree changes were preserved.
+
+Physical-device follow-up, 2026-10-05 (America/Los_Angeles)
+The user installed the matching-signed ARM64 0.9.3-gctest build, version code
+213347481, on an SM-S908U1 (Galaxy S22 Ultra), Android 16 / One UI 8. The user
+reported that Refresh Database completed, and that menus and character building
+responded to touch afterward, but Android kept repeating its not-responding
+dialog. Do not describe each repeated dialog as a new UI freeze.
+
+Captured evidence:
+- One input-dispatch ANR event in the retained event log: 00:31:58.060, PID 20827,
+  waited 10000 ms for MotionEvent. DropBox contains one corresponding new report
+  at 00:32:09, and the follow-up index contains no additional report for this run.
+- Earlier logcat records a 17077 ms frame at 00:32:02.245 and later shorter stalls.
+  This proves an initial responsiveness problem, not ongoing unresponsiveness
+  during every popup or a measured 17-second Mono GC pause.
+- A memory sample after that ANR recorded PSS 1519809 KB and RSS 1619988 KB.
+- The first waiting-channel sample has the main thread waiting on a futex and
+  several managed threads suspended in signal waits. Stack capture initially
+  timed out; the later main stack is an unresolved anonymous managed/JIT frame.
+  The trace does not identify a responsible managed method or prove GC causality.
+  The short ART GC durations in logcat describe Java GC, not Mono's collector.
+- At 00:36:42.269 the user chose Close app. Exit history records reason ANR with
+  description "user request after error" and references the ORIGINAL 00:31:58
+  trace. There is no captured new native SIGSEGV in this run.
+- The phone also retains an ANR report for the original 0.9.3 release on October
+  2. ANRs therefore predate the GC workaround; this does not rule out increased
+  pauses from non-concurrent collection.
+
+Interpretation: a real initial timeout was followed by apparently repeated
+presentation of the same ANR. Android 16's AppNotRespondingDialog can reschedule
+the same continuous input-ANR dialog after Wait, while retaining the report.
+ActivityManagerService dismisses it when notified that input dispatch resumed.
+This is consistent with the user's recovered-but-repeated-dialog observation,
+but we have not proved a Samsung framework defect or the missed recovery path.
+Primary source:
+https://github.com/aosp-mirror/platform_frameworks_base/blob/android16-release/services/core/java/com/android/server/am/AppNotRespondingDialog.java
+https://github.com/aosp-mirror/platform_frameworks_base/blob/android16-release/services/core/java/com/android/server/am/ActivityManagerService.java
+
+The GC mitigation has not passed physical-device responsiveness validation.
+Import already runs on Task.Run. Remaining synchronous XML fallback and catalog
+publication work are candidates for profiling, not established causes here.
+Next work should correlate import/reload phases, UI heartbeat and managed GC
+pauses, then reduce retained XML and move proven compute work off the UI context
+while preserving notification/thread ownership. Do not suppress Android's dialog
+or count completion of refresh alone as a smoke-test pass.
+
+Evidence: buildtmp/android-ab-20261003/phone-test-20261005/
+- anr-20261005-003358/: logcat, event, memory, DropBox traces and follow-up captures.
+- phone-results-20261005-003647/: user's post-close exit and package diagnostics.
+The local log collector was updated to recover the last app PID from exit
+history, so it can collect retained logcat after Close app as well as ANR events.
+No additional app-code change, commit, PR, or release was made in this follow-up.
+
+Why the phone's 0.9.0-to-0.9.3 regression remains unresolved
+The earlier native-crash mitigation does not identify the change responsible for
+this ANR. The user's report that 0.8.4/0.9.0 did not show this symptom is important;
+the emulator's 0.9.0 native crash is a different observation, not a reproduction
+of that phone-version comparison.
+
+- Tag comparison: the import Task.Run wrapper and ReloadContentAsync are
+  unchanged between 0.9.0 and 0.9.3. XML fallback and synchronous source-list
+  rebuilding already existed in 0.9.0. Settings changes remove work; later
+  spell-proxy changes defer materialization rather than proving a new import stall.
+- Aurora.Content changes from 0.7.1 to 0.9.0 through app commits 77ba8f1 and
+  a066867. Collision retention, supplier ordering and classification handling
+  changed. The documented 0.7.1 classification failure could abort some full
+  imports that later versions complete. Whether that explains THIS user's older
+  successful sessions has not been established.
+- Existing desktop measurements in docs/platform-investigation-2026-10-03.md
+  report similar or lower import time/working set with the newer library. These
+  are desktop results, but they contradict assuming general growth after 0.9.0.
+- Direct APK comparison: published 0.9.0, the backed-up phone 0.9.0, and published
+  0.9.3 have BYTE-IDENTICAL libmonosgen-2.0.so and major=marksweep-conc. SHA256:
+  ceb774ae047b8ce79f1f80d7ab46472f9eb5d0d74a9070ad8fa5305413f6a5b1.
+  BuildId 54924a38a8872da3a0bb85f533898e89895508b7, runtime 10.0.12.0,
+  10.0.1226.42308 / commit 95017c711e6afc1085133d440e42b4bd78155701.
+  Thus a changed Mono binary or default GC mode does not explain those releases.
+- The locally rebuilt ARM64 gctest uses the local 10.0.12 runtime from a DIFFERENT
+  build (10.0.1226.41902 / f3c422da807f2a8698a7b1b95cb1badd4572ac4c), as well as
+  the non-concurrent setting. Do not call the published-vs-gctest ARM64 comparison
+  a one-variable experiment. The original x64 emulator mitigation experiment did
+  keep the locally installed runtime constant.
+
+Comparison evidence: phone-test-20261005/apk-runtime-comparison.json. A reliable
+first-bad-change determination requires the same frozen corpus and starting DB,
+matched runtime/GC settings, and intermediate app builds (0.9.1, 0.9.2) or a commit
+bisect. Do not downgrade/uninstall the user's live installation to perform this.
+
+Instrumented S22 Ultra follow-up (October 5, 2026)
+- Kept the user's normal com.auroralights.app installation unchanged. Installed
+  com.auroralights.diagnostics with opt-in Android main-thread/observer heartbeats,
+  content phase timings and Mono GC logs. Runtime matches the local rebuilt APK,
+  not the published release runtime; collector explicitly major=marksweep-conc.
+- Frozen 1512 XML + 126 index files from the verified phone backup. No starting
+  database or characters, automatic startup content downloads disabled.
+- Initial preload: 57.902s, including XML fallback 43.614s and source-list rebuild
+  14.148s. UI heartbeat age reached 18.370s while observer gaps stayed <=582ms.
+  Source rebuild GC pauses totalled 1.633s, individual maximum 12.15ms. This
+  identifies synchronous application work, not a 14-second whole-runtime pause.
+- A later 6.925s UI frame followed touch input, consistent with Settings building
+  its separate SourcesManager. This method was not individually traced.
+- Refresh after startup completed in 72.777s: worker import 54.990s; SQLite reload
+  17.745s; source rebuilding 707.7ms. No delayed heartbeats during refresh; maximum
+  sampled UI age 239ms. No captured ANR/native crash in this diagnostic session.
+  This does not reproduce the user's original ANR or test startup/refresh overlap.
+- Source-list initialization deep-copied each Source's ElementNode via reflection,
+  following XmlNode parent/OwnerDocument/siblings and copying unrelated XML too.
+  First CharacterManager access can initialize it and immediately refresh it;
+  Settings constructs another manager. The existing DB loader uses one document
+  per element, explaining why its source copies are cheaper than raw XML copies.
+- Implemented opt-in CopyWithDetachedXml for source snapshots only, preserving
+  independent non-XML fields. Existing Copy callers are unchanged. Membership
+  lookup now uses a case-insensitive first-wins dictionary and ordered missing
+  source names instead of scanning every source for each element.
+- Desktop probe on all 306 raw Source declarations: copying 749.5ms / 156.57MiB
+  before, 21.9ms / 5.19MiB after. All source XML subtrees semantically equivalent;
+  17 empty paired tags normalize to self-closing tags. These are not phone times.
+- Focused source/catalog/required-source tests passed 39/39; one additional
+  empty-element test subsequently passed with the complete 5-test clone subset.
+- Remaining XML fallback tail performs synchronous appends, support resolution,
+  generated-element/template work and item initialization. Moving the whole
+  method to Task.Run would also move shared catalog mutation and notifications;
+  that is a larger ownership change requiring separate profiling and tests.
+Evidence: buildtmp/android-anr-20261005/device-kit/ (startup and baseline-complete),
+  native-analysis/source-clone-probe/, corpus-comparison/, source-fix-kit/.
+
+Source fix phone result and next bounded fixes
+- Same ARM64 runtime and concurrent GC, same frozen raw XML/no initial DB:
+  source rebuild 14147.8 -> 660.3ms; preload 57.902 -> 44.000s; maximum sampled
+  startup UI age 18370 -> 4942ms. XML fallback itself stayed about43.2s.
+- Settings navigation after preload had no delayed heartbeats. Refresh completed
+  in72.864s with no delayed heartbeats; post-SQLite source rebuild170.3ms.
+- Later 2.223s and4.152s UI frames remained. The user believes they were looking
+  at Content Doctor. There is no new ANR or native crash in this captured run.
+- Content Doctor's conflict view was added in71c6617 (Sept29), after app0.9.0
+  (Sept25). It rendered all2268 conflict IDs /4537 declarations from this corpus
+  at once. Database reads were already in Task.Run. Changed the view to25cards
+  perpage, preserving all definitions and winner labels, with diagnostic query
+  and render-completion markers. This is a concrete later-version UI change;
+  it is not proof that it caused the original Refresh Database ANR.
+- XML fallback still eagerly generated every spell/list proxy even though the
+  prepared-database path deferred them. It now uses the same Enabled/Prime
+  behavior, retaining eager mode for callers that disable lazy proxies. Added
+  sparse phase timings to distinguish appends/class templates/proxies/items.
+- Actual XML fallback test fails before the change when lazy=true, passes after;
+  eager compatibility retained. New2cases plus existing7proxytests passed9/9.
+- Combined diagnostic APK will use major=marksweep (native crash workaround).
+  Thus this final combined trial changes collector from the source-only trial;
+  use the previous matched-GC pair for the isolated source-copy comparison.
+
+Combined phone verification completed (01:40 local)
+Package: com.auroralights.contentfix (Aurora-ContentFix), 0.9.3-contentfix.
+ARM64 Release with opt-in diagnostics; the local Mono binary and major=marksweep
+were verified in the APK and runtime logs (session f7ef9461, PID 19021).
+
+- Fresh frozen corpus, no starting DB: preload 45.805 seconds; source rebuilding
+  327.6 ms; maximum sampled startup UI age 2,705 ms. This trial also changes GC
+  mode, so do not attribute overall time differences to a single edit.
+- Remaining synchronous XML tail: appends 449.0 ms, class/ASI features 1,171.4 ms,
+  deferred spell proxies 3.2 ms, item details 522.0 ms.
+- Refresh Database completed in 71.695 seconds: 20,060 elements / 1,512 files.
+- Opened Settings/Sources and Data; sources listed normally.
+- Content Doctor loaded its data in 171.4 ms and reached its render callback
+  118.4 ms later. It displayed 25 cards out of 2,268 conflicts. Next changed
+  1-25 to 26-50 in 28.2 ms. Re-check loaded in 145.7 ms, returned to 1-25 and
+  reached its render callback 58.7 ms later. Screenshots verify these controls.
+  OnAfterRender timing does not measure final native paint completion.
+- No new ANR or native crash captured. The historical 00:31:58 normal-app ANR
+  remains in the system event buffer; it does not belong to these later trials.
+- Final combined focused suite: 49 passed, 0 failed, 0 skipped in one run.
+  Android build: 0 errors, with existing nullable warnings.
+- Changes remain local and uncommitted. The normal installation and its data
+  were preserved. Three separate diagnostic apps retain their comparison states;
+  the latest combined test app is Aurora-ContentFix.
+
+Plan recorded before the XML worker change below
+1. XML fallback currently mutates the shared catalog and notifies listeners.
+   Build a private candidate off the UI thread, validate it, then publish the
+   complete catalog once under the load/character coordination used by the DB
+   path. Preserve the previous catalog if construction fails. Wrapping the
+   current method in Task.Run would change event and thread ownership and could
+   introduce partially loaded views or concurrent collection mutations.
+2. Repeat cold/warm starts, Settings/Content Doctor, refresh during startup,
+   repeated refresh, and character creation/reopen/save on the emulator and
+   physical device. Capture heartbeat, exit reasons, native faults and ANRs.
+   A completed import alone is not a smoke-test pass. Existing platform CI did
+   not provide this native Android performance and interaction coverage.
+3. Keep the original version regression distinct from the proven stalls above.
+   The original release's Mono GC trace and the x64 native crash remain relevant,
+   but a single first-bad app commit for the phone ANR has not been established.
+   Content Doctor's unbounded rendering was added after 0.9.0; source XML copying
+   predates it. With the frozen current corpus, old library 0.7.1 aborts during
+   classification while 0.9.0 completes import. That changes the work performed;
+   it does not establish what happened in every older successful phone session.
+
+XML worker and completed-catalog publication (Oct 5, 02:18 local)
+
+Implemented DataManager.InitializeElementDataAsync as a caller-context wrapper
+around private worker preparation. Directory/settings inputs are captured before
+Task.Run. XML reads, parsing, appends, generated class features, generated items,
+and item detail initialization operate on a private candidate. The prior catalog,
+populated flag, aliases, and deferred spell state remain available until success.
+Changing content directories during preparation rejects the stale candidate.
+
+Publication preserves the collection instance and uses ReplaceAll with one Reset
+after all entries are present. Alias changes are staged, proxy state is primed at
+publication, and synchronous observers' newly generated aliases are retained.
+Preparation errors preserve live state; synchronous publication errors restore it.
+Progress uses fresh snapshots coalesced onto the caller context, with queued work
+suppressed after completion. Dialogs and notifications remain on the caller context.
+The application's existing element/character locks still coordinate reloads; this
+does not make arbitrary background enumeration of ObservableCollection thread-safe.
+
+Validation:
+- 64 focused tests passed, zero failed/skipped, including new caller-context,
+  completed-catalog notification, queued progress, failure preservation, folder
+  switch, observer-generated aliases, and ReplaceAll tests. This was not a full
+  repository test run. Evidence: buildtmp/android-anr-20261005/
+  xml-worker-regressions.log.
+- ARM64 and x64 Release diagnostic APK builds succeeded. Both use version code4,
+  display version0.9.3-xmlworker and the separate com.auroralights.contentfix app.
+  The normal phone app remains version0.9.3-gctest and was not replaced.
+- Artifact hashes, frozen fixture, install/capture/cold-trial scripts, logs and
+  UI evidence are in buildtmp/android-anr-20261005/xml-worker-kit/.
+  Cold preparation preserved the existing diagnostic SQLite DB by timestamped
+  rename. No normal app data or user characters were removed.
+
+S22 Ultra (SM-S908U1, Android16), frozen1512XML/126index corpus:
+- Valid fresh XML startup PID31999/session17825085 at02:06:29. The initial02:04
+  trial launched while the phone was locked and is excluded from responsiveness
+  comparisons. The user unlocked the phone before the valid restart.
+- Matched prior combined build: same ARM64 Mono SHA256
+  13c160bf504107e2fed22f74bf88d6fde281c4334e081bb48fdb26add060fbd8
+  and major=marksweep. Preload45.805s ->47.445s. This improves responsiveness,
+  not total loading speed.
+- Maximum logged UI age DURING preload2705ms ->168ms; delayed heartbeat records
+  4 ->0. All XML finalization markers now run on worker thread7/context=none,
+  previously main thread1/SyncContext. Source rebuild remains main,364.9ms.
+  Settings navigation worked while XML loading was still active.
+- Full refresh69.854s; import52.553s, DB read14.795s, postprocess2.202s on workers.
+  Main publication26.3ms and source rebuild149.7ms. Compendium navigation worked
+  during refresh. Maximum logged UI age during refresh369ms.
+- Created XMLWorker-Smoke only in the diagnostic app, chose Aarakocra, observed
+  automatic save, closed and reopened it. Pulled character XML parses and contains
+  ID_WOTC_MOTM_RACE_AARAKOCRA; reopened UI shows the saved race.
+- First complete session:92 logged heartbeats, no delayed record. No scoped ANR,
+  fatal exception or native crash. After-refresh UI age maximum248ms.
+- Database startup PID4368/session9b329c10:15.928s. Second refresh17.292s,
+  explicitly database-current (no reimport). Its read14.499s/postprocess2.278s
+  were workers; main publication7.6ms/source rebuild156.6ms.
+- Content Doctor query201.0ms/render callback107.7ms; Next changed1-25 to26-50
+  of2268 (render callback296.2ms). Re-check query162.1ms/render callback69.7ms
+  returned to1-25. These callbacks do not measure final native paint completion.
+- Second session:39 logged heartbeats, no delayed record; max UI age400ms,
+  max observer gap503ms. No scoped ANR or crash; earlier intentional force-stops
+  and package updates are recorded in exit history and excluded from failures.
+- Caught GitHub DNS failures and optional resource/WebView messages remain;
+  isolated31/32 skipped-frame messages are shorter than the delayed threshold.
+  Managed memory reached about905MiB in the first session. No leak conclusion is
+  established by this bounded trial.
+
+Android emulator (API33, native x64, 2048MiB) verification:
+- Initial shell-extracted fixture lacked emulator app access; that setup trial
+  is excluded. Corrected access only under the diagnostic app's content folder.
+  Prepare-Diagnostics now applies that correction only when ro.kernel.qemu=1.
+- Valid fresh XML startup88.441s, Settings/Content/Data usable during loading.
+  Full refresh80.336s, final UI reported20060elements/1512files. Compendium
+  navigation during refresh and Content Doctor paging succeeded.
+- Two database-backed restarts completed24.316s and29.209s; repeat refresh also
+  completed. These launches did not overlap initial loading with refresh, and
+  are not counted as overlap evidence.
+- A separate fresh-XML overlap trial preserved the prior diagnostic DB and
+  launched PID7770/session7fca4b41. XML began02:21:44.447; refresh began
+  02:22:02.873, with import on a separate worker while XML was still active.
+  XML completed117.608s, initial preload118.124s, refresh155.917s. Contention
+  increased elapsed times but did not prevent completion.
+- Overlap capture:60 logged heartbeats, max UI age310ms, observer gap516ms,
+  zero delayed records. Final UI showed20060elements/1512files, and the explicit
+  ANR event capture was empty. AppPID7770 remained running; no native crash or
+  fatal exception was recorded. Capture completed normally. Exit history records the earlier intentional stops,
+  with no failure for the tested PID. This is emulator overlap coverage; the
+  phone's separate startup/refresh cases do not establish overlap on the S22.
+
+Interpretation: heartbeat maxima are samples, not worst-case latency guarantees.
+The observer checks every500ms and normally logs every5s, more often if UI age or
+observer delay reaches1500ms. These trials address the measured XML startup stall
+and exercise the earlier fixes. They do not establish a single historical
+first-bad commit for every reported phone ANR, nor replace long-running device use.
+Changes remain local and uncommitted; no release has been published.

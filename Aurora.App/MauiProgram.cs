@@ -19,6 +19,11 @@ public static class MauiProgram
         var appContext = new MauiApplicationContext();
         ApplicationContext.SetCurrent(appContext);
 
+#if AURORA_ANDROID_DIAGNOSTICS
+        // Diagnostic trials use a frozen content snapshot. Do not download newer inputs at launch.
+        appContext.Settings.StartupCheckForContentUpdated = false;
+#endif
+
 #if ANDROID
         // Default to external app-specific storage on Android so user data survives uninstalls.
         // /storage/emulated/0/Android/data/{package}/files — preserved across updates,

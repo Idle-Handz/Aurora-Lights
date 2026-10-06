@@ -15,8 +15,8 @@ using System.Xml;
 namespace Aurora.App.Services;
 
 /// <summary>
-/// Lightweight XML fallback index for cases where the SQLite projection loses
-/// selection supports, list items, or structured starting equipment.
+/// Index of the published prepared definitions (or XML when no catalog has been published).
+/// Supplies structured equipment/list details and recovery for malformed selection expressions.
 /// </summary>
 public static class XmlContentFallbackService
 {
@@ -70,59 +70,6 @@ public static class XmlContentFallbackService
             byId[entry.Id] = entry;
         }
         return CreateSnapshot(byId);
-    }
-
-    /// <summary>
-    /// Materializes every XML element from all custom content directories that is not already
-    /// present in the live collection. Call this after a DB load to pull in any XML files that
-    /// have not yet been synced to the database. User-override files (under custom/user/) are
-    /// intentionally skipped here because <see cref="RawUserXmlOverlayService"/> handles them
-    /// with full upsert semantics including append-node support.
-    /// </summary>
-    public static void MergeUnsynced(ElementBaseCollection? target = null)
-    {
-        try
-        {
-            XmlFallbackSnapshot snapshot = target == null ? EnsureLoaded() : LoadSnapshot();
-
-            HashSet<string> liveIds = (target ?? DataManager.Current.ElementsCollection)
-                .Where(e => !string.IsNullOrWhiteSpace(e.Id))
-                .Select(e => e.Id)
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-            int added = 0;
-            int failed = 0;
-            foreach (XmlFallbackElement xmlElement in snapshot.ById.Values)
-            {
-                if (xmlElement.IsUserOverride)
-                    continue;
-
-                if (liveIds.Contains(xmlElement.Id))
-                    continue;
-
-                ElementBase? materialized = TryMaterializeElement(xmlElement, replaceExisting: false, target);
-                if (materialized != null)
-                {
-                    liveIds.Add(materialized.Id);
-                    added++;
-                }
-                else
-                {
-                    failed++;
-                }
-            }
-
-            if (added > 0 || failed > 0)
-            {
-                DebugLogService.Instance.Log(LogLevel.Info,
-                    $"[XmlContentFallback] merged {added} unsynced XML element(s) into live collection" +
-                    (failed > 0 ? $"; {failed} failed to materialize" : ""));
-            }
-        }
-        catch (Exception ex)
-        {
-            DebugLogService.Instance.LogException(ex, "XmlContentFallbackService.MergeUnsynced");
-        }
     }
 
     public static IReadOnlyList<ElementBase> GetElementFallbacks(SelectRule rule)
@@ -183,7 +130,7 @@ public static class XmlContentFallbackService
             {
                 DebugLogService.Instance.Log(LogLevel.Warning,
                     $"[XmlContentFallback] recovered {result.Count} option(s) for " +
-                    $"'{rule.Attributes.Name ?? rule.Attributes.Type}' from raw XML" +
+                    $"'{rule.Attributes.Name ?? rule.Attributes.Type}' from indexed definitions" +
                     (materializedElements > 0 ? $"; materialized {materializedElements} XML-only element(s)" : "") +
                     (replacedUserOverrides > 0 ? $"; replaced {replacedUserOverrides} live element(s) with custom/user XML" : "") +
                     (unresolvedXmlElements > 0 ? $"; left {unresolvedXmlElements} XML element(s) unresolved" : ""));
@@ -239,7 +186,7 @@ public static class XmlContentFallbackService
                     {
                         DebugLogService.Instance.Log(LogLevel.Warning,
                             $"[XmlContentFallback] recovered {items.Count} list item(s) for " +
-                            $"'{ruleName ?? "List"}' on '{ownerId}' from raw XML");
+                            $"'{ruleName ?? "List"}' on '{ownerId}' from indexed definitions");
                         return items;
                     }
                 }
@@ -269,7 +216,7 @@ public static class XmlContentFallbackService
             if (block.HasContent)
             {
                 DebugLogService.Instance.Log(LogLevel.Warning,
-                    $"[XmlContentFallback] recovered starting equipment for '{elementId}' from raw XML");
+                    $"[XmlContentFallback] read starting equipment for '{elementId}' from indexed definitions");
             }
 
             return block;
@@ -455,7 +402,7 @@ public static class XmlContentFallbackService
             target.IsUserOverride = true;
     }
 
-    private static ElementBase? TryMaterializeElement(XmlFallbackElement xmlElement, bool replaceExisting, ElementBaseCollection? target = null)
+    private static ElementBase? TryMaterializeElement(XmlFallbackElement xmlElement, bool replaceExisting)
     {
         try
         {
@@ -468,11 +415,6 @@ public static class XmlContentFallbackService
 
             ElementBase element = parser.ParseElement(node);
             ElementProvenance.SetContentFilePath(element, xmlElement.ContentFilePath);
-            if (target != null)
-            {
-                target.Add(element);
-                return element;
-            }
             return UpsertLiveElement(element, replaceExisting);
         }
         catch (Exception ex)

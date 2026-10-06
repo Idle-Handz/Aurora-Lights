@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text.RegularExpressions;
@@ -36,6 +38,25 @@ public class ElementBaseCollection : ObservableCollection<ElementBase>
 		{
 			Add(element);
 		}
+	}
+
+	/// <summary>
+	/// Replaces the contents in place and notifies subscribers once the complete
+	/// replacement is available. Enumeration failures leave the collection unchanged.
+	/// </summary>
+	public void ReplaceAll(IEnumerable<ElementBase> elements)
+	{
+		ArgumentNullException.ThrowIfNull(elements);
+		ElementBase[] replacement = elements.ToArray();
+		CheckReentrancy();
+		Items.Clear();
+		foreach (ElementBase element in replacement)
+		{
+			Items.Add(element);
+		}
+		OnPropertyChanged(new PropertyChangedEventArgs(nameof(Count)));
+		OnPropertyChanged(new PropertyChangedEventArgs("Item[]"));
+		OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
 	}
 
 	public bool ContainsType(string type)

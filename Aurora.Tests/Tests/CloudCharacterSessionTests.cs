@@ -104,6 +104,115 @@ public sealed class CloudCharacterSessionTests : IDisposable
         File.ReadAllBytes(path).Should().Equal(store.Remote.Content);
         string backup = Directory.GetFiles(Path.Combine(Path.GetDirectoryName(path)!, "recovery"), "*.dnd5e").Single();
         File.ReadAllBytes(backup).Should().Equal(unsent);
+        second.RecoveryPath.Should().Be(backup);
+    }
+
+    [Theory]
+    [InlineData(false, null)]
+    [InlineData(true, null)]
+    [InlineData(false, "null")]
+    [InlineData(false, "{broken")]
+    [InlineData(false, "{}")]
+    [InlineData(false, "{\"Metadata\":{}}")]
+    public async Task ReopenWithUnusableReceipt_ArchivesExistingCharacterAndSession(bool sessionOnly, string? receiptContent)
+    {
+        var store = new FakeStore();
+        string path;
+        byte[] unsent = Character("Unsent without receipt");
+        byte[] sessionState = "{\"CurrentHp\":3}"u8.ToArray();
+        using (var first = await Open(store))
+        {
+            path = first.FilePath;
+            File.WriteAllBytes(path, unsent);
+            File.WriteAllBytes(first.SessionPath, sessionState);
+        }
+        File.Delete(path + ".cloud.json");
+        if (receiptContent is not null) File.WriteAllText(path + ".cloud.json", receiptContent);
+        if (sessionOnly) File.Delete(path);
+        store.Remote = new(Metadata("8"), Character("Cloud wins"));
+
+        using var second = await Open(store);
+
+        File.ReadAllBytes(path).Should().Equal(store.Remote.Content);
+        second.RecoveryPath.Should().NotBeNull();
+        File.ReadAllBytes(second.RecoveryPath + ".session.json").Should().Equal(sessionState);
+        if (!sessionOnly) File.ReadAllBytes(second.RecoveryPath!).Should().Equal(unsent);
+        second.Metadata.ProviderVersion.Should().Be("8");
+        second.HasPendingChanges.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ReopenUnchangedCharacter_DoesNotCreateRecoveryCopy()
+    {
+        var store = new FakeStore();
+        using (await Open(store)) { }
+
+        using var second = await Open(store);
+
+        second.RecoveryPath.Should().BeNull();
+        Directory.Exists(Path.Combine(Path.GetDirectoryName(second.FilePath)!, "recovery")).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ReloadWithOnlySessionRemaining_ArchivesSessionBeforeReplacingIt()
+    {
+        var store = new FakeStore();
+        using var session = await Open(store);
+        byte[] state = "{\"CurrentHp\":3}"u8.ToArray();
+        File.WriteAllBytes(session.SessionPath, state);
+        File.Delete(session.FilePath);
+
+        await session.ReloadAuthoritativeAsync();
+
+        File.ReadAllBytes(session.RecoveryPath + ".session.json").Should().Equal(state);
+        File.Exists(session.SessionPath).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ReopenWithMismatchedReceipt_RejectsWithoutReplacingFilesAndReleasesLease()
+    {
+        var store = new FakeStore();
+        string path;
+        byte[] unsent = Character("Keep me");
+        using (var first = await Open(store))
+        {
+            path = first.FilePath;
+            File.WriteAllBytes(path, unsent);
+        }
+        string receiptPath = path + ".cloud.json";
+        string receipt = File.ReadAllText(receiptPath);
+        File.WriteAllText(receiptPath, receipt.Replace("remote-file", "different-file"));
+
+        await ((Func<Task>)(async () => { using var unexpected = await Open(store); }))
+            .Should().ThrowAsync<InvalidDataException>();
+        File.ReadAllBytes(path).Should().Equal(unsent);
+
+        File.WriteAllText(receiptPath, receipt);
+        using var reopened = await Open(store);
+        File.ReadAllBytes(reopened.RecoveryPath!).Should().Equal(unsent);
+    }
+
+    [Fact]
+    public async Task InvalidDownloadWithMissingReceipt_DoesNotTouchSurvivingFiles()
+    {
+        var store = new FakeStore();
+        string path;
+        byte[] unsent = Character("Keep me");
+        using (var first = await Open(store))
+        {
+            path = first.FilePath;
+            File.WriteAllBytes(path, unsent);
+            File.WriteAllText(first.SessionPath, "{\"CurrentHp\":3}");
+        }
+        File.Delete(path + ".cloud.json");
+        store.Remote = new(Metadata("2"), "<html />"u8.ToArray());
+
+        await ((Func<Task>)(async () => { using var unexpected = await Open(store); }))
+            .Should().ThrowAsync<InvalidDataException>();
+
+        File.ReadAllBytes(path).Should().Equal(unsent);
+        File.ReadAllText(path + ".session.json").Should().Be("{\"CurrentHp\":3}");
+        File.Exists(path + ".cloud.json").Should().BeFalse();
     }
 
     [Fact]

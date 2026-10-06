@@ -116,7 +116,9 @@ internal static class ContentPolicyRehearsal
                 else Require(import!.DefinitionCollisions > 0 && !databaseUnchanged.Value,
                     "Skip mode activates unaffected updates and reports retained definitions");
                 await Load(true);
-                Require(elements.Single(e => e.Id == Conflict).Name == "Conflict original", "The previous definition remains authoritative");
+                Require(elements.Single(e => e.Id == Conflict).Name == (skip ? "Conflict second" : "Conflict original"),
+                    skip ? "A best-effort refresh uses the Legacy load-order winner"
+                        : "A rejected refresh keeps the previous definition authoritative");
                 Require(elements.Any(e => e.Id == "ID_POLICY_REHEARSAL_NEW") == skip, "Only successful best-effort refresh publishes the unrelated update");
                 break;
             case "policy-protect-correction":

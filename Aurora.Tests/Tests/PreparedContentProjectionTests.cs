@@ -20,7 +20,7 @@ public sealed class PreparedContentProjectionTests : IDisposable
         db.Open();
         Sql("""
             CREATE TABLE content_preparation_metadata(singleton_id,contract_version,catalog_policy,append_policy);
-            INSERT INTO content_preparation_metadata VALUES(1,1,'unrestricted','materialized');
+            INSERT INTO content_preparation_metadata VALUES(1,2,'unrestricted','materialized');
             CREATE TABLE content_prepared_elements(aurora_id,base_xml);
             CREATE TABLE v_content_prepared_sources(aurora_id,file_path,relative_path,package_key,package_kind);
             CREATE TABLE v_content_append_operations(file_path,relative_path,package_key,package_kind,ordinal,target_aurora_id,operation_xml,status);
@@ -49,6 +49,60 @@ public sealed class PreparedContentProjectionTests : IDisposable
     private static string[] Grants(PreparedCatalogProjection projection, string id)
         => XElement.Parse(projection.Elements.Single(e => e.AuroraId == id).Xml).Element("rules")!
             .Elements("grant").Select(g => (string)g.Attribute("id")!).ToArray();
+
+    [Theory]
+    [InlineData(true, true)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(false, false)]
+    public void AppendsUseLegacyOrderAndIgnoreDescriptions(bool hasBaseDescription, bool persistedAppends)
+    {
+        Base("BASE", Source("core/base.xml"));
+        if (!hasBaseDescription)
+        {
+            var definition = XElement.Parse(Element("BASE"));
+            definition.Element("description")!.Remove();
+            Sql("UPDATE content_prepared_elements SET base_xml=$p0 WHERE aurora_id='BASE'", definition.ToString());
+        }
+        // Absolute paths and this input sequence both put homebrew first. Legacy's
+        // content-relative directory ladder applies supplements before homebrew.
+        var operations = new[]
+        {
+            (Source: Source("homebrew/a.xml"), Xml: "<append id='BASE'><description><p>Extra</p></description><rules><grant type='Feat' id='HOMEBREW'/></rules></append>"),
+            (Source: Source("supplements/b.xml"), Xml: "<append id='BASE'><rules><grant type='Feat' id='SUPPLEMENT'/></rules></append>")
+        };
+        PreparedCatalogFile[] runtimeFiles = [];
+        if (persistedAppends)
+        {
+            foreach (var operation in operations)
+                Sql("INSERT INTO v_content_append_operations VALUES($p0,$p1,$p2,$p3,0,'BASE',$p4,'applied')",
+                    operation.Source.FilePath, operation.Source.RelativePath, operation.Source.PackageKey,
+                    operation.Source.PackageKind, operation.Xml);
+        }
+        else
+        {
+            runtimeFiles = operations.Select(operation => new PreparedCatalogFile(operation.Source,
+                "<elements>" + operation.Xml + "</elements>")).ToArray();
+        }
+
+        // Replay must neither duplicate grants nor carry appended prose into the target,
+        // even when the target has no description of its own.
+        for (int replay = 0; replay < 2; replay++)
+        {
+            var projection = PreparedCatalogReader.Read(db, runtimeFiles: runtimeFiles);
+            Grants(projection, "BASE").Should().Equal("SUPPLEMENT", "HOMEBREW");
+            string? description = XElement.Parse(projection.Elements.Single().Xml).Element("description")?.Value;
+            description.Should().Be(hasBaseDescription ? "base" : null);
+            projection.Elements.Single().Xml.Should().NotContain("Extra");
+        }
+        if (persistedAppends)
+        {
+            using var command = db.CreateCommand();
+            command.CommandText = "SELECT operation_xml FROM v_content_append_operations WHERE relative_path='homebrew/a.xml'";
+            command.ExecuteScalar().Should().Be(operations[0].Xml,
+                "ignored description fragments remain inspectable in append provenance");
+        }
+    }
 
     [Fact]
     public void SecondaryXmlAndDatabaseAppendsAreAppliedOnceInFileOrder()

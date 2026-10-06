@@ -1,5 +1,5 @@
 {
-  "current": "0.9.0",
+  "current": "0.10.1",
   "versions": [
     {
       "version": "0.1.0",
@@ -202,6 +202,23 @@
         {
           "file": "Aurora.Content.0.9.0.nupkg",
           "sha256": "186b6089cd3fdeb4e0e4e729d9c23fb0bf375e9b1239c686f681efb4fce04a38"
+        }
+      ]
+    },
+    {
+      "version": "0.10.1",
+      "sourceRepository": "https://github.com/Xellarant/AuroraTranslator",
+      "sourceCommit": "e6dfacdb12162c37cd9e9d5387b5d8832173e389",
+      "dirtySource": false,
+      "vendoredUtc": "2026-10-06T01:31:25.8053601+00:00",
+      "packages": [
+        {
+          "file": "Aurora.Content.Contracts.0.10.1.nupkg",
+          "sha256": "75eff3e8d46da4c4851a541f6b61c36f9ac629bf203e9e94a4c7f96abad60109"
+        },
+        {
+          "file": "Aurora.Content.0.10.1.nupkg",
+          "sha256": "ecb57369e0d45c54a0bcb72336e3a1722f4622e135c7b1aecf31d32dce9cc160"
         }
       ]
     }

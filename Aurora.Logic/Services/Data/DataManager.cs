@@ -27,6 +27,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 
@@ -49,6 +50,7 @@ public sealed class DataManager
   private const string ElementsDataFileExtension = ".xml";
   private const string CharacterFileExtension = ".dnd5e";
   private readonly IEventAggregator _eventAggregator;
+  private readonly SemaphoreSlim _xmlLoadLock = new(1, 1);
 
   private DataManager() => this._eventAggregator = ApplicationContext.Current.EventAggregator;
 
@@ -176,7 +178,138 @@ public sealed class DataManager
 
   public async Task<IEnumerable<ElementBase>> InitializeElementDataAsync()
   {
-    this.IsElementsCollectionPopulated = false;
+    await _xmlLoadLock.WaitAsync();
+    XmlLoadProgress progress = null;
+    bool completed = false;
+    try
+    {
+      // Settings and UI services belong to the caller. The worker only builds private objects.
+      string contentRoot = UserDocumentsCustomElementsDirectory;
+      string[] additionalDirectories = ApplicationContext.Current.Settings.AdditionalCustomDirectories.ToArray();
+      bool lazySpells = SpellProxyCatalog.Enabled;
+      bool debuggerAttached = Debugger.IsAttached;
+      bool developerMode = ApplicationContext.Current.IsInDeveloperMode;
+      progress = new XmlLoadProgress(_eventAggregator);
+      using var aliases = ElementIdAliases.BeginScope();
+      XmlCatalogBuild build = await Task.Run(() => BuildXmlCatalogAsync(contentRoot, additionalDirectories,
+        lazySpells, debuggerAttached, developerMode, progress));
+
+      // A folder switch during the await must not publish the previous folder as the new one.
+      if (!PathsEqual(contentRoot, UserDocumentsCustomElementsDirectory) ||
+          !additionalDirectories.SequenceEqual(ApplicationContext.Current.Settings.AdditionalCustomDirectories))
+        throw new InvalidOperationException("Content directories changed during loading. Please reload content.");
+
+      var previousElements = ElementsCollection.ToArray();
+      bool previouslyPopulated = IsElementsCollectionPopulated;
+      Action restoreProxies = SpellProxyCatalog.CaptureRestore();
+      Action restoreAliases = aliases.Publish();
+      try
+      {
+        if (lazySpells) SpellProxyCatalog.Prime(ElementsCollection, build.SpellListNames, null);
+        else SpellProxyCatalog.Reset();
+        IsElementsCollectionPopulated = true;
+        // Observers see a complete catalog, with generated elements and lookup state ready.
+        ElementsCollection.ReplaceAll(build.Elements);
+        // A synchronous observer may materialize a spell category during Reset. Commit any
+        // aliases it generated too, then let subsequent notifications use the live alias map.
+        aliases.Publish();
+        aliases.Dispose();
+      }
+      catch
+      {
+        restoreAliases();
+        aliases.Dispose();
+        restoreProxies();
+        IsElementsCollectionPopulated = previouslyPopulated;
+        try { ElementsCollection.ReplaceAll(previousElements); }
+        catch (Exception ex) { Logger.Exception(ex, "Restoring the previous XML catalog"); }
+        throw;
+      }
+      completed = true;
+      NotifyXmlLoad(() => progress.Complete("Content loaded", 100));
+      NotifyXmlLoad(NotifyElementsLoaded);
+      foreach (Action showWarning in build.Warnings)
+        NotifyXmlLoad(showWarning);
+      return build.SourceElements;
+    }
+    finally
+    {
+      try
+      {
+        if (!completed) NotifyXmlLoad(() => progress?.Complete("Content loading failed", 0));
+      }
+      finally { _xmlLoadLock.Release(); }
+    }
+  }
+
+  private static void NotifyXmlLoad(Action notification)
+  {
+    // A UI notification cannot undo a committed catalog or replace the original load error.
+    try { notification(); }
+    catch (Exception ex)
+    {
+      try { Logger.Exception(ex, "Notifying XML content load"); }
+      catch { /* A failing logging subscriber must not change the load outcome either. */ }
+    }
+  }
+
+  private sealed class XmlCatalogBuild
+  {
+    public ElementBaseCollection Elements { get; init; }
+    public ElementBaseCollection SourceElements { get; init; }
+    public IEnumerable<string> SpellListNames { get; init; }
+    public List<Action> Warnings { get; init; }
+  }
+
+  // Coalesce worker updates instead of flooding the UI queue with one callback per element.
+  // Each dispatched event is a fresh snapshot; queued work cannot revive a completed load.
+  private sealed class XmlLoadProgress : IProgress<DataManagerProgressChanged>
+  {
+    private readonly SynchronizationContext _context = SynchronizationContext.Current ?? new SynchronizationContext();
+    private readonly IEventAggregator _events;
+    private readonly object _gate = new();
+    private DataManagerProgressChanged _latest;
+    private bool _scheduled;
+    private bool _stopped;
+
+    public XmlLoadProgress(IEventAggregator events) => _events = events;
+
+    public void Report(DataManagerProgressChanged value)
+    {
+      lock (_gate)
+      {
+        if (_stopped) return;
+        _latest = new DataManagerProgressChanged(value.ProgressMessage, value.ProgressPercentage, value.InProgress);
+        if (_scheduled) return;
+        _scheduled = true;
+        _context.Post(_ => Dispatch(), _latest);
+      }
+    }
+
+    private void Dispatch()
+    {
+      lock (_gate)
+      {
+        _scheduled = false;
+        if (_stopped) return;
+        _events.Send(_latest);
+      }
+    }
+
+    public void Complete(string message, int percentage)
+    {
+      lock (_gate)
+      {
+        _stopped = true;
+        _events.Send(new DataManagerProgressChanged(message, percentage, false));
+      }
+    }
+  }
+
+  private async Task<XmlCatalogBuild> BuildXmlCatalogAsync(string contentRoot, string[] additionalDirectories,
+    bool lazySpells, bool debuggerAttached, bool developerMode, IProgress<DataManagerProgressChanged> progress)
+  {
+    var warnings = new List<Action>();
     List<ElementBase> elementBaseList = new List<ElementBase>();
     List<ElementParser> elementParserCollection = ElementParserFactory.GetParsers().ToList<ElementParser>();
     ElementParser defaultParser = new ElementParser();
@@ -185,7 +318,7 @@ public sealed class DataManager
     ElementBaseCollection coreElements = new ElementBaseCollection();
     int elementNodeCount = 0;
     DataManagerProgressChanged args = new DataManagerProgressChanged("Initializing Core", 0, true);
-    this._eventAggregator.Send<DataManagerProgressChanged>(args);
+    progress.Report(args);
     int count = 0;
     List<XmlDocument> xmlDocumentList = this.LoadElementDocumentsFromResource();
     foreach (XmlDocument xmlDocument in xmlDocumentList)
@@ -196,7 +329,7 @@ public sealed class DataManager
       {
         ++count;
         args.ProgressPercentage = DataManager.GetPercentage((double) count, (double) xmlDocumentList.Count);
-        this._eventAggregator.Send<DataManagerProgressChanged>(args);
+        progress.Report(args);
         List<XmlNode> list = xmlDocument.DocumentElement.ChildNodes.Cast<XmlNode>().Where<XmlNode>((Func<XmlNode, bool>) (x => x.NodeType != XmlNodeType.Comment && x.Name.Equals("element"))).ToList<XmlNode>();
         elementNodeCount += list.Count;
         foreach (XmlNode elementNode in list)
@@ -212,7 +345,7 @@ public sealed class DataManager
               exceptions.Add((Exception) new DuplicateElementException(element.Name, "resource filename"));
             else
               coreElements.Add(element);
-            this._eventAggregator.Send<DataManagerProgressChanged>(args);
+            progress.Report(args);
           }
           catch (Exception ex)
           {
@@ -234,10 +367,9 @@ public sealed class DataManager
     Logger.Info("loaded {0} core elements from {1} element nodes", (object) coreElements.Count, (object) elementNodeCount);
     args.ProgressMessage = "Initializing Custom Elements";
     args.ProgressPercentage = 0;
-    this._eventAggregator.Send<DataManagerProgressChanged>(args);
-    await Task.Delay(50);
+    progress.Report(args);
     int currentFileCount = 0;
-    List<FileInfo> customFiles = this.GetCustomFiles();
+    List<FileInfo> customFiles = this.GetCustomFiles(contentRoot, additionalDirectories);
     List<XmlNode> appendNotes = new List<XmlNode>();
     foreach (FileInfo file in customFiles)
     {
@@ -248,7 +380,7 @@ public sealed class DataManager
         ++currentFileCount;
         args.ProgressMessage = ef.Info.DisplayName ?? "";
         args.ProgressPercentage = DataManager.GetPercentage((double) currentFileCount, (double) customFiles.Count);
-        this._eventAggregator.Send<DataManagerProgressChanged>(args);
+        progress.Report(args);
         if (ef.Ignore)
         {
           Logger.Warning($"ignore {file}");
@@ -325,9 +457,11 @@ public sealed class DataManager
       }
     }
     args.ProgressMessage = "Processing elements...";
-    this._eventAggregator.Send<DataManagerProgressChanged>(args);
-    await Task.Delay(10);
+    progress.Report(args);
+    Logger.Info("[content-phase] xml.append-elements begin");
+    Stopwatch contentPhase = Stopwatch.StartNew();
     this.AppendElements((IEnumerable<XmlNode>) appendNotes, coreElements, elementParser, defaultParser, elementParserCollection);
+    Logger.Info($"[content-phase] xml.append-elements end elapsed_ms={contentPhase.Elapsed.TotalMilliseconds:F1}");
     args.ProgressMessage = $"{coreElements.Count}/{elementNodeCount} elements loaded";
     args.ProgressPercentage = 100;
     Logger.Info(args.ProgressMessage);
@@ -344,7 +478,7 @@ public sealed class DataManager
           stringBuilder.AppendLine("\t" + exception.Message);
         stringBuilder.AppendLine();
         stringBuilder.AppendLine("These will not be available until these missing setters have been added.").AppendLine().AppendLine();
-        MessageDialogContext.Current?.Show(stringBuilder.ToString());
+        warnings.Add(() => MessageDialogContext.Current?.Show(stringBuilder.ToString()));
       }
       List<Exception> list2 = exceptions.Where<Exception>((Func<Exception, bool>) (x => x.GetType() == typeof (DuplicateElementException))).ToList<Exception>();
       if (list2.Any<Exception>())
@@ -356,23 +490,21 @@ public sealed class DataManager
         foreach (Exception exception in list2)
           stringBuilder.AppendLine("\t" + exception.Message);
         stringBuilder.AppendLine("original elements have been replaced with the custom elements with the same id");
-        if (Debugger.IsAttached)
-          MessageDialogContext.Current?.Show(stringBuilder.ToString());
+        if (debuggerAttached)
+          warnings.Add(() => MessageDialogContext.Current?.Show(stringBuilder.ToString()));
       }
       if (exceptions.Any<Exception>())
       {
         Exception ex = exceptions.First<Exception>();
         object obj1 = ex.Data.Contains((object) "filename") ? ex.Data[(object) "filename"] : (object) "internal";
         object obj2 = ex.Data.Contains((object) "warning") ? ex.Data[(object) "warning"] : (object) "";
-        MessageDialogContext.Current?.ShowException(ex, "Error(s) parsing data files", exceptions.Count > 1 ? $"{exceptions.Count} exceptions occurred while parsing the data files. The first one is shown below, the others can be found in the logs.\r\nFile: {obj1}\r\nInfo: {obj2}" : $"An exception occurred while parsing the data files.\r\nFile: {obj1}\r\nInfo: {obj2}");
+        warnings.Add(() => MessageDialogContext.Current?.ShowException(ex, "Error(s) parsing data files", exceptions.Count > 1 ? $"{exceptions.Count} exceptions occurred while parsing the data files. The first one is shown below, the others can be found in the logs.\r\nFile: {obj1}\r\nInfo: {obj2}" : $"An exception occurred while parsing the data files.\r\nFile: {obj1}\r\nInfo: {obj2}"));
       }
     }
-    this.ElementsCollection.Clear();
-    this.ElementsCollection.AddRange((IEnumerable<ElementBase>) coreElements);
-    this._eventAggregator.Send<ElementsCollectionPopulatedEvent>(new ElementsCollectionPopulatedEvent());
+    var candidate = new ElementBaseCollection(coreElements);
     args.ProgressMessage = "Finalizing Content";
-    this._eventAggregator.Send<DataManagerProgressChanged>(args);
-    List<ElementBase> list3 = this.ElementsCollection.Where<ElementBase>((Func<ElementBase, bool>) (x => x.Type.Equals("Support"))).ToList<ElementBase>();
+    progress.Report(args);
+    List<ElementBase> list3 = candidate.Where<ElementBase>((Func<ElementBase, bool>) (x => x.Type.Equals("Support"))).ToList<ElementBase>();
     string[] strArray = new string[11]
     {
       "(",
@@ -387,7 +519,7 @@ public sealed class DataManager
       "'",
       "�"
     };
-    foreach (ElementBase elements in (Collection<ElementBase>) this.ElementsCollection)
+    foreach (ElementBase elements in (Collection<ElementBase>) candidate)
     {
       foreach (string str in strArray)
       {
@@ -414,19 +546,21 @@ public sealed class DataManager
           elements.Supports.Add(str);
       }
     }
-    IEnumerable<ElementBase> source1 = this.ElementsCollection.Where<ElementBase>((Func<ElementBase, bool>) (x => x.Type == "Class Feature"));
+    Logger.Info("[content-phase] xml.class-features begin");
+    contentPhase.Restart();
+    IEnumerable<ElementBase> source1 = candidate.Where<ElementBase>((Func<ElementBase, bool>) (x => x.Type == "Class Feature"));
     IEnumerable<ElementBase> source2 = source1.Where<ElementBase>((Func<ElementBase, bool>) (x => x.Id.StartsWith("ID_INTERNAL_TEMPLATE_CLASS_FEATURE_ABILITY_4")));
     IEnumerable<ElementBase> source3 = source1.Where<ElementBase>((Func<ElementBase, bool>) (x => x.Id.StartsWith("ID_INTERNAL_TEMPLATE_CLASS_FEATURE_FEAT_4")));
     ElementBase original1 = source2.FirstOrDefault<ElementBase>();
     ElementBase original2 = source3.FirstOrDefault<ElementBase>();
     Dictionary<string, string> dictionary = new Dictionary<string, string>();
     List<string> stringList1 = new List<string>();
-    foreach (Class @class in this.ElementsCollection.Where<ElementBase>((Func<ElementBase, bool>) (x => x.Type == "Class")).Cast<Class>().ToList<Class>())
+    foreach (Class @class in candidate.Where<ElementBase>((Func<ElementBase, bool>) (x => x.Type == "Class")).Cast<Class>().ToList<Class>())
     {
       if (@class.CanMulticlass)
       {
         ElementBase element = elementParserCollection.FirstOrDefault<ElementParser>((Func<ElementParser, bool>) (x => x.ParserType == "Multiclass")).ParseElement(@class.ElementNode);
-        this.ElementsCollection.Add(element);
+        candidate.Add(element);
         @class.Requirements = @class.HasRequirements ? $"({@class.Requirements})&&!{element.Id}" : "!" + element.Id;
         @class.Rules.Add((RuleBase) new GrantRule(@class.ElementHeader)
         {
@@ -460,7 +594,7 @@ public sealed class DataManager
           if (name.Contains(","))
           {
             Logger.Warning(name + " contains ','");
-            if (Debugger.IsAttached)
+            if (debuggerAttached)
               Debugger.Break();
           }
           ElementBase elementBase3 = original1.Copy<ElementBase>();
@@ -496,49 +630,54 @@ public sealed class DataManager
           elementBase4.IncludeInCompendium = false;
           elements.Add(elementBase4);
         }
-        this.ElementsCollection.AddRange((IEnumerable<ElementBase>) elements);
+        candidate.AddRange((IEnumerable<ElementBase>) elements);
         stringList1.Add(@class.Name);
       }
     }
+    Logger.Info($"[content-phase] xml.class-features end elapsed_ms={contentPhase.Elapsed.TotalMilliseconds:F1}");
     if (true)
     {
       Stopwatch stopwatch = Stopwatch.StartNew();
       SpellScrollContentGenerator contentGenerator = new SpellScrollContentGenerator();
-      ElementBase elementBase = this.ElementsCollection.FirstOrDefault<ElementBase>((Func<ElementBase, bool>) (x => x.Id.Equals("ID_WOTC_DMG_MAGIC_ITEM_SPELL_SCROLL_CANTRIP")));
-      ElementBaseCollection elementsCollection = this.ElementsCollection;
+      ElementBase elementBase = candidate.FirstOrDefault<ElementBase>((Func<ElementBase, bool>) (x => x.Id.Equals("ID_WOTC_DMG_MAGIC_ITEM_SPELL_SCROLL_CANTRIP")));
+      ElementBaseCollection elementsCollection = candidate;
       MagicItemElement template = elementBase as MagicItemElement;
       List<ElementBase> elements = contentGenerator.Generate((IEnumerable<ElementBase>) elementsCollection, template);
-      this.ElementsCollection.AddRange((IEnumerable<ElementBase>) elements);
+      candidate.AddRange((IEnumerable<ElementBase>) elements);
       stopwatch.Stop();
       Logger.Warning($"generating {elements.Count} scrolls took {stopwatch.ElapsedMilliseconds}ms");
     }
     InternalElementsGenerator elementsGenerator = new InternalElementsGenerator();
-    this.ElementsCollection.AddRange((IEnumerable<ElementBase>) elementsGenerator.GenerateInternalFeats((IEnumerable<ElementBase>) this.ElementsCollection));
-    this.ElementsCollection.AddRange((IEnumerable<ElementBase>) elementsGenerator.GenerateInternalLanguages((IEnumerable<ElementBase>) this.ElementsCollection));
-    this.ElementsCollection.AddRange((IEnumerable<ElementBase>) elementsGenerator.GenerateInternalProficiency((IEnumerable<ElementBase>) this.ElementsCollection));
-    this.ElementsCollection.AddRange((IEnumerable<ElementBase>) elementsGenerator.GenerateInternalAsi((IEnumerable<ElementBase>) this.ElementsCollection));
-    this.ElementsCollection.AddRange((IEnumerable<ElementBase>) elementsGenerator.GenerateInternalSpells((IEnumerable<ElementBase>) this.ElementsCollection));
-    if (Debugger.IsAttached || ApplicationContext.Current.IsInDeveloperMode)
-      this.ElementsCollection.AddRange((IEnumerable<ElementBase>) elementsGenerator.GenerateInternalIgnore((IEnumerable<ElementBase>) this.ElementsCollection));
+    candidate.AddRange((IEnumerable<ElementBase>) elementsGenerator.GenerateInternalFeats((IEnumerable<ElementBase>) candidate));
+    candidate.AddRange((IEnumerable<ElementBase>) elementsGenerator.GenerateInternalLanguages((IEnumerable<ElementBase>) candidate));
+    candidate.AddRange((IEnumerable<ElementBase>) elementsGenerator.GenerateInternalProficiency((IEnumerable<ElementBase>) candidate));
+    candidate.AddRange((IEnumerable<ElementBase>) elementsGenerator.GenerateInternalAsi((IEnumerable<ElementBase>) candidate));
+    Logger.Info($"[content-phase] xml.spell-proxies begin lazy={lazySpells}");
+    contentPhase.Restart();
+    if (!lazySpells)
+      candidate.AddRange((IEnumerable<ElementBase>) elementsGenerator.GenerateInternalSpells((IEnumerable<ElementBase>) candidate));
+    var spellListNames = lazySpells ? elementsGenerator.GetSpellcastingListNames(candidate).ToArray() : Array.Empty<string>();
+    Logger.Info($"[content-phase] xml.spell-proxies end elapsed_ms={contentPhase.Elapsed.TotalMilliseconds:F1}");
+    if (debuggerAttached || developerMode)
+      candidate.AddRange((IEnumerable<ElementBase>) elementsGenerator.GenerateInternalIgnore((IEnumerable<ElementBase>) candidate));
+    Logger.Info("[content-phase] xml.item-details begin");
+    contentPhase.Restart();
     this.InitializeItemDetails(coreElements);
-    if (Debugger.IsAttached)
+    Logger.Info($"[content-phase] xml.item-details end elapsed_ms={contentPhase.Elapsed.TotalMilliseconds:F1}");
+    if (debuggerAttached)
     {
-      IEnumerable<ElementBase> source4 = this.ElementsCollection.Where<ElementBase>((Func<ElementBase, bool>) (x => !ElementsHelper.ValidateID(x.Id) && !x.Type.Equals("Ignore")));
+      IEnumerable<ElementBase> source4 = candidate.Where<ElementBase>((Func<ElementBase, bool>) (x => !ElementsHelper.ValidateID(x.Id) && !x.Type.Equals("Ignore")));
       Logger.Warning($"found {source4.Count<ElementBase>()} invalid IDs");
       foreach (ElementBase elementBase in source4)
         Logger.Warning($"invalid ID on {elementBase} [{elementBase.Id}]");
     }
-    this.IsElementsCollectionPopulated = true;
-    IEnumerable<ElementBase> elementBases = (IEnumerable<ElementBase>) coreElements;
-    elementParserCollection = (List<ElementParser>) null;
-    defaultParser = (ElementParser) null;
-    elementParser = (ElementParser) null;
-    exceptions = (List<Exception>) null;
-    coreElements = (ElementBaseCollection) null;
-    args = (DataManagerProgressChanged) null;
-    customFiles = (List<FileInfo>) null;
-    appendNotes = (List<XmlNode>) null;
-    return elementBases;
+    return new XmlCatalogBuild
+    {
+      Elements = candidate,
+      SourceElements = coreElements,
+      SpellListNames = spellListNames,
+      Warnings = warnings
+    };
   }
 
   private void InitializeItemDetails(ElementBaseCollection collection)
@@ -1068,17 +1207,17 @@ public sealed class DataManager
     return files;
   }
 
-  private List<FileInfo> GetCustomFiles()
+  private List<FileInfo> GetCustomFiles(string contentRoot, IEnumerable<string> additionalDirectories)
   {
-    List<FileInfo> all = this.GetCustomFiles(this.UserDocumentsCustomElementsDirectory);
+    List<FileInfo> all = this.GetCustomFiles(contentRoot);
 
     // Current content root plus explicitly configured additional content directories.
     // The legacy single-directory setting is intentionally ignored so stale defaults do not
     // continue influencing content after the active content root has moved.
-    foreach (string dir in ApplicationContext.Current.Settings.AdditionalCustomDirectories)
+    foreach (string dir in additionalDirectories)
     {
       if (string.IsNullOrWhiteSpace(dir) || !Directory.Exists(dir)) continue;
-      if (dir.Equals(this.UserDocumentsCustomElementsDirectory, StringComparison.OrdinalIgnoreCase)) continue;
+      if (dir.Equals(contentRoot, StringComparison.OrdinalIgnoreCase)) continue;
       all.AddRange(this.GetCustomFiles(dir));
     }
 

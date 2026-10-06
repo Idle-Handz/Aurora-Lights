@@ -1,5 +1,7 @@
+using Aurora.Content;
 using Aurora.Content.Contracts;
 using Microsoft.Data.Sqlite;
+using System.Xml;
 
 namespace Aurora.App.Services;
 
@@ -53,9 +55,8 @@ public sealed record OverrideFileModel(
 public sealed record ConflictDeclarationModel(string PackageName, string RelativePath, bool IsWinner);
 
 /// <summary>
-/// An element id more than one file declares. Aurora Builder gives the id to the declaration it
-/// loads last, so a book published later overrides an earlier one by design - the alternatives are
-/// kept so a reader can see what was set aside rather than having to infer it.
+/// An element id more than one file declares. The importer records its selected declaration and
+/// preserves alternatives so the reader can inspect load-order and correction decisions.
 /// </summary>
 public sealed record ContentConflictModel(
     string AuroraId,
@@ -68,6 +69,12 @@ public sealed record ContentConflictModel(
     public IReadOnlyList<ConflictDeclarationModel> SetAside =>
         Declarations.Where(d => !d.IsWinner).ToList();
 }
+
+public sealed record ContentDoctorSnapshot(
+    IReadOnlyList<OverrideFileModel> Files,
+    IReadOnlyList<ContentConflictModel> Conflicts,
+    IReadOnlyList<ContentImportSkip> Skipped,
+    string? Problem);
 
 /// <summary>
 /// Reads the override files the content importer knows about and re-evaluates each one against
@@ -84,19 +91,46 @@ public sealed class ContentDoctorService
 
     public ContentDoctorService(ContentDatabaseService contentDb) => _contentDb = contentDb;
 
-    public IReadOnlyList<OverrideFileModel> LoadOverrideFiles()
-    {
-        var files = new List<OverrideFileModel>();
-        foreach (string path in ReadKnownOverridePaths())
-        {
-            OverrideFileModel model = Evaluate(path);
-            files.Add(model);
-        }
+    public ContentDoctorSnapshot Load(CancellationToken cancellationToken = default) =>
+        ReadSnapshot(_contentDb.DatabasePath, cancellationToken);
 
-        return files
-            .OrderByDescending(file => file.IncorporatedCount)
-            .ThenBy(file => file.DisplayName, StringComparer.OrdinalIgnoreCase)
-            .ToList();
+    internal static ContentDoctorSnapshot ReadSnapshot(string? dbPath, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(dbPath) || !File.Exists(dbPath))
+            return new([], [], [], "No content database is available. Refresh content in Settings before reviewing import diagnostics.");
+
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            using var connection = OpenReadOnly(dbPath);
+            // Keep all imported evidence on the same database snapshot during a concurrent refresh.
+            using var transaction = connection.BeginTransaction(deferred: true);
+            IReadOnlyList<string> paths = ReadKnownOverridePaths(connection, transaction, cancellationToken);
+            IReadOnlyList<ContentConflictModel> conflicts;
+            using (ContentLoadTrace.Begin("doctor.conflicts-worker"))
+                conflicts = ReadConflicts(connection, cancellationToken, transaction);
+            IReadOnlyList<ContentImportSkip> skipped;
+            using (ContentLoadTrace.Begin("doctor.skipped-worker"))
+                skipped = ReadSkippedContent(connection, transaction, cancellationToken);
+            transaction.Commit();
+
+            var files = new List<OverrideFileModel>();
+            using (ContentLoadTrace.Begin("doctor.overrides-worker"))
+            {
+                foreach (string path in paths)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    files.Add(Evaluate(path));
+                }
+            }
+
+            return new(files.OrderByDescending(file => file.IncorporatedCount)
+                .ThenBy(file => file.DisplayName, StringComparer.OrdinalIgnoreCase).ToList(), conflicts, skipped, null);
+        }
+        catch (Exception ex) when (ex is SqliteException or IOException or UnauthorizedAccessException)
+        {
+            return new([], [], [], $"Import diagnostics could not be read. Refresh content in Settings and re-check. {ex.Message}");
+        }
     }
 
     /// <summary>
@@ -107,49 +141,44 @@ public sealed class ContentDoctorService
         LocalCorrectionDocument.AcceptUpstream(
             file.FilePath, file.LocalHash, file.UpstreamHash, [correction.Key]);
 
-    /// <summary>
-    /// Content the last refresh could not use. Already read by ContentDatabaseService, so this only
-    /// puts it beside the other content problems rather than querying for it again.
-    /// </summary>
-    public IReadOnlyList<Aurora.Content.ContentImportSkip> LoadSkippedContent() =>
-        _contentDb.GetSkippedContent();
-
-    /// <summary>
-    /// Element ids more than one file declares. Read from the database rather than from disk: which
-    /// declaration won is the importer's decision, recorded when the catalog was built.
-    /// </summary>
-    public IReadOnlyList<ContentConflictModel> LoadConflicts() =>
-        _contentDb.DatabasePath is { } path && File.Exists(path) ? ReadConflicts(path) : [];
-
     /// <summary>Internal so a test can point it at a database without resolving the app's own.</summary>
     internal static IReadOnlyList<ContentConflictModel> ReadConflicts(string dbPath)
     {
+        using var connection = OpenReadOnly(dbPath);
+        return ReadConflicts(connection, CancellationToken.None);
+    }
+
+    private static SqliteConnection OpenReadOnly(string dbPath)
+    {
+        var connection = new SqliteConnection(new SqliteConnectionStringBuilder
+        {
+            DataSource = dbPath, Mode = SqliteOpenMode.ReadOnly, Pooling = false
+        }.ToString());
+        try { connection.Open(); return connection; }
+        catch { connection.Dispose(); throw; }
+    }
+
+    private static IReadOnlyList<ContentConflictModel> ReadConflicts(SqliteConnection connection, CancellationToken cancellationToken,
+        SqliteTransaction? transaction = null)
+    {
         var byId = new Dictionary<string, List<ConflictDeclarationModel>>(StringComparer.Ordinal);
         var names = new Dictionary<string, (string Name, string Type)>(StringComparer.Ordinal);
-        try
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = """
+            SELECT aurora_id, name, type_name, COALESCE(package_name, ''), relative_path, is_winner
+            FROM v_duplicate_aurora_ids
+            ORDER BY aurora_id, is_winner DESC, relative_path
+            """;
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
         {
-            using var connection = new SqliteConnection($"Data Source={dbPath};Mode=ReadOnly;Pooling=False");
-            connection.Open();
-            using var command = connection.CreateCommand();
-            command.CommandText = """
-                SELECT aurora_id, name, type_name, COALESCE(package_name, ''), relative_path, is_winner
-                FROM v_duplicate_aurora_ids
-                ORDER BY aurora_id, is_winner DESC, relative_path
-                """;
-            using var reader = command.ExecuteReader();
-            while (reader.Read())
-            {
-                string id = reader.GetString(0);
-                if (!byId.TryGetValue(id, out var declarations))
-                    byId[id] = declarations = [];
-                declarations.Add(new(reader.GetString(3), reader.GetString(4), reader.GetInt64(5) != 0));
-                names.TryAdd(id, (reader.GetString(1), reader.GetString(2)));
-            }
-        }
-        catch (SqliteException)
-        {
-            // A database built before duplicate declarations were kept has no such view.
-            return [];
+            cancellationToken.ThrowIfCancellationRequested();
+            string id = reader.GetString(0);
+            if (!byId.TryGetValue(id, out var declarations))
+                byId[id] = declarations = [];
+            declarations.Add(new(reader.GetString(3), reader.GetString(4), reader.GetInt64(5) != 0));
+            names.TryAdd(id, (reader.GetString(1), reader.GetString(2)));
         }
 
         return byId
@@ -160,27 +189,40 @@ public sealed class ContentDoctorService
             .ToList();
     }
 
-    private IReadOnlyList<string> ReadKnownOverridePaths()
+    private static IReadOnlyList<string> ReadKnownOverridePaths(SqliteConnection connection, SqliteTransaction transaction,
+        CancellationToken cancellationToken)
     {
-        if (_contentDb.DatabasePath is not { } dbPath || !File.Exists(dbPath))
-            return [];
-
         var paths = new List<string>();
-        try
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        // Retired rows preserve history after the importer renames the XML to a backup.
+        // Only active overrides still require a file at their original path.
+        command.CommandText = "SELECT file_path FROM local_override_files WHERE status <> 'retired' ORDER BY file_path";
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
         {
-            using var connection = new SqliteConnection($"Data Source={dbPath};Mode=ReadOnly;Pooling=False");
-            connection.Open();
-            using var command = connection.CreateCommand();
-            command.CommandText = "SELECT file_path FROM local_override_files ORDER BY file_path";
-            using var reader = command.ExecuteReader();
-            while (reader.Read()) paths.Add(reader.GetString(0));
-        }
-        catch (SqliteException)
-        {
-            // A database built before override tracking, or none at all: nothing to show.
+            cancellationToken.ThrowIfCancellationRequested();
+            paths.Add(reader.GetString(0));
         }
 
         return paths;
+    }
+
+    private static IReadOnlyList<ContentImportSkip> ReadSkippedContent(SqliteConnection connection, SqliteTransaction transaction,
+        CancellationToken cancellationToken)
+    {
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = "SELECT file_path, relative_path, kind, detail, related_path FROM content_skipped_files ORDER BY skip_ordinal";
+        using var reader = command.ExecuteReader();
+        var skipped = new List<ContentImportSkip>();
+        while (reader.Read())
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            skipped.Add(new(reader.GetString(0), reader.GetString(1), reader.GetString(2),
+                reader.GetString(3), reader.IsDBNull(4) ? null : reader.GetString(4)));
+        }
+        return skipped;
     }
 
     /// <summary>Evaluates one override file against what is on disk. Internal so a test can
@@ -217,7 +259,7 @@ public sealed class ContentDoctorService
                 corrections,
                 File.Exists(source) ? null : "The upstream file it corrects is not installed.");
         }
-        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or XmlException)
         {
             return new(path, name, string.Empty, false, string.Empty, string.Empty, [], ex.Message);
         }

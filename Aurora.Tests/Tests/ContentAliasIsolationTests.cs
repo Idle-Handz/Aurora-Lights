@@ -11,6 +11,85 @@ namespace Aurora.Tests.Tests;
 public sealed class ContentAliasIsolationTests
 {
     [Theory]
+    [InlineData("DROP TABLE content_element_aliases")]
+    [InlineData("ALTER TABLE content_element_aliases RENAME COLUMN target_aurora_id TO broken_target")]
+    public async Task UnreadableAliasContractRejectsCandidateAndPreservesLiveAliases(string damage)
+    {
+        TestApplicationContextInstaller.EnsureInstalled();
+        string root = Path.Combine(Path.GetTempPath(), "Aurora.Tests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        var manager = DataManager.Current;
+        var primaryProperty = typeof(DataManager).GetProperty(nameof(DataManager.UserDocumentsCustomElementsDirectory))!;
+        string? previousRoot = manager.UserDocumentsCustomElementsDirectory;
+        var additional = ApplicationContext.Current.Settings.AdditionalCustomDirectories;
+        string[] previousAdditional = additional.ToArray();
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "content.xml"), """
+                <elements>
+                  <element id="ID_TEST_CURRENT" name="Current" type="Proficiency" source="Test" />
+                  <alias id="ID_TEST_OLD" target="ID_TEST_CURRENT" />
+                </elements>
+                """);
+            string database = Path.Combine(root, ContentDatabaseService.DatabaseFileName);
+            await ContentImport.ImportAsync(root, database);
+            using (var connection = new Microsoft.Data.Sqlite.SqliteConnection(new Microsoft.Data.Sqlite.SqliteConnectionStringBuilder
+                   { DataSource = database, Mode = Microsoft.Data.Sqlite.SqliteOpenMode.ReadWrite, Pooling = false }.ToString()))
+            {
+                connection.Open();
+                using var command = connection.CreateCommand();
+                command.CommandText = damage;
+                command.ExecuteNonQuery();
+            }
+            primaryProperty.SetValue(manager, root);
+            additional.Clear();
+            ElementIdAliases.Set(new Dictionary<string, string> { ["ID_TEST_OLD"] = "ID_TEST_LIVE" });
+            var live = new ElementBaseCollection { new ElementBase { ElementHeader = new("Live", "Proficiency", "Test", "ID_TEST_LIVE") } };
+            var before = live.ToArray();
+
+            var result = await DbElementLoader.TryLoadSnapshotAsync(live);
+
+            result.Success.Should().BeFalse("missing forwarding addresses must not look like a complete successful load");
+            live.Should().Equal(before);
+            ElementIdAliases.TryGetTarget("ID_TEST_OLD", out string target).Should().BeTrue();
+            target.Should().Be("ID_TEST_LIVE");
+            Action fallback = () => ContentDatabaseService.ValidateRawXmlFallback(database, result.FailureReason);
+            fallback.Should().Throw<InvalidDataException>().WithMessage("*aliases could not be read*forwarding*");
+        }
+        finally
+        {
+            ElementIdAliases.Clear();
+            primaryProperty.SetValue(manager, previousRoot);
+            additional.Clear();
+            foreach (string directory in previousAdditional) additional.Add(directory);
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task RawFallbackCannotDiscardDeclaredSavedIdForwarding()
+    {
+        string root = Path.Combine(Path.GetTempPath(), "Aurora.Tests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "content.xml"), """
+                <elements>
+                  <element id="ID_TEST_CURRENT" name="Current" type="Proficiency" source="Test" />
+                  <alias id="ID_TEST_OLD" target="ID_TEST_CURRENT" />
+                </elements>
+                """);
+            string database = Path.Combine(root, ContentDatabaseService.DatabaseFileName);
+            await ContentImport.ImportAsync(root, database);
+
+            Action fallback = () => ContentDatabaseService.ValidateRawXmlFallback(database);
+
+            fallback.Should().Throw<InvalidDataException>().WithMessage("*aliases that raw XML fallback cannot preserve*");
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public async Task UnpublishedLoadPreservesAliasesForTheLiveCatalog(bool failFullLoad)

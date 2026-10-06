@@ -1,0 +1,1 @@
+A new Content Doctor page, shown when developer mode is enabled, reviews local override files and lets you clear corrections once upstream adopts them, lists element IDs that more than one file defines, and shows content the last refresh left out.

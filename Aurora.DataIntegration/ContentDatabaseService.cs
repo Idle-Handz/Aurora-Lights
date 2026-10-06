@@ -12,6 +12,8 @@ public sealed class ContentDatabaseService
     public const string DatabaseFileName = "aurora-elements.sqlite";
 
     private readonly SemaphoreSlim _lock = new(1, 1);
+    private readonly object _readFailureLock = new();
+    private readonly Dictionary<string, string> _readFailures = new(StringComparer.Ordinal);
 
     // ── State ────────────────────────────────────────────────────────────────
 
@@ -20,7 +22,15 @@ public sealed class ContentDatabaseService
     public AuroraImportResult?      LastResult { get; private set; }
 
     public bool IsStale { get; private set; }
-    public string? LastReadFailure { get; private set; }
+    /// <summary>Unresolved diagnostic read failures. A successful read clears only its own failure.</summary>
+    public string? LastReadFailure
+    {
+        get
+        {
+            lock (_readFailureLock)
+                return _readFailures.Count == 0 ? null : string.Join(Environment.NewLine, _readFailures.Values);
+        }
+    }
 
     public IReadOnlyList<LocalCorrectionStatus> GetLocalCorrections() => TryRead(
         "read local corrections", () => DatabasePath is { } path
@@ -37,7 +47,7 @@ public sealed class ContentDatabaseService
     /// <summary>Prevents raw XML recovery from undoing persisted import decisions.</summary>
     public static void ValidateRawXmlFallback(string? databasePath, string? loadFailure = null)
     {
-        if (string.IsNullOrWhiteSpace(databasePath)) return;
+        if (string.IsNullOrWhiteSpace(databasePath) || !File.Exists(databasePath)) return;
         var unavailable = ContentDatabaseReader.ReadUnavailableIds(databasePath);
         if (unavailable.Count > 0)
             throw new InvalidDataException("The database contains conflicting element IDs that must remain unavailable. " +
@@ -63,6 +73,31 @@ public sealed class ContentDatabaseService
                 "Affected files: " + string.Join(", ", affectedFiles.Take(5)) +
                 (affectedFiles.Length > 5 ? $" (and {affectedFiles.Length - 5} more)" : "") +
                 (string.IsNullOrWhiteSpace(loadFailure) ? "" : ". Prepared load failed: " + loadFailure));
+        }
+
+        // The Legacy XML loader does not reconstruct declared forwarding addresses. A raw
+        // reload would silently strand saved IDs even when every element parses successfully.
+        // Missing/malformed alias data in a prepared database must also fail this check.
+        using var connection = ContentDatabase.OpenReadableConnection(databasePath);
+        if (PreparedCatalogReader.HasPreparationMetadata(connection))
+        {
+            try
+            {
+                using var command = connection.CreateCommand();
+                command.CommandText = "SELECT saved_aurora_id, target_aurora_id FROM content_element_aliases LIMIT 1";
+                using var aliases = command.ExecuteReader();
+                if (aliases.Read())
+                    throw new InvalidDataException(
+                        "The database contains element aliases that raw XML fallback cannot preserve. " +
+                        "Refresh the content database in Settings before retrying." +
+                        (string.IsNullOrWhiteSpace(loadFailure) ? "" : " Prepared load failed: " + loadFailure));
+            }
+            catch (Microsoft.Data.Sqlite.SqliteException ex)
+            {
+                throw new InvalidDataException(
+                    "The database's element aliases could not be read. Raw XML fallback cannot verify saved-ID forwarding. " +
+                    "Refresh the content database in Settings before retrying.", ex);
+            }
         }
     }
 
@@ -99,7 +134,7 @@ public sealed class ContentDatabaseService
     public ContentDatabaseHealthReport? GetHealthReport() =>
         TryRead(
             "read database health",
-            () => DatabasePath is { } p ? ContentDatabaseReader.ReadHealth(p) : null,
+            () => DatabasePath is { } p ? ContentDatabaseHealthReader.Read(p) : null,
             fallback: null);
 
     public void NotifyContentDirectoryChanged()
@@ -109,7 +144,8 @@ public sealed class ContentDatabaseService
         Progress   = null;
         LastResult = null;
         IsStale    = false;
-        LastReadFailure = null;
+        lock (_readFailureLock)
+            _readFailures.Clear();
         StateChanged?.Invoke();
     }
 
@@ -118,7 +154,8 @@ public sealed class ContentDatabaseService
         try
         {
             T result = action();
-            LastReadFailure = null;
+            lock (_readFailureLock)
+                _readFailures.Remove(operation);
             return result;
         }
         catch (Exception ex)
@@ -131,9 +168,15 @@ public sealed class ContentDatabaseService
     private void RecordReadFailure(string operation, Exception ex)
     {
         string message = $"{operation}: {ex.Message}";
-        if (!string.Equals(LastReadFailure, message, StringComparison.Ordinal))
+        bool changed;
+        lock (_readFailureLock)
+        {
+            changed = !_readFailures.TryGetValue(operation, out string? previous) ||
+                !string.Equals(previous, message, StringComparison.Ordinal);
+            _readFailures[operation] = message;
+        }
+        if (changed)
             DebugLogService.Instance.Warn($"Content database could not {operation}.", ex.ToString());
-        LastReadFailure = message;
     }
 
     // ── Staleness check ──────────────────────────────────────────────────────
@@ -161,6 +204,7 @@ public sealed class ContentDatabaseService
     /// </summary>
     public async Task<AuroraImportResult> SyncAsync(CancellationToken cancellationToken = default)
     {
+        using var trace = ContentLoadTrace.Begin("database.sync");
         await _lock.WaitAsync(cancellationToken);
         try
         {
@@ -193,7 +237,12 @@ public sealed class ContentDatabaseService
             // activation and retirement. Give it the real primary root; secondary
             // roots are composed from XML by the runtime reader.
             string contentDirectory = ContentDirectory;
-            var result = await Task.Run(() => ImportAsync(contentDirectory, dbPath, cancellationToken), cancellationToken);
+            _tracedPhase = null;
+            var result = await Task.Run(async () =>
+            {
+                using var importTrace = ContentLoadTrace.Begin("database.import-worker");
+                return await ImportAsync(contentDirectory, dbPath, cancellationToken);
+            }, cancellationToken);
 
             LastResult = result;
             IsStale    = !result.Success;
@@ -246,8 +295,15 @@ public sealed class ContentDatabaseService
             classificationIssues: imported.Skipped.Count(skip => skip.Kind == "classification"));
     }
 
+    private ContentImportPhase? _tracedPhase;
+
     private void ReportProgress(ContentImportProgress p)
     {
+        if (ContentLoadTrace.Sink is not null && _tracedPhase != p.Phase)
+        {
+            _tracedPhase = p.Phase;
+            ContentLoadTrace.Mark($"import-phase={p.Phase} completed={p.Completed} total={p.Total}");
+        }
         Progress = MapProgress(p);
         StateChanged?.Invoke();
     }

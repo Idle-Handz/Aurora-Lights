@@ -49,24 +49,22 @@ public sealed class CloudCharacterSession : IDisposable
         string path = Path.Combine(directory, "character.dnd5e");
         try
         {
-            Receipt? receipt = File.Exists(path + ".cloud.json")
-                ? JsonSerializer.Deserialize<Receipt>(CharacterFileIo.LoadTextFile(path + ".cloud.json"))
-                : null;
-            if (receipt is not null)
-            {
-                if (receipt.Metadata.Reference.DocumentId != reference.DocumentId)
-                    throw new InvalidDataException("Cloud recovery metadata refers to a different character.");
-                var recovered = new CloudCharacterSession(store, path, lease, receipt);
-                // Drive is authoritative on every open. Archive unsent edits before replacing them.
-                if (recovered.HasPendingChanges)
-                    recovered.PreserveRecovery();
-            }
+            Receipt? receipt = ReadReceipt(path + ".cloud.json");
+            if (receipt is not null && receipt.Metadata.Reference.DocumentId != reference.DocumentId)
+                throw new InvalidDataException("Cloud recovery metadata refers to a different character.");
             CharacterDocument document = await store.OpenAsync(reference, cancellationToken);
             ValidateCharacter(document.Content);
             var xml = LoadXml(document.Content);
             string? sessionJson = xml.DocumentElement?[SessionNode]?.InnerText;
             if (sessionJson is not null)
                 using (JsonDocument.Parse(sessionJson)) { }
+            cancellationToken.ThrowIfCancellationRequested();
+            // Without a usable receipt, surviving files cannot be assumed to be saved.
+            // Validate the download first, then archive before replacing either local file.
+            string? recoveryPath = receipt is null
+                || HashFile(path) != receipt.CharacterHash
+                || HashFile(path + ".session.json") != receipt.SessionHash
+                ? PreserveRecovery(path) : null;
             // Store the original downloaded XML; the engine preserves/ignores the extra node.
             WriteBytes(path, document.Content);
             if (sessionJson is not null)
@@ -75,7 +73,7 @@ public sealed class CloudCharacterSession : IDisposable
                 File.Delete(path + ".session.json");
             receipt = new(document.Metadata, HashFile(path), HashFile(path + ".session.json"));
             CharacterFileIo.SaveTextFileAtomic(path + ".cloud.json", JsonSerializer.Serialize(receipt));
-            return new CloudCharacterSession(store, path, lease, receipt);
+            return new CloudCharacterSession(store, path, lease, receipt) { RecoveryPath = recoveryPath };
         }
         catch { lease.Dispose(); throw; }
     }
@@ -131,15 +129,31 @@ public sealed class CloudCharacterSession : IDisposable
         finally { _saveGate.Release(); }
     }
 
-    private void PreserveRecovery()
+    private static Receipt? ReadReceipt(string path)
     {
-        if (!File.Exists(FilePath)) return;
-        string recovery = Path.Combine(Path.GetDirectoryName(FilePath)!, "recovery");
+        if (!File.Exists(path)) return null;
+        Receipt? receipt;
+        try { receipt = JsonSerializer.Deserialize<Receipt>(CharacterFileIo.LoadTextFile(path)); }
+        catch (JsonException) { return null; }
+        // A missing identity is incomplete metadata, not proof that local files are clean.
+        return string.IsNullOrWhiteSpace(receipt?.Metadata?.Reference?.DocumentId) ? null : receipt;
+    }
+
+    private void PreserveRecovery() => RecoveryPath = PreserveRecovery(FilePath);
+
+    private static string? PreserveRecovery(string path)
+    {
+        string sessionPath = path + ".session.json";
+        if (!File.Exists(path) && !File.Exists(sessionPath)) return null;
+        string recovery = Path.Combine(Path.GetDirectoryName(path)!, "recovery");
         Directory.CreateDirectory(recovery);
-        RecoveryPath = Path.Combine(recovery, $"{DateTime.UtcNow:yyyyMMdd-HHmmss}-{Guid.NewGuid():N}.dnd5e");
+        string recoveryPath = Path.Combine(recovery, $"{DateTime.UtcNow:yyyyMMdd-HHmmss}-{Guid.NewGuid():N}.dnd5e");
         // Keep the exact local bytes even if they cannot currently be parsed.
-        WriteBytes(RecoveryPath, File.ReadAllBytes(FilePath));
-        if (File.Exists(SessionPath)) WriteBytes(RecoveryPath + ".session.json", File.ReadAllBytes(SessionPath));
+        if (File.Exists(path)) WriteBytes(recoveryPath, File.ReadAllBytes(path));
+        if (File.Exists(sessionPath)) WriteBytes(recoveryPath + ".session.json", File.ReadAllBytes(sessionPath));
+        if (File.Exists(path + ".cloud.json"))
+            WriteBytes(recoveryPath + ".cloud.json", File.ReadAllBytes(path + ".cloud.json"));
+        return recoveryPath;
     }
 
     public static byte[] Pack(byte[] character, byte[]? session)

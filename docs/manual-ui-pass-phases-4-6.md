@@ -8,12 +8,13 @@ Visual presentation and interaction still need review in the rendered app. It
 covers the shared library, source restrictions, Builder.Data cleanup, the 0.7.0
 conflict and correction policy, and the rebuilt sources editor.
 
-**Aurora.Content 0.9.0, data version 17 (schema 1).** An installed database in an
-older format reads as out of date and must be refreshed before content loads;
-the v17 reader will not read a
-v15 database. A database already at v17 needs no further format migration. Check
-1 therefore needs an older-format database and cannot be repeated on the same
-database after it has been refreshed.
+**Aurora.Content 0.10.1, data version 18 (schema 1), preparation contract 2.**
+Existing data-17 databases need an XML refresh before content loads. The refresh
+recomposes append effects using Legacy ordering and description behavior; changing
+version metadata alone is insufficient. If an unreadable append supplier prevents
+safe recomposition, the refresh preserves the previous database and reports what
+needs repair. Check 1 therefore needs an older-format database and cannot be
+repeated on the same database after it has been refreshed.
 
 The library now follows legacy declaration order for readable same-ID collisions
 and records superseded declarations separately from active mechanics. Explicit
@@ -53,7 +54,7 @@ robocopy "%USERPROFILE%\Documents\5e Character Builder" "%USERPROFILE%\Documents
 migration reads the switched-off packages recorded in the database, and it ran
 before the first refresh: `settings.json` has `"SourcePreferencesSeeded": true`.
 Restoring an old database no longer brings it back either, because a data-12
-database is not readable by the data-17 reader — it has to be refreshed first,
+database is not readable by the current data-18 reader — it has to be refreshed first,
 and the refresh is what retires those flags. Check 1 is kept below as a record of
 what it was meant to show, and its lasting half (what the Sources panel holds) is
 still worth reading.
@@ -337,8 +338,8 @@ a PDF import, and switch between two open character tabs.
   references with an explicit forwarding entry. References without one still
   require a content repair or re-picking the appropriate choice and saving.
 - **An older-format database reads as out of date on first launch** after taking
-  this branch, because the content format moved to data version 17. Refresh once;
-  a database already at v17 does not need this migration again.
+  this branch, because the content format moved to data version 18. Refresh once;
+  a database already at v18 does not need this migration again.
 
 ## If something looks wrong
 

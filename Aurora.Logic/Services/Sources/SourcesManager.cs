@@ -96,7 +96,7 @@ public class SourcesManager : ISourceRestrictionsProvider
 
   private void InitializeSources()
   {
-    foreach (SourceItem sourceItem in DataManager.Current.ElementsCollection.Where<ElementBase>((Func<ElementBase, bool>) (x => x.Type.Equals("Source", StringComparison.OrdinalIgnoreCase))).Cast<Source>().OrderBy<Source, string>((Func<Source, string>) (x => x.ReleaseDate)).ThenBy<Source, string>((Func<Source, string>) (x => x.Name)).Select<Source, SourceItem>((Func<Source, SourceItem>) (x => new SourceItem(x.Copy<Source>()))))
+    foreach (SourceItem sourceItem in DataManager.Current.ElementsCollection.Where<ElementBase>((Func<ElementBase, bool>) (x => x.Type.Equals("Source", StringComparison.OrdinalIgnoreCase))).Cast<Source>().OrderBy<Source, string>((Func<Source, string>) (x => x.ReleaseDate)).ThenBy<Source, string>((Func<Source, string>) (x => x.Name)).Select<Source, SourceItem>((Func<Source, SourceItem>) (x => new SourceItem(x.CopyWithDetachedXml()))))
       this.SourceItems.Add(sourceItem);
     // Internal/Core often have only source labels, without their own Source declaration.
     // Show the infrastructure actually present in the catalog instead of hiding those labels.
@@ -210,15 +210,22 @@ public class SourcesManager : ISourceRestrictionsProvider
   private IEnumerable<string> GetUndefinedSourceNames(SourcesGroup undefinedGroup)
   {
     IEnumerable<ElementBase> elementBases = DataManager.Current.ElementsCollection.Where<ElementBase>((Func<ElementBase, bool>) (x => !x.Type.Equals("Source") && !x.Type.Equals("Internal") && !x.Type.Equals("Core") && !x.Type.Equals("Ability Score Improvement") && !x.Type.Equals("Level") && !x.Type.Equals("Multiclass") && !x.Type.Equals("Skill") && !x.Type.Equals("Support")));
-    List<string> list = this.SourceItems.Select<SourceItem, string>((Func<SourceItem, string>) (x => x.Source.Name)).ToList<string>();
+    // Match the first declared source, as FirstOrDefault did, without scanning every
+    // source twice for every catalog element during a refresh on the UI thread.
+    var sourcesByName = new Dictionary<string, SourceItem>(StringComparer.OrdinalIgnoreCase);
+    foreach (SourceItem item in this.SourceItems)
+      if (item.Source.Name != null)
+        sourcesByName.TryAdd(item.Source.Name, item);
+    var undefinedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
     List<string> source2 = new List<string>();
     foreach (ElementBase elementBase in elementBases)
     {
       string elementSourceName = elementBase.Source;
       if (!RequiredContentPolicy.IsRequiredSource(elementSourceName))
       {
-        this.SourceItems.FirstOrDefault<SourceItem>((Func<SourceItem, bool>) (x => x.Source.Name.Equals(elementSourceName, StringComparison.OrdinalIgnoreCase)))?.Elements.Add(elementBase.ElementHeader);
-        if (!source2.Contains<string>(elementSourceName, (IEqualityComparer<string>) StringComparer.OrdinalIgnoreCase) && !list.Contains<string>(elementSourceName, (IEqualityComparer<string>) StringComparer.OrdinalIgnoreCase))
+        if (elementSourceName != null && sourcesByName.TryGetValue(elementSourceName, out SourceItem sourceItem))
+          sourceItem.Elements.Add(elementBase.ElementHeader);
+        else if (undefinedNames.Add(elementSourceName))
           source2.Add(elementSourceName);
       }
     }

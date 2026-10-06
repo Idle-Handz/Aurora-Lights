@@ -170,9 +170,10 @@ public sealed class ContentDoctorServiceTests : IDisposable
     }
 
     [Fact]
-    public void AnAbsentOrOlderDatabaseReportsNoConflictsRatherThanFailing()
+    public void AnAbsentOrOlderDatabaseReportsUnavailableDiagnosticsRatherThanAnEmptySuccess()
     {
-        ContentDoctorService.ReadConflicts(Path.Combine(root, "missing.sqlite")).Should().BeEmpty();
+        ContentDoctorService.ReadSnapshot(Path.Combine(root, "missing.sqlite")).Problem
+            .Should().Contain("No content database");
 
         string empty = Path.Combine(root, "empty.sqlite");
         using (var connection = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={empty};Pooling=False"))
@@ -183,6 +184,88 @@ public sealed class ContentDoctorServiceTests : IDisposable
             command.ExecuteNonQuery();
         }
 
-        ContentDoctorService.ReadConflicts(empty).Should().BeEmpty("a database built before duplicates were kept has no such view");
+        ContentDoctorService.ReadSnapshot(empty).Problem.Should().Contain("could not be read",
+            "an older database cannot prove that no overrides, conflicts or skipped files exist");
+    }
+
+    [Fact]
+    public void ACorruptDatabaseCannotReportHealthyEmptyDiagnostics()
+    {
+        string db = Path.Combine(root, "corrupt.sqlite");
+        File.WriteAllText(db, "This is not a SQLite database.");
+
+        ContentDoctorService.ReadSnapshot(db).Problem.Should().Contain("could not be read");
+    }
+
+    [Fact]
+    public void MalformedCorrectionXmlIsAnIndividualFileProblem()
+    {
+        File.WriteAllText(Upstream, Baseline);
+        WriteOverride();
+        File.WriteAllText(Override, File.ReadAllText(Override).Replace("</elements>", ""));
+
+        ContentDoctorService.Evaluate(Override).Problem.Should().NotBeNullOrWhiteSpace();
+    }
+
+    [Fact]
+    public async Task SnapshotReadsTheCurrentImportAndHonorsCancellation()
+    {
+        File.WriteAllText(Upstream, Baseline);
+        WriteOverride();
+        File.WriteAllText(Path.Combine(root, "broken.xml"), "<elements><element");
+        string db = Path.Combine(root, "content.sqlite");
+        await Aurora.Content.ContentImport.ImportAsync(root, db, skipUnusableContent: true);
+
+        ContentDoctorSnapshot snapshot = ContentDoctorService.ReadSnapshot(db);
+
+        snapshot.Problem.Should().BeNull();
+        snapshot.Files.Should().ContainSingle().Which.Corrections.Should().ContainSingle();
+        snapshot.Skipped.Should().Contain(s => s.RelativePath == "broken.xml" && s.Kind == "unreadable");
+
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        Action load = () => ContentDoctorService.ReadSnapshot(db, cancellation.Token);
+        load.Should().Throw<OperationCanceledException>();
+    }
+
+    [Fact]
+    public async Task ARetiredOverrideIsNotReportedAsAMissingActiveFile()
+    {
+        File.WriteAllText(Upstream, Corrected);
+        WriteOverride("accepted-upstream");
+        string db = Path.Combine(root, "content.sqlite");
+        await Aurora.Content.ContentImport.ImportAsync(root, db);
+
+        File.Exists(Override).Should().BeFalse("the import retired the accepted override");
+        Directory.GetFiles(Path.GetDirectoryName(Override)!, "fix.xml.retired-*").Should().ContainSingle();
+        using (var connection = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={db};Mode=ReadOnly;Pooling=False"))
+        {
+            connection.Open();
+            using var command = connection.CreateCommand();
+            command.CommandText = "SELECT status FROM local_override_files WHERE file_path = $path";
+            command.Parameters.AddWithValue("$path", Override);
+            command.ExecuteScalar().Should().Be("retired", "retirement history remains in the database");
+        }
+
+        ContentDoctorSnapshot snapshot = ContentDoctorService.ReadSnapshot(db);
+
+        snapshot.Problem.Should().BeNull();
+        snapshot.Files.Should().BeEmpty("a deliberately retired correction no longer needs an active XML file");
+    }
+
+    [Fact]
+    public async Task AMissingActiveOverrideStillReportsAFileProblem()
+    {
+        File.WriteAllText(Upstream, Baseline);
+        WriteOverride();
+        string db = Path.Combine(root, "content.sqlite");
+        await Aurora.Content.ContentImport.ImportAsync(root, db);
+        File.Delete(Override);
+
+        ContentDoctorSnapshot snapshot = ContentDoctorService.ReadSnapshot(db);
+
+        snapshot.Problem.Should().BeNull();
+        snapshot.Files.Should().ContainSingle().Which.Problem.Should().Contain("no longer on disk",
+            "only confirmed retirement may suppress a missing override warning");
     }
 }
