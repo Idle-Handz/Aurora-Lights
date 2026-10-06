@@ -227,4 +227,45 @@ public sealed class ContentDoctorServiceTests : IDisposable
         Action load = () => ContentDoctorService.ReadSnapshot(db, cancellation.Token);
         load.Should().Throw<OperationCanceledException>();
     }
+
+    [Fact]
+    public async Task ARetiredOverrideIsNotReportedAsAMissingActiveFile()
+    {
+        File.WriteAllText(Upstream, Corrected);
+        WriteOverride("accepted-upstream");
+        string db = Path.Combine(root, "content.sqlite");
+        await Aurora.Content.ContentImport.ImportAsync(root, db);
+
+        File.Exists(Override).Should().BeFalse("the import retired the accepted override");
+        Directory.GetFiles(Path.GetDirectoryName(Override)!, "fix.xml.retired-*").Should().ContainSingle();
+        using (var connection = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={db};Mode=ReadOnly;Pooling=False"))
+        {
+            connection.Open();
+            using var command = connection.CreateCommand();
+            command.CommandText = "SELECT status FROM local_override_files WHERE file_path = $path";
+            command.Parameters.AddWithValue("$path", Override);
+            command.ExecuteScalar().Should().Be("retired", "retirement history remains in the database");
+        }
+
+        ContentDoctorSnapshot snapshot = ContentDoctorService.ReadSnapshot(db);
+
+        snapshot.Problem.Should().BeNull();
+        snapshot.Files.Should().BeEmpty("a deliberately retired correction no longer needs an active XML file");
+    }
+
+    [Fact]
+    public async Task AMissingActiveOverrideStillReportsAFileProblem()
+    {
+        File.WriteAllText(Upstream, Baseline);
+        WriteOverride();
+        string db = Path.Combine(root, "content.sqlite");
+        await Aurora.Content.ContentImport.ImportAsync(root, db);
+        File.Delete(Override);
+
+        ContentDoctorSnapshot snapshot = ContentDoctorService.ReadSnapshot(db);
+
+        snapshot.Problem.Should().BeNull();
+        snapshot.Files.Should().ContainSingle().Which.Problem.Should().Contain("no longer on disk",
+            "only confirmed retirement may suppress a missing override warning");
+    }
 }

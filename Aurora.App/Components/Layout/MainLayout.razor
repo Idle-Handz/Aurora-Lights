@@ -50,7 +50,7 @@
                            title="Save (Ctrl+S)"
                            OnClick="@(() => SaveActive())" />
         }
-        @* Update indicator — single icon button covers both release channels plus pending content refresh.
+        @* Update indicator covers app releases, pending content refresh, and correction proposals.
            It also appears while checks are running so manual/startup checks have visible feedback. *@
         @if (ShowUpdateIndicator)
         {
@@ -232,6 +232,7 @@
         Nav.LocationChanged           += OnLocationChanged;
         AppUpdates.Changed            += OnUpdatesChanged;
         Content.ContentDownloaded     += OnContentDownloaded;
+        Content.ReplacementProposalsAvailable += OnReplacementProposalsAvailable;
         Content.Changed               += OnUpdatesChanged;
     }
 
@@ -258,14 +259,37 @@
         });
     }
 
+    private void OnReplacementProposalsAvailable(int count)
+    {
+        if (_disposed || count <= 0) return;
+        _ = InvokeAsync(() =>
+        {
+            if (_disposed) return;
+            Snackbar.Add($"{count} content correction(s) are ready to review.", Severity.Info, cfg =>
+            {
+                cfg.VisibleStateDuration = 12000;
+                cfg.Action = "Review corrections";
+                cfg.ActionColor = Color.Primary;
+                cfg.Onclick = _ =>
+                {
+                    Nav.NavigateTo("/settings?tab=content&section=corrections");
+                    return Task.CompletedTask;
+                };
+            });
+            StateHasChanged();
+        });
+    }
+
     /// <summary>
     /// How many distinct attention-worthy signals to badge in the AppBar:
     ///   • a newer app release (GitHub)
     ///   • a startup-downloaded content pack pending refresh
+    ///   • downloaded corrections ready for explicit application
     /// </summary>
     private int UpdateAvailableCount =>
         (AppUpdates.UpdateAvailable ? 1 : 0) +
-        (Content.ContentReloadPending ? 1 : 0);
+        (Content.ContentReloadPending ? 1 : 0) +
+        Content.AvailableReplacementCount;
 
     private bool UpdatesAreChecking =>
         AppUpdates.IsChecking ||
@@ -291,6 +315,8 @@
                 parts.Add($"App: {AppUpdates.Latest!.LatestTag}");
             if (Content.ContentReloadPending)
                 parts.Add("Refresh database to apply downloaded content");
+            if (Content.AvailableReplacementCount > 0)
+                parts.Add($"{Content.AvailableReplacementCount} content correction(s) ready to review");
             return parts.Count == 0 ? "Updates" : string.Join(" • ", parts);
         }
     }
@@ -328,7 +354,7 @@
                        AppUpdates.UpdateAvailable ||
                        Content.ContentReloadPending
             ? "/settings?tab=updates"
-            : "/settings?tab=content");
+            : "/settings?tab=content&section=corrections");
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -338,8 +364,18 @@
             await ApplyBrowserThemeAsync();
             try { await JS.InvokeVoidAsync("AuroraShortcuts.register", _selfRef); } catch { }
             NotifyAppUpdateIfAvailable();
-            if (Prefs.AutoDownloadContentOnStartup)
-                _ = Task.Run(Content.RunStartupContentRefreshAsync);
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    Content.EnsureReplacementFeedInstalled();
+                    await Content.RunStartupContentRefreshAsync(() => Prefs.AutoDownloadContentOnStartup);
+                }
+                catch (Exception ex)
+                {
+                    DebugLogService.Catch(ex, "MainLayout.StartupContentRefresh");
+                }
+            });
         }
     }
 
@@ -439,6 +475,7 @@
         Nav.LocationChanged           -= OnLocationChanged;
         AppUpdates.Changed            -= OnUpdatesChanged;
         Content.ContentDownloaded     -= OnContentDownloaded;
+        Content.ReplacementProposalsAvailable -= OnReplacementProposalsAvailable;
         Content.Changed               -= OnUpdatesChanged;
         try { _ = JS.InvokeVoidAsync("AuroraShortcuts.unregister"); } catch { }
         _selfRef?.Dispose();

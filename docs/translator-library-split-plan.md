@@ -846,6 +846,20 @@ Capture the baseline from the current working tree before changing anything (Pha
      the corrected comparator. Logs are in `buildtmp/verification-0.7.1`.
      Character parity was not repeated for this version-only uptake.
 
+### Aurora.Content 0.10.1 uptake (2026-10-05)
+
+The current pin advances from 0.9.0 to **0.10.1**, consuming the verified immutable
+Translator release packages from clean source e6dfacd. Schema remains **1**,
+data becomes **18**, and preparation contract becomes **2**. Existing databases
+require XML refresh to recompose append order and descriptions. The direct Legacy
+oracle covers targets both with and without base descriptions; unsafe migration
+retains the previous database and reports the supplier that needs repair.
+
+See [the 0.10.1 adoption record](content-library-0.10.1-uptake.md) for package
+provenance, migration preservation, tests, corpus checks and known limitations.
+The additive catalog reader API is available but is not substituted for the
+host's runtime projection, which also includes live XML overlays and builtins.
+
 ### Aurora.Content 0.9.0 uptake (2026-09-26)
 
 The pin and both immutable packages now use **0.9.0**, from clean Translator

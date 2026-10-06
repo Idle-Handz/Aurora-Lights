@@ -31,7 +31,7 @@ public sealed class ContentDatabaseHealthTests : IDisposable
             DROP VIEW v_source_integrity_issues;
             CREATE VIEW v_source_integrity_issues AS
             WITH RECURSIVE rows(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM rows WHERE n < 49)
-            SELECT CASE WHEN n < 49 THEN 'grant-target-id-in-name-attribute' ELSE 'blank-grant-target-id' END AS issue_kind,
+            SELECT CASE WHEN n < 49 THEN 'grant-target-id-in-name-attribute' ELSE 'unrecognized-rule' END AS issue_kind,
                    'Feat' AS owner_type_name, 'ID_HEALTH_TEST' AS owner_aurora_id, 'Health Test' AS owner_name,
                    'file-' || CAST((n - 1) / 2 AS TEXT) || '.xml' AS relative_path,
                    'ID_HEALTH_TEST' AS issue_key, 'Finding' AS issue_text
@@ -47,6 +47,59 @@ public sealed class ContentDatabaseHealthTests : IDisposable
         report.ManualReviewIssueCount.Should().Be(1,
             "a display limit must never hide a smaller issue group from the status");
         report.Status.Should().Be(ContentDatabaseHealthStatus.Warning);
+        report.Samples.Should().ContainSingle(sample => sample.Impact == ContentDatabaseTrustImpact.ManualReview)
+            .Which.Should().Be(new ContentDatabaseHealthIssueSample(ContentDatabaseTrustImpact.ManualReview,
+                "source-integrity", "review", "unrecognized-rule", "Feat", "file-24.xml",
+                "ID_HEALTH_TEST", "ID_HEALTH_TEST", "Finding"));
+        report.Samples.Count(sample => sample.Impact == ContentDatabaseTrustImpact.AutoRecovered).Should().BeLessThanOrEqualTo(12);
+    }
+
+    [Fact]
+    public async Task EveryActionableReferenceIncludesItsOwnerFileWithoutInflatingTotals()
+    {
+        foreach (string file in new[] { "first", "second" })
+            File.WriteAllText(Path.Combine(_root, file + ".xml"),
+                $"<elements><element id='ID_HEALTH_{file}' name='{file}' type='Feat' source='Test'><rules>" +
+                string.Concat(Enumerable.Range(0, 7).Select(index =>
+                    $"<grant type='Feat' id='ID_MISSING_{file}_{index}'/>")) + "</rules></element></elements>");
+        await ContentImport.ImportAsync(_root, DatabasePath);
+
+        var report = ContentDatabaseHealthReader.Read(DatabasePath)!;
+
+        report.ActionableUnresolvedLinks.Should().Be(14);
+        report.BlockingIssueCount.Should().Be(14);
+        report.Samples.Should().HaveCount(14, "the former twelve-sample limit must not hide actionable references");
+        foreach (string file in new[] { "first", "second" })
+        {
+            report.Samples.Where(sample => sample.FilePath == file + ".xml").Should().HaveCount(7)
+                .And.OnlyContain(sample => sample.Impact == ContentDatabaseTrustImpact.Blocking &&
+                    sample.Area == "unresolved-link" && sample.Kind == "grant" && sample.Owner == "ID_HEALTH_" + file &&
+                    sample.Key.StartsWith("ID_MISSING_" + file + "_", StringComparison.Ordinal));
+            report.Groups.Should().ContainSingle(group => group.FilePath == file + ".xml")
+                .Which.Count.Should().Be(7);
+        }
+    }
+
+    [Fact]
+    public async Task MissingTypedRowsIdentifyEachFileAndDoNotDoubleCountBlockingIssues()
+    {
+        foreach (string kind in new[] { "Spell", "Item", "Companion" })
+            File.WriteAllText(Path.Combine(_root, kind + ".xml"),
+                $"<elements><element id='ID_HEALTH_{kind}' name='{kind}' type='{kind}' source='Test'/></elements>");
+        await ContentImport.ImportAsync(_root, DatabasePath);
+        Execute("DELETE FROM spells; DELETE FROM items; DELETE FROM companions;");
+
+        var report = ContentDatabaseHealthReader.Read(DatabasePath)!;
+
+        report.ProjectionIssues.Should().Be(3);
+        report.BlockingIssueCount.Should().Be(3);
+        report.Groups.Should().NotContain(group => group.Area == "projection",
+            "projection counts are already included by the shared report contract");
+        foreach (string kind in new[] { "Spell", "Item", "Companion" })
+            report.Samples.Should().ContainSingle(sample => sample.Area == "projection" && sample.Kind == kind)
+                .Which.Should().Be(new ContentDatabaseHealthIssueSample(ContentDatabaseTrustImpact.Blocking,
+                    "projection", "missing-row", "missing-resolved-row", kind, kind + ".xml",
+                    "ID_HEALTH_" + kind, "ID_HEALTH_" + kind, $"The effective {kind} has no typed database record."));
     }
 
     [Fact]

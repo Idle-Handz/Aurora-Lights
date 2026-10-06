@@ -44,6 +44,7 @@ public sealed class ContentIndexUpdateServiceTests
 
             result.Updated.Should().BeTrue();
             result.UpdatedFileCount.Should().Be(3);
+            result.UpdatedContentFileCount.Should().Be(2, "only XML files affect the element database");
             result.CheckedEntryCount.Should().Be(3);
             result.IndexFileCount.Should().Be(2);
             File.Exists(Path.Combine(root, "core", "root.xml")).Should().BeTrue();
@@ -344,6 +345,8 @@ public sealed class ContentIndexUpdateServiceTests
     [InlineData("book.xml", "<elements><element")]
     [InlineData("child.index", "<index><files>")]
     [InlineData("child.index", "<html><body>Temporary server error</body></html>")]
+    [InlineData("fix.aurora-correction", "<elements><proposal")]
+    [InlineData("fix.aurora-correction", "<html>Temporary server error</html>")]
     public async Task UpdateAsync_preserves_existing_content_when_a_download_is_not_valid_xml_or_index(
         string filename, string invalidDownload)
     {
@@ -396,6 +399,33 @@ public sealed class ContentIndexUpdateServiceTests
             File.Exists(obsoletePath).Should().BeFalse();
             result.FailedFileCount.Should().Be(1);
             result.UpdatedFileCount.Should().Be(1);
+            result.UpdatedContentFileCount.Should().Be(1, "removing obsolete XML also requires a refresh");
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public async Task Proposal_download_and_retirement_do_not_change_active_content()
+    {
+        string root = CreateTempDirectory();
+        try
+        {
+            string index = Path.Combine(root, "repairs.index");
+            File.WriteAllText(index, "<index><files><file name='fix.aurora-correction' url='https://example.test/fix'/></files></index>");
+            var handler = new SequenceHandler();
+            handler.Respond("https://example.test/fix", Ok("<elements><info><name>Repair proposal</name></info></elements>"));
+            using var client = new HttpClient(handler);
+            var service = new ContentIndexUpdateService(client);
+            var download = await service.UpdateAsync(new(root, ["repairs.index"]));
+            download.Updated.Should().BeTrue();
+            download.UpdatedContentFileCount.Should().Be(0);
+            File.Exists(Path.Combine(root, "repairs", "fix.aurora-correction")).Should().BeTrue();
+            Directory.GetFiles(root, "*.xml", SearchOption.AllDirectories).Should().BeEmpty();
+
+            File.WriteAllText(index, "<index><files><obsolete name='fix.aurora-correction'/></files></index>");
+            var removal = await service.UpdateAsync(new(root, ["repairs.index"]));
+            removal.Updated.Should().BeTrue();
+            removal.UpdatedContentFileCount.Should().Be(0);
         }
         finally { Directory.Delete(root, recursive: true); }
     }

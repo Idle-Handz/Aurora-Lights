@@ -195,7 +195,9 @@ public sealed class ContentDoctorService
         var paths = new List<string>();
         using var command = connection.CreateCommand();
         command.Transaction = transaction;
-        command.CommandText = "SELECT file_path FROM local_override_files ORDER BY file_path";
+        // Retired rows preserve history after the importer renames the XML to a backup.
+        // Only active overrides still require a file at their original path.
+        command.CommandText = "SELECT file_path FROM local_override_files WHERE status <> 'retired' ORDER BY file_path";
         using var reader = command.ExecuteReader();
         while (reader.Read())
         {
