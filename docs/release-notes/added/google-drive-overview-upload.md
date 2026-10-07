@@ -1,0 +1,1 @@
+Upload app-saved characters directly from Overview with **Upload to Drive**, including current edits, HP, spell slots and other session state. This works without locating the app's private files in the mobile file picker; external-file upload remains available in Cloud Saves.

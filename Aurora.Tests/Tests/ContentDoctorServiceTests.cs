@@ -5,9 +5,8 @@ using LocalCorrectionDocument = Aurora.Content.Contracts.LocalCorrectionDocument
 namespace Aurora.Tests.Tests;
 
 /// <summary>
-/// The page exists so a reader can tell a correction that is still doing work from one upstream
-/// has since adopted, and clear the latter. Getting that distinction wrong either hides a redundant
-/// correction forever or offers to throw away one that is the only thing supplying a fix.
+/// Installed source files may contain local edits. A local match must not become a claim of
+/// publisher adoption or permission to retire the correction that protects the fix.
 /// </summary>
 public sealed class ContentDoctorServiceTests : IDisposable
 {
@@ -43,7 +42,7 @@ public sealed class ContentDoctorServiceTests : IDisposable
             [new LocalCorrection("fix", "replace", "ID_FIX", null, null, state)]));
 
     [Fact]
-    public void ACorrectionUpstreamHasNotAdoptedIsStillNeeded()
+    public void ACorrectionMissingFromTheInstalledSourceIsStillNeeded()
     {
         File.WriteAllText(Upstream, Baseline);
         WriteOverride();
@@ -52,25 +51,33 @@ public sealed class ContentDoctorServiceTests : IDisposable
 
         file.Problem.Should().BeNull();
         file.Corrections.Should().ContainSingle();
-        file.Corrections[0].Incorporated.Should().BeFalse("upstream still carries the uncorrected element");
+        file.Corrections[0].MatchesInstalledSource.Should().BeFalse("the installed source still carries the uncorrected element");
         file.Corrections[0].Summary.Should().Be("Still needed");
-        file.IncorporatedCount.Should().Be(0);
+        file.InstalledMatchCount.Should().Be(0);
         file.CanRetire.Should().BeFalse();
     }
 
     [Fact]
-    public void ACorrectionUpstreamHasAdoptedIsOfferedForClearing()
+    public void ALocallyPatchedSourceIsOnlyReportedAsAnInstalledMatchAndCannotBeAccepted()
     {
-        // Upstream now ships the same fix the correction was making.
+        // Editing this installed file does not establish what the publisher ships.
         File.WriteAllText(Upstream, Corrected);
         WriteOverride();
+        byte[] originalLocal = File.ReadAllBytes(Override);
+        byte[] originalSource = File.ReadAllBytes(Upstream);
+        var service = new ContentDoctorService(new ContentDatabaseService());
 
         OverrideFileModel file = ContentDoctorService.Evaluate(Override);
 
-        file.Corrections[0].Incorporated.Should().BeTrue();
-        file.Corrections[0].Summary.Should().Be("Upstream has adopted this");
-        file.IncorporatedCount.Should().Be(1);
-        file.Status.Should().Be("1 ready to clear");
+        file.Corrections[0].MatchesInstalledSource.Should().BeTrue();
+        file.Corrections[0].Summary.Should().Be("Matches installed source");
+        file.InstalledMatchCount.Should().Be(1);
+        file.Status.Should().Be("Matches installed source");
+        file.CanRetire.Should().BeFalse();
+        Action accept = () => service.AcceptCorrection(file, file.Corrections[0]);
+        accept.Should().Throw<InvalidDataException>().WithMessage("*Publisher adoption has not been verified*");
+        File.ReadAllBytes(Override).Should().Equal(originalLocal);
+        File.ReadAllBytes(Upstream).Should().Equal(originalSource);
     }
 
     [Fact]
@@ -87,13 +94,13 @@ public sealed class ContentDoctorServiceTests : IDisposable
         file.Problem.Should().BeNull();
         file.Corrections[0].State.Should().Be("approved-local");
         file.Corrections[0].Summary.Should().Be("Approved locally");
-        file.Corrections[0].Incorporated.Should().BeFalse();
-        file.IncorporatedCount.Should().Be(0);
+        file.Corrections[0].MatchesInstalledSource.Should().BeFalse();
+        file.InstalledMatchCount.Should().Be(0);
         file.CanRetire.Should().BeFalse();
     }
 
     [Fact]
-    public void AnApprovedLocalCorrectionAlreadyInUpstreamCanStillBeCleared()
+    public void AnApprovedCorrectionMatchingTheInstalledSourceRemainsProtected()
     {
         File.WriteAllText(Upstream, Corrected);
         WriteOverride();
@@ -106,21 +113,22 @@ public sealed class ContentDoctorServiceTests : IDisposable
         OverrideFileModel before = ContentDoctorService.Evaluate(Override);
 
         before.Corrections[0].State.Should().Be("approved-local");
-        before.Corrections[0].Incorporated.Should().BeTrue();
-        before.Corrections[0].Summary.Should().Be("Upstream has adopted this");
-        before.Status.Should().Be("1 ready to clear");
-        service.AcceptCorrection(before, before.Corrections[0]);
+        before.Corrections[0].MatchesInstalledSource.Should().BeTrue();
+        before.Corrections[0].Summary.Should().Be("Matches installed source");
+        before.Status.Should().Be("Matches installed source");
+        string originalXml = File.ReadAllText(Override);
+        Action accept = () => service.AcceptCorrection(before, before.Corrections[0]);
+        accept.Should().Throw<InvalidDataException>().WithMessage("*Publisher adoption has not been verified*");
 
         OverrideFileModel after = ContentDoctorService.Evaluate(Override);
-        after.Corrections[0].Accepted.Should().BeTrue();
-        after.Corrections[0].Summary.Should().Be("Accepted upstream");
-        after.IncorporatedCount.Should().Be(0);
-        after.CanRetire.Should().BeTrue();
-        File.Exists(Override).Should().BeTrue("acceptance leaves retirement to a separate import");
+        after.Corrections[0].State.Should().Be("approved-local");
+        after.Corrections[0].Accepted.Should().BeFalse();
+        after.CanRetire.Should().BeFalse();
+        File.ReadAllText(Override).Should().Be(originalXml);
     }
 
     [Fact]
-    public void ADisabledIncorporatedCorrectionIsNotOfferedForClearingAndRejectsAnAlteredModel()
+    public void ADisabledMatchingCorrectionRejectsAnAlteredModel()
     {
         File.WriteAllText(Upstream, Corrected);
         WriteOverride();
@@ -134,8 +142,8 @@ public sealed class ContentDoctorServiceTests : IDisposable
 
         file.Problem.Should().BeNull();
         file.IsDisabled.Should().BeTrue();
-        file.Corrections[0].Incorporated.Should().BeTrue("incorporation remains a fact even while the file is disabled");
-        file.IncorporatedCount.Should().Be(0, "disabled corrections are not ready to clear");
+        file.Corrections[0].MatchesInstalledSource.Should().BeTrue("the installed files still match while the correction is disabled");
+        file.InstalledMatchCount.Should().Be(0, "disabled corrections are not active matches");
         file.Status.Should().Be("Disabled");
         Action clear = () => service.AcceptCorrection(file with { IsDisabled = false }, file.Corrections[0]);
         clear.Should().Throw<InvalidDataException>().WithMessage("*Enable the local correction file*");
@@ -162,25 +170,73 @@ public sealed class ContentDoctorServiceTests : IDisposable
     }
 
     /// <summary>
-    /// The whole point of clearing: once nothing is left doing work, the file can retire itself on
-    /// the next content refresh rather than sitting there forever.
+    /// Existing accepted metadata records intent, not evidence that a publisher shipped the fix.
     /// </summary>
-    [Fact]
-    public void ClearingTheLastCorrectionLeavesTheFileReadyToRetire()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ExistingAcceptanceReportsRecordedRetirementIntentWithoutClaimingPublisherAdoption(bool sourceMatches)
     {
-        File.WriteAllText(Upstream, Corrected);
-        WriteOverride();
-        var service = new ContentDoctorService(new ContentDatabaseService());
-
-        OverrideFileModel before = ContentDoctorService.Evaluate(Override);
-        service.AcceptCorrection(before, before.Corrections[0]);
+        File.WriteAllText(Upstream, sourceMatches ? Corrected : Baseline);
+        WriteOverride("accepted-upstream");
+        string originalXml = File.ReadAllText(Override);
 
         OverrideFileModel after = ContentDoctorService.Evaluate(Override);
         after.Corrections[0].Accepted.Should().BeTrue();
-        after.Corrections[0].Summary.Should().Be("Accepted upstream");
-        after.IncorporatedCount.Should().Be(0);
+        after.Corrections[0].MatchesInstalledSource.Should().Be(sourceMatches);
+        after.Corrections[0].Summary.Should().Be("Marked accepted");
+        after.InstalledMatchCount.Should().Be(0);
         after.CanRetire.Should().BeTrue();
-        after.Status.Should().Be("Ready to retire");
+        after.Status.Should().Be("Marked for retirement");
+        File.ReadAllText(Override).Should().Be(originalXml);
+    }
+
+    [Fact]
+    public void AnAlteredMatchingOrAcceptedModelCannotAuthorizeAcceptance()
+    {
+        File.WriteAllText(Upstream, Baseline);
+        WriteOverride();
+        byte[] originalLocal = File.ReadAllBytes(Override);
+        byte[] originalSource = File.ReadAllBytes(Upstream);
+        var service = new ContentDoctorService(new ContentDatabaseService());
+        var file = ContentDoctorService.Evaluate(Override);
+        var forged = file.Corrections[0] with { MatchesInstalledSource = true, State = "accepted-upstream" };
+
+        Action accept = () => service.AcceptCorrection(file with { CanRetire = true, Corrections = [forged] }, forged);
+
+        accept.Should().Throw<InvalidDataException>().WithMessage("*Publisher adoption has not been verified*");
+        File.ReadAllBytes(Override).Should().Equal(originalLocal);
+        File.ReadAllBytes(Upstream).Should().Equal(originalSource);
+    }
+
+    [Fact]
+    public async Task ALocallyMatchingCorrectionStillProtectsTheFixWhenInstalledContentRegresses()
+    {
+        File.WriteAllText(Upstream, Corrected);
+        WriteOverride();
+        byte[] originalLocal = File.ReadAllBytes(Override);
+        string db = Path.Combine(root, "content.sqlite");
+        await Aurora.Content.ContentImport.ImportAsync(root, db);
+        var service = new ContentDoctorService(new ContentDatabaseService());
+        var matching = ContentDoctorService.Evaluate(Override);
+        Action accept = () => service.AcceptCorrection(matching, matching.Corrections[0]);
+        accept.Should().Throw<InvalidDataException>().WithMessage("*Publisher adoption has not been verified*");
+
+        // A later publisher download can replace the locally patched source with the original.
+        File.WriteAllText(Upstream, Baseline);
+        await Aurora.Content.ContentImport.ImportAsync(root, db);
+
+        var protectedFile = ContentDoctorService.Evaluate(Override);
+        protectedFile.Corrections[0].MatchesInstalledSource.Should().BeFalse();
+        protectedFile.Corrections[0].State.Should().Be("review-pending");
+        protectedFile.CanRetire.Should().BeFalse();
+        File.ReadAllBytes(Override).Should().Equal(originalLocal);
+        Directory.GetFiles(Path.GetDirectoryName(Override)!, "fix.xml.retired-*").Should().BeEmpty();
+        using var connection = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={db};Mode=ReadOnly;Pooling=False");
+        connection.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT name FROM elements WHERE aurora_id = 'ID_FIX' AND declaration_status = 'effective';";
+        command.ExecuteScalar().Should().Be("Fixed", "the correction must survive a source download that still lacks the fix");
     }
 
     /// <summary>

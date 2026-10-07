@@ -127,8 +127,8 @@
                 <MudPaper Class="pa-3 mb-3" Outlined="true">
                     <div class="d-flex align-center flex-wrap gap-2">
                         <MudIcon Icon="@Icons.Material.Filled.Cloud" />
-                        <MudText>Google Drive — @(cloudTab.IsLoading ? "Loading..." : cloudTab.IsSaving ? "Saving..." : cloudTab.IsDirty ? "Changes not yet saved to Drive" : "Cloud save loaded")</MudText>
-                        <MudButton OnClick="SaveActive" Disabled="@(cloudTab.IsSaving || cloudTab.IsLoading)">Save to Drive</MudButton>
+                        <MudText>Google Drive — @(cloudTab.IsLoading ? "Loading..." : cloudTab.IsSaving ? "Saving..." : cloudTab.CloudReloadFailed ? "Could not load Drive save" : cloudTab.IsDirty ? "Changes not yet saved to Drive" : "Cloud save loaded")</MudText>
+                        <MudButton OnClick="SaveActive" Disabled="@(cloudTab.IsSaving || cloudTab.IsLoading || cloudTab.CloudReloadFailed)">Save to Drive</MudButton>
                         <MudButton OnClick="ReloadCloud" Disabled="@(cloudTab.IsSaving || cloudTab.IsLoading)">Load Drive Save</MudButton>
                         <MudButton OnClick="OpenCloudRecovery" Disabled="@(cloudTab.IsSaving || cloudTab.IsLoading)">Recovery Files</MudButton>
                     </div>
@@ -138,7 +138,7 @@
                     }
                 </MudPaper>
             }
-            <div inert="@(Tabs.ActiveTab?.CloudSession is not null && Tabs.ActiveTab.IsSaving ? string.Empty : null)">
+            <div inert="@(Tabs.ActiveTab is { IsSaving: true } or { CloudReloadFailed: true } ? string.Empty : null)">
                 <AppErrorBoundary @key="PageReloadVersion" @ref="_errorBoundary">@Body</AppErrorBoundary>
             </div>
         </MudContainer>
@@ -571,7 +571,8 @@
         if (tab?.CloudSession is null) return;
         try
         {
-            await BuildService.ReloadCloudTabAsync(tab);
+            string? warning = await BuildService.ReloadCloudTabAsync(tab);
+            if (warning is not null) Snackbar.Add(warning, Severity.Warning);
             Tabs.NotifyChanged();
             // CloudReloadVersion recreates the page's cached session/snapshot references.
         }

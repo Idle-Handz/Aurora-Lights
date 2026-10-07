@@ -78,6 +78,7 @@
     <Compile Include="..\Aurora.App\Services\SessionAttackReminderService.cs" Link="Linked\SessionAttackReminderService.cs" />
     <Compile Include="..\Aurora.App\Services\SessionState.cs" Link="Linked\SessionState.cs" />
     <Compile Include="..\Aurora.App\Services\SessionStore.cs" Link="Linked\SessionStore.cs" />
+    <Compile Include="..\Aurora.App\Services\LocalCharacterCloudUpload.cs" Link="Linked\LocalCharacterCloudUpload.cs" />
     <!-- Exercise the app's actual refresh/preload lifecycle without a MAUI window. -->
     <Compile Include="..\Aurora.App\Services\CharacterService.cs" Link="Linked\CharacterService.cs" />
     <Compile Include="..\Aurora.App\Services\CharacterContext.cs" Link="Linked\CharacterContext.cs" />

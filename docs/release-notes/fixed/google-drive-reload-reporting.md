@@ -1,0 +1,1 @@
+Google Drive reloads and conflict recovery now report partial or failed character loads instead of claiming success. Failed initialization blocks saving the previous character over the downloaded file until a successful reload.

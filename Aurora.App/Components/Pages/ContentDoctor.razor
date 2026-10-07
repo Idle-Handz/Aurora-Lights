@@ -26,9 +26,9 @@ else
 {
 <MudText Typo="Typo.h6" Class="mb-1">Override files</MudText>
 <MudText Typo="Typo.body2" Class="mb-4">
-    Override files keep a local copy of a content file so a correction can be applied to it. When the
-    people who publish that content adopt the same fix, the correction stops doing anything &mdash;
-    clearing it here is what eventually lets the override file retire itself.
+    Override files protect your corrections when installed content changes. This page compares files
+    on this device; an installed source may also contain local edits. A match does not verify that
+    the publisher adopted the fix, so accepting corrections is unavailable here.
 </MudText>
 
 @if (_loading)
@@ -63,9 +63,9 @@ else
             }
             else if (file.CanRetire)
             {
-                <MudAlert Severity="Severity.Success" Dense="true" Class="mt-3">
-                    Every correction here has been accepted and the content matches upstream. The next
-                    content refresh will retire this file.
+                <MudAlert Severity="Severity.Warning" Dense="true" Class="mt-3">
+                    Every correction in this file is already marked accepted. The next content refresh
+                    may retire it. Content Doctor has not verified a publisher update.
                 </MudAlert>
             }
 
@@ -78,7 +78,6 @@ else
                             <th>Operation</th>
                             <th>Element</th>
                             <th>State</th>
-                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -98,14 +97,6 @@ else
                                     <MudChip T="string" Size="Size.Small" Color="@CorrectionColour(correction)">
                                         @correction.Summary
                                     </MudChip>
-                                </td>
-                                <td style="text-align: right;">
-                                    @if (!file.IsDisabled && correction.Incorporated && !correction.Accepted)
-                                    {
-                                        <MudButton Size="Size.Small" Variant="Variant.Filled" Color="Color.Primary"
-                                                   Disabled="_busy"
-                                                   OnClick="@(() => Accept(file, correction))">Accept upstream</MudButton>
-                                    }
                                 </td>
                             </tr>
                         }
@@ -508,31 +499,6 @@ else
             $"elapsedMs={System.Diagnostics.Stopwatch.GetElapsedTime(start).TotalMilliseconds:F1}");
     }
 
-    private async Task Accept(OverrideFileModel file, OverrideCorrectionModel correction)
-    {
-        if (_disposed || _busy || _loading || _databaseRefreshing) return;
-        _busy = true;
-        try
-        {
-            await Task.Run(() => Doctor.AcceptCorrection(file, correction));
-            if (_disposed) return;
-            Snackbar.Add($"Cleared {correction.Key}. Refresh content to rebuild the database.", Severity.Success);
-            await Reload();
-        }
-        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or System.Xml.XmlException)
-        {
-            // The hashes captured when the list was read no longer match, or the file cannot be
-            // written. Re-read so the reader is deciding from what is actually on disk.
-            if (_disposed) return;
-            Snackbar.Add(ex.Message, Severity.Error);
-            await Reload();
-        }
-        finally
-        {
-            _busy = false;
-        }
-    }
-
     public void Dispose()
     {
         _disposed = true;
@@ -543,13 +509,13 @@ else
 
     private static Color StatusColour(OverrideFileModel file) =>
         file.Problem is not null ? Color.Warning
-        : file.CanRetire ? Color.Success
-        : file.IncorporatedCount > 0 ? Color.Primary
+        : file.CanRetire ? Color.Warning
+        : file.InstalledMatchCount > 0 ? Color.Primary
         : Color.Default;
 
     private static Color CorrectionColour(OverrideCorrectionModel correction) =>
-        correction.Accepted ? Color.Success
-        : correction.Incorporated ? Color.Primary
+        correction.Accepted ? Color.Default
+        : correction.MatchesInstalledSource ? Color.Primary
         : Color.Default;
 
     private static string Reason(string kind) => kind switch

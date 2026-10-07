@@ -81,7 +81,8 @@ else
         var existing = Tabs.Tabs.FirstOrDefault(t => t.CloudSession?.Metadata.Reference.DocumentId == metadata.Reference.DocumentId);
         if (existing is not null)
         {
-            await BuildService.ReloadCloudTabAsync(existing);
+            string? warning = await BuildService.ReloadCloudTabAsync(existing);
+            if (warning is not null) Snackbar.Add(warning, Severity.Warning);
             Tabs.ActivateTab(existing);
             Tabs.NotifyChanged();
             Nav.NavigateTo("/character");

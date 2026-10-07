@@ -2,6 +2,10 @@
 *.jks
 *.b64
 
+# Local OAuth client credentials and Codex attachments
+/client_secret_*.apps.googleusercontent.com.json
+/.codex-remote-attachments/
+
 # Build outputs
 bin/
 obj/

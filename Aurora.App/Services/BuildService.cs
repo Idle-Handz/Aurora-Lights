@@ -558,6 +558,8 @@ public static partial class BuildService
     private static async Task<string?> SaveTabCoreAsync(CharacterTab tab)
     {
         if (tab.File == null) return "No file associated with this tab.";
+        if (tab.CloudReloadFailed)
+            return tab.CloudNotice = "The Drive character could not be loaded. Load the Drive save again before editing or saving.";
         using var scope = await CharacterContext.EnterAsync(tab);
         long editVersion = tab.EditVersion;
         string? error = null;
@@ -593,10 +595,14 @@ public static partial class BuildService
                 {
                     SaveCharacterFile(tab);
                     await ReloadCloudFilesAsync(tab);
-                    await ReloadCloudStateAsync(tab);
-                    tab.CloudNotice = "A newer Drive save was loaded. Unsent edits were kept in the recovery folder.";
+                    error = await ReloadCloudStateAsync(tab);
+                    tab.CloudNotice = error ?? "A newer Drive save was loaded. Unsent edits were kept in the recovery folder.";
                 }
-                catch (Exception ex) { error = ex.Message; }
+                catch (Exception ex)
+                {
+                    error = "The newer Drive save could not be loaded. Unsent edits were kept in the recovery folder. " + ex.Message;
+                    if (tab.CloudReloadFailed) tab.IsDirty = true;
+                }
             }
             catch (Exception ex)
             {
@@ -607,7 +613,7 @@ public static partial class BuildService
         return error;
     }
 
-    public static async Task ReloadCloudTabAsync(CharacterTab tab)
+    public static async Task<string?> ReloadCloudTabAsync(CharacterTab tab)
     {
         if (tab.IsSaving) throw new InvalidOperationException("Wait for the current save to finish.");
         tab.CloudNotice = null;
@@ -616,30 +622,48 @@ public static partial class BuildService
         {
             // Reloading an already-open Drive character also hydrates and recalculates the
             // engine. Keep that work off the renderer, under the same character-context lock.
-            await Task.Run(async () =>
+            string? warning = await Task.Run(async () =>
             {
                 using var scope = await CharacterContext.EnterAsync(tab);
                 // Materialize in-memory changes so recovery includes unsaved text/build edits.
-                SaveCharacterFile(tab);
+                // After a failed hydration, the downloaded file and recovery copy are the
+                // authoritative evidence. Never overwrite them with the previous model.
+                if (!tab.CloudReloadFailed) SaveCharacterFile(tab);
                 await ReloadCloudFilesAsync(tab);
-                await ReloadCloudStateAsync(tab);
+                return await ReloadCloudStateAsync(tab);
             });
-            tab.CloudNotice = "Loaded the current Google Drive save.";
+            tab.CloudNotice = warning ?? "Loaded the current Google Drive save.";
+            return warning;
+        }
+        catch (Exception ex)
+        {
+            tab.CloudNotice = "Could not load the Google Drive save. " + ex.Message;
+            if (tab.CloudReloadFailed) tab.IsDirty = true;
+            throw;
         }
         finally { tab.IsSaving = false; }
     }
 
-    private static async Task ReloadCloudStateAsync(CharacterTab tab)
+    private static async Task<string?> ReloadCloudStateAsync(CharacterTab tab)
     {
+        tab.CloudReloadFailed = true;
         // The authoritative download intentionally changes the disk stamp.
         tab.File.RestoreKnownDiskStamp(null);
-        await CharacterContext.ReloadFromDiskAsync(tab);
+        var loaded = await CharacterContext.ReloadFromDiskAsync(tab);
         tab.Session = SessionStore.Load(tab.File.FilePath);
         tab.Snapshot = CharacterSnapshot.From(tab.Character!);
         ResnapTab(tab);
+        tab.CloudReloadFailed = false;
+        tab.CloudReloadVersion++;
+        if (!loaded.Success)
+        {
+            DebugLogService.Instance.Warn($"Partial Drive reload: {tab.File.FileName}", loaded.Message);
+            tab.IsDirty = true;
+            return PartialLoadReport.Describe(loaded) + " Unsent edits were kept in the recovery folder.";
+        }
         tab.CloudSavedEditVersion = tab.EditVersion;
         tab.IsDirty = false;
-        tab.CloudReloadVersion++;
+        return null;
     }
 
     private static async Task ReloadCloudFilesAsync(CharacterTab tab)
@@ -728,6 +752,8 @@ public static partial class BuildService
         CharacterTab tab,
         Builder.Presentation.Models.CharacterFile? explicitFile = null)
     {
+        if (tab.CloudReloadFailed)
+            throw new InvalidOperationException("Load the Drive save again before editing or saving this character.");
         Builder.Presentation.Models.CharacterFile? targetFile = explicitFile ?? tab.File;
         if (targetFile is null)
             throw new InvalidOperationException("No file associated with this tab.");

@@ -13,9 +13,10 @@
     </div>
 }
 
-<MudPaper Class="mt-6 pa-4" Outlined="true">
+<MudPaper id="cloud-saves" Class="mt-6 pa-4" Outlined="true">
     <MudText Typo="Typo.h5">Cloud Saves</MudText>
     <MudText Typo="Typo.body2" Class="mb-3">Open and save characters in Google Drive. Drive is the main save; this device keeps a working copy.</MudText>
+    <MudText Typo="Typo.body2" Class="mb-3">For a character saved in this app, open its Overview and choose Upload to Drive.</MudText>
     @if (!Cloud.IsSupported)
     {
         <MudText>Google Drive sign-in is available on desktop and Android.</MudText>
@@ -41,7 +42,7 @@
         <div class="d-flex flex-wrap gap-2 my-3">
             <MudButton OnClick="Refresh" Disabled="_busy" StartIcon="@Icons.Material.Filled.Refresh">Refresh</MudButton>
             <MudButton OnClick="Upload" Disabled="_busy" StartIcon="@Icons.Material.Filled.CloudUpload"
-                       Variant="Variant.Filled" Color="Color.Primary">Upload Character</MudButton>
+                       Variant="Variant.Outlined" Color="Color.Primary">Upload external file</MudButton>
             <MudButton OnClick="Connect" Disabled="_busy">Reconnect</MudButton>
             <MudButton OnClick="Disconnect" Disabled="@(_busy || Tabs.Tabs.Any(t => t.CloudSession is not null))">
                 Disconnect
@@ -49,7 +50,7 @@
         </div>
         @if (_files.Count == 0 && !_busy)
         {
-            <MudText>No cloud characters yet. Upload a .dnd5e file to get started.</MudText>
+            <MudText>No cloud characters yet. Open a character and choose Upload to Drive on Overview, or upload an external .dnd5e file.</MudText>
         }
         @foreach (var file in _files)
         {

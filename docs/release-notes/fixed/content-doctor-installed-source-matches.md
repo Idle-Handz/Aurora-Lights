@@ -1,0 +1,1 @@
+Content Doctor now labels matches against installed source files without claiming that the publisher adopted a correction. Accepting corrections is unavailable until publisher updates can be verified, so a locally edited source cannot authorize retirement of the correction protecting the fix.

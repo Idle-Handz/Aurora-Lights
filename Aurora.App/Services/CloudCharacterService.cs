@@ -120,6 +120,10 @@ public sealed class CloudCharacterService
         CloudCharacterSession.OpenAsync(_store ?? throw new InvalidOperationException("Connect Google Drive first."),
             WorkspaceRoot, AccountId ?? throw new InvalidOperationException("Connect Google Drive first."), reference, ct);
 
+    public Task<CharacterDocumentMetadata> UploadCharacterAsync(CharacterTab tab, CancellationToken ct = default) =>
+        LocalCharacterCloudUpload.UploadAsync(
+            _store ?? throw new InvalidOperationException("Connect Google Drive first."), tab, ct);
+
     public async Task<CharacterDocumentMetadata?> UploadFileAsync(CancellationToken ct = default)
     {
         var picked = await FilePicker.Default.PickAsync(new PickOptions { PickerTitle = "Upload an Aurora character to Google Drive" });

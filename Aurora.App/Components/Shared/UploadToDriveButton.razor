@@ -1,0 +1,76 @@
+@implements IDisposable
+@inject CloudCharacterService Cloud
+@inject CharacterTabService Tabs
+@inject NavigationManager Nav
+@inject ISnackbar Snackbar
+
+@if (Tab is { CloudSession: null } && Cloud.IsSupported)
+{
+    <div class="mt-3">
+        <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.CloudUpload"
+                   Disabled="@(_busy || Tab.IsLoading || Tab.IsSaving)" OnClick="Upload">
+            @(_busy ? "Uploading to Drive..." : "Upload to Drive")
+        </MudButton>
+        @if (_busy)
+        {
+            <MudProgressLinear Indeterminate="true" Class="mt-2" />
+        }
+        @if (_uploaded)
+        {
+            <MudText Typo="Typo.body2" Class="mt-2">
+                Uploaded a copy. Open it from <MudLink Href="/#cloud-saves">Cloud Saves</MudLink> to continue using Drive.
+            </MudText>
+        }
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public CharacterTab? Tab { get; set; }
+    private bool _busy;
+    private bool _uploaded;
+    private bool _disposed;
+    private CancellationTokenSource? _operation;
+
+    private async Task Upload()
+    {
+        if (_busy || _disposed || Tab is not { } tab) return;
+        if (!Cloud.IsConfigured)
+        {
+            Snackbar.Add("Set up Google Drive in Cloud Saves, then upload this character from Overview.", Severity.Info);
+            Nav.NavigateTo("/#cloud-saves");
+            return;
+        }
+        _busy = true;
+        _uploaded = false;
+        using var cancellation = new CancellationTokenSource();
+        _operation = cancellation;
+        try
+        {
+            if (!Cloud.IsConnected) await Cloud.ConnectAsync(interactive: true, cancellation.Token);
+            cancellation.Token.ThrowIfCancellationRequested();
+            if (!Tabs.Tabs.Contains(tab)) return;
+            await Cloud.UploadCharacterAsync(tab, cancellation.Token);
+            if (!_disposed)
+            {
+                _uploaded = true;
+                Snackbar.Add("Character and session state uploaded to Google Drive.", Severity.Success);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            if (!_disposed) Snackbar.Add("Upload cancelled. Your local character is still on this device.", Severity.Info);
+        }
+        catch (Exception ex)
+        {
+            if (!_disposed) Snackbar.Add($"Could not upload to Drive: {ex.Message}", Severity.Error);
+        }
+        finally { _busy = false; _operation = null; }
+    }
+
+    public void Dispose()
+    {
+        _disposed = true;
+        _operation?.Cancel();
+    }
+}

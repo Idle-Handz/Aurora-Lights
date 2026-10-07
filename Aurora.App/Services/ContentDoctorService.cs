@@ -9,9 +9,8 @@ namespace Aurora.App.Services;
 /// <summary>
 /// One correction inside an override file, and whether it is still doing work.
 ///
-/// "Pinned" means upstream still does not carry the corrected content, so the correction is the
-/// only thing supplying it. "Incorporated" means upstream has since adopted it and the correction
-/// is now redundant - accepting it is what lets the override file eventually retire itself.
+/// Matching the installed source describes local files only. It cannot establish that the
+/// publisher adopted a correction: the installed source may itself have been edited locally.
 /// </summary>
 public sealed record OverrideCorrectionModel(
     string Key,
@@ -19,21 +18,20 @@ public sealed record OverrideCorrectionModel(
     string TargetId,
     string? ReplacementId,
     string State,
-    bool Incorporated,
+    bool MatchesInstalledSource,
     string? Reason)
 {
     public bool Accepted => string.Equals(State, "accepted-upstream", StringComparison.Ordinal);
 
-    public string Summary => Accepted ? "Accepted upstream"
-        : Incorporated ? "Upstream has adopted this"
+    public string Summary => Accepted ? "Marked accepted"
+        : MatchesInstalledSource ? "Matches installed source"
         : string.Equals(State, "approved-local", StringComparison.Ordinal) ? "Approved locally"
         : "Still needed";
 }
 
 /// <summary>
-/// An override file: a local copy of an upstream content file carrying marked corrections. The
-/// hashes are the state the reader is looking at, and accepting a correction passes them back so
-/// the write is refused if either file moved underneath them.
+/// An override file and its installed source. Hashes identify the local versions reviewed;
+/// neither those hashes nor the library's retirement eligibility prove publisher adoption.
 /// </summary>
 public sealed record OverrideFileModel(
     string FilePath,
@@ -47,12 +45,12 @@ public sealed record OverrideFileModel(
 {
     public bool IsDisabled { get; init; }
 
-    public int IncorporatedCount => IsDisabled ? 0 : Corrections.Count(c => c.Incorporated && !c.Accepted);
+    public int InstalledMatchCount => IsDisabled ? 0 : Corrections.Count(c => c.MatchesInstalledSource && !c.Accepted);
 
     public string Status => Problem is not null ? "Cannot be read"
         : IsDisabled ? "Disabled"
-        : CanRetire ? "Ready to retire"
-        : IncorporatedCount > 0 ? $"{IncorporatedCount} ready to clear"
+        : CanRetire ? "Marked for retirement"
+        : InstalledMatchCount > 0 ? "Matches installed source"
         : "In use";
 }
 
@@ -103,8 +101,8 @@ public sealed record ContentDoctorSnapshot(
 /// Reads the override files the content importer knows about and re-evaluates each one against
 /// what is on disk now.
 ///
-/// The database records an evaluation from the last import, which goes stale the moment a
-/// correction is accepted. Evaluating from disk instead means the page keeps telling the truth
+/// The database records an evaluation from the last import, which goes stale when either local
+/// file changes. Evaluating from disk instead means the page reports the current installed state
 /// without waiting for a content refresh; the database is used only to learn which files are
 /// override files in the first place.
 /// </summary>
@@ -150,7 +148,7 @@ public sealed class ContentDoctorService
                 }
             }
 
-            return new(files.OrderByDescending(file => file.IncorporatedCount)
+            return new(files.OrderByDescending(file => file.InstalledMatchCount)
                 .ThenBy(file => file.DisplayName, StringComparer.OrdinalIgnoreCase).ToList(), conflicts, skipped, null, suggestions);
         }
         catch (Exception ex) when (ex is SqliteException or IOException or UnauthorizedAccessException)
@@ -160,20 +158,20 @@ public sealed class ContentDoctorService
     }
 
     /// <summary>
-    /// Clears one correction by recording that upstream now carries it. The file is rewritten, so
-    /// the content database is a refresh behind until the next import.
+    /// Refuses acceptance until a publisher-verification workflow can establish adoption.
+    /// The guard belongs here as well as in the UI so old or altered models cannot authorize it.
     /// </summary>
     public void AcceptCorrection(OverrideFileModel file, OverrideCorrectionModel correction)
     {
         // The model is presentation state. Check the real XML so an old or altered model
-        // cannot authorize accepting a disabled correction; the writer still checks both hashes.
+        // cannot authorize accepting a disabled correction or an unreviewed file revision.
         var current = ContentCorrectionEditor.Read(file.FilePath);
         if (IsDisabled(current.LocalXml))
             throw new InvalidDataException("Enable the local correction file before accepting its corrections.");
         if (current.LocalHash != file.LocalHash || current.UpstreamHash != file.UpstreamHash)
             throw new IOException("Content changed since review. Review the correction again before accepting it.");
-        LocalCorrectionDocument.AcceptUpstream(
-            file.FilePath, file.LocalHash, file.UpstreamHash, [correction.Key]);
+        throw new InvalidDataException(
+            "Publisher adoption has not been verified. A match in the installed source may be a local edit. Keep the local correction active.");
     }
 
     /// <summary>
@@ -355,7 +353,7 @@ public sealed class ContentDoctorService
             string? root = LocalCorrectionDocument.FindContentRoot(path);
             if (root is null)
                 return new(path, name, string.Empty, false, string.Empty, string.Empty, [],
-                    "Not inside a content root, so its upstream file cannot be located.");
+                    "Not inside a content root, so its source file cannot be located.");
 
             LocalCorrectionEvaluation? evaluation = LocalCorrectionDocument.FromFile(path, root);
             if (evaluation is null)
@@ -373,7 +371,7 @@ public sealed class ContentDoctorService
                 LocalCorrectionDocument.FileFingerprint(path),
                 File.Exists(source) ? LocalCorrectionDocument.FileFingerprint(source) : string.Empty,
                 corrections,
-                File.Exists(source) ? null : "The upstream file it corrects is not installed.")
+                File.Exists(source) ? null : "The source file it corrects is not installed.")
             { IsDisabled = IsDisabled(evaluation.LocalXml) };
         }
         catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or XmlException)

@@ -7,11 +7,24 @@ character, and open it from the cloud list. The regular Save command and the
 **Save to Drive** button upload the open cloud character. The normal local
 character library remains separate.
 
+To upload a character saved inside the app, open its **Overview** and choose
+**Upload to Drive**. This saves current character edits and includes the session
+state (HP, spell slots and resources), without opening a native file picker.
+The local character remains on the device; open the new copy from **Cloud Saves**
+to continue saving to Drive. **Upload external file** remains available for files
+accessible through the system picker.
+
 Drive is authoritative. Opening or explicitly reloading a cloud character reads
 Drive and updates the managed local copy. If Drive changed after the character
 was opened, Save loads the newer Drive character automatically instead of
 overwriting it. A notice explains what happened. Displaced edits and their
 session sidecar are retained in the recovery folder.
+
+A partial reload reports the missing saved picks and does not mark the tab clean
+or report a successful save. If the downloaded character cannot initialize at
+all, editing and saving are blocked until a successful reload, so the previous
+character model cannot overwrite the downloaded file. Recovery copies remain
+available in both cases.
 
 Normal editor autosaves can update the managed local working copy. The cloud
 banner continues to say **Changes not yet saved to Drive** until an explicit

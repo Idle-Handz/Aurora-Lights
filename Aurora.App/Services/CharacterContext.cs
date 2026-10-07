@@ -74,16 +74,21 @@ public static class CharacterContext
     /// <see cref="EnterAsync"/> scope for the same tab). Used to roll back a failed save so
     /// the in-memory state matches what's actually on disk.
     /// </summary>
-    internal static async Task ReloadFromDiskAsync(CharacterTab tab)
+    internal static async Task<Builder.Presentation.Models.CharacterFile.LoadResult> ReloadFromDiskAsync(CharacterTab tab)
     {
         tab.StateXml = null;
         CharacterLoadCompatibilityService.PrepareForCharacterLoad();
-        await tab.File.Load();
+        var result = await tab.File.Load();
+        // A non-partial failure can occur before the loader creates a new character.
+        // Do not attach the previous singleton character to the downloaded file.
+        if (!result.Success && result.Missing.Count == 0)
+            throw new InvalidDataException(result.Message);
         tab.Character = CharacterManager.Current.Character;
         CharacterLoadCompatibilityService.RestoreEquippedSlots(tab.Character);
         BuildService.ReapplyCustomFeatures(tab.File);
         BuildService.NormalizeSelectionState();
         CharacterManager.Current.ReprocessCharacter();
+        return result;
     }
 
     /// <summary>

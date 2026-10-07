@@ -21,6 +21,8 @@ public sealed class CharacterTab
     public long CloudReloadVersion { get; set; }
     public CloudCharacterSession? CloudSession { get; set; }
     public string? CloudNotice { get; set; }
+    /// <summary>A failed hydration must be retried before the previous model can be saved.</summary>
+    public bool CloudReloadFailed { get; set; }
     private bool _isSaving;
     public event Action? SaveStateChanged;
     public bool IsSaving

@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using System.Xml.Linq;
 using Aurora.App.Services;
 using Builder.Presentation.Models;
 using Builder.Presentation.Services.Storage;
@@ -276,8 +277,14 @@ public sealed class CloudCharacterSessionTests : IDisposable
         validate.Should().Throw<Exception>();
     }
 
-    [Fact]
-    public async Task SaveCommand_WhenDriveChanges_LoadsAuthoritativeCharacterAndSession()
+    [Theory]
+    [InlineData(true, "none")]
+    [InlineData(false, "none")]
+    [InlineData(true, "missing-pick")]
+    [InlineData(false, "missing-pick")]
+    [InlineData(true, "uninitialized")]
+    [InlineData(false, "uninitialized")]
+    public async Task DriveReload_ReportsActualHydrationResult(bool conflict, string issue)
     {
         TestApplicationContextInstaller.EnsureInstalled();
         DataManager.Current.InitializeDirectories();
@@ -311,7 +318,12 @@ public sealed class CloudCharacterSessionTests : IDisposable
             byte[] original = File.ReadAllBytes(seedPath);
             manager.Character.Name = "Drive Newer";
             seed.Save(manager.Character).Should().BeTrue();
-            byte[] authoritative = CloudCharacterSession.Pack(File.ReadAllBytes(seedPath),
+            var remoteXml = XDocument.Load(seedPath);
+            if (issue == "missing-pick")
+                remoteXml.Root!.Element("build")!.Element("sum")!.Add(
+                    new XElement("element", new XAttribute("id", "ID_MISSING_CLOUD_FEAT"), new XAttribute("type", "Feat")));
+            if (issue == "uninitialized") remoteXml.Root!.Element("display-properties")!.Remove();
+            byte[] authoritative = CloudCharacterSession.Pack(Encoding.UTF8.GetBytes(remoteXml.ToString()),
                 Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new SessionState { CurrentHp = 7 })));
             var store = new FakeStore { Remote = new(Metadata(), original) };
             using var session = await Open(store);
@@ -325,14 +337,52 @@ public sealed class CloudCharacterSessionTests : IDisposable
             }
             store.Remote = new(Metadata("2"), authoritative);
             store.Save = (_, _, _) => throw new CharacterDocumentConflictException(Metadata(), Metadata("2"));
-            (await BuildService.SaveTabAsync(tab)).Should().BeNull();
+            string? error;
+            try
+            {
+                error = conflict ? await BuildService.SaveTabAsync(tab) : await BuildService.ReloadCloudTabAsync(tab);
+            }
+            catch (InvalidDataException ex) { error = ex.Message; }
+            File.ReadAllText(session.RecoveryPath!).Should().Contain("Unsent Local Name");
+            File.ReadAllBytes(session.FilePath).Should().Equal(authoritative);
+            tab.IsSaving.Should().BeFalse();
+            if (issue != "none")
+            {
+                error.Should().NotBeNullOrWhiteSpace();
+                tab.CloudNotice.Should().NotBeNullOrWhiteSpace();
+                tab.CloudNotice.Should().NotBe("Loaded the current Google Drive save.");
+                tab.CloudNotice.Should().NotBe("Saved to Google Drive.");
+                tab.IsDirty.Should().BeTrue();
+                tab.CloudSavedEditVersion.Should().BeLessThan(tab.EditVersion);
+                if (issue == "missing-pick")
+                {
+                    error.Should().Contain("1 saved pick could not be restored");
+                    tab.Character!.Name.Should().Be("Drive Newer");
+                    tab.Snapshot!.Name.Should().Be("Drive Newer");
+                    tab.Session.CurrentHp.Should().Be(7);
+                    tab.CloudReloadVersion.Should().Be(1);
+                    tab.CloudReloadFailed.Should().BeFalse("the partial character can still be inspected and repaired");
+                }
+                else
+                {
+                    tab.CloudReloadFailed.Should().BeTrue();
+                    (await BuildService.SaveTabAsync(tab)).Should().NotBeNullOrWhiteSpace();
+                    File.ReadAllBytes(session.FilePath).Should().Equal(authoritative, "failed hydration must not save the previous character over the download");
+                    // A subsequent valid download must recover without serializing the stale model.
+                    store.Remote = new(Metadata("3"), original);
+                    (await BuildService.ReloadCloudTabAsync(tab)).Should().BeNull();
+                    tab.CloudReloadFailed.Should().BeFalse();
+                    tab.Character!.Name.Should().Be("Drive Original");
+                    tab.IsDirty.Should().BeFalse();
+                }
+                return;
+            }
+            error.Should().BeNull();
             tab.Character!.Name.Should().Be("Drive Newer");
             tab.Snapshot!.Name.Should().Be("Drive Newer");
             tab.Session.CurrentHp.Should().Be(7);
             tab.IsDirty.Should().BeFalse();
             tab.CloudReloadVersion.Should().Be(1);
-            File.ReadAllText(session.RecoveryPath!).Should().Contain("Unsent Local Name");
-            File.ReadAllBytes(session.FilePath).Should().Equal(authoritative);
         }
         finally
         {
