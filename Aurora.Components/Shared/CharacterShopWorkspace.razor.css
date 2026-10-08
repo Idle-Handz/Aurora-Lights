@@ -1081,9 +1081,9 @@
 }
 
 /* ── Short windows: a 1080p laptop at 150% is only ~620px tall ───────────────
-   Height is about the window, not the shop's width, so this is a media query. The filters fold away as
-   they do on narrow widths, and the details scroll as one piece instead of leaving a tiny scroll box
-   for the rules text above an order panel that is taller than the pane. */
+   Fold away filters to leave room for the item and checkout. Keep the description independently
+   scrollable so long rules text cannot push the purchase buttons below the pane. The outer detail
+   pane can still scroll when the order form itself is taller than the available space. */
 
 @media (max-height: 820px) {
     .shop-filter-toggle {
@@ -1101,10 +1101,13 @@
     .shop-filters.is-open {
         display: flex;
     }
+}
 
-    .shop-detail-body {
-        flex: 0 0 auto;
-        overflow-y: visible;
+/* In phone landscape or with the keyboard open, the header can consume the
+   available height. Let the page scroll instead of collapsing the item panes. */
+@media (max-height: 500px) {
+    .shop-body {
+        min-height: 16rem;
     }
 }
 

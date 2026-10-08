@@ -1,0 +1,1728 @@
+
+<elements>
+	<info>
+		<name>Equipment Packs</name>
+		<description>Equipment Packs from the Player’s Handbook 2024.</description>
+		<update version="0.0.1">
+			<file name="items-packs.xml" url="https://raw.githubusercontent.com/AuroraLegacy/elements/master/core/players-handbook-2024/items/items-packs.xml" />
+		</update>
+	</info>
+
+	<!-- Background Equipment Packs -->
+	<element name="Background Equipment Pack (Acolyte)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_ACOLYTE">
+		<description>
+			<p style="margin-bottom:5px">This pack contains items that are given to a character of Acolyte Background, if you chose option A for Equipment.</p>
+			<p>You will receive following items by extracting contents of this pack:</p>
+			<p class="indent">• Calligrapher’s Supplies</p>
+			<p class="indent">• Book (prayers)</p>
+			<p class="indent">• Parchment (10 sheets)</p>
+			<p class="indent" style="margin-bottom:5px">• Robe</p>
+			<p><b>Note:</b> This pack doesn't include Holy Symbol (can be chosen in "Spellcasting Focus" Equipment category) and 8 GP.</p>
+		</description>
+		<setters>
+			<set name="category">Equipment Packs</set>
+			
+			<set name="weight">—</set>
+		</setters>
+		<extract>
+			<item>ID_WOTC_PHB24_ITEM_TOOL_CALLIGRAPHERS_SUPPLIES</item>
+			<item>ID_WOTC_PHB24_ITEM_BOOK</item>
+			<item amount="10">ID_WOTC_PHB24_ITEM_PARCHMENT</item>
+			<item>ID_WOTC_PHB24_ITEM_ROBE</item>
+		</extract>
+	</element>
+
+	<element name="Background Equipment Pack (Artisan)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_ARTISAN">
+		<description>
+			<p style="margin-bottom:5px">This pack contains items that are given to a character of Artisan Background, if you chose option A for Equipment.</p>
+			<p>You will receive following items by extracting contents of this pack:</p>
+			<p class="indent">• 2 Pouches</p>
+			<p class="indent">• Traveler's Clothes</p>
+			<p><b>Note:</b> This pack doesn't include the Artisan’s Tools of the same kind as Proficiency gained from this Background (can be taken from "Tools" Equipment category) and 32 GP.</p>
+		</description>
+		<setters>
+			<set name="category">Equipment Packs</set>
+			
+			<set name="weight">—</set>
+		</setters>
+		<extract>
+			<item amount="2">ID_WOTC_PHB24_ITEM_POUCH</item>
+			<item>ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS</item>
+		</extract>
+	</element>
+
+	<element name="Background Equipment Pack (Charlatan)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_CHARLATAN">
+		<description>
+			<p style="margin-bottom:5px">This pack contains items that are given to a character of Charlatan Background, if you chose option A for Equipment.</p>
+			<p>You will receive following items by extracting contents of this pack:</p>
+			<p class="indent">• Forgery Kit</p>
+			<p class="indent">• Costume</p>
+			<p class="indent">• Fine Clothes</p>
+			<p><b>Note:</b> This pack doesn't include 15 GP.</p>
+		</description>
+		<setters>
+			<set name="category">Equipment Packs</set>
+			
+			<set name="weight">—</set>
+		</setters>
+		<extract>
+			<item>ID_WOTC_PHB24_ITEM_TOOL_FORGERY_KIT</item>
+			<item>ID_WOTC_PHB24_ITEM_COSTUME</item>
+			<item>ID_WOTC_PHB24_ITEM_CLOTHES_FINE</item>
+		</extract>
+	</element>
+
+	<element name="Background Equipment Pack (Criminal)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_CRIMINAL">
+		<description>
+			<p style="margin-bottom:5px">This pack contains items that are given to a character of Criminal Background, if you chose option A for Equipment.</p>
+			<p>You will receive following items by extracting contents of this pack:</p>
+			<p class="indent">• 2 Daggers</p>
+			<p class="indent">• Thieves' Tools</p>
+			<p class="indent">• Crowbar</p>
+			<p class="indent">• 2 Pouches</p>
+			<p class="indent">• Traveler's Clothes</p>
+			<p><b>Note:</b> This pack doesn't include 15 GP.</p>
+		</description>
+		<setters>
+			<set name="category">Equipment Packs</set>
+			
+			<set name="weight">—</set>
+		</setters>
+		<extract>
+			<item amount="2">ID_WOTC_PHB24_WEAPON_DAGGER</item>
+			<item>ID_WOTC_PHB24_ITEM_TOOL_THIEVES_TOOLS</item>
+			<item>ID_WOTC_PHB24_ITEM_CROWBAR</item>
+			<item amount="2">ID_WOTC_PHB24_ITEM_POUCH</item>
+			<item>ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS</item>
+		</extract>
+	</element>
+
+	<element name="Background Equipment Pack (Entertainer)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_ENTERTAINER">
+		<description>
+			<p style="margin-bottom:5px">This pack contains items that are given to a character of Entertainer Background, if you chose option A for Equipment.</p>
+			<p>You will receive following items by extracting contents of this pack:</p>
+			<p class="indent">• 2 Costumes</p>
+			<p class="indent">• Mirror</p>
+			<p class="indent">• Perfume</p>
+			<p class="indent">• Traveler's Clothes</p>
+			<p><b>Note:</b> This pack doesn't include the Musical Instrument of the same kind as Proficiency gained from this Background (can be taken from "Musical Instruments" Equipment category) and 11 GP.</p>
+		</description>
+		<setters>
+			<set name="category">Equipment Packs</set>
+			
+			<set name="weight">—</set>
+		</setters>
+		<extract>
+			<item amount="2">ID_WOTC_PHB24_ITEM_COSTUME</item>
+			<item>ID_WOTC_PHB24_ITEM_MIRROR</item>
+			<item>ID_WOTC_PHB24_ITEM_PERFUME</item>
+			<item>ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS</item>
+		</extract>
+	</element>
+
+	<element name="Background Equipment Pack (Farmer)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_FARMER">
+		<description>
+			<p style="margin-bottom:5px">This pack contains items that are given to a character of Farmer Background, if you chose option A for Equipment.</p>
+			<p>You will receive following items by extracting contents of this pack:</p>
+			<p class="indent">• Sickle</p>
+			<p class="indent">• Carpenter's Tools</p>
+			<p class="indent">• Healer's Kit</p>
+			<p class="indent">• Iron Pot</p>
+			<p class="indent">• Shovel</p>
+			<p class="indent">• Traveler's Clothes</p>
+			<p><b>Note:</b> This pack doesn't include 30 GP.</p>
+		</description>
+		<setters>
+			<set name="category">Equipment Packs</set>
+			
+			<set name="weight">—</set>
+		</setters>
+		<extract>
+			<item>ID_WOTC_PHB24_WEAPON_SICKLE</item>
+			<item>ID_WOTC_PHB24_ITEM_TOOL_CARPENTERS_TOOLS</item>
+			<item>ID_WOTC_PHB24_ITEM_HEALERS_KIT</item>
+			<item>ID_WOTC_PHB24_ITEM_POT_IRON</item>
+			<item>ID_WOTC_PHB24_ITEM_SHOVEL</item>
+			<item>ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS</item>
+		</extract>
+	</element>
+
+	<element name="Background Equipment Pack (Guard)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_GUARD">
+		<description>
+			<p style="margin-bottom:5px">This pack contains items that are given to a character of Guard Background, if you chose option A for Equipment.</p>
+			<p>You will receive following items by extracting contents of this pack:</p>
+			<p class="indent">• Spear</p>
+			<p class="indent">• Light Crossbow</p>
+			<p class="indent">• 20 Bolts</p>
+			<p class="indent">• Hooded Lantern</p>
+			<p class="indent">• Manacles</p>
+			<p class="indent">• Quiver</p>
+			<p class="indent">• Traveler's Clothes</p>
+			<p><b>Note:</b> This pack doesn't include the Gaming Set of the same kind as Proficiency gained from this Background (can be taken from "Tools" Equipment category) and 12 GP.</p>
+		</description>
+		<setters>
+			<set name="category">Equipment Packs</set>
+			
+			<set name="weight">—</set>
+		</setters>
+		<extract>
+			<item>ID_WOTC_PHB24_WEAPON_SPEAR</item>
+			<item>ID_WOTC_PHB24_WEAPON_LIGHT_CROSSBOW</item>
+			<item amount="20">ID_WOTC_PHB24_ITEM_BOLT</item>
+			<item>ID_WOTC_PHB24_ITEM_LANTERN_HOODED</item>
+			<item>ID_WOTC_PHB24_ITEM_MANACLES</item>
+			<item>ID_WOTC_PHB24_ITEM_QUIVER</item>
+			<item>ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS</item>
+		</extract>
+	</element>
+
+	<element name="Background Equipment Pack (Guide)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_GUIDE">
+		<description>
+			<p style="margin-bottom:5px">This pack contains items that are given to a character of Guide Background, if you chose option A for Equipment.</p>
+			<p>You will receive following items by extracting contents of this pack:</p>
+			<p class="indent">• Shortbow</p>
+			<p class="indent">• 20 Arrows</p>
+			<p class="indent">• Cartographer's Tools</p>
+			<p class="indent">• Bedroll</p>
+			<p class="indent">• Quiver</p>
+			<p class="indent">• Tent</p>
+			<p class="indent">• Traveler's Clothes</p>
+			<p><b>Note:</b> This pack doesn't include 3 GP.</p>
+		</description>
+		<setters>
+			<set name="category">Equipment Packs</set>
+			
+			<set name="weight">—</set>
+		</setters>
+		<extract>
+			<item>ID_WOTC_PHB24_WEAPON_SHORTBOW</item>
+			<item amount="20">ID_WOTC_PHB24_ITEM_ARROW</item>
+			<item>ID_WOTC_PHB24_ITEM_TOOL_CARTOGRAPHERS_TOOLS</item>
+			<item>ID_WOTC_PHB24_ITEM_BEDROLL</item>
+			<item>ID_WOTC_PHB24_ITEM_QUIVER</item>
+			<item>ID_WOTC_PHB24_ITEM_TENT</item>
+			<item>ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS</item>
+		</extract>
+	</element>
+
+	<element name="Background Equipment Pack (Hermit)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_HERMIT">
+		<description>
+			<p style="margin-bottom:5px">This pack contains items that are given to a character of Hermit Background, if you chose option A for Equipment.</p>
+			<p>You will receive following items by extracting contents of this pack:</p>
+			<p class="indent">• Quarterstaff</p>
+			<p class="indent">• Herbalism Kit</p>
+			<p class="indent">• Bedroll</p>
+			<p class="indent">• Book (philosophy)</p>
+			<p class="indent">• Lamp</p>
+			<p class="indent">• Oil (3 flasks)</p>
+			<p class="indent">• Traveler's Clothes</p>
+			<p><b>Note:</b> This pack doesn't include 16 GP.</p>
+		</description>
+		<setters>
+			<set name="category">Equipment Packs</set>
+			
+			<set name="weight">—</set>
+		</setters>
+		<extract>
+			<item>ID_WOTC_PHB24_WEAPON_QUARTERSTAFF</item>
+			<item>ID_WOTC_PHB24_ITEM_TOOL_HERBALISM_KIT</item>
+			<item>ID_WOTC_PHB24_ITEM_BEDROLL</item>
+			<item>ID_WOTC_PHB24_ITEM_BOOK</item>
+			<item>ID_WOTC_PHB24_ITEM_LAMP</item>
+			<item amount="3">ID_WOTC_PHB24_ITEM_OIL</item>
+			<item>ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS</item>
+		</extract>
+	</element>
+
+	<element name="Background Equipment Pack (Merchant)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_MERCHANT">
+		<description>
+			<p style="margin-bottom:5px">This pack contains items that are given to a character of Merchant Background, if you chose option A for Equipment.</p>
+			<p>You will receive following items by extracting contents of this pack:</p>
+			<p class="indent">• Navigator's Tools</p>
+			<p class="indent">• 2 Pouches</p>
+			<p class="indent">• Traveler's Clothes</p>
+			<p><b>Note:</b> This pack doesn't include 22 GP.</p>
+		</description>
+		<setters>
+			<set name="category">Equipment Packs</set>
+			
+			<set name="weight">—</set>
+		</setters>
+		<extract>
+			<item>ID_WOTC_PHB24_ITEM_TOOL_NAVIGATORS_TOOLS</item>
+			<item amount="2">ID_WOTC_PHB24_ITEM_POUCH</item>
+			<item>ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS</item>
+		</extract>
+	</element>
+
+	<element name="Background Equipment Pack (Noble)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_NOBLE">
+		<description>
+			<p style="margin-bottom:5px">This pack contains items that are given to a character of Noble Background, if you chose option A for Equipment.</p>
+			<p>You will receive following items by extracting contents of this pack:</p>
+			<p class="indent">• Fine Clothes</p>
+			<p class="indent">• Perfume</p>
+			<p><b>Note:</b> This pack doesn't include the Gaming Set of the same kind as Proficiency gained from this Background (can be taken from "Tools" Equipment category) and 29 GP.</p>
+		</description>
+		<setters>
+			<set name="category">Equipment Packs</set>
+			
+			<set name="weight">—</set>
+		</setters>
+		<extract>
+			<item>ID_WOTC_PHB24_ITEM_CLOTHES_FINE</item>
+			<item>ID_WOTC_PHB24_ITEM_PERFUME</item>
+		</extract>
+	</element>
+
+	<element name="Background Equipment Pack (Sage)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_SAGE">
+		<description>
+			<p style="margin-bottom:5px">This pack contains items that are given to a character of Sage Background, if you chose option A for Equipment.</p>
+			<p>You will receive following items by extracting contents of this pack:</p>
+			<p class="indent">• Quarterstaff</p>
+			<p class="indent">• Calligrapher's Supplies</p>
+			<p class="indent">• Book (history)</p>
+			<p class="indent">• Parchment (8 sheets)</p>
+			<p class="indent">• Robe</p>
+			<p><b>Note:</b> This pack doesn't include 8 GP.</p>
+		</description>
+		<setters>
+			<set name="category">Equipment Packs</set>
+			
+			<set name="weight">—</set>
+		</setters>
+		<extract>
+			<item>ID_WOTC_PHB24_WEAPON_QUARTERSTAFF</item>
+			<item>ID_WOTC_PHB24_ITEM_TOOL_CALLIGRAPHERS_SUPPLIES</item>
+			<item>ID_WOTC_PHB24_ITEM_BOOK</item>
+			<item amount="8">ID_WOTC_PHB24_ITEM_PARCHMENT</item>
+			<item>ID_WOTC_PHB24_ITEM_ROBE</item>
+		</extract>
+	</element>
+
+	<element name="Background Equipment Pack (Sailor)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_SAILOR">
+		<description>
+			<p style="margin-bottom:5px">This pack contains items that are given to a character of Sailor Background, if you chose option A for Equipment.</p>
+			<p>You will receive following items by extracting contents of this pack:</p>
+			<p class="indent">• Dagger</p>
+			<p class="indent">• Navigator's Tools</p>
+			<p class="indent">• Rope</p>
+			<p class="indent">• Traveler’s Clothes</p>
+			<p><b>Note:</b> This pack doesn't include 20 GP.</p>
+		</description>
+		<setters>
+			<set name="category">Equipment Packs</set>
+			
+			<set name="weight">—</set>
+		</setters>
+		<extract>
+			<item>ID_WOTC_PHB24_WEAPON_DAGGER</item>
+			<item>ID_WOTC_PHB24_ITEM_TOOL_NAVIGATORS_TOOLS</item>
+			<item>ID_WOTC_PHB24_ITEM_ROPE</item>
+			<item>ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS</item>
+		</extract>
+	</element>
+
+	<element name="Background Equipment Pack (Scribe)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_SCRIBE">
+		<description>
+			<p style="margin-bottom:5px">This pack contains items that are given to a character of Scribe Background, if you chose option A for Equipment.</p>
+			<p>You will receive following items by extracting contents of this pack:</p>
+			<p class="indent">• Calligrapher's Supplies</p>
+			<p class="indent">• Fine Clothes</p>
+			<p class="indent">• Lamp</p>
+			<p class="indent">• Oil (3 flasks)</p>
+			<p class="indent">• Parchment (12 sheets)</p>
+			<p><b>Note:</b> This pack doesn't include 23 GP.</p>
+		</description>
+		<setters>
+			<set name="category">Equipment Packs</set>
+			
+			<set name="weight">—</set>
+		</setters>
+		<extract>
+			<item>ID_WOTC_PHB24_ITEM_TOOL_CALLIGRAPHERS_SUPPLIES</item>
+			<item>ID_WOTC_PHB24_ITEM_CLOTHES_FINE</item>
+			<item>ID_WOTC_PHB24_ITEM_LAMP</item>
+			<item amount="3">ID_WOTC_PHB24_ITEM_OIL</item>
+			<item amount="12">ID_WOTC_PHB24_ITEM_PARCHMENT</item>
+		</extract>
+	</element>
+
+	<element name="Background Equipment Pack (Soldier)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_SOLDIER">
+		<description>
+			<p style="margin-bottom:5px">This pack contains items that are given to a character of Soldier Background, if you chose option A for Equipment.</p>
+			<p>You will receive following items by extracting contents of this pack:</p>
+			<p class="indent">• Spear</p>
+			<p class="indent">• Shortbow</p>
+			<p class="indent">• 20 Arrows</p>
+			<p class="indent">• Healer's Kit</p>
+			<p class="indent">• Quiver</p>
+			<p class="indent">• Traveler’s Clothes</p>
+			<p><b>Note:</b> This pack doesn't include the Gaming Set of the same kind as Proficiency gained from this Background (can be taken from "Tools" Equipment category) and 14 GP.</p>
+		</description>
+		<setters>
+			<set name="category">Equipment Packs</set>
+			
+			<set name="weight">—</set>
+		</setters>
+		<extract>
+			<item>ID_WOTC_PHB24_WEAPON_SPEAR</item>
+			<item>ID_WOTC_PHB24_WEAPON_SHORTBOW</item>
+			<item amount="20">ID_WOTC_PHB24_ITEM_ARROW</item>
+			<item>ID_WOTC_PHB24_ITEM_HEALERS_KIT</item>
+			<item>ID_WOTC_PHB24_ITEM_QUIVER</item>
+			<item>ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS</item>
+		</extract>
+	</element>
+
+	<element name="Background Equipment Pack (Wayfarer)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_WAYFARER">
+		<description>
+			<p style="margin-bottom:5px">This pack contains items that are given to a character of Wayfarer Background, if you chose option A for Equipment.</p>
+			<p>You will receive following items by extracting contents of this pack:</p>
+			<p class="indent">• 2 Daggers</p>
+			<p class="indent">• Thieves' Tools</p>
+			<p class="indent">• Bedroll</p>
+			<p class="indent">• 2 Pouches</p>
+			<p class="indent">• Traveler's Clothes</p>
+			<p><b>Note:</b> This pack doesn't include the Gaming Set of the same kind as Proficiency gained from this Background (can be taken from "Tools" Equipment category) and 16 GP.</p>
+		</description>
+		<setters>
+			<set name="category">Equipment Packs</set>
+			
+			<set name="weight">—</set>
+		</setters>
+		<extract>
+			<item amount="2">ID_WOTC_PHB24_WEAPON_DAGGER</item>
+			<item>ID_WOTC_PHB24_ITEM_TOOL_THIEVES_TOOLS</item>
+			<item>ID_WOTC_PHB24_ITEM_BEDROLL</item>
+			<item amount="2">ID_WOTC_PHB24_ITEM_POUCH</item>
+			<item>ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS</item>
+		</extract>
+	</element>
+
+	<!-- Class Equipment Packs -->
+	<element name="Class Equipment Pack (Barbarian)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_BARBARIAN">
+		<description>
+			<p style="margin-bottom:5px">This pack contains items that are given to a character of Barbarian Class, if you chose option A for Equipment.</p>
+			<p>You will receive following items by extracting contents of this pack:</p>
+			<p class="indent">• Greataxe</p>
+			<p class="indent">• 4 Handaxes</p>
+			<p class="indent" style="margin-bottom:5px">• Explorer's Pack</p>
+			<p><b>Note:</b> This pack doesn't include 15 GP.</p>
+		</description>
+		<setters>
+			<set name="category">Equipment Packs</set>
+			
+			<set name="weight">—</set>
+		</setters>
+		<extract>
+			<item>ID_WOTC_PHB24_WEAPON_GREATAXE</item>
+			<item amount="4">ID_WOTC_PHB24_WEAPON_HANDAXE</item>
+			<item>ID_WOTC_PHB24_ITEM_EXPLORERS_PACK</item>
+		</extract>
+	</element>
+
+	<element name="Class Equipment Pack (Bard)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_BARD">
+		<description>
+			<p style="margin-bottom:5px">This pack contains items that are given to a character of Bard Class, if you chose option A for Equipment.</p>
+			<p>You will receive following items by extracting contents of this pack:</p>
+			<p class="indent">• 2 Daggers</p>
+			<p class="indent" style="margin-bottom:5px">• Entertainer's Pack</p>
+			<p><b>Note:</b> This pack doesn't include Leather Armor, Musical Instrument of your choice (can be selected under "Musical Instrument" category) and 19 GP.</p>
+		</description>
+		<setters>
+			<set name="category">Equipment Packs</set>
+			
+			<set name="weight">—</set>
+		</setters>
+		<extract>
+			<item amount="2">ID_WOTC_PHB24_WEAPON_DAGGER</item>
+			<item>ID_WOTC_PHB24_ITEM_ENTERTAINERS_PACK</item>
+		</extract>
+	</element>
+
+	<element name="Class Equipment Pack (Cleric)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_CLERIC">
+		<description>
+			<p style="margin-bottom:5px">This pack contains items that are given to a character of Cleric Class, if you chose option A for Equipment.</p>
+			<p>You will receive following items by extracting contents of this pack:</p> 
+			<p class="indent">• Mace</p>
+			<p class="indent" style="margin-bottom:5px">• Priest's Pack</p>
+			<p><b>Note:</b> This pack doesn't include Chain Shirt, Shield, Holy Symbol (can be selected under "Spellcasting Focus" category) and 7 GP.</p>
+		</description>
+		<setters>
+			<set name="category">Equipment Packs</set>
+			
+			<set name="weight">—</set>
+		</setters>
+		<extract>
+			<item>ID_WOTC_PHB24_WEAPON_MACE</item>
+			<item>ID_WOTC_PHB24_ITEM_PRIESTS_PACK</item>
+		</extract>
+	</element>
+
+	<element name="Class Equipment Pack (Druid)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_DRUID">
+		<description>
+			<p style="margin-bottom:5px">This pack contains items that are given to a character of Druid Class, if you chose option A for Equipment.</p>
+			<p>You will receive following items by extracting contents of this pack:</p>
+			<p class="indent">• Sickle</p>
+			<p class="indent">• Druidic Focus (Quarterstaff)</p>
+			<p class="indent">• Explorer's Pack</p>
+			<p class="indent" style="margin-bottom:5px">• Herbalism kit</p>
+			<p><b>Note:</b> This pack doesn't include Leather Armor, Shield and 9 GP.</p>
+		</description>
+		<setters>
+			<set name="category">Equipment Packs</set>
+			
+			<set name="weight">—</set>
+		</setters>
+		<extract>
+			<item>ID_WOTC_PHB24_WEAPON_SICKLE</item>
+			<item>ID_WOTC_PHB24_WEAPON_QUARTERSTAFF</item>
+			<item>ID_WOTC_PHB24_ITEM_EXPLORERS_PACK</item>
+			<item>ID_WOTC_PHB24_ITEM_TOOL_HERBALISM_KIT</item>
+		</extract>
+	</element>
+
+	<element name="Class Equipment Pack (Fighter, Option A)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_FIGHTER_1">
+		<description>
+			<p style="margin-bottom:5px">This pack contains items that are given to a character of Fighter Class, if you chose option A for Equipment.</p>
+			<p>You will receive following items by extracting contents of this pack:</p>
+			<p class="indent">• Greatsword</p>
+			<p class="indent">• Flail</p>
+			<p class="indent">• 8 Javelins</p>
+			<p class="indent" style="margin-bottom:5px">• Dungeoneer's Pack</p>
+			<p><b>Note:</b> This pack doesn't include Chain Mail and 4 GP.</p>
+		</description>
+		<setters>
+			<set name="category">Equipment Packs</set>
+			
+			<set name="weight">—</set>
+		</setters>
+		<extract>
+			<item>ID_WOTC_PHB24_WEAPON_GREATSWORD</item>
+			<item>ID_WOTC_PHB24_WEAPON_FLAIL</item>
+			<item amount="8">ID_WOTC_PHB24_WEAPON_JAVELIN</item>
+			<item>ID_WOTC_PHB24_ITEM_DUNGEONEERS_PACK</item>
+		</extract>
+	</element>
+	<element name="Class Equipment Pack (Fighter, Option B)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_FIGHTER_2">
+		<description>
+			<p style="margin-bottom:5px">This pack contains items that are given to a character of Fighter Class, if you chose option B for Equipment.</p>
+			<p>You will receive following items by extracting contents of this pack:</p>
+			<p class="indent">• Scimitar</p>
+			<p class="indent">• Shortsword</p>
+			<p class="indent">• Longbow</p>
+			<p class="indent">• 20 Arrows</p>
+			<p class="indent">• Quiver</p>
+			<p class="indent" style="margin-bottom:5px">• Dungeoneer's Pack</p>
+			<p><b>Note:</b> This pack doesn't include Studded Leather Armor and 11 GP.</p>
+		</description>
+		<setters>
+			<set name="category">Equipment Packs</set>
+			
+			<set name="weight">—</set>
+		</setters>
+		<extract>
+			<item>ID_WOTC_PHB24_WEAPON_SCIMITAR</item>
+			<item>ID_WOTC_PHB24_WEAPON_SHORTSWORD</item>
+			<item>ID_WOTC_PHB24_WEAPON_LONGBOW</item>
+			<item amount="20">ID_WOTC_PHB24_ITEM_ARROW</item>
+			<item>ID_WOTC_PHB24_ITEM_QUIVER</item>
+			<item>ID_WOTC_PHB24_ITEM_DUNGEONEERS_PACK</item>
+		</extract>
+	</element>
+
+	<element name="Class Equipment Pack (Monk)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_MONK">
+		<description>
+			<p style="margin-bottom:5px">This pack contains items that are given to a character of Monk Class, if you chose option A for Equipment.</p>
+			<p>You will receive following items by extracting contents of this pack:</p>
+			<p class="indent">• Spear</p>
+			<p class="indent">• 5 Daggers</p>
+			<p class="indent" style="margin-bottom:5px">• Explorer's Pack</p>
+			<p><b>Note:</b> This pack doesn't include Artisan's Tools or Musical Instrument which was chosen for this Class's tool proficiency and 11 GP.</p>
+		</description>
+		<setters>
+			<set name="category">Equipment Packs</set>
+			
+			<set name="weight">—</set>
+		</setters>
+		<extract>
+			<item>ID_WOTC_PHB24_WEAPON_SPEAR</item>
+			<item amount="5">ID_WOTC_PHB24_WEAPON_DAGGER</item>
+			<item>ID_WOTC_PHB24_ITEM_EXPLORERS_PACK</item>
+		</extract>
+	</element>
+
+	<element name="Class Equipment Pack (Paladin)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_PALADIN">
+		<description>
+			<p style="margin-bottom:5px">This pack contains items that are given to a character of Paladin Class, if you chose option A for Equipment.</p>
+			<p>You will receive following items by extracting contents of this pack:</p>
+			<p class="indent">• Longsword</p>
+			<p class="indent">• 6 Javelins</p>
+			<p class="indent" style="margin-bottom:5px">• Priest's Pack</p>
+			<p><b>Note:</b> This pack doesn't include Chain Mail, Shield, Holy Symbol (can be selected under "Spellcasting Focus" category) and 9 GP.</p>
+		</description>
+		<setters>
+			<set name="category">Equipment Packs</set>
+			
+			<set name="weight">—</set>
+		</setters>
+		<extract>
+			<item>ID_WOTC_PHB24_WEAPON_LONGSWORD</item>
+			<item amount="6">ID_WOTC_PHB24_WEAPON_JAVELIN</item>
+			<item>ID_WOTC_PHB24_ITEM_PRIESTS_PACK</item>
+		</extract>
+	</element>
+
+	<element name="Class Equipment Pack (Ranger)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_RANGER">
+		<description>
+			<p style="margin-bottom:5px">This pack contains items that are given to a character of Ranger Class, if you chose option A for Equipment.</p>
+			<p>You will receive following items by extracting contents of this pack:</p>
+			<p class="indent">• Scimitar</p>
+			<p class="indent">• Shortsword</p>
+			<p class="indent">• Longbow</p>
+			<p class="indent">• 20 Arrows</p>
+			<p class="indent">• Quiver</p>
+			<p class="indent">• Druidic Focus (sprig of mistletoe)</p>
+			<p class="indent" style="margin-bottom:5px">• Explorer's Pack</p>
+			<p><b>Note:</b> This pack doesn't include Studded Leather Armor and 7 GP.</p>
+		</description>
+		<setters>
+			<set name="category">Equipment Packs</set>
+			
+			<set name="weight">—</set>
+		</setters>
+		<extract>
+			<item>ID_WOTC_PHB24_WEAPON_SCIMITAR</item>
+			<item>ID_WOTC_PHB24_WEAPON_SHORTSWORD</item>
+			<item>ID_WOTC_PHB24_WEAPON_LONGBOW</item>
+			<item amount="20">ID_WOTC_PHB24_ITEM_ARROW</item>
+			<item>ID_WOTC_PHB24_ITEM_QUIVER</item>
+			<item>ID_WOTC_PHB24_ITEM_DRUIDIC_FOCUS_SPRIG_OF_MISTLETOE</item>
+			<item>ID_WOTC_PHB24_ITEM_EXPLORERS_PACK</item>
+		</extract>
+	</element>
+
+	<element name="Class Equipment Pack (Rogue)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_ROGUE">
+		<description>
+			<p style="margin-bottom:5px">This pack contains items that are given to a character of Rogue Class, if you chose option A for Equipment.</p>
+			<p>You will receive following items by extracting contents of this pack:</p>
+			<p class="indent">• 2 Daggers</p>
+			<p class="indent">• Shortsword</p>
+			<p class="indent">• Shortbow</p>
+			<p class="indent">• 20 Arrows</p>
+			<p class="indent">• Quiver</p>
+			<p class="indent">• Thieves' Tools</p>
+			<p class="indent" style="margin-bottom:5px">• Burglar's Pack</p>
+			<p><b>Note:</b> This pack doesn't include Leather Armor and 8 GP.</p>
+		</description>
+		<setters>
+			<set name="category">Equipment Packs</set>
+			
+			<set name="weight">—</set>
+		</setters>
+		<extract>
+			<item amount="2">ID_WOTC_PHB24_WEAPON_DAGGER</item>
+			<item>ID_WOTC_PHB24_WEAPON_SHORTSWORD</item>
+			<item>ID_WOTC_PHB24_WEAPON_SHORTBOW</item>
+			<item amount="20">ID_WOTC_PHB24_ITEM_ARROW</item>
+			<item>ID_WOTC_PHB24_ITEM_QUIVER</item>
+			<item>ID_WOTC_PHB24_ITEM_TOOL_THIEVES_TOOLS</item>
+			<item>ID_WOTC_PHB24_ITEM_BURGLARS_PACK</item>
+		</extract>
+	</element>
+
+	<element name="Class Equipment Pack (Sorcerer)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_SORCERER">
+		<description>
+			<p style="margin-bottom:5px">This pack contains items that are given to a character of Sorcerer Class, if you chose option A for Equipment.</p>
+			<p>You will receive following items by extracting contents of this pack:</p>
+			<p class="indent">• Spear</p>
+			<p class="indent">• 2 Daggers</p>
+			<p class="indent">• Arcane Focus (crystal)</p>
+			<p class="indent" style="margin-bottom:5px">• Dungeoneer's Pack</p>
+			<p><b>Note:</b> This pack doesn't include 28 GP.</p>
+		</description>
+		<setters>
+			<set name="category">Equipment Packs</set>
+			
+			<set name="weight">—</set>
+		</setters>
+		<extract>
+			<item>ID_WOTC_PHB24_WEAPON_SPEAR</item>
+			<item amount="2">ID_WOTC_PHB24_WEAPON_DAGGER</item>
+			<item>ID_WOTC_PHB24_ITEM_ARCANE_FOCUS_CRYSTAL</item>
+			<item>ID_WOTC_PHB24_ITEM_DUNGEONEERS_PACK</item>
+		</extract>
+	</element>
+
+	<element name="Class Equipment Pack (Warlock)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_WARLOCK">
+		<description>
+			<p style="margin-bottom:5px">This pack contains items that are given to a character of Warlock Class, if you chose option A for Equipment.</p>
+			<p>You will receive following items by extracting contents of this pack:</p>
+			<p class="indent">• Sickle</p>
+			<p class="indent">• 2 Daggers</p>
+			<p class="indent">• Arcane Focus (orb)</p>
+			<p class="indent">• Book (occult lore)</p>
+			<p class="indent" style="margin-bottom:5px">• Scholar's Pack</p>
+			<p><b>Note:</b> This pack doesn't include Leather Armor and 15 GP.</p>
+		</description>
+		<setters>
+			<set name="category">Equipment Packs</set>
+			
+			<set name="weight">—</set>
+		</setters>
+		<extract>
+			<item>ID_WOTC_PHB24_WEAPON_SICKLE</item>
+			<item amount="2">ID_WOTC_PHB24_WEAPON_DAGGER</item>
+			<item>ID_WOTC_PHB24_ITEM_ARCANE_FOCUS_ORB</item>
+			<item>ID_WOTC_PHB24_ITEM_BOOK</item>
+			<item>ID_WOTC_PHB24_ITEM_SCHOLARS_PACK</item>
+		</extract>
+	</element>
+
+	<element name="Class Equipment Pack (Wizard)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_WIZARD">
+		<description>
+			<p style="margin-bottom:5px">This pack contains items that are given to a character of Wizard Class, if you chose option A for Equipment.</p>
+			<p>You will receive following items by extracting contents of this pack:</p>
+			<p class="indent">• 2 Daggers</p>
+			<p class="indent">• Arcane Focus (Quarterstaff)</p>
+			<p class="indent">• Robe</p>
+			<p class="indent">• Spellbook</p>
+			<p class="indent" style="margin-bottom:5px">• Scholar's Pack</p>
+			<p><b>Note:</b> This pack doesn't include 5 GP.</p>
+		</description>
+		<setters>
+			<set name="category">Equipment Packs</set>
+			
+			<set name="weight">—</set>
+		</setters>
+		<extract>
+			<item amount="2">ID_WOTC_PHB24_WEAPON_DAGGER</item>
+			<item>ID_WOTC_PHB24_WEAPON_QUARTERSTAFF</item>
+			<item>ID_WOTC_PHB24_ITEM_ROBE</item>
+			<item>ID_WOTC_PHB24_ITEM_BOOK</item>
+			<item>ID_WOTC_PHB24_ITEM_SCHOLARS_PACK</item>
+		</extract>
+	</element>
+
+	<!-- Item Packs -->
+	<element name="Burglar's Pack" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_BURGLARS_PACK">
+		<description>
+			<p>A Burglar's Pack contains the following items: Backpack, Ball Bearings, Bell, 10 Candles, Crowbar, Hooded Lantern, 7 flasks of Oil, 5 days of Rations, Rope, Tinderbox, and Waterskin.</p>
+		</description>
+		<setters>
+			<set name="category">Equipment Packs</set>
+			<set name="cost" currency="gp">16</set>
+			<set name="weight" lb="42">42 lbs.</set>
+		</setters>
+		<extract>
+			<item>ID_WOTC_PHB24_ITEM_BACKPACK</item>
+			<item>ID_WOTC_PHB24_ITEM_BALL_BEARINGS</item>
+			<item>ID_WOTC_PHB24_ITEM_STRING</item>
+			<item>ID_WOTC_PHB24_ITEM_BELL</item>
+			<item amount="10">ID_WOTC_PHB24_ITEM_CANDLE</item>
+			<item>ID_WOTC_PHB24_ITEM_CROWBAR</item>
+			<item>ID_WOTC_PHB24_ITEM_LANTERN_HOODED</item>
+			<item amount="7">ID_WOTC_PHB24_ITEM_OIL</item>
+			<item amount="5">ID_WOTC_PHB24_ITEM_RATIONS</item>
+			<item>ID_WOTC_PHB24_ITEM_ROPE</item>
+			<item>ID_WOTC_PHB24_ITEM_TINDERBOX</item>
+			<item>ID_WOTC_PHB24_ITEM_WATERSKIN</item>
+		</extract>
+	</element>
+
+	<element name="Diplomat's Pack" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_DIPLOMATS_PACK">
+		<description>
+			<p>A Diplomat's Pack contains the following items: Chest, Fine Clothes, Ink, 5 Ink Pens, Lamp, 2 Map or Scroll Cases, 4 flasks of Oil, 5 sheets of Paper, 5 sheets of Parchment, Perfume, and Tinderbox.</p>
+		</description>
+		<setters>
+			<set name="category">Equipment Packs</set>
+			<set name="cost" currency="gp">39</set>
+			<set name="weight" lb="39">39 lbs.</set>
+		</setters>
+		<extract>
+			<item>ID_WOTC_PHB24_ITEM_CHEST</item>
+			<item>ID_WOTC_PHB24_ITEM_CLOTHES_FINE</item>
+			<item>ID_WOTC_PHB24_ITEM_INK</item>
+			<item amount="5">ID_WOTC_PHB24_ITEM_INK_PEN</item>
+			<item>ID_WOTC_PHB24_ITEM_LAMP</item>
+			<item amount="2">ID_WOTC_PHB24_ITEM_CASE_MAP_OR_SCROLL</item>
+			<item amount="4">ID_WOTC_PHB24_ITEM_OIL</item>
+			<item amount="5">ID_WOTC_PHB24_ITEM_PAPER</item>
+			<item amount="5">ID_WOTC_PHB24_ITEM_PARCHMENT</item>
+			<item>ID_WOTC_PHB24_ITEM_PERFUME</item>
+			<item>ID_WOTC_PHB24_ITEM_TINDERBOX</item>
+		</extract>
+	</element>
+
+	<element name="Dungeoneer's Pack" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_DUNGEONEERS_PACK">
+		<description>
+			<p>A Dungeoneer's Pack contains the following items: Backpack, Caltrops, Crowbar, 2 flasks of Oil, 10 days of Rations, Rope, Tinderbox, 10 Torches, and Waterskin.</p>
+		</description>
+		<setters>
+			<set name="category">Equipment Packs</set>
+			<set name="cost" currency="gp">12</set>
+			<set name="weight" lb="55">55 lbs.</set>
+		</setters>
+		<extract>
+			<item>ID_WOTC_PHB24_ITEM_BACKPACK</item>
+			<item>ID_WOTC_PHB24_ITEM_CALTROPS</item>
+			<item>ID_WOTC_PHB24_ITEM_CROWBAR</item>
+			<item amount="2">ID_WOTC_PHB24_ITEM_OIL</item>
+			<item amount="10">ID_WOTC_PHB24_ITEM_RATIONS</item>
+			<item>ID_WOTC_PHB24_ITEM_ROPE</item>
+			<item>ID_WOTC_PHB24_ITEM_TINDERBOX</item>
+			<item amount="10">ID_WOTC_PHB24_ITEM_TORCH</item>
+			<item>ID_WOTC_PHB24_ITEM_WATERSKIN</item>
+		</extract>
+	</element>
+
+	<element name="Entertainer's Pack" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_ENTERTAINERS_PACK">
+		<description>
+			<p>An Entertainer's Pack contains the following items: Backpack, Bedroll, Bell, Bullseye Lantern, 3 Costumes, Mirror, 8 flasks of Oil, 9 days of Rations, Tinderbox, and Waterskin.</p>
+		</description>
+		<setters>
+			<set name="category">Equipment Packs</set>
+			<set name="cost" currency="gp">40</set>
+			<set name="weight" lb="58.5">58½ lbs.</set>
+		</setters>
+		<extract>
+			<item>ID_WOTC_PHB24_ITEM_BACKPACK</item>
+			<item>ID_WOTC_PHB24_ITEM_BEDROLL</item>
+			<item>ID_WOTC_PHB24_ITEM_BELL</item>
+			<item>ID_WOTC_PHB24_ITEM_LANTERN_BULLSEYE</item>
+			<item amount="3">ID_WOTC_PHB24_ITEM_COSTUME</item>
+			<item>ID_WOTC_PHB24_ITEM_MIRROR</item>
+			<item amount="8">ID_WOTC_PHB24_ITEM_OIL</item>
+			<item amount="9">ID_WOTC_PHB24_ITEM_RATIONS</item>
+			<item>ID_WOTC_PHB24_ITEM_TINDERBOX</item>
+			<item>ID_WOTC_PHB24_ITEM_WATERSKIN</item>
+		</extract>
+	</element>
+
+	<element name="Explorer's Pack" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_EXPLORERS_PACK">
+		<description>
+			<p>An Explorer's Pack contains the following items: Backpack, Bedroll, 2 flasks of Oil, 10 days of Rations, Rope, Tinderbox, 10 Torches, and Waterskin.</p>
+		</description>
+		<setters>
+			<set name="category">Equipment Packs</set>
+			<set name="cost" currency="gp">10</set>
+			<set name="weight" lb="55">55 lbs.</set>
+		</setters>
+		<extract>
+			<item>ID_WOTC_PHB24_ITEM_BACKPACK</item>
+			<item>ID_WOTC_PHB24_ITEM_BEDROLL</item>
+			<item amount="2">ID_WOTC_PHB24_ITEM_OIL</item>
+			<item amount="10">ID_WOTC_PHB24_ITEM_RATIONS</item>
+			<item>ID_WOTC_PHB24_ITEM_ROPE</item>
+			<item>ID_WOTC_PHB24_ITEM_TINDERBOX</item>
+			<item amount="10">ID_WOTC_PHB24_ITEM_TORCH</item>
+			<item>ID_WOTC_PHB24_ITEM_WATERSKIN</item>
+		</extract>
+	</element>
+
+	<element name="Priest's Pack" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_PRIESTS_PACK">
+		<description>
+			<p>A Priest's Pack contains the following items: Backpack, Blanket, Holy Water, Lamp, 7 days of Rations, Robe, and Tinderbox.</p>
+		</description>
+		<setters>
+			<set name="category">Equipment Packs</set>
+			<set name="cost" currency="gp">33</set>
+			<set name="weight" lb="29">29 lbs.</set>
+		</setters>
+		<extract>
+			<item>ID_WOTC_PHB24_ITEM_BACKPACK</item>
+			<item>ID_WOTC_PHB24_ITEM_BLANKET</item>
+			<item>ID_WOTC_PHB24_ITEM_HOLY_WATER</item>
+			<item>ID_WOTC_PHB24_ITEM_LAMP</item>
+			<item amount="7">ID_WOTC_PHB24_ITEM_RATIONS</item>
+			<item>ID_WOTC_PHB24_ITEM_ROBE</item>
+			<item>ID_WOTC_PHB24_ITEM_TINDERBOX</item>
+		</extract>
+	</element>
+
+	<element name="Scholar's Pack" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_SCHOLARS_PACK">
+		<description>
+			<p>A Scholar’s Pack contains the following items: Backpack, Book, Ink, Ink Pen, Lamp, 10 flasks of Oil, 10 sheets of Parchment, and Tinderbox.</p>
+		</description>
+		<setters>
+			<set name="category">Equipment Packs</set>
+			<set name="cost" currency="gp">40</set>
+			<set name="weight" lb="22">22 lbs.</set>
+		</setters>
+		<extract>
+			<item>ID_WOTC_PHB24_ITEM_BACKPACK</item>
+			<item>ID_WOTC_PHB24_ITEM_BOOK</item>
+			<item>ID_WOTC_PHB24_ITEM_INK</item>
+			<item>ID_WOTC_PHB24_ITEM_INK_PEN</item>
+			<item>ID_WOTC_PHB24_ITEM_LAMP</item>
+			<item amount="10">ID_WOTC_PHB24_ITEM_OIL</item>
+			<item amount="10">ID_WOTC_PHB24_ITEM_PARCHMENT</item>
+			<item>ID_WOTC_PHB24_ITEM_TINDERBOX</item>
+		</extract>
+	</element>
+<al:corrections xmlns:al="urn:aurora-lights:corrections:1" version="1" source-path="core/players-handbook-2024/items-packs.xml"><al:baseline encoding="escaped-xml">&lt;?xml version="1.0" encoding="utf-8" ?&gt;
+&lt;elements&gt;
+	&lt;info&gt;
+		&lt;name&gt;Equipment Packs&lt;/name&gt;
+		&lt;description&gt;Equipment Packs from the Player’s Handbook 2024.&lt;/description&gt;
+		&lt;update version="0.0.1"&gt;
+			&lt;file name="items-packs.xml" url="https://raw.githubusercontent.com/AuroraLegacy/elements/master/core/players-handbook-2024/items/items-packs.xml" /&gt;
+		&lt;/update&gt;
+	&lt;/info&gt;
+
+	&lt;!-- Background Equipment Packs --&gt;
+	&lt;element name="Background Equipment Pack (Acolyte)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_ACOLYTE"&gt;
+		&lt;description&gt;
+			&lt;p style="margin-bottom:5px"&gt;This pack contains items that are given to a character of Acolyte Background, if you chose option A for Equipment.&lt;/p&gt;
+			&lt;p&gt;You will receive following items by extracting contents of this pack:&lt;/p&gt;
+			&lt;p class="indent"&gt;• Calligrapher’s Supplies&lt;/p&gt;
+			&lt;p class="indent"&gt;• Book (prayers)&lt;/p&gt;
+			&lt;p class="indent"&gt;• Parchment (10 sheets)&lt;/p&gt;
+			&lt;p class="indent" style="margin-bottom:5px"&gt;• Robe&lt;/p&gt;
+			&lt;p&gt;&lt;b&gt;Note:&lt;/b&gt; This pack doesn't include Holy Symbol (can be chosen in "Spellcasting Focus" Equipment category) and 8 GP.&lt;/p&gt;
+		&lt;/description&gt;
+		&lt;setters&gt;
+			&lt;set name="category"&gt;Equipment Packs&lt;/set&gt;
+			&lt;set name="cost"&gt;—&lt;/set&gt;
+			&lt;set name="weight"&gt;—&lt;/set&gt;
+		&lt;/setters&gt;
+		&lt;extract&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_TOOL_CALLIGRAPHERS_SUPPLIES&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_BOOK&lt;/item&gt;
+			&lt;item amount="10"&gt;ID_WOTC_PHB24_ITEM_PARCHMENT&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_ROBE&lt;/item&gt;
+		&lt;/extract&gt;
+	&lt;/element&gt;
+
+	&lt;element name="Background Equipment Pack (Artisan)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_ARTISAN"&gt;
+		&lt;description&gt;
+			&lt;p style="margin-bottom:5px"&gt;This pack contains items that are given to a character of Artisan Background, if you chose option A for Equipment.&lt;/p&gt;
+			&lt;p&gt;You will receive following items by extracting contents of this pack:&lt;/p&gt;
+			&lt;p class="indent"&gt;• 2 Pouches&lt;/p&gt;
+			&lt;p class="indent"&gt;• Traveler's Clothes&lt;/p&gt;
+			&lt;p&gt;&lt;b&gt;Note:&lt;/b&gt; This pack doesn't include the Artisan’s Tools of the same kind as Proficiency gained from this Background (can be taken from "Tools" Equipment category) and 32 GP.&lt;/p&gt;
+		&lt;/description&gt;
+		&lt;setters&gt;
+			&lt;set name="category"&gt;Equipment Packs&lt;/set&gt;
+			&lt;set name="cost"&gt;—&lt;/set&gt;
+			&lt;set name="weight"&gt;—&lt;/set&gt;
+		&lt;/setters&gt;
+		&lt;extract&gt;
+			&lt;item amount="2"&gt;ID_WOTC_PHB24_ITEM_POUCH&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS&lt;/item&gt;
+		&lt;/extract&gt;
+	&lt;/element&gt;
+
+	&lt;element name="Background Equipment Pack (Charlatan)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_CHARLATAN"&gt;
+		&lt;description&gt;
+			&lt;p style="margin-bottom:5px"&gt;This pack contains items that are given to a character of Charlatan Background, if you chose option A for Equipment.&lt;/p&gt;
+			&lt;p&gt;You will receive following items by extracting contents of this pack:&lt;/p&gt;
+			&lt;p class="indent"&gt;• Forgery Kit&lt;/p&gt;
+			&lt;p class="indent"&gt;• Costume&lt;/p&gt;
+			&lt;p class="indent"&gt;• Fine Clothes&lt;/p&gt;
+			&lt;p&gt;&lt;b&gt;Note:&lt;/b&gt; This pack doesn't include 15 GP.&lt;/p&gt;
+		&lt;/description&gt;
+		&lt;setters&gt;
+			&lt;set name="category"&gt;Equipment Packs&lt;/set&gt;
+			&lt;set name="cost"&gt;—&lt;/set&gt;
+			&lt;set name="weight"&gt;—&lt;/set&gt;
+		&lt;/setters&gt;
+		&lt;extract&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_TOOL_FORGERY_KIT&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_COSTUME&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_CLOTHES_FINE&lt;/item&gt;
+		&lt;/extract&gt;
+	&lt;/element&gt;
+
+	&lt;element name="Background Equipment Pack (Criminal)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_CRIMINAL"&gt;
+		&lt;description&gt;
+			&lt;p style="margin-bottom:5px"&gt;This pack contains items that are given to a character of Criminal Background, if you chose option A for Equipment.&lt;/p&gt;
+			&lt;p&gt;You will receive following items by extracting contents of this pack:&lt;/p&gt;
+			&lt;p class="indent"&gt;• 2 Daggers&lt;/p&gt;
+			&lt;p class="indent"&gt;• Thieves' Tools&lt;/p&gt;
+			&lt;p class="indent"&gt;• Crowbar&lt;/p&gt;
+			&lt;p class="indent"&gt;• 2 Pouches&lt;/p&gt;
+			&lt;p class="indent"&gt;• Traveler's Clothes&lt;/p&gt;
+			&lt;p&gt;&lt;b&gt;Note:&lt;/b&gt; This pack doesn't include 15 GP.&lt;/p&gt;
+		&lt;/description&gt;
+		&lt;setters&gt;
+			&lt;set name="category"&gt;Equipment Packs&lt;/set&gt;
+			&lt;set name="cost"&gt;—&lt;/set&gt;
+			&lt;set name="weight"&gt;—&lt;/set&gt;
+		&lt;/setters&gt;
+		&lt;extract&gt;
+			&lt;item amount="2"&gt;ID_WOTC_PHB24_WEAPON_DAGGER&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_TOOL_THIEVES_TOOLS&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_CROWBAR&lt;/item&gt;
+			&lt;item amount="2"&gt;ID_WOTC_PHB24_ITEM_POUCH&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS&lt;/item&gt;
+		&lt;/extract&gt;
+	&lt;/element&gt;
+
+	&lt;element name="Background Equipment Pack (Entertainer)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_ENTERTAINER"&gt;
+		&lt;description&gt;
+			&lt;p style="margin-bottom:5px"&gt;This pack contains items that are given to a character of Entertainer Background, if you chose option A for Equipment.&lt;/p&gt;
+			&lt;p&gt;You will receive following items by extracting contents of this pack:&lt;/p&gt;
+			&lt;p class="indent"&gt;• 2 Costumes&lt;/p&gt;
+			&lt;p class="indent"&gt;• Mirror&lt;/p&gt;
+			&lt;p class="indent"&gt;• Perfume&lt;/p&gt;
+			&lt;p class="indent"&gt;• Traveler's Clothes&lt;/p&gt;
+			&lt;p&gt;&lt;b&gt;Note:&lt;/b&gt; This pack doesn't include the Musical Instrument of the same kind as Proficiency gained from this Background (can be taken from "Musical Instruments" Equipment category) and 11 GP.&lt;/p&gt;
+		&lt;/description&gt;
+		&lt;setters&gt;
+			&lt;set name="category"&gt;Equipment Packs&lt;/set&gt;
+			&lt;set name="cost"&gt;—&lt;/set&gt;
+			&lt;set name="weight"&gt;—&lt;/set&gt;
+		&lt;/setters&gt;
+		&lt;extract&gt;
+			&lt;item amount="2"&gt;ID_WOTC_PHB24_ITEM_COSTUME&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_MIRROR&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_PERFUME&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS&lt;/item&gt;
+		&lt;/extract&gt;
+	&lt;/element&gt;
+
+	&lt;element name="Background Equipment Pack (Farmer)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_FARMER"&gt;
+		&lt;description&gt;
+			&lt;p style="margin-bottom:5px"&gt;This pack contains items that are given to a character of Farmer Background, if you chose option A for Equipment.&lt;/p&gt;
+			&lt;p&gt;You will receive following items by extracting contents of this pack:&lt;/p&gt;
+			&lt;p class="indent"&gt;• Sickle&lt;/p&gt;
+			&lt;p class="indent"&gt;• Carpenter's Tools&lt;/p&gt;
+			&lt;p class="indent"&gt;• Healer's Kit&lt;/p&gt;
+			&lt;p class="indent"&gt;• Iron Pot&lt;/p&gt;
+			&lt;p class="indent"&gt;• Shovel&lt;/p&gt;
+			&lt;p class="indent"&gt;• Traveler's Clothes&lt;/p&gt;
+			&lt;p&gt;&lt;b&gt;Note:&lt;/b&gt; This pack doesn't include 30 GP.&lt;/p&gt;
+		&lt;/description&gt;
+		&lt;setters&gt;
+			&lt;set name="category"&gt;Equipment Packs&lt;/set&gt;
+			&lt;set name="cost"&gt;—&lt;/set&gt;
+			&lt;set name="weight"&gt;—&lt;/set&gt;
+		&lt;/setters&gt;
+		&lt;extract&gt;
+			&lt;item&gt;ID_WOTC_PHB24_WEAPON_SICKLE&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_TOOL_CARPENTERS_TOOLS&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_HEALERS_KIT&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_POT_IRON&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_SHOVEL&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS&lt;/item&gt;
+		&lt;/extract&gt;
+	&lt;/element&gt;
+
+	&lt;element name="Background Equipment Pack (Guard)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_GUARD"&gt;
+		&lt;description&gt;
+			&lt;p style="margin-bottom:5px"&gt;This pack contains items that are given to a character of Guard Background, if you chose option A for Equipment.&lt;/p&gt;
+			&lt;p&gt;You will receive following items by extracting contents of this pack:&lt;/p&gt;
+			&lt;p class="indent"&gt;• Spear&lt;/p&gt;
+			&lt;p class="indent"&gt;• Light Crossbow&lt;/p&gt;
+			&lt;p class="indent"&gt;• 20 Bolts&lt;/p&gt;
+			&lt;p class="indent"&gt;• Hooded Lantern&lt;/p&gt;
+			&lt;p class="indent"&gt;• Manacles&lt;/p&gt;
+			&lt;p class="indent"&gt;• Quiver&lt;/p&gt;
+			&lt;p class="indent"&gt;• Traveler's Clothes&lt;/p&gt;
+			&lt;p&gt;&lt;b&gt;Note:&lt;/b&gt; This pack doesn't include the Gaming Set of the same kind as Proficiency gained from this Background (can be taken from "Tools" Equipment category) and 12 GP.&lt;/p&gt;
+		&lt;/description&gt;
+		&lt;setters&gt;
+			&lt;set name="category"&gt;Equipment Packs&lt;/set&gt;
+			&lt;set name="cost"&gt;—&lt;/set&gt;
+			&lt;set name="weight"&gt;—&lt;/set&gt;
+		&lt;/setters&gt;
+		&lt;extract&gt;
+			&lt;item&gt;ID_WOTC_PHB24_WEAPON_SPEAR&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_WEAPON_CROSSBOW_LIGHT&lt;/item&gt;
+			&lt;item amount="20"&gt;ID_WOTC_PHB24_ITEM_BOLT&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_LANTERN_HOODED&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_MANACLES&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_QUIVER&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS&lt;/item&gt;
+		&lt;/extract&gt;
+	&lt;/element&gt;
+
+	&lt;element name="Background Equipment Pack (Guide)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_GUIDE"&gt;
+		&lt;description&gt;
+			&lt;p style="margin-bottom:5px"&gt;This pack contains items that are given to a character of Guide Background, if you chose option A for Equipment.&lt;/p&gt;
+			&lt;p&gt;You will receive following items by extracting contents of this pack:&lt;/p&gt;
+			&lt;p class="indent"&gt;• Shortbow&lt;/p&gt;
+			&lt;p class="indent"&gt;• 20 Arrows&lt;/p&gt;
+			&lt;p class="indent"&gt;• Cartographer's Tools&lt;/p&gt;
+			&lt;p class="indent"&gt;• Bedroll&lt;/p&gt;
+			&lt;p class="indent"&gt;• Quiver&lt;/p&gt;
+			&lt;p class="indent"&gt;• Tent&lt;/p&gt;
+			&lt;p class="indent"&gt;• Traveler's Clothes&lt;/p&gt;
+			&lt;p&gt;&lt;b&gt;Note:&lt;/b&gt; This pack doesn't include 3 GP.&lt;/p&gt;
+		&lt;/description&gt;
+		&lt;setters&gt;
+			&lt;set name="category"&gt;Equipment Packs&lt;/set&gt;
+			&lt;set name="cost"&gt;—&lt;/set&gt;
+			&lt;set name="weight"&gt;—&lt;/set&gt;
+		&lt;/setters&gt;
+		&lt;extract&gt;
+			&lt;item&gt;ID_WOTC_PHB24_WEAPON_SHORTBOW&lt;/item&gt;
+			&lt;item amount="20"&gt;ID_WOTC_PHB24_ITEM_ARROW&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_TOOL_CARTOGRAPHERS_TOOLS&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_BEDROLL&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_QUIVER&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_TENT&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS&lt;/item&gt;
+		&lt;/extract&gt;
+	&lt;/element&gt;
+
+	&lt;element name="Background Equipment Pack (Hermit)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_HERMIT"&gt;
+		&lt;description&gt;
+			&lt;p style="margin-bottom:5px"&gt;This pack contains items that are given to a character of Hermit Background, if you chose option A for Equipment.&lt;/p&gt;
+			&lt;p&gt;You will receive following items by extracting contents of this pack:&lt;/p&gt;
+			&lt;p class="indent"&gt;• Quarterstaff&lt;/p&gt;
+			&lt;p class="indent"&gt;• Herbalism Kit&lt;/p&gt;
+			&lt;p class="indent"&gt;• Bedroll&lt;/p&gt;
+			&lt;p class="indent"&gt;• Book (philosophy)&lt;/p&gt;
+			&lt;p class="indent"&gt;• Lamp&lt;/p&gt;
+			&lt;p class="indent"&gt;• Oil (3 flasks)&lt;/p&gt;
+			&lt;p class="indent"&gt;• Traveler's Clothes&lt;/p&gt;
+			&lt;p&gt;&lt;b&gt;Note:&lt;/b&gt; This pack doesn't include 16 GP.&lt;/p&gt;
+		&lt;/description&gt;
+		&lt;setters&gt;
+			&lt;set name="category"&gt;Equipment Packs&lt;/set&gt;
+			&lt;set name="cost"&gt;—&lt;/set&gt;
+			&lt;set name="weight"&gt;—&lt;/set&gt;
+		&lt;/setters&gt;
+		&lt;extract&gt;
+			&lt;item&gt;ID_WOTC_PHB24_WEAPON_QUARTERSTAFF&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_TOOL_HERBALISM_KIT&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_BEDROLL&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_BOOK&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_LAMP&lt;/item&gt;
+			&lt;item amount="3"&gt;ID_WOTC_PHB24_ITEM_OIL&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS&lt;/item&gt;
+		&lt;/extract&gt;
+	&lt;/element&gt;
+
+	&lt;element name="Background Equipment Pack (Merchant)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_MERCHANT"&gt;
+		&lt;description&gt;
+			&lt;p style="margin-bottom:5px"&gt;This pack contains items that are given to a character of Merchant Background, if you chose option A for Equipment.&lt;/p&gt;
+			&lt;p&gt;You will receive following items by extracting contents of this pack:&lt;/p&gt;
+			&lt;p class="indent"&gt;• Navigator's Tools&lt;/p&gt;
+			&lt;p class="indent"&gt;• 2 Pouches&lt;/p&gt;
+			&lt;p class="indent"&gt;• Traveler's Clothes&lt;/p&gt;
+			&lt;p&gt;&lt;b&gt;Note:&lt;/b&gt; This pack doesn't include 22 GP.&lt;/p&gt;
+		&lt;/description&gt;
+		&lt;setters&gt;
+			&lt;set name="category"&gt;Equipment Packs&lt;/set&gt;
+			&lt;set name="cost"&gt;—&lt;/set&gt;
+			&lt;set name="weight"&gt;—&lt;/set&gt;
+		&lt;/setters&gt;
+		&lt;extract&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_TOOL_NAVIGATORS_TOOLS&lt;/item&gt;
+			&lt;item amount="2"&gt;ID_WOTC_PHB24_ITEM_POUCH&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS&lt;/item&gt;
+		&lt;/extract&gt;
+	&lt;/element&gt;
+
+	&lt;element name="Background Equipment Pack (Noble)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_NOBLE"&gt;
+		&lt;description&gt;
+			&lt;p style="margin-bottom:5px"&gt;This pack contains items that are given to a character of Noble Background, if you chose option A for Equipment.&lt;/p&gt;
+			&lt;p&gt;You will receive following items by extracting contents of this pack:&lt;/p&gt;
+			&lt;p class="indent"&gt;• Fine Clothes&lt;/p&gt;
+			&lt;p class="indent"&gt;• Perfume&lt;/p&gt;
+			&lt;p&gt;&lt;b&gt;Note:&lt;/b&gt; This pack doesn't include the Gaming Set of the same kind as Proficiency gained from this Background (can be taken from "Tools" Equipment category) and 29 GP.&lt;/p&gt;
+		&lt;/description&gt;
+		&lt;setters&gt;
+			&lt;set name="category"&gt;Equipment Packs&lt;/set&gt;
+			&lt;set name="cost"&gt;—&lt;/set&gt;
+			&lt;set name="weight"&gt;—&lt;/set&gt;
+		&lt;/setters&gt;
+		&lt;extract&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_CLOTHES_FINE&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_PERFUME&lt;/item&gt;
+		&lt;/extract&gt;
+	&lt;/element&gt;
+
+	&lt;element name="Background Equipment Pack (Sage)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_SAGE"&gt;
+		&lt;description&gt;
+			&lt;p style="margin-bottom:5px"&gt;This pack contains items that are given to a character of Sage Background, if you chose option A for Equipment.&lt;/p&gt;
+			&lt;p&gt;You will receive following items by extracting contents of this pack:&lt;/p&gt;
+			&lt;p class="indent"&gt;• Quarterstaff&lt;/p&gt;
+			&lt;p class="indent"&gt;• Calligrapher's Supplies&lt;/p&gt;
+			&lt;p class="indent"&gt;• Book (history)&lt;/p&gt;
+			&lt;p class="indent"&gt;• Parchment (8 sheets)&lt;/p&gt;
+			&lt;p class="indent"&gt;• Robe&lt;/p&gt;
+			&lt;p&gt;&lt;b&gt;Note:&lt;/b&gt; This pack doesn't include 8 GP.&lt;/p&gt;
+		&lt;/description&gt;
+		&lt;setters&gt;
+			&lt;set name="category"&gt;Equipment Packs&lt;/set&gt;
+			&lt;set name="cost"&gt;—&lt;/set&gt;
+			&lt;set name="weight"&gt;—&lt;/set&gt;
+		&lt;/setters&gt;
+		&lt;extract&gt;
+			&lt;item&gt;ID_WOTC_PHB24_WEAPON_QUARTERSTAFF&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_TOOL_CALLIGRAPHERS_SUPPLIES&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_BOOK&lt;/item&gt;
+			&lt;item amount="8"&gt;ID_WOTC_PHB24_ITEM_PARCHMENT&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_ROBE&lt;/item&gt;
+		&lt;/extract&gt;
+	&lt;/element&gt;
+
+	&lt;element name="Background Equipment Pack (Sailor)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_SAILOR"&gt;
+		&lt;description&gt;
+			&lt;p style="margin-bottom:5px"&gt;This pack contains items that are given to a character of Sailor Background, if you chose option A for Equipment.&lt;/p&gt;
+			&lt;p&gt;You will receive following items by extracting contents of this pack:&lt;/p&gt;
+			&lt;p class="indent"&gt;• Dagger&lt;/p&gt;
+			&lt;p class="indent"&gt;• Navigator's Tools&lt;/p&gt;
+			&lt;p class="indent"&gt;• Rope&lt;/p&gt;
+			&lt;p class="indent"&gt;• Traveler’s Clothes&lt;/p&gt;
+			&lt;p&gt;&lt;b&gt;Note:&lt;/b&gt; This pack doesn't include 20 GP.&lt;/p&gt;
+		&lt;/description&gt;
+		&lt;setters&gt;
+			&lt;set name="category"&gt;Equipment Packs&lt;/set&gt;
+			&lt;set name="cost"&gt;—&lt;/set&gt;
+			&lt;set name="weight"&gt;—&lt;/set&gt;
+		&lt;/setters&gt;
+		&lt;extract&gt;
+			&lt;item&gt;ID_WOTC_PHB24_WEAPON_DAGGER&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_TOOL_NAVIGATORS_TOOLS&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_ROPE&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS&lt;/item&gt;
+		&lt;/extract&gt;
+	&lt;/element&gt;
+
+	&lt;element name="Background Equipment Pack (Scribe)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_SCRIBE"&gt;
+		&lt;description&gt;
+			&lt;p style="margin-bottom:5px"&gt;This pack contains items that are given to a character of Scribe Background, if you chose option A for Equipment.&lt;/p&gt;
+			&lt;p&gt;You will receive following items by extracting contents of this pack:&lt;/p&gt;
+			&lt;p class="indent"&gt;• Calligrapher's Supplies&lt;/p&gt;
+			&lt;p class="indent"&gt;• Fine Clothes&lt;/p&gt;
+			&lt;p class="indent"&gt;• Lamp&lt;/p&gt;
+			&lt;p class="indent"&gt;• Oil (3 flasks)&lt;/p&gt;
+			&lt;p class="indent"&gt;• Parchment (12 sheets)&lt;/p&gt;
+			&lt;p&gt;&lt;b&gt;Note:&lt;/b&gt; This pack doesn't include 23 GP.&lt;/p&gt;
+		&lt;/description&gt;
+		&lt;setters&gt;
+			&lt;set name="category"&gt;Equipment Packs&lt;/set&gt;
+			&lt;set name="cost"&gt;—&lt;/set&gt;
+			&lt;set name="weight"&gt;—&lt;/set&gt;
+		&lt;/setters&gt;
+		&lt;extract&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_TOOL_CALLIGRAPHERS_SUPPLIES&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_CLOTHES_FINE&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_LAMP&lt;/item&gt;
+			&lt;item amount="3"&gt;ID_WOTC_PHB24_ITEM_OIL&lt;/item&gt;
+			&lt;item amount="12"&gt;ID_WOTC_PHB24_ITEM_PARCHMENT&lt;/item&gt;
+		&lt;/extract&gt;
+	&lt;/element&gt;
+
+	&lt;element name="Background Equipment Pack (Soldier)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_SOLDIER"&gt;
+		&lt;description&gt;
+			&lt;p style="margin-bottom:5px"&gt;This pack contains items that are given to a character of Soldier Background, if you chose option A for Equipment.&lt;/p&gt;
+			&lt;p&gt;You will receive following items by extracting contents of this pack:&lt;/p&gt;
+			&lt;p class="indent"&gt;• Spear&lt;/p&gt;
+			&lt;p class="indent"&gt;• Shortbow&lt;/p&gt;
+			&lt;p class="indent"&gt;• 20 Arrows&lt;/p&gt;
+			&lt;p class="indent"&gt;• Healer's Kit&lt;/p&gt;
+			&lt;p class="indent"&gt;• Quiver&lt;/p&gt;
+			&lt;p class="indent"&gt;• Traveler’s Clothes&lt;/p&gt;
+			&lt;p&gt;&lt;b&gt;Note:&lt;/b&gt; This pack doesn't include the Gaming Set of the same kind as Proficiency gained from this Background (can be taken from "Tools" Equipment category) and 14 GP.&lt;/p&gt;
+		&lt;/description&gt;
+		&lt;setters&gt;
+			&lt;set name="category"&gt;Equipment Packs&lt;/set&gt;
+			&lt;set name="cost"&gt;—&lt;/set&gt;
+			&lt;set name="weight"&gt;—&lt;/set&gt;
+		&lt;/setters&gt;
+		&lt;extract&gt;
+			&lt;item&gt;ID_WOTC_PHB24_WEAPON_SPEAR&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_WEAPON_SHORTBOW&lt;/item&gt;
+			&lt;item amount="20"&gt;ID_WOTC_PHB24_ITEM_ARROW&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_HEALERS_KIT&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_QUIVER&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS&lt;/item&gt;
+		&lt;/extract&gt;
+	&lt;/element&gt;
+
+	&lt;element name="Background Equipment Pack (Wayfarer)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_WAYFARER"&gt;
+		&lt;description&gt;
+			&lt;p style="margin-bottom:5px"&gt;This pack contains items that are given to a character of Wayfarer Background, if you chose option A for Equipment.&lt;/p&gt;
+			&lt;p&gt;You will receive following items by extracting contents of this pack:&lt;/p&gt;
+			&lt;p class="indent"&gt;• 2 Daggers&lt;/p&gt;
+			&lt;p class="indent"&gt;• Thieves' Tools&lt;/p&gt;
+			&lt;p class="indent"&gt;• Bedroll&lt;/p&gt;
+			&lt;p class="indent"&gt;• 2 Pouches&lt;/p&gt;
+			&lt;p class="indent"&gt;• Traveler's Clothes&lt;/p&gt;
+			&lt;p&gt;&lt;b&gt;Note:&lt;/b&gt; This pack doesn't include the Gaming Set of the same kind as Proficiency gained from this Background (can be taken from "Tools" Equipment category) and 16 GP.&lt;/p&gt;
+		&lt;/description&gt;
+		&lt;setters&gt;
+			&lt;set name="category"&gt;Equipment Packs&lt;/set&gt;
+			&lt;set name="cost"&gt;—&lt;/set&gt;
+			&lt;set name="weight"&gt;—&lt;/set&gt;
+		&lt;/setters&gt;
+		&lt;extract&gt;
+			&lt;item amount="2"&gt;ID_WOTC_PHB24_WEAPON_DAGGER&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_TOOL_THIEVES_TOOLS&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_BEDROLL&lt;/item&gt;
+			&lt;item amount="2"&gt;ID_WOTC_PHB24_ITEM_POUCH&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS&lt;/item&gt;
+		&lt;/extract&gt;
+	&lt;/element&gt;
+
+	&lt;!-- Class Equipment Packs --&gt;
+	&lt;element name="Class Equipment Pack (Barbarian)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_BARBARIAN"&gt;
+		&lt;description&gt;
+			&lt;p style="margin-bottom:5px"&gt;This pack contains items that are given to a character of Barbarian Class, if you chose option A for Equipment.&lt;/p&gt;
+			&lt;p&gt;You will receive following items by extracting contents of this pack:&lt;/p&gt;
+			&lt;p class="indent"&gt;• Greataxe&lt;/p&gt;
+			&lt;p class="indent"&gt;• 4 Handaxes&lt;/p&gt;
+			&lt;p class="indent" style="margin-bottom:5px"&gt;• Explorer's Pack&lt;/p&gt;
+			&lt;p&gt;&lt;b&gt;Note:&lt;/b&gt; This pack doesn't include 15 GP.&lt;/p&gt;
+		&lt;/description&gt;
+		&lt;setters&gt;
+			&lt;set name="category"&gt;Equipment Packs&lt;/set&gt;
+			&lt;set name="cost"&gt;—&lt;/set&gt;
+			&lt;set name="weight"&gt;—&lt;/set&gt;
+		&lt;/setters&gt;
+		&lt;extract&gt;
+			&lt;item&gt;ID_WOTC_PHB24_WEAPON_GREATAXE&lt;/item&gt;
+			&lt;item amount="4"&gt;ID_WOTC_PHB24_WEAPON_HANDAXE&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_EXPLORERS_PACK&lt;/item&gt;
+		&lt;/extract&gt;
+	&lt;/element&gt;
+
+	&lt;element name="Class Equipment Pack (Bard)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_BARD"&gt;
+		&lt;description&gt;
+			&lt;p style="margin-bottom:5px"&gt;This pack contains items that are given to a character of Bard Class, if you chose option A for Equipment.&lt;/p&gt;
+			&lt;p&gt;You will receive following items by extracting contents of this pack:&lt;/p&gt;
+			&lt;p class="indent"&gt;• 2 Daggers&lt;/p&gt;
+			&lt;p class="indent" style="margin-bottom:5px"&gt;• Entertainer's Pack&lt;/p&gt;
+			&lt;p&gt;&lt;b&gt;Note:&lt;/b&gt; This pack doesn't include Leather Armor, Musical Instrument of your choice (can be selected under "Musical Instrument" category) and 19 GP.&lt;/p&gt;
+		&lt;/description&gt;
+		&lt;setters&gt;
+			&lt;set name="category"&gt;Equipment Packs&lt;/set&gt;
+			&lt;set name="cost"&gt;—&lt;/set&gt;
+			&lt;set name="weight"&gt;—&lt;/set&gt;
+		&lt;/setters&gt;
+		&lt;extract&gt;
+			&lt;item amount="2"&gt;ID_WOTC_PHB24_WEAPON_DAGGER&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_ENTERTAINERS_PACK&lt;/item&gt;
+		&lt;/extract&gt;
+	&lt;/element&gt;
+
+	&lt;element name="Class Equipment Pack (Cleric)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_CLERIC"&gt;
+		&lt;description&gt;
+			&lt;p style="margin-bottom:5px"&gt;This pack contains items that are given to a character of Cleric Class, if you chose option A for Equipment.&lt;/p&gt;
+			&lt;p&gt;You will receive following items by extracting contents of this pack:&lt;/p&gt; 
+			&lt;p class="indent"&gt;• Mace&lt;/p&gt;
+			&lt;p class="indent" style="margin-bottom:5px"&gt;• Priest's Pack&lt;/p&gt;
+			&lt;p&gt;&lt;b&gt;Note:&lt;/b&gt; This pack doesn't include Chain Shirt, Shield, Holy Symbol (can be selected under "Spellcasting Focus" category) and 7 GP.&lt;/p&gt;
+		&lt;/description&gt;
+		&lt;setters&gt;
+			&lt;set name="category"&gt;Equipment Packs&lt;/set&gt;
+			&lt;set name="cost"&gt;—&lt;/set&gt;
+			&lt;set name="weight"&gt;—&lt;/set&gt;
+		&lt;/setters&gt;
+		&lt;extract&gt;
+			&lt;item&gt;ID_WOTC_PHB24_WEAPON_MACE&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_PRIESTS_PACK&lt;/item&gt;
+		&lt;/extract&gt;
+	&lt;/element&gt;
+
+	&lt;element name="Class Equipment Pack (Druid)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_DRUID"&gt;
+		&lt;description&gt;
+			&lt;p style="margin-bottom:5px"&gt;This pack contains items that are given to a character of Druid Class, if you chose option A for Equipment.&lt;/p&gt;
+			&lt;p&gt;You will receive following items by extracting contents of this pack:&lt;/p&gt;
+			&lt;p class="indent"&gt;• Sickle&lt;/p&gt;
+			&lt;p class="indent"&gt;• Druidic Focus (Quarterstaff)&lt;/p&gt;
+			&lt;p class="indent"&gt;• Explorer's Pack&lt;/p&gt;
+			&lt;p class="indent" style="margin-bottom:5px"&gt;• Herbalism kit&lt;/p&gt;
+			&lt;p&gt;&lt;b&gt;Note:&lt;/b&gt; This pack doesn't include Leather Armor, Shield and 9 GP.&lt;/p&gt;
+		&lt;/description&gt;
+		&lt;setters&gt;
+			&lt;set name="category"&gt;Equipment Packs&lt;/set&gt;
+			&lt;set name="cost"&gt;—&lt;/set&gt;
+			&lt;set name="weight"&gt;—&lt;/set&gt;
+		&lt;/setters&gt;
+		&lt;extract&gt;
+			&lt;item&gt;ID_WOTC_PHB24_WEAPON_SICKLE&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_WEAPON_QUARTERSTAFF&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_EXPLORERS_PACK&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_TOOL_HERBALISM_KIT&lt;/item&gt;
+		&lt;/extract&gt;
+	&lt;/element&gt;
+
+	&lt;element name="Class Equipment Pack (Fighter, Option A)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_FIGHTER_1"&gt;
+		&lt;description&gt;
+			&lt;p style="margin-bottom:5px"&gt;This pack contains items that are given to a character of Fighter Class, if you chose option A for Equipment.&lt;/p&gt;
+			&lt;p&gt;You will receive following items by extracting contents of this pack:&lt;/p&gt;
+			&lt;p class="indent"&gt;• Greatsword&lt;/p&gt;
+			&lt;p class="indent"&gt;• Flail&lt;/p&gt;
+			&lt;p class="indent"&gt;• 8 Javelins&lt;/p&gt;
+			&lt;p class="indent" style="margin-bottom:5px"&gt;• Dungeoneer's Pack&lt;/p&gt;
+			&lt;p&gt;&lt;b&gt;Note:&lt;/b&gt; This pack doesn't include Chain Mail and 4 GP.&lt;/p&gt;
+		&lt;/description&gt;
+		&lt;setters&gt;
+			&lt;set name="category"&gt;Equipment Packs&lt;/set&gt;
+			&lt;set name="cost"&gt;—&lt;/set&gt;
+			&lt;set name="weight"&gt;—&lt;/set&gt;
+		&lt;/setters&gt;
+		&lt;extract&gt;
+			&lt;item&gt;ID_WOTC_PHB24_WEAPON_GREATSWORD&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_WEAPON_FLAIL&lt;/item&gt;
+			&lt;item amount="8"&gt;ID_WOTC_PHB24_WEAPON_JAVELIN&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_DUNGEONEERS_PACK&lt;/item&gt;
+		&lt;/extract&gt;
+	&lt;/element&gt;
+	&lt;element name="Class Equipment Pack (Fighter, Option B)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_FIGHTER_2"&gt;
+		&lt;description&gt;
+			&lt;p style="margin-bottom:5px"&gt;This pack contains items that are given to a character of Fighter Class, if you chose option B for Equipment.&lt;/p&gt;
+			&lt;p&gt;You will receive following items by extracting contents of this pack:&lt;/p&gt;
+			&lt;p class="indent"&gt;• Scimitar&lt;/p&gt;
+			&lt;p class="indent"&gt;• Shortsword&lt;/p&gt;
+			&lt;p class="indent"&gt;• Longbow&lt;/p&gt;
+			&lt;p class="indent"&gt;• 20 Arrows&lt;/p&gt;
+			&lt;p class="indent"&gt;• Quiver&lt;/p&gt;
+			&lt;p class="indent" style="margin-bottom:5px"&gt;• Dungeoneer's Pack&lt;/p&gt;
+			&lt;p&gt;&lt;b&gt;Note:&lt;/b&gt; This pack doesn't include Studded Leather Armor and 11 GP.&lt;/p&gt;
+		&lt;/description&gt;
+		&lt;setters&gt;
+			&lt;set name="category"&gt;Equipment Packs&lt;/set&gt;
+			&lt;set name="cost"&gt;—&lt;/set&gt;
+			&lt;set name="weight"&gt;—&lt;/set&gt;
+		&lt;/setters&gt;
+		&lt;extract&gt;
+			&lt;item&gt;ID_WOTC_PHB24_WEAPON_SCIMITAR&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_WEAPON_SHORTSWORD&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_WEAPON_LONGBOW&lt;/item&gt;
+			&lt;item amount="20"&gt;ID_WOTC_PHB24_ITEM_ARROW&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_QUIVER&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_DUNGEONEERS_PACK&lt;/item&gt;
+		&lt;/extract&gt;
+	&lt;/element&gt;
+
+	&lt;element name="Class Equipment Pack (Monk)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_MONK"&gt;
+		&lt;description&gt;
+			&lt;p style="margin-bottom:5px"&gt;This pack contains items that are given to a character of Monk Class, if you chose option A for Equipment.&lt;/p&gt;
+			&lt;p&gt;You will receive following items by extracting contents of this pack:&lt;/p&gt;
+			&lt;p class="indent"&gt;• Spear&lt;/p&gt;
+			&lt;p class="indent"&gt;• 5 Daggers&lt;/p&gt;
+			&lt;p class="indent" style="margin-bottom:5px"&gt;• Explorer's Pack&lt;/p&gt;
+			&lt;p&gt;&lt;b&gt;Note:&lt;/b&gt; This pack doesn't include Artisan's Tools or Musical Instrument which was chosen for this Class's tool proficiency and 11 GP.&lt;/p&gt;
+		&lt;/description&gt;
+		&lt;setters&gt;
+			&lt;set name="category"&gt;Equipment Packs&lt;/set&gt;
+			&lt;set name="cost"&gt;—&lt;/set&gt;
+			&lt;set name="weight"&gt;—&lt;/set&gt;
+		&lt;/setters&gt;
+		&lt;extract&gt;
+			&lt;item&gt;ID_WOTC_PHB24_WEAPON_SPEAR&lt;/item&gt;
+			&lt;item amount="5"&gt;ID_WOTC_PHB24_WEAPON_DAGGER&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_EXPLORERS_PACK&lt;/item&gt;
+		&lt;/extract&gt;
+	&lt;/element&gt;
+
+	&lt;element name="Class Equipment Pack (Paladin)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_PALADIN"&gt;
+		&lt;description&gt;
+			&lt;p style="margin-bottom:5px"&gt;This pack contains items that are given to a character of Paladin Class, if you chose option A for Equipment.&lt;/p&gt;
+			&lt;p&gt;You will receive following items by extracting contents of this pack:&lt;/p&gt;
+			&lt;p class="indent"&gt;• Longsword&lt;/p&gt;
+			&lt;p class="indent"&gt;• 6 Javelins&lt;/p&gt;
+			&lt;p class="indent" style="margin-bottom:5px"&gt;• Priest's Pack&lt;/p&gt;
+			&lt;p&gt;&lt;b&gt;Note:&lt;/b&gt; This pack doesn't include Chain Mail, Shield, Holy Symbol (can be selected under "Spellcasting Focus" category) and 9 GP.&lt;/p&gt;
+		&lt;/description&gt;
+		&lt;setters&gt;
+			&lt;set name="category"&gt;Equipment Packs&lt;/set&gt;
+			&lt;set name="cost"&gt;—&lt;/set&gt;
+			&lt;set name="weight"&gt;—&lt;/set&gt;
+		&lt;/setters&gt;
+		&lt;extract&gt;
+			&lt;item&gt;ID_WOTC_PHB24_WEAPON_LONGSWORD&lt;/item&gt;
+			&lt;item amount="6"&gt;ID_WOTC_PHB24_WEAPON_JAVELIN&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_PRIESTS_PACK&lt;/item&gt;
+		&lt;/extract&gt;
+	&lt;/element&gt;
+
+	&lt;element name="Class Equipment Pack (Ranger)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_RANGER"&gt;
+		&lt;description&gt;
+			&lt;p style="margin-bottom:5px"&gt;This pack contains items that are given to a character of Ranger Class, if you chose option A for Equipment.&lt;/p&gt;
+			&lt;p&gt;You will receive following items by extracting contents of this pack:&lt;/p&gt;
+			&lt;p class="indent"&gt;• Scimitar&lt;/p&gt;
+			&lt;p class="indent"&gt;• Shortsword&lt;/p&gt;
+			&lt;p class="indent"&gt;• Longbow&lt;/p&gt;
+			&lt;p class="indent"&gt;• 20 Arrows&lt;/p&gt;
+			&lt;p class="indent"&gt;• Quiver&lt;/p&gt;
+			&lt;p class="indent"&gt;• Druidic Focus (sprig of mistletoe)&lt;/p&gt;
+			&lt;p class="indent" style="margin-bottom:5px"&gt;• Explorer's Pack&lt;/p&gt;
+			&lt;p&gt;&lt;b&gt;Note:&lt;/b&gt; This pack doesn't include Studded Leather Armor and 7 GP.&lt;/p&gt;
+		&lt;/description&gt;
+		&lt;setters&gt;
+			&lt;set name="category"&gt;Equipment Packs&lt;/set&gt;
+			&lt;set name="cost"&gt;—&lt;/set&gt;
+			&lt;set name="weight"&gt;—&lt;/set&gt;
+		&lt;/setters&gt;
+		&lt;extract&gt;
+			&lt;item&gt;ID_WOTC_PHB24_WEAPON_SCIMITAR&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_WEAPON_SHORTSWORD&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_WEAPON_LONGBOW&lt;/item&gt;
+			&lt;item amount="20"&gt;ID_WOTC_PHB24_ITEM_ARROW&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_QUIVER&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_DRUIDIC_FOCUS_SPRIG_OF_MISTLETOE&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_EXPLORERS_PACK&lt;/item&gt;
+		&lt;/extract&gt;
+	&lt;/element&gt;
+
+	&lt;element name="Class Equipment Pack (Rogue)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_ROGUE"&gt;
+		&lt;description&gt;
+			&lt;p style="margin-bottom:5px"&gt;This pack contains items that are given to a character of Rogue Class, if you chose option A for Equipment.&lt;/p&gt;
+			&lt;p&gt;You will receive following items by extracting contents of this pack:&lt;/p&gt;
+			&lt;p class="indent"&gt;• 2 Daggers&lt;/p&gt;
+			&lt;p class="indent"&gt;• Shortsword&lt;/p&gt;
+			&lt;p class="indent"&gt;• Shortbow&lt;/p&gt;
+			&lt;p class="indent"&gt;• 20 Arrows&lt;/p&gt;
+			&lt;p class="indent"&gt;• Quiver&lt;/p&gt;
+			&lt;p class="indent"&gt;• Thieves' Tools&lt;/p&gt;
+			&lt;p class="indent" style="margin-bottom:5px"&gt;• Burglar's Pack&lt;/p&gt;
+			&lt;p&gt;&lt;b&gt;Note:&lt;/b&gt; This pack doesn't include Leather Armor and 8 GP.&lt;/p&gt;
+		&lt;/description&gt;
+		&lt;setters&gt;
+			&lt;set name="category"&gt;Equipment Packs&lt;/set&gt;
+			&lt;set name="cost"&gt;—&lt;/set&gt;
+			&lt;set name="weight"&gt;—&lt;/set&gt;
+		&lt;/setters&gt;
+		&lt;extract&gt;
+			&lt;item amount="2"&gt;ID_WOTC_PHB24_WEAPON_DAGGER&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_WEAPON_SHORTSWORD&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_WEAPON_SHORTBOW&lt;/item&gt;
+			&lt;item amount="20"&gt;ID_WOTC_PHB24_ITEM_ARROW&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_QUIVER&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_TOOL_THIEVES_TOOLS&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_BURGLARS_PACK&lt;/item&gt;
+		&lt;/extract&gt;
+	&lt;/element&gt;
+
+	&lt;element name="Class Equipment Pack (Sorcerer)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_SORCERER"&gt;
+		&lt;description&gt;
+			&lt;p style="margin-bottom:5px"&gt;This pack contains items that are given to a character of Sorcerer Class, if you chose option A for Equipment.&lt;/p&gt;
+			&lt;p&gt;You will receive following items by extracting contents of this pack:&lt;/p&gt;
+			&lt;p class="indent"&gt;• Spear&lt;/p&gt;
+			&lt;p class="indent"&gt;• 2 Daggers&lt;/p&gt;
+			&lt;p class="indent"&gt;• Arcane Focus (crystal)&lt;/p&gt;
+			&lt;p class="indent" style="margin-bottom:5px"&gt;• Dungeoneer's Pack&lt;/p&gt;
+			&lt;p&gt;&lt;b&gt;Note:&lt;/b&gt; This pack doesn't include 28 GP.&lt;/p&gt;
+		&lt;/description&gt;
+		&lt;setters&gt;
+			&lt;set name="category"&gt;Equipment Packs&lt;/set&gt;
+			&lt;set name="cost"&gt;—&lt;/set&gt;
+			&lt;set name="weight"&gt;—&lt;/set&gt;
+		&lt;/setters&gt;
+		&lt;extract&gt;
+			&lt;item&gt;ID_WOTC_PHB24_WEAPON_SPEAR&lt;/item&gt;
+			&lt;item amount="2"&gt;ID_WOTC_PHB24_WEAPON_DAGGER&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_ARCANE_FOCUS_CRYSTAL&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_DUNGEONEERS_PACK&lt;/item&gt;
+		&lt;/extract&gt;
+	&lt;/element&gt;
+
+	&lt;element name="Class Equipment Pack (Warlock)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_WARLOCK"&gt;
+		&lt;description&gt;
+			&lt;p style="margin-bottom:5px"&gt;This pack contains items that are given to a character of Warlock Class, if you chose option A for Equipment.&lt;/p&gt;
+			&lt;p&gt;You will receive following items by extracting contents of this pack:&lt;/p&gt;
+			&lt;p class="indent"&gt;• Sickle&lt;/p&gt;
+			&lt;p class="indent"&gt;• 2 Daggers&lt;/p&gt;
+			&lt;p class="indent"&gt;• Arcane Focus (orb)&lt;/p&gt;
+			&lt;p class="indent"&gt;• Book (occult lore)&lt;/p&gt;
+			&lt;p class="indent" style="margin-bottom:5px"&gt;• Scholar's Pack&lt;/p&gt;
+			&lt;p&gt;&lt;b&gt;Note:&lt;/b&gt; This pack doesn't include Leather Armor and 15 GP.&lt;/p&gt;
+		&lt;/description&gt;
+		&lt;setters&gt;
+			&lt;set name="category"&gt;Equipment Packs&lt;/set&gt;
+			&lt;set name="cost"&gt;—&lt;/set&gt;
+			&lt;set name="weight"&gt;—&lt;/set&gt;
+		&lt;/setters&gt;
+		&lt;extract&gt;
+			&lt;item&gt;ID_WOTC_PHB24_WEAPON_SICKLE&lt;/item&gt;
+			&lt;item amount="2"&gt;ID_WOTC_PHB24_WEAPON_DAGGER&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_ARCANE_FOCUS_ORB&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_BOOK&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_SCHOLARS_PACK&lt;/item&gt;
+		&lt;/extract&gt;
+	&lt;/element&gt;
+
+	&lt;element name="Class Equipment Pack (Wizard)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_WIZARD"&gt;
+		&lt;description&gt;
+			&lt;p style="margin-bottom:5px"&gt;This pack contains items that are given to a character of Wizard Class, if you chose option A for Equipment.&lt;/p&gt;
+			&lt;p&gt;You will receive following items by extracting contents of this pack:&lt;/p&gt;
+			&lt;p class="indent"&gt;• 2 Daggers&lt;/p&gt;
+			&lt;p class="indent"&gt;• Arcane Focus (Quarterstaff)&lt;/p&gt;
+			&lt;p class="indent"&gt;• Robe&lt;/p&gt;
+			&lt;p class="indent"&gt;• Spellbook&lt;/p&gt;
+			&lt;p class="indent" style="margin-bottom:5px"&gt;• Scholar's Pack&lt;/p&gt;
+			&lt;p&gt;&lt;b&gt;Note:&lt;/b&gt; This pack doesn't include 5 GP.&lt;/p&gt;
+		&lt;/description&gt;
+		&lt;setters&gt;
+			&lt;set name="category"&gt;Equipment Packs&lt;/set&gt;
+			&lt;set name="cost"&gt;—&lt;/set&gt;
+			&lt;set name="weight"&gt;—&lt;/set&gt;
+		&lt;/setters&gt;
+		&lt;extract&gt;
+			&lt;item amount="2"&gt;ID_WOTC_PHB24_WEAPON_DAGGER&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_WEAPON_QUARTERSTAFF&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_ROBE&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_BOOK&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_SCHOLARS_PACK&lt;/item&gt;
+		&lt;/extract&gt;
+	&lt;/element&gt;
+
+	&lt;!-- Item Packs --&gt;
+	&lt;element name="Burglar's Pack" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_BURGLARS_PACK"&gt;
+		&lt;description&gt;
+			&lt;p&gt;A Burglar's Pack contains the following items: Backpack, Ball Bearings, Bell, 10 Candles, Crowbar, Hooded Lantern, 7 flasks of Oil, 5 days of Rations, Rope, Tinderbox, and Waterskin.&lt;/p&gt;
+		&lt;/description&gt;
+		&lt;setters&gt;
+			&lt;set name="category"&gt;Equipment Packs&lt;/set&gt;
+			&lt;set name="cost" currency="gp"&gt;16&lt;/set&gt;
+			&lt;set name="weight" lb="42"&gt;42 lbs.&lt;/set&gt;
+		&lt;/setters&gt;
+		&lt;extract&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_BACKPACK&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_BALL_BEARINGS&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_STRING&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_BELL&lt;/item&gt;
+			&lt;item amount="10"&gt;ID_WOTC_PHB24_ITEM_CANDLE&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_CROWBAR&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_LANTERN_HOODED&lt;/item&gt;
+			&lt;item amount="7"&gt;ID_WOTC_PHB24_ITEM_OIL&lt;/item&gt;
+			&lt;item amount="5"&gt;ID_WOTC_PHB24_ITEM_RATIONS&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_ROPE&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_TINDERBOX&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_WATERSKIN&lt;/item&gt;
+		&lt;/extract&gt;
+	&lt;/element&gt;
+
+	&lt;element name="Diplomat's Pack" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_DIPLOMATS_PACK"&gt;
+		&lt;description&gt;
+			&lt;p&gt;A Diplomat's Pack contains the following items: Chest, Fine Clothes, Ink, 5 Ink Pens, Lamp, 2 Map or Scroll Cases, 4 flasks of Oil, 5 sheets of Paper, 5 sheets of Parchment, Perfume, and Tinderbox.&lt;/p&gt;
+		&lt;/description&gt;
+		&lt;setters&gt;
+			&lt;set name="category"&gt;Equipment Packs&lt;/set&gt;
+			&lt;set name="cost" currency="gp"&gt;39&lt;/set&gt;
+			&lt;set name="weight" lb="39"&gt;39 lbs.&lt;/set&gt;
+		&lt;/setters&gt;
+		&lt;extract&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_CHEST&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_CLOTHES_FINE&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_INK&lt;/item&gt;
+			&lt;item amount="5"&gt;ID_WOTC_PHB24_ITEM_INK_PEN&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_LAMP&lt;/item&gt;
+			&lt;item amount="2"&gt;ID_WOTC_PHB24_ITEM_CASE_MAP_OR_SCROLL&lt;/item&gt;
+			&lt;item amount="4"&gt;ID_WOTC_PHB24_ITEM_OIL&lt;/item&gt;
+			&lt;item amount="5"&gt;ID_WOTC_PHB24_ITEM_PAPER&lt;/item&gt;
+			&lt;item amount="5"&gt;ID_WOTC_PHB24_ITEM_PARCHMENT&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_PERFUME&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_TINDERBOX&lt;/item&gt;
+		&lt;/extract&gt;
+	&lt;/element&gt;
+
+	&lt;element name="Dungeoneer's Pack" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_DUNGEONEERS_PACK"&gt;
+		&lt;description&gt;
+			&lt;p&gt;A Dungeoneer's Pack contains the following items: Backpack, Caltrops, Crowbar, 2 flasks of Oil, 10 days of Rations, Rope, Tinderbox, 10 Torches, and Waterskin.&lt;/p&gt;
+		&lt;/description&gt;
+		&lt;setters&gt;
+			&lt;set name="category"&gt;Equipment Packs&lt;/set&gt;
+			&lt;set name="cost" currency="gp"&gt;12&lt;/set&gt;
+			&lt;set name="weight" lb="55"&gt;55 lbs.&lt;/set&gt;
+		&lt;/setters&gt;
+		&lt;extract&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_BACKPACK&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_CALTROPS&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_CROWBAR&lt;/item&gt;
+			&lt;item amount="2"&gt;ID_WOTC_PHB24_ITEM_OIL&lt;/item&gt;
+			&lt;item amount="10"&gt;ID_WOTC_PHB24_ITEM_RATIONS&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_ROPE&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_TINDERBOX&lt;/item&gt;
+			&lt;item amount="10"&gt;ID_WOTC_PHB24_ITEM_TORCH&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_WATERSKIN&lt;/item&gt;
+		&lt;/extract&gt;
+	&lt;/element&gt;
+
+	&lt;element name="Entertainer's Pack" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_ENTERTAINERS_PACK"&gt;
+		&lt;description&gt;
+			&lt;p&gt;An Entertainer's Pack contains the following items: Backpack, Bedroll, Bell, Bullseye Lantern, 3 Costumes, Mirror, 8 flasks of Oil, 9 days of Rations, Tinderbox, and Waterskin.&lt;/p&gt;
+		&lt;/description&gt;
+		&lt;setters&gt;
+			&lt;set name="category"&gt;Equipment Packs&lt;/set&gt;
+			&lt;set name="cost" currency="gp"&gt;40&lt;/set&gt;
+			&lt;set name="weight" lb="58.5"&gt;58½ lbs.&lt;/set&gt;
+		&lt;/setters&gt;
+		&lt;extract&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_BACKPACK&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_BEDROLL&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_BELL&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_LANTERN_BULLSEYE&lt;/item&gt;
+			&lt;item amount="3"&gt;ID_WOTC_PHB24_ITEM_COSTUME&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_MIRROR&lt;/item&gt;
+			&lt;item amount="8"&gt;ID_WOTC_PHB24_ITEM_OIL&lt;/item&gt;
+			&lt;item amount="9"&gt;ID_WOTC_PHB24_ITEM_RATIONS&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_TINDERBOX&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_WATERSKIN&lt;/item&gt;
+		&lt;/extract&gt;
+	&lt;/element&gt;
+
+	&lt;element name="Explorer's Pack" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_EXPLORERS_PACK"&gt;
+		&lt;description&gt;
+			&lt;p&gt;An Explorer's Pack contains the following items: Backpack, Bedroll, 2 flasks of Oil, 10 days of Rations, Rope, Tinderbox, 10 Torches, and Waterskin.&lt;/p&gt;
+		&lt;/description&gt;
+		&lt;setters&gt;
+			&lt;set name="category"&gt;Equipment Packs&lt;/set&gt;
+			&lt;set name="cost" currency="gp"&gt;10&lt;/set&gt;
+			&lt;set name="weight" lb="55"&gt;55 lbs.&lt;/set&gt;
+		&lt;/setters&gt;
+		&lt;extract&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_BACKPACK&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_BEDROLL&lt;/item&gt;
+			&lt;item amount="2"&gt;ID_WOTC_PHB24_ITEM_OIL&lt;/item&gt;
+			&lt;item amount="10"&gt;ID_WOTC_PHB24_ITEM_RATIONS&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_ROPE&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_TINDERBOX&lt;/item&gt;
+			&lt;item amount="10"&gt;ID_WOTC_PHB24_ITEM_TORCH&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_WATERSKIN&lt;/item&gt;
+		&lt;/extract&gt;
+	&lt;/element&gt;
+
+	&lt;element name="Priest's Pack" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_PRIESTS_PACK"&gt;
+		&lt;description&gt;
+			&lt;p&gt;A Priest's Pack contains the following items: Backpack, Blanket, Holy Water, Lamp, 7 days of Rations, Robe, and Tinderbox.&lt;/p&gt;
+		&lt;/description&gt;
+		&lt;setters&gt;
+			&lt;set name="category"&gt;Equipment Packs&lt;/set&gt;
+			&lt;set name="cost" currency="gp"&gt;33&lt;/set&gt;
+			&lt;set name="weight" lb="29"&gt;29 lbs.&lt;/set&gt;
+		&lt;/setters&gt;
+		&lt;extract&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_BACKPACK&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_BLANKET&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_HOLY_WATER&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_LAMP&lt;/item&gt;
+			&lt;item amount="7"&gt;ID_WOTC_PHB24_ITEM_RATIONS&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_ROBE&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_TINDERBOX&lt;/item&gt;
+		&lt;/extract&gt;
+	&lt;/element&gt;
+
+	&lt;element name="Scholar's Pack" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_SCHOLARS_PACK"&gt;
+		&lt;description&gt;
+			&lt;p&gt;A Scholar’s Pack contains the following items: Backpack, Book, Ink, Ink Pen, Lamp, 10 flasks of Oil, 10 sheets of Parchment, and Tinderbox.&lt;/p&gt;
+		&lt;/description&gt;
+		&lt;setters&gt;
+			&lt;set name="category"&gt;Equipment Packs&lt;/set&gt;
+			&lt;set name="cost" currency="gp"&gt;40&lt;/set&gt;
+			&lt;set name="weight" lb="22"&gt;22 lbs.&lt;/set&gt;
+		&lt;/setters&gt;
+		&lt;extract&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_BACKPACK&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_BOOK&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_INK&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_INK_PEN&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_LAMP&lt;/item&gt;
+			&lt;item amount="10"&gt;ID_WOTC_PHB24_ITEM_OIL&lt;/item&gt;
+			&lt;item amount="10"&gt;ID_WOTC_PHB24_ITEM_PARCHMENT&lt;/item&gt;
+			&lt;item&gt;ID_WOTC_PHB24_ITEM_TINDERBOX&lt;/item&gt;
+		&lt;/extract&gt;
+	&lt;/element&gt;
+&lt;/elements&gt;
+
+</al:baseline><al:correction key="pack-repair-ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_ACOLYTE" operation="replace" target-id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_ACOLYTE" state="review-pending" original-fingerprint="C342B950751B638909E4304356D2374870D14E1E7C47876736C0AF7A492355A3"><al:reason>Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.</al:reason></al:correction><al:correction key="pack-repair-ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_ARTISAN" operation="replace" target-id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_ARTISAN" state="review-pending" original-fingerprint="2BFE6B546CDBDB1F50447977D6CF7F505A53BBC6472297FF7CE0C6209C183258"><al:reason>Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.</al:reason></al:correction><al:correction key="pack-repair-ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_CHARLATAN" operation="replace" target-id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_CHARLATAN" state="review-pending" original-fingerprint="F1E947C050811D27C539E395AA6A3D87CD0A4AD718FDE2ECBAD415122A90B685"><al:reason>Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.</al:reason></al:correction><al:correction key="pack-repair-ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_CRIMINAL" operation="replace" target-id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_CRIMINAL" state="review-pending" original-fingerprint="EF0709B7423EA54905B80255BABA72487933CE6823F6BE4AE27442932F6081F8"><al:reason>Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.</al:reason></al:correction><al:correction key="pack-repair-ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_ENTERTAINER" operation="replace" target-id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_ENTERTAINER" state="review-pending" original-fingerprint="91A766CD3C805D241CBACA89E0E533A3F778C3DD88AF9A1EF8BF551A99DA491A"><al:reason>Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.</al:reason></al:correction><al:correction key="pack-repair-ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_FARMER" operation="replace" target-id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_FARMER" state="review-pending" original-fingerprint="3554378006C5D8ED82318655C896C4C89B936CC99089637B04F52D077F4B0321"><al:reason>Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.</al:reason></al:correction><al:correction key="pack-repair-ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_GUARD" operation="replace" target-id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_GUARD" state="review-pending" original-fingerprint="F6F20E7939A5299B769CD16858547B9665EFACCC4D4C8755805409D0356F332E"><al:reason>Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs. Correct Guard's Light Crossbow extraction reference to ID_WOTC_PHB24_WEAPON_LIGHT_CROSSBOW.</al:reason></al:correction><al:correction key="pack-repair-ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_GUIDE" operation="replace" target-id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_GUIDE" state="review-pending" original-fingerprint="1F1A76C14341DD9E70DFBEE484E4870E6C65BF018742F0DCD2ADF504507E1DA5"><al:reason>Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.</al:reason></al:correction><al:correction key="pack-repair-ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_HERMIT" operation="replace" target-id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_HERMIT" state="review-pending" original-fingerprint="AEE2670E3B919DED9A5C78B378364214450184007BD9F5154418A0F70E265693"><al:reason>Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.</al:reason></al:correction><al:correction key="pack-repair-ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_MERCHANT" operation="replace" target-id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_MERCHANT" state="review-pending" original-fingerprint="1E94384D057DEBF7B886255A366B606DD9E88F9736900F1B937F7B38B94D1965"><al:reason>Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.</al:reason></al:correction><al:correction key="pack-repair-ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_NOBLE" operation="replace" target-id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_NOBLE" state="review-pending" original-fingerprint="74EA04994356C2EE1E28F445C764CD43AF38B51E2DA8A49D8B85482D35561356"><al:reason>Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.</al:reason></al:correction><al:correction key="pack-repair-ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_SAGE" operation="replace" target-id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_SAGE" state="review-pending" original-fingerprint="1902F0D5AA8FA417721DAA7A54FF5B7E031101DECA9D7D1086D7E47E34456365"><al:reason>Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.</al:reason></al:correction><al:correction key="pack-repair-ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_SAILOR" operation="replace" target-id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_SAILOR" state="review-pending" original-fingerprint="0411405EB7F5BCF7D3A7949F8C2C01C6651AD91FA5A424519F1739A9B7C36986"><al:reason>Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.</al:reason></al:correction><al:correction key="pack-repair-ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_SCRIBE" operation="replace" target-id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_SCRIBE" state="review-pending" original-fingerprint="834091207897F0A50C6736FD8848AC117EDC97F0B2D29B6C38AD5D15B716168D"><al:reason>Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.</al:reason></al:correction><al:correction key="pack-repair-ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_SOLDIER" operation="replace" target-id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_SOLDIER" state="review-pending" original-fingerprint="C668961577FA2CE74919D3A51D909736D108CBB4FB84A68F05E590626854B7AF"><al:reason>Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.</al:reason></al:correction><al:correction key="pack-repair-ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_WAYFARER" operation="replace" target-id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_WAYFARER" state="review-pending" original-fingerprint="7349547FA01D8789198D091D8A3920176F84651FA9F9FDD1B4A026A91D01C3DF"><al:reason>Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.</al:reason></al:correction><al:correction key="pack-repair-ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_BARBARIAN" operation="replace" target-id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_BARBARIAN" state="review-pending" original-fingerprint="AFC5175554D4DBCAC18D4E981A8B4424AC16D73640C7740BA48D37D1120647F3"><al:reason>Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.</al:reason></al:correction><al:correction key="pack-repair-ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_BARD" operation="replace" target-id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_BARD" state="review-pending" original-fingerprint="E73D75A4DF95A3B9074DFB7F13820F1106C3CB8AFF5FF99F3EA0F87C4C130F13"><al:reason>Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.</al:reason></al:correction><al:correction key="pack-repair-ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_CLERIC" operation="replace" target-id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_CLERIC" state="review-pending" original-fingerprint="C6A66A83E3C7F8D0F557F02B6599DD32B462F1F71911307D423CE731CA36C5A6"><al:reason>Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.</al:reason></al:correction><al:correction key="pack-repair-ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_DRUID" operation="replace" target-id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_DRUID" state="review-pending" original-fingerprint="7E1DE3D7B7B398D31B0BF0D553B50E1E0848B5684140C7484EB9EB29B6CCAE2D"><al:reason>Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.</al:reason></al:correction><al:correction key="pack-repair-ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_FIGHTER_1" operation="replace" target-id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_FIGHTER_1" state="review-pending" original-fingerprint="25D56F1D98F70388962B4FD7EE5F99236B030B3158C076D34D144B08AA2ECF0B"><al:reason>Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.</al:reason></al:correction><al:correction key="pack-repair-ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_FIGHTER_2" operation="replace" target-id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_FIGHTER_2" state="review-pending" original-fingerprint="C0CF39010A258DF2DD65BAE2DE23FF2CE437621ABAB1339371C283C67CE1B441"><al:reason>Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.</al:reason></al:correction><al:correction key="pack-repair-ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_MONK" operation="replace" target-id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_MONK" state="review-pending" original-fingerprint="4F7A4FDB18C273B5E5E123633461A89D171BA2F407048100B9CA47D121D95234"><al:reason>Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.</al:reason></al:correction><al:correction key="pack-repair-ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_PALADIN" operation="replace" target-id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_PALADIN" state="review-pending" original-fingerprint="7E0125E8384E13D85E287883D806FA45FBA86E6A8196541DC1A2B4F5197FCA6C"><al:reason>Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.</al:reason></al:correction><al:correction key="pack-repair-ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_RANGER" operation="replace" target-id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_RANGER" state="review-pending" original-fingerprint="C778810EB42DB0E39ABC99F21F1CD5DA8396DEB9EB13FD10F49C25D3C19B5759"><al:reason>Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.</al:reason></al:correction><al:correction key="pack-repair-ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_ROGUE" operation="replace" target-id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_ROGUE" state="review-pending" original-fingerprint="199D84BF989868BA2241A42A15BD823C99FC1B95EB273B7B7C5DE408325213DB"><al:reason>Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.</al:reason></al:correction><al:correction key="pack-repair-ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_SORCERER" operation="replace" target-id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_SORCERER" state="review-pending" original-fingerprint="6075A2395133E3C005A9E57733DD4CF7ACFB7CF1636EA672D75782C7B88D4145"><al:reason>Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.</al:reason></al:correction><al:correction key="pack-repair-ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_WARLOCK" operation="replace" target-id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_WARLOCK" state="review-pending" original-fingerprint="088FDE42DEB13BC5E8C7ED57E350D642EF4B09FA843D4E8196EFDEA6240C1920"><al:reason>Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.</al:reason></al:correction><al:correction key="pack-repair-ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_WIZARD" operation="replace" target-id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_WIZARD" state="review-pending" original-fingerprint="BF3C5E6CF8C7E27E674276C08CBF56325171F02CD40D6F72A77F02FE64AEAD99"><al:reason>Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.</al:reason></al:correction></al:corrections></elements>
+

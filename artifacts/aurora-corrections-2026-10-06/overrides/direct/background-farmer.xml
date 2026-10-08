@@ -1,0 +1,90 @@
+
+<elements>
+	<info>
+		<name>Farmer</name>
+		<description>Farmer background from the Player’s Handbook 2024.</description>
+		<author url="https://dndstore.wizards.com/us/en/product/1001494/2024-player-s-handbook-digital-plus-physical-bundle">Wizards of the Coast</author>
+		<update version="0.0.1">
+			<file name="background-farmer.xml" url="https://raw.githubusercontent.com/AuroraLegacy/elements/master/core/players-handbook-2024/backgrounds/background-farmer.xml" />
+		</update>
+	</info>
+
+	<element name="Farmer" type="Background" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_BACKGROUND_FARMER">
+		<description>
+			<ul class="unstyled" style="text-indent:-1em; margin-left:1em; margin-bottom:5px">
+				<li><strong>Ability Scores:</strong> Strength, Constitution, Wisdom</li>
+				<li><strong>Feat:</strong> Tough</li>
+				<li><strong>Skill Proficiencies:</strong> Animal Handling and Nature</li>
+				<li><strong>Tool Proficiency:</strong> Carpenter's Tools</li>
+				<li><strong>Equipment:</strong><i> Choose A or B:</i> (A) Sickle, Carpenter's Tools, Healer's Kit, Iron Pot, Shovel, Traveler's Clothes, 30GP; or (B) 50 GP</li>
+			</ul>
+			<p>You grew up close to the land. Years tending animals and cultivating the earth rewarded you with patience and good health. You have a keen appreciation for nature's bounty alongside a healthy respect for nature's wrath.</p>
+			<div element="ID_WOTC_PHB24_BACKGROUND_FEATURE_FARMER_TOUGH" />
+			<div class="reference">
+				<div element="ID_WOTC_PHB24_FEAT_TOUGH" />
+			</div>
+		</description>
+		<setters>
+			<set name="short">Strength, Constitution, Wisdom, Tough Feat, Animal Handling and Nature Skills, Carpenter's Tools</set>
+		</setters>
+		<rules>
+			<grant type="Ability Score Improvement" id="ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_STR_CON_WIS" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_SKILL_ANIMALHANDLING" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_SKILL_NATURE" />
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_BACKGROUND_ASI" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_TOOL_PROFICIENCY_CARPENTERS_TOOLS" />
+			<grant type="Background Feature" id="ID_WOTC_PHB24_BACKGROUND_FEATURE_FARMER_TOUGH" />
+		</rules>
+	</element>
+
+	<element name="Origin Feat (Tough)" type="Background Feature" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_BACKGROUND_FEATURE_FARMER_TOUGH">
+		<description>
+			<p>You gain the <b>Tough</b> <i>Origin Feat</i> from the Player's Handbook (2024).</p>
+		</description>
+		<sheet alt="Tough">
+			<description>You start with the <b>Tough</b> Feat from your life in farming.</description>
+		</sheet>
+		<rules>
+			<grant type="Feat" id="ID_WOTC_PHB24_FEAT_TOUGH" />
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_BACKGROUND_WITH_A_FEAT" />
+		</rules>
+	</element>
+<al:corrections xmlns:al="urn:aurora-lights:corrections:1" version="1" source-path="core/players-handbook-2024/background-farmer.xml"><al:baseline encoding="escaped-xml">&lt;?xml version="1.0" encoding="utf-8" ?&gt;
+&lt;elements&gt;
+	&lt;info&gt;
+		&lt;name&gt;Farmer&lt;/name&gt;
+		&lt;description&gt;Farmer background from the Player’s Handbook 2024.&lt;/description&gt;
+		&lt;author url="https://dndstore.wizards.com/us/en/product/1001494/2024-player-s-handbook-digital-plus-physical-bundle"&gt;Wizards of the Coast&lt;/author&gt;
+		&lt;update version="0.0.1"&gt;
+			&lt;file name="background-farmer.xml" url="https://raw.githubusercontent.com/AuroraLegacy/elements/master/core/players-handbook-2024/backgrounds/background-farmer.xml" /&gt;
+		&lt;/update&gt;
+	&lt;/info&gt;
+
+	&lt;element name="Farmer" type="Background" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_BACKGROUND_FARMER"&gt;
+		&lt;description&gt;
+			&lt;ul class="unstyled" style="text-indent:-1em; margin-left:1em; margin-bottom:5px"&gt;
+				&lt;li&gt;&lt;strong&gt;Ability Scores:&lt;/strong&gt; Strength, Constitution, Wisdom&lt;/li&gt;
+				&lt;li&gt;&lt;strong&gt;Feat:&lt;/strong&gt; Tough&lt;/li&gt;
+				&lt;li&gt;&lt;strong&gt;Skill Proficiencies:&lt;/strong&gt; Animal Handling and Nature&lt;/li&gt;
+				&lt;li&gt;&lt;strong&gt;Tool Proficiency:&lt;/strong&gt; Carpenter's Tools&lt;/li&gt;
+				&lt;li&gt;&lt;strong&gt;Equipment:&lt;/strong&gt;&lt;i&gt; Choose A or B:&lt;/i&gt; (A) Sickle, Carpenter's Tools, Healer's Kit, Iron Pot, Shovel, Traveler's Clothes, 30GP; or (B) 50 GP&lt;/li&gt;
+			&lt;/ul&gt;
+			&lt;p&gt;You grew up close to the land. Years tending animals and cultivating the earth rewarded you with patience and good health. You have a keen appreciation for nature's bounty alongside a healthy respect for nature's wrath.&lt;/p&gt;
+			&lt;div class="reference"&gt;
+				&lt;div element="ID_WOTC_PHB24_FEAT_TOUGH" /&gt;
+			&lt;/div&gt;
+		&lt;/description&gt;
+		&lt;setters&gt;
+			&lt;set name="short"&gt;Strength, Constitution, Wisdom, Tough Feat, Animal Handling and Nature Skills, Carpenter's Tools&lt;/set&gt;
+		&lt;/setters&gt;
+		&lt;rules&gt;
+			&lt;grant type="Ability Score Improvement" id="ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_STR_CON_WIS" /&gt;
+			&lt;grant type="Feat" id="ID_WOTC_PHB24_FEAT_TOUGH" /&gt;
+			&lt;grant type="Proficiency" id="ID_PROFICIENCY_SKILL_ANIMALHANDLING" /&gt;
+			&lt;grant type="Proficiency" id="ID_PROFICIENCY_SKILL_NATURE" /&gt;
+			&lt;grant type="Grants" id="ID_INTERNAL_GRANTS_BACKGROUND_ASI" /&gt;
+			&lt;grant type="Proficiency" id="ID_PROFICIENCY_TOOL_PROFICIENCY_CARPENTERS_TOOLS" /&gt;
+		&lt;/rules&gt;
+	&lt;/element&gt;
+&lt;/elements&gt;
+</al:baseline><al:correction key="farmer-local-background" operation="replace" target-id="ID_WOTC_PHB24_BACKGROUND_FARMER" state="review-pending" original-fingerprint="F4385AA397829D41C39CF367932F803E0EB673D7FCEE497B949149D72CA91186" group="farmer-local-feat-presentation"><al:reason>Intentional user preference: present Tough through an Origin Feat background feature while retaining the canonical Farmer identity. This is a local presentation/behavior preference, not an upstream authoring-error claim.</al:reason></al:correction><al:correction key="farmer-local-tough-feature" operation="add" target-id="ID_WOTC_PHB24_BACKGROUND_FEATURE_FARMER_TOUGH" state="review-pending" group="farmer-local-feat-presentation"><al:reason>Companion to the intentional Farmer replacement: retain the Tough feature wrapper and ID_INTERNAL_GRANTS_BACKGROUND_WITH_A_FEAT grant. Review together with the Farmer replacement.</al:reason></al:correction></al:corrections></elements>

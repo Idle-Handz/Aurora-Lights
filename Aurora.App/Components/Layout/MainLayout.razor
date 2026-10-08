@@ -10,7 +10,7 @@
 @inject Aurora.App.Services.Updates.AppUpdateService AppUpdates
 @inject ContentService Content
 
-<MudThemeProvider Theme="ActiveMudTheme" IsDarkMode="SelectedTheme.IsDark" />
+<MudThemeProvider Theme="ActiveMudTheme" IsDarkMode="SelectedTheme.IsDark" ObserveSystemThemeChange="false" />
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
@@ -138,7 +138,7 @@
                     }
                 </MudPaper>
             }
-            <div inert="@(Tabs.ActiveTab is { IsSaving: true } or { CloudReloadFailed: true } ? string.Empty : null)">
+            <div class="app-page-content" inert="@(Tabs.ActiveTab is { IsSaving: true } or { CloudReloadFailed: true } ? string.Empty : null)">
                 <AppErrorBoundary @key="PageReloadVersion" @ref="_errorBoundary">@Body</AppErrorBoundary>
             </div>
         </MudContainer>

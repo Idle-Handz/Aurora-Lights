@@ -172,7 +172,16 @@
     private void RunSearch()
     {
         _selectedNew = null;
-        if (_mode == SelectMode.New) _mode = SelectMode.None;
+        if (_mode == SelectMode.New)
+        {
+            _mode = SelectMode.None;
+            _detailName = null;
+            _detailType = null;
+            _detailSource = null;
+            _detailDesc = null;
+            _detailDescHtml = null;
+            _inventoryDetail = null;
+        }
         if (_search.Length < 2) { _results = []; return; }
         _results = EquipmentService.SearchItemsForSlot(Slot, _search).ToList();
     }

@@ -879,6 +879,12 @@ html, body {
     overflow-x: hidden;
 }
 
+/* Preserve the page's flex layout through the interaction guard. Inert still
+   protects its descendants during saves, without an extra box stretching the shop. */
+.app-page-content {
+    display: contents;
+}
+
 .app-status-bar {
     position: fixed;
     bottom: 0;

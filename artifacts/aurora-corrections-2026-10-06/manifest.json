@@ -1,0 +1,732 @@
+{
+  "version": "2026.10.06",
+  "contentLibrary": "0.10.1",
+  "entries": [
+    {
+      "id": "background-farmer",
+      "category": "personal-preference",
+      "destination": "user/local/aurora-corrections-20261006/background-farmer.xml",
+      "variants": [
+        {
+          "sourcePath": "core/players-handbook-2024/background-farmer.xml",
+          "sourceSha256": "924D3BFE199369DA3B4805AE847A6F0C1460AE5EB2893FF93717EBA432D3A9EF",
+          "template": "overrides/direct/background-farmer.xml",
+          "templateSha256": "24E0AD17D687E38354E1DB47B528E3B4B7CA7AE4EAC9A4979AA1E2E2D8D276AF"
+        },
+        {
+          "sourcePath": "aurora-sources/AuroraLegacy/core/players-handbook-2024/background-farmer.xml",
+          "sourceSha256": "924D3BFE199369DA3B4805AE847A6F0C1460AE5EB2893FF93717EBA432D3A9EF",
+          "template": "overrides/aggregate/background-farmer.xml",
+          "templateSha256": "68206F46F324ACFB3111791C39E35962A2928975A7AA651B74010505EEB08DD9"
+        }
+      ],
+      "corrections": [
+        {
+          "key": "farmer-local-background",
+          "operation": "replace",
+          "targetId": "ID_WOTC_PHB24_BACKGROUND_FARMER",
+          "replacementId": null,
+          "originalFingerprint": "F4385AA397829D41C39CF367932F803E0EB673D7FCEE497B949149D72CA91186",
+          "state": "review-pending",
+          "group": "farmer-local-feat-presentation",
+          "reason": "Intentional user preference: present Tough through an Origin Feat background feature while retaining the canonical Farmer identity. This is a local presentation/behavior preference, not an upstream authoring-error claim."
+        },
+        {
+          "key": "farmer-local-tough-feature",
+          "operation": "add",
+          "targetId": "ID_WOTC_PHB24_BACKGROUND_FEATURE_FARMER_TOUGH",
+          "replacementId": null,
+          "originalFingerprint": null,
+          "state": "review-pending",
+          "group": "farmer-local-feat-presentation",
+          "reason": "Companion to the intentional Farmer replacement: retain the Tough feature wrapper and ID_INTERNAL_GRANTS_BACKGROUND_WITH_A_FEAT grant. Review together with the Farmer replacement."
+        }
+      ]
+    },
+    {
+      "id": "dmg24-walloping-ammunition",
+      "category": "repair",
+      "destination": "user/local/aurora-corrections-20261006/dmg24-walloping-ammunition.xml",
+      "variants": [
+        {
+          "sourcePath": "core/dungeon-masters-guide-2024/items-weapons.xml",
+          "sourceSha256": "F54384270A05C31D3A76D7CF87FFAEF523ED287E6B83722D45ABC1065F50FE55",
+          "template": "overrides/direct/dmg24-walloping-ammunition.xml",
+          "templateSha256": "31A9461CD28B31E0DA72B4238E0D637869A6A604B6F3156FECDCD61A152C46C1"
+        },
+        {
+          "sourcePath": "aurora-sources/AuroraLegacy/core/dungeon-masters-guide-2024/items-weapons.xml",
+          "sourceSha256": "F54384270A05C31D3A76D7CF87FFAEF523ED287E6B83722D45ABC1065F50FE55",
+          "template": "overrides/aggregate/dmg24-walloping-ammunition.xml",
+          "templateSha256": "CDD2C9CFCCEB269F5F5BB186F99CCE8511FD47203D51EA393E1F1EE549691EC0"
+        }
+      ],
+      "corrections": [
+        {
+          "key": "rename-ID_WOTC_DMG24_MAGIC_ITEM_AMMUNITION_WALLOPING",
+          "operation": "rename",
+          "targetId": "ID_WOTC_DMG24_MAGIC_ITEM_AMMUNITION_ADAMANTINE",
+          "replacementId": "ID_WOTC_DMG24_MAGIC_ITEM_AMMUNITION_WALLOPING",
+          "originalFingerprint": "FFA165ECC02CD71A291070599C563528D7FDD1A799C0E8EF86C17CB5207A4D4E",
+          "state": "review-pending",
+          "group": null,
+          "reason": "2026-09-13 reviewed content repair: give Walloping Ammunition its own identity; retain the other definition."
+        }
+      ]
+    },
+    {
+      "id": "guns",
+      "category": "repair",
+      "destination": "user/local/aurora-corrections-20261006/guns.xml",
+      "variants": [
+        {
+          "sourcePath": "reddit/reddit-unearthed-arcana/arcane-artillery/guns.xml",
+          "sourceSha256": "412728DB3A783F20A6A0A1ED30CBB9C04DCA4120B0E97ECC381B50CBFADA269C",
+          "template": "overrides/direct/guns.xml",
+          "templateSha256": "35A398C647F081354F1BC3C6D9113A2EB787D91A8561507FB006BCFBEA35EF89"
+        },
+        {
+          "sourcePath": "aurora-sources/reddit/reddit-unearthed-arcana/arcane-artillery/guns.xml",
+          "sourceSha256": "412728DB3A783F20A6A0A1ED30CBB9C04DCA4120B0E97ECC381B50CBFADA269C",
+          "template": "overrides/aggregate/guns.xml",
+          "templateSha256": "F005138036D61FC68A75716CB8BBE06DB2C36F2D3058B06E99EFBE95DA34BB17"
+        }
+      ],
+      "corrections": [
+        {
+          "key": "remove-musketball-pack",
+          "operation": "remove",
+          "targetId": "ID_RDDT_AA_MUSKETBALL",
+          "replacementId": null,
+          "originalFingerprint": "82AE46B162127D5DDD587532028DB4BF5B8FA55285B1A10096890C18F222E149",
+          "state": "review-pending",
+          "group": null,
+          "reason": "Keep the single-piece Musketball; quantities represent multiples of 20."
+        }
+      ]
+    },
+    {
+      "id": "fighter-devout",
+      "category": "repair",
+      "destination": "user/local/aurora-corrections-20261006/fighter-devout.xml",
+      "variants": [
+        {
+          "sourcePath": "reddit/reddit-unearthed-arcana/blazing-dawn-players-companion/fighter-devout.xml",
+          "sourceSha256": "505997AFD5F398D77842C47AA7CA0774C22C60DC5458AB8B9D87B0467BA87096",
+          "template": "overrides/direct/fighter-devout.xml",
+          "templateSha256": "D2243F6E15C4E4FABED80CF83CDE4183D69C296C8F3651A482EE8B844926C155"
+        },
+        {
+          "sourcePath": "aurora-sources/reddit/reddit-unearthed-arcana/blazing-dawn-players-companion/fighter-devout.xml",
+          "sourceSha256": "505997AFD5F398D77842C47AA7CA0774C22C60DC5458AB8B9D87B0467BA87096",
+          "template": "overrides/aggregate/fighter-devout.xml",
+          "templateSha256": "B97F7C5A29FD4B6AE6759AB82B8BEA6C2523567514BE55394313AC4F77AEDCBB"
+        }
+      ],
+      "corrections": [
+        {
+          "key": "rename-ID_JONOMAN3000_ARCHETYPE_FEATURE_DEVOUT_ZEALOTS_DEVOTION_DEFENDER_OF_KIN",
+          "operation": "rename",
+          "targetId": "ID_JONOMAN3000_ARCHETYPE_FEATURE_DEVOUT_ZEALOTS_DEVOTION_",
+          "replacementId": "ID_JONOMAN3000_ARCHETYPE_FEATURE_DEVOUT_ZEALOTS_DEVOTION_DEFENDER_OF_KIN",
+          "originalFingerprint": "D0CAF7828DC0B0B000C5E613B2DFB92EFD3907C6E0BE347261E17ABE891F5AFE",
+          "state": "review-pending",
+          "group": "hotfix-20260913-fighter-devout",
+          "reason": "2026-09-13 reviewed content repair: give Defender of Kin its own identity; retain the other definition."
+        },
+        {
+          "key": "rename-ID_JONOMAN3000_ARCHETYPE_FEATURE_DEVOUT_ZEALOTS_DEVOTION_SLAYER_OF_FOES",
+          "operation": "rename",
+          "targetId": "ID_JONOMAN3000_ARCHETYPE_FEATURE_DEVOUT_ZEALOTS_DEVOTION_",
+          "replacementId": "ID_JONOMAN3000_ARCHETYPE_FEATURE_DEVOUT_ZEALOTS_DEVOTION_SLAYER_OF_FOES",
+          "originalFingerprint": "2A0FB0BFDF78578337D737D874D2E51EA770B284202294DA712886D82F813E35",
+          "state": "review-pending",
+          "group": "hotfix-20260913-fighter-devout",
+          "reason": "2026-09-13 reviewed content repair: give Slayer of Foes its own identity; retain the other definition."
+        },
+        {
+          "key": "repair-parent-ID_JONOMAN3000_BDPC_ARCHETYPE_FEATURE_DEVOUT_ZEALOTS_DEVOTION",
+          "operation": "replace",
+          "targetId": "ID_JONOMAN3000_BDPC_ARCHETYPE_FEATURE_DEVOUT_ZEALOTS_DEVOTION",
+          "replacementId": null,
+          "originalFingerprint": "7703D3419257411C39398A9535BAD2C198DD46370F4827580CE4037C12681392",
+          "state": "review-pending",
+          "group": "hotfix-20260913-fighter-devout",
+          "reason": "Repair parent grants together with the related identity changes."
+        }
+      ]
+    },
+    {
+      "id": "race-tatsumi",
+      "category": "repair",
+      "destination": "user/local/aurora-corrections-20261006/race-tatsumi.xml",
+      "variants": [
+        {
+          "sourcePath": "ryokos-guide-to-the-yokai-realms/race-tatsumi.xml",
+          "sourceSha256": "87D7EDE395B00C64C15EFFA3832B88498AA7FB2E35012CDF4B7CC1A3D9B5798E",
+          "template": "overrides/direct/race-tatsumi.xml",
+          "templateSha256": "1B0A3C282AC03FF9071750BA1783D05C9EF4F43DCEF039577E40BB72CFBC2A9F"
+        }
+      ],
+      "corrections": [
+        {
+          "key": "rename-ID_RGTTYR_RACIAL_TRAIT_TATSUMI_RYUJIN_HEARTENING_BREATH",
+          "operation": "rename",
+          "targetId": "ID_RGTTYR_RACIAL_TRAIT_TATSUMI_RYUJIN_CLOUDSTEP",
+          "replacementId": "ID_RGTTYR_RACIAL_TRAIT_TATSUMI_RYUJIN_HEARTENING_BREATH",
+          "originalFingerprint": "CBD8F0B835B9C0950F1D0982D071B8507772F272FC181CA4B10257E3516577EB",
+          "state": "review-pending",
+          "group": "hotfix-20260913-race-tatsumi",
+          "reason": "2026-09-13 reviewed content repair: give Heartening Breath its own identity; retain the other definition."
+        },
+        {
+          "key": "repair-parent-ID_RGTTYR_RACE_VARIANT_TATSUMI_RYUJIN",
+          "operation": "replace",
+          "targetId": "ID_RGTTYR_RACE_VARIANT_TATSUMI_RYUJIN",
+          "replacementId": null,
+          "originalFingerprint": "61693F7A2CA4AD8E967B7C8212AE6A320ACAE68BA72EA96446CB3104BF57EDF1",
+          "state": "review-pending",
+          "group": "hotfix-20260913-race-tatsumi",
+          "reason": "Repair parent grants together with the related identity changes."
+        }
+      ]
+    },
+    {
+      "id": "forgotten-secrets-items",
+      "category": "repair",
+      "destination": "user/local/aurora-corrections-20261006/forgotten-secrets-items.xml",
+      "variants": [
+        {
+          "sourcePath": "third-party/genuine-fantasy-press/forgotten-secrets/items.xml",
+          "sourceSha256": "23C95C97E60DD643B3D873B859D28B1ADE858CC07E97F0AD62C6D0D7E90BBBAC",
+          "template": "overrides/direct/forgotten-secrets-items.xml",
+          "templateSha256": "C7CCE641136DF15104AA8EE662578DA4B3AF47EC0F035180E260CB6213961CDA"
+        },
+        {
+          "sourcePath": "aurora-sources/aurorabuilder-third-party/genuine-fantasy-press/forgotten-secrets/items.xml",
+          "sourceSha256": "23C95C97E60DD643B3D873B859D28B1ADE858CC07E97F0AD62C6D0D7E90BBBAC",
+          "template": "overrides/aggregate/forgotten-secrets-items.xml",
+          "templateSha256": "D84D7FFB61135A893B494634E0033CF817F513F9D0ACB423D6EC2463DD8BF81A"
+        }
+      ],
+      "corrections": [
+        {
+          "key": "rename-ID_GFP_COFSA_MAGIC_ITEM_WONDROUS_ITEM_KABA_GAIDA_OF_NEVIHTA",
+          "operation": "rename",
+          "targetId": "ID_GFP_COFSA_MAGIC_ITEM_WONDROUS_ITEM_CIMBALOM_OF_DAZD",
+          "replacementId": "ID_GFP_COFSA_MAGIC_ITEM_WONDROUS_ITEM_KABA_GAIDA_OF_NEVIHTA",
+          "originalFingerprint": "8595BCBCFA3B928EDCB7145F93B42B48A9997DF630D7FE043F781A92A9048111",
+          "state": "review-pending",
+          "group": null,
+          "reason": "2026-09-13 reviewed content repair: give Kaba Gaida of Nevihta its own identity; retain the other definition."
+        },
+        {
+          "key": "rename-ID_GFP_COFSA_MAGIC_ITEM_WONDROUS_ITEM_ANCIENT_HEART_STRENGTH_THREE",
+          "operation": "rename",
+          "targetId": "ID_GFP_COFSA_MAGIC_ITEM_WONDROUS_ITEM_ANCIENT_HEART_STRENGTH_TWO",
+          "replacementId": "ID_GFP_COFSA_MAGIC_ITEM_WONDROUS_ITEM_ANCIENT_HEART_STRENGTH_THREE",
+          "originalFingerprint": "65FE0FB56E12C019EFE830086D0004C0B20FAEC96A84C5B0B6D3F67A13CDF883",
+          "state": "review-pending",
+          "group": null,
+          "reason": "2026-09-13 reviewed content repair: give Ancient Heart (Strength +3) its own identity; retain the other definition."
+        }
+      ]
+    },
+    {
+      "id": "players-handbook-2024-items-packs",
+      "category": "repair",
+      "destination": "user/local/aurora-corrections-20261006/players-handbook-2024-items-packs.xml",
+      "variants": [
+        {
+          "sourcePath": "core/players-handbook-2024/items-packs.xml",
+          "sourceSha256": "2B3DE990250AF7E05C6E9F77CC5BDDD6ACDAA4B72558DBA1D644B85987256588",
+          "template": "overrides/direct/players-handbook-2024-items-packs.xml",
+          "templateSha256": "3055894DEF7514980CE5AC5013AA68AA21EC63DA31066F4EC1D092E6C2089B72"
+        },
+        {
+          "sourcePath": "aurora-sources/AuroraLegacy/core/players-handbook-2024/items-packs.xml",
+          "sourceSha256": "2B3DE990250AF7E05C6E9F77CC5BDDD6ACDAA4B72558DBA1D644B85987256588",
+          "template": "overrides/aggregate/players-handbook-2024-items-packs.xml",
+          "templateSha256": "32D27505581C9DCF41DBFC433349460A0145E933AC311602D56CE223C7659CAA"
+        }
+      ],
+      "corrections": [
+        {
+          "key": "pack-repair-ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_ACOLYTE",
+          "operation": "replace",
+          "targetId": "ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_ACOLYTE",
+          "replacementId": null,
+          "originalFingerprint": "C342B950751B638909E4304356D2374870D14E1E7C47876736C0AF7A492355A3",
+          "state": "review-pending",
+          "group": null,
+          "reason": "Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs."
+        },
+        {
+          "key": "pack-repair-ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_ARTISAN",
+          "operation": "replace",
+          "targetId": "ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_ARTISAN",
+          "replacementId": null,
+          "originalFingerprint": "2BFE6B546CDBDB1F50447977D6CF7F505A53BBC6472297FF7CE0C6209C183258",
+          "state": "review-pending",
+          "group": null,
+          "reason": "Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs."
+        },
+        {
+          "key": "pack-repair-ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_CHARLATAN",
+          "operation": "replace",
+          "targetId": "ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_CHARLATAN",
+          "replacementId": null,
+          "originalFingerprint": "F1E947C050811D27C539E395AA6A3D87CD0A4AD718FDE2ECBAD415122A90B685",
+          "state": "review-pending",
+          "group": null,
+          "reason": "Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs."
+        },
+        {
+          "key": "pack-repair-ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_CRIMINAL",
+          "operation": "replace",
+          "targetId": "ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_CRIMINAL",
+          "replacementId": null,
+          "originalFingerprint": "EF0709B7423EA54905B80255BABA72487933CE6823F6BE4AE27442932F6081F8",
+          "state": "review-pending",
+          "group": null,
+          "reason": "Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs."
+        },
+        {
+          "key": "pack-repair-ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_ENTERTAINER",
+          "operation": "replace",
+          "targetId": "ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_ENTERTAINER",
+          "replacementId": null,
+          "originalFingerprint": "91A766CD3C805D241CBACA89E0E533A3F778C3DD88AF9A1EF8BF551A99DA491A",
+          "state": "review-pending",
+          "group": null,
+          "reason": "Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs."
+        },
+        {
+          "key": "pack-repair-ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_FARMER",
+          "operation": "replace",
+          "targetId": "ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_FARMER",
+          "replacementId": null,
+          "originalFingerprint": "3554378006C5D8ED82318655C896C4C89B936CC99089637B04F52D077F4B0321",
+          "state": "review-pending",
+          "group": null,
+          "reason": "Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs."
+        },
+        {
+          "key": "pack-repair-ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_GUARD",
+          "operation": "replace",
+          "targetId": "ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_GUARD",
+          "replacementId": null,
+          "originalFingerprint": "F6F20E7939A5299B769CD16858547B9665EFACCC4D4C8755805409D0356F332E",
+          "state": "review-pending",
+          "group": null,
+          "reason": "Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs. Correct Guard's Light Crossbow extraction reference to ID_WOTC_PHB24_WEAPON_LIGHT_CROSSBOW."
+        },
+        {
+          "key": "pack-repair-ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_GUIDE",
+          "operation": "replace",
+          "targetId": "ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_GUIDE",
+          "replacementId": null,
+          "originalFingerprint": "1F1A76C14341DD9E70DFBEE484E4870E6C65BF018742F0DCD2ADF504507E1DA5",
+          "state": "review-pending",
+          "group": null,
+          "reason": "Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs."
+        },
+        {
+          "key": "pack-repair-ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_HERMIT",
+          "operation": "replace",
+          "targetId": "ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_HERMIT",
+          "replacementId": null,
+          "originalFingerprint": "AEE2670E3B919DED9A5C78B378364214450184007BD9F5154418A0F70E265693",
+          "state": "review-pending",
+          "group": null,
+          "reason": "Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs."
+        },
+        {
+          "key": "pack-repair-ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_MERCHANT",
+          "operation": "replace",
+          "targetId": "ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_MERCHANT",
+          "replacementId": null,
+          "originalFingerprint": "1E94384D057DEBF7B886255A366B606DD9E88F9736900F1B937F7B38B94D1965",
+          "state": "review-pending",
+          "group": null,
+          "reason": "Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs."
+        },
+        {
+          "key": "pack-repair-ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_NOBLE",
+          "operation": "replace",
+          "targetId": "ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_NOBLE",
+          "replacementId": null,
+          "originalFingerprint": "74EA04994356C2EE1E28F445C764CD43AF38B51E2DA8A49D8B85482D35561356",
+          "state": "review-pending",
+          "group": null,
+          "reason": "Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs."
+        },
+        {
+          "key": "pack-repair-ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_SAGE",
+          "operation": "replace",
+          "targetId": "ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_SAGE",
+          "replacementId": null,
+          "originalFingerprint": "1902F0D5AA8FA417721DAA7A54FF5B7E031101DECA9D7D1086D7E47E34456365",
+          "state": "review-pending",
+          "group": null,
+          "reason": "Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs."
+        },
+        {
+          "key": "pack-repair-ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_SAILOR",
+          "operation": "replace",
+          "targetId": "ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_SAILOR",
+          "replacementId": null,
+          "originalFingerprint": "0411405EB7F5BCF7D3A7949F8C2C01C6651AD91FA5A424519F1739A9B7C36986",
+          "state": "review-pending",
+          "group": null,
+          "reason": "Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs."
+        },
+        {
+          "key": "pack-repair-ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_SCRIBE",
+          "operation": "replace",
+          "targetId": "ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_SCRIBE",
+          "replacementId": null,
+          "originalFingerprint": "834091207897F0A50C6736FD8848AC117EDC97F0B2D29B6C38AD5D15B716168D",
+          "state": "review-pending",
+          "group": null,
+          "reason": "Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs."
+        },
+        {
+          "key": "pack-repair-ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_SOLDIER",
+          "operation": "replace",
+          "targetId": "ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_SOLDIER",
+          "replacementId": null,
+          "originalFingerprint": "C668961577FA2CE74919D3A51D909736D108CBB4FB84A68F05E590626854B7AF",
+          "state": "review-pending",
+          "group": null,
+          "reason": "Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs."
+        },
+        {
+          "key": "pack-repair-ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_WAYFARER",
+          "operation": "replace",
+          "targetId": "ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_WAYFARER",
+          "replacementId": null,
+          "originalFingerprint": "7349547FA01D8789198D091D8A3920176F84651FA9F9FDD1B4A026A91D01C3DF",
+          "state": "review-pending",
+          "group": null,
+          "reason": "Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs."
+        },
+        {
+          "key": "pack-repair-ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_BARBARIAN",
+          "operation": "replace",
+          "targetId": "ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_BARBARIAN",
+          "replacementId": null,
+          "originalFingerprint": "AFC5175554D4DBCAC18D4E981A8B4424AC16D73640C7740BA48D37D1120647F3",
+          "state": "review-pending",
+          "group": null,
+          "reason": "Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs."
+        },
+        {
+          "key": "pack-repair-ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_BARD",
+          "operation": "replace",
+          "targetId": "ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_BARD",
+          "replacementId": null,
+          "originalFingerprint": "E73D75A4DF95A3B9074DFB7F13820F1106C3CB8AFF5FF99F3EA0F87C4C130F13",
+          "state": "review-pending",
+          "group": null,
+          "reason": "Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs."
+        },
+        {
+          "key": "pack-repair-ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_CLERIC",
+          "operation": "replace",
+          "targetId": "ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_CLERIC",
+          "replacementId": null,
+          "originalFingerprint": "C6A66A83E3C7F8D0F557F02B6599DD32B462F1F71911307D423CE731CA36C5A6",
+          "state": "review-pending",
+          "group": null,
+          "reason": "Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs."
+        },
+        {
+          "key": "pack-repair-ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_DRUID",
+          "operation": "replace",
+          "targetId": "ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_DRUID",
+          "replacementId": null,
+          "originalFingerprint": "7E1DE3D7B7B398D31B0BF0D553B50E1E0848B5684140C7484EB9EB29B6CCAE2D",
+          "state": "review-pending",
+          "group": null,
+          "reason": "Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs."
+        },
+        {
+          "key": "pack-repair-ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_FIGHTER_1",
+          "operation": "replace",
+          "targetId": "ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_FIGHTER_1",
+          "replacementId": null,
+          "originalFingerprint": "25D56F1D98F70388962B4FD7EE5F99236B030B3158C076D34D144B08AA2ECF0B",
+          "state": "review-pending",
+          "group": null,
+          "reason": "Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs."
+        },
+        {
+          "key": "pack-repair-ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_FIGHTER_2",
+          "operation": "replace",
+          "targetId": "ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_FIGHTER_2",
+          "replacementId": null,
+          "originalFingerprint": "C0CF39010A258DF2DD65BAE2DE23FF2CE437621ABAB1339371C283C67CE1B441",
+          "state": "review-pending",
+          "group": null,
+          "reason": "Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs."
+        },
+        {
+          "key": "pack-repair-ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_MONK",
+          "operation": "replace",
+          "targetId": "ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_MONK",
+          "replacementId": null,
+          "originalFingerprint": "4F7A4FDB18C273B5E5E123633461A89D171BA2F407048100B9CA47D121D95234",
+          "state": "review-pending",
+          "group": null,
+          "reason": "Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs."
+        },
+        {
+          "key": "pack-repair-ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_PALADIN",
+          "operation": "replace",
+          "targetId": "ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_PALADIN",
+          "replacementId": null,
+          "originalFingerprint": "7E0125E8384E13D85E287883D806FA45FBA86E6A8196541DC1A2B4F5197FCA6C",
+          "state": "review-pending",
+          "group": null,
+          "reason": "Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs."
+        },
+        {
+          "key": "pack-repair-ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_RANGER",
+          "operation": "replace",
+          "targetId": "ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_RANGER",
+          "replacementId": null,
+          "originalFingerprint": "C778810EB42DB0E39ABC99F21F1CD5DA8396DEB9EB13FD10F49C25D3C19B5759",
+          "state": "review-pending",
+          "group": null,
+          "reason": "Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs."
+        },
+        {
+          "key": "pack-repair-ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_ROGUE",
+          "operation": "replace",
+          "targetId": "ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_ROGUE",
+          "replacementId": null,
+          "originalFingerprint": "199D84BF989868BA2241A42A15BD823C99FC1B95EB273B7B7C5DE408325213DB",
+          "state": "review-pending",
+          "group": null,
+          "reason": "Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs."
+        },
+        {
+          "key": "pack-repair-ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_SORCERER",
+          "operation": "replace",
+          "targetId": "ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_SORCERER",
+          "replacementId": null,
+          "originalFingerprint": "6075A2395133E3C005A9E57733DD4CF7ACFB7CF1636EA672D75782C7B88D4145",
+          "state": "review-pending",
+          "group": null,
+          "reason": "Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs."
+        },
+        {
+          "key": "pack-repair-ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_WARLOCK",
+          "operation": "replace",
+          "targetId": "ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_WARLOCK",
+          "replacementId": null,
+          "originalFingerprint": "088FDE42DEB13BC5E8C7ED57E350D642EF4B09FA843D4E8196EFDEA6240C1920",
+          "state": "review-pending",
+          "group": null,
+          "reason": "Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs."
+        },
+        {
+          "key": "pack-repair-ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_WIZARD",
+          "operation": "replace",
+          "targetId": "ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_WIZARD",
+          "replacementId": null,
+          "originalFingerprint": "BF3C5E6CF8C7E27E674276C08CBF56325171F02CD40D6F72A77F02FE64AEAD99",
+          "state": "review-pending",
+          "group": null,
+          "reason": "Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs."
+        }
+      ]
+    },
+    {
+      "id": "class-spiritualist",
+      "category": "repair",
+      "destination": "user/local/aurora-corrections-20261006/class-spiritualist.xml",
+      "variants": [
+        {
+          "sourcePath": "third-party/dms-guild/class-spiritualist.xml",
+          "sourceSha256": "BC8ED0B0D936D1AE8CDF882E00FCBB97F6923FE73F023202CC630CB729E2BF37",
+          "template": "overrides/direct/class-spiritualist.xml",
+          "templateSha256": "6202424AE42F1B92F0BF82B826FD67DDBA745A58E8EB131B5C5C79BD6D917D52"
+        },
+        {
+          "sourcePath": "aurora-sources/aurorabuilder-third-party/dms-guild/class-spiritualist.xml",
+          "sourceSha256": "BC8ED0B0D936D1AE8CDF882E00FCBB97F6923FE73F023202CC630CB729E2BF37",
+          "template": "overrides/aggregate/class-spiritualist.xml",
+          "templateSha256": "7F6F7BBA9F67B4D2F19F9AA1D4AB12071A532C059CCE38E124DC7E996AC840C3"
+        }
+      ],
+      "corrections": [
+        {
+          "key": "reference-repair-ID_DMSG_HSPRT_CLASS_FEATURE_CHANNEL_SPIRIT_GREED",
+          "operation": "replace",
+          "targetId": "ID_DMSG_HSPRT_CLASS_FEATURE_CHANNEL_SPIRIT_GREED",
+          "replacementId": null,
+          "originalFingerprint": "E63E4FACB0AC10CC86CEFE8532E807161812AF89DBBF76A1C0FCAE29CC79F678",
+          "state": "review-pending",
+          "group": null,
+          "reason": "2026-10-06 user-authorized local repair. User confirmed Animate Objects as the intended fifth-level spell; repair the singular ID. ID_PHB_SPELL_ANIMATE_OBJECT -> ID_PHB_SPELL_ANIMATE_OBJECTS. Not accepted upstream."
+        }
+      ]
+    },
+    {
+      "id": "psionic-disciplines",
+      "category": "repair",
+      "destination": "user/local/aurora-corrections-20261006/psionic-disciplines.xml",
+      "variants": [
+        {
+          "sourcePath": "reddit/reddit-unearthed-arcana/kibblestasty/psion/psionic-disciplines.xml",
+          "sourceSha256": "C9FD9E27C65BECAD613FCAA9CE5EC428D273EA6F704252222D0FCF154224C78E",
+          "template": "overrides/direct/psionic-disciplines.xml",
+          "templateSha256": "B5286DFE43293E87BB52DE75984464AAB664DFED294EA602B03B219B46D770C3"
+        },
+        {
+          "sourcePath": "aurora-sources/reddit/reddit-unearthed-arcana/kibblestasty/psion/psionic-disciplines.xml",
+          "sourceSha256": "C9FD9E27C65BECAD613FCAA9CE5EC428D273EA6F704252222D0FCF154224C78E",
+          "template": "overrides/aggregate/psionic-disciplines.xml",
+          "templateSha256": "D0325CAEC136CF765F122FD03AF48F078F7CEDCFF04E48D28E0A2A81D4226DA4"
+        }
+      ],
+      "corrections": [
+        {
+          "key": "reference-repair-ID_KT_PSION_CLASS_FEATURE_PSIONIC_DISCIPLINE_PSYCHOKINETICS_DISCIPLINE",
+          "operation": "replace",
+          "targetId": "ID_KT_PSION_CLASS_FEATURE_PSIONIC_DISCIPLINE_PSYCHOKINETICS_DISCIPLINE",
+          "replacementId": null,
+          "originalFingerprint": "E5835F032ABAAEB4795FEE149626EF64E4537DE9691704328334912FAE3F8EEF",
+          "state": "review-pending",
+          "group": null,
+          "reason": "2026-10-06 user-authorized local repair. User checked and confirmed Wall of Fire as the intended spell. ID_PHB_SPELL_WALL_OF_FLAME -> ID_PHB_SPELL_WALL_OF_FIRE. Not accepted upstream."
+        },
+        {
+          "key": "reference-repair-ID_KT_PSION_CLASS_FEATURE_PSIONIC_DISCIPLINE_TELEPATHY_DISCIPLINE",
+          "operation": "replace",
+          "targetId": "ID_KT_PSION_CLASS_FEATURE_PSIONIC_DISCIPLINE_TELEPATHY_DISCIPLINE",
+          "replacementId": null,
+          "originalFingerprint": "040F641532E4172EFCA86E16E68BBDBAE8382B38EE6B06D61DB85B358268B2B3",
+          "state": "review-pending",
+          "group": null,
+          "reason": "2026-10-06 user-authorized local repair. Repair Cause Fear's source prefix. ID_PHB_SPELL_CAUSE_FEAR -> ID_XGTE_SPELL_CAUSE_FEAR. User confirmed Rary's Telepathic Bond as the intended fifth-level spell. ID_PHB_SPELL_TELEPATHIC_BOND -> ID_PHB_SPELL_RARYS_TELEPATHIC_BOND. Not accepted upstream."
+        },
+        {
+          "key": "reference-repair-ID_KT_PSION_CLASS_FEATURE_PSIONIC_DISCIPLINE_TRANSPOSITION_DISCIPLINE",
+          "operation": "replace",
+          "targetId": "ID_KT_PSION_CLASS_FEATURE_PSIONIC_DISCIPLINE_TRANSPOSITION_DISCIPLINE",
+          "replacementId": null,
+          "originalFingerprint": "C034219CFE9468C090FBFF70A097201521FDF1F16DFF1E36C00D9CA06148BC92",
+          "state": "review-pending",
+          "group": null,
+          "reason": "2026-10-06 user-authorized local repair. User checked and confirmed Banishment as the intended spell. ID_PHB_SPELL_BANISH -> ID_PHB_SPELL_BANISHMENT. Not accepted upstream."
+        }
+      ]
+    },
+    {
+      "id": "race-imperial",
+      "category": "repair",
+      "destination": "user/local/aurora-corrections-20261006/race-imperial.xml",
+      "variants": [
+        {
+          "sourcePath": "third-party/genuine-fantasy-press/forgotten-secrets/race-imperial.xml",
+          "sourceSha256": "3773F31763F468D2B8D161B080242CF87AB7B36EBF2ACF6BF2DBECFAFB1F9FD7",
+          "template": "overrides/direct/race-imperial.xml",
+          "templateSha256": "33F0D4857EBF02B1DEFF57F0D2A40B3B441470639117BA76BFC6F30598F76452"
+        },
+        {
+          "sourcePath": "aurora-sources/aurorabuilder-third-party/genuine-fantasy-press/forgotten-secrets/race-imperial.xml",
+          "sourceSha256": "3773F31763F468D2B8D161B080242CF87AB7B36EBF2ACF6BF2DBECFAFB1F9FD7",
+          "template": "overrides/aggregate/race-imperial.xml",
+          "templateSha256": "844AE43116F9FD11FD52905DB9CEA8CDF2B18F8DDA31422DBB5B319987BDA9BC"
+        }
+      ],
+      "corrections": [
+        {
+          "key": "reference-repair-ID_GFP_COFSA_RACIAL_TRAIT_VENOMOUS_BLESSING",
+          "operation": "replace",
+          "targetId": "ID_GFP_COFSA_RACIAL_TRAIT_VENOMOUS_BLESSING",
+          "replacementId": null,
+          "originalFingerprint": "AEDBBF796ACF6970548415FE03035727CC29C5377F16C285D1ED4E94F8463EBE",
+          "state": "review-pending",
+          "group": null,
+          "reason": "2026-10-06 user-authorized local repair. The feature explicitly names Poison Spray; remove the extraneous publisher prefix. ID_GFP_PHB_SPELL_POISON_SPRAY -> ID_PHB_SPELL_POISON_SPRAY. Not accepted upstream."
+        }
+      ]
+    },
+    {
+      "id": "wizard-demonbinder",
+      "category": "repair",
+      "destination": "user/local/aurora-corrections-20261006/wizard-demonbinder.xml",
+      "variants": [
+        {
+          "sourcePath": "third-party/dms-guild/the-great-dale/wizard-demonbinder.xml",
+          "sourceSha256": "10150208B6ED5480BC4EA8121AEA5F2414D0A277733D47FACEC40C8444337686",
+          "template": "overrides/direct/wizard-demonbinder.xml",
+          "templateSha256": "F59799A8EEC79BB8A8605271D21A35CFDD122AEC2D3D9CCFD901CC5D4B02E474"
+        },
+        {
+          "sourcePath": "aurora-sources/aurorabuilder-third-party/dms-guild/the-great-dale/wizard-demonbinder.xml",
+          "sourceSha256": "10150208B6ED5480BC4EA8121AEA5F2414D0A277733D47FACEC40C8444337686",
+          "template": "overrides/aggregate/wizard-demonbinder.xml",
+          "templateSha256": "34B806B4DFB8E41BB8043A755F4226A86F6893256C2F45EB7764F6B61FFF5589"
+        }
+      ],
+      "corrections": [
+        {
+          "key": "reference-repair-ID_DMSG_TGD_ARCHETYPE_FEATURE_DEMONBINDER_DEMON_SUMMONER",
+          "operation": "replace",
+          "targetId": "ID_DMSG_TGD_ARCHETYPE_FEATURE_DEMONBINDER_DEMON_SUMMONER",
+          "replacementId": null,
+          "originalFingerprint": "FDB7ADF6116CA79DF3C8A96E22B2451C02046F21726A62E3021BAC670070A33F",
+          "state": "review-pending",
+          "group": null,
+          "reason": "2026-10-06 user-authorized local repair. The feature explicitly names Summon Lesser Demons; repair the source prefix. ID_PHB_SPELL_SUMMON_LESSER_DEMONS -> ID_XGTE_SPELL_SUMMON_LESSER_DEMONS. Not accepted upstream."
+        },
+        {
+          "key": "reference-repair-ID_DMSG_TGD_ARCHETYPE_FEATURE_DEMONBINDER_MASTER_DEMON_SUMMONER",
+          "operation": "replace",
+          "targetId": "ID_DMSG_TGD_ARCHETYPE_FEATURE_DEMONBINDER_MASTER_DEMON_SUMMONER",
+          "replacementId": null,
+          "originalFingerprint": "997D61273ABB541EC51B4859335C8AA44BDEB22D9C37C660556CBEEB4BCC96C0",
+          "state": "review-pending",
+          "group": null,
+          "reason": "2026-10-06 user-authorized local repair. The feature explicitly names Summon Greater Demon; repair the source prefix and singular spell ID. ID_PHB_SPELL_SUMMON_GREATER_DEMONS -> ID_XGTE_SPELL_SUMMON_GREATER_DEMON. Not accepted upstream."
+        }
+      ]
+    },
+    {
+      "id": "sorcerer-stoneheart",
+      "category": "repair",
+      "destination": "user/local/aurora-corrections-20261006/sorcerer-stoneheart.xml",
+      "variants": [
+        {
+          "sourcePath": "reddit/reddit-unearthed-arcana/kibblestasty/sorcerer-stoneheart.xml",
+          "sourceSha256": "996291A1F67DAA706860D8E8AE775FCC6787FCBAC75FC761B5350CB704F6CBDC",
+          "template": "overrides/direct/sorcerer-stoneheart.xml",
+          "templateSha256": "C698C7F6DA7448FF0146A0D58B8DE29A222CA51E382F2B38C36ACE65611518D4"
+        },
+        {
+          "sourcePath": "aurora-sources/reddit/reddit-unearthed-arcana/kibblestasty/sorcerer-stoneheart.xml",
+          "sourceSha256": "996291A1F67DAA706860D8E8AE775FCC6787FCBAC75FC761B5350CB704F6CBDC",
+          "template": "overrides/aggregate/sorcerer-stoneheart.xml",
+          "templateSha256": "7DEED187156AFD9922FE861027977FA02C48BA3CBB7926A88D12BD46183F1784"
+        }
+      ],
+      "corrections": [
+        {
+          "key": "repair-ID_KT_SS_ARCHETYPE_SORCERER_STONEHEART",
+          "operation": "replace",
+          "targetId": "ID_KT_SS_ARCHETYPE_SORCERER_STONEHEART",
+          "replacementId": null,
+          "originalFingerprint": "104AED674A48A8048B8F2C36E256F34B4D01602FC775C429B5FD8083FFAEC470",
+          "state": "review-pending",
+          "group": null,
+          "reason": "User-authorized local correction: Stoneheart is unresolved KibblesTasty homebrew and declares no custom Erupting Earth spell. Use Xanathar's Guide to Everything (ID_XGTE_SPELL_ERUPTING_EARTH) as the assumed first-party reference. Preserve the distinct Princes of the Apocalypse definition. Pending confirmation with KibblesTasty; this is not an upstream-accepted correction."
+        }
+      ]
+    }
+  ]
+}

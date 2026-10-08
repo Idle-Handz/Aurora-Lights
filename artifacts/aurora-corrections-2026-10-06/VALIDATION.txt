@@ -1,0 +1,43 @@
+VALIDATION - 2026-10-06
+
+Data was imported from staged copies of both actual content collections using
+Aurora.Content 0.10.1, with prepared-catalog and normalized-reference checks.
+These checks do not claim that every gameplay interaction was exercised.
+
+Direct collection:    1,194 XML files; 0 manual source-integrity findings;
+                      1 unrelated blocking Bender reference remains.
+Aggregate collection: 1,522 XML files; 0 manual source-integrity findings;
+                      0 blocking references.
+
+Manual source-integrity counts were queried from the complete diagnostic view,
+without the display/sample limit. Known automatically recovered diagnostics
+were excluded from the manual count.
+
+Verified:
+- All ten previously repaired grant/extract references resolve in the prepared
+  catalog and normalized database.
+- Adamantine and Walloping Ammunition remain distinct usable definitions.
+- Cimbalom / Kaba Gaida and Ancient Heart Strength +2 / +3 remain distinct.
+- Devout has two valid level-3 grants to its two uniquely named child features.
+- The individual Musketball definition remains; the duplicate 20-round pack
+  declaration is removed. Existing references retain the individual-round ID.
+- All 36 PHB24 packs match clean upstream text with exactly 29 nonnumeric
+  cost-placeholder removals and the Guard Light Crossbow reference repair.
+  Seven genuinely priced packs retain their prices. Corrupted punctuation in
+  the older pack override is not carried into this bundle.
+- Every template has valid managed-correction metadata; no unclassified local
+  edits were detected by the correction evaluator.
+- Source/template hashes match the manifest.
+
+Installer validation:
+- 17 isolated checks cover planning, hash failures, XML DTD rejection, unsafe
+  paths/symlinks, ambiguous sources, duplicate managed overrides, existing-file
+  preservation, race protection and rollback.
+- Actual bundle tested on fresh copies of the reviewed source files:
+    Direct:    11 default files; 12 with optional Farmer.
+    Aggregate: 10 default files; 11 with optional Farmer.
+  Dry-run changed nothing; apply wrote exactly the selected templates; repeat
+  apply added nothing; original sources were unchanged.
+
+An app database rebuild is required after file installation. Validation was
+performed in staging; existing live databases were not replaced by this ZIP.

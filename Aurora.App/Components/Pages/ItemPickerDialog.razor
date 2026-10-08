@@ -92,7 +92,7 @@
         <MudButton Color="Color.Primary"
                    Variant="Variant.Filled"
                    OnClick="Confirm"
-                   Disabled="@(_selectedId == null)">
+                   Disabled="@(!CanConfirm)">
             Add
         </MudButton>
     </DialogActions>
@@ -122,6 +122,8 @@
 
     // When filtering by category, show all matching items without a minimum query length.
     private bool NeedsMinQuery => string.IsNullOrWhiteSpace(Category) && _search.Length < 2;
+    private bool CanConfirm => !_disposed && !_searching && _selectedId is not null &&
+        _results.Any(result => result.Id == _selectedId);
 
     protected override async Task OnInitializedAsync()
     {
@@ -140,6 +142,8 @@
         _selectedId = null;
         _selected = null;
         _amount = 1;
+        // The old rows no longer belong to the query shown in the search box.
+        _results = [];
 
         if (string.IsNullOrWhiteSpace(Category))
         {
@@ -203,14 +207,24 @@
 
     private void SelectResult(ItemSearchResult r)
     {
+        if (_disposed || _searching || !_results.Contains(r))
+            return;
+
         _selectedId = r.Id;
         _selected   = r;
         _amount     = 1;
     }
 
     private void Cancel()  => MudDialog.Cancel();
-    private void Confirm() { if (_selectedId != null) MudDialog.Close(new ItemPickerResult(_selectedId, _amount)); }
-    private void ConfirmItem(ItemSearchResult r) { SelectResult(r); Confirm(); }
+    private void Confirm() { if (CanConfirm) MudDialog.Close(new ItemPickerResult(_selectedId!, _amount)); }
+    private void ConfirmItem(ItemSearchResult r)
+    {
+        if (_disposed || _searching || !_results.Contains(r))
+            return;
+
+        SelectResult(r);
+        Confirm();
+    }
 
     public void Dispose()
     {

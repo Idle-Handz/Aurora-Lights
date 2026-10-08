@@ -1,0 +1,208 @@
+AURORA CONTENT CORRECTION CATALOG - 2026-10-06
+
+11 repair sources / 46 correction records. Optional Farmer adds 2 records.
+Record notes below use the direct profile; equivalent profile-specific
+metadata keys/notes can differ. XML correction sections are authoritative.
+
+background-farmer
+OPTIONAL PREFERENCE: present Tough via the Farmer background feature wrapper; not an authoring-error repair.
+Category: personal-preference
+Correction records: 2
+Source: core/players-handbook-2024/background-farmer.xml
+Source SHA-256: 924D3BFE199369DA3B4805AE847A6F0C1460AE5EB2893FF93717EBA432D3A9EF
+Source: aurora-sources/AuroraLegacy/core/players-handbook-2024/background-farmer.xml
+Source SHA-256: 924D3BFE199369DA3B4805AE847A6F0C1460AE5EB2893FF93717EBA432D3A9EF
+  replace: ID_WOTC_PHB24_BACKGROUND_FARMER
+    Intentional user preference: present Tough through an Origin Feat background feature while retaining the canonical Farmer identity. This is a local presentation/behavior preference, not an upstream authoring-error claim.
+  add: ID_WOTC_PHB24_BACKGROUND_FEATURE_FARMER_TOUGH
+    Companion to the intentional Farmer replacement: retain the Tough feature wrapper and ID_INTERNAL_GRANTS_BACKGROUND_WITH_A_FEAT grant. Review together with the Farmer replacement.
+
+dmg24-walloping-ammunition
+Give Walloping Ammunition its own ID; retain Adamantine Ammunition.
+Category: repair
+Correction records: 1
+Source: core/dungeon-masters-guide-2024/items-weapons.xml
+Source SHA-256: F54384270A05C31D3A76D7CF87FFAEF523ED287E6B83722D45ABC1065F50FE55
+Source: aurora-sources/AuroraLegacy/core/dungeon-masters-guide-2024/items-weapons.xml
+Source SHA-256: F54384270A05C31D3A76D7CF87FFAEF523ED287E6B83722D45ABC1065F50FE55
+  rename: ID_WOTC_DMG24_MAGIC_ITEM_AMMUNITION_ADAMANTINE -> ID_WOTC_DMG24_MAGIC_ITEM_AMMUNITION_WALLOPING
+    2026-09-13 reviewed content repair: give Walloping Ammunition its own identity; retain the other definition.
+
+guns
+Remove the duplicate Musketball (20) declaration; retain the individual-round ID, cost and weight.
+Category: repair
+Correction records: 1
+Source: reddit/reddit-unearthed-arcana/arcane-artillery/guns.xml
+Source SHA-256: 412728DB3A783F20A6A0A1ED30CBB9C04DCA4120B0E97ECC381B50CBFADA269C
+Source: aurora-sources/reddit/reddit-unearthed-arcana/arcane-artillery/guns.xml
+Source SHA-256: 412728DB3A783F20A6A0A1ED30CBB9C04DCA4120B0E97ECC381B50CBFADA269C
+  remove: ID_RDDT_AA_MUSKETBALL
+    Keep the single-piece Musketball; quantities represent multiples of 20.
+
+fighter-devout
+Give Defender of Kin and Slayer of Foes unique IDs and fill both blank level-3 grants.
+Category: repair
+Correction records: 3
+Source: reddit/reddit-unearthed-arcana/blazing-dawn-players-companion/fighter-devout.xml
+Source SHA-256: 505997AFD5F398D77842C47AA7CA0774C22C60DC5458AB8B9D87B0467BA87096
+Source: aurora-sources/reddit/reddit-unearthed-arcana/blazing-dawn-players-companion/fighter-devout.xml
+Source SHA-256: 505997AFD5F398D77842C47AA7CA0774C22C60DC5458AB8B9D87B0467BA87096
+  rename: ID_JONOMAN3000_ARCHETYPE_FEATURE_DEVOUT_ZEALOTS_DEVOTION_ -> ID_JONOMAN3000_ARCHETYPE_FEATURE_DEVOUT_ZEALOTS_DEVOTION_DEFENDER_OF_KIN
+    2026-09-13 reviewed content repair: give Defender of Kin its own identity; retain the other definition.
+  rename: ID_JONOMAN3000_ARCHETYPE_FEATURE_DEVOUT_ZEALOTS_DEVOTION_ -> ID_JONOMAN3000_ARCHETYPE_FEATURE_DEVOUT_ZEALOTS_DEVOTION_SLAYER_OF_FOES
+    2026-09-13 reviewed content repair: give Slayer of Foes its own identity; retain the other definition.
+  replace: ID_JONOMAN3000_BDPC_ARCHETYPE_FEATURE_DEVOUT_ZEALOTS_DEVOTION
+    Repair parent grants together with the related identity changes.
+
+race-tatsumi
+Rename the mislabeled Heartening Breath declaration and correct the Ryujin parent grant.
+Category: repair
+Correction records: 2
+Source: ryokos-guide-to-the-yokai-realms/race-tatsumi.xml
+Source SHA-256: 87D7EDE395B00C64C15EFFA3832B88498AA7FB2E35012CDF4B7CC1A3D9B5798E
+  rename: ID_RGTTYR_RACIAL_TRAIT_TATSUMI_RYUJIN_CLOUDSTEP -> ID_RGTTYR_RACIAL_TRAIT_TATSUMI_RYUJIN_HEARTENING_BREATH
+    2026-09-13 reviewed content repair: give Heartening Breath its own identity; retain the other definition.
+  replace: ID_RGTTYR_RACE_VARIANT_TATSUMI_RYUJIN
+    Repair parent grants together with the related identity changes.
+
+forgotten-secrets-items
+Separate Kaba Gaida from Cimbalom and Ancient Heart Strength +3 from +2.
+Category: repair
+Correction records: 2
+Source: third-party/genuine-fantasy-press/forgotten-secrets/items.xml
+Source SHA-256: 23C95C97E60DD643B3D873B859D28B1ADE858CC07E97F0AD62C6D0D7E90BBBAC
+Source: aurora-sources/aurorabuilder-third-party/genuine-fantasy-press/forgotten-secrets/items.xml
+Source SHA-256: 23C95C97E60DD643B3D873B859D28B1ADE858CC07E97F0AD62C6D0D7E90BBBAC
+  rename: ID_GFP_COFSA_MAGIC_ITEM_WONDROUS_ITEM_CIMBALOM_OF_DAZD -> ID_GFP_COFSA_MAGIC_ITEM_WONDROUS_ITEM_KABA_GAIDA_OF_NEVIHTA
+    2026-09-13 reviewed content repair: give Kaba Gaida of Nevihta its own identity; retain the other definition.
+  rename: ID_GFP_COFSA_MAGIC_ITEM_WONDROUS_ITEM_ANCIENT_HEART_STRENGTH_TWO -> ID_GFP_COFSA_MAGIC_ITEM_WONDROUS_ITEM_ANCIENT_HEART_STRENGTH_THREE
+    2026-09-13 reviewed content repair: give Ancient Heart (Strength +3) its own identity; retain the other definition.
+
+players-handbook-2024-items-packs
+Remove 29 invalid dash cost placeholders; repair the Guard Light Crossbow extraction reference; preserve clean upstream text.
+Category: repair
+Correction records: 29
+Source: core/players-handbook-2024/items-packs.xml
+Source SHA-256: 2B3DE990250AF7E05C6E9F77CC5BDDD6ACDAA4B72558DBA1D644B85987256588
+Source: aurora-sources/AuroraLegacy/core/players-handbook-2024/items-packs.xml
+Source SHA-256: 2B3DE990250AF7E05C6E9F77CC5BDDD6ACDAA4B72558DBA1D644B85987256588
+  replace: ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_ACOLYTE
+    Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.
+  replace: ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_ARTISAN
+    Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.
+  replace: ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_CHARLATAN
+    Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.
+  replace: ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_CRIMINAL
+    Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.
+  replace: ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_ENTERTAINER
+    Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.
+  replace: ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_FARMER
+    Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.
+  replace: ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_GUARD
+    Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs. Correct Guard's Light Crossbow extraction reference to ID_WOTC_PHB24_WEAPON_LIGHT_CROSSBOW.
+  replace: ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_GUIDE
+    Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.
+  replace: ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_HERMIT
+    Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.
+  replace: ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_MERCHANT
+    Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.
+  replace: ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_NOBLE
+    Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.
+  replace: ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_SAGE
+    Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.
+  replace: ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_SAILOR
+    Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.
+  replace: ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_SCRIBE
+    Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.
+  replace: ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_SOLDIER
+    Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.
+  replace: ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_WAYFARER
+    Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.
+  replace: ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_BARBARIAN
+    Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.
+  replace: ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_BARD
+    Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.
+  replace: ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_CLERIC
+    Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.
+  replace: ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_DRUID
+    Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.
+  replace: ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_FIGHTER_1
+    Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.
+  replace: ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_FIGHTER_2
+    Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.
+  replace: ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_MONK
+    Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.
+  replace: ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_PALADIN
+    Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.
+  replace: ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_RANGER
+    Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.
+  replace: ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_ROGUE
+    Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.
+  replace: ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_SORCERER
+    Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.
+  replace: ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_WARLOCK
+    Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.
+  replace: ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_WIZARD
+    Remove a nonnumeric em-dash cost placeholder with no currency; preserve equipment contents and valid priced packs.
+
+class-spiritualist
+Correct the Greed feature reference to Animate Objects.
+Category: repair
+Correction records: 1
+Source: third-party/dms-guild/class-spiritualist.xml
+Source SHA-256: BC8ED0B0D936D1AE8CDF882E00FCBB97F6923FE73F023202CC630CB729E2BF37
+Source: aurora-sources/aurorabuilder-third-party/dms-guild/class-spiritualist.xml
+Source SHA-256: BC8ED0B0D936D1AE8CDF882E00FCBB97F6923FE73F023202CC630CB729E2BF37
+  replace: ID_DMSG_HSPRT_CLASS_FEATURE_CHANNEL_SPIRIT_GREED
+    2026-10-06 user-authorized local repair. User confirmed Animate Objects as the intended fifth-level spell; repair the singular ID. ID_PHB_SPELL_ANIMATE_OBJECT -> ID_PHB_SPELL_ANIMATE_OBJECTS. Not accepted upstream.
+
+psionic-disciplines
+Correct Wall of Fire, Cause Fear, Rary's Telepathic Bond and Banishment references.
+Category: repair
+Correction records: 3
+Source: reddit/reddit-unearthed-arcana/kibblestasty/psion/psionic-disciplines.xml
+Source SHA-256: C9FD9E27C65BECAD613FCAA9CE5EC428D273EA6F704252222D0FCF154224C78E
+Source: aurora-sources/reddit/reddit-unearthed-arcana/kibblestasty/psion/psionic-disciplines.xml
+Source SHA-256: C9FD9E27C65BECAD613FCAA9CE5EC428D273EA6F704252222D0FCF154224C78E
+  replace: ID_KT_PSION_CLASS_FEATURE_PSIONIC_DISCIPLINE_PSYCHOKINETICS_DISCIPLINE
+    2026-10-06 user-authorized local repair. User checked and confirmed Wall of Fire as the intended spell. ID_PHB_SPELL_WALL_OF_FLAME -> ID_PHB_SPELL_WALL_OF_FIRE. Not accepted upstream.
+  replace: ID_KT_PSION_CLASS_FEATURE_PSIONIC_DISCIPLINE_TELEPATHY_DISCIPLINE
+    2026-10-06 user-authorized local repair. Repair Cause Fear's source prefix. ID_PHB_SPELL_CAUSE_FEAR -> ID_XGTE_SPELL_CAUSE_FEAR. User confirmed Rary's Telepathic Bond as the intended fifth-level spell. ID_PHB_SPELL_TELEPATHIC_BOND -> ID_PHB_SPELL_RARYS_TELEPATHIC_BOND. Not accepted upstream.
+  replace: ID_KT_PSION_CLASS_FEATURE_PSIONIC_DISCIPLINE_TRANSPOSITION_DISCIPLINE
+    2026-10-06 user-authorized local repair. User checked and confirmed Banishment as the intended spell. ID_PHB_SPELL_BANISH -> ID_PHB_SPELL_BANISHMENT. Not accepted upstream.
+
+race-imperial
+Correct Venomous Blessing to the PHB Poison Spray ID.
+Category: repair
+Correction records: 1
+Source: third-party/genuine-fantasy-press/forgotten-secrets/race-imperial.xml
+Source SHA-256: 3773F31763F468D2B8D161B080242CF87AB7B36EBF2ACF6BF2DBECFAFB1F9FD7
+Source: aurora-sources/aurorabuilder-third-party/genuine-fantasy-press/forgotten-secrets/race-imperial.xml
+Source SHA-256: 3773F31763F468D2B8D161B080242CF87AB7B36EBF2ACF6BF2DBECFAFB1F9FD7
+  replace: ID_GFP_COFSA_RACIAL_TRAIT_VENOMOUS_BLESSING
+    2026-10-06 user-authorized local repair. The feature explicitly names Poison Spray; remove the extraneous publisher prefix. ID_GFP_PHB_SPELL_POISON_SPRAY -> ID_PHB_SPELL_POISON_SPRAY. Not accepted upstream.
+
+wizard-demonbinder
+Correct Summon Lesser Demons and Summon Greater Demon references to XGTE IDs.
+Category: repair
+Correction records: 2
+Source: third-party/dms-guild/the-great-dale/wizard-demonbinder.xml
+Source SHA-256: 10150208B6ED5480BC4EA8121AEA5F2414D0A277733D47FACEC40C8444337686
+Source: aurora-sources/aurorabuilder-third-party/dms-guild/the-great-dale/wizard-demonbinder.xml
+Source SHA-256: 10150208B6ED5480BC4EA8121AEA5F2414D0A277733D47FACEC40C8444337686
+  replace: ID_DMSG_TGD_ARCHETYPE_FEATURE_DEMONBINDER_DEMON_SUMMONER
+    2026-10-06 user-authorized local repair. The feature explicitly names Summon Lesser Demons; repair the source prefix. ID_PHB_SPELL_SUMMON_LESSER_DEMONS -> ID_XGTE_SPELL_SUMMON_LESSER_DEMONS. Not accepted upstream.
+  replace: ID_DMSG_TGD_ARCHETYPE_FEATURE_DEMONBINDER_MASTER_DEMON_SUMMONER
+    2026-10-06 user-authorized local repair. The feature explicitly names Summon Greater Demon; repair the source prefix and singular spell ID. ID_PHB_SPELL_SUMMON_GREATER_DEMONS -> ID_XGTE_SPELL_SUMMON_GREATER_DEMON. Not accepted upstream.
+
+sorcerer-stoneheart
+Resolve Erupting Earth to the preferred XGTE definition; retain the distinct POTA definition.
+Category: repair
+Correction records: 1
+Source: reddit/reddit-unearthed-arcana/kibblestasty/sorcerer-stoneheart.xml
+Source SHA-256: 996291A1F67DAA706860D8E8AE775FCC6787FCBAC75FC761B5350CB704F6CBDC
+Source: aurora-sources/reddit/reddit-unearthed-arcana/kibblestasty/sorcerer-stoneheart.xml
+Source SHA-256: 996291A1F67DAA706860D8E8AE775FCC6787FCBAC75FC761B5350CB704F6CBDC
+  replace: ID_KT_SS_ARCHETYPE_SORCERER_STONEHEART
+    User-authorized local correction: Stoneheart is unresolved KibblesTasty homebrew and declares no custom Erupting Earth spell. Use Xanathar's Guide to Everything (ID_XGTE_SPELL_ERUPTING_EARTH) as the assumed first-party reference. Preserve the distinct Princes of the Apocalypse definition. Pending confirmation with KibblesTasty; this is not an upstream-accepted correction.
+
