@@ -41,6 +41,7 @@ public static partial class BuildService
     public static async Task<string?> AddCustomFeatureAsync(CharacterTab tab, string elementId)
     {
         using var scope = await CharacterContext.EnterAsync(tab);
+        FlushPendingSnapshotEdits(tab);
         return await Task.Run(() =>
         {
             try
@@ -191,6 +192,7 @@ public static partial class BuildService
     public static async Task<string?> RemoveCustomFeatureAsync(CharacterTab tab, string elementId)
     {
         using var scope = await CharacterContext.EnterAsync(tab);
+        FlushPendingSnapshotEdits(tab);
         return await Task.Run(() =>
         {
             try

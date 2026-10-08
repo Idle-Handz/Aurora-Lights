@@ -45,6 +45,12 @@ jobs:
       - name: Restore
         run: dotnet restore "$PROJECT"
 
+      - name: Prepare Google Drive desktop configuration
+        shell: pwsh
+        env:
+          GOOGLE_DRIVE_DESKTOP_CLIENT_JSON: ${{ secrets.GOOGLE_DRIVE_DESKTOP_CLIENT_JSON }}
+        run: ./tools/prepare-google-drive-client.ps1
+
       - name: Publish (maccatalyst-x64)
         run: |
           dotnet publish "$PROJECT" \
@@ -103,7 +109,11 @@ jobs:
       - name: Restore
         run: dotnet restore "$PROJECT"
 
-      - name: Publish (maccatalyst-arm64)
+      - name: Prepare Google Drive desktop configuration
+        shell: pwsh
+        env:
+          GOOGLE_DRIVE_DESKTOP_CLIENT_JSON: ${{ secrets.GOOGLE_DRIVE_DESKTOP_CLIENT_JSON }}
+        run: ./tools/prepare-google-drive-client.ps1
         run: |
           dotnet publish "$PROJECT" \
             -f net10.0-maccatalyst \

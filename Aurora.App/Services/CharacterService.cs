@@ -41,6 +41,7 @@ public sealed class CharacterService :
     // Serialized access to CharacterManager.Current is owned by CharacterContext; callers that
     // perform full-file loads acquire it via CharacterContext.EnterForLoadAsync().
     private volatile bool _isCharacterLoading;
+    private long _loadedContextVersion = -1;
 
     public Character? CurrentCharacter { get; private set; }
     public CharacterFile? CurrentCharacterFile { get; private set; }
@@ -382,7 +383,11 @@ public sealed class CharacterService :
     /// <see cref="CurrentCharacter"/> and no other load has since overwritten it.
     /// </summary>
     public bool IsPreloaded(CharacterFile file) =>
-        CharacterFileIdentity.RefersToSameFile(CurrentCharacterFile, file) && CurrentCharacter != null;
+        _loadedContextVersion == CharacterContext.StateVersion
+        && CurrentCharacter != null
+        && CharacterFileIdentity.RefersToSameFile(CurrentCharacterFile, file)
+        && CurrentCharacterFile!.LastKnownDiskStamp is { } loadedStamp
+        && CharacterFileDiskStamp.Capture(CurrentCharacterFile.FilePath) == loadedStamp;
 
     /// <summary>
     /// Starts loading <paramref name="file"/> on a background thread without blocking
@@ -433,6 +438,7 @@ public sealed class CharacterService :
                 {
                     CharacterLoadCompatibilityService.PrepareForCharacterLoad();
                     var loaded = await file.Load();
+                    CharacterContext.EnsureUsableLoad(loaded);
                     var current = CharacterManager.Current?.Character;
                     if (current is not null)
                     {
@@ -449,6 +455,7 @@ public sealed class CharacterService :
                 {
                     CurrentCharacter     = character;
                     CurrentCharacterFile = file;
+                    _loadedContextVersion = CharacterContext.StateVersion;
 
                     // Remember this as the MRU character so the next app launch can preload it.
                     if (!string.IsNullOrEmpty(file.FilePath))
@@ -592,6 +599,7 @@ public sealed class CharacterService :
 
             CurrentCharacter     = character;
             CurrentCharacterFile = file;
+            _loadedContextVersion = CharacterContext.StateVersion;
             return (file, null);
         }
         catch (Exception ex)

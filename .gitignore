@@ -4,6 +4,7 @@
 
 # Local OAuth client credentials and Codex attachments
 /client_secret_*.apps.googleusercontent.com.json
+/Aurora.App/Configuration/google-drive-client.json
 /.codex-remote-attachments/
 
 # Build outputs

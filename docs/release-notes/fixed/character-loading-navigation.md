@@ -1,0 +1,1 @@
+Opening a character no longer sends you back to Overview if you navigate elsewhere, switch tabs, or close the character while it is loading. The same protection applies when opening or reloading a character from Google Drive. Characters left open still finish loading in the background.

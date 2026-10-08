@@ -43,19 +43,56 @@ Windows desktop uses browser sign-in; macOS desktop follows the same loopback
 flow but still needs platform verification. Android uses native Google Play
 services authorization, described below. The existing web host is unchanged.
 
-1. In the application's Google Cloud project, enable the Google Drive API.
-2. Configure OAuth consent for Aurora and the drive.file scope. During Google
-   testing mode, add the intended Google account as a test user.
-3. Create an OAuth client of type **Desktop app** and download its JSON.
-4. In Characters > Cloud Saves, choose **Set up Google Drive** and import that
-   JSON, then connect in the system browser.
+Official desktop releases embed Aurora's Desktop OAuth client configuration.
+On a fresh installation, choose Characters > Cloud Saves > **Connect Google
+Drive** and authorize your own account in the system browser. Users do not need
+a Google Cloud project or a downloaded configuration file.
 
-The installation keeps the desktop client configuration in
-FileSystem.Current.AppDataDirectory/google-drive-client.json. Refresh tokens
-are stored through MAUI SecureStorage, keyed by client ID; they are not written
-to logs, character XML, Git, or the recovery manifest. A release-wide client
-configuration/consent setup is still needed before this can be a zero-setup
-feature for ordinary users. Do not commit an actual client JSON here.
+An existing installation's imported configuration at
+FileSystem.Current.AppDataDirectory/google-drive-client.json takes precedence.
+This preserves its Google project and client-keyed credentials. Such installations
+retain **Change Google Drive setup**; a fresh bundled installation does not show
+that control. Developer builds without a bundle retain **Set up Google Drive**.
+Manual import accepts a downloaded **Desktop app** OAuth JSON, not an Android,
+web, or service-account credential.
+
+Refresh tokens are stored through MAUI SecureStorage, keyed by client ID; they
+are not written to logs, character XML, Git, or the recovery manifest. Bundled
+configuration identifies the application; it contains no user's Google account
+credentials, access tokens, or refresh tokens. Installed OAuth clients cannot
+keep their client configuration confidential after distribution.
+
+### Maintaining the release configuration
+
+1. In Aurora's Google Cloud project, enable the Drive API, configure the
+   `drive.file` scope, and create an OAuth client of type **Desktop app**.
+   Keep this in the same project as the Android clients.
+2. Store the complete downloaded JSON in the GitHub Actions repository secret
+   **GOOGLE_DRIVE_DESKTOP_CLIENT_JSON**. Do not commit the downloaded JSON.
+3. The Windows and macOS workflows run `tools/prepare-google-drive-client.ps1`.
+   It validates the desktop download and writes only ClientId and ClientSecret
+   to the ignored `Aurora.App/Configuration/google-drive-client.json`. The app
+   embeds that file as `Aurora.GoogleDriveClient.json` on desktop only.
+4. The release workflow requires this secret and fails if it is missing or
+   invalid. Other desktop build workflows can omit it for source/fork builds
+   with manual setup. Android continues to use native authorization.
+
+For a local bundled build, run the following before building the desktop app:
+
+```powershell
+./tools/prepare-google-drive-client.ps1 -InputPath ./client_secret_DESKTOP.apps.googleusercontent.com.json -Required
+```
+
+The script accepts `GOOGLE_DRIVE_DESKTOP_CLIENT_JSON` as an environment variable
+instead of `-InputPath`. `AuroraGoogleDriveClientConfiguration` can override the
+path to the prepared file; `AuroraRequireGoogleDriveClientConfiguration=true`
+makes desktop MSBuild fail if it is absent. The default prepared path is ignored
+by Git. Keep real credentials out of test fixtures, source, and build logs.
+
+Bundling does not change Google's audience or verification settings. While the
+OAuth project is in Testing, users must be listed as test users. Public access
+requires an External/In production audience and the applicable public website,
+privacy disclosures, and branding setup in Google Auth Platform.
 
 The drive.file grant lists files created by or explicitly authorized for this
 app. It does not browse every arbitrary file in a user's Drive. Upload creates
@@ -69,8 +106,9 @@ to switch accounts.
 ## Android setup and cross-device saves
 
 Create the Android OAuth client in the **same Google Cloud project** as the
-desktop client. Keep the existing Drive API, External/Testing audience, test
-users, and `https://www.googleapis.com/auth/drive.file` scope. Using one project
+desktop client. Keep the existing Drive API, External audience, and
+`https://www.googleapis.com/auth/drive.file` scope. In Testing, add test users;
+use In production for public access. Using one project
 is important for both clients to access the app's Drive files.
 
 1. Open Google Auth Platform > Clients > Create client > Android.
@@ -214,6 +252,41 @@ including weapon proficiencies. This was reproduced both before and after this
 update and is separate from the resolved v17/v18 database compatibility error.
 This update does not repair or suppress that warning. No save was uploaded to
 Drive during these checks; full cross-device save/load acceptance remains open.
+
+## Live desktop / Android round-trip (2026-10-08)
+
+The installed 0.9.4 releases completed a live Google Drive round-trip using a
+disposable character: Windows desktop (0.9.4-beta, commit `25e9476`) and Samsung
+SM-S366V Android (version code 213499260). This validates those installed builds,
+not the subsequent uncommitted navigation or client-configuration changes.
+
+- Desktop Overview uploaded the character and full session sidecar with 137 gp,
+  23 HP and 4 temporary HP. Android opened that cloud copy with the seeded
+  conditions, inspiration, exhaustion, spell slots, resources and attack reminders.
+- Android saved 139 gp, 17 HP and 2 temporary HP. Desktop's Load Drive Save
+  retrieved those values; every other session field matched the seed exactly.
+- Desktop saved 141 gp and 19 HP. Android retrieved 141 gp, 19 HP and 2 temporary
+  HP, then retained those values after closing the tab, restarting the app and
+  reopening the cloud character. Saved authorization was restored on restart.
+- All 21 registered build-choice IDs, all 10 inventory rows, notes and embedded
+  portrait content survived the return transfer. Character and session hashes
+  matched the desktop cloud receipt.
+
+Android reported 17 unresolved saved entries, including Claw, Chakram and
+Kusarigama proficiencies. Desktop saving had added exactly 17 granted weapon
+proficiencies from its Ryoko content; that content directory was absent on the
+phone. These were granted entries rather than changes to the 21 registered
+choices, and the returned XML retained their IDs. Explicit reload correctly
+reported the partial load and kept the tab marked for attention. This content
+compatibility warning remains separate from the successful transport check.
+
+The desktop Open File importer copied only the selected XML, so the prepared
+sidecar was placed beside the disposable imported copy and verified in Session
+before upload. This run does not validate sidecar import through a native picker.
+Live stale-write races/HTTP 412, network interruption, revoked consent and
+recovery-file restoration were not exercised. Local evidence is retained under
+`buildtmp/drive-roundtrip-20261008`; the distinctly named disposable Drive save is
+left available for inspection.
 
 ## References
 

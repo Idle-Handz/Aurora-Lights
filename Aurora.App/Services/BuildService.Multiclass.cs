@@ -144,6 +144,7 @@ public static partial class BuildService
     public static async Task<string?> AddMulticlassLevelAsync(CharacterTab tab, string multiclassElementId)
     {
         using var scope = await CharacterContext.EnterAsync(tab);
+        FlushPendingSnapshotEdits(tab);
         return await Task.Run(() =>
         {
             var levelBefore = 0;
@@ -316,6 +317,7 @@ public static partial class BuildService
     private static async Task<string?> AddMulticlassLevelLegacyAsync(CharacterTab tab, string multiclassElementId)
     {
         using var scope = await CharacterContext.EnterAsync(tab);
+        FlushPendingSnapshotEdits(tab);
         return await Task.Run(() =>
         {
             try

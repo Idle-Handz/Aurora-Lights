@@ -28,6 +28,7 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - 'playwright.config.ts'
+      - 'playwright.ui.config.ts'
       - '.github/workflows/test.yml'
   pull_request:
     paths:
@@ -56,6 +57,7 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - 'playwright.config.ts'
+      - 'playwright.ui.config.ts'
       - '.github/workflows/test.yml'
   workflow_dispatch:
   workflow_call:
@@ -116,3 +118,6 @@ jobs:
 
       - name: Run browser tests
         run: npm run e2e
+
+      - name: Run App workspace layout regressions
+        run: npm run test:ui-layout

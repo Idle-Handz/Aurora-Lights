@@ -63,6 +63,27 @@
     <AndroidEnvironment Include="Platforms\Android\diagnostics.env" />
   </ItemGroup>
 
+  <!-- Prepared from the desktop OAuth download by tools/prepare-google-drive-client.ps1.
+       Native Android authorization uses its package/signing certificate instead. -->
+  <PropertyGroup>
+    <AuroraGoogleDriveClientConfiguration Condition="'$(AuroraGoogleDriveClientConfiguration)' == ''">$(MSBuildProjectDirectory)/Configuration/google-drive-client.json</AuroraGoogleDriveClientConfiguration>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Razor includes JSON as loose content by default; only the desktop resource may carry this file. -->
+    <Content Remove="Configuration/google-drive-client.json;$(AuroraGoogleDriveClientConfiguration)" />
+    <None Remove="Configuration/google-drive-client.json;$(AuroraGoogleDriveClientConfiguration)" />
+  </ItemGroup>
+  <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows' OR $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">
+    <EmbeddedResource Include="$(AuroraGoogleDriveClientConfiguration)"
+                      LogicalName="Aurora.GoogleDriveClient.json"
+                      Condition="Exists('$(AuroraGoogleDriveClientConfiguration)')" />
+  </ItemGroup>
+  <Target Name="RequireGoogleDriveClientConfiguration" BeforeTargets="PrepareForBuild"
+          Condition="'$(AuroraRequireGoogleDriveClientConfiguration)' == 'true' AND ($([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows' OR $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst')">
+    <Error Condition="!Exists('$(AuroraGoogleDriveClientConfiguration)')"
+           Text="The release requires a desktop Google Drive client. Run tools/prepare-google-drive-client.ps1 with GOOGLE_DRIVE_DESKTOP_CLIENT_JSON configured." />
+  </Target>
+
   <ItemGroup>
     <!-- App Icon -->
     <MauiIcon Include="Resources\AppIcon\appicon.png" />

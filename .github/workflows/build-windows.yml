@@ -15,6 +15,7 @@ on:
       - 'nuget.config'
       - 'vendor/nuget/**'
       - '.github/workflows/build-windows.yml'
+      - 'tools/prepare-google-drive-client.ps1'
   workflow_dispatch:
 
 jobs:
@@ -43,6 +44,12 @@ jobs:
       - name: Restore
         shell: bash
         run: dotnet restore "$PROJECT"
+
+      - name: Prepare Google Drive desktop configuration
+        shell: pwsh
+        env:
+          GOOGLE_DRIVE_DESKTOP_CLIENT_JSON: ${{ secrets.GOOGLE_DRIVE_DESKTOP_CLIENT_JSON }}
+        run: ./tools/prepare-google-drive-client.ps1
 
       - name: Publish (${{ matrix.runtime }})
         shell: bash

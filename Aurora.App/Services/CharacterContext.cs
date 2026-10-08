@@ -20,6 +20,11 @@ namespace Aurora.App.Services;
 public static class CharacterContext
 {
     private static readonly SingletonGuard<CharacterTab> _guard = new();
+    private static long _stateVersion;
+
+    // CharacterManager reuses its Character instance across loads. Object identity therefore
+    // cannot establish that a service's cached preload still owns the singleton's current state.
+    internal static long StateVersion => Interlocked.Read(ref _stateVersion);
 
     /// <summary>
     /// Fires when in-memory character state could not be captured before a tab swap or load.
@@ -60,13 +65,20 @@ public static class CharacterContext
     /// Drops the active tab reference so the next <see cref="EnterAsync"/> on any tab will hydrate
     /// fresh. Call this when reloading element data.
     /// </summary>
-    public static Task InvalidateAsync() => _guard.InvalidateAsync();
+    public static Task InvalidateAsync() =>
+        _guard.CaptureAndInvalidateAsync(_ => Interlocked.Increment(ref _stateVersion));
 
     /// <summary>
     /// Drops the active tab reference if it matches <paramref name="tab"/>. Call this when closing
     /// a tab so the closed object is not retained until the next swap.
     /// </summary>
-    public static Task ReleaseAsync(CharacterTab tab) => _guard.ReleaseAsync(tab);
+    public static async Task ReleaseAsync(CharacterTab tab)
+    {
+        await _guard.ReleaseAsync(tab);
+        // Closing a tab can discard unsaved edits. Reopening must hydrate its saved file,
+        // even when no other character has occupied the singleton in the meantime.
+        Interlocked.Increment(ref _stateVersion);
+    }
 
     /// <summary>
     /// Reloads <paramref name="tab"/>'s character from its file on disk, discarding any in-memory
@@ -77,18 +89,24 @@ public static class CharacterContext
     internal static async Task<Builder.Presentation.Models.CharacterFile.LoadResult> ReloadFromDiskAsync(CharacterTab tab)
     {
         tab.StateXml = null;
+        Interlocked.Increment(ref _stateVersion);
         CharacterLoadCompatibilityService.PrepareForCharacterLoad();
         var result = await tab.File.Load();
-        // A non-partial failure can occur before the loader creates a new character.
-        // Do not attach the previous singleton character to the downloaded file.
-        if (!result.Success && result.Missing.Count == 0)
-            throw new InvalidDataException(result.Message);
+        EnsureUsableLoad(result);
         tab.Character = CharacterManager.Current.Character;
         CharacterLoadCompatibilityService.RestoreEquippedSlots(tab.Character);
         BuildService.ReapplyCustomFeatures(tab.File);
         BuildService.NormalizeSelectionState();
         CharacterManager.Current.ReprocessCharacter();
         return result;
+    }
+
+    internal static void EnsureUsableLoad(CharacterFile.LoadResult result)
+    {
+        // Missing elements describe a usable partial character. Other failures can occur
+        // before New(), leaving the previous character in the mutable singleton.
+        if (!result.Success && result.Missing.Count == 0)
+            throw new InvalidDataException(result.Message);
     }
 
     /// <summary>
@@ -101,6 +119,7 @@ public static class CharacterContext
         {
             if (outgoing != null)
                 TryCaptureState(outgoing, "CharacterContext.CaptureAndInvalidateAsync");
+            Interlocked.Increment(ref _stateVersion);
         });
 
     /// <summary>
@@ -113,6 +132,7 @@ public static class CharacterContext
         {
             if (outgoing != null)
                 TryCaptureState(outgoing, "CharacterContext.EnterForLoadAsync");
+            Interlocked.Increment(ref _stateVersion);
         });
 
     /// <summary>
@@ -145,6 +165,8 @@ public static class CharacterContext
             TryCaptureState(outgoing, "CharacterContext.SwapAsync");
 
         // 2. Reset ancillary singletons (prepared spells, expander registry) before hydrating.
+        Interlocked.Increment(ref _stateVersion);
+        incoming.Character = null;
         CharacterLoadCompatibilityService.PrepareForCharacterLoad();
 
         // 3. Hydrate the incoming tab. Prefer the in-memory snapshot (unsaved edits); fall back
@@ -159,7 +181,7 @@ public static class CharacterContext
             try
             {
                 await File.WriteAllBytesAsync(temp, bytes);
-                await incoming.File.Load(temp);
+                EnsureUsableLoad(await incoming.File.Load(temp));
             }
             finally
             {
@@ -170,7 +192,7 @@ public static class CharacterContext
         }
         else
         {
-            await incoming.File.Load();
+            EnsureUsableLoad(await incoming.File.Load());
         }
 
         // 4. Re-point the tab's cached Character at the freshly-loaded singleton character.

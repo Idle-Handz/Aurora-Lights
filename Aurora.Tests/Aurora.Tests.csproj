@@ -44,6 +44,7 @@
     <Content Include="..\tests\LegacyOracles\Builder.Data.dll" Link="LegacyOracles\Builder.Data.dll" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\tests\LegacyOracles\Aurora.Documents.dll" Link="LegacyOracles\Aurora.Documents.dll" CopyToOutputDirectory="PreserveNewest" />
     <EmbeddedResource Include="Fixtures\*.dnd5e" />
+    <EmbeddedResource Include="Fixtures\google-drive-client.test.json" LogicalName="Aurora.GoogleDriveClient.json" />
     <Content Include="Fixtures\Characters\*.dnd5e" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Fixtures\ChoiceIdentity\*.json" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Fixtures\ParityScenarios\*.json" CopyToOutputDirectory="PreserveNewest" />
@@ -79,11 +80,13 @@
     <Compile Include="..\Aurora.App\Services\SessionState.cs" Link="Linked\SessionState.cs" />
     <Compile Include="..\Aurora.App\Services\SessionStore.cs" Link="Linked\SessionStore.cs" />
     <Compile Include="..\Aurora.App\Services\LocalCharacterCloudUpload.cs" Link="Linked\LocalCharacterCloudUpload.cs" />
+    <Compile Include="..\Aurora.App\Services\GoogleDriveClientConfiguration.cs" Link="Linked\GoogleDriveClientConfiguration.cs" />
     <!-- Exercise the app's actual refresh/preload lifecycle without a MAUI window. -->
     <Compile Include="..\Aurora.App\Services\CharacterService.cs" Link="Linked\CharacterService.cs" />
     <Compile Include="..\Aurora.App\Services\CharacterContext.cs" Link="Linked\CharacterContext.cs" />
     <Compile Include="..\Aurora.App\Services\CharacterTabModel.cs" Link="Linked\CharacterTabModel.cs" />
     <Compile Include="..\Aurora.App\Services\CharacterTabService.cs" Link="Linked\CharacterTabService.cs" />
+    <Compile Include="..\Aurora.App\Services\CharacterLoadNavigation.cs" Link="Linked\CharacterLoadNavigation.cs" />
     <Compile Include="..\Aurora.App\Services\CharacterSnapshot.cs" Link="Linked\CharacterSnapshot.cs" />
     <Compile Include="..\Aurora.App\Services\CharacterFileSaveExtensions.cs" Link="Linked\CharacterFileSaveExtensions.cs" />
     <Compile Include="..\Aurora.App\Services\BuildService*.cs" Link="Linked\%(Filename)%(Extension)" />

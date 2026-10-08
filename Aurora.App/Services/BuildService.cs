@@ -353,6 +353,7 @@ public static partial class BuildService
         bool saveToFile = true)
     {
         using var scope = await CharacterContext.EnterAsync(tab);
+        FlushPendingSnapshotEdits(tab);
 
         var invalidated = new List<string>();
 
@@ -488,6 +489,16 @@ public static partial class BuildService
                 if (!string.IsNullOrEmpty(bgChar.Ideals.Content)) tab.Snapshot.Notes2 = bgChar.Ideals.Content;
                 if (!string.IsNullOrEmpty(bgChar.Bonds.Content))  tab.Snapshot.Allies = bgChar.Bonds.Content;
                 if (!string.IsNullOrEmpty(bgChar.Flaws.Content))  tab.Snapshot.Organisation = bgChar.Flaws.Content;
+            }
+
+            // These fields also have free-text editors. An explicit selection replaces its
+            // corresponding text, while unrelated selections retain pending narrative edits.
+            if (tab.Snapshot != null)
+            {
+                if (string.Equals(rule.Attributes.Type, "Alignment", StringComparison.OrdinalIgnoreCase))
+                    tab.Snapshot.Alignment = cm.Character.Alignment;
+                else if (string.Equals(rule.Attributes.Type, "Deity", StringComparison.OrdinalIgnoreCase))
+                    tab.Snapshot.Deity = cm.Character.Deity;
             }
 
             // 5. Flush snapshot text edits back into the Character object so they
@@ -674,6 +685,20 @@ public static partial class BuildService
     }
 
     /// <summary>
+    /// Copies pending editable fields into the active character before a mutation or snapshot
+    /// rebuild. Call while holding the tab's CharacterContext, before changing live state;
+    /// authoritative reloads and rollbacks must not apply the previous snapshot.
+    /// </summary>
+    public static void FlushPendingSnapshotEdits(CharacterTab tab)
+    {
+        if (tab.Snapshot is null || tab.Character is null) return;
+        if (!ReferenceEquals(CharacterContext.ActiveTab, tab) ||
+            !ReferenceEquals(tab.Character, CharacterManager.Current.Character))
+            throw new InvalidOperationException("Enter the character's context before applying pending edits.");
+        FlushSnapshotToCharacter(tab.Snapshot, tab.Character);
+    }
+
+    /// <summary>
     /// Pushes the editable text fields from a CharacterSnapshot back into the live
     /// Character object so that a full CharacterFile.Save() includes them.
     /// Called before Save() since Save() reads directly from the Character object.
@@ -695,13 +720,15 @@ public static partial class BuildService
         character.Eyes            = snap.Eyes;
         character.Skin            = snap.Skin;
         character.Hair            = snap.Hair;
+        character.Age             = snap.Age;
+        character.Height          = snap.Height;
+        character.Weight          = snap.Weight;
         // FillableField properties used by CharacterFile.Save()
         character.AgeField.Content    = snap.Age;
         character.HeightField.Content = snap.Height;
         character.WeightField.Content = snap.Weight;
         character.BackgroundStory.Content = snap.Backstory;
-        if (!string.IsNullOrEmpty(snap.Trinket))
-            character.Trinket.Content = snap.Trinket;
+        character.Trinket.Content = snap.Trinket;
         character.Inventory.Equipment  = snap.InventoryEquipmentText;
         character.Inventory.Treasure   = snap.InventoryTreasureText;
         character.Inventory.QuestItems = snap.InventoryQuestText;
@@ -1137,6 +1164,7 @@ public static partial class BuildService
     private static async Task<string?> SetOptionAsync(CharacterTab tab, string optionId, bool enabled, string callerName)
     {
         using var scope = await CharacterContext.EnterAsync(tab);
+        FlushPendingSnapshotEdits(tab);
         return await Task.Run(() =>
         {
             try
@@ -1171,6 +1199,7 @@ public static partial class BuildService
     public static async Task<string?> SetHpMethodAsync(CharacterTab tab, HpMethod method)
     {
         using var scope = await CharacterContext.EnterAsync(tab);
+        FlushPendingSnapshotEdits(tab);
         return await Task.Run(() =>
         {
             try
@@ -1212,6 +1241,7 @@ public static partial class BuildService
     public static async Task<(string? Error, int HpGained, bool IsAverage)> LevelUpMainAsync(CharacterTab tab)
     {
         using var scope = await CharacterContext.EnterAsync(tab);
+        FlushPendingSnapshotEdits(tab);
         return await Task.Run(() =>
         {
             try
@@ -1248,6 +1278,7 @@ public static partial class BuildService
     public static async Task<string?> LevelDownAsync(CharacterTab tab)
     {
         using var scope = await CharacterContext.EnterAsync(tab);
+        FlushPendingSnapshotEdits(tab);
         return await Task.Run(() =>
         {
             try

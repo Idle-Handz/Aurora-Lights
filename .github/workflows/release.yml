@@ -151,6 +151,12 @@ jobs:
           dotnet restore Aurora.DataIntegration/Aurora.DataIntegration.csproj
           dotnet restore Aurora.PdfImport/Aurora.PdfImport.csproj
 
+      - name: Prepare Google Drive desktop configuration
+        shell: pwsh
+        env:
+          GOOGLE_DRIVE_DESKTOP_CLIENT_JSON: ${{ secrets.GOOGLE_DRIVE_DESKTOP_CLIENT_JSON }}
+        run: ./tools/prepare-google-drive-client.ps1 -Required
+
       - name: Publish (win-x64)
         shell: bash
         run: |
@@ -158,6 +164,7 @@ jobs:
             -f net10.0-windows10.0.19041.0 \
             -r win-x64 \
             -c Release \
+            -p:AuroraRequireGoogleDriveClientConfiguration=true \
             --self-contained true \
             --no-restore \
             -p:PublishReadyToRun=false \
@@ -247,6 +254,12 @@ jobs:
           dotnet restore Aurora.DataIntegration/Aurora.DataIntegration.csproj
           dotnet restore Aurora.PdfImport/Aurora.PdfImport.csproj
 
+      - name: Prepare Google Drive desktop configuration
+        shell: pwsh
+        env:
+          GOOGLE_DRIVE_DESKTOP_CLIENT_JSON: ${{ secrets.GOOGLE_DRIVE_DESKTOP_CLIENT_JSON }}
+        run: ./tools/prepare-google-drive-client.ps1 -Required
+
       - name: Publish (win-arm64)
         shell: bash
         run: |
@@ -254,6 +267,7 @@ jobs:
             -f net10.0-windows10.0.19041.0 \
             -r win-arm64 \
             -c Release \
+            -p:AuroraRequireGoogleDriveClientConfiguration=true \
             --self-contained true \
             --no-restore \
             -p:PublishReadyToRun=false \
@@ -429,12 +443,19 @@ jobs:
       - name: Restore
         run: dotnet restore "$PROJECT"
 
+      - name: Prepare Google Drive desktop configuration
+        shell: pwsh
+        env:
+          GOOGLE_DRIVE_DESKTOP_CLIENT_JSON: ${{ secrets.GOOGLE_DRIVE_DESKTOP_CLIENT_JSON }}
+        run: ./tools/prepare-google-drive-client.ps1 -Required
+
       - name: Publish (maccatalyst-x64)
         run: |
           dotnet publish "$PROJECT" \
             -f net10.0-maccatalyst \
             -r maccatalyst-x64 \
             -c Release \
+            -p:AuroraRequireGoogleDriveClientConfiguration=true \
             -p:CreatePackage=false \
             -p:MtouchLink=None \
             -p:Version=$VERSION_ASSEMBLY \
@@ -488,12 +509,19 @@ jobs:
       - name: Restore
         run: dotnet restore "$PROJECT"
 
+      - name: Prepare Google Drive desktop configuration
+        shell: pwsh
+        env:
+          GOOGLE_DRIVE_DESKTOP_CLIENT_JSON: ${{ secrets.GOOGLE_DRIVE_DESKTOP_CLIENT_JSON }}
+        run: ./tools/prepare-google-drive-client.ps1 -Required
+
       - name: Publish (maccatalyst-arm64)
         run: |
           dotnet publish "$PROJECT" \
             -f net10.0-maccatalyst \
             -r maccatalyst-arm64 \
             -c Release \
+            -p:AuroraRequireGoogleDriveClientConfiguration=true \
             -p:CreatePackage=false \
             -p:MtouchLink=None \
             -p:Version=$VERSION_ASSEMBLY \

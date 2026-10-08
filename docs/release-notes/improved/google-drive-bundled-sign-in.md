@@ -1,0 +1,1 @@
+Fresh desktop installations can connect Google Drive directly without importing an OAuth configuration file. Official Windows and macOS releases include Aurora's app configuration, while existing imported configurations are preserved. Android continues to use native Google account selection. Google audience and consent requirements still apply.

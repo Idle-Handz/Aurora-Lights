@@ -20,8 +20,12 @@ public sealed class CloudCharacterService
     public bool IsConnected => AccountId is not null;
     public bool IsSupported => OperatingSystem.IsAndroid() || OperatingSystem.IsWindows() || OperatingSystem.IsMacCatalyst() || OperatingSystem.IsMacOS();
     public bool UsesClientConfiguration => !OperatingSystem.IsAndroid();
-    public bool IsConfigured => !UsesClientConfiguration || File.Exists(ConfigurationPath);
-    private string ConfigurationPath => Path.Combine(FileSystem.Current.AppDataDirectory, "google-drive-client.json");
+    public bool IsConfigured => !UsesClientConfiguration || _clientConfiguration.IsConfigured;
+    public bool CanChangeClientConfiguration => UsesClientConfiguration
+        && (!_clientConfiguration.HasBundledConfiguration || _clientConfiguration.HasOverride);
+    private static string ConfigurationPath => Path.Combine(FileSystem.Current.AppDataDirectory, "google-drive-client.json");
+    private readonly GoogleDriveClientConfiguration _clientConfiguration = new(
+        ConfigurationPath, typeof(CloudCharacterService).Assembly);
     public string WorkspaceRoot => Path.Combine(FileSystem.Current.AppDataDirectory, "Cloud Saves");
 
     public async Task ImportConfigurationAsync(CancellationToken cancellationToken = default)
@@ -33,13 +37,7 @@ public sealed class CloudCharacterService
         cancellationToken.ThrowIfCancellationRequested();
         if (picked is null) return;
         await using var stream = await picked.OpenReadAsync();
-        using var json = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
-        var client = json.RootElement.GetProperty("installed");
-        string? id = client.GetProperty("client_id").GetString();
-        if (string.IsNullOrWhiteSpace(id) || !id.EndsWith(".apps.googleusercontent.com", StringComparison.Ordinal))
-            throw new InvalidDataException("Choose a Google OAuth Desktop app client configuration.");
-        var config = new GoogleDriveClientOptions(id,
-            client.TryGetProperty("client_secret", out var secret) ? secret.GetString() : null);
+        var config = await GoogleDriveClientConfiguration.ReadDownloadAsync(stream, cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
         Builder.Presentation.Utilities.CharacterFileIo.SaveTextFileAtomic(ConfigurationPath, JsonSerializer.Serialize(config));
 #if !ANDROID
@@ -70,7 +68,7 @@ public sealed class CloudCharacterService
         if (!IsConfigured) throw new InvalidOperationException("Google Drive sign-in needs the app's desktop client configuration.");
         if (_authorization is null)
         {
-            var options = JsonSerializer.Deserialize<GoogleDriveClientOptions>(File.ReadAllText(ConfigurationPath))!;
+            var options = _clientConfiguration.Read();
             _authorization = new GoogleDriveAuthorization(_http, new SecureTokenStore(), options);
         }
         _store ??= new GoogleDriveCharacterDocumentStore(_http, _authorization);

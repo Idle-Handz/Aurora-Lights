@@ -31,7 +31,7 @@
         <MudButton OnClick="Connect" Disabled="_busy" Variant="Variant.Filled" Color="Color.Primary">
             Connect Google Drive
         </MudButton>
-        @if (Cloud.UsesClientConfiguration)
+        @if (Cloud.CanChangeClientConfiguration)
         {
             <MudButton OnClick="Configure" Disabled="@(_busy || !CanChangeSetup)">Change Google Drive setup</MudButton>
         }

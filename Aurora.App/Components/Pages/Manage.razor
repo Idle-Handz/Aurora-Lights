@@ -201,6 +201,7 @@
         IReadOnlyList<string> cleared;
         using (var scope = await CharacterContext.EnterAsync(tab))
         {
+            BuildService.FlushPendingSnapshotEdits(tab);
             CharacterManager.Current.SourcesManager.ApplyRestrictions(reprocess: true);
             // Restricting a source also takes back what it gave this character: its picks are
             // cleared here and its grants are suppressed by the grant policy.
@@ -224,6 +225,7 @@
         {
             using var scope = await CharacterContext.EnterAsync(tab);
             BuildService.ResnapTab(tab);
+            LoadFromActiveTab();
             return;
         }
 
@@ -296,6 +298,7 @@
         IReadOnlyList<string> cleared;
         using (var scope = await CharacterContext.EnterAsync(tab))
         {
+            BuildService.FlushPendingSnapshotEdits(tab);
             CharacterManager.Current.SourcesManager.LoadDefaults();
             cleared = RestrictedSelectionSweep.ClearRestrictedSelections();
             if (!await PersistSourceRestrictionsAsync(tab)) return;

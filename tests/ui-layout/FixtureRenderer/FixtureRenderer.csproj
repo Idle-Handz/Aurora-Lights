@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="bunit" Version="2.7.2" />
+    <PackageReference Include="MudBlazor" Version="7.16.0" GeneratePathProperty="true" />
+    <ProjectReference Include="../../../Aurora.Components/Aurora.Components.csproj" />
+    <Content Include="$(PkgMudBlazor)/staticwebassets/MudBlazor.min.css" Link="MudBlazor.min.css" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

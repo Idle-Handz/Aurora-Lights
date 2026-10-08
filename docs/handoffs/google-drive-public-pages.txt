@@ -1,0 +1,24 @@
+Continue the existing Aurora Reflections homepage project. Add public Terms of Service and Privacy Policy pages that match its design, and add clearly visible links to both in the homepage/footer. Preserve the homepage work already in progress.
+
+Purpose: Aurora Reflections, an Idle Handz character-building application, is preparing Google Drive cloud saves for general availability on Windows and Android, with desktop authorization also implemented for macOS. These pages will be linked from Google Auth Platform and the application. Use stable HTTPS URLs on the same controlled domain as the homepage, accessible without sign-in. Return the final canonical homepage, privacy, and terms URLs for the Google configuration and future in-app links. Do not invent URLs or claim that Google has approved the app.
+
+Before drafting, inspect the website's actual hosting, forms, cookies, analytics, and third-party integrations. If available, inspect the application repository at C:\Users\Ralla\source\repos\Aurora-Lights, especially docs\google-drive-cloud-saves.md and the Drive storage/authentication services. Distinguish the desktop/mobile application's practices from the website's practices. Ask for unresolved factual details such as the legal operator's name, support/privacy contact, jurisdiction, intended age audience, and any paid services. Do not fabricate those details or silently choose legal terms such as arbitration or governing law.
+
+Verified Drive feature behavior to use and recheck against the code:
+- Users authorize their own Google account. Aurora requests only https://www.googleapis.com/auth/drive.file, allowing access to files created by or explicitly authorized for the app, rather than general access to the user's whole Drive.
+- Aurora retrieves the connected Drive account identifier and email/display name to identify and bind the account.
+- Character XML and session data, including HP, spell slots and resources, are uploaded directly from the device to Google Drive. The Drive feature does not send these saves through an Idle Handz storage backend.
+- The device keeps local working copies, session sidecars, and recovery copies. Recovery copies are not automatically pruned. Cloud saves are explicit; this is not continuous background synchronization.
+- Desktop refresh tokens are stored using the platform's MAUI SecureStorage. Android uses Google Play services authorization and stores its account binding through SecureStorage. The bundled desktop client configuration identifies the app; it is not a user's account credential.
+- Disconnect removes the connection credentials/account binding for that installation. It does not delete Drive files, local/recovery files, or revoke access on other devices. Users can separately revoke Aurora's permission in their Google Account and delete their Drive files and local copies.
+
+The Privacy Policy should accurately explain data access, purpose, storage, sharing, retention/deletion, Google permissions, user controls, contact details, and the website's verified practices. Check Google's current API Services User Data Policy and Limited Use requirements and include applicable disclosures. Do not assert that the whole product has no analytics, data sharing, ads, AI use, or server processing without checking.
+
+The Terms should cover the actual application/service, user responsibilities, ownership and permitted use of user-provided characters/content, third-party Google services, save/backup expectations, applicable software/content licenses, and appropriate warranty/liability and change/contact provisions. Preserve existing open-source license rights and do not imply ownership of third-party tabletop content. Flag jurisdiction-dependent provisions for review rather than presenting the draft as guaranteed legal compliance.
+
+Check current official Google guidance:
+https://support.google.com/cloud/answer/15549049
+https://support.google.com/cloud/answer/13464321
+https://developers.google.com/terms/api-services-user-data-policy
+
+Implement the pages in the existing website, verify mobile/desktop readability and all footer links, and list any unresolved facts before calling the drafts final. Include an effective/updated date appropriate to actual publication. Do not create a new homepage or change Google Cloud settings. Prepare the pages for review; use the existing website's authorized deployment process for publication.

@@ -771,6 +771,7 @@
         {
             using (await CharacterContext.EnterAsync(tab))
             {
+                BuildService.FlushPendingSnapshotEdits(tab);
                 sourceIndex = AttackReminderCharacterService.EnsureWeaponAttackEntry(
                     tab.Character,
                     equipmentIdentifier);
@@ -830,6 +831,7 @@
             var migrated = new List<(SessionAttackReminder Reminder, int SourceIndex)>();
             using (await CharacterContext.EnterAsync(tab))
             {
+                BuildService.FlushPendingSnapshotEdits(tab);
                 foreach (var reminder in pending)
                 {
                     int sourceIndex = AttackReminderCharacterService.EnsureWeaponAttackEntry(
@@ -896,6 +898,7 @@
 
             using (await CharacterContext.EnterAsync(tab))
             {
+                BuildService.FlushPendingSnapshotEdits(tab);
                 AttackReminderCharacterService.AddAttackEntry(tab.Character, customReminder);
                 BuildService.ResnapTab(tab);
             }
@@ -949,6 +952,7 @@
         int sourceIndex = reminder.SourceAttackIndex;
         using (await CharacterContext.EnterAsync(tab))
         {
+            BuildService.FlushPendingSnapshotEdits(tab);
             if (sourceIndex < 0 && reminder.EquipmentIdentifier is { } equipmentIdentifier)
             {
                 sourceIndex = AttackReminderCharacterService.EnsureWeaponAttackEntry(

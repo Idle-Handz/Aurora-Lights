@@ -78,24 +78,32 @@ else
     private async Task OnCloudCharacterSelected((Builder.Presentation.Services.Storage.CharacterDocumentMetadata Metadata, CancellationToken Token) request)
     {
         var metadata = request.Metadata;
+        using var openingNavigation = new CharacterLoadNavigation(Nav, Tabs);
         var existing = Tabs.Tabs.FirstOrDefault(t => t.CloudSession?.Metadata.Reference.DocumentId == metadata.Reference.DocumentId);
         if (existing is not null)
         {
             string? warning = await BuildService.ReloadCloudTabAsync(existing);
             if (warning is not null) Snackbar.Add(warning, Severity.Warning);
-            Tabs.ActivateTab(existing);
             Tabs.NotifyChanged();
-            Nav.NavigateTo("/character");
+            openingNavigation.TryOpenOverview(existing);
             return;
         }
 
         var session = await Cloud.OpenAsync(metadata.Reference, request.Token);
+        if (!openingNavigation.IsCurrent)
+        {
+            session.Dispose();
+            return;
+        }
+        openingNavigation.Dispose();
         var file = new Builder.Presentation.Models.CharacterFile(session.FilePath);
         var tab = Tabs.OpenLoadingTab(file);
         tab.CloudSession = session;
+        using var navigation = new CharacterLoadNavigation(Nav, Tabs);
         try
         {
             var result = await CharSvc.LoadCharacterAsync(file);
+            if (!Tabs.Tabs.Contains(tab)) return;
             if (CharSvc.CurrentCharacter is null
                 || !CharacterFileIdentity.RefersToSameFile(CharSvc.CurrentCharacterFile, file))
                 throw new InvalidOperationException(result.Message);
@@ -107,7 +115,7 @@ else
             CharacterContext.ClaimAfterLoad(tab);
             Tabs.NotifyChanged();
             if (!result.Success) Snackbar.Add(result.Message, Severity.Warning);
-            Nav.NavigateTo("/character");
+            navigation.TryOpenOverview(tab);
         }
         catch { Tabs.CloseTab(tab); throw; }
     }
@@ -320,11 +328,13 @@ else
         _error = null;
         _warning = false;
         CharacterTab loadingTab = Tabs.OpenLoadingTab(characterFile);
-        Nav.NavigateTo("/build"); // stay on Build while loading spinner is shown
+        using var navigation = new CharacterLoadNavigation(Nav, Tabs, loadingRoute: "/build");
 
         try
         {
             (bool success, string message) = await CharSvc.LoadCharacterAsync(characterFile);
+            // Closing a loading tab must not attach or claim its late result.
+            if (!Tabs.Tabs.Contains(loadingTab)) return;
 
             if (success
                 && CharSvc.CurrentCharacter != null
@@ -337,7 +347,7 @@ else
                 loadingTab.IsLoading = false;
                 CharacterContext.ClaimAfterLoad(loadingTab);
                 Tabs.NotifyChanged();
-                Nav.NavigateTo("/character");
+                navigation.TryOpenOverview(loadingTab);
                 return;
             }
 
@@ -351,7 +361,7 @@ else
                 loadingTab.IsLoading = false;
                 CharacterContext.ClaimAfterLoad(loadingTab);
                 Tabs.NotifyChanged();
-                Nav.NavigateTo("/character");
+                navigation.TryOpenOverview(loadingTab);
                 string warningMessage = string.IsNullOrEmpty(message)
                     ? $"Warning: {characterFile.DisplayName} loaded with missing elements; some features may not display."
                     : message;

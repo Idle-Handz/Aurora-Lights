@@ -58,6 +58,74 @@ for (const route of routes) {
   });
 }
 
+test('Topbar search preserves imported content and the edited active character', async ({ page }, testInfo) => {
+  test.skip(
+    testInfo.project.name === 'chromium-mobile',
+    'Session continuity is covered once on desktop; mobile navigation has separate layout coverage.'
+  );
+  test.slow();
+
+  const markerName = 'Search Marker & + # ?';
+  const markerId = 'ID_TEST_TOPBAR_SESSION_MARKER';
+  await page.goto('/import', { waitUntil: 'networkidle' });
+  await page.locator('#phase0-upload').setInputFiles({
+    name: 'topbar-session-marker.xml',
+    mimeType: 'text/xml',
+    buffer: Buffer.from(`<elements>
+      <element name="Search Marker &amp; + # ?" type="Feat" source="Topbar Regression" id="${markerId}">
+        <description><p>Imported content must survive topbar search.</p></description>
+      </element>
+    </elements>`)
+  });
+  await expect(page.locator('.status-banner.success')).toContainText('Imported 1 file');
+
+  await page.locator('.web-nav-drawer a[href="/"]').click();
+  await page.getByLabel('Character Name', { exact: true }).fill('Search Session Character');
+  await page.getByRole('button', { name: 'Create New Character', exact: true }).click();
+  await expect(page).toHaveURL(/\/build$/, { timeout: 60_000 });
+
+  await page.locator('.web-nav-drawer a[href="/manage"]').click();
+  await page.locator('.character-info-editor').getByLabel('Character', { exact: true })
+    .fill('Edited Search Session Character');
+  await page.locator('.character-info-editor').getByLabel('Player', { exact: true })
+    .fill('Preserved Player');
+  await page.getByRole('button', { name: 'Save Session Changes', exact: true }).click();
+  await expect(page.locator('.character-library-status.success'))
+    .toHaveText('Character details saved in the current web session.');
+
+  await page.locator('.web-nav-drawer a[href="/workspace"]').click();
+  const sourceFile = page.locator('.detail-item').filter({
+    has: page.locator('.detail-label', { hasText: /^Source File$/ })
+  }).locator('strong');
+  await expect(sourceFile).toBeVisible();
+  const originalFileName = await sourceFile.innerText();
+
+  const topbarSearch = page.getByPlaceholder('Compendium search', { exact: true });
+  await topbarSearch.fill(markerName);
+  await topbarSearch.press('Enter');
+  await expect(page).toHaveURL(url =>
+    url.pathname === '/compendium' && url.searchParams.get('q') === markerName);
+  await expect(page.getByRole('cell', { name: markerName, exact: true })).toBeVisible();
+  await expect(page.locator('.origin-pill.session')).toHaveCount(1);
+
+  // The search button must use the same in-circuit navigation as Enter.
+  await topbarSearch.fill(markerId);
+  await page.getByRole('button', { name: 'Search compendium', exact: true }).click();
+  await expect(page).toHaveURL(url =>
+    url.pathname === '/compendium' && url.searchParams.get('q') === markerId);
+  await expect(page.getByRole('cell', { name: markerName, exact: true })).toBeVisible();
+
+  await page.locator('.web-nav-drawer a[href="/workspace"]').click();
+  await expect(page.locator('.detail-grid')).toContainText('Edited Search Session Character');
+  await expect(page.locator('.detail-grid')).toContainText('Preserved Player');
+  await expect(sourceFile).toHaveText(originalFileName);
+  const xmlCount = page.locator('.summary-item').filter({
+    has: page.locator('.summary-caption', { hasText: /^XML files$/ })
+  }).locator('.summary-number');
+  await expect(xmlCount).toHaveText('1');
+  await expect(page.locator('#blazor-error-ui')).toBeHidden();
+});
+
 test('Build picker distinguishes the current choice from unavailable owned choices', async ({ page }, testInfo) => {
   test.skip(
     testInfo.project.name === 'chromium-mobile',
