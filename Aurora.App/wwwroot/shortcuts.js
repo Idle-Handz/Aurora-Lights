@@ -1,5 +1,22 @@
 window.scrollElementToTop = function (el) { if (el) el.scrollTop = 0; };
 
+window.AuroraBack = {
+    dismissOverlay: function () {
+        // Hit-test the actual stack so a menu opened above a dialog closes first.
+        // Use the existing backdrop handler: dialogs that forbid dismissal keep
+        // their policy and consume Back instead of losing the underlying page.
+        const overlay = document.elementsFromPoint(innerWidth / 2, innerHeight / 2)
+            .map(el => el.closest('.mud-overlay, .mobile-more-backdrop'))
+            .find(el => el !== null);
+        if (overlay) {
+            overlay.click();
+            return true;
+        }
+        return Array.from(document.querySelectorAll('.mud-dialog'))
+            .some(el => el.getClientRects().length > 0);
+    }
+};
+
 window.AuroraTheme = {
     apply: function (themeId, isDark) {
         const root = document.documentElement;

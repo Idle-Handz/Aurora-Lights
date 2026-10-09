@@ -3,6 +3,7 @@ using Aurora.App.Services.Updates;
 using Builder.Presentation;
 using Builder.Presentation.Services;
 using Microsoft.Extensions.Logging;
+using Microsoft.Maui.LifecycleEvents;
 using MudBlazor.Services;
 
 namespace Aurora.App;
@@ -59,6 +60,12 @@ public static class MauiProgram
             });
 
         builder.Services.AddMauiBlazorWebView();
+#if ANDROID
+        builder.ConfigureLifecycleEvents(events => events.AddAndroid(android => android
+            .OnBackPressed(activity =>
+                MainActivity.GetMainPage(activity) is MainPage page &&
+                page.HandleAndroidBack(activity))));
+#endif
         builder.Services.AddMudServices();
 
         builder.Services.AddSingleton<MauiApplicationContext>(appContext);

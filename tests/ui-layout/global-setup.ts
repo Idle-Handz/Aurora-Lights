@@ -9,7 +9,7 @@ export default function globalSetup() {
   const output = 'tests/ui-layout/FixtureRenderer/bin/Debug/net10.0';
   copyFileSync('Aurora.App/wwwroot/app.css', `${output}/app.css`);
   copyFileSync('Aurora.App/Components/Layout/MainLayout.razor', `${output}/MainLayout.razor`);
-  for (const component of ['CharacterShopWorkspace', 'CharacterEquipmentWorkspace']) {
+  for (const component of ['CharacterShopWorkspace', 'CharacterEquipmentWorkspace', 'CharacterBrowser', 'CharacterBrowserCard', 'CharacterLibraryShell']) {
     copyFileSync(`Aurora.Components/obj/Debug/net10.0/scopedcss/Shared/${component}.razor.rz.scp.css`, `${output}/${component}.css`);
   }
 }

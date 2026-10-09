@@ -5,10 +5,12 @@ import path from 'node:path';
 const read = (file: string) => readFileSync(path.resolve(file), 'utf8');
 const output = 'tests/ui-layout/FixtureRenderer/bin/Debug/net10.0';
 
-async function showWorkspace(page: Page, component: 'shop' | 'equipment', options = { long: false, cloud: false }) {
-  const componentName = component === 'shop' ? 'CharacterShopWorkspace' : 'CharacterEquipmentWorkspace';
-  const markup = read(`${output}/${component === 'shop' ? `shop-${options.long ? 'long' : 'short'}` : 'equipment'}.html`);
-  const css = read(`${output}/${componentName}.css`);
+async function showWorkspace(page: Page, component: 'shop' | 'equipment' | 'characters', options = { long: false, cloud: false }) {
+  const componentNames = component === 'shop' ? ['CharacterShopWorkspace']
+    : component === 'equipment' ? ['CharacterEquipmentWorkspace']
+      : ['CharacterBrowser', 'CharacterBrowserCard', 'CharacterLibraryShell'];
+  const markup = read(`${output}/${component === 'shop' ? `shop-${options.long ? 'long' : 'short'}` : component}.html`);
+  const css = componentNames.map(name => read(`${output}/${name}.css`)).join('\n');
 
   // Use the App's actual Body wrapper, whose extra layout box caused the shop regression.
   // Keep only its conditional inert attribute under test control; fail clearly if the shell changes.
@@ -44,6 +46,36 @@ async function expectNoHorizontalOverflow(page: Page) {
   expect(await page.evaluate(() => Math.max(document.body.scrollWidth, document.documentElement.scrollWidth) - innerWidth))
     .toBeLessThanOrEqual(1);
 }
+
+test('character library header and actions fit a narrow viewport with 200% text', async ({ page }) => {
+  await page.setViewportSize({ width: 288, height: 624 });
+  await showWorkspace(page, 'characters');
+  // Android WebView text zoom enlarges text while retaining CSS layout dimensions.
+  await page.locator('.character-library-panel, .character-library-panel *').evaluateAll(elements => {
+    const sizes = elements.map(el => parseFloat(getComputedStyle(el).fontSize));
+    elements.forEach((el, i) => { (el as HTMLElement).style.fontSize = `${sizes[i] * 2}px`; });
+  });
+  const header = page.locator('.character-browser-header');
+  const panelBounds = (await page.locator('.character-library-panel').boundingBox())!;
+  const bounds = (await header.boundingBox())!;
+  expect(bounds.x).toBeGreaterThanOrEqual(panelBounds.x);
+  expect(bounds.x + bounds.width).toBeLessThanOrEqual(panelBounds.x + panelBounds.width);
+  expect(await header.evaluate(el => el.scrollWidth - el.clientWidth), 'Large text must wrap inside the library header')
+    .toBeLessThanOrEqual(1);
+  expect(await page.locator('.character-library-panel').evaluate(el => el.scrollWidth - el.clientWidth),
+    'Long character/group names and search controls must not expand the library grid')
+    .toBeLessThanOrEqual(1);
+  const actions = page.locator('.character-browser-create');
+  await expect(actions).toHaveCount(3);
+  for (const button of await actions.all()) {
+    expect(await button.evaluate(el => el.scrollWidth - el.clientWidth), 'Every action label must fit its button')
+      .toBeLessThanOrEqual(1);
+    await button.scrollIntoViewIfNeeded();
+    await button.click({ trial: true });
+    await expect(button).toBeInViewport({ ratio: 1 });
+  }
+  await expectNoHorizontalOverflow(page);
+});
 
 for (const scenario of [
   { width: 1440, height: 900, long: false, cloud: false },

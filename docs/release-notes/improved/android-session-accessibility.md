@@ -1,0 +1,1 @@
+Session controls now have clearer screen-reader names and tracked states, larger touch targets, and visible keyboard focus. Android supports pinch zoom, and large-text layouts keep character-library actions and Session menus within reach. Landscape layouts leave room for the system navigation bar, and Android Back dismisses open menus and dialogs before leaving the app.

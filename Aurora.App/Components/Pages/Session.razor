@@ -22,6 +22,8 @@
     </div>
     <MudTooltip Text="Save session">
         <MudIconButton Icon="@Icons.Material.Filled.Save"
+                       aria-label="Save session"
+                       Class="session-save-button"
                        Size="Size.Small"
                        Color="Color.Primary"
                        OnClick="SaveSession"
@@ -55,6 +57,8 @@
     <div class="session-card-title-row">
         <div class="session-card-title">Attack Reminders</div>
         <MudMenu Icon="@Icons.Material.Filled.AddCircleOutline"
+                 AriaLabel="Add attack reminder"
+                 PopoverClass="session-add-menu"
                  Size="Size.Small"
                  Dense="true"
                  AnchorOrigin="Origin.BottomRight"
@@ -107,11 +111,13 @@
                                        Size="Size.Small"
                                        Color="Color.Secondary"
                                        title="Edit reminder"
+                                       aria-label="@($"Edit {row.Name} attack reminder")"
                                        OnClick="() => OpenEditAttackReminderDialog(row)" />
                         <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
                                        Size="Size.Small"
                                        Color="Color.Secondary"
                                        title="Remove reminder"
+                                       aria-label="@($"Remove {row.Name} attack reminder")"
                                        OnClick="() => RemoveAttackReminder(row)" />
                     </span>
                 </div>
@@ -120,7 +126,7 @@
     }
 </div>
 
-<div class="detail-advancement-strip">
+<div class="detail-advancement-strip session-advancement-strip">
     <div class="detail-advancement-meta">
         <div class="section-label" style="margin-bottom: 6px;">Advancement</div>
         <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-disabled);">
@@ -178,14 +184,14 @@
     <div class="session-hp-row">
         @* Current HP *@
         <div class="session-hp-block">
-            <div class="session-hp-label">Current</div>
+            <label class="session-hp-label" for="session-current-hp">Current</label>
             <div class="session-hp-controls">
-                <button class="session-hp-btn" @onclick="() => AdjustHp(-1)">−</button>
-                <input class="session-hp-input" type="number"
+                <button class="session-hp-btn" aria-label="Decrease current hit points by 1" @onclick="() => AdjustHp(-1)">−</button>
+                <input id="session-current-hp" class="session-hp-input" type="number" aria-label="Current hit points"
                        value="@_s.CurrentHp"
                        min="0" max="@(_snap.MaxHp + _s.TempHp)"
                        @onchange="OnCurrentHpChanged" />
-                <button class="session-hp-btn" @onclick="() => AdjustHp(+1)">+</button>
+                <button class="session-hp-btn" aria-label="Increase current hit points by 1" @onclick="() => AdjustHp(+1)">+</button>
             </div>
             <div class="session-hp-max">/ @_snap.MaxHp</div>
         </div>
@@ -194,14 +200,14 @@
 
         @* Temp HP *@
         <div class="session-hp-block">
-            <div class="session-hp-label">Temp</div>
+            <label class="session-hp-label" for="session-temp-hp">Temp</label>
             <div class="session-hp-controls">
-                <button class="session-hp-btn" @onclick="() => AdjustTempHp(-1)">−</button>
-                <input class="session-hp-input" type="number"
+                <button class="session-hp-btn" aria-label="Decrease temporary hit points by 1" @onclick="() => AdjustTempHp(-1)">−</button>
+                <input id="session-temp-hp" class="session-hp-input" type="number" aria-label="Temporary hit points"
                        value="@_s.TempHp"
                        min="0" max="999"
                        @onchange="OnTempHpChanged" />
-                <button class="session-hp-btn" @onclick="() => AdjustTempHp(+1)">+</button>
+                <button class="session-hp-btn" aria-label="Increase temporary hit points by 1" @onclick="() => AdjustTempHp(+1)">+</button>
             </div>
         </div>
     </div>
@@ -215,8 +221,9 @@
 
         @* Inspiration *@
         <button class="session-inspiration-btn @(_s.Inspiration ? "inspiration-on" : "")"
+                aria-pressed="@(_s.Inspiration ? "true" : "false")"
                 @onclick="ToggleInspiration">
-            <span class="inspiration-star">★</span>
+            <span class="inspiration-star" aria-hidden="true">★</span>
             Inspiration
         </button>
 
@@ -229,6 +236,9 @@
                     var lvl = i;
                     <button class="session-pip @(lvl <= _s.Exhaustion ? "pip-exhaustion" : "pip-empty")"
                             title="@ExhaustionTooltip(lvl)"
+                            aria-label="@($"Exhaustion level {lvl}")"
+                            aria-pressed="@(lvl <= _s.Exhaustion ? "true" : "false")"
+                            aria-description="@($"Set exhaustion to level {(_s.Exhaustion == lvl ? lvl - 1 : lvl)}. {ExhaustionTooltip(lvl)}")"
                             @onclick="() => SetExhaustion(lvl)"></button>
                 }
             </div>
@@ -248,6 +258,9 @@
                         var idx = i;
                         <button class="session-pip @(idx <= _s.DeathSaveSuccesses ? "pip-success" : "pip-empty")"
                                 title="Death save success @idx of 3 (3 successes = stabilize)"
+                                aria-label="@($"Death save success {idx} of 3")"
+                                aria-pressed="@(idx <= _s.DeathSaveSuccesses ? "true" : "false")"
+                                aria-description="@($"Set death save successes to {(_s.DeathSaveSuccesses == idx ? idx - 1 : idx)}. Three successes stabilize the character.")"
                                 @onclick="() => ToggleDeathSuccess(idx)"></button>
                     }
                 </div>
@@ -260,6 +273,9 @@
                         var idx = i;
                         <button class="session-pip @(idx <= _s.DeathSaveFailures ? "pip-failure" : "pip-empty")"
                                 title="Death save failure @idx of 3 (3 failures = death)"
+                                aria-label="@($"Death save failure {idx} of 3")"
+                                aria-pressed="@(idx <= _s.DeathSaveFailures ? "true" : "false")"
+                                aria-description="@($"Set death save failures to {(_s.DeathSaveFailures == idx ? idx - 1 : idx)}. Three failures result in death.")"
                                 @onclick="() => ToggleDeathFailure(idx)"></button>
                     }
                 </div>
@@ -276,10 +292,12 @@
                 var c = cond;
                 <div class="session-condition-chip">
                     @c
-                    <button class="session-condition-remove" @onclick="() => RemoveCondition(c)">×</button>
+                    <button class="session-condition-remove" aria-label="@($"Remove {c} condition")" @onclick="() => RemoveCondition(c)">×</button>
                 </div>
             }
             <MudMenu Icon="@Icons.Material.Filled.Add"
+                     AriaLabel="Add condition"
+                     PopoverClass="session-add-menu"
                      Size="Size.Small"
                      Dense="true"
                      AnchorOrigin="Origin.BottomLeft"
@@ -302,31 +320,31 @@
     <div class="session-card-title">Currency</div>
     <div class="session-currency-strip">
         <label class="session-coin-cell">
-            <input class="session-coin-input" type="number" min="0"
+            <input class="session-coin-input" type="number" min="0" aria-label="Copper pieces"
                    value="@_snap.CoinCopper"
                    @onchange='e => OnCoinChanged("cp", e)' />
             <span class="session-coin-label">CP</span>
         </label>
         <label class="session-coin-cell">
-            <input class="session-coin-input" type="number" min="0"
+            <input class="session-coin-input" type="number" min="0" aria-label="Silver pieces"
                    value="@_snap.CoinSilver"
                    @onchange='e => OnCoinChanged("sp", e)' />
             <span class="session-coin-label">SP</span>
         </label>
         <label class="session-coin-cell">
-            <input class="session-coin-input" type="number" min="0"
+            <input class="session-coin-input" type="number" min="0" aria-label="Electrum pieces"
                    value="@_snap.CoinElectrum"
                    @onchange='e => OnCoinChanged("ep", e)' />
             <span class="session-coin-label">EP</span>
         </label>
         <label class="session-coin-cell">
-            <input class="session-coin-input" type="number" min="0"
+            <input class="session-coin-input" type="number" min="0" aria-label="Gold pieces"
                    value="@_snap.CoinGold"
                    @onchange='e => OnCoinChanged("gp", e)' />
             <span class="session-coin-label">GP</span>
         </label>
         <label class="session-coin-cell">
-            <input class="session-coin-input" type="number" min="0"
+            <input class="session-coin-input" type="number" min="0" aria-label="Platinum pieces"
                    value="@_snap.CoinPlatinum"
                    @onchange='e => OnCoinChanged("pp", e)' />
             <span class="session-coin-label">PP</span>
@@ -356,6 +374,9 @@
                         {
                             var idx = i;
                             <button class="session-pip @(idx <= used ? "pip-slot-used" : "pip-slot-free")"
+                                    aria-label="@($"{OrdinalLevel(level)}-level spell slot {idx} of {total} used")"
+                                    aria-pressed="@(idx <= used ? "true" : "false")"
+                                    aria-description="@($"Set used slots to {(used == idx ? idx - 1 : idx)}. {total - used} of {total} slots are currently available.")"
                                     @onclick="() => ToggleSlot(level, idx)"></button>
                         }
                     </div>
@@ -371,6 +392,7 @@
     <div class="session-card-title-row">
         <div class="session-card-title">Resources</div>
         <MudIconButton Icon="@Icons.Material.Filled.AddCircleOutline"
+                       aria-label="Add resource"
                        Size="Size.Small"
                        OnClick="OpenAddResourceDialog"
                        Style="color: var(--mud-palette-primary); padding: 2px;" />
@@ -396,9 +418,9 @@
                     @if (r.UseNumeric)
                     {
                         <div class="session-resource-numeric">
-                            <button class="session-hp-btn" @onclick="() => AdjustResource(r, -1)">−</button>
+                            <button class="session-hp-btn" aria-label="@($"Expend one {r.Name}")" @onclick="() => AdjustResource(r, -1)">−</button>
                             <span class="session-resource-val">@r.Remaining/@r.Max</span>
-                            <button class="session-hp-btn" @onclick="() => AdjustResource(r, +1)">+</button>
+                            <button class="session-hp-btn" aria-label="@($"Recover one {r.Name}")" @onclick="() => AdjustResource(r, +1)">+</button>
                         </div>
                     }
                     else
@@ -408,16 +430,21 @@
                             {
                                 var idx = i;
                                 <button class="session-pip @(idx <= r.Used ? "pip-resource-used" : "pip-slot-free")"
+                                        aria-label="@($"{r.Name} resource {idx} of {r.Max} used")"
+                                        aria-pressed="@(idx <= r.Used ? "true" : "false")"
+                                        aria-description="@($"Set used resources to {(r.Used == idx ? idx - 1 : idx)}. {r.Remaining} of {r.Max} are currently available.")"
                                         @onclick="() => ToggleResource(r, idx)"></button>
                             }
                         </div>
                     }
                     <div class="session-resource-actions">
                         <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                       aria-label="@($"Edit {r.Name} resource")"
                                        Size="Size.Small"
                                        OnClick="() => OpenEditResourceDialog(r)"
                                        Style="color: var(--mud-palette-text-disabled); padding: 2px;" />
                         <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
+                                       aria-label="@($"Remove {r.Name} resource")"
                                        Size="Size.Small"
                                        OnClick="() => RemoveResource(r)"
                                        Style="color: var(--mud-palette-text-disabled); padding: 2px;" />
@@ -433,12 +460,14 @@
     <div class="session-card-title">Notes</div>
     <div class="session-notes-row">
         <textarea class="session-notes-area"
+                  aria-label="Notes"
                   rows="4"
                   placeholder="Notes…"
                   value="@_snap.Notes1"
                   @oninput="args => OnNotesInput(1, args.Value?.ToString() ?? string.Empty)"
                   @onchange="args => SaveNotesInput(1, args.Value?.ToString() ?? string.Empty)"></textarea>
         <textarea class="session-notes-area"
+                  aria-label="More notes"
                   rows="4"
                   placeholder="More notes…"
                   value="@_snap.Notes2"
@@ -458,8 +487,7 @@
     <MudButton Variant="Variant.Filled"
                Color="Color.Primary"
                StartIcon="@Icons.Material.Filled.NightShelter"
-               OnClick="DoLongRest"
-               Style="margin-left: 10px;">
+               OnClick="DoLongRest">
         Long Rest
     </MudButton>
 </div>
