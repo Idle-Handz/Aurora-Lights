@@ -121,3 +121,14 @@ jobs:
 
       - name: Run App workspace layout regressions
         run: npm run test:ui-layout
+
+      - name: Upload browser failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-failure-diagnostics
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7

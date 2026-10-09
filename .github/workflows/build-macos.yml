@@ -114,6 +114,8 @@ jobs:
         env:
           GOOGLE_DRIVE_DESKTOP_CLIENT_JSON: ${{ secrets.GOOGLE_DRIVE_DESKTOP_CLIENT_JSON }}
         run: ./tools/prepare-google-drive-client.ps1
+
+      - name: Publish (maccatalyst-arm64)
         run: |
           dotnet publish "$PROJECT" \
             -f net10.0-maccatalyst \

@@ -6,6 +6,19 @@ const legacyMonkFixture = path.resolve(
   'Aurora.Tests/Fixtures/Characters/legacy-edited-arilith.dnd5e'
 );
 
+const characterTest = test.extend<{ clearCharacterSession: void }>({
+  clearCharacterSession: [async ({ page }, use, testInfo) => {
+    await use();
+    if (testInfo.status === 'skipped') return;
+
+    // A closed browser leaves its Blazor circuit retained for reconnection. Release
+    // the shared character engine through the owning circuit before closing it.
+    await page.locator('.web-nav-drawer a[href="/import"]').click();
+    await page.getByRole('button', { name: 'Clear Session Imports', exact: true }).click();
+    await expect(page.locator('.status-banner.success')).toHaveText('Session workspace cleared.');
+  }, { auto: true }]
+});
+
 const routes = [
   { path: '/', heading: 'Characters' },
   { path: '/overview', heading: 'Web workspace' },
@@ -58,7 +71,7 @@ for (const route of routes) {
   });
 }
 
-test('Topbar search preserves imported content and the edited active character', async ({ page }, testInfo) => {
+characterTest('Topbar search preserves imported content and the edited active character', async ({ page }, testInfo) => {
   test.skip(
     testInfo.project.name === 'chromium-mobile',
     'Session continuity is covered once on desktop; mobile navigation has separate layout coverage.'
@@ -126,7 +139,7 @@ test('Topbar search preserves imported content and the edited active character',
   await expect(page.locator('#blazor-error-ui')).toBeHidden();
 });
 
-test('Build picker distinguishes the current choice from unavailable owned choices', async ({ page }, testInfo) => {
+characterTest('Build picker distinguishes the current choice from unavailable owned choices', async ({ page }, testInfo) => {
   test.skip(
     testInfo.project.name === 'chromium-mobile',
     'Picker behavior is covered once on desktop; mobile navigation has separate layout coverage.'
