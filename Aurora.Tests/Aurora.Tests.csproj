@@ -91,6 +91,7 @@
     <Compile Include="..\Aurora.App\Services\CharacterFileSaveExtensions.cs" Link="Linked\CharacterFileSaveExtensions.cs" />
     <Compile Include="..\Aurora.App\Services\BuildService*.cs" Link="Linked\%(Filename)%(Extension)" />
     <Compile Include="..\Aurora.App\Services\StartingEquipmentDataLoader.cs" Link="Linked\StartingEquipmentDataLoader.cs" />
+    <Compile Include="..\Aurora.App\Services\PdfImportService.cs" Link="Linked\PdfImportService.cs" />
   </ItemGroup>
 
 </Project>

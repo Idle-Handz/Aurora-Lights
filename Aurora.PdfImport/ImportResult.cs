@@ -41,6 +41,7 @@ public sealed class ImportResult
     public int Charisma     { get; set; } = 8;
 
     public int Level { get; set; } = 1;
+    public List<ParsedClass> Classes { get; set; } = [];
 
     // Display properties (for the file header).
     public string DisplayRace       { get; set; } = "";
@@ -66,6 +67,7 @@ public sealed record ResolvedElement
     public string Name       { get; set; } = "";
     public string? PackageName { get; set; }
     public int    Level      { get; set; } = 1;    // level at which this was selected
+    public string? OwnerClass { get; set; }
 }
 
 public sealed class ImportWarning

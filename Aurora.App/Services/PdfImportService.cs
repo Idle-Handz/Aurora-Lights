@@ -52,7 +52,8 @@ public sealed class PdfImportService
             return engine.Infer(sheet);
         });
 
-        sheet.PortraitLocalPath = await TryExtractAndSavePdfPortraitAsync(pdfPath, sheet.CharacterName);
+        sheet.StagedPortrait = await TryExtractAndSavePdfPortraitAsync(pdfPath);
+        sheet.PortraitLocalPath = sheet.StagedPortrait?.Path;
 
         return (sheet, result);
     }
@@ -79,12 +80,13 @@ public sealed class PdfImportService
 
         // Try to download the portrait; failure is non-fatal — falls back to placeholder.
         if (!string.IsNullOrWhiteSpace(sheet.PortraitUrl))
-            sheet.PortraitLocalPath = await TryDownloadPortraitAsync(sheet.PortraitUrl, sheet.CharacterName);
+            sheet.StagedPortrait = await TryDownloadPortraitAsync(sheet.PortraitUrl);
+        sheet.PortraitLocalPath = sheet.StagedPortrait?.Path;
 
         return (sheet, result);
     }
 
-    private static async Task<string?> TryDownloadPortraitAsync(string url, string? characterName)
+    private static async Task<StagedImportPortrait?> TryDownloadPortraitAsync(string url)
     {
         try
         {
@@ -93,7 +95,7 @@ public sealed class PdfImportService
 
             using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
             byte[] data = await http.GetByteArrayAsync(url);
-            return await SavePortraitBytesAsync(data, ext, characterName);
+            return await StagedImportPortrait.CreateAsync(data, ext);
         }
         catch
         {
@@ -101,34 +103,13 @@ public sealed class PdfImportService
         }
     }
 
-    private static async Task<string?> TryExtractAndSavePdfPortraitAsync(string pdfPath, string? characterName)
+    private static async Task<StagedImportPortrait?> TryExtractAndSavePdfPortraitAsync(string pdfPath)
     {
         try
         {
             var portrait = await Task.Run(() => DndBeyondPdfParser.TryExtractPortrait(pdfPath));
             if (portrait == null) return null;
-            return await SavePortraitBytesAsync(portrait.Value.Bytes, portrait.Value.Extension, characterName);
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    private static async Task<string?> SavePortraitBytesAsync(byte[] data, string ext, string? characterName)
-    {
-        try
-        {
-            string portraitsDir = DataManager.Current.UserDocumentsPortraitsDirectory;
-            Directory.CreateDirectory(portraitsDir);
-
-            string safeName = string.Concat(
-                (characterName ?? "portrait").Where(c => !Path.GetInvalidFileNameChars().Contains(c))).Trim();
-            if (string.IsNullOrEmpty(safeName)) safeName = "portrait";
-
-            string filePath = Path.Combine(portraitsDir, safeName + ext);
-            await File.WriteAllBytesAsync(filePath, data);
-            return filePath;
+            return await StagedImportPortrait.CreateAsync(portrait.Value.Bytes, portrait.Value.Extension);
         }
         catch
         {
@@ -144,8 +125,33 @@ public sealed class PdfImportService
         ImportResult result,
         string outputPath)
     {
+        CharacterImportSupport.EnsureSupported(sheet);
         using var scope = await CharacterContext.EnterForLoadAsync();
-        await BuildAndSaveCharacterFileAsync(sheet, result, outputPath);
+        string fullOutputPath = Path.GetFullPath(outputPath);
+        string temporaryPath = Path.Combine(Path.GetDirectoryName(fullOutputPath)!,
+            $".aurora-import-{Guid.NewGuid():N}.dnd5e");
+        string? previewPath = sheet.PortraitLocalPath;
+        try
+        {
+            if (sheet.StagedPortrait is { } portrait)
+                sheet.PortraitLocalPath = portrait.CopyForCommit(
+                    DataManager.Current.UserDocumentsPortraitsDirectory, sheet.CharacterName);
+
+            await BuildAndSaveCharacterFileAsync(sheet, result, temporaryPath);
+            File.Move(temporaryPath, fullOutputPath, overwrite: true);
+            sheet.StagedPortrait?.AcceptCommit();
+            sheet.StagedPortrait = null;
+        }
+        catch
+        {
+            sheet.StagedPortrait?.RollbackCommit();
+            sheet.PortraitLocalPath = previewPath;
+            throw;
+        }
+        finally
+        {
+            if (File.Exists(temporaryPath)) File.Delete(temporaryPath);
+        }
     }
 
     private static async Task BuildAndSaveCharacterFileAsync(
@@ -161,8 +167,8 @@ public sealed class PdfImportService
 
         List<ResolvedElement> resolved = GetResolvedElements(result);
         List<PendingImportSelection> pending = resolved
-            .Where(e => !string.Equals(e.TypeName, "Level", StringComparison.OrdinalIgnoreCase))
-            .Select(e => new PendingImportSelection(e))
+            .Where(e => e.TypeName is not ("Level" or "Multiclass"))
+            .Select(e => new PendingImportSelection(e, ResolveOwnerClassId(e.OwnerClass, resolved)))
             .ToList();
 
         RequireSelection(pending, "Race");
@@ -171,9 +177,13 @@ public sealed class PdfImportService
 
         ApplyPendingSelections(pending, cm.Character.Level);
 
-        while (cm.Character.Level < Math.Max(1, result.Level))
+        int mainTarget = result.Classes.Count > 0 ? result.Classes[0].Level : Math.Max(1, result.Level);
+        while (cm.Character.Level < mainTarget)
         {
+            int before = cm.Character.Level;
             cm.LevelUpMain();
+            if (cm.Character.Level != before + 1)
+                throw new InvalidOperationException("The imported main class could not gain its requested level.");
             try { cm.ReprocessCharacter(); }
             catch (Exception ex)
             {
@@ -183,7 +193,51 @@ public sealed class PdfImportService
             ApplyPendingSelections(pending, cm.Character.Level);
         }
 
+        if (result.Classes.Count > 1)
+        {
+            var option = DataManager.Current.ElementsCollection.GetElement(Builder.Data.Strings.InternalOptions.AllowMulticlassing)
+                ?? throw new InvalidOperationException("Multiclassing core content is missing. Refresh content before importing.");
+            cm.RegisterElement(option);
+            foreach (var importedClass in result.Classes.Skip(1))
+            {
+                var choice = resolved.SingleOrDefault(element => element.TypeName == "Multiclass"
+                    && string.Equals(element.OwnerClass, importedClass.Name, StringComparison.OrdinalIgnoreCase))
+                    ?? throw new InvalidOperationException($"Resolve the Multiclass selection for {importedClass.Name} before importing.");
+                int before = cm.Character.Level;
+                cm.NewMulticlass();
+                if (cm.Character.Level != before + 1)
+                    throw new InvalidOperationException($"Could not open a multiclass level for {importedClass.Name}.");
+                var selection = new PendingImportSelection(choice);
+                if (!TryApplySelection(selection))
+                    throw new InvalidOperationException($"Could not apply the imported multiclass {importedClass.Name}.");
+                cm.ReprocessCharacter();
+                var progression = cm.ClassProgressionManagers.SingleOrDefault(manager => manager.IsMulticlass
+                    && manager.ClassElement?.Id == choice.AuroraId)
+                    ?? throw new InvalidOperationException($"The {importedClass.Name} progression was not created.");
+                ApplyPendingSelections(pending, cm.Character.Level);
+                while (progression.ProgressionLevel < importedClass.Level)
+                {
+                    before = cm.Character.Level;
+                    int classBefore = progression.ProgressionLevel;
+                    cm.LevelUpMulti((Multiclass)progression.ClassElement);
+                    if (cm.Character.Level != before + 1 || progression.ProgressionLevel != classBefore + 1)
+                        throw new InvalidOperationException($"Could not add the requested level of {importedClass.Name}.");
+                    cm.ReprocessCharacter();
+                    ApplyPendingSelections(pending, cm.Character.Level);
+                }
+            }
+        }
+
         ApplyPendingSelections(pending, cm.Character.Level, includeDeferred: true);
+
+        foreach (var importedClass in result.Classes.Where(importedClass => !string.IsNullOrWhiteSpace(importedClass.Subclass)))
+        {
+            if (!pending.Any(selection => selection.Element.TypeName == "Archetype" && selection.Applied
+                    && string.Equals(selection.Element.OwnerClass, importedClass.Name, StringComparison.OrdinalIgnoreCase)))
+                throw new InvalidOperationException($"The subclass {importedClass.Subclass} could not be applied to {importedClass.Name}. Resolve its content match before importing.");
+        }
+        if (cm.Character.Level != Math.Max(1, result.Level))
+            throw new InvalidOperationException("The imported class levels do not match the export. No character file was replaced.");
 
         ApplyEditableFields(cm.Character, sheet, result);
         HarmonizeBaseAbilityScores(cm.Character, result);
@@ -192,7 +246,8 @@ public sealed class PdfImportService
         AppendImportDiagnostics(result, pending, sheet, resolved);
 
         var file = new CharacterFile(outputPath);
-        file.Save(cm.Character);
+        if (!file.Save(cm.Character))
+            throw new IOException("The imported character could not be written.");
 
         var snapshot = CharacterSnapshot.From(cm.Character);
         OverrideSnapshotFields(snapshot, sheet, result);
@@ -252,7 +307,7 @@ public sealed class PdfImportService
                 .ThenBy(p => p.Element.Level)
                 .ThenBy(p => p.Element.Name, StringComparer.OrdinalIgnoreCase))
             {
-                if (!ShouldAttemptSelection(selection.Element, out string? skipReason))
+                if (!ShouldAttemptSelection(selection, out string? skipReason))
                 {
                     selection.LastFailureReason ??= skipReason;
                     continue;
@@ -269,15 +324,15 @@ public sealed class PdfImportService
         while (progressed);
     }
 
-    private static bool ShouldAttemptSelection(ResolvedElement element, out string? skipReason)
+    private static bool ShouldAttemptSelection(PendingImportSelection selection, out string? skipReason)
     {
+        var element = selection.Element;
         skipReason = null;
         if (!string.Equals(element.TypeName, "Spell", StringComparison.OrdinalIgnoreCase))
             return true;
 
-        SpellcastingInformation? spellInfo = CharacterManager.Current
-            .GetSpellcastingInformations()
-            .FirstOrDefault(x => !x.IsExtension);
+        var profiles = GetOwnedSpellcastingProfiles(element.OwnerClass, selection.OwnerClassId).ToArray();
+        SpellcastingInformation? spellInfo = profiles.Length == 1 ? profiles[0] : null;
         if (spellInfo == null)
             return true;
 
@@ -305,6 +360,8 @@ public sealed class PdfImportService
 
         foreach (SelectRule rule in CharacterManager.Current.SelectionRules
             .Where(r => string.Equals(r.Attributes.Type, selection.Element.TypeName, StringComparison.OrdinalIgnoreCase))
+            .Where(r => selection.Element.TypeName is not ("Archetype" or "Spell") || string.IsNullOrWhiteSpace(selection.Element.OwnerClass)
+                || RuleBelongsToClass(r, selection.OwnerClassId))
             .OrderBy(r => r.Attributes.RequiredLevel)
             .ThenBy(r => r.Attributes.Name, StringComparer.OrdinalIgnoreCase))
         {
@@ -340,6 +397,34 @@ public sealed class PdfImportService
                 ? "A rule existed, but the resolved element was not offered by any current option list."
                 : "Matching rules were already filled or unavailable.";
         return false;
+    }
+
+    private static bool RuleBelongsToClass(SelectRule rule, string? classId) =>
+        CharacterManager.Current.ClassProgressionManagers.Any(progression =>
+            classId != null && string.Equals(progression.ClassElement?.Id, classId, StringComparison.OrdinalIgnoreCase)
+            && progression.SelectionRules.Any(candidate => candidate.UniqueIdentifier == rule.UniqueIdentifier));
+
+    private static string? ResolveOwnerClassId(string? source, IReadOnlyList<ResolvedElement> resolved)
+    {
+        if (string.IsNullOrWhiteSpace(source)) return null;
+        // Keep exported names for display, but bind ownership to the user's resolved content
+        // choice. A suffix such as "(legacy)" must not become a second engine class name.
+        var ids = resolved.Where(element => (element.TypeName is "Class" or "Multiclass")
+                && string.Equals(element.OwnerClass ?? element.Name, source, StringComparison.OrdinalIgnoreCase))
+            .Select(element => element.AuroraId).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+        return ids.Length == 1 ? ids[0] : null;
+    }
+
+    private static IEnumerable<SpellcastingInformation> GetOwnedSpellcastingProfiles(string? source, string? classId)
+    {
+        var manager = CharacterManager.Current;
+        if (classId != null)
+            return manager.ClassProgressionManagers
+                .Where(progression => string.Equals(progression.ClassElement?.Id, classId, StringComparison.OrdinalIgnoreCase))
+                .SelectMany(progression => progression.SpellcastingInformations)
+                .Where(profile => !profile.IsExtension);
+        return manager.GetSpellcastingInformations().Where(profile => !profile.IsExtension
+            && (string.IsNullOrWhiteSpace(source) || string.Equals(profile.Name, source, StringComparison.OrdinalIgnoreCase)));
     }
 
     private static void ApplyEditableFields(
@@ -453,12 +538,6 @@ public sealed class PdfImportService
         IReadOnlyList<ResolvedElement> resolvedElements,
         ImportResult result)
     {
-        SpellcastingInformation? spellInfo = CharacterManager.Current
-            .GetSpellcastingInformations()
-            .FirstOrDefault(x => !x.IsExtension);
-        if (spellInfo == null || !spellInfo.Prepare)
-            return;
-
         var byName = resolvedElements
             .Where(e => string.Equals(e.TypeName, "Spell", StringComparison.OrdinalIgnoreCase))
             .GroupBy(e => e.Name, StringComparer.OrdinalIgnoreCase)
@@ -467,6 +546,14 @@ public sealed class PdfImportService
         int missedPrepared = 0;
         foreach (ParsedSpell spell in sheet.Spells.Where(s => s.IsPrepared))
         {
+            var candidates = GetOwnedSpellcastingProfiles(spell.Source, ResolveOwnerClassId(spell.Source, resolvedElements))
+                .Where(profile => profile.Prepare).ToArray();
+            var spellInfo = candidates.Length == 1 ? candidates[0] : null;
+            if (spellInfo is null)
+            {
+                missedPrepared++;
+                continue;
+            }
             if (!byName.TryGetValue(spell.Name, out string? id))
             {
                 missedPrepared++;
@@ -477,7 +564,7 @@ public sealed class PdfImportService
 
         if (missedPrepared > 0)
             result.ImportDiagnostics.Add(
-                $"Note: {missedPrepared} prepared spell(s) could not be marked as prepared (name mismatch between sheet and resolved spell list).");
+                $"Note: {missedPrepared} prepared spell(s) need review because their spell or casting class could not be resolved unambiguously.");
     }
 
     private static void OverrideSnapshotFields(
@@ -562,9 +649,14 @@ public sealed class PdfImportService
 
     private sealed class PendingImportSelection
     {
-        public PendingImportSelection(ResolvedElement element) => Element = element;
+        public PendingImportSelection(ResolvedElement element, string? ownerClassId = null)
+        {
+            Element = element;
+            OwnerClassId = ownerClassId;
+        }
 
         public ResolvedElement Element { get; }
+        public string? OwnerClassId { get; }
         public bool Applied { get; set; }
         public string? LastFailureReason { get; set; }
 

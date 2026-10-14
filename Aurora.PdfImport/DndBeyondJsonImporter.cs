@@ -36,6 +36,7 @@ public static class DndBeyondJsonImporter
             ch = c;
 
         var sheet = new ParsedCharacterSheet();
+        var classNamesById = new Dictionary<int, string>();
 
         sheet.CharacterName = Str(ch, "name");
 
@@ -51,7 +52,6 @@ public static class DndBeyondJsonImporter
         if (ch.TryGetProperty("classes", out var classes) &&
             classes.ValueKind == JsonValueKind.Array)
         {
-            int    totalLevel      = 0;
             string? primaryName   = null;
             int     primaryLevel  = 0;
             bool    hasStartingClass = false;
@@ -59,14 +59,15 @@ public static class DndBeyondJsonImporter
             foreach (var cls in classes.EnumerateArray())
             {
                 int lvl = Int(cls, "level") ?? 0;
-                totalLevel += lvl;
 
                 string? name = null;
                 if (cls.TryGetProperty("definition", out var clsDef))
                     name = Str(clsDef, "name");
+                if (Int(cls, "id") is int classId && !string.IsNullOrWhiteSpace(name))
+                    classNamesById[classId] = name;
 
                 // Subclass — emit as a sub-feature so InferSubclass can resolve it.
-                if (cls.TryGetProperty("subclassDefinition", out var subDef))
+                if (cls.TryGetProperty("subclassDefinition", out var subDef) && subDef.ValueKind == JsonValueKind.Object)
                 {
                     string? subName = Str(subDef, "name");
                     if (!string.IsNullOrWhiteSpace(subName))
@@ -74,6 +75,10 @@ public static class DndBeyondJsonImporter
                 }
 
                 bool isStarting = Bool(cls, "isStartingClass") ?? false;
+                sheet.Classes.Add(new ParsedClass(name ?? "Unknown class", lvl,
+                    cls.TryGetProperty("subclassDefinition", out var subclass)
+                        && subclass.ValueKind == JsonValueKind.Object ? Str(subclass, "name") : null,
+                    isStarting));
                 if (isStarting || (!hasStartingClass && (primaryName == null || lvl > primaryLevel)))
                 {
                     primaryName  = name;
@@ -83,7 +88,7 @@ public static class DndBeyondJsonImporter
             }
 
             sheet.ClassName  = primaryName;
-            sheet.ClassLevel = totalLevel;
+            sheet.ClassLevel = primaryLevel;
         }
 
         // ── Background ────────────────────────────────────────────────────────
@@ -154,7 +159,7 @@ public static class DndBeyondJsonImporter
             if (spellsEl.TryGetProperty("class", out var classSources) && classSources.ValueKind == JsonValueKind.Array)
                 foreach (var src in classSources.EnumerateArray())
                     if (src.TryGetProperty("spells", out var list))
-                        AddSpells(list, sheet);
+                        AddSpells(list, sheet, ClassSpellSource(src, classNamesById, sheet));
 
             // Spells granted by race, feats, or items.
             foreach (string key in (string[])["race", "feat", "item"])
@@ -166,7 +171,7 @@ public static class DndBeyondJsonImporter
         if (ch.TryGetProperty("classSpells", out var classSpellsEl) && classSpellsEl.ValueKind == JsonValueKind.Array)
             foreach (var entry in classSpellsEl.EnumerateArray())
                 if (entry.TryGetProperty("spells", out var list))
-                    AddSpells(list, sheet);
+                    AddSpells(list, sheet, ClassSpellSource(entry, classNamesById, sheet));
 
         // ── Inventory ─────────────────────────────────────────────────────────
         if (ch.TryGetProperty("inventory", out var inventory) &&
@@ -379,7 +384,14 @@ public static class DndBeyondJsonImporter
 
     // ── Spell helpers ─────────────────────────────────────────────────────────
 
-    private static void AddSpells(JsonElement spellArray, ParsedCharacterSheet sheet)
+    private static string? ClassSpellSource(JsonElement source, IReadOnlyDictionary<int, string> classes, ParsedCharacterSheet sheet)
+    {
+        int? id = Int(source, "characterClassId") ?? Int(source, "classId");
+        return id.HasValue && classes.TryGetValue(id.Value, out string? name) ? name
+            : sheet.Classes.Count == 1 ? sheet.Classes[0].Name : null;
+    }
+
+    private static void AddSpells(JsonElement spellArray, ParsedCharacterSheet sheet, string? source = null)
     {
         if (spellArray.ValueKind != JsonValueKind.Array) return;
         foreach (var entry in spellArray.EnumerateArray())
@@ -397,7 +409,7 @@ public static class DndBeyondJsonImporter
             bool prepared = (Bool(entry, "prepared") ?? false)
                          || (Bool(entry, "alwaysPrepared") ?? false);
 
-            sheet.Spells.Add(new ParsedSpell { Name = name, Level = level, IsPrepared = prepared });
+            sheet.Spells.Add(new ParsedSpell { Name = name, Level = level, IsPrepared = prepared, Source = source });
         }
     }
 

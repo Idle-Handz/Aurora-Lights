@@ -49,6 +49,48 @@ public sealed record CharacterFileWriteResult(
 public static class CharacterFileWriteCoordinator
 {
     /// <summary>
+    /// Completes the sidecar and any changed session-backed XML fields as one awaited operation.
+    /// Pending state belongs to the tab, so navigation cannot hide a failure from close handling.
+    /// </summary>
+    public static async Task<CharacterFileWriteResult> SaveSessionAsync(
+        CharacterTab tab, SessionState session, CharacterSnapshot snapshot)
+    {
+        long version = tab.SessionWrites.BeginChange();
+        var edits = SessionCharacterEdits.From(snapshot);
+        await tab.FileSaveSemaphore.WaitAsync();
+        try
+        {
+            // A full save may have completed this edit while this request waited for the file.
+            if (tab.SessionWrites.IsAlreadySaved(version))
+                return CharacterFileWriteResult.Saved("Session");
+            tab.SessionWrites.InitializeFromFile(tab.File);
+            if (!SessionStore.Save(tab.File.FilePath, session))
+                return CharacterFileWriteResult.Failed("Session state");
+
+            bool currencyChanged = tab.SessionWrites.NeedsCurrencyPatch(edits);
+            bool notesChanged = tab.SessionWrites.NeedsNotesPatch(edits);
+            if (currencyChanged || notesChanged)
+            {
+                var patch = edits.ToSnapshot();
+                var result = await Task.Run(() => WriteWithoutGate(tab.File, "Session currency and notes", () =>
+                    (!currencyChanged || tab.File.SaveCurrency(patch)) && (!notesChanged || tab.File.SaveNotes(patch))));
+                if (!result.Succeeded) return result;
+            }
+            tab.SessionWrites.Saved(version, edits);
+            return CharacterFileWriteResult.Saved("Session");
+        }
+        catch (Exception ex)
+        {
+            return CharacterFileWriteResult.Failed("Session", ex);
+        }
+        finally
+        {
+            tab.CloudSession?.InvalidatePendingState();
+            tab.FileSaveSemaphore.Release();
+        }
+    }
+
+    /// <summary>
     /// Writes only when <paramref name="targetFile"/> is the same physical file owned by the
     /// active tab. This is the final guard against a stale service-level file reference sending
     /// one tab's in-memory character to another tab's path.

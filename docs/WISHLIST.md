@@ -6,6 +6,11 @@ An actionable to-do list organized by theme. Check items off as they land. Use
 `CLIENT_FEATURE_COMPARISON.md` as the reference for current parity status and
 `ROADMAP.md` for the broader strategic direction.
 
+Concrete findings from the October solution audit and correctness review are
+tracked in [the audit findings backlog](BACKLOG.md), including verification
+requirements and completed fixes. Use those IDs for that work rather than
+duplicating bug status here; this wishlist retains broader feature requests.
+
 ---
 
 ## Aurora.Web — Parity Gaps vs. Aurora: Reflections

@@ -1,0 +1,25 @@
+<div class="narrative-field">
+    <label class="narrative-label" for="@_fieldId">@Label</label>
+    @if (Lines > 1)
+    {
+        <textarea id="@_fieldId" class="narrative-textarea"
+                  rows="@Lines" value="@Value"
+                  @oninput="e => ValueChanged.InvokeAsync(e.Value?.ToString() ?? string.Empty)"
+                  @onchange="() => OnCommitted.InvokeAsync()"></textarea>
+    }
+    else
+    {
+        <input id="@_fieldId" class="narrative-input" type="text" value="@Value"
+               @oninput="e => ValueChanged.InvokeAsync(e.Value?.ToString() ?? string.Empty)"
+               @onchange="() => OnCommitted.InvokeAsync()" />
+    }
+</div>
+
+@code {
+    [Parameter] public string Label { get; set; } = "";
+    [Parameter] public string Value { get; set; } = "";
+    [Parameter] public int Lines { get; set; } = 1;
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter] public EventCallback OnCommitted { get; set; }
+    private readonly string _fieldId = $"narrative-{Guid.NewGuid():N}";
+}

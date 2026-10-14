@@ -16,6 +16,7 @@ public sealed class CharacterTab
     public CharacterFile File { get; }
     public Character? Character { get; set; }
     private bool _isDirty;
+    internal SessionWriteState SessionWrites { get; } = new();
     public long EditVersion { get; private set; }
     public long CloudSavedEditVersion { get; set; }
     public long CloudReloadVersion { get; set; }
@@ -32,7 +33,7 @@ public sealed class CharacterTab
     }
     public bool IsDirty
     {
-        get => _isDirty || CloudSession?.HasPendingChanges == true;
+        get => _isDirty || SessionWrites.HasPendingChanges || CloudSession?.HasPendingChanges == true;
         set
         {
             if (value) EditVersion++;
@@ -89,6 +90,53 @@ public sealed class CharacterTab
     public SemaphoreSlim FileSaveSemaphore { get; } = new(1, 1);
 
     public CharacterTab(CharacterFile file) => File = file;
+}
+
+/// <summary>Tracks session writes independently of other unsaved character edits.</summary>
+internal sealed class SessionWriteState
+{
+    private long _version;
+    private long _savedVersion;
+    private SessionCharacterEdits? _savedEdits;
+    public long Version => Interlocked.Read(ref _version);
+    public bool HasPendingChanges => Version > Interlocked.Read(ref _savedVersion);
+    public long BeginChange() => Interlocked.Increment(ref _version);
+    public bool IsAlreadySaved(long version) => version <= Interlocked.Read(ref _savedVersion);
+    public void Initialize(CharacterSnapshot snapshot) => _savedEdits ??= SessionCharacterEdits.From(snapshot);
+    public void InitializeFromFile(CharacterFile file)
+    {
+        if (_savedEdits is not null) return;
+        var document = Builder.Presentation.Utilities.CharacterFileIo.LoadXmlDocument(file.FilePath);
+        string Read(string path) => document.SelectSingleNode("/character/build/input/" + path)?.InnerText ?? string.Empty;
+        long Coin(string name) => long.TryParse(Read("currency/" + name), out long value) ? value : 0;
+        _savedEdits = new SessionCharacterEdits(
+            (Coin("copper"), Coin("silver"), Coin("electrum"), Coin("gold"), Coin("platinum")),
+            (Read("notes/note[@column='left']"), Read("notes/note[@column='right']")));
+    }
+    public bool NeedsCurrencyPatch(SessionCharacterEdits edits) => _savedEdits?.Currency != edits.Currency;
+    public bool NeedsNotesPatch(SessionCharacterEdits edits) => _savedEdits?.Notes != edits.Notes;
+    public void Saved(long version, SessionCharacterEdits edits)
+    {
+        if (version < Interlocked.Read(ref _savedVersion)) return;
+        _savedEdits = edits;
+        Interlocked.Exchange(ref _savedVersion, version);
+    }
+}
+
+internal sealed record SessionCharacterEdits(
+    (long Copper, long Silver, long Electrum, long Gold, long Platinum) Currency,
+    (string Notes1, string Notes2) Notes)
+{
+    public static SessionCharacterEdits From(CharacterSnapshot snapshot) => new(
+        (snapshot.CoinCopper, snapshot.CoinSilver, snapshot.CoinElectrum, snapshot.CoinGold, snapshot.CoinPlatinum),
+        (snapshot.Notes1, snapshot.Notes2));
+
+    public CharacterSnapshot ToSnapshot() => new()
+    {
+        CoinCopper = Currency.Copper, CoinSilver = Currency.Silver, CoinElectrum = Currency.Electrum,
+        CoinGold = Currency.Gold, CoinPlatinum = Currency.Platinum,
+        Notes1 = Notes.Notes1, Notes2 = Notes.Notes2,
+    };
 }
 
 /// <summary>

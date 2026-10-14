@@ -571,31 +571,30 @@ public static partial class BuildService
         if (tab.File == null) return "No file associated with this tab.";
         if (tab.CloudReloadFailed)
             return tab.CloudNotice = "The Drive character could not be loaded. Load the Drive save again before editing or saving.";
-        using var scope = await CharacterContext.EnterAsync(tab);
-        long editVersion = tab.EditVersion;
+        long editVersion;
         string? error = null;
-        await Task.Run(() =>
+        using (await CharacterContext.EnterAsync(tab))
         {
-            try
+            editVersion = tab.EditVersion;
+            await Task.Run(() =>
             {
-                SaveCharacterFile(tab);
-            }
-            catch (Exception ex)
-            {
-                error = DebugLogService.Catch(ex, "BuildService.SaveTabAsync");
-            }
-        });
+                try
+                {
+                    SaveCharacterFile(tab);
+                }
+                catch (Exception ex)
+                {
+                    error = DebugLogService.Catch(ex, "BuildService.SaveTabAsync");
+                }
+            });
+        }
         if (error is null && tab.CloudSession is { } cloud)
         {
             try
             {
-                await tab.FileSaveSemaphore.WaitAsync();
-                try
-                {
-                    await cloud.SaveAsync();
-                    tab.File.RestoreKnownDiskStamp(CharacterFileDiskStamp.Capture(tab.File.FilePath));
-                }
-                finally { tab.FileSaveSemaphore.Release(); }
+                await cloud.SaveAsync(localFileGate: tab.FileSaveSemaphore,
+                    localFilesChanged: () => tab.File.RestoreKnownDiskStamp(
+                        CharacterFileDiskStamp.Capture(tab.File.FilePath)));
                 tab.CloudSavedEditVersion = editVersion;
                 tab.CloudNotice = "Saved to Google Drive.";
             }
@@ -604,9 +603,7 @@ public static partial class BuildService
                 // Drive is authoritative. Preserve displaced local edits before loading its version.
                 try
                 {
-                    SaveCharacterFile(tab);
-                    await ReloadCloudFilesAsync(tab);
-                    error = await ReloadCloudStateAsync(tab);
+                    error = await ReloadCloudFilesAsync(tab);
                     tab.CloudNotice = error ?? "A newer Drive save was loaded. Unsent edits were kept in the recovery folder.";
                 }
                 catch (Exception ex)
@@ -631,17 +628,11 @@ public static partial class BuildService
         tab.IsSaving = true;
         try
         {
-            // Reloading an already-open Drive character also hydrates and recalculates the
-            // engine. Keep that work off the renderer, under the same character-context lock.
+            // Keep engine work guarded and off the renderer. The per-tab save state and file
+            // gate protect this operation while network waits leave other characters usable.
             string? warning = await Task.Run(async () =>
             {
-                using var scope = await CharacterContext.EnterAsync(tab);
-                // Materialize in-memory changes so recovery includes unsaved text/build edits.
-                // After a failed hydration, the downloaded file and recovery copy are the
-                // authoritative evidence. Never overwrite them with the previous model.
-                if (!tab.CloudReloadFailed) SaveCharacterFile(tab);
-                await ReloadCloudFilesAsync(tab);
-                return await ReloadCloudStateAsync(tab);
+                return await ReloadCloudFilesAsync(tab);
             });
             tab.CloudNotice = warning ?? "Loaded the current Google Drive save.";
             return warning;
@@ -664,6 +655,7 @@ public static partial class BuildService
         tab.Session = SessionStore.Load(tab.File.FilePath);
         tab.Snapshot = CharacterSnapshot.From(tab.Character!);
         ResnapTab(tab);
+        tab.SessionWrites.Saved(tab.SessionWrites.Version, SessionCharacterEdits.From(tab.Snapshot!));
         tab.CloudReloadFailed = false;
         tab.CloudReloadVersion++;
         if (!loaded.Success)
@@ -677,11 +669,40 @@ public static partial class BuildService
         return null;
     }
 
-    private static async Task ReloadCloudFilesAsync(CharacterTab tab)
+    private static async Task<string?> ReloadCloudFilesAsync(CharacterTab tab)
     {
-        await tab.FileSaveSemaphore.WaitAsync();
-        try { await tab.CloudSession!.ReloadAuthoritativeAsync(); }
-        finally { tab.FileSaveSemaphore.Release(); }
+        string? error = null;
+        await tab.CloudSession!.ReloadAuthoritativeAsync(applyLocalFiles: async apply =>
+        {
+            // Download without the global engine or local file gate. Once it is available,
+            // preserve the latest edits, replace the workspace, and hydrate as one engine operation.
+            async Task ApplyFilesAsync()
+            {
+                await tab.FileSaveSemaphore.WaitAsync();
+                try
+                {
+                    apply();
+                    tab.File.RestoreKnownDiskStamp(CharacterFileDiskStamp.Capture(tab.File.FilePath));
+                }
+                finally { tab.FileSaveSemaphore.Release(); }
+            }
+            // A previous remote document may not have been hydratable. Repair the workspace
+            // before asking the engine to enter that character, without saving its stale model.
+            if (tab.CloudReloadFailed)
+            {
+                await ApplyFilesAsync();
+                using (await CharacterContext.EnterAsync(tab))
+                    error = await ReloadCloudStateAsync(tab);
+                return;
+            }
+            using (await CharacterContext.EnterAsync(tab))
+            {
+                SaveCharacterFile(tab);
+                await ApplyFilesAsync();
+                error = await ReloadCloudStateAsync(tab);
+            }
+        });
+        return error;
     }
 
     /// <summary>
@@ -792,6 +813,7 @@ public static partial class BuildService
             "Character",
             () =>
         {
+            long sessionVersion = tab.SessionWrites.Version;
             if (tab.Snapshot != null && tab.Character != null)
                 FlushSnapshotToCharacter(tab.Snapshot, tab.Character);
 
@@ -816,6 +838,10 @@ public static partial class BuildService
 
             if (tab.Snapshot != null && !targetFile.SaveTextEdits(tab.Snapshot))
                 throw new InvalidOperationException("Character save completed, but snapshot-backed edits could not be patched into the file.");
+
+            if (tab.Snapshot != null)
+                tab.SessionWrites.Saved(sessionVersion, SessionCharacterEdits.From(tab.Snapshot));
+            tab.CloudSession?.InvalidatePendingState();
 
             return true;
         }).ThrowIfFailed();

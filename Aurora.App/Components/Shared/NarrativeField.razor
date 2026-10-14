@@ -1,27 +1,12 @@
 @* Editable text field for narrative/appearance data on the Background build tab. *@
 
-<div class="narrative-field">
-    <label class="narrative-label">@Label</label>
-    @if (Lines > 1)
-    {
-        <textarea class="narrative-textarea"
-                  rows="@Lines"
-                  value="@Value"
-                  @onchange="e => ValueChanged.InvokeAsync(e.Value?.ToString() ?? string.Empty)">
-        </textarea>
-    }
-    else
-    {
-        <input class="narrative-input"
-               type="text"
-               value="@Value"
-               @onchange="e => ValueChanged.InvokeAsync(e.Value?.ToString() ?? string.Empty)" />
-    }
-</div>
+<Aurora.Components.Shared.CharacterNarrativeField Label="@Label" Value="@Value" Lines="Lines"
+                                                 ValueChanged="ValueChanged" OnCommitted="OnCommitted" />
 
 @code {
     [Parameter] public string  Label        { get; set; } = "";
     [Parameter] public string  Value        { get; set; } = "";
     [Parameter] public int     Lines        { get; set; } = 1;
     [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter] public EventCallback OnCommitted { get; set; }
 }

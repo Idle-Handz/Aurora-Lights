@@ -15,6 +15,11 @@ public sealed class CloudCharacterSession : IDisposable
     private readonly ICharacterDocumentStore _store;
     private readonly FileStream _lease;
     private readonly SemaphoreSlim _saveGate = new(1, 1);
+    private readonly FileSystemWatcher? _watcher;
+    private volatile bool _watcherHealthy;
+    private long _fileChangeVersion;
+    private PendingStateCache? _pendingStateCache;
+    private long _pendingFileReadCount;
     private Receipt _receipt;
     public string FilePath { get; }
     public string SessionPath => FilePath + ".session.json";
@@ -27,14 +32,78 @@ public sealed class CloudCharacterSession : IDisposable
     {
         get
         {
-            try { return HashFile(FilePath) != _receipt.CharacterHash || HashFile(SessionPath) != _receipt.SessionHash; }
+            try
+            {
+                long version = Interlocked.Read(ref _fileChangeVersion);
+                var characterStamp = CharacterFileDiskStamp.Capture(FilePath);
+                var sessionStamp = CharacterFileDiskStamp.Capture(SessionPath);
+                Receipt receipt = _receipt;
+                var cached = Volatile.Read(ref _pendingStateCache);
+                if (_watcherHealthy && cached is not null
+                    && cached.Version == version && ReferenceEquals(cached.Receipt, receipt)
+                    && cached.CharacterStamp == characterStamp && cached.SessionStamp == sessionStamp)
+                    return cached.Pending;
+
+                bool pending = HashPendingFile(FilePath) != receipt.CharacterHash || HashPendingFile(SessionPath) != receipt.SessionHash;
+                // Never cache a hash across a write that happened while either file was read.
+                if (version == Interlocked.Read(ref _fileChangeVersion)
+                    && characterStamp == CharacterFileDiskStamp.Capture(FilePath)
+                    && sessionStamp == CharacterFileDiskStamp.Capture(SessionPath))
+                    Volatile.Write(ref _pendingStateCache,
+                        new PendingStateCache(version, receipt, characterStamp, sessionStamp, pending));
+                return pending;
+            }
             catch (IOException) { return true; }
             catch (UnauthorizedAccessException) { return true; }
         }
     }
 
     private CloudCharacterSession(ICharacterDocumentStore store, string path, FileStream lease, Receipt receipt)
-        => (_store, FilePath, _lease, _receipt) = (store, path, lease, receipt);
+    {
+        (_store, FilePath, _lease, _receipt) = (store, path, lease, receipt);
+        try
+        {
+            _watcher = new FileSystemWatcher(Path.GetDirectoryName(path)!, Path.GetFileName(path) + "*")
+            {
+                NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.Size,
+            };
+            _watcher.Changed += OnWorkspaceChanged;
+            _watcher.Created += OnWorkspaceChanged;
+            _watcher.Deleted += OnWorkspaceChanged;
+            _watcher.Renamed += OnWorkspaceChanged;
+            _watcher.Error += (_, _) =>
+            {
+                _watcherHealthy = false; // Lost events must not leave a trusted cached result.
+                InvalidatePendingState();
+            };
+            _watcherHealthy = true;
+            _watcher.EnableRaisingEvents = true;
+        }
+        catch (Exception ex) when (ex is IOException or PlatformNotSupportedException or UnauthorizedAccessException)
+        {
+            _watcherHealthy = false;
+            _watcher?.Dispose();
+            _watcher = null; // Unsupported watchers retain the original full-hash behavior.
+        }
+    }
+
+    private void OnWorkspaceChanged(object sender, FileSystemEventArgs args) => InvalidatePendingState();
+
+    private string? HashPendingFile(string path)
+    {
+        if (!File.Exists(path)) return null;
+        Interlocked.Increment(ref _pendingFileReadCount);
+        return Hash(File.ReadAllBytes(path));
+    }
+
+    public void InvalidatePendingState()
+    {
+        Interlocked.Increment(ref _fileChangeVersion);
+        Volatile.Write(ref _pendingStateCache, null);
+    }
+
+    private sealed record PendingStateCache(long Version, Receipt Receipt,
+        CharacterFileDiskStamp? CharacterStamp, CharacterFileDiskStamp? SessionStamp, bool Pending);
 
     public static async Task<CloudCharacterSession> OpenAsync(
         ICharacterDocumentStore store, string workspaceRoot, string accountId,
@@ -78,25 +147,43 @@ public sealed class CloudCharacterSession : IDisposable
         catch { lease.Dispose(); throw; }
     }
 
-    public async Task SaveAsync(CancellationToken cancellationToken = default)
+    public async Task SaveAsync(CancellationToken cancellationToken = default,
+        SemaphoreSlim? localFileGate = null, Action? localFilesChanged = null)
     {
         await _saveGate.WaitAsync(cancellationToken);
         IsSaving = true;
         try
         {
-            byte[] character = File.ReadAllBytes(FilePath);
-            byte[]? session = File.Exists(SessionPath) ? File.ReadAllBytes(SessionPath) : null;
-            byte[] payload = Pack(character, session);
-            // This exact candidate remains recoverable even if the process exits mid-request.
-            WriteBytes(FilePath + ".pending", payload);
+            byte[] character;
+            byte[]? session;
+            byte[] payload;
+            if (localFileGate is not null) await localFileGate.WaitAsync(cancellationToken);
+            try
+            {
+                character = File.ReadAllBytes(FilePath);
+                session = File.Exists(SessionPath) ? File.ReadAllBytes(SessionPath) : null;
+                payload = Pack(character, session);
+                // This exact candidate remains recoverable even if the process exits mid-request.
+                WriteBytes(FilePath + ".pending", payload);
+            }
+            finally { localFileGate?.Release(); }
             var saved = await _store.SaveAsync(_receipt.Metadata, payload, cancellationToken);
             string? sessionHash = session is null ? null : Hash(session);
-            // Once Drive confirms, keep an exact local mirror unless a later local edit arrived.
-            if (HashFile(FilePath) == Hash(character) && HashFile(SessionPath) == sessionHash)
-                WriteBytes(FilePath, payload);
-            var receipt = new Receipt(saved, Hash(payload), sessionHash);
-            CharacterFileIo.SaveTextFileAtomic(ReceiptPath, JsonSerializer.Serialize(receipt));
-            _receipt = receipt;
+            if (localFileGate is not null) await localFileGate.WaitAsync(cancellationToken);
+            try
+            {
+                // Once Drive confirms, keep an exact local mirror unless a later local edit arrived.
+                if (HashFile(FilePath) == Hash(character) && HashFile(SessionPath) == sessionHash)
+                {
+                    WriteBytes(FilePath, payload);
+                    localFilesChanged?.Invoke();
+                }
+                var receipt = new Receipt(saved, Hash(payload), sessionHash);
+                CharacterFileIo.SaveTextFileAtomic(ReceiptPath, JsonSerializer.Serialize(receipt));
+                _receipt = receipt;
+                InvalidatePendingState();
+            }
+            finally { localFileGate?.Release(); }
             LastError = null;
         }
         catch (Exception ex)
@@ -107,7 +194,8 @@ public sealed class CloudCharacterSession : IDisposable
         finally { IsSaving = false; _saveGate.Release(); }
     }
 
-    public async Task ReloadAuthoritativeAsync(CancellationToken cancellationToken = default)
+    public async Task ReloadAuthoritativeAsync(CancellationToken cancellationToken = default,
+        Func<Action, Task>? applyLocalFiles = null)
     {
         await _saveGate.WaitAsync(cancellationToken);
         try
@@ -117,13 +205,19 @@ public sealed class CloudCharacterSession : IDisposable
             var xml = LoadXml(remote.Content);
             string? session = xml.DocumentElement?[SessionNode]?.InnerText;
             if (session is not null) using (JsonDocument.Parse(session)) { }
-            PreserveRecovery();
-            WriteBytes(FilePath, remote.Content);
-            if (session is not null) CharacterFileIo.SaveTextFileAtomic(SessionPath, session);
-            else if (File.Exists(SessionPath)) File.Delete(SessionPath);
-            var receipt = new Receipt(remote.Metadata, HashFile(FilePath), HashFile(SessionPath));
-            CharacterFileIo.SaveTextFileAtomic(ReceiptPath, JsonSerializer.Serialize(receipt));
-            _receipt = receipt;
+            void Apply()
+            {
+                PreserveRecovery();
+                WriteBytes(FilePath, remote.Content);
+                if (session is not null) CharacterFileIo.SaveTextFileAtomic(SessionPath, session);
+                else if (File.Exists(SessionPath)) File.Delete(SessionPath);
+                var receipt = new Receipt(remote.Metadata, HashFile(FilePath), HashFile(SessionPath));
+                CharacterFileIo.SaveTextFileAtomic(ReceiptPath, JsonSerializer.Serialize(receipt));
+                _receipt = receipt;
+                InvalidatePendingState();
+            }
+            if (applyLocalFiles is null) Apply();
+            else await applyLocalFiles(Apply);
             LastError = null;
         }
         finally { _saveGate.Release(); }
@@ -209,6 +303,10 @@ public sealed class CloudCharacterSession : IDisposable
         finally { if (File.Exists(temp)) File.Delete(temp); }
     }
 
-    public void Dispose() => _lease.Dispose();
+    public void Dispose()
+    {
+        _watcher?.Dispose();
+        _lease.Dispose();
+    }
     public sealed record Receipt(CharacterDocumentMetadata Metadata, string? CharacterHash, string? SessionHash);
 }

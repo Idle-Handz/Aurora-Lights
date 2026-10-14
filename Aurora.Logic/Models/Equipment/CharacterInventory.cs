@@ -34,6 +34,8 @@ public class CharacterInventory : ObservableObject
   private string _equipment;
   private string _treasure;
   private string _questItems;
+  private int _weightCalculationDepth;
+  private bool _weightCalculationPending;
 
   public CharacterInventory()
   {
@@ -133,7 +135,39 @@ public class CharacterInventory : ObservableObject
 
   public Decimal CalculateWeight()
   {
+    if (this._weightCalculationDepth > 0)
+    {
+      this._weightCalculationPending = true;
+      return this.EquipmentWeight;
+    }
     return this.CalculateWeight((IEnumerable<RefactoredEquipmentItem>) this.Items);
+  }
+
+  /// <summary>Defers aggregate weight updates until the outermost bulk edit completes.</summary>
+  public IDisposable DeferWeightCalculation()
+  {
+    ++this._weightCalculationDepth;
+    return new WeightCalculationScope(this);
+  }
+
+  private sealed class WeightCalculationScope : IDisposable
+  {
+    private CharacterInventory _inventory;
+
+    public WeightCalculationScope(CharacterInventory inventory) => this._inventory = inventory;
+
+    public void Dispose()
+    {
+      CharacterInventory inventory = this._inventory;
+      if (inventory == null)
+        return;
+      this._inventory = null;
+      if (--inventory._weightCalculationDepth == 0 && inventory._weightCalculationPending)
+      {
+        inventory._weightCalculationPending = false;
+        inventory.CalculateWeight();
+      }
+    }
   }
 
   public Decimal CalculateWeight(
@@ -196,6 +230,7 @@ public class CharacterInventory : ObservableObject
 
   public void ClearInventory()
   {
+    using var weightUpdate = this.DeferWeightCalculation();
     while (this.Items.Any<RefactoredEquipmentItem>())
     {
       this.Items.FirstOrDefault<RefactoredEquipmentItem>()?.Retrieve();
@@ -223,16 +258,16 @@ public class CharacterInventory : ObservableObject
     this.CalculateWeight();
   }
 
-  public void EquipArmor(RefactoredEquipmentItem equipment)
+  public void EquipArmor(RefactoredEquipmentItem equipment, bool? attune = null)
   {
     this.EquippedArmor = equipment;
     this.EquippedArmor.EquippedLocation = "Armor";
-    this.EquippedArmor.Activate(true, equipment.IsAttunable);
+    this.EquippedArmor.Activate(true, attune ?? equipment.IsAttunable);
     this.CalculateAttunedItemCount();
     ApplicationContext.Current.EventAggregator.Send<ReprocessCharacterEvent>(new ReprocessCharacterEvent());
   }
 
-  public void EquipPrimary(RefactoredEquipmentItem equipment, bool twohanded = false)
+  public void EquipPrimary(RefactoredEquipmentItem equipment, bool twohanded = false, bool? attune = null)
   {
     this.EquippedPrimary = equipment;
     this.EquippedPrimary.EquippedLocation = "Primary Hand";
@@ -243,17 +278,17 @@ public class CharacterInventory : ObservableObject
       if (!equipment.IsTwoHandTarget() && equipment.Item.HasVersatile)
         this.EquippedSecondary.EquippedLocation = "Two-Handed (Versatile)";
     }
-    this.EquippedPrimary.Activate(true, equipment.IsAttunable);
+    this.EquippedPrimary.Activate(true, attune ?? equipment.IsAttunable);
     this.CalculateAttunedItemCount();
     this.PromtAddToAttacksIfEnabled(equipment);
     ApplicationContext.Current.EventAggregator.Send<ReprocessCharacterEvent>(new ReprocessCharacterEvent());
   }
 
-  public void EquipSecondary(RefactoredEquipmentItem equipment)
+  public void EquipSecondary(RefactoredEquipmentItem equipment, bool? attune = null)
   {
     this.EquippedSecondary = equipment;
     this.EquippedSecondary.EquippedLocation = "Secondary Hand";
-    this.EquippedSecondary.Activate(true, equipment.IsAttunable);
+    this.EquippedSecondary.Activate(true, attune ?? equipment.IsAttunable);
     this.CalculateAttunedItemCount();
     if (!this.IsEquippedShield())
       this.PromtAddToAttacksIfEnabled(equipment);

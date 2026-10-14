@@ -1,7 +1,17 @@
 @page "/equipment"
+@using Microsoft.AspNetCore.Components.Routing
 @inject WebCharacterSessionService CharacterSession
 
 <PageTitle>Equipment</PageTitle>
+
+<NavigationLock OnBeforeInternalNavigation="BeforeNavigationAsync" ConfirmExternalNavigation="@HasPendingNotes" />
+@if (HasPendingNotes)
+{
+    <div class="action-row">
+        <button type="button" class="action-link primary" @onclick="CommitNotesAsync" disabled="@_noteSaving">Save Notes</button>
+        <span>@(_noteSaving ? "Saving notes…" : "Notes have unsaved changes.")</span>
+    </div>
+}
 
 <CharacterLibraryShell Title="Equipment"
                        IntroText="Review the active character's attacks, gear, currency, and inventory in the current browser session."
@@ -29,7 +39,9 @@
                                          OnToggleAttuned="ToggleAttunedAsync"
                                          OnChangeAmount="ChangeAmountAsync"
                                          OnCoinChanged="ChangeCoinAsync"
-                                         OnNoteChanged="ChangeNoteAsync" />
+                                         OnNoteChanged="ChangeNoteAsync"
+                                         NoteDrafts="_noteDrafts"
+                                         OnNoteCommitted="CommitNotesAsync" />
 
             @if (_itemDetail is not null)
             {
@@ -175,6 +187,56 @@
 </CharacterLibraryShell>
 
 @code {
+    private readonly Dictionary<string, string> _noteDrafts = [];
+    private string? _noteCharacterPath;
+    private bool _noteSaving;
+    private Task<bool>? _noteSaveTask;
+    private bool HasPendingNotes => _noteDrafts.Count > 0 || _noteSaving;
+
+    private async Task BeforeNavigationAsync(LocationChangingContext context)
+    {
+        if (!await FlushNotesAsync()) context.PreventNavigation();
+    }
+
+    private async Task CommitNotesAsync() { await FlushNotesAsync(); }
+
+    private async Task<bool> FlushNotesAsync()
+    {
+        if (_noteSaveTask is not null) return await _noteSaveTask;
+        _noteSaveTask = SaveNotesCoreAsync();
+        try { return await _noteSaveTask; }
+        finally { _noteSaveTask = null; }
+    }
+
+    private async Task<bool> SaveNotesCoreAsync()
+    {
+        if (_noteDrafts.Count == 0) return true;
+        _noteSaving = true;
+        _failed = false;
+        try
+        {
+            while (_noteDrafts.Count > 0)
+            {
+                foreach (var draft in _noteDrafts.ToArray())
+                {
+                    _state = await CharacterSession.UpdateCurrentEquipmentNoteAsync(
+                        new EquipmentNoteChangeModel(draft.Key, draft.Value), _noteCharacterPath);
+                    if (_noteDrafts.TryGetValue(draft.Key, out string? latest) && latest == draft.Value)
+                        _noteDrafts.Remove(draft.Key);
+                }
+            }
+            _statusMessage = "Equipment notes saved in the current web session.";
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _failed = true;
+            _statusMessage = $"Notes could not be saved. Your draft is retained; choose Save Notes to retry. {ex.Message}";
+            return false;
+        }
+        finally { _noteSaving = false; }
+    }
+
     private WebCharacterEquipmentState? _state;
     private bool _loading = true;
     private bool _busy;
@@ -391,6 +453,11 @@
 
     private async Task ChooseInventoryItemAsync(string elementId)
     {
+        if (!await FlushNotesAsync())
+        {
+            return;
+        }
+
         _busy = true;
         _failed = false;
         try
@@ -453,9 +520,12 @@
         await RunEquipmentActionAsync(() => CharacterSession.UpdateCurrentEquipmentCoinAsync(change), closePickerOnSuccess: false);
     }
 
-    private async Task ChangeNoteAsync(EquipmentNoteChangeModel change)
+    private Task ChangeNoteAsync(EquipmentNoteChangeModel change)
     {
-        await RunEquipmentActionAsync(() => CharacterSession.UpdateCurrentEquipmentNoteAsync(change), closePickerOnSuccess: false);
+        if (_state is null) return Task.CompletedTask;
+        _noteCharacterPath ??= _state.Summary.RelativePath;
+        _noteDrafts[change.NoteId] = change.Value;
+        return Task.CompletedTask;
     }
 
     private async Task ToggleEquippedAsync(string identifier)
@@ -490,6 +560,11 @@
 
     private async Task RunEquipmentActionAsync(Func<Task<WebCharacterEquipmentState>> action, bool closePickerOnSuccess)
     {
+        if (!await FlushNotesAsync())
+        {
+            return;
+        }
+
         _busy = true;
         _failed = false;
         try

@@ -265,27 +265,30 @@
         <div class="equipment-section-label">Equipment Notes</div>
         <textarea class="equipment-notes-area"
                   rows="3"
-                  value="@Model.EquipmentNotes"
+                  value='@GetNoteValue("equipment", Model.EquipmentNotes)'
                   disabled="@(!OnNoteChanged.HasDelegate || Busy)"
-                  @oninput='args => ChangeNoteAsync("equipment", args)'></textarea>
+                  @oninput='args => ChangeNoteAsync("equipment", args)'
+                  @onchange="() => OnNoteCommitted.InvokeAsync()"></textarea>
     </section>
 
     <section class="equipment-section">
         <div class="equipment-section-label">Treasure</div>
         <textarea class="equipment-notes-area"
                   rows="3"
-                  value="@Model.TreasureNotes"
+                  value='@GetNoteValue("treasure", Model.TreasureNotes)'
                   disabled="@(!OnNoteChanged.HasDelegate || Busy)"
-                  @oninput='args => ChangeNoteAsync("treasure", args)'></textarea>
+                  @oninput='args => ChangeNoteAsync("treasure", args)'
+                  @onchange="() => OnNoteCommitted.InvokeAsync()"></textarea>
     </section>
 
     <section class="equipment-section">
         <div class="equipment-section-label">Quest Items</div>
         <textarea class="equipment-notes-area"
                   rows="3"
-                  value="@Model.QuestNotes"
+                  value='@GetNoteValue("quest", Model.QuestNotes)'
                   disabled="@(!OnNoteChanged.HasDelegate || Busy)"
-                  @oninput='args => ChangeNoteAsync("quest", args)'></textarea>
+                  @oninput='args => ChangeNoteAsync("quest", args)'
+                  @onchange="() => OnNoteCommitted.InvokeAsync()"></textarea>
     </section>
 </div>
 
@@ -328,6 +331,15 @@
 
     [Parameter]
     public EventCallback<EquipmentNoteChangeModel> OnNoteChanged { get; set; }
+
+    [Parameter]
+    public IReadOnlyDictionary<string, string>? NoteDrafts { get; set; }
+
+    [Parameter]
+    public EventCallback OnNoteCommitted { get; set; }
+
+    private string GetNoteValue(string noteId, string savedValue) =>
+        NoteDrafts is not null && NoteDrafts.TryGetValue(noteId, out string? draft) ? draft : savedValue;
 
     [Parameter]
     public EventCallback<string> OnEditItem { get; set; }

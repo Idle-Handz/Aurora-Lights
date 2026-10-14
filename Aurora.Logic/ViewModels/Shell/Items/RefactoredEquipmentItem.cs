@@ -224,36 +224,21 @@ public class RefactoredEquipmentItem : EquipmentItem
       Logger.Warning($"request attune item {this} while not attunable");
       attune = false;
     }
-    if (this.IsAdorned)
+    if (equip && this.Item.IsEquippable)
     {
-      if (equip && this.Item.IsEquippable)
-      {
+      if (!this.Item.RequiresAttunement)
         this.RegisterItem();
-        if (!this.Item.RequiresAttunement)
-          this.RegisterAdorner();
-        this.IsEquipped = true;
-      }
-      if (attune && this.AdornerItem.RequiresAttunement)
-      {
+      if (this.IsAdorned && !this.AdornerItem.RequiresAttunement)
         this.RegisterAdorner();
-        this.IsAttuned = true;
-      }
+      this.IsEquipped = true;
     }
-    else
+    if (attune)
     {
-      if (equip && this.Item.IsEquippable)
-      {
-        if (this.Item.Type.Equals("Armor") || this.Item.Type.Equals("Weapon"))
-          this.RegisterItem();
-        if (!this.Item.RequiresAttunement)
-          this.RegisterItem();
-        this.IsEquipped = true;
-      }
-      if (attune && this.Item.RequiresAttunement)
-      {
+      if (this.Item.RequiresAttunement)
         this.RegisterItem();
-        this.IsAttuned = true;
-      }
+      if (this.IsAdorned && this.AdornerItem.RequiresAttunement)
+        this.RegisterAdorner();
+      this.IsAttuned = true;
     }
     if (this.RaiseEquippedConditionForSidebar())
       this.IncludeInEquipmentPageDescriptionSidebar = true;
@@ -274,16 +259,11 @@ public class RefactoredEquipmentItem : EquipmentItem
   {
     if (!this.IsAttuned)
       Logger.Warning($"trying to unattune {this} which was not attuned.");
-    if (this.IsAdorned)
-    {
+    if (this.IsAdorned && this.AdornerItem.RequiresAttunement)
       this.UnRegisterAdorner();
-      this.IsAttuned = false;
-    }
-    else
-    {
+    if (this.Item.RequiresAttunement)
       this.UnRegisterItem();
-      this.IsAttuned = false;
-    }
+    this.IsAttuned = false;
   }
 
   public bool IsArmorTarget()

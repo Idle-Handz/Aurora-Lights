@@ -216,6 +216,7 @@ Additional technical documentation:
 - [Aurora.Logic README](Aurora.Logic/README.md)
 - [Source ownership and legacy compatibility](docs/LEGACY_RESTORATION.md)
 - [Project roadmap](docs/ROADMAP.md)
+- [Audit findings backlog](docs/BACKLOG.md)
 
 ## Support Aurora Lights
 

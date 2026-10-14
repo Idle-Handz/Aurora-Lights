@@ -1272,7 +1272,7 @@
             }
             return;
         }
-        if (PersistSessionChanges())
+        if (await PersistSessionChangesAsync())
         {
             Snackbar.Add("Session saved.", Severity.Success);
         }
@@ -1288,6 +1288,12 @@
             if (field == 1) ch.Notes1 = value;
             else            ch.Notes2 = value;
         }
+        if (_tab is { } tab)
+        {
+            bool wasDirty = tab.IsDirty;
+            tab.SessionWrites.BeginChange();
+            if (!wasDirty) Tabs.NotifyChanged();
+        }
     }
 
     private void SaveNotesInput(int field, string value)
@@ -1296,40 +1302,29 @@
         AutoSave();
     }
 
-    private bool PersistSessionChanges()
+    private void PersistSessionChanges() => _ = PersistSessionChangesAsync();
+
+    private async Task<bool> PersistSessionChangesAsync()
     {
         if (_tab is null || _snap is null) return false;
+        var tab = _tab;
+        var saving = CharacterFileWriteCoordinator.SaveSessionAsync(tab, _s, _snap);
+        if (tab.CloudSession is not null) Tabs.MarkDirty(tab);
+        else Tabs.NotifyChanged();
 
-        // The sidecar is a separate file — no write gate needed; saves immediately.
-        var sessionSaved = SessionStore.Save(_tab.File.FilePath, _s);
-
-        // XML patch saves (currency, notes) must not interleave with a background full save's
-        // SaveTextEdits. Fire them on a background task so we can await the shared write
-        // coordinator without blocking the UI thread.
-        var tab  = _tab;
-        var snap = _snap;
-        _ = Task.Run(async () =>
+        var result = await saving;
+        Tabs.NotifyChanged();
+        if (result.Succeeded)
         {
-            var result = await CharacterFileWriteCoordinator.WriteAsync(
-                tab.FileSaveSemaphore,
-                tab.File,
-                "Session currency and notes",
-                () => tab.File.SaveCurrency(snap) && tab.File.SaveNotes(snap));
-
-            if (!result.Succeeded && !_disposed)
-                await InvokeAsync(() => HandleSessionPatchFailureAsync(tab, result));
-        });
-
-        if (sessionSaved)
-        {
-            if (tab.CloudSession is not null) Tabs.MarkDirty(tab);
-            _saveError = null;
+            if (!_disposed && _tab == tab && !tab.SessionWrites.HasPendingChanges) _saveError = null;
             return true;
         }
 
-        _saveError = "Some session changes could not be saved yet. Your current values are still in memory, but please try saving again after resolving any file access issues.";
-        Snackbar.Add(_saveError, Severity.Error);
-        _ = InvokeAsync(StateHasChanged);
+        if (!_disposed && _tab == tab && tab.SessionWrites.HasPendingChanges)
+        {
+            _saveError = "Some session changes could not be saved yet. Your current values are still in memory; retry Save before closing the character.";
+            await InvokeAsync(() => HandleSessionPatchFailureAsync(tab, result));
+        }
         return false;
     }
 
@@ -1342,12 +1337,10 @@
         if (result.IsExternalChange)
         {
             Snackbar.Add(
-                "Session saved, but the character file changed on disk. Reloaded the character instead of overwriting notes or currency.",
+                "Session state was saved, but the character file changed on disk. Notes and currency are still pending. Review the external changes before retrying or discarding these edits.",
                 Severity.Warning,
                 cfg => cfg.VisibleStateDuration = 7000);
 
-            if (_tab == tab)
-                await ReloadAfterExternalChangeAsync(tab);
             return;
         }
 
@@ -1355,7 +1348,7 @@
             DebugLogService.Instance.LogException(result.Exception, "Session.PersistSessionChanges");
 
         Snackbar.Add(
-            $"Session saved, but currency and notes could not be written to the character file. {result.Message}",
+            $"Some session changes could not be saved. Your edits are still pending. {result.Message}",
             Severity.Warning,
             cfg => cfg.VisibleStateDuration = 7000);
     }
@@ -1367,6 +1360,7 @@
             using var scope = await CharacterContext.EnterAsync(tab);
             await CharacterContext.ReloadFromDiskAsync(tab);
             BuildService.ResnapTab(tab);
+            tab.SessionWrites.Saved(tab.SessionWrites.Version, SessionCharacterEdits.From(tab.Snapshot!));
             Refresh();
             StateHasChanged();
         }

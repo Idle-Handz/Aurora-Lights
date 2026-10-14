@@ -633,6 +633,7 @@ public class CharacterFile : ObservableObject
         XmlNode xmlNode4 = (XmlNode)buildNode["equipment"];
         if (xmlNode4 != null)
         {
+            using var inventoryUpdate = character.Inventory.DeferWeightCalculation();
             int count = xmlNode4.ChildNodes.Count;
             int num = 0;
             foreach (XmlNode node5 in xmlNode4.ChildNodes.Cast<XmlNode>().Where<XmlNode>((Func<XmlNode, bool>)(x => x.Name.Equals("storage"))))
@@ -1954,7 +1955,11 @@ public class CharacterFile : ObservableObject
                                 listRule = ResolveSavedSelectRule(list, existingChecksum, registeredElementId, hasNumber ? number : 1, savedChoiceRowKey, savedChoiceKey, savedSelectId);
                                 if (listRule == null)
                                     continue;
-                                int num2 = await CharacterFile.AwaitExpanderCreationAsync(listRule, hasNumber ? number : 1) ? 1 : 0;
+                                if (!await CharacterFile.AwaitExpanderCreationAsync(listRule, hasNumber ? number : 1))
+                                {
+                                    if (element != null) _deferredSelectionOwners[elementNode] = element;
+                                    continue;
+                                }
                                 SelectionRuleExpanderContext.Current.SetRegisteredElement(listRule, registeredElementId, hasNumber ? number : 1);
                                 continue;
                             }
@@ -2230,6 +2235,11 @@ public class CharacterFile : ObservableObject
 
     private static async Task<bool> AwaitExpanderCreationAsync(SelectRule selectionRule, int number = 1)
     {
+        // The character's total level can exceed this class's level while a save is
+        // replayed. Headless handlers have no UI expander to enforce that boundary.
+        var progression = CharacterManager.Current.GetProgressManager(selectionRule);
+        if (progression == null || !selectionRule.Attributes.MeetsLevelRequirement(progression.ProgressionLevel))
+            return false;
         int loopCount = 0;
         while (!SelectionRuleExpanderContext.Current.HasExpander(selectionRule.UniqueIdentifier, number))
         {

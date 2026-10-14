@@ -24,6 +24,8 @@
                                 bool used = slotIndex <= slotLevel.UsedSlots;
                                 <button type="button"
                                         class="magic-slot-bubble @(used ? "used" : string.Empty)"
+                                        aria-label="@($"{Ordinal(lvl)} level spell slot {slotIndex} of {slotLevel.TotalSlots}: {(used ? "used" : "available")}")"
+                                        aria-pressed="@(used ? "true" : "false")"
                                         disabled="@(!OnToggleSlot.HasDelegate || Busy)"
                                         @onclick="() => OnToggleSlot.InvokeAsync(new MagicSlotToggleModel(lvl, slotIndex))">
                                 </button>
@@ -37,7 +39,7 @@
 
         @* ── Tabs: a Known tab is always present; each prepared-caster class gets its own
              "Prepared — <class>" tab. ── *@
-        @if (HasCastableSpells || Model.KnownSpellGroups.Count > 0)
+        @if (HasCastableSpells || Model.KnownSpellGroups.Count > 0 || PreparedSections.Count > 0)
         {
             <div class="magic-view-tabs">
                 @if (HasCastableSpells)
@@ -549,10 +551,10 @@
                     {
                         var levelNum = level.Level;
                         var levelCollapsed = _collapsedLevels.Contains(levelNum);
-                        <div class="magic-level-header magic-level-toggle" @onclick="() => ToggleLevel(levelNum)">
+                        <button type="button" class="magic-level-header magic-level-toggle" aria-expanded="@(!levelCollapsed ? "true" : "false")" @onclick="() => ToggleLevel(levelNum)">
                             <span class="magic-section-label">@Ordinal(level.Level) Level Spells</span>
                             <span class="magic-chevron @(levelCollapsed ? string.Empty : "open")">▾</span>
-                        </div>
+                        </button>
 
                         @if (!levelCollapsed)
                         {
@@ -563,6 +565,7 @@
                                     {
                                         <input type="checkbox"
                                                class="magic-spell-prep-check"
+                                               aria-label="@($"Prepare {spell.Name} for {ActiveSection.Label}")"
                                                checked="@spell.IsPrepared"
                                                disabled="@IsPreparationDisabled(spell)"
                                                @onchange="args => ChangePreparedAsync(spell.Id, args)"

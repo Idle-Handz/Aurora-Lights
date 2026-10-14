@@ -1,5 +1,9 @@
 # Roadmap
 
+For concrete correctness, UI, and performance findings, use the
+[audit findings backlog](BACKLOG.md). It records open work, evidence limits,
+completion criteria, and resolved findings separately from this product roadmap.
+
 ## Near-Term Priorities
 
 1. Stabilize the shared layer as a true multi-client core.

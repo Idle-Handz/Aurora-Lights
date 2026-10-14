@@ -63,16 +63,18 @@ public static class CharacterLoadCompatibilityService
 
                 if (location == "Armor" && inv.EquippedArmor == null)
                 {
-                    inv.EquipArmor(item);
+                inv.EquipArmor(item, attune: item.IsAttuned);
                 }
                 else if (location is "Primary Hand" or "Two-Handed" or "Two-Handed (Versatile)"
                          && inv.EquippedPrimary == null)
                 {
-                    inv.EquipPrimary(item, item.IsTwoHandTarget() || location == "Two-Handed (Versatile)");
+                inv.EquipPrimary(item,
+                    item.IsTwoHandTarget() || location is "Two-Handed" or "Two-Handed (Versatile)",
+                    attune: item.IsAttuned);
                 }
                 else if (location == "Secondary Hand" && inv.EquippedSecondary == null)
                 {
-                    inv.EquipSecondary(item);
+                inv.EquipSecondary(item, attune: item.IsAttuned);
                 }
                 else if (string.IsNullOrEmpty(location))
                 {

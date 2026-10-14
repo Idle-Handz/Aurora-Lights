@@ -59,7 +59,7 @@ public class StatisticValuesGroup
 
   public void Merge(StatisticValuesGroup group)
   {
-    if (group == null || group.Sum() <= 0)
+    if (group == null)
       return;
     foreach (KeyValuePair<string, int> keyValuePair in group.GetValues())
       this.AddValue(keyValuePair.Key, keyValuePair.Value);

@@ -132,11 +132,31 @@
     private string _selectedOrigin = string.Empty;
     private const int VisibleEntryLimit = 80;
 
-    private IReadOnlyList<ContentCatalogEntry> _filteredElements =>
-        _catalog?.Elements
-                .Where(MatchesFilters)
-                .ToList()
-        ?? [];
+    private MergedContentCatalog? _filteredCatalog;
+    private string? _filteredSearchText;
+    private string? _filteredType;
+    private string? _filteredOrigin;
+    private IReadOnlyList<ContentCatalogEntry> _cachedFilteredElements = [];
+
+    private IReadOnlyList<ContentCatalogEntry> _filteredElements
+    {
+        get
+        {
+            if (!ReferenceEquals(_filteredCatalog, _catalog)
+                || _filteredSearchText != _searchText
+                || _filteredType != _selectedType
+                || _filteredOrigin != _selectedOrigin)
+            {
+                _cachedFilteredElements = _catalog?.Elements.Where(MatchesFilters).ToList() ?? [];
+                _filteredCatalog = _catalog;
+                _filteredSearchText = _searchText;
+                _filteredType = _selectedType;
+                _filteredOrigin = _selectedOrigin;
+            }
+
+            return _cachedFilteredElements;
+        }
+    }
 
     private IEnumerable<ContentCatalogEntry> VisibleEntries =>
         _filteredElements.Take(VisibleEntryLimit);

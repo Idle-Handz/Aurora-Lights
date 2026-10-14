@@ -1,4 +1,4 @@
-﻿using Builder.Core.Logging;
+using Builder.Core.Logging;
 using Builder.Data;
 using Builder.Data.Elements;
 using Builder.Data.Rules;
@@ -31,6 +31,7 @@ public sealed class WebCharacterEngineService
     private readonly WebSelectionRuleExpanderHandler _selectionHandler = new();
     private readonly WebSpellcastingSectionHandler _spellcastingHandler = new();
     private bool _fileLoggerInitialized;
+    private string? _activeCharacterPath;
 
     private sealed record MagicRuleSelectionGroup(
         string Label,
@@ -96,12 +97,14 @@ public sealed class WebCharacterEngineService
         await _operationLock.WaitAsync();
         try
         {
+            _activeCharacterPath = null;
             await PrepareWorkspaceAsync(workspace);
 
             CharacterLoadCompatibilityService.PrepareForCharacterLoad();
 
             CharacterFile file = new(absolutePath);
             CharacterFile.LoadResult result = await file.Load();
+            _activeCharacterPath = Path.GetFullPath(absolutePath);
 
             Character character = CharacterManager.Current.Character;
             CharacterLoadCompatibilityService.RestoreEquippedSlots(character);
@@ -125,6 +128,7 @@ public sealed class WebCharacterEngineService
         await _operationLock.WaitAsync();
         try
         {
+            _activeCharacterPath = null;
             await PrepareWorkspaceAsync(workspace);
 
             CharacterLoadCompatibilityService.PrepareForCharacterLoad();
@@ -147,7 +151,9 @@ public sealed class WebCharacterEngineService
 
             CharacterFile file = new(path);
             file.CollectionGroupName = string.IsNullOrWhiteSpace(group) ? "Characters" : group.Trim();
-            file.Save(character);
+            if (!file.Save(character))
+                throw new IOException("The new character could not be saved.");
+            _activeCharacterPath = Path.GetFullPath(path);
 
             string relativePath = Path.GetRelativePath(workspace.WorkspacePath, path);
             ImportedCharacterSummary summary = BuildSummary(relativePath, new FileInfo(path), character, file);
@@ -745,6 +751,17 @@ public sealed class WebCharacterEngineService
         try
         {
             Character character = RequireCurrentCharacter();
+            string expectedPath = ResolveWorkspaceFile(workspace, relativePath);
+            string? activePath = _activeCharacterPath;
+            StringComparison pathComparison = OperatingSystem.IsWindows()
+                ? StringComparison.OrdinalIgnoreCase
+                : StringComparison.Ordinal;
+            if (string.IsNullOrWhiteSpace(activePath)
+                || !string.Equals(Path.GetFullPath(activePath), Path.GetFullPath(expectedPath), pathComparison))
+            {
+                throw new InvalidOperationException("The active character changed before these notes could be saved.");
+            }
+
             switch (change.NoteId)
             {
                 case "equipment":
@@ -921,7 +938,9 @@ public sealed class WebCharacterEngineService
             MagicOverviewModel magic = BuildMagicModel(character);
             ApplyPersistedMagicState(absolutePath, magic);
 
-            MagicSpellListEntryModel? spell = magic.SpellLevels
+            MagicSpellcastingSectionModel? section = magic.Sections.FirstOrDefault(candidate =>
+                string.Equals(candidate.Id, change.SpellcastingSectionId, StringComparison.OrdinalIgnoreCase));
+            MagicSpellListEntryModel? spell = section?.SpellLevels
                 .SelectMany(level => level.Spells)
                 .FirstOrDefault(candidate => string.Equals(candidate.Id, change.SpellId, StringComparison.Ordinal));
             if (spell is null || spell.IsAlwaysPrepared)
@@ -930,16 +949,14 @@ public sealed class WebCharacterEngineService
                 return new WebCharacterMagicState(unchangedSummary, magic, "Spell preparation updated for the current browser session.");
             }
 
-            if (change.Value && !spell.IsPrepared && magic.IsPreparedCaster && magic.MaxPrepared > 0 && magic.PreparedCount >= magic.MaxPrepared)
+            if (change.Value && !spell.IsPrepared && section!.IsPreparedCaster && section.PreparedCount >= Math.Max(0, section.MaxPrepared))
             {
                 ImportedCharacterSummary unchangedSummary = BuildSummary(relativePath, new FileInfo(absolutePath), character, new CharacterFile(absolutePath));
                 return new WebCharacterMagicState(unchangedSummary, magic, "Prepared spell limit reached for the current browser session.");
             }
 
             spell.IsPrepared = change.Value;
-            magic.PreparedCount = magic.SpellLevels
-                .SelectMany(level => level.Spells)
-                .Count(candidate => candidate.IsPrepared && !candidate.IsAlwaysPrepared);
+            RefreshPreparedCounts(magic);
             MagicSpellAccessClassifier.Apply(magic);
 
             PersistMagicState(absolutePath, magic);
@@ -967,13 +984,7 @@ public sealed class WebCharacterEngineService
             MagicOverviewModel magic = BuildMagicModel(character);
             ApplyPersistedMagicState(absolutePath, magic);
 
-            MagicSpellLevelModel? level = magic.SpellLevels.FirstOrDefault(candidate => candidate.Level == change.Level);
-            if (level is not null)
-            {
-                level.UsedSlots = change.SlotIndex < level.UsedSlots
-                    ? change.SlotIndex
-                    : change.SlotIndex + 1;
-            }
+            WebMagicStatePersistence.ToggleSlot(magic, change.Level, change.SlotIndex);
 
             PersistMagicState(absolutePath, magic);
 
@@ -1606,7 +1617,20 @@ public sealed class WebCharacterEngineService
     private static MagicOverviewModel BuildMagicModel(Character character)
     {
         var cm = CharacterManager.Current;
-        var spellInfo = cm.GetSpellcastingInformations().FirstOrDefault(info => !info.IsExtension);
+        var allProfiles = cm.GetSpellcastingInformations().ToList();
+        var acquisitions = SpellAcquisitionResolver.Resolve(cm.GetElements(), allProfiles);
+        var sections = new List<MagicSpellcastingSectionModel>();
+        foreach (var spellInfo in allProfiles.Where(info => !info.IsExtension))
+        {
+        string profileKey = SpellAcquisitionResolver.ProfileKey(spellInfo);
+        var profileSpells = acquisitions.Where(acquisition => acquisition.ProfileKey == profileKey
+            && !acquisition.IsFeature && acquisition.Preparation != SpellPreparation.RitualOnly).ToList();
+        var extensions = allProfiles.Where(candidate => candidate.IsExtension
+                && string.Equals(candidate.Name, spellInfo.Name, StringComparison.OrdinalIgnoreCase))
+            .SelectMany(candidate => candidate.ExtendedSupportedSpellsExpressions)
+            .Concat(spellInfo.ExtendedSupportedSpellsExpressions)
+            .Where(expression => expression.Known)
+            .Select(expression => (expression.Supports, expression.IsId)).ToList();
 
         string spellDc = string.Empty;
         string spellAttack = string.Empty;
@@ -1634,12 +1658,15 @@ public sealed class WebCharacterEngineService
             ? cm.StatisticsCalculator.StatisticValues.GetValue(spellInfo!.GetPrepareAmountStatisticName())
             : 0;
 
-        IReadOnlyList<(string Id, string Name)> cantrips = CollectCantrips();
+        IReadOnlyList<(string Id, string Name)> cantrips = CollectCantrips(profileSpells);
         IReadOnlyList<MagicSpellLevelModel> spellLevels = CollectSpellLevels(
+            spellInfo!,
             preparedCaster,
             spellInfo?.InitialSupportedSpellsExpression?.Supports ?? string.Empty,
-            GetPreparedIds(spellInfo?.Name ?? string.Empty),
-            isSpellbookCaster);
+            SpellcastingSectionContext.Current?.GetPreparedIds(spellInfo!) ?? Array.Empty<string>(),
+            isSpellbookCaster,
+            profileSpells,
+            extensions);
         List<MagicSpellListEntryModel> cantripEntries = cantrips
             .Select(cantrip => new MagicSpellListEntryModel(
                 cantrip.Id,
@@ -1659,13 +1686,11 @@ public sealed class WebCharacterEngineService
         int preparedCount = spellLevels
             .SelectMany(level => level.Spells)
             .Count(spell => spell.IsPrepared && !spell.IsAlwaysPrepared);
-        var sections = cm.Status.HasSpellcasting || cantripEntries.Count > 0 || spellLevels.Count > 0
-            ? new[]
-            {
-                new MagicSpellcastingSectionModel
+        sections.Add(new MagicSpellcastingSectionModel
                 {
-                    Id = string.IsNullOrWhiteSpace(spellInfo?.Name) ? "spellcasting" : spellInfo.Name,
+                    Id = profileKey,
                     Label = string.IsNullOrWhiteSpace(spellInfo?.Name) ? "Spellcasting" : spellInfo.Name,
+                    HasExtensions = extensions.Count > 0,
                     IsPreparedCaster = preparedCaster,
                     IsSpellbookCaster = isSpellbookCaster,
                     RitualCastingMode = !supportsRitualCasting
@@ -1682,290 +1707,77 @@ public sealed class WebCharacterEngineService
                     MaxPrepared = maxPrepared,
                     Cantrips = cantripEntries,
                     SpellLevels = spellLevels
-                }
-            }
-            : [];
+                });
+        }
 
         var magic = new MagicOverviewModel
         {
-            HasSpellcasting = cm.Status.HasSpellcasting,
-            KnownSpellGroups = BuildMagicRuleGroups(sections),
+            HasSpellcasting = sections.Count > 0 || acquisitions.Count > 0,
+            KnownSpellGroups = BuildMagicRuleGroups(sections).Concat(BuildFeatureSpellGroups(acquisitions)).ToList(),
             Sections = sections
         };
         MagicSpellAccessClassifier.Apply(magic);
         return magic;
     }
 
+    private static IReadOnlyList<MagicKnownSpellGroupModel> BuildFeatureSpellGroups(IReadOnlyList<SpellAcquisition> acquisitions)
+    {
+        var entries = acquisitions.Where(acquisition => acquisition.Rule is not SelectRule
+                && acquisition.IsFeature && acquisition.Preparation != SpellPreparation.ListOnly)
+            .Select((acquisition, index) =>
+            {
+                var spell = acquisition.Spell;
+                var metadata = GetMagicSpellMetadata(spell.Id);
+                int level = GetSpellLevel(spell);
+                bool canUseSlots = level > 0 && acquisition.CanUseSlots(false);
+                return new MagicKnownSpellEntryModel(
+                    $"granted:{index}", level == 0 ? "Cantrip" : $"Level {level}", spell.Name,
+                    SpellLevel: level, IsReadOnly: true, SpellId: spell.Id, Source: spell.Source,
+                    School: metadata?.School ?? string.Empty, IsRitual: metadata?.IsRitual ?? false,
+                    IsConcentration: metadata?.IsConcentration ?? false, CastingTime: metadata?.CastingTime ?? string.Empty,
+                    GrantedBy: acquisition.OriginName, SelectionAccess: MagicSpellSelectionAccess.Granted,
+                    AccessSource: acquisition.OriginName,
+                    ResolvedAccessPaths: [new MagicSpellAccessPathModel(MagicSpellAccessKind.Granted, string.Empty,
+                        acquisition.OriginName, level == 0 || acquisition.FreeUses > 0 || canUseSlots, false,
+                        canUseSlots, acquisition.Ability, acquisition.FreeUses, acquisition.Recharge, acquisition.Diagnostic, acquisition.SlotUses)]);
+            }).ToList();
+        return entries.Count == 0 ? [] : [new MagicKnownSpellGroupModel("Granted by Features", entries, ReadOnlyGroup: true)];
+    }
+
     private static void ApplyPersistedMagicState(string absolutePath, MagicOverviewModel magic)
     {
-        if (string.IsNullOrWhiteSpace(absolutePath) || !File.Exists(absolutePath))
-        {
-            return;
-        }
-
-        try
-        {
-            XmlDocument document = new();
-            document.Load(absolutePath);
-
-            Dictionary<string, bool> preparedById = new(StringComparer.OrdinalIgnoreCase);
-            Dictionary<string, bool> preparedByName = new(StringComparer.OrdinalIgnoreCase);
-
-            XmlNode? buildNode = document.DocumentElement?["build"];
-            XmlNode? magicNode = buildNode?["magic"];
-            if (magicNode is not null)
-            {
-                foreach (XmlNode spellcastingNode in magicNode.ChildNodes)
-                {
-                    if (spellcastingNode.Name != "spellcasting")
-                    {
-                        continue;
-                    }
-
-                    XmlNode? spellsNode = spellcastingNode["spells"];
-                    if (spellsNode is null)
-                    {
-                        continue;
-                    }
-
-                    foreach (XmlNode spellNode in spellsNode.ChildNodes)
-                    {
-                        if (spellNode.Name != "spell")
-                        {
-                            continue;
-                        }
-
-                        bool isPrepared = string.Equals(spellNode.Attributes?["prepared"]?.Value, "true", StringComparison.OrdinalIgnoreCase);
-                        string? spellId = spellNode.Attributes?["id"]?.Value;
-                        string? spellName = spellNode.Attributes?["name"]?.Value;
-
-                        if (!string.IsNullOrWhiteSpace(spellId))
-                        {
-                            preparedById[spellId] = isPrepared;
-                        }
-
-                        if (!string.IsNullOrWhiteSpace(spellName))
-                        {
-                            preparedByName[spellName] = isPrepared;
-                        }
-                    }
-                }
-            }
-
-            foreach (MagicSpellListEntryModel spell in magic.SpellLevels.SelectMany(level => level.Spells))
-            {
-                if (spell.IsAlwaysPrepared)
-                {
-                    spell.IsPrepared = true;
-                    continue;
-                }
-
-                if (!string.IsNullOrWhiteSpace(spell.Id) && preparedById.TryGetValue(spell.Id, out bool preparedByIdentifier))
-                {
-                    spell.IsPrepared = preparedByIdentifier;
-                }
-                else if (preparedByName.TryGetValue(spell.Name, out bool preparedBySpellName))
-                {
-                    spell.IsPrepared = preparedBySpellName;
-                }
-            }
-
-            XmlNode? sessionNode = document.DocumentElement?["session"];
-            XmlNode? spellSlotsNode = sessionNode?["spellslots"];
-            if (spellSlotsNode is not null)
-            {
-                Dictionary<int, int> usedByLevel = [];
-                foreach (XmlNode slotNode in spellSlotsNode.ChildNodes)
-                {
-                    if (slotNode.Name != "slot")
-                    {
-                        continue;
-                    }
-
-                    if (int.TryParse(slotNode.Attributes?["level"]?.Value, out int level)
-                        && int.TryParse(slotNode.Attributes?["used"]?.Value, out int used))
-                    {
-                        usedByLevel[level] = Math.Max(0, used);
-                    }
-                }
-
-                foreach (MagicSpellLevelModel level in magic.SpellLevels)
-                {
-                    if (usedByLevel.TryGetValue(level.Level, out int used))
-                    {
-                        level.UsedSlots = Math.Clamp(used, 0, level.TotalSlots);
-                    }
-                }
-            }
-
-            RefreshPreparedCounts(magic);
-            MagicSpellAccessClassifier.Apply(magic);
-        }
-        catch (Exception ex)
-        {
-            Logger.Exception(ex, $"WebCharacterEngineService.ApplyPersistedMagicState for '{absolutePath}'");
-        }
+        if (!File.Exists(absolutePath)) return;
+        WebMagicStatePersistence.Load(absolutePath, magic);
+        SynchronizePreparedState(magic);
     }
 
-    private static void CopyPersistedMagicState(MagicOverviewModel source, MagicOverviewModel target)
-    {
-        var sourceSpells = source.SpellLevels.SelectMany(level => level.Spells).ToList();
-        Dictionary<string, bool> preparedById =
-            PreparedSpellLookup.ById(sourceSpells, spell => spell.Id, spell => spell.IsPrepared);
-        Dictionary<string, bool> preparedByName =
-            PreparedSpellLookup.ByName(sourceSpells, spell => spell.Name, spell => spell.IsPrepared);
+    private static void CopyPersistedMagicState(MagicOverviewModel source, MagicOverviewModel target) =>
+        WebMagicStatePersistence.Copy(source, target);
 
-        foreach (MagicSpellListEntryModel spell in target.SpellLevels.SelectMany(level => level.Spells))
-        {
-            if (spell.IsAlwaysPrepared)
-            {
-                spell.IsPrepared = true;
-                continue;
-            }
-
-            if (!string.IsNullOrWhiteSpace(spell.Id) && preparedById.TryGetValue(spell.Id, out bool preparedByIdentifier))
-            {
-                spell.IsPrepared = preparedByIdentifier;
-            }
-            else if (preparedByName.TryGetValue(spell.Name, out bool preparedBySpellName))
-            {
-                spell.IsPrepared = preparedBySpellName;
-            }
-        }
-
-        Dictionary<int, int> usedByLevel = source.SpellLevels.ToDictionary(level => level.Level, level => level.UsedSlots);
-        foreach (MagicSpellLevelModel level in target.SpellLevels)
-        {
-            if (usedByLevel.TryGetValue(level.Level, out int used))
-            {
-                level.UsedSlots = Math.Clamp(used, 0, level.TotalSlots);
-            }
-        }
-
-        RefreshPreparedCounts(target);
-        MagicSpellAccessClassifier.Apply(target);
-    }
-
-    private static void RefreshPreparedCounts(MagicOverviewModel magic)
-    {
-        foreach (MagicSpellcastingSectionModel section in magic.Sections)
-        {
-            section.PreparedCount = section.SpellLevels
-                .SelectMany(level => level.Spells)
-                .Count(spell => spell.IsPrepared && !spell.IsAlwaysPrepared);
-        }
-
-        magic.PreparedCount = magic.Sections.FirstOrDefault()?.PreparedCount
-            ?? magic.SpellLevels.SelectMany(level => level.Spells).Count(spell => spell.IsPrepared && !spell.IsAlwaysPrepared);
-    }
+    private static void RefreshPreparedCounts(MagicOverviewModel magic) =>
+        WebMagicStatePersistence.Refresh(magic);
 
     private static void PersistMagicState(string absolutePath, MagicOverviewModel magic)
     {
-        if (string.IsNullOrWhiteSpace(absolutePath) || !File.Exists(absolutePath))
-        {
-            return;
-        }
-
-        XmlDocument document = new();
-        document.Load(absolutePath);
-
-        var magicSpells = magic.SpellLevels.SelectMany(level => level.Spells).ToList();
-        Dictionary<string, bool> preparedById =
-            PreparedSpellLookup.ById(magicSpells, spell => spell.Id, spell => spell.IsPrepared);
-        Dictionary<string, bool> preparedByName =
-            PreparedSpellLookup.ByName(magicSpells, spell => spell.Name, spell => spell.IsPrepared);
-
-        XmlNode? buildNode = document.DocumentElement?["build"];
-        XmlNode? magicNode = buildNode?["magic"];
-        if (magicNode is not null)
-        {
-            foreach (XmlNode spellcastingNode in magicNode.ChildNodes)
-            {
-                if (spellcastingNode.Name != "spellcasting")
-                {
-                    continue;
-                }
-
-                XmlNode? spellsNode = spellcastingNode["spells"];
-                if (spellsNode is null)
-                {
-                    continue;
-                }
-
-                foreach (XmlNode spellNode in spellsNode.ChildNodes)
-                {
-                    if (spellNode.Name != "spell")
-                    {
-                        continue;
-                    }
-
-                    string? spellId = spellNode.Attributes?["id"]?.Value;
-                    string? spellName = spellNode.Attributes?["name"]?.Value;
-                    if (!TryGetPreparedValue(preparedById, preparedByName, spellId, spellName, out bool isPrepared))
-                    {
-                        continue;
-                    }
-
-                    string? alwaysPrepared = spellNode.Attributes?["always-prepared"]?.Value;
-                    if (string.Equals(alwaysPrepared, "true", StringComparison.OrdinalIgnoreCase))
-                    {
-                        continue;
-                    }
-
-                    XmlAttributeCollection? attributes = spellNode.Attributes;
-                    XmlAttribute? preparedAttribute = attributes?["prepared"];
-                    if (isPrepared)
-                    {
-                        if (preparedAttribute is null)
-                        {
-                            XmlAttribute created = document.CreateAttribute("prepared");
-                            created.Value = "true";
-                            attributes?.Append(created);
-                        }
-                        else
-                        {
-                            preparedAttribute.Value = "true";
-                        }
-                    }
-                    else if (preparedAttribute is not null)
-                    {
-                        attributes?.Remove(preparedAttribute);
-                    }
-                }
-            }
-        }
-
-        XmlElement root = document.DocumentElement ?? throw new InvalidOperationException("Character file is missing a root element.");
-        XmlElement sessionNode = root["session"] ?? document.CreateElement("session");
-        if (sessionNode.ParentNode is null)
-        {
-            root.AppendChild(sessionNode);
-        }
-
-        XmlElement spellSlotsNode = sessionNode["spellslots"] ?? document.CreateElement("spellslots");
-        if (spellSlotsNode.ParentNode is null)
-        {
-            sessionNode.AppendChild(spellSlotsNode);
-        }
-        spellSlotsNode.RemoveAll();
-
-        foreach (MagicSpellLevelModel level in magic.SpellLevels.Where(level => level.UsedSlots > 0))
-        {
-            XmlElement slotNode = document.CreateElement("slot");
-            slotNode.SetAttribute("level", level.Level.ToString());
-            slotNode.SetAttribute("used", level.UsedSlots.ToString());
-            spellSlotsNode.AppendChild(slotNode);
-        }
-
-        using XmlTextWriter writer = new(absolutePath, Encoding.UTF8)
-        {
-            Formatting = Formatting.Indented,
-            IndentChar = '\t',
-            Indentation = 1
-        };
-        document.Save(writer);
+        WebMagicStatePersistence.Save(absolutePath, magic);
+        SynchronizePreparedState(magic);
     }
 
+    private static void SynchronizePreparedState(MagicOverviewModel magic)
+    {
+        var handler = SpellcastingSectionContext.Current;
+        if (handler is null) return;
+        foreach (var profile in CharacterManager.Current.GetSpellcastingInformations().Where(profile => !profile.IsExtension))
+        {
+            var section = magic.Sections.FirstOrDefault(section =>
+                section.Id.Equals(SpellAcquisitionResolver.ProfileKey(profile), StringComparison.OrdinalIgnoreCase));
+            if (section is null) continue;
+            foreach (string id in handler.GetPreparedIds(profile).ToArray())
+                handler.UnsetPrepareSpell(profile, id);
+            foreach (var spell in section.SpellLevels.SelectMany(level => level.Spells).Where(spell => spell.IsPrepared))
+                handler.SetPrepareSpell(profile, spell.Id);
+        }
+    }
     private static bool TryGetPreparedValue(
         IReadOnlyDictionary<string, bool> preparedById,
         IReadOnlyDictionary<string, bool> preparedByName,
@@ -2265,8 +2077,8 @@ public sealed class WebCharacterEngineService
     private static IReadOnlyCollection<string> GetPreparedIds(string spellcastingName) =>
         SpellcastingSectionContext.Current?.GetPreparedIds(spellcastingName) ?? Array.Empty<string>();
 
-    private static IReadOnlyList<(string Id, string Name)> CollectCantrips() =>
-        CharacterManager.Current.GetElements()
+    private static IReadOnlyList<(string Id, string Name)> CollectCantrips(IReadOnlyList<SpellAcquisition> acquisitions) =>
+        acquisitions.Where(acquisition => acquisition.Preparation != SpellPreparation.ListOnly).Select(acquisition => acquisition.Spell)
             .Where(element => element.Type == "Spell" && GetSpellLevel(element) == 0)
             .Select(element => (element.Id ?? element.Name ?? string.Empty, element.Name ?? string.Empty))
             .Where(entry => !string.IsNullOrWhiteSpace(entry.Item2))
@@ -2275,15 +2087,17 @@ public sealed class WebCharacterEngineService
             .ToList();
 
     private static IReadOnlyList<MagicSpellLevelModel> CollectSpellLevels(
+        SpellcastingInformation info,
         bool isPreparedCaster,
         string supportsExpr,
         IReadOnlyCollection<string> preparedIds,
-        bool isSpellbookCaster = false)
+        bool isSpellbookCaster,
+        IReadOnlyList<SpellAcquisition> acquisitions,
+        IReadOnlyList<(string Supports, bool IsId)> extensions)
     {
         int[] totalSlots = new int[10];
         try
         {
-            var info = CharacterManager.Current.GetSpellcastingInformations().FirstOrDefault(candidate => !candidate.IsExtension);
             if (info is not null)
             {
                 for (int level = 1; level <= 9; level++)
@@ -2309,15 +2123,15 @@ public sealed class WebCharacterEngineService
 
         if (isPreparedCaster && isSpellbookCaster)
         {
-            return CollectPreparedCasterSpellLevels(string.Empty, preparedIds, totalSlots, maxSlot, true);
+            return CollectPreparedCasterSpellLevels(string.Empty, preparedIds, totalSlots, maxSlot, true, acquisitions, extensions);
         }
 
         if (isPreparedCaster && !string.IsNullOrEmpty(supportsExpr))
         {
-            return CollectPreparedCasterSpellLevels(supportsExpr, preparedIds, totalSlots, maxSlot, false);
+            return CollectPreparedCasterSpellLevels(supportsExpr, preparedIds, totalSlots, maxSlot, false, acquisitions, extensions);
         }
 
-        var spellsByLevel = CharacterManager.Current.GetElements()
+        var spellsByLevel = acquisitions.Where(acquisition => acquisition.Preparation != SpellPreparation.ListOnly).Select(acquisition => acquisition.Spell)
             .Where(element => element.Type == "Spell")
             .Select(element => (Name: element.Name ?? string.Empty, Id: element.Id ?? string.Empty, Level: GetSpellLevel(element)))
             .Where(spell => spell.Level > 0 && !string.IsNullOrEmpty(spell.Name))
@@ -2349,31 +2163,17 @@ public sealed class WebCharacterEngineService
         IReadOnlyCollection<string> preparedIds,
         int[] totalSlots,
         int maxSlot,
-        bool isSpellbookCaster)
+        bool isSpellbookCaster,
+        IReadOnlyList<SpellAcquisition> acquisitions,
+        IReadOnlyList<(string Supports, bool IsId)> extensions)
     {
         int effectiveMax = maxSlot > 0 ? maxSlot : 9;
         HashSet<string> alwaysPreparedIds = new(StringComparer.OrdinalIgnoreCase);
         Dictionary<string, string> alwaysPreparedSources = new(StringComparer.OrdinalIgnoreCase);
-        foreach (var element in CharacterManager.Current.GetElements().Where(element => element.Type == "Spell"))
+        foreach (var acquisition in acquisitions.Where(acquisition => acquisition.IsAlwaysPrepared))
         {
-            try
-            {
-                dynamic dynamicElement = element;
-                if ((bool)dynamicElement.Aquisition.WasGranted && (bool)dynamicElement.Aquisition.GrantRule.IsAlwaysPrepared())
-                {
-                    string id = (string)dynamicElement.Id;
-                    alwaysPreparedIds.Add(id);
-                    string source = element.Aquisition.GetParentHeader()?.Name ?? string.Empty;
-                    if (!string.IsNullOrWhiteSpace(source))
-                    {
-                        alwaysPreparedSources[id] = source;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.Exception(ex, $"WebCharacterEngineService.CollectPreparedCasterSpellLevels always-prepared check for '{element.Id}'");
-            }
+            alwaysPreparedIds.Add(acquisition.Spell.Id);
+            alwaysPreparedSources[acquisition.Spell.Id] = acquisition.OriginName;
         }
 
         var sourcesManager = CharacterManager.Current.SourcesManager;
@@ -2386,7 +2186,7 @@ public sealed class WebCharacterEngineService
         List<(string Name, string Id, int Level, string Source)> allSpellList;
         if (isSpellbookCaster)
         {
-            allSpellList = CharacterManager.Current.GetElements()
+            allSpellList = acquisitions.Where(acquisition => acquisition.Preparation != SpellPreparation.ListOnly).Select(acquisition => acquisition.Spell)
                 .Where(element => element.Type == "Spell")
                 .Select(element => (element.Name ?? string.Empty, element.Id ?? string.Empty, GetSpellLevel(element), element.Source ?? string.Empty))
                 .Where(spell => spell.Item3 > 0 && spell.Item3 <= effectiveMax && !string.IsNullOrEmpty(spell.Item1))
@@ -2419,9 +2219,27 @@ public sealed class WebCharacterEngineService
                 .Where(spell => spell.Level > 0 && spell.Level <= effectiveMax && !string.IsNullOrEmpty(spell.Name))
                 .ToList();
 
+            foreach (var extension in extensions)
+            {
+                IEnumerable<ElementBase> extended;
+                if (extension.IsId)
+                {
+                    var spell = DataManager.Current.ElementsCollection.GetElement(extension.Supports);
+                    extended = spell is null ? [] : [spell];
+                }
+                else
+                {
+                    extended = new ExpressionInterpreter().EvaluateSupportsExpression(
+                        extension.Supports, spellBase.Cast<object>()).Cast<ElementBase>();
+                }
+                classSpells.AddRange(extended.Where(spell => spell.Type == "Spell")
+                    .Select(spell => (spell.Name ?? string.Empty, spell.Id ?? string.Empty, GetSpellLevel(spell), spell.Source ?? string.Empty))
+                    .Where(spell => spell.Item3 > 0 && spell.Item3 <= effectiveMax));
+            }
+
             HashSet<string> classSpellIds = new(classSpells.Select(spell => spell.Id), StringComparer.OrdinalIgnoreCase);
 
-            var extraSpells = CharacterManager.Current.GetElements()
+            var extraSpells = acquisitions.Where(acquisition => acquisition.Preparation != SpellPreparation.ListOnly).Select(acquisition => acquisition.Spell)
                 .Where(element => element.Type == "Spell")
                 .Select(element => (
                     Name: element.Name ?? string.Empty,
@@ -2445,7 +2263,7 @@ public sealed class WebCharacterEngineService
             .Where(spell => !IsRestricted(spell.Id, spell.Source) || preparedIds.Contains(spell.Id) || alwaysPreparedIds.Contains(spell.Id))
             .GroupBy(spell => spell.Level)
             .ToDictionary(group => group.Key, group =>
-                group.GroupBy(spell => spell.Name, StringComparer.OrdinalIgnoreCase)
+                group.GroupBy(spell => spell.Id, StringComparer.OrdinalIgnoreCase)
                     .Select(nameGroup =>
                     {
                         var preferred = nameGroup.FirstOrDefault(spell => preparedIds.Contains(spell.Id) || alwaysPreparedIds.Contains(spell.Id));

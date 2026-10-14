@@ -302,23 +302,26 @@ else if (_workflowSuggestion != null)
                         Personality trait, ideal, bond, and flaw are selected above when your background offers them.
                     </MudText>
                     <NarrativeField Label="Backstory" Value="@_snap.Backstory" Lines="4"
+                                    OnCommitted="CommitNarrativeAsync"
                                     ValueChanged="v => OnNarrativeChanged(v, f => _snap!.Backstory = f)" />
                     <NarrativeField Label="Deity / Faith" Value="@_snap.Deity"
+                                    OnCommitted="CommitNarrativeAsync"
                                     ValueChanged="v => OnNarrativeChanged(v, f => _snap!.Deity = f)" />
                     <NarrativeField Label="Alignment" Value="@_snap.Alignment"
+                                    OnCommitted="CommitNarrativeAsync"
                                     ValueChanged="v => OnNarrativeChanged(v, f => _snap!.Alignment = f)" />
                 </div>
 
                 <div class="build-section">
                     <div class="section-label">Appearance</div>
                     <div class="bg-narrative-grid">
-                        <NarrativeField Label="Age"    Value="@_snap.Age"    ValueChanged="v => OnNarrativeChanged(v, f => _snap!.Age    = f)" />
-                        <NarrativeField Label="Gender" Value="@_snap.Gender" ValueChanged="v => OnNarrativeChanged(v, f => _snap!.Gender = f)" />
-                        <NarrativeField Label="Height" Value="@_snap.Height" ValueChanged="v => OnNarrativeChanged(v, f => _snap!.Height = f)" />
-                        <NarrativeField Label="Weight" Value="@_snap.Weight" ValueChanged="v => OnNarrativeChanged(v, f => _snap!.Weight = f)" />
-                        <NarrativeField Label="Eyes"   Value="@_snap.Eyes"   ValueChanged="v => OnNarrativeChanged(v, f => _snap!.Eyes   = f)" />
-                        <NarrativeField Label="Hair"   Value="@_snap.Hair"   ValueChanged="v => OnNarrativeChanged(v, f => _snap!.Hair   = f)" />
-                        <NarrativeField Label="Skin"   Value="@_snap.Skin"   ValueChanged="v => OnNarrativeChanged(v, f => _snap!.Skin   = f)" />
+                        <NarrativeField Label="Age"    Value="@_snap.Age"    OnCommitted="CommitNarrativeAsync" ValueChanged="v => OnNarrativeChanged(v, f => _snap!.Age    = f)" />
+                        <NarrativeField Label="Gender" Value="@_snap.Gender" OnCommitted="CommitNarrativeAsync" ValueChanged="v => OnNarrativeChanged(v, f => _snap!.Gender = f)" />
+                        <NarrativeField Label="Height" Value="@_snap.Height" OnCommitted="CommitNarrativeAsync" ValueChanged="v => OnNarrativeChanged(v, f => _snap!.Height = f)" />
+                        <NarrativeField Label="Weight" Value="@_snap.Weight" OnCommitted="CommitNarrativeAsync" ValueChanged="v => OnNarrativeChanged(v, f => _snap!.Weight = f)" />
+                        <NarrativeField Label="Eyes"   Value="@_snap.Eyes"   OnCommitted="CommitNarrativeAsync" ValueChanged="v => OnNarrativeChanged(v, f => _snap!.Eyes   = f)" />
+                        <NarrativeField Label="Hair"   Value="@_snap.Hair"   OnCommitted="CommitNarrativeAsync" ValueChanged="v => OnNarrativeChanged(v, f => _snap!.Hair   = f)" />
+                        <NarrativeField Label="Skin"   Value="@_snap.Skin"   OnCommitted="CommitNarrativeAsync" ValueChanged="v => OnNarrativeChanged(v, f => _snap!.Skin   = f)" />
                     </div>
                 </div>
             }
@@ -337,6 +340,7 @@ else if (_workflowSuggestion != null)
                     @foreach (var m in _allMethods)
                     {
                         <button class="ability-method-btn @(_abilityMethod == m.Method ? "active" : "")"
+                                disabled="@_saving"
                                 @onclick="() => SetAbilityMethod(m.Method)">
                             @m.Label
                         </button>
@@ -377,7 +381,7 @@ else if (_workflowSuggestion != null)
                         }
                     </div>
                     <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-disabled); margin-top: 2px;">
-                        Assign each value to exactly one ability score.
+                        Assign each value once. Choosing an occupied value swaps the two scores; unassigned rows keep their existing score until assigned.
                     </MudText>
                 }
 
@@ -927,13 +931,14 @@ else if (_workflowSuggestion != null)
             WarnUnavailable("There is no active character to save right now.");
             return;
         }
+        long editVersion = tab.EditVersion;
         _saving = true;
         StateHasChanged();
         var error = await BuildService.SaveTabAsync(tab);
         _saving = false;
         if (error == null)
         {
-            Tabs.MarkClean(tab);
+            if (tab.EditVersion == editVersion) Tabs.MarkClean(tab);
             Snackbar.Add("Saved.", Severity.Success, cfg => { cfg.VisibleStateDuration = 2000; });
         }
         else
@@ -1032,19 +1037,29 @@ else if (_workflowSuggestion != null)
 
     // ── Narrative fields ─────────────────────────────────────────────────────────
 
-    private async Task OnNarrativeChanged(string value, Action<string> setter)
+    private Task OnNarrativeChanged(string value, Action<string> setter)
     {
         setter(value);
+        if (Tabs.ActiveTab is { } tab) Tabs.MarkDirty(tab);
+        return Task.CompletedTask;
+    }
+
+    private async Task CommitNarrativeAsync()
+    {
         var tab = Tabs.ActiveTab;
         if (tab == null) return;
 
         if (Prefs.AutoSaveBuildChanges)
         {
+            // A local save yields while the fields remain editable. Its completion must not
+            // clear the dirty flag for text entered after this save started.
+            long editVersion = tab.EditVersion;
             _saving = true;
             StateHasChanged();
             var error = await BuildService.SaveTabAsync(tab);
             _saving = false;
             if (error != null) _saveError = error;
+            else if (tab.EditVersion == editVersion) Tabs.MarkClean(tab);
         }
         else
         {
@@ -1334,20 +1349,31 @@ else if (_workflowSuggestion != null)
 
     // ── Ability scores: method switching ─────────────────────────────────────────
 
-    private void SetAbilityMethod(AbilityGenMethod method)
+    private async Task SetAbilityMethod(AbilityGenMethod method)
     {
         _abilityMethod = method;
         if (_abilities == null) return;
         if (method == AbilityGenMethod.PointBuy)
         {
+            bool changed = _abilityRows.Any(row => row.Item.BaseScore is < 8 or > 15);
             foreach (var row in _abilityRows)
                 row.Item.BaseScore = Math.Clamp(row.Item.BaseScore, 8, 15);
             _abilities.DisablePointsCalculation = false;
             _abilities.CalculateAvailablePoints();
+            if (changed)
+            {
+                await ApplyAbilityChangesAsync();
+                Snackbar.Add("Base scores converted to the Point Buy range (8–15).", Severity.Info);
+            }
         }
         else
         {
             _abilities.DisablePointsCalculation = true;
+        }
+        if (method == AbilityGenMethod.StandardArray)
+        {
+            _arrayAssignments.Clear();
+            LoadAbilityRows();
         }
     }
 
@@ -1413,18 +1439,16 @@ else if (_workflowSuggestion != null)
 
     private IEnumerable<int> GetAvailableArrayValues(string abbrev)
     {
-        var usedElsewhere = _abilityRows
-            .Where(r => r.Abbrev != abbrev && _arrayAssignments.TryGetValue(r.Abbrev, out var v) && v != 0)
-            .Select(r => _arrayAssignments[r.Abbrev])
-            .ToHashSet();
-        return _standardArray.Where(v => !usedElsewhere.Contains(v));
+        return _standardArray;
     }
 
     private async Task AssignArrayValue(AbilityItem item, string abbrev, int value)
     {
-        _arrayAssignments[abbrev] = value;
-        if (value == 0) return;
-        item.BaseScore = value;
+        if (!_standardArray.Contains(value)) return;
+        var scores = _abilityRows.ToDictionary(row => row.Abbrev, row => row.Item.BaseScore);
+        var updated = StandardArrayAssignment.Assign(_arrayAssignments, scores, abbrev, value);
+        foreach (var row in _abilityRows)
+            row.Item.BaseScore = updated[row.Abbrev];
         await ApplyAbilityChangesAsync();
     }
 

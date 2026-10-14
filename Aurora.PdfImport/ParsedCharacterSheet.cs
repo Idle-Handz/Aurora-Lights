@@ -6,11 +6,14 @@ namespace Aurora.PdfImport;
 /// </summary>
 public sealed class ParsedCharacterSheet
 {
+    /// <summary>Temporary portrait owned by this import; dispose when the preview is discarded.</summary>
+    public StagedImportPortrait? StagedPortrait { get; set; }
     // ── Header ───────────────────────────────────────────────────────────────
     public string? CharacterName  { get; set; }
     public string? PlayerName     { get; set; }
     public string? ClassName      { get; set; }  // e.g. "Blood Hunter (archived)"
     public int?    ClassLevel      { get; set; }
+    public List<ParsedClass> Classes { get; set; } = [];
     public string? Species         { get; set; }  // e.g. "Human", "Custom Lineage"
     public string? Background      { get; set; }  // e.g. "Haunted One", "Custom Background"
     public string? ExperiencePoints { get; set; } // "900" or "(Milestone)"
@@ -111,6 +114,23 @@ public sealed class ParsedFeature
     public string? SourcePage { get; set; }  // e.g. "12"
     public string? Description { get; set; }
     public bool    IsSubFeature { get; set; } // true for "|" prefix lines
+}
+
+public sealed record ParsedClass(string Name, int Level, string? Subclass, bool IsStartingClass);
+
+public static class CharacterImportSupport
+{
+    public static void EnsureSupported(ParsedCharacterSheet sheet)
+    {
+        if (sheet.Classes.Count == 0) return;
+        if (sheet.Classes.Any(candidate => candidate.Level is < 1 or > 20)
+            || sheet.Classes.Sum(candidate => candidate.Level) > 20)
+            throw new InvalidOperationException("Class levels must be positive and total no more than 20.");
+        if (sheet.Classes.Count(candidate => candidate.IsStartingClass) > 1)
+            throw new InvalidOperationException("The export identifies more than one starting class. Correct the export before importing.");
+        if (sheet.Classes.GroupBy(candidate => candidate.Name, StringComparer.OrdinalIgnoreCase).Any(group => group.Count() > 1))
+            throw new InvalidOperationException("The export contains duplicate class entries. Combine each class's levels before importing.");
+    }
 }
 
 public sealed class ParsedSpell

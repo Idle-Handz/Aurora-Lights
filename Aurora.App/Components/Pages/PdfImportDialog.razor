@@ -1,3 +1,5 @@
+@implements IDisposable
+
 <MudDialog>
     <TitleContent>
         <MudText Typo="Typo.h6" Style="font-size: 15px; font-weight: 600;">Import Character</MudText>
@@ -102,8 +104,19 @@
             @if (_state == State.Review && _result != null)
             {
                 <MudText Style="font-size: 13px; margin-bottom: 12px;">
-                    Parsed <strong>@_result.CharacterName</strong> — @_result.DisplayRace @_result.DisplayClass @_result.Level
+                    Parsed <strong>@_result.CharacterName</strong> — @_result.DisplayRace @_result.DisplayClass
+                    @if (_result.Classes.Count <= 1)
+                    {
+                        <text> @_result.Level</text>
+                    }
                 </MudText>
+                @if (_result.Classes.Count > 1)
+                {
+                    <MudText Style="font-size: 12px; margin-bottom: 12px;">
+                        Starting class: @_result.Classes[0].Name. Total level: @_result.Level.
+                        Review level-specific choices in Build after import.
+                    </MudText>
+                }
 
                 @if (_result.Ambiguities.Any())
                 {
@@ -210,7 +223,7 @@
         </div>
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Cancel" Variant="Variant.Text">
+        <MudButton OnClick="Cancel" Variant="Variant.Text" Disabled="@_saving">
             @(_state == State.Done ? "Close" : "Cancel")
         </MudButton>
         @if (_state == State.Review)
@@ -242,6 +255,8 @@
     private string _outputFileName = "";
     private string _ddbUrl         = "";
     private bool _apiUrlCopied;
+    private bool _disposed;
+    private bool _saving;
 
     private ParsedCharacterSheet? _sheet;
     private ImportResult? _result;
@@ -303,27 +318,30 @@
             };
 
             var file = await FilePicker.Default.PickAsync(options);
-            if (file == null) return;
+            if (file == null || _disposed) return;
 
             _state         = State.Working;
             _statusMessage = "Rendering PDF and running OCR…";
             StateHasChanged();
 
             // Stream-copy to a temp file — FullPath is a content:// URI on Android.
-            string tmpPdf = Path.Combine(Path.GetTempPath(), Path.GetFileName(file.FileName));
-            using (var src  = await file.OpenReadAsync())
-            using (var dest = File.Create(tmpPdf))
-                await src.CopyToAsync(dest);
-
-            var outcome = await PdfImport.ImportAsync(tmpPdf);
-            HandleOutcome(outcome, "Content database is not available. Sync in Content DB settings first.");
+            string tmpPdf = Path.Combine(Path.GetTempPath(), $"aurora-import-{Guid.NewGuid():N}.pdf");
+            try
+            {
+                using (var src = await file.OpenReadAsync())
+                using (var dest = File.Create(tmpPdf))
+                    await src.CopyToAsync(dest);
+                var outcome = await PdfImport.ImportAsync(tmpPdf);
+                HandleOutcome(outcome, "Content database is not available. Sync in Content DB settings first.");
+            }
+            finally { File.Delete(tmpPdf); }
         }
         catch (Exception ex)
         {
             _state = State.Idle;
             _error = $"Import failed: {ex.Message}";
         }
-        finally { StateHasChanged(); }
+        finally { if (!_disposed) StateHasChanged(); }
     }
 
     // ── JSON import ───────────────────────────────────────────────────────────
@@ -346,27 +364,30 @@
             };
 
             var file = await FilePicker.Default.PickAsync(options);
-            if (file == null) return;
+            if (file == null || _disposed) return;
 
             _state         = State.Working;
             _statusMessage = "Parsing JSON export…";
             StateHasChanged();
 
             // Stream-copy to a temp file — FullPath is a content:// URI on Android.
-            string tmpJson = Path.Combine(Path.GetTempPath(), Path.GetFileName(file.FileName));
-            using (var src  = await file.OpenReadAsync())
-            using (var dest = File.Create(tmpJson))
-                await src.CopyToAsync(dest);
-
-            var outcome = await PdfImport.ImportFromJsonAsync(tmpJson);
-            HandleOutcome(outcome, "Content database is not available. Sync in Content DB settings first.");
+            string tmpJson = Path.Combine(Path.GetTempPath(), $"aurora-import-{Guid.NewGuid():N}.json");
+            try
+            {
+                using (var src = await file.OpenReadAsync())
+                using (var dest = File.Create(tmpJson))
+                    await src.CopyToAsync(dest);
+                var outcome = await PdfImport.ImportFromJsonAsync(tmpJson);
+                HandleOutcome(outcome, "Content database is not available. Sync in Content DB settings first.");
+            }
+            finally { File.Delete(tmpJson); }
         }
         catch (Exception ex)
         {
             _state = State.Idle;
             _error = $"Import failed: {ex.Message}";
         }
-        finally { StateHasChanged(); }
+        finally { if (!_disposed) StateHasChanged(); }
     }
 
     // ── Shared outcome handler ────────────────────────────────────────────────
@@ -375,6 +396,11 @@
         (Aurora.PdfImport.ParsedCharacterSheet Sheet, ImportResult Result)? outcome,
         string noDbMessage)
     {
+        if (_disposed)
+        {
+            outcome?.Sheet.StagedPortrait?.Dispose();
+            return;
+        }
         if (outcome == null)
         {
             _state = State.Idle;
@@ -384,12 +410,14 @@
 
         if (outcome.Value.Sheet.IsUnsupportedFormat)
         {
+            outcome.Value.Sheet.StagedPortrait?.Dispose();
             _state = State.Idle;
             _error = "This file doesn't appear to be a D&D Beyond character sheet. " +
                      "Only D&D Beyond PDF exports (and JSON character exports) are currently supported.";
             return;
         }
 
+        _sheet?.StagedPortrait?.Dispose();
         _result         = outcome.Value.Result;
         _sheet          = outcome.Value.Sheet;
         _outputFileName = SanitiseFileName(_result.CharacterName);
@@ -434,6 +462,7 @@
             }
 
             _state         = State.Working;
+            _saving = true;
             _statusMessage = "Saving character file…";
             StateHasChanged();
 
@@ -446,10 +475,25 @@
             _state = State.Review;
             _error = $"Save failed: {ex.GetType().Name}: {ex.Message}";
         }
-        finally { StateHasChanged(); }
+        finally
+        {
+            _saving = false;
+            if (_disposed) _sheet?.StagedPortrait?.Dispose();
+            else StateHasChanged();
+        }
     }
 
-    private void Cancel() => MudDialog.Cancel();
+    private void Cancel()
+    {
+        Dispose();
+        MudDialog.Cancel();
+    }
+
+    public void Dispose()
+    {
+        _disposed = true;
+        if (!_saving) _sheet?.StagedPortrait?.Dispose();
+    }
 
     private static string SanitiseFileName(string name)
     {

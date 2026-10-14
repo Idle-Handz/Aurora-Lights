@@ -29,6 +29,7 @@
                           EmptySubMessage="Create a character here, or import an existing .dnd5e file."
                           BusyMessage="@BusyMessage"
                           ShowCreateButton="false"
+                          @bind-SearchText="_searchText"
                           SelectedId="@_selectedCharacter?.RelativePath"
                           OnSelected="OnBrowserSelected"
                           OnDelete="DeleteCharacterAsync"
@@ -54,6 +55,7 @@
     private IReadOnlyList<ImportedCharacterSummary> _characters = [];
     private ImportedCharacterSummary? _selectedCharacter;
     private bool _loading = true;
+    private string _searchText = string.Empty;
     private bool _busy;
     private bool _failed;
     private string? _message;

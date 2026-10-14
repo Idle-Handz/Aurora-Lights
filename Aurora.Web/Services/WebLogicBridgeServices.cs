@@ -8,6 +8,8 @@ using Builder.Presentation.Models;
 using Builder.Presentation.Services.Data;
 using Builder.Presentation.UserControls.Spellcasting;
 
+using Builder.Presentation.Services;
+
 namespace Aurora.Web.Services;
 
 internal sealed class WebSelectionRuleExpanderHandler : ISelectionRuleExpanderHandler
@@ -82,10 +84,29 @@ internal sealed class WebSpellcastingSectionHandler : ISpellcastingSectionHandle
 
     public void ResetPreparedState() => _preparedIds.Clear();
 
-    public IReadOnlyCollection<string> GetPreparedIds(string spellcastingName) =>
-        _preparedIds.TryGetValue(spellcastingName, out HashSet<string>? ids)
-            ? ids
-            : Array.Empty<string>();
+    public IReadOnlyCollection<string> GetPreparedIds(string spellcastingName)
+    {
+        var profiles = CharacterManager.Current.GetSpellcastingInformations()
+            .Where(p => !p.IsExtension && p.Name == spellcastingName).ToArray();
+        return profiles.Length == 1 ? GetPreparedIds(profiles[0]) : Array.Empty<string>();
+    }
+
+    public IReadOnlyCollection<string> GetPreparedIds(SpellcastingInformation profile) =>
+        _preparedIds.TryGetValue(SpellAcquisitionResolver.ProfileKey(profile), out var ids)
+            ? ids : Array.Empty<string>();
+
+    public void UnsetPrepareSpell(SpellcastingInformation profile, string elementId)
+    {
+        if (_preparedIds.TryGetValue(SpellAcquisitionResolver.ProfileKey(profile), out var ids))
+            ids.Remove(elementId);
+    }
+
+    public void UnsetPrepareSpell(string spellcastingName, string elementId)
+    {
+        var profiles = CharacterManager.Current.GetSpellcastingInformations()
+            .Where(p => !p.IsExtension && p.Name == spellcastingName).ToArray();
+        if (profiles.Length == 1) UnsetPrepareSpell(profiles[0], elementId);
+    }
 
     public SpellcasterSelectionControlViewModel? GetSpellcasterSectionViewModel(string uniqueIdentifier) => null;
 
@@ -94,8 +115,9 @@ internal sealed class WebSpellcastingSectionHandler : ISpellcastingSectionHandle
         if (string.IsNullOrWhiteSpace(elementId))
             return false;
 
-        if (!_preparedIds.TryGetValue(information.Name, out HashSet<string>? ids))
-            _preparedIds[information.Name] = ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        string key = SpellAcquisitionResolver.ProfileKey(information);
+        if (!_preparedIds.TryGetValue(key, out HashSet<string>? ids))
+            _preparedIds[key] = ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         ids.Add(elementId);
         return true;

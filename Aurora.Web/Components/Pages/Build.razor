@@ -146,7 +146,7 @@
                                 <span class="ability-array-chip @(used ? "used" : "")">@v</span>
                             }
                         </div>
-                        <p class="ability-hint">Assign each value to exactly one ability score.</p>
+                        <p class="ability-hint">Assign each value to one ability score. Choosing a value already in use swaps the two scores. Unassigned abilities retain their current scores.</p>
                     }
 
                     <div class="ability-stats-table-wrapper">
@@ -642,18 +642,13 @@
 
     private IEnumerable<int> GetAvailableArrayValues(string stat)
     {
-        var usedElsewhere = _arrayAssignments
-            .Where(kv => kv.Key != stat && kv.Value != 0)
-            .Select(kv => kv.Value)
-            .ToHashSet();
-        return _standardArray.Where(v => !usedElsewhere.Contains(v));
+        return _standardArray;
     }
 
     private async Task AssignArrayValueAsync(string stat, int value)
     {
-        _arrayAssignments[stat] = value;
-        if (value == 0) return;
-        var scores = BuildScoresDict(stat, value);
+        if (!_standardArray.Contains(value)) return;
+        var scores = StandardArrayAssignment.Assign(_arrayAssignments, BuildScoresDict(), stat, value);
         await ApplyScoresAsync(scores);
     }
 

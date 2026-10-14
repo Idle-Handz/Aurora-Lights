@@ -17,14 +17,16 @@ public class StatisticValuesGroupCollection : List<StatisticValuesGroup>
   {
     if (groupName == null)
       return false;
-    return groupName.StartsWith("-") ? this.Any<StatisticValuesGroup>((Func<StatisticValuesGroup, bool>) (x => x.GroupName.Equals(groupName.Substring(1, groupName.Length - 1)))) : this.Any<StatisticValuesGroup>((Func<StatisticValuesGroup, bool>) (x => x.GroupName.Equals(groupName)));
+    if (groupName.StartsWith("-"))
+      groupName = groupName.Substring(1);
+    return this.Any(x => x.GroupName.Equals(groupName));
   }
 
   public void AddGroup(StatisticValuesGroup group)
   {
-    if (this.ContainsGroup(group.GroupName))
+    StatisticValuesGroup group1 = this.GetGroup(group.GroupName, false);
+    if (group1 != null)
     {
-      StatisticValuesGroup group1 = this.GetGroup(group.GroupName);
       foreach (KeyValuePair<string, int> keyValuePair in group.GetValues())
         group1.AddValue(keyValuePair.Key, keyValuePair.Value);
     }
@@ -36,8 +38,9 @@ public class StatisticValuesGroupCollection : List<StatisticValuesGroup>
   {
     if (groupName.StartsWith("-"))
       groupName = groupName.Substring(1, groupName.Length - 1);
-    if (this.ContainsGroup(groupName))
-      return this.Single<StatisticValuesGroup>((Func<StatisticValuesGroup, bool>) (x => x.GroupName.Equals(groupName)));
+    StatisticValuesGroup existing = this.SingleOrDefault(x => x.GroupName.Equals(groupName));
+    if (existing != null)
+      return existing;
     if (!createNonExisting)
       return (StatisticValuesGroup) null;
     StatisticValuesGroup group = new StatisticValuesGroup(groupName);
@@ -47,6 +50,6 @@ public class StatisticValuesGroupCollection : List<StatisticValuesGroup>
 
   public int GetValue(string groupName)
   {
-    return this.ContainsGroup(groupName) ? this.GetGroup(groupName).Sum() : 0;
+    return groupName == null ? 0 : this.GetGroup(groupName, false)?.Sum() ?? 0;
   }
 }

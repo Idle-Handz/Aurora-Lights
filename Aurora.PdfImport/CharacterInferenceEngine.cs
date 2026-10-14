@@ -45,6 +45,7 @@ public sealed class CharacterInferenceEngine
 
     public ImportResult Infer(ParsedCharacterSheet sheet)
     {
+        CharacterImportSupport.EnsureSupported(sheet);
         var result = new ImportResult();
 
         // Flat character data.
@@ -74,11 +75,21 @@ public sealed class CharacterInferenceEngine
 
         result.Level            = sheet.ClassLevel ?? 1;
         result.ParseDiagnostics = sheet.ParseDiagnostics;
+        if (sheet.Classes.Count > 0)
+        {
+            var starting = sheet.Classes.FirstOrDefault(candidate => candidate.IsStartingClass)
+                ?? sheet.Classes.FirstOrDefault(candidate => candidate.Name == sheet.ClassName)
+                ?? sheet.Classes[0];
+            result.Classes = sheet.Classes.OrderByDescending(candidate => ReferenceEquals(candidate, starting)).ToList();
+            result.Level = result.Classes.Sum(candidate => candidate.Level);
+        }
 
         // ── Element resolution ────────────────────────────────────────────────
 
         string? className = CleanClassName(sheet.ClassName);
         result.DisplayClass      = className ?? sheet.ClassName ?? "";
+        if (result.Classes.Count > 1)
+            result.DisplayClass = string.Join(" / ", result.Classes.Select(candidate => $"{candidate.Name} {candidate.Level}"));
         result.DisplayRace       = sheet.Species    ?? "";
         result.DisplayBackground = sheet.Background ?? "";
 
@@ -89,7 +100,19 @@ public sealed class CharacterInferenceEngine
             ResolveRaceWithSubrace(connection, sheet.Species, result);
 
         // Class.
-        if (!string.IsNullOrWhiteSpace(className))
+        if (result.Classes.Count > 0)
+        {
+            for (int index = 0; index < result.Classes.Count; index++)
+            {
+                var importedClass = result.Classes[index];
+                string name = CleanClassName(importedClass.Name) ?? importedClass.Name;
+                ResolveByName(connection, index == 0 ? "Class" : "Multiclass", name, result, level: 1, ownerClass: importedClass.Name);
+                if (!string.IsNullOrWhiteSpace(importedClass.Subclass))
+                    ResolveByName(connection, "Archetype", CleanArchivedSuffix(importedClass.Subclass), result,
+                        level: SubclassLevel(name), ownerClass: importedClass.Name);
+            }
+        }
+        else if (!string.IsNullOrWhiteSpace(className))
             ResolveByName(connection, "Class", className, result, level: 1);
 
         // Background.
@@ -101,7 +124,7 @@ public sealed class CharacterInferenceEngine
             InferLevelElements(connection, className, result.Level, result);
 
         // Subclass — inferred from features with sub-feature names.
-        if (!string.IsNullOrWhiteSpace(className))
+        if (result.Classes.Count == 0 && !string.IsNullOrWhiteSpace(className))
             InferSubclass(connection, className, sheet, result);
 
         // Feats.
@@ -110,7 +133,8 @@ public sealed class CharacterInferenceEngine
 
         // Spells.
         foreach (var spell in sheet.Spells)
-            ResolveByName(connection, "Spell", spell.Name, result, level: 1);
+            ResolveByName(connection, "Spell", spell.Name, result, level: 1,
+                ownerClass: sheet.Classes.Any(candidate => candidate.Name == spell.Source) ? spell.Source : null);
 
         // Languages (from proficiencies block, supplementary to what elements grant).
         foreach (string lang in sheet.Languages)
@@ -176,7 +200,14 @@ public sealed class CharacterInferenceEngine
         int freeFeats = CountAutoGrantedFeats(connection, allResolvedIds);
 
         // ASI inference.
-        InferAsi(className, sheet, result, freeFeats);
+        if (result.Classes.Count <= 1)
+            InferAsi(className, sheet, result, freeFeats);
+        else
+            result.Warnings.Add(new ImportWarning
+            {
+                Category = "Progression", Item = result.DisplayClass,
+                Reason = "The export supplies class totals, not level-by-level history. Aurora keeps the starting class and each class's levels and subclass; review ability improvements and other level-specific choices in Build."
+            });
 
         return result;
     }
@@ -189,7 +220,8 @@ public sealed class CharacterInferenceEngine
         string name,
         ImportResult result,
         int level,
-        bool warnIfMissing = true)
+        bool warnIfMissing = true,
+        string? ownerClass = null)
     {
         // Strip source suffix from feat names like "Svirfneblin Magic (EE)" → "Svirfneblin Magic".
         string cleanName = Regex.Replace(name, @"\s*\([A-Z][A-Za-z\-]*\d*\)\s*$", "").Trim();
@@ -211,7 +243,7 @@ public sealed class CharacterInferenceEngine
         if (matches.Count == 1 || typeName == "Spell")
         {
             // For spells, take the first match (we're not deduplicating editions).
-            result.Elements.Add(matches[0] with { Level = level });
+            result.Elements.Add(matches[0] with { Level = level, OwnerClass = ownerClass });
             return;
         }
 
@@ -220,11 +252,11 @@ public sealed class CharacterInferenceEngine
         {
             Category   = typeName,
             Item       = cleanName,
-            Candidates = matches.Select(m => m with { Level = level }).ToList(),
+            Candidates = matches.Select(m => m with { Level = level, OwnerClass = ownerClass }).ToList(),
         });
 
         // Pre-choose the highest-precedence match as the default.
-        result.Ambiguities[^1].Chosen = matches[0] with { Level = level };
+        result.Ambiguities[^1].Chosen = matches[0] with { Level = level, OwnerClass = ownerClass };
     }
 
     private void ResolveByCandidateNames(

@@ -199,6 +199,8 @@ public sealed class CharacterIdentityRegressionTests
         var originalElements = catalog.ToArray();
         var originalSelection = SelectionRuleExpanderContext.Current;
         var originalSpells = SpellcastingSectionContext.Current;
+        SelectionRuleExpanderContext.Current = new TestSelectionRuleExpanderHandler();
+        SpellcastingSectionContext.Current = new TestSpellHandler();
         var manager = CharacterManager.Current;
         string root = Path.Combine(Path.GetTempPath(), "Aurora.Tests", "identity-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
@@ -206,8 +208,6 @@ public sealed class CharacterIdentityRegressionTests
         {
             await CharacterContext.InvalidateAsync();
             await manager.New(false);
-            SelectionRuleExpanderContext.Current = new TestSelectionRuleExpanderHandler();
-            SpellcastingSectionContext.Current = new TestSpellHandler();
             catalog.Clear();
             for (int number = 1; number <= 2; number++)
             {

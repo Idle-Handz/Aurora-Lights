@@ -431,11 +431,22 @@ public sealed class WebCharacterSessionService : IDisposable
         return state;
     }
 
-    public async Task<WebCharacterEquipmentState> UpdateCurrentEquipmentNoteAsync(EquipmentNoteChangeModel change)
+    public async Task<WebCharacterEquipmentState> UpdateCurrentEquipmentNoteAsync(
+        EquipmentNoteChangeModel change, string? expectedCharacterPath = null)
     {
         EnsureActiveCharacter();
+        string characterPath = _currentCharacterPath!;
+        if (expectedCharacterPath is not null &&
+            !string.Equals(expectedCharacterPath, characterPath, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("The active character changed before these notes could be saved.");
         PhaseZeroSessionWorkspace workspace = await _workspaceService.GetWorkspaceAsync();
-        WebCharacterEquipmentState state = await _engine.UpdateCurrentEquipmentNoteAsync(workspace, _currentCharacterPath!, change);
+        if (!string.Equals(characterPath, _currentCharacterPath, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("The active character changed before these notes could be saved.");
+        WebCharacterEquipmentState state = await _engine.UpdateCurrentEquipmentNoteAsync(workspace, characterPath, change);
+        if (!string.Equals(characterPath, _currentCharacterPath, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("The active character changed while these notes were being saved.");
+        }
         SyncRuntimeSummary(state.Summary, state.StatusMessage);
         await PersistMagicIfAvailableAsync(workspace);
         return state;
