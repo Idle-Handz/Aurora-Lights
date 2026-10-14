@@ -72,6 +72,8 @@ public static class MauiProgram
         builder.Services.AddSingleton<AppIdentityService>();
         builder.Services.AddSingleton<CharacterService>();
         builder.Services.AddSingleton<CharacterTabService>();
+        builder.Services.AddSingleton<CharacterCloseCoordinator>();
+        builder.Services.AddSingleton<WindowCloseCoordinator>();
         builder.Services.AddSingleton<CloudCharacterService>();
         builder.Services.AddSingleton<AppPageStateService>();
         builder.Services.AddSingleton<UserPreferencesService>();

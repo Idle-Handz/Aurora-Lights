@@ -132,7 +132,7 @@ jobs:
       - name: Install vpk tool
         shell: bash
         run: |
-          dotnet tool install -g vpk --version 0.0.1298
+          dotnet tool install -g vpk --version 1.0.1
           echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
 
       - name: Restore Windows runtime graph
@@ -204,6 +204,7 @@ jobs:
             --packVersion "$VERSION_SEMVER" \
             --packDir   publish/win-x64 \
             --mainExe   Aurora.Reflections.exe \
+            --framework webview2 \
             --outputDir releases/win-x64 \
             --channel   win-x64
 
@@ -235,7 +236,7 @@ jobs:
       - name: Install vpk tool
         shell: bash
         run: |
-          dotnet tool install -g vpk --version 0.0.1298
+          dotnet tool install -g vpk --version 1.0.1
           echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
 
       - name: Restore Windows runtime graph
@@ -305,6 +306,7 @@ jobs:
             --packVersion "$VERSION_SEMVER" \
             --packDir   publish/win-arm64 \
             --mainExe   Aurora.Reflections.exe \
+            --framework webview2 \
             --outputDir releases/win-arm64 \
             --channel   win-arm64
 

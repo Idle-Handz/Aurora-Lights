@@ -63,6 +63,7 @@
     <Compile Include="..\Aurora.App\Services\Updates\GithubReleasesClient.cs" Link="Linked\GithubReleasesClient.cs" />
     <Compile Include="..\Aurora.App\Services\Updates\UpdateAvailability.cs" Link="Linked\UpdateAvailability.cs" />
     <Compile Include="..\Aurora.App\Services\Updates\GithubReleaseChannelService.cs" Link="Linked\GithubReleaseChannelService.cs" />
+    <Compile Include="..\Aurora.App\Services\Updates\AppUpdateRestartCoordinator.cs" Link="Linked\AppUpdateRestartCoordinator.cs" />
     <Compile Include="..\Aurora.App\Services\MauiSpellcastingSectionHandler.cs" Link="Linked\MauiSpellcastingSectionHandler.cs" />
     <Compile Include="..\Aurora.App\Services\EquipmentService.cs" Link="Linked\EquipmentService.cs" />
     <Compile Include="..\Aurora.App\Services\InventoryItemAdder.cs" Link="Linked\InventoryItemAdder.cs" />
@@ -86,6 +87,8 @@
     <Compile Include="..\Aurora.App\Services\CharacterContext.cs" Link="Linked\CharacterContext.cs" />
     <Compile Include="..\Aurora.App\Services\CharacterTabModel.cs" Link="Linked\CharacterTabModel.cs" />
     <Compile Include="..\Aurora.App\Services\CharacterTabService.cs" Link="Linked\CharacterTabService.cs" />
+    <Compile Include="..\Aurora.App\Services\CharacterCloseCoordinator.cs" Link="Linked\CharacterCloseCoordinator.cs" />
+    <Compile Include="..\Aurora.App\Services\WindowCloseCoordinator.cs" Link="Linked\WindowCloseCoordinator.cs" />
     <Compile Include="..\Aurora.App\Services\CharacterLoadNavigation.cs" Link="Linked\CharacterLoadNavigation.cs" />
     <Compile Include="..\Aurora.App\Services\CharacterSnapshot.cs" Link="Linked\CharacterSnapshot.cs" />
     <Compile Include="..\Aurora.App\Services\CharacterFileSaveExtensions.cs" Link="Linked\CharacterFileSaveExtensions.cs" />

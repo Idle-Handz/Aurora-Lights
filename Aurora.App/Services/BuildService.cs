@@ -557,13 +557,54 @@ public static partial class BuildService
     /// than the raw XML) are always captured correctly.
     /// Returns null on success, or an error message on failure.
     /// </summary>
-    public static async Task<string?> SaveTabAsync(CharacterTab tab)
+    public static Task<string?> SaveTabAsync(CharacterTab tab, bool coalesceRequests = false)
     {
-        if (tab.IsSaving) return "A save is already in progress.";
-        tab.CloudNotice = null;
-        tab.IsSaving = true;
-        try { return await SaveTabCoreAsync(tab); }
-        finally { tab.IsSaving = false; }
+        lock (tab.SaveRequestGate)
+        {
+            if (tab.IsSaving)
+            {
+                if (!coalesceRequests || tab.InFlightSave is not { } inFlight)
+                    return Task.FromResult<string?>("A save is already in progress.");
+
+                // Narrative input versions every accepted edit. Its blur and Ctrl+S requests
+                // may describe the same draft; both must observe the actual write result.
+                if (tab.EditVersion == tab.InFlightSaveEditVersion) return inFlight;
+                return SaveAfterInFlightAsync(tab, inFlight);
+            }
+
+            var completion = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
+            tab.InFlightSave = completion.Task;
+            tab.InFlightSaveEditVersion = tab.EditVersion;
+            tab.CloudNotice = null;
+            tab.IsSaving = true;
+            _ = CompleteSaveRequestAsync(tab, completion);
+            return completion.Task;
+        }
+    }
+
+    private static async Task<string?> SaveAfterInFlightAsync(CharacterTab tab, Task<string?> inFlight)
+    {
+        string? error = await inFlight;
+        // Retain newer edits after a failure rather than repeatedly retrying the same fault.
+        if (error is not null) return error;
+        return await SaveTabAsync(tab, coalesceRequests: true);
+    }
+
+    private static async Task CompleteSaveRequestAsync(CharacterTab tab, TaskCompletionSource<string?> completion)
+    {
+        string? error = null;
+        Exception? failure = null;
+        try { error = await SaveTabCoreAsync(tab); }
+        catch (Exception ex) { failure = ex; }
+
+        lock (tab.SaveRequestGate)
+        {
+            tab.InFlightSave = null;
+            tab.IsSaving = false;
+        }
+
+        if (failure is not null) completion.TrySetException(failure);
+        else completion.TrySetResult(error);
     }
 
     private static async Task<string?> SaveTabCoreAsync(CharacterTab tab)

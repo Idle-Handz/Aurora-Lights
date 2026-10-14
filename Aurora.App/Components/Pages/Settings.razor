@@ -900,17 +900,17 @@
                                                        Class="mt-1"
                                                        Style="max-width: 280px;" />
                                 }
-                                else if (AppUpdates.ApplyOnExitScheduled)
-                                {
-                                    <text>The update is downloaded. Close the app normally when convenient; your next launch will use @avail.LatestTag.</text>
-                                }
                                 else if (_applyError is { Length: > 0 } err)
                                 {
-                                    <text>Update failed: @err</text>
+                                    <text>Update not installed: @err</text>
+                                }
+                                else if (AppUpdates.ApplyOnExitScheduled)
+                                {
+                                    <text>The update is downloaded. Save your characters and wait for saves to finish before closing the app; your next launch will use @avail.LatestTag.</text>
                                 }
                                 else
                                 {
-                                    <text>Install immediately and restart, or download now and finish the update when you close the app.</text>
+                                    <text>Close all character tabs to install and restart now. Or download now, then save your characters and close the app when ready.</text>
                                 }
                             </div>
                         </div>
@@ -1646,6 +1646,7 @@
 
     private async Task ApplyUpdateAsync()
     {
+        if (_applying || _disposed) return;
         _applying = true;
         _applyProgress = 0;
         _applyError = null;
@@ -1654,14 +1655,20 @@
         {
             var progress = new Progress<int>(p =>
             {
+                if (_disposed) return;
                 _applyProgress = p;
-                _ = InvokeAsync(StateHasChanged);
+                _ = InvokeAsync(() => { if (!_disposed) StateHasChanged(); });
             });
 
             // ApplyAsync downloads and then normally exits via Velopack restart.
             // Any returned string means the process is still alive and the user needs feedback.
             string? error = await AppUpdates.ApplyAsync(
-                Prefs.IncludePrereleasesInUpdateCheck, progress);
+                Prefs.IncludePrereleasesInUpdateCheck,
+                action => InvokeAsync(action),
+                () => !_disposed,
+                progress);
+
+            if (_disposed) return;
 
             if (error != null)
             {
@@ -1673,6 +1680,7 @@
         }
         catch (Exception ex)
         {
+            if (_disposed) return;
             _applyError = ex.Message;
             _applying = false;
             await InvokeAsync(StateHasChanged);
@@ -1681,6 +1689,7 @@
 
     private async Task PrepareUpdateOnCloseAsync()
     {
+        if (_applying || _disposed) return;
         _applying = true;
         _applyProgress = 0;
         _applyError = null;
@@ -1704,7 +1713,7 @@
             else
             {
                 Snackbar.Add(
-                    "Update downloaded. Close the app normally when convenient; your next launch will use the new version.",
+                    "Update downloaded. Save your characters and wait for saves to finish before closing the app; your next launch will use the new version.",
                     Severity.Success,
                     cfg => cfg.VisibleStateDuration = 10000);
             }

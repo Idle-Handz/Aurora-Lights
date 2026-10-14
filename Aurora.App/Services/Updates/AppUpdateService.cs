@@ -17,7 +17,11 @@ namespace Aurora.App.Services.Updates;
 /// </summary>
 public sealed class AppUpdateService : GithubReleaseChannelService
 {
-    public AppUpdateService(GithubReleasesClient client) : base(client, "app") { }
+    private readonly AppUpdateRestartCoordinator _restartCoordinator;
+
+    public AppUpdateService(GithubReleasesClient client, CharacterTabService tabs,
+        CharacterCloseCoordinator characters) : base(client, "app")
+        => _restartCoordinator = new AppUpdateRestartCoordinator(tabs, characters);
 
     protected override SemVer CurrentVersion
     {
@@ -85,27 +89,38 @@ public sealed class AppUpdateService : GithubReleaseChannelService
     /// Downloads the pending update and restarts the app into the new version.
     /// Progress is 0–100. This method does NOT return on success — Velopack terminates
     /// the process and relaunches via the bootstrapper.
+    /// The caller must dispatch the final character-tab check and restart together on its UI
+    /// context and report whether the Settings view is still current after the download.
     /// Returns an error message string on failure, or null if the restart was initiated.
     /// </summary>
     public async Task<string?> ApplyAsync(
         bool includePreReleases,
+        Func<Action, Task> dispatchAsync,
+        Func<bool> isCurrentView,
         IProgress<int>? progress = null,
         CancellationToken ct = default)
     {
         try
         {
-            var manager = CreateUpdateManager(includePreReleases);
+            UpdateManager? manager = null;
+            UpdateInfo? updateInfo = null;
+            string? error = await _restartCoordinator.RunAsync(
+                downloadAsync: async () =>
+                {
+                    manager = CreateUpdateManager(includePreReleases);
+                    updateInfo = await manager.CheckForUpdatesAsync().ConfigureAwait(false);
+                    if (updateInfo is null)
+                        return $"No applicable Velopack update was found for the {WindowsChannel} channel.";
 
-            var updateInfo = await manager.CheckForUpdatesAsync().ConfigureAwait(false);
-            if (updateInfo == null)
-                return $"No applicable Velopack update was found for the {WindowsChannel} channel.";
-
-            await manager.DownloadUpdatesAsync(updateInfo, p => progress?.Report(p), ct)
-                         .ConfigureAwait(false);
-
-            // Terminates the process and relaunches — nothing below here runs on success.
-            manager.ApplyUpdatesAndRestart(updateInfo.TargetFullRelease);
-            return "The update was downloaded, but automatic restart did not begin. Close and reopen the app to finish applying it.";
+                    await manager.DownloadUpdatesAsync(updateInfo, p => progress?.Report(p), ct)
+                                 .ConfigureAwait(false);
+                    return null;
+                },
+                // Terminates the process in the same UI callback as the final tab check.
+                restart: () => manager!.ApplyUpdatesAndRestart(updateInfo!.TargetFullRelease),
+                dispatchAsync,
+                isCurrentView).ConfigureAwait(false);
+            return error ?? "The update was downloaded, but automatic restart did not begin. Close and reopen the app to finish applying it.";
         }
         catch (Exception ex)
         {

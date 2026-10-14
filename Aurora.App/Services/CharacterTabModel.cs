@@ -25,6 +25,9 @@ public sealed class CharacterTab
     /// <summary>A failed hydration must be retried before the previous model can be saved.</summary>
     public bool CloudReloadFailed { get; set; }
     private bool _isSaving;
+    internal object SaveRequestGate { get; } = new();
+    internal Task<string?>? InFlightSave { get; set; }
+    internal long InFlightSaveEditVersion { get; set; }
     public event Action? SaveStateChanged;
     public bool IsSaving
     {

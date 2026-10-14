@@ -934,7 +934,7 @@ else if (_workflowSuggestion != null)
         long editVersion = tab.EditVersion;
         _saving = true;
         StateHasChanged();
-        var error = await BuildService.SaveTabAsync(tab);
+        var error = await BuildService.SaveTabAsync(tab, coalesceRequests: true);
         _saving = false;
         if (error == null)
         {
@@ -1056,15 +1056,13 @@ else if (_workflowSuggestion != null)
             long editVersion = tab.EditVersion;
             _saving = true;
             StateHasChanged();
-            var error = await BuildService.SaveTabAsync(tab);
+            var error = await BuildService.SaveTabAsync(tab, coalesceRequests: true);
             _saving = false;
             if (error != null) _saveError = error;
             else if (tab.EditVersion == editVersion) Tabs.MarkClean(tab);
         }
-        else
-        {
-            Tabs.MarkDirty(tab);
-        }
+        // Input already marked the edit dirty. A blur after an explicit save must not
+        // create another edit version when auto-save is disabled.
         StateHasChanged();
     }
 

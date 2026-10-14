@@ -126,9 +126,10 @@
                     <input class="magic-filter-input"
                            type="text"
                            placeholder="Search known spells..."
+                           aria-label="Search known spells"
                            @bind="State.Known.SearchText"
                            @bind:event="oninput" />
-                    <select class="magic-filter-select" @bind="State.Known.Level">
+                    <select class="magic-filter-select" aria-label="Spell level" @bind="State.Known.Level">
                         <option value="">All levels</option>
                         <option value="0">Cantrips</option>
                         @for (int i = 1; i <= 9; i++)
@@ -136,21 +137,21 @@
                             <option value="@i">@Ordinal(i) level</option>
                         }
                     </select>
-                    <select class="magic-filter-select" @bind="State.Known.Source">
+                    <select class="magic-filter-select" aria-label="Spell source" @bind="State.Known.Source">
                         <option value="">All sources</option>
                         @foreach (string source in _availableSources)
                         {
                             <option value="@source">@source</option>
                         }
                     </select>
-                    <select class="magic-filter-select" @bind="State.Known.School">
+                    <select class="magic-filter-select" aria-label="Spell school" @bind="State.Known.School">
                         <option value="">All schools</option>
                         @foreach (string school in _availableSchools)
                         {
                             <option value="@school">@school</option>
                         }
                     </select>
-                    <select class="magic-filter-select magic-casting-time-filter" @bind="State.Known.CastingTime">
+                    <select class="magic-filter-select magic-casting-time-filter" aria-label="Spell casting time" @bind="State.Known.CastingTime">
                         <option value="">All casting times</option>
                         <option value="action">Action</option>
                         <option value="bonus-action">Bonus action</option>
@@ -274,9 +275,10 @@
                     <input class="magic-filter-input"
                            type="text"
                            placeholder="Search castable spells..."
+                           aria-label="Search castable spells"
                            @bind="State.Castable.SearchText"
                            @bind:event="oninput" />
-                    <select class="magic-filter-select" @bind="State.Castable.Level">
+                    <select class="magic-filter-select" aria-label="Spell level" @bind="State.Castable.Level">
                         <option value="">All levels</option>
                         <option value="0">Cantrips</option>
                         @for (int i = 1; i <= 9; i++)
@@ -284,21 +286,21 @@
                             <option value="@i">@Ordinal(i) level</option>
                         }
                     </select>
-                    <select class="magic-filter-select" @bind="State.Castable.Source">
+                    <select class="magic-filter-select" aria-label="Spell source" @bind="State.Castable.Source">
                         <option value="">All sources</option>
                         @foreach (string source in _availableSources)
                         {
                             <option value="@source">@source</option>
                         }
                     </select>
-                    <select class="magic-filter-select" @bind="State.Castable.School">
+                    <select class="magic-filter-select" aria-label="Spell school" @bind="State.Castable.School">
                         <option value="">All schools</option>
                         @foreach (string school in _availableSchools)
                         {
                             <option value="@school">@school</option>
                         }
                     </select>
-                    <select class="magic-filter-select magic-casting-time-filter" @bind="State.Castable.CastingTime">
+                    <select class="magic-filter-select magic-casting-time-filter" aria-label="Spell casting time" @bind="State.Castable.CastingTime">
                         <option value="">All casting times</option>
                         <option value="action">Action</option>
                         <option value="bonus-action">Bonus action</option>
@@ -495,30 +497,31 @@
                     <input class="magic-filter-input"
                            type="text"
                            placeholder="Search spells..."
+                           aria-label="Search spells"
                            @bind="State.Prepared.SearchText"
                            @bind:event="oninput" />
-                    <select class="magic-filter-select" @bind="State.Prepared.Level">
+                    <select class="magic-filter-select" aria-label="Spell level" @bind="State.Prepared.Level">
                         <option value="">All levels</option>
                         @for (int i = 1; i <= 9; i++)
                         {
                             <option value="@i">@Ordinal(i) level</option>
                         }
                     </select>
-                    <select class="magic-filter-select" @bind="State.Prepared.Source">
+                    <select class="magic-filter-select" aria-label="Spell source" @bind="State.Prepared.Source">
                         <option value="">All sources</option>
                         @foreach (string source in _availableSources)
                         {
                             <option value="@source">@source</option>
                         }
                     </select>
-                    <select class="magic-filter-select" @bind="State.Prepared.School">
+                    <select class="magic-filter-select" aria-label="Spell school" @bind="State.Prepared.School">
                         <option value="">All schools</option>
                         @foreach (string school in _availableSchools)
                         {
                             <option value="@school">@school</option>
                         }
                     </select>
-                    <select class="magic-filter-select magic-casting-time-filter" @bind="State.Prepared.CastingTime">
+                    <select class="magic-filter-select magic-casting-time-filter" aria-label="Spell casting time" @bind="State.Prepared.CastingTime">
                         <option value="">All casting times</option>
                         <option value="action">Action</option>
                         <option value="bonus-action">Bonus action</option>
@@ -560,15 +563,17 @@
                         {
                             @foreach (MagicSpellListEntryModel spell in level.Spells)
                             {
-                                <div class="magic-spell-row @(SelectedSpellId == spell.Id ? "selected" : string.Empty)">
+                                <div @key="(ActiveSection.Id, spell.Id)" class="magic-spell-row @(SelectedSpellId == spell.Id ? "selected" : string.Empty)">
                                     @if (ActiveSection.IsPreparedCaster)
                                     {
                                         <input type="checkbox"
                                                class="magic-spell-prep-check"
-                                               aria-label="@($"Prepare {spell.Name} for {ActiveSection.Label}")"
-                                               checked="@spell.IsPrepared"
+                                               aria-label="@PreparationLabel(spell)"
+                                               aria-disabled="@((PreparationPending || IsPreparationDisabled(spell)) ? "true" : "false")"
+                                               @bind:get="spell.IsPrepared"
+                                               @bind:set="value => ChangePreparedAsync(spell.Id, value)"
                                                disabled="@IsPreparationDisabled(spell)"
-                                               @onchange="args => ChangePreparedAsync(spell.Id, args)"
+                                               @onclick:preventDefault="PreparationPending"
                                                @onclick:stopPropagation="true" />
                                     }
                                     <button type="button"
@@ -709,6 +714,8 @@
     private readonly HashSet<string> _collapsedGroups = new(StringComparer.Ordinal);
     private readonly HashSet<int> _collapsedLevels = new();
     private IReadOnlyList<MagicSpellcastingSectionModel> _castableSections = [];
+    private bool _preparationPending;
+    private bool PreparationPending => Busy || _preparationPending;
 
     // Prepared-caster sections, each of which gets a Prepared tab.
     private IReadOnlyList<MagicSpellcastingSectionModel> PreparedSections =>
@@ -1083,7 +1090,7 @@
 
     private bool IsPreparationDisabled(MagicSpellListEntryModel spell)
     {
-        if (!OnPreparedChanged.HasDelegate || Busy || spell.IsAlwaysPrepared)
+        if (!OnPreparedChanged.HasDelegate || spell.IsAlwaysPrepared)
         {
             return true;
         }
@@ -1094,12 +1101,29 @@
                && ActiveSection.PreparedCount >= ActiveSection.MaxPrepared;
     }
 
-    private Task ChangePreparedAsync(string spellId, ChangeEventArgs args)
+    private string PreparationLabel(MagicSpellListEntryModel spell)
     {
-        if (!OnPreparedChanged.HasDelegate) return Task.CompletedTask;
-        bool value = args.Value is bool b && b;
-        return OnPreparedChanged.InvokeAsync(
-            new MagicPreparedChangeModel(spellId, value, ActiveSection.Id, ActiveSection.Label));
+        string label = $"Prepare {spell.Name} for {ActiveSection.Label}";
+        return string.IsNullOrWhiteSpace(spell.Source) ? label : $"{label} ({spell.Source})";
+    }
+
+    private async Task ChangePreparedAsync(string spellId, bool value)
+    {
+        if (PreparationPending || !OnPreparedChanged.HasDelegate) return;
+        var section = ActiveSection;
+        var spell = section.SpellLevels.SelectMany(level => level.Spells)
+            .FirstOrDefault(candidate => candidate.Id == spellId);
+        if (spell is null || IsPreparationDisabled(spell)) return;
+
+        // Keep the focused checkbox enabled while the host saves. The binding restores the
+        // authoritative checked value if a stale change event arrives while this is pending.
+        _preparationPending = true;
+        try
+        {
+            await OnPreparedChanged.InvokeAsync(
+                new MagicPreparedChangeModel(spellId, value, section.Id, section.Label));
+        }
+        finally { _preparationPending = false; }
     }
 
     private static IEnumerable<(string Label, string Value)> GetSpellProperties(MagicSpellDetailModel spell)

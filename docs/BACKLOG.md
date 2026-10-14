@@ -1,11 +1,12 @@
 # Audit Findings Backlog
 
-Last consolidated: **2026-10-13**. Source baseline: `a5348aa`.
+Last updated: **2026-10-14**. Audit baseline: `a5348aa`; implementation commit: `4e4b484`.
 
 This is the implementation backlog for the October solution audit and the
-October 13 correctness review: **18 local fixes, 1 open hosting milestone, and
-4 previously resolved P1 findings**. Local fixes still need commit/release and the
-manual acceptance checks called out below.
+October 13 correctness review: **18 implemented fixes, 1 open hosting milestone,
+and 4 previously resolved P1 findings**. The original implementation is committed
+in `4e4b484`. Follow-up desktop acceptance fixes and their current verification
+are recorded below; no published release is certified by this document.
 It includes correctness, UI, performance, and the Web hosting constraint discussed
 in that review. The [roadmap](ROADMAP.md) and [wishlist](WISHLIST.md) retain broader
 product work; this document does not claim to re-audit every older entry there.
@@ -24,7 +25,8 @@ product work; this document does not claim to re-audit every older entry there.
 - **Resolved:** the correction and its regression coverage are committed.
   This does not certify a particular installed binary or published release.
 - **Local fix:** implementation is present in the working tree, with the focused
-  evidence recorded below. It is not committed, installed, or released.
+  evidence recorded below. It is not committed or released; acceptance of local
+  binaries is recorded separately.
 
 Suggested order is independent of evidence confidence: **Next** covers rules
 correctness and potential loss of edits; **Following** covers workflow and
@@ -33,24 +35,24 @@ code-trace findings before treating their full user-visible impact as reproduced
 
 | ID | Item | Order | Evidence | Status |
 | --- | --- | --- | --- | --- |
-| [COR-01](#cor-01-negative-statistic-contributions-are-discarded) | Negative statistic contributions | Next | Primitive and calculator checks pass | Local fix |
-| [COR-02](#cor-02-magical-effects-activate-without-required-attunement) | Magical effects without attunement | Next | Equipment lifecycle checks pass | Local fix |
-| [COR-03](#cor-03-equipment-restoration-changes-saved-attunement) | Saved attunement changes on restoration | Next | Save/load/restoration checks pass | Local fix |
-| [COR-04](#cor-04-web-spell-slot-usage-is-off-by-one) | Web spell-slot usage | Next | Regression checks pass | Local fix |
-| [COR-05](#cor-05-local-session-save-completion-and-dirty-state) | Local save completion and dirty state | Next | Pending/failure/retry checks pass | Local fix |
-| [COR-06](#cor-06-multiclass-imports-collapse-class-levels) | Multiclass import fidelity | Next | Import/save/reload checks pass | Local fix |
-| [COR-07](#cor-07-import-preview-can-overwrite-an-existing-portrait) | Portrait overwrite during import preview | Next | File lifecycle checks pass | Local fix; native dialog check pending |
-| [COR-08](#cor-08-standard-array-assignments-cannot-be-rearranged) | Standard-array reassignment | Following | Helper and Web browser checks pass | Local fix |
-| [COR-09](#cor-09-point-buy-conversion-bypasses-the-normal-edit-workflow) | Point Buy conversion persistence | Following | Windows build passes | Local fix; native acceptance pending |
-| [COR-10](#cor-10-ctrls-can-save-stale-narrative-text) | Narrative text and Ctrl+S | Next | Draft/commit checks pass | Local fix; native keyboard check pending |
-| [COR-11](#cor-11-web-magic-builds-only-the-first-casting-profile) | Multiple Web casting profiles | Following | Profile/persistence checks pass | Local fix |
-| [UX-01](#ux-01-web-character-selection-clears-search) | Web character search resets | Following | Web browser check passes | Local fix |
-| [UX-02](#ux-02-shared-magic-controls-lack-accessible-names-and-state) | Shared Magic accessibility | Following | Markup/state/callback checks pass | Local fix; screen-reader check pending |
-| [PERF-01](#perf-01-cloud-requests-hold-the-global-character-lock) | Cloud requests block other characters | Following | Paused-provider checks pass | Local fix |
-| [PERF-02](#perf-02-dirty-state-reads-hash-whole-files) | File hashing during dirty-state reads | Later | Read-count and invalidation checks pass | Local fix |
-| [PERF-03](#perf-03-note-and-session-writes-are-not-coalesced) | Repeated note and session writes | Following | Draft and XML write checks pass | Local fix |
-| [PERF-04](#perf-04-inventory-loading-recalculates-weight-per-row) | Repeated inventory weight calculations | Later | Synthetic bulk measurements/checks pass | Local fix |
-| [PERF-05](#perf-05-repeated-statistic-searches-and-compendium-projections) | Repeated lookups and projections | Later | Lookup/projection measurements/checks pass | Local fix |
+| [COR-01](#cor-01-negative-statistic-contributions-are-discarded) | Negative statistic contributions | Next | Primitive and calculator checks pass | Resolved |
+| [COR-02](#cor-02-magical-effects-activate-without-required-attunement) | Magical effects without attunement | Next | Equipment lifecycle and native AC checks pass | Resolved; local hand-transition follow-up |
+| [COR-03](#cor-03-equipment-restoration-changes-saved-attunement) | Saved attunement changes on restoration | Next | Save/load, native tab switching and disk-conflict reload pass | Resolved; local hand-transition follow-up |
+| [COR-04](#cor-04-web-spell-slot-usage-is-off-by-one) | Web spell-slot usage | Next | Regression checks pass | Resolved |
+| [COR-05](#cor-05-local-session-save-completion-and-dirty-state) | Local save completion and dirty state | Next | Pending/failure/retry checks pass | Resolved |
+| [COR-06](#cor-06-multiclass-imports-collapse-class-levels) | Multiclass import fidelity | Next | Import/save/reload checks pass | Resolved |
+| [COR-07](#cor-07-import-preview-can-overwrite-an-existing-portrait) | Portrait overwrite during import preview | Next | File lifecycle and native ready/in-flight cancellation pass | Resolved |
+| [COR-08](#cor-08-standard-array-assignments-cannot-be-rearranged) | Standard-array reassignment | Following | Helper and Web browser checks pass | Resolved |
+| [COR-09](#cor-09-point-buy-conversion-bypasses-the-normal-edit-workflow) | Point Buy conversion persistence | Following | Native autosave on/off and disk values pass | Resolved |
+| [COR-10](#cor-10-ctrls-can-save-stale-narrative-text) | Narrative text and Ctrl+S | Next | Native Backstory/Age with autosave on/off pass | Resolved; local save-coalescing follow-up |
+| [COR-11](#cor-11-web-magic-builds-only-the-first-casting-profile) | Multiple Web casting profiles | Following | Profile/persistence checks pass | Resolved |
+| [UX-01](#ux-01-web-character-selection-clears-search) | Web character search resets | Following | Web browser check passes | Resolved |
+| [UX-02](#ux-02-shared-magic-controls-lack-accessible-names-and-state) | Shared Magic accessibility | Following | NVDA labels/state, autosave focus and forward/reverse traversal pass; audible speech confirmed | Resolved; local follow-ups verified |
+| [PERF-01](#perf-01-cloud-requests-hold-the-global-character-lock) | Cloud requests block other characters | Following | Paused-provider checks pass | Resolved |
+| [PERF-02](#perf-02-dirty-state-reads-hash-whole-files) | File hashing during dirty-state reads | Later | Read-count and invalidation checks pass | Resolved |
+| [PERF-03](#perf-03-note-and-session-writes-are-not-coalesced) | Repeated note and session writes | Following | Draft and XML write checks pass | Resolved |
+| [PERF-04](#perf-04-inventory-loading-recalculates-weight-per-row) | Repeated inventory weight calculations | Later | Synthetic bulk measurements/checks pass | Resolved |
+| [PERF-05](#perf-05-repeated-statistic-searches-and-compendium-projections) | Repeated lookups and projections | Later | Lookup/projection measurements/checks pass | Resolved |
 | [WEB-01](#web-01-concurrent-hosting-requires-session-local-engine-state) | Concurrent Web character sessions | Before concurrent public hosting | Documented constraint | Open |
 
 ## Implementation verification: 2026-10-13
@@ -87,7 +89,174 @@ code-trace findings before treating their full user-visible impact as reproduced
 - The three Chromium checks above remain prior evidence; they were not rerun
   for these App/import changes. Native and screen-reader acceptance checks
   remain open. WEB-01 remains a separate hosting milestone.
-- Changes remain uncommitted and unpublished.
+- That implementation was subsequently committed as `4e4b484`; the checks above
+  remain evidence from the commit review, not reruns during desktop acceptance.
+
+## Desktop release acceptance: 2026-10-14
+
+Scope: Windows x64 desktop. WEB-01 remains excluded. Only uniquely named synthetic
+characters were edited during native acceptance.
+
+- **Import cancellation passed in the native app:** canceling a completed JSON
+  preview removed its staged portrait. Canceling during a controlled 12-second
+  portrait download left the dialog closed after the response completed, removed
+  the late staged file, and created no character. The Windows picker was exercised
+  through its filename keyboard shortcut; no file-picker limitation remains.
+- **Equipment baseline checks passed:** armor/weapon/shield references and saved
+  attunement survived tab switches. Unattuning the ring changed AC from 19 to 18.
+  An external disk edit produced the reload warning and discarded the attempted
+  conflicting edit instead of overwriting the file.
+- **Point Buy with autosave disabled passed:** 18/7/10/10/10/10 became
+  15/8/10/10/10/10, with 17 points spent; disk stayed unchanged until Save, then
+  contained the clamped values. With autosave enabled in the packaged candidate,
+  a separate fixture wrote the same clamped values without an explicit Save.
+- **Native Magic keyboard checks passed:** Space changed the first slot from used
+  to available; Enter expanded a collapsed spell-level group; Tab/Space unprepared
+  Cure Wounds. Windows accessibility exposed slot position/usage and preparation
+  names. This is UI Automation and keyboard evidence, not a listening test with
+  Narrator or NVDA.
+- **Follow-up fixes found during acceptance:** focused Ctrl+S could leave a
+  false dirty state with autosave disabled or show a competing-save error with it
+  enabled; a two-handed weapon could leave a displaced shield active; spell-filter
+  selects had no accessible names. Save coalescing and version guards now preserve
+  real failures/newer edits while avoiding duplicate-save errors. Native Backstory
+  and Age Ctrl+S checks pass with autosave on and off, including disk contents and
+  the clean indicator. Filter names are confirmed in native accessibility output.
+  Equipment now removes displaced hand effects, corrects conflicting older saves,
+  prefers the shield's explicit secondary slot, and preserves attunement when
+  moving the same item or changing versatile grip.
+- **Final packaged equipment retest passed:** the inventory shield Equip button
+  selected Secondary Hand, unequipped the two-handed greatsword, and produced
+  AC 18. Equipping the greatsword again unequipped the shield and restored AC 16.
+  Ctrl+S completed successfully and the tab closed without an unsaved-change prompt.
+- **71 distinct focused .NET cases passed across the final relevant runs:**
+  64 passed together; after the final hand-placement changes, all 35 equipment
+  cases passed (28 repeated, seven additional). There were zero failures or skips.
+  Coverage includes hand conflicts/attunement, duplicate and newer save requests,
+  narrative fields, Magic accessible names, staged portraits, session completion
+  and character identity. A final scoped save-coalescing review found no blockers.
+- **Windows packaging correction:** the release CLI now matches the app's
+  Velopack 1.0.1 dependency and declares WebView2 for both Windows installers.
+  The earlier local x64 Release publish and Setup/portable/full-package build passed
+  after the initial acceptance fixes. Archive CRCs, payload contents and release-manifest
+  hashes passed verification. The extracted portable launcher started the app,
+  and its final equipment retest passed. Artifacts are unsigned and remain in
+  `artifacts/desktop-release-check-2026-10-14/bin/win-x64-check/final2-packages/`.
+  Existing compiler warnings remain; the publish completed without errors.
+- **Prior candidate Setup acceptance passed in Windows Sandbox:** after enabling
+  Sandbox and completing the required host restart, the unmodified candidate was
+  installed in a fresh disposable guest. First launch, synthetic character/session
+  save, exit and reopen passed. No existing host installation or personal character
+  files were replaced. WebView2 was already installed in the guest, so this does
+  not establish missing-runtime bootstrap behavior.
+- **Both original diagnostic update paths passed:** isolated copies used local
+  release metadata and a local Velopack feed for `0.0.2-localcheck.20261014` to
+  `0.0.3-localcheck.20261014`. Immediate update installed B and restarted into it.
+  Deferred update left A running with the same process ID for **86.2 seconds**;
+  normal close applied B without restarting, and shortcut relaunch opened B.
+  Synthetic character XML and session-sidecar hashes were preserved in both paths.
+  The updater's process-wait access-denied warning was followed by successful
+  lifecycle hooks, package application and restart in the immediate case; it was
+  not an observed update failure. These checks exercise the app's update lifecycle
+  with diagnostic feed seams, not production GitHub discovery or downloads.
+- **Immediate-update follow-up:** installing and restarting now requires all
+  character tabs to be closed. The guard checks before download and again in the
+  same synchronous UI callback as restart; leaving Settings cancels the restart.
+  Existing tab-close Save/Discard/Cancel handling is reused. All **14 focused
+  `AppUpdateRestartTests` cases passed**, including pending session writes, tabs
+  opened during a paused download, navigation, queued UI work and clean-tabs retry.
+  The unmodified **final3 Windows x64 Release publish and package build passed**
+  with this safeguard.
+- **Final3 Setup acceptance passed:** the unmodified final3 installer completed
+  a fresh Sandbox installation, usable first launch, normal exit and shortcut
+  relaunch. The install hook completed in 1,888.7178 ms. Evidence is under
+  `artifacts/desktop-release-check-2026-10-14/bin/sandbox/final3-results/`.
+- **Native immediate-update guard and retry passed:** with autosave disabled,
+  the synthetic equipment-note draft was `y` while disk still contained `x`.
+  Immediate update was blocked and A's process (8152) stayed alive. Canceling
+  tab close retained the draft; choosing Save wrote `y` and closed the tab.
+  Retrying with all tabs closed updated to B (`0.0.3-localcheck.20261014`) and
+  automatically relaunched. Reopening the character displayed note `y`, Temp HP 1
+  and Inspiration enabled; saved character and session-sidecar hashes were
+  unchanged by the update. Lifecycle hooks succeeded despite the same nonfatal
+  process-wait access-denied warning. This used the isolated diagnostic feed;
+  evidence is under
+  `artifacts/desktop-release-check-2026-10-14/bin/sandbox/diagnostic-restart-guard/results-guard/`.
+- **Windows native-close safeguard implemented:** closing the main window now
+  uses the existing character Save/Discard/Cancel workflow. Cancel/save failure
+  retains the window; full/session writes and engine release finish before close.
+  Repeated tab/window requests share one prompt, newer edits are rechecked, and
+  pending engine release also blocks immediate restart after a tab disappears.
+  Loading-tab cancellation is preserved. **38 final focused cases passed** (17
+  window-close, 14 immediate-update and 7 session-save cases), with independent
+  review complete. Final5 Release publish/package, fresh installation, clean
+  native exit and shortcut relaunch passed. Native Cancel preserved the unsaved
+  draft and the same A process **111.3 seconds** after update preparation. Save
+  persisted the draft and applied B without restart; shortcut relaunch retained
+  the note, Temp HP and Inspiration. Discard of a later draft exited without
+  changing saved XML/sidecar hashes. Both update callbacks succeeded. Evidence:
+  `artifacts/desktop-release-check-2026-10-14/bin/sandbox/diagnostic-window-close-final/results-close/`.
+  All disposable guests were discarded after export; the host installation was
+  not changed.
+- **Remaining release gates and limits:** missing-WebView2 bootstrap passed in
+  the clean Windows 10 LTSC guest described below. Actual NVDA speech and autosave focus
+  now have native evidence and the user confirmed understandable audible output;
+  two final forward/reverse-Tab retests passed. Production GitHub release discovery and
+  package download, signing/SmartScreen behavior, delta updates and Windows ARM64
+  remain unverified. See the
+  [installer acceptance checklist](desktop-installer-acceptance.md) for artifact
+  hashes, completed lifecycle evidence and the remaining steps. No published
+  release is certified by these local checks.
+- **NVDA follow-up passed:** portable NVDA 2026.2 generated the expected
+  search/filter names and values across all three Magic views, slot position and
+  used/available state, group expansion state, and preparation/limit-disabled
+  announcements. This is actual NVDA speech-output evidence; the user confirmed
+  audible and understandable playback. Native testing found focus loss after
+  preparation autosave and indistinguishable labels for same-named spells from
+  different sources. Source-aware labels, stable row keys and pending-change
+  guards passed ten focused component cases. Final6 still lost focus because the
+  page-wide save lock uses `inert`. The final7 layout helper preserves that lock
+  and passed 17 real Chromium cases. Final7 native NVDA reports confirm focus on
+  the correct checkbox after both unprepare and prepare saves, and Tab reaches
+  the distinct 2024 source label. Two complete forward/reverse traversals passed
+  in the fresh Windows 10 LTSC guest, including after keyboard preparation and
+  unpreparation saves, without bypassing NVDA. Generated speech and explicit
+  focus reports confirm the expected source-specific controls. That basic VM
+  connection has no audio endpoint; human listening remains the earlier Sandbox
+  confirmation. Transient IA2/UIA and watchdog warnings are retained in the logs.
+  Release publish/package and integrity checks passed. Raw logs and failed and
+  successful retest evidence are preserved under `bin/sandbox/runtime-accessibility`
+  in the acceptance artifact directory; final native evidence and synthetic saves
+  are also in `bin/missing-runtime-vm/results-final`.
+- **Missing-WebView2 bootstrap passed:** Windows 10 Enterprise LTSC 2021
+  evaluation build 19044 x64 was installed offline from Microsoft's official,
+  hash-verified ISO in the dedicated Hyper-V guest. The default loader returned
+  `0x80070002` with null version, with no runtime registrations/files or loader
+  overrides, both offline and 172 ms before the hash-verified final7 Setup launch.
+  The native prerequisite prompt, download/install and usable Aurora first launch
+  passed. Velopack's explicit `/install` and the user updater's interactive
+  `otherinstallcmd` handoff correlate to the same `--user-level` archive and
+  successful result 0 before Velopack resumed. The post-install API returned
+  `S_OK`, version `155.0.4283.45`. A concurrent background machine EdgeUpdate
+  completed later; the final HKLM runtime is not solely attributed to final7,
+  while its successful per-user bootstrap is independently logged. Evidence:
+  `bin/missing-runtime-vm/results-bootstrap` and `results-bootstrap-extra` under
+  the acceptance artifact directory. Aurora/NVDA exited normally, final evidence
+  was exported, and the guest was shut down with networking disconnected. With
+  explicit user approval, its VM registration and generated disk/configuration
+  were removed, reclaiming 12.57 GiB. Installers, the Windows ISO and all exported
+  evidence remain preserved; `bin/missing-runtime-vm/disposed-vm-result.json`
+  records cleanup.
+  No host WebView2 installation was modified. See the
+  [exact acceptance evidence](desktop-installer-acceptance.md#missing-webview2-runtime).
+- **Cleanup:** all five synthetic library characters and four session sidecars
+  were archived under the ignored acceptance artifacts and removed from the
+  library, returning it to its original 60 characters. The app was closed and
+  autosave was restored to its original disabled setting. All acceptance Sandbox
+  guests were subsequently disposed; `wsb list` confirmed no remaining guests.
+- **Publication:** follow-up changes are local; no commit, push, tag or release
+  publication has been performed. Installations and upgrades above were confined
+  to disposable Sandbox and Hyper-V guests; no existing host installation was replaced.
 
 ## Correctness
 
@@ -373,7 +542,12 @@ code-trace findings before treating their full user-visible impact as reproduced
   pressed state; preparation controls name the spell and profile; level toggles
   are native buttons with expanded state. Component regressions inspect those
   attributes and callbacks. A first unprepared spell also leaves the preparation
-  tab reachable. Actual screen-reader and native keyboard acceptance remain manual.
+  tab reachable.
+- **2026-10-14 native follow-up:** NVDA verified control names and state; the user
+  confirmed understandable speech. The final7 candidate fixes focus loss during
+  preparation autosave and distinguishes same-named spells by source. Forward
+  and reverse traversal and restored checkbox focus passed, including after
+  keyboard preparation saves. See [desktop acceptance evidence](desktop-installer-acceptance.md#screen-reader-checks).
 
 - **Impact/evidence:** the shared Magic slot buttons are empty and do not expose
   a descriptive accessible name or pressed state; spell preparation checkboxes

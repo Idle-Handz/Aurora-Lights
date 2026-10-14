@@ -269,6 +269,13 @@ public class CharacterInventory : ObservableObject
 
   public void EquipPrimary(RefactoredEquipmentItem equipment, bool twohanded = false, bool? attune = null)
   {
+    bool shouldAttune = attune ?? (equipment.IsEquipped ? equipment.IsAttuned : equipment.IsAttunable);
+    if (this.EquippedPrimary != null && !ReferenceEquals(this.EquippedPrimary, equipment))
+      this.UnequipPrimary();
+    if (twohanded && this.EquippedSecondary != null && !ReferenceEquals(this.EquippedSecondary, equipment))
+      this.UnequipSecondary();
+    if (!twohanded && ReferenceEquals(this.EquippedSecondary, equipment))
+      this.EquippedSecondary = (RefactoredEquipmentItem) null;
     this.EquippedPrimary = equipment;
     this.EquippedPrimary.EquippedLocation = "Primary Hand";
     if (twohanded)
@@ -278,7 +285,7 @@ public class CharacterInventory : ObservableObject
       if (!equipment.IsTwoHandTarget() && equipment.Item.HasVersatile)
         this.EquippedSecondary.EquippedLocation = "Two-Handed (Versatile)";
     }
-    this.EquippedPrimary.Activate(true, attune ?? equipment.IsAttunable);
+    this.EquippedPrimary.Activate(true, shouldAttune);
     this.CalculateAttunedItemCount();
     this.PromtAddToAttacksIfEnabled(equipment);
     ApplicationContext.Current.EventAggregator.Send<ReprocessCharacterEvent>(new ReprocessCharacterEvent());
@@ -286,9 +293,14 @@ public class CharacterInventory : ObservableObject
 
   public void EquipSecondary(RefactoredEquipmentItem equipment, bool? attune = null)
   {
+    bool shouldAttune = attune ?? (equipment.IsEquipped ? equipment.IsAttuned : equipment.IsAttunable);
+    if (this.EquippedSecondary != null && !ReferenceEquals(this.EquippedSecondary, equipment))
+      this.UnequipSecondary();
+    if (ReferenceEquals(this.EquippedPrimary, equipment))
+      this.EquippedPrimary = (RefactoredEquipmentItem) null;
     this.EquippedSecondary = equipment;
     this.EquippedSecondary.EquippedLocation = "Secondary Hand";
-    this.EquippedSecondary.Activate(true, attune ?? equipment.IsAttunable);
+    this.EquippedSecondary.Activate(true, shouldAttune);
     this.CalculateAttunedItemCount();
     if (!this.IsEquippedShield())
       this.PromtAddToAttacksIfEnabled(equipment);
@@ -325,7 +337,10 @@ public class CharacterInventory : ObservableObject
       return;
     RefactoredEquipmentItem equippedSecondary = this.EquippedSecondary;
     if (this.IsEquippedVersatile())
+    {
       this.EquippedSecondary = (RefactoredEquipmentItem) null;
+      equippedSecondary.EquippedLocation = "Primary Hand";
+    }
     else if (this.IsEquippedTwoHanded())
     {
       this.EquippedSecondary = (RefactoredEquipmentItem) null;

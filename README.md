@@ -44,10 +44,13 @@ Windows is the recommended platform for the beta preview.
    the `win-x64` release.
 3. Run the installer and launch **Aurora: Reflections**.
 
+`Setup.exe` installs the Microsoft Edge WebView2 Runtime if it is missing.
+An internet connection is required for that download.
+
 Windows installations created through `Setup.exe` use
 [Velopack](https://velopack.io/) and can install future app updates from inside
-Aurora: Reflections. Portable or extracted copies can still check for new
-releases, but they cannot apply updates in place.
+Aurora: Reflections. Portable or extracted copies require WebView2 to already
+be installed. They can check for new releases, but cannot apply updates in place.
 
 Mac Catalyst and Android builds are also produced by the release workflow.
 Those targets are experimental and have received less hands-on testing than the

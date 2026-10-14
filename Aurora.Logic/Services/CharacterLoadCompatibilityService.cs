@@ -76,6 +76,13 @@ public static class CharacterLoadCompatibilityService
                 {
                 inv.EquipSecondary(item, attune: item.IsAttuned);
                 }
+                else if (location == "Secondary Hand" && !ReferenceEquals(inv.EquippedSecondary, item)
+                         && (inv.IsEquippedTwoHanded() || inv.IsEquippedVersatile()))
+                {
+                    // Older saves can retain an active off-hand row after a two-handed
+                    // weapon replaced its slot reference. Remove that row's effects too.
+                    item.Deactivate();
+                }
                 else if (string.IsNullOrEmpty(location))
                 {
                     try { item.Activate(equip: true, attune: item.IsAttuned); }

@@ -7,14 +7,17 @@ public partial class App : Application
 {
     private readonly UserPreferencesService _prefs;
     private readonly AppUpdateService _appUpdates;
+    private readonly WindowCloseCoordinator _windowClose;
 
     public App(
         UserPreferencesService prefs,
-        AppUpdateService appUpdates)
+        AppUpdateService appUpdates,
+        WindowCloseCoordinator windowClose)
     {
         DebugLogService.Instance.Info("App constructor entered.");
         _prefs          = prefs;
         _appUpdates     = appUpdates;
+        _windowClose    = windowClose;
         InitializeComponent();
         DebugLogService.Instance.Info("App InitializeComponent completed.");
     }
@@ -27,7 +30,37 @@ public partial class App : Application
             Title = AppIdentityService.DefaultAppName
         };
 #if WINDOWS
-        window.Destroying += (_, _) => _appUpdates.TryApplyPreparedUpdateOnExit();
+        Microsoft.UI.Xaml.Window? nativeWindow = null;
+        bool closeAllowed = false;
+        async void OnNativeClosing(Microsoft.UI.Windowing.AppWindow sender,
+            Microsoft.UI.Windowing.AppWindowClosingEventArgs args)
+        {
+            if (closeAllowed) return;
+            args.Cancel = true;
+            try
+            {
+                await _windowClose.RequestCloseAsync(() =>
+                {
+                    closeAllowed = true;
+                    try { nativeWindow!.Close(); }
+                    catch { closeAllowed = false; throw; }
+                });
+            }
+            catch (Exception ex)
+            {
+                DebugLogService.Instance.LogException(ex, "App.WindowClosing");
+            }
+        }
+        window.Created += (_, _) =>
+        {
+            nativeWindow = window.Handler?.PlatformView as Microsoft.UI.Xaml.Window;
+            if (nativeWindow is not null) nativeWindow.AppWindow.Closing += OnNativeClosing;
+        };
+        window.Destroying += (_, _) =>
+        {
+            if (nativeWindow is not null) nativeWindow.AppWindow.Closing -= OnNativeClosing;
+            _appUpdates.TryApplyPreparedUpdateOnExit();
+        };
 #endif
 
         // Fire-and-forget the startup release check on a background task — never block window creation

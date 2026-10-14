@@ -1,6 +1,8 @@
 @inherits LayoutComponentBase
 @implements IDisposable
 @inject CharacterTabService Tabs
+@inject CharacterCloseCoordinator CharacterClose
+@inject WindowCloseCoordinator WindowClose
 @inject NavigationManager Nav
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
@@ -138,7 +140,7 @@
                     }
                 </MudPaper>
             }
-            <div class="app-page-content" inert="@(Tabs.ActiveTab is { IsSaving: true } or { CloudReloadFailed: true } ? string.Empty : null)">
+            <div class="app-page-content" @ref="_pageContent" data-focus-context="@PageFocusContext" inert="@(Tabs.ActiveTab is { IsSaving: true } or { CloudReloadFailed: true } ? string.Empty : null)">
                 <AppErrorBoundary @key="PageReloadVersion" @ref="_errorBoundary">@Body</AppErrorBoundary>
             </div>
         </MudContainer>
@@ -234,9 +236,11 @@
     private bool _drawerOpen = true;
     private bool _mobileMoreOpen;
     private AppErrorBoundary? _errorBoundary;
+    private ElementReference _pageContent;
     private DotNetObjectReference<MainLayout>? _selfRef;
     private string _compendiumQuickQuery = string.Empty;
     private string? _notifiedAppUpdateTag;
+    private WindowCloseCoordinator.CloseHandler? _windowCloseHandler;
 
     // Keep the library and its in-flight Drive operation mounted when tabs change.
     // Character pages still remount after a cloud reload to discard cached snapshots.
@@ -244,12 +248,17 @@
         ? 0
         : Tabs.ActiveTab?.CloudReloadVersion ?? 0;
 
+    private string PageFocusContext => $"{Nav.Uri}|{Tabs.ActiveTab?.Id}|{PageReloadVersion}";
+
     private string ContentStyle => Tabs.Tabs.Count > 0
         ? "--character-tabs-height: 34px;"
         : "--character-tabs-height: 0px;";
 
     protected override void OnInitialized()
     {
+        _windowCloseHandler = new(
+            work => InvokeAsync(work), TryCloseTabAsync, () => !_disposed);
+        WindowClose.Handler = _windowCloseHandler;
         Tabs.TabsChanged              += OnTabsChanged;
         CharacterContext.CaptureError += OnCaptureError;
         Prefs.ThemeChanged            += OnThemeChanged;
@@ -388,6 +397,7 @@
             _selfRef = DotNetObjectReference.Create(this);
             await ApplyBrowserThemeAsync();
             try { await JS.InvokeVoidAsync("AuroraShortcuts.register", _selfRef); } catch { }
+            try { await JS.InvokeVoidAsync("AuroraPageFocus.register", _pageContent); } catch { }
             NotifyAppUpdateIfAvailable();
             _ = Task.Run(async () =>
             {
@@ -493,6 +503,7 @@
     public void Dispose()
     {
         _disposed = true;
+        if (WindowClose.Handler == _windowCloseHandler) WindowClose.Handler = null;
         Tabs.TabsChanged              -= OnTabsChanged;
         CharacterContext.CaptureError -= OnCaptureError;
         Prefs.ThemeChanged            -= OnThemeChanged;
@@ -503,6 +514,7 @@
         Content.ReplacementProposalsAvailable -= OnReplacementProposalsAvailable;
         Content.Changed               -= OnUpdatesChanged;
         try { _ = JS.InvokeVoidAsync("AuroraShortcuts.unregister"); } catch { }
+        try { _ = JS.InvokeVoidAsync("AuroraPageFocus.unregister"); } catch { }
         _selfRef?.Dispose();
     }
 
@@ -514,30 +526,22 @@
 
     private async Task CloseTabAsync(CharacterTab tab)
     {
-        if (tab.IsSaving) { Snackbar.Add("Wait for the save to finish.", Severity.Info); return; }
-        if (tab.IsDirty)
-        {
-            bool? result = await DialogService.ShowMessageBox(
-                "Unsaved Changes",
-                $"Save changes to {tab.DisplayName} before closing?",
-                yesText: "Save", noText: "Discard", cancelText: "Cancel");
+        await TryCloseTabAsync(tab);
+    }
 
-            if (result == null) return; // Cancel
-
-            if (result == true)
-            {
-                var error = await BuildService.SaveTabAsync(tab);
-                if (error != null)
-                {
-                    Snackbar.Add($"Save failed: {error}", Severity.Error);
-                    return;
-                }
-            }
-        }
-
+    private async Task<bool> TryCloseTabAsync(CharacterTab tab)
+    {
         var wasActive = tab == Tabs.ActiveTab;
-        Tabs.CloseTab(tab);
-        await CharacterContext.ReleaseAsync(tab);
+        bool closed = await CharacterClose.TryCloseAsync(
+            tab,
+            character => DialogService.ShowMessageBox(
+                "Unsaved Changes",
+                $"Save changes to {character.DisplayName} before closing?",
+                yesText: "Save", noText: "Discard", cancelText: "Cancel"),
+            character => BuildService.SaveTabAsync(character, coalesceRequests: true),
+            error => Snackbar.Add(error, Severity.Error),
+            CharacterContext.ReleaseAsync);
+        if (!closed) return false;
 
         if (wasActive)
         {
@@ -546,6 +550,7 @@
             else
                 Nav.NavigateTo("/");
         }
+        return true;
     }
 
     private async Task SaveActive()
@@ -553,10 +558,11 @@
         var tab = Tabs.ActiveTab;
         if (tab == null) return;
 
-        var error = await BuildService.SaveTabAsync(tab);
+        long editVersion = tab.EditVersion;
+        var error = await BuildService.SaveTabAsync(tab, coalesceRequests: true);
         if (error == null)
         {
-            Tabs.MarkClean(tab);
+            if (tab.EditVersion == editVersion) Tabs.MarkClean(tab);
             Snackbar.Add(tab.CloudSession is null ? "Saved." : tab.CloudNotice ?? "Saved to Google Drive.", Severity.Success);
         }
         else

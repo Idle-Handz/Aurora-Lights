@@ -30,7 +30,7 @@ public sealed class MagicPreparationAccessibilityTests : BunitContext
         var component = Render<CharacterMagicWorkspace>(parameters => parameters.Add(component => component.Model, model));
 
         component.FindAll(".magic-view-tab").Single(tab => tab.TextContent.Contains("Prepared")).Click();
-        component.Find("input.magic-spell-prep-check").GetAttribute("aria-label").Should().Be("Prepare Shield for Wizard");
+        component.Find("input.magic-spell-prep-check").GetAttribute("aria-label").Should().Be("Prepare Shield for Wizard (Test)");
         var toggle = component.Find("button.magic-level-toggle");
         toggle.GetAttribute("type").Should().Be("button");
         toggle.GetAttribute("aria-expanded").Should().Be("true");

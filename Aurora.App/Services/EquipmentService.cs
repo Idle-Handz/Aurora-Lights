@@ -718,14 +718,10 @@ public static class EquipmentService
                 break;
 
             case GearSlot.MainHand:
-                if (character.Inventory.EquippedPrimary != null)
-                    character.Inventory.UnequipPrimary();
                 character.Inventory.EquipPrimary(item, item.IsTwoHandTarget());
                 break;
 
             case GearSlot.OffHand:
-                if (character.Inventory.EquippedSecondary != null)
-                    character.Inventory.UnequipSecondary();
                 character.Inventory.EquipSecondary(item);
                 break;
         }
@@ -742,18 +738,6 @@ public static class EquipmentService
 
         if (twoHanded)
         {
-            if (!ReferenceEquals(character.Inventory.EquippedPrimary, item))
-            {
-                if (character.Inventory.EquippedPrimary != null)
-                    character.Inventory.UnequipPrimary();
-            }
-
-            if (character.Inventory.EquippedSecondary != null &&
-                !ReferenceEquals(character.Inventory.EquippedSecondary, item))
-            {
-                character.Inventory.UnequipSecondary();
-            }
-
             character.Inventory.EquipPrimary(item, twohanded: true);
         }
         else
@@ -762,7 +746,6 @@ public static class EquipmentService
                 !ReferenceEquals(character.Inventory.EquippedPrimary, item))
                 return false;
 
-            character.Inventory.UnequipPrimary();
             character.Inventory.EquipPrimary(item, twohanded: false);
         }
 
@@ -797,11 +780,12 @@ public static class EquipmentService
     /// <summary>
     /// Returns the natural gear slot for an inventory item, or null if the item
     /// is equippable but doesn't belong to a named slot (rings, cloaks, etc.).
-    /// Priority: Armor → MainHand → OffHand.
+    /// Explicit secondary slots take priority over generic one-handed compatibility.
     /// </summary>
     public static GearSlot? GetNaturalSlot(RefactoredEquipmentItem item)
     {
         if (IsItemCompatibleWithSlot(item, GearSlot.Armor))    return GearSlot.Armor;
+        if (item.IsSecondaryTarget())                         return GearSlot.OffHand;
         if (IsItemCompatibleWithSlot(item, GearSlot.MainHand)) return GearSlot.MainHand;
         if (IsItemCompatibleWithSlot(item, GearSlot.OffHand))  return GearSlot.OffHand;
         return null;
