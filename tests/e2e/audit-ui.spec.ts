@@ -14,7 +14,22 @@ const legacyMonkFixture = path.resolve(
 
 test('Character search survives selection and can be cleared', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name === 'chromium-mobile', 'Covered on desktop.');
-  await page.goto('/import', { waitUntil: 'networkidle' });
+  let releaseHydration!: () => void;
+  const hydrationGate = new Promise<void>(resolve => { releaseHydration = resolve; });
+  await page.route(/\/_framework\/blazor\.web(?:\.[^/]+)?\.js$/, async route => {
+    await hydrationGate;
+    await route.continue();
+  });
+  const navigation = page.goto('/import', { waitUntil: 'domcontentloaded' });
+  try {
+    // An upload selected before Blazor attaches its handler is otherwise lost.
+    await expect(page.locator('#phase0-upload')).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Clear Session Imports', exact: true })).toBeDisabled();
+  } finally {
+    releaseHydration();
+  }
+  await navigation;
+  await expect(page.locator('#phase0-upload')).toBeEnabled();
   await page.locator('#phase0-upload').setInputFiles(legacyMonkFixture);
   await expect(page.locator('.status-banner.success')).toContainText('Imported 1 file');
   await page.locator('.web-nav-drawer a[href="/"]').click();

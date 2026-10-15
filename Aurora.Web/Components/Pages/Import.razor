@@ -16,14 +16,14 @@
         <label class="upload-label" for="phase0-upload">Select files</label>
         <InputFile id="phase0-upload"
                    OnChange="ImportFilesAsync"
-                   disabled="@_busy"
+                   disabled="@(_busy || !_interactive)"
                    multiple
                    accept=".xml,.zip,.dnd5e" />
         <div class="upload-hint">Supported: `.xml`, `.zip`, `.dnd5e`</div>
     </div>
 
     <div class="action-row">
-        <button class="action-link danger" @onclick="ClearSessionAsync" disabled="@_busy">Clear Session Imports</button>
+        <button class="action-link danger" @onclick="ClearSessionAsync" disabled="@(_busy || !_interactive)">Clear Session Imports</button>
     </div>
 
     @if (_busy)
@@ -129,6 +129,7 @@
 
 @code {
     private PhaseZeroSessionWorkspace? _workspace;
+    private bool _interactive;
     private bool _busy;
     private bool _failed;
     private string? _message;
@@ -137,6 +138,16 @@
     protected override async Task OnInitializedAsync()
     {
         _workspace = await SessionWorkspace.GetWorkspaceAsync();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Prerendered controls must wait for the interactive upload handler.
+            _interactive = true;
+            StateHasChanged();
+        }
     }
 
     private async Task ImportFilesAsync(InputFileChangeEventArgs args)

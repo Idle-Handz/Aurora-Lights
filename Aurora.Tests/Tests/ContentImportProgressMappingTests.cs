@@ -104,25 +104,37 @@ public class ContentImportProgressMappingTests
         try
         {
             contentPath.SetValue(DataManager.Current, workspace);
-            // Exercise the pinned package, not fabricated progress callbacks. Enough actual writes
-            // to cross its reporting throttle while remaining a small, isolated database.
-            var elements = Enumerable.Range(0, 2000).Select(i =>
+            // Exercise real writes from the pinned package, not fabricated progress callbacks.
+            // Two records are enough once the callback below explicitly crosses its time throttle.
+            const int elementCount = 2;
+            var elements = Enumerable.Range(0, elementCount).Select(i =>
                 $"<element name='Progress {i}' type='Proficiency' source='Progress test' id='ID_PROGRESS_{i}'><description>Progress test</description></element>");
             File.WriteAllText(Path.Combine(workspace, "progress.xml"), "<elements>" + string.Concat(elements) + "</elements>");
             var service = new ContentDatabaseService();
             var reports = new List<AuroraImportProgress>();
+            bool pausedAtFirstWrite = false;
             service.StateChanged += () =>
             {
                 if (service.SyncState == ContentDatabaseSyncState.Syncing && service.Progress is { } progress)
+                {
                     reports.Add(progress);
+                    if (!pausedAtFirstWrite && progress.PhaseLabel.StartsWith("Writing content", StringComparison.Ordinal))
+                    {
+                        pausedAtFirstWrite = true;
+                        // The library reports on the importing thread, at most every 100 ms.
+                        // Hold its first writing callback beyond that interval so the next actual
+                        // insert produces intermediate progress even on fast CI runners.
+                        Thread.Sleep(TimeSpan.FromMilliseconds(150));
+                    }
+                }
             };
             using var cancellation = new CancellationTokenSource(TimeSpan.FromMinutes(1));
 
             var result = await service.SyncAsync(cancellation.Token);
 
             result.Success.Should().BeTrue(result.ErrorMessage);
-            result.ElementsImported.Should().Be(2000);
-            reports.Should().Contain(p => p.Phase == AuroraImportPhase.Importing && p.ElementsImported > 0 && p.ElementsImported < 2000,
+            result.ElementsImported.Should().Be(elementCount);
+            reports.Should().Contain(p => p.Phase == AuroraImportPhase.Importing && p.ElementsImported > 0 && p.ElementsImported < elementCount,
                 "Settings needs real intermediate writes, not just phase boundaries");
             var writing = reports.Where(p => p.PhaseLabel.StartsWith("Writing content", StringComparison.Ordinal)).ToArray();
             writing.Select(p => p.Percentage).Distinct().Count().Should().BeGreaterThan(1);

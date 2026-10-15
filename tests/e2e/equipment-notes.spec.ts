@@ -11,6 +11,24 @@ test('equipment notes retain the final draft across navigation, explicit save, a
   test.skip(testInfo.project.name !== 'chromium-desktop', 'The desktop drawer is exercised by this regression.');
   test.slow();
 
+  // Make stale server renders arrive while later keystrokes are already in the DOM.
+  let delayServerRenders = false;
+  const pendingRenders = new Set<ReturnType<typeof setTimeout>>();
+  await page.routeWebSocket(/\/_blazor\?/, socket => {
+    const server = socket.connectToServer();
+    server.onMessage(message => {
+      if (!delayServerRenders) {
+        socket.send(message);
+        return;
+      }
+      const timer = setTimeout(() => {
+        pendingRenders.delete(timer);
+        if (!page.isClosed()) socket.send(message);
+      }, 75);
+      pendingRenders.add(timer);
+    });
+  });
+
   await page.goto('/', { waitUntil: 'networkidle' });
   await page.getByLabel('Character Name', { exact: true }).fill('Equipment Notes Regression');
   await page.getByRole('button', { name: 'Create New Character', exact: true }).click();
@@ -20,11 +38,15 @@ test('equipment notes retain the final draft across navigation, explicit save, a
   const notes = page.locator('.equipment-notes-area').first();
   const saveNotes = page.getByRole('button', { name: 'Save Notes', exact: true });
   const finalDraft = 'A complete note typed without interrupted focus.';
+  await expect(notes).toBeVisible();
+  delayServerRenders = true;
   await notes.fill('');
   await notes.pressSequentially(finalDraft, { delay: 5 });
   await expect(notes).toHaveValue(finalDraft);
   await expect(notes).toBeEnabled();
   await expect(saveNotes).toBeVisible();
+  await expect.poll(() => pendingRenders.size).toBe(0);
+  delayServerRenders = false;
 
   await page.locator('.web-nav-drawer a[href="/workspace"]').click();
   await expect(page).toHaveURL(/\/workspace$/);

@@ -81,6 +81,7 @@ characterTest('Topbar search preserves imported content and the edited active ch
   const markerName = 'Search Marker & + # ?';
   const markerId = 'ID_TEST_TOPBAR_SESSION_MARKER';
   await page.goto('/import', { waitUntil: 'networkidle' });
+  await expect(page.locator('#phase0-upload')).toBeEnabled();
   await page.locator('#phase0-upload').setInputFiles({
     name: 'topbar-session-marker.xml',
     mimeType: 'text/xml',
@@ -147,6 +148,7 @@ characterTest('Build picker distinguishes the current choice from unavailable ow
   test.slow();
 
   await page.goto('/import', { waitUntil: 'networkidle' });
+  await expect(page.locator('#phase0-upload')).toBeEnabled();
   await page.locator('#phase0-upload').setInputFiles(legacyMonkFixture);
   await expect(page.locator('.status-banner.success')).toContainText('Imported 1 file', {
     timeout: 15_000

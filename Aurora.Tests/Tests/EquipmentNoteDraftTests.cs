@@ -24,16 +24,15 @@ public sealed class EquipmentNoteDraftTests : BunitContext
             })
             .Add(component => component.OnNoteCommitted, () => commits++));
 
-        var field = component.FindAll("textarea")[0];
         for (int index = 1; index <= 20; index++)
         {
-            field.Input($"Note {index}");
+            component.FindAll("textarea")[0].Input($"Note {index}");
         }
 
         inputEvents.Should().Be(20);
         commits.Should().Be(0);
         drafts["equipment"].Should().Be("Note 20");
-        field.Change("Note 20");
+        component.FindAll("textarea")[0].Change("Note 20");
         commits.Should().Be(1);
     }
 

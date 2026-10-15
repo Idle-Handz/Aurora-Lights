@@ -265,9 +265,10 @@
         <div class="equipment-section-label">Equipment Notes</div>
         <textarea class="equipment-notes-area"
                   rows="3"
-                  value='@GetNoteValue("equipment", Model.EquipmentNotes)'
+                  @bind:get='GetNoteValue("equipment", Model.EquipmentNotes)'
+                  @bind:set='value => ChangeNoteAsync("equipment", value)'
+                  @bind:event="oninput"
                   disabled="@(!OnNoteChanged.HasDelegate || Busy)"
-                  @oninput='args => ChangeNoteAsync("equipment", args)'
                   @onchange="() => OnNoteCommitted.InvokeAsync()"></textarea>
     </section>
 
@@ -275,9 +276,10 @@
         <div class="equipment-section-label">Treasure</div>
         <textarea class="equipment-notes-area"
                   rows="3"
-                  value='@GetNoteValue("treasure", Model.TreasureNotes)'
+                  @bind:get='GetNoteValue("treasure", Model.TreasureNotes)'
+                  @bind:set='value => ChangeNoteAsync("treasure", value)'
+                  @bind:event="oninput"
                   disabled="@(!OnNoteChanged.HasDelegate || Busy)"
-                  @oninput='args => ChangeNoteAsync("treasure", args)'
                   @onchange="() => OnNoteCommitted.InvokeAsync()"></textarea>
     </section>
 
@@ -285,9 +287,10 @@
         <div class="equipment-section-label">Quest Items</div>
         <textarea class="equipment-notes-area"
                   rows="3"
-                  value='@GetNoteValue("quest", Model.QuestNotes)'
+                  @bind:get='GetNoteValue("quest", Model.QuestNotes)'
+                  @bind:set='value => ChangeNoteAsync("quest", value)'
+                  @bind:event="oninput"
                   disabled="@(!OnNoteChanged.HasDelegate || Busy)"
-                  @oninput='args => ChangeNoteAsync("quest", args)'
                   @onchange="() => OnNoteCommitted.InvokeAsync()"></textarea>
     </section>
 </div>
@@ -394,13 +397,13 @@
         return OnCoinChanged.InvokeAsync(new EquipmentCoinChangeModel(coinId, value));
     }
 
-    private Task ChangeNoteAsync(string noteId, ChangeEventArgs args)
+    private Task ChangeNoteAsync(string noteId, string? value)
     {
         if (!OnNoteChanged.HasDelegate)
         {
             return Task.CompletedTask;
         }
 
-        return OnNoteChanged.InvokeAsync(new EquipmentNoteChangeModel(noteId, args.Value?.ToString() ?? string.Empty));
+        return OnNoteChanged.InvokeAsync(new EquipmentNoteChangeModel(noteId, value ?? string.Empty));
     }
 }
