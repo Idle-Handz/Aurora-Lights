@@ -1,0 +1,27 @@
+<nav class="aurora-policy-links" aria-label="Privacy, terms and support">
+    @foreach (var link in Links)
+    {
+        <a href="@link.Url" target="_blank" rel="noopener noreferrer"
+           @onclick="() => OnOpen.InvokeAsync(link.Url)" @onclick:preventDefault="OnOpen.HasDelegate">@link.Label</a>
+    }
+</nav>
+
+@code {
+    [Parameter] public bool IncludeDriveDetails { get; set; }
+    [Parameter] public EventCallback<string> OnOpen { get; set; }
+
+    private IEnumerable<(string Url, string Label)> Links
+    {
+        get
+        {
+            yield return (AuroraPublicPages.Privacy, "Privacy Policy");
+            yield return (AuroraPublicPages.Terms, "Terms of Service");
+            yield return (AuroraPublicPages.Support, "Support");
+            if (IncludeDriveDetails)
+            {
+                yield return (AuroraPublicPages.DrivePrivacy, "How Drive data is used");
+                yield return (AuroraPublicPages.DataControls, "Manage or delete your data");
+            }
+        }
+    }
+}

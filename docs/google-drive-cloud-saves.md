@@ -39,6 +39,32 @@ locally, unless another local edit arrived while the request was running.
 
 ## Desktop sign-in setup
 
+Before interactive Connect, Reconnect, or sign-in started by Upload to Drive,
+Aurora displays a data-use notice with **Cancel** and **Continue to Google**.
+The notice describes per-file access, account information, direct character and
+session transfers, local/recovery copies, and disconnect/revocation behavior.
+Only Continue starts Google authorization. Dismissing the notice (including
+Escape or Android Back) leaves the connection unchanged; cancelling the calling
+operation also dismisses the notice. Silent connection restoration and token
+renewal do not show it.
+
+Cloud Saves, the notice, and About provide Privacy Policy, Terms of Service and
+Support links that open through the platform's external launcher. Cloud Saves
+and the notice also link to the Drive disclosure and data-management sections.
+These remain available regardless of whether a Google account is connected:
+
+- https://aurora.idlehandz.com/privacy/
+- https://aurora.idlehandz.com/terms/
+- https://aurora.idlehandz.com/support/
+- https://aurora.idlehandz.com/privacy/#google-drive
+- https://aurora.idlehandz.com/privacy/#controls
+
+Google Auth Platform's Authorized domains entry is `idlehandz.com`, the
+registrable parent domain. The homepage and policy URL fields use the full
+`https://aurora.idlehandz.com/...` addresses. Publishing these pages and adding
+the in-app notice do not establish Google domain verification, brand approval,
+or In production audience status.
+
 Windows desktop uses browser sign-in; macOS desktop follows the same loopback
 flow but still needs platform verification. Android uses native Google Play
 services authorization, described below. The existing web host is unchanged.

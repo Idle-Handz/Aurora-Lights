@@ -1,0 +1,34 @@
+<MudDialog>
+    <DialogContent>
+        <GoogleDriveDataUseNotice />
+        <AppPolicyLinks IncludeDriveDetails="true" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Continue">Continue to Google</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private MudDialogInstance MudDialog { get; set; } = default!;
+
+    private void Cancel() => MudDialog.Cancel();
+    private void Continue() => MudDialog.Close(DialogResult.Ok(true));
+
+    public static async Task<bool> ConfirmAsync(IDialogService dialogs, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        var dialog = await dialogs.ShowAsync<GoogleDriveDisclosureDialog>("Before connecting Google Drive",
+            new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, FullWidth = true, MaxWidth = MaxWidth.Small });
+        try
+        {
+            var result = await dialog.Result.WaitAsync(ct);
+            ct.ThrowIfCancellationRequested();
+            return result is { Canceled: false, Data: true };
+        }
+        finally
+        {
+            if (ct.IsCancellationRequested) dialog.Close(DialogResult.Cancel());
+        }
+    }
+}

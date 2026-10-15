@@ -3,6 +3,7 @@
 @inject CharacterTabService Tabs
 @inject NavigationManager Nav
 @inject ISnackbar Snackbar
+@inject IDialogService DialogService
 
 @if (Tab is { CloudSession: null } && Cloud.IsSupported)
 {
@@ -47,7 +48,8 @@
         _operation = cancellation;
         try
         {
-            if (!Cloud.IsConnected) await Cloud.ConnectAsync(interactive: true, cancellation.Token);
+            if (!Cloud.IsConnected && !await Cloud.ConnectInteractiveAsync(
+                token => GoogleDriveDisclosureDialog.ConfirmAsync(DialogService, token), cancellation.Token)) return;
             cancellation.Token.ThrowIfCancellationRequested();
             if (!Tabs.Tabs.Contains(tab)) return;
             await Cloud.UploadCharacterAsync(tab, cancellation.Token);

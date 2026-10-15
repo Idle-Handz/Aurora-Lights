@@ -1,0 +1,18 @@
+.aurora-policy-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem 1rem;
+    margin-block: .75rem;
+    font-size: .875rem;
+}
+
+.aurora-policy-links a {
+    color: var(--mud-palette-primary, #547ac1);
+    text-decoration: underline;
+    text-underline-offset: .15em;
+}
+
+.aurora-policy-links a:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 3px;
+}

@@ -33,7 +33,13 @@ test('equipment notes retain the final draft across navigation, explicit save, a
   await page.getByLabel('Character Name', { exact: true }).fill('Equipment Notes Regression');
   await page.getByRole('button', { name: 'Create New Character', exact: true }).click();
   await expect(page).toHaveURL(/\/build$/, { timeout: 60_000 });
-  await page.locator('.web-nav-drawer a[href="/equipment"]').click();
+  const openEquipment = async () => {
+    await page.locator('.web-nav-drawer a[href="/equipment"]').click();
+    // Finish FocusOnNavigate before typing or delaying server messages; otherwise
+    // its pending heading-focus command can interrupt the draft under test.
+    await expect(page.getByRole('heading', { name: 'Equipment', exact: true })).toBeFocused();
+  };
+  await openEquipment();
 
   const notes = page.locator('.equipment-notes-area').first();
   const saveNotes = page.getByRole('button', { name: 'Save Notes', exact: true });
@@ -43,6 +49,7 @@ test('equipment notes retain the final draft across navigation, explicit save, a
   await notes.fill('');
   await notes.pressSequentially(finalDraft, { delay: 5 });
   await expect(notes).toHaveValue(finalDraft);
+  await expect(notes).toBeFocused();
   await expect(notes).toBeEnabled();
   await expect(saveNotes).toBeVisible();
   await expect.poll(() => pendingRenders.size).toBe(0);
@@ -50,20 +57,20 @@ test('equipment notes retain the final draft across navigation, explicit save, a
 
   await page.locator('.web-nav-drawer a[href="/workspace"]').click();
   await expect(page).toHaveURL(/\/workspace$/);
-  await page.locator('.web-nav-drawer a[href="/equipment"]').click();
+  await openEquipment();
   await expect(notes).toHaveValue(finalDraft);
 
   await notes.fill('Saved explicitly while the draft is focused.');
   await saveNotes.click();
   await expect(saveNotes).toBeHidden();
   await page.locator('.web-nav-drawer a[href="/workspace"]').click();
-  await page.locator('.web-nav-drawer a[href="/equipment"]').click();
+  await openEquipment();
   await expect(notes).toHaveValue('Saved explicitly while the draft is focused.');
 
   await notes.fill('Final text committed on blur.');
   await notes.press('Tab');
   await expect(saveNotes).toBeHidden();
   await page.locator('.web-nav-drawer a[href="/workspace"]').click();
-  await page.locator('.web-nav-drawer a[href="/equipment"]').click();
+  await openEquipment();
   await expect(notes).toHaveValue('Final text committed on blur.');
 });

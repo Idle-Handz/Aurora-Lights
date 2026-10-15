@@ -1,0 +1,18 @@
+.drive-data-use-notice {
+    font-size: .9375rem;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.drive-data-use-notice p {
+    margin: 0 0 .75rem;
+}
+
+.drive-data-use-notice ul {
+    padding-inline-start: 1.25rem;
+    margin: 0 0 .75rem;
+}
+
+.drive-data-use-notice li + li {
+    margin-top: .5rem;
+}

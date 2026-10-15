@@ -2,6 +2,7 @@
 @inject CloudCharacterService Cloud
 @inject CharacterTabService Tabs
 @inject ISnackbar Snackbar
+@inject IDialogService DialogService
 @implements IDisposable
 
 @if (_busy && _opening)
@@ -17,6 +18,7 @@
     <MudText Typo="Typo.h5">Cloud Saves</MudText>
     <MudText Typo="Typo.body2" Class="mb-3">Open and save characters in Google Drive. Drive is the main save; this device keeps a working copy.</MudText>
     <MudText Typo="Typo.body2" Class="mb-3">For a character saved in this app, open its Overview and choose Upload to Drive.</MudText>
+    <AppPolicyLinks IncludeDriveDetails="true" />
     @if (!Cloud.IsSupported)
     {
         <MudText>Google Drive sign-in is available on desktop and Android.</MudText>
@@ -96,7 +98,7 @@
             // Restore a previous connection without opening a browser. Refusal simply shows Connect.
             await Run("Connecting to Google Drive...", async ct =>
             {
-                try { await Cloud.ConnectAsync(interactive: false, ct); }
+                try { await Cloud.RestoreConnectionAsync(ct); }
                 catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
                 catch { return; }
                 _files = await Cloud.ListAsync(ct);
@@ -111,7 +113,8 @@
     }
     private Task Connect() => Run("Complete Google sign-in and allow Drive access...", async ct =>
     {
-        await Cloud.ConnectAsync(interactive: true, ct);
+        if (!await Cloud.ConnectInteractiveAsync(token => GoogleDriveDisclosureDialog.ConfirmAsync(DialogService, token), ct))
+            return;
         _files = await Cloud.ListAsync(ct);
     });
     private Task Refresh() => Run("Loading cloud characters...", async ct => _files = await Cloud.ListAsync(ct));
