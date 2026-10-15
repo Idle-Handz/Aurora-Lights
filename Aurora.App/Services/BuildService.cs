@@ -607,6 +607,13 @@ public static partial class BuildService
         else completion.TrySetResult(error);
     }
 
+    /// <summary>Flushes a draft before detaching from Drive; the caller owns IsSaving.</summary>
+    internal static async Task SaveLocalDraftAsync(CharacterTab tab)
+    {
+        using (await CharacterContext.EnterAsync(tab))
+            await Task.Run(() => SaveCharacterFile(tab));
+    }
+
     private static async Task<string?> SaveTabCoreAsync(CharacterTab tab)
     {
         if (tab.File == null) return "No file associated with this tab.";

@@ -1,8 +1,15 @@
 <div class="character-browser-card-wrapper">
     <button class="@CardClass"
             type="button"
+            disabled="@Disabled"
             @onclick="SelectAsync">
         <div class="character-browser-portrait">
+            @if (Character.IsCloud)
+            {
+                <span class="character-browser-cloud" role="img" aria-label="Cloud save" title="Google Drive">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.35 10.04A7.49 7.49 0 0 0 5.4 8.02 6 6 0 0 0 6 20h13a5 5 0 0 0 .35-9.96Z" /></svg>
+                </span>
+            }
             @if (!string.IsNullOrWhiteSpace(Character.PortraitDataUrl))
             {
                 <img src="@Character.PortraitDataUrl" alt="@Character.DisplayName" />
@@ -63,12 +70,16 @@
     private bool _renderedSelected;
     private bool _renderedCanDelete;
     private bool _renderedCanEditGroup;
+    private bool _renderedDisabled;
 
     [Parameter, EditorRequired]
     public CharacterBrowserEntry Character { get; set; } = default!;
 
     [Parameter]
     public bool Selected { get; set; }
+
+    [Parameter]
+    public bool Disabled { get; set; }
 
     [Parameter]
     public EventCallback<CharacterBrowserEntry> OnSelected { get; set; }
@@ -88,6 +99,7 @@
         bool shouldRender =
             !ReferenceEquals(_renderedCharacter, Character) ||
             _renderedSelected != Selected ||
+            _renderedDisabled != Disabled ||
             _renderedCanDelete != OnDelete.HasDelegate ||
             _renderedCanEditGroup != OnEditGroup.HasDelegate;
 
@@ -101,11 +113,12 @@
     {
         _renderedCharacter = Character;
         _renderedSelected = Selected;
+        _renderedDisabled = Disabled;
         _renderedCanDelete = OnDelete.HasDelegate;
         _renderedCanEditGroup = OnEditGroup.HasDelegate;
     }
 
-    private Task SelectAsync() => OnSelected.InvokeAsync(Character);
+    private Task SelectAsync() => Disabled ? Task.CompletedTask : OnSelected.InvokeAsync(Character);
     private Task DeleteAsync() => OnDelete.InvokeAsync(Character);
     private Task EditGroupAsync() => OnEditGroup.InvokeAsync(Character);
 

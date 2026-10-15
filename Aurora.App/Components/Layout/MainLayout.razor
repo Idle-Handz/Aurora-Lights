@@ -11,6 +11,7 @@
 @inject IJSRuntime JS
 @inject Aurora.App.Services.Updates.AppUpdateService AppUpdates
 @inject ContentService Content
+@inject CharacterService Characters
 
 <MudThemeProvider Theme="ActiveMudTheme" IsDarkMode="SelectedTheme.IsDark" ObserveSystemThemeChange="false" />
 <MudPopoverProvider />
@@ -132,6 +133,7 @@
                         <MudText>Google Drive — @(cloudTab.IsLoading ? "Loading..." : cloudTab.IsSaving ? "Saving..." : cloudTab.CloudReloadFailed ? "Could not load Drive save" : cloudTab.IsDirty ? "Changes not yet saved to Drive" : "Cloud save loaded")</MudText>
                         <MudButton OnClick="SaveActive" Disabled="@(cloudTab.IsSaving || cloudTab.IsLoading || cloudTab.CloudReloadFailed)">Save to Drive</MudButton>
                         <MudButton OnClick="ReloadCloud" Disabled="@(cloudTab.IsSaving || cloudTab.IsLoading)">Load Drive Save</MudButton>
+                        <MudButton OnClick="DisconnectCloudCharacter" Disabled="@(cloudTab.IsSaving || cloudTab.IsLoading || cloudTab.CloudReloadFailed)">Disconnect character</MudButton>
                         <MudButton OnClick="OpenCloudRecovery" Disabled="@(cloudTab.IsSaving || cloudTab.IsLoading)">Recovery Files</MudButton>
                     </div>
                     @if (cloudTab.CloudNotice is not null)
@@ -583,6 +585,24 @@
             // CloudReloadVersion recreates the page's cached session/snapshot references.
         }
         catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+    }
+
+    private async Task DisconnectCloudCharacter()
+    {
+        var tab = Tabs.ActiveTab;
+        if (tab?.CloudSession is null) return;
+        bool? confirmed = await DialogService.ShowMessageBox("Disconnect this character?",
+            "Keep this character and its session data in your local library. Future saves will stay on this device. The existing Google Drive file will remain unchanged.",
+            yesText: "Disconnect character", cancelText: "Cancel");
+        if (confirmed != true || !Tabs.Tabs.Contains(tab)) return;
+        try
+        {
+            await LocalCharacterCloudUpload.DisconnectAsync(tab, Characters.CharactersDirectory);
+            Characters.InvalidateFileListCache();
+            Tabs.NotifyChanged();
+            Snackbar.Add("Character disconnected. Future saves stay on this device.", Severity.Success);
+        }
+        catch (Exception ex) { Snackbar.Add($"Could not disconnect character: {ex.Message}", Severity.Error); }
     }
 
     private Task OpenCloudRecovery()

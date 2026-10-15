@@ -54,16 +54,17 @@
         {
             <MudText>No cloud characters yet. Open a character and choose Upload to Drive on Overview, or upload an external .dnd5e file.</MudText>
         }
-        @foreach (var file in _files)
+        <div class="cloud-character-grid" aria-label="Cloud Saves">
+            @foreach (var entry in FilteredEntries)
+            {
+                <CharacterBrowserCard @key="entry.Id" Character="entry" Disabled="_busy"
+                                      Selected="@(Tabs.ActiveTab?.CloudSession?.Metadata.Reference.DocumentId == entry.Id)"
+                                      OnSelected="OpenEntry" />
+            }
+        </div>
+        @if (_files.Count > 0 && !FilteredEntries.Any())
         {
-            <div @key="file.Reference.DocumentId" class="d-flex align-center justify-space-between pa-3"
-                 style="border-bottom: 1px solid var(--mud-palette-divider); gap: 16px;">
-                <div>
-                    <MudText>@System.IO.Path.GetFileNameWithoutExtension(file.FileName)</MudText>
-                    <MudText Typo="Typo.caption">Saved @file.ModifiedTime?.ToLocalTime().ToString("g")</MudText>
-                </div>
-                <MudButton Disabled="_busy" OnClick="@(() => Open(file))">Open</MudButton>
-            </div>
+            <MudText>No cloud characters match "@SearchText".</MudText>
         }
     }
     @if (_busy && !_opening)
@@ -80,7 +81,15 @@
 
 @code {
     [Parameter] public EventCallback<(CharacterDocumentMetadata Metadata, CancellationToken Token)> OnOpen { get; set; }
+    [Parameter] public string SearchText { get; set; } = "";
     private IReadOnlyList<CharacterDocumentMetadata> _files = [];
+    private List<CharacterBrowserEntry> _entries = [];
+    private CancellationTokenSource? _previewOperation;
+    private IEnumerable<CharacterBrowserEntry> FilteredEntries => _entries
+        .Where(e => string.IsNullOrWhiteSpace(SearchText)
+            || e.DisplayName.Contains(SearchText, StringComparison.OrdinalIgnoreCase)
+            || "Cloud Saves".Contains(SearchText, StringComparison.OrdinalIgnoreCase))
+        .OrderBy(e => !e.IsFavorite).ThenBy(e => e.DisplayName, StringComparer.OrdinalIgnoreCase);
     private bool _busy;
     private bool _opening;
     private string? _openingName;
@@ -101,7 +110,7 @@
                 try { await Cloud.RestoreConnectionAsync(ct); }
                 catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
                 catch { return; }
-                _files = await Cloud.ListAsync(ct);
+                await LoadFiles(ct);
             });
         }
     }
@@ -115,23 +124,62 @@
     {
         if (!await Cloud.ConnectInteractiveAsync(token => GoogleDriveDisclosureDialog.ConfirmAsync(DialogService, token), ct))
             return;
-        _files = await Cloud.ListAsync(ct);
+        await LoadFiles(ct);
     });
-    private Task Refresh() => Run("Loading cloud characters...", async ct => _files = await Cloud.ListAsync(ct));
+    private Task Refresh() => Run("Loading cloud characters...", LoadFiles);
     private Task Upload() => Run("Uploading character...", async ct =>
     {
         var created = await Cloud.UploadFileAsync(ct);
         if (created is not null)
         {
-            _files = await Cloud.ListAsync(ct);
+            await LoadFiles(ct);
             Snackbar.Add("Character saved to Google Drive.", Severity.Success);
         }
     });
+    private async Task LoadFiles(CancellationToken ct)
+    {
+        _files = await Cloud.ListAsync(ct);
+        _previewOperation?.Cancel();
+        _previewOperation?.Dispose();
+        _previewOperation = new CancellationTokenSource();
+        _entries = _files.Select(CloudCharacterPreview.Placeholder).ToList();
+        _ = LoadPreviews(_files, _previewOperation.Token);
+    }
+
+    private async Task LoadPreviews(IReadOnlyList<CharacterDocumentMetadata> files, CancellationToken ct)
+    {
+        using var throttle = new SemaphoreSlim(4);
+        async Task LoadOne(CharacterDocumentMetadata file)
+        {
+            await throttle.WaitAsync(ct);
+            try
+            {
+                CharacterBrowserEntry entry;
+                try { entry = await Cloud.GetBrowserEntryAsync(file, ct); }
+                catch (OperationCanceledException) { throw; }
+                catch { entry = CloudCharacterPreview.Placeholder(file) with { CaptionText = "Preview unavailable. Open to retry." }; }
+                await InvokeAsync(() =>
+                {
+                    if (_disposed || ct.IsCancellationRequested) return;
+                    int index = _entries.FindIndex(e => e.Id == entry.Id);
+                    if (index >= 0) _entries[index] = entry;
+                    StateHasChanged();
+                });
+            }
+            finally { throttle.Release(); }
+        }
+        try { await Task.WhenAll(files.Select(LoadOne)); }
+        catch (OperationCanceledException) { }
+        catch (Exception) when (_disposed) { }
+    }
+
+    private Task OpenEntry(CharacterBrowserEntry entry) => Open(_files.First(f => f.Reference.DocumentId == entry.Id));
     private async Task Open(CharacterDocumentMetadata file)
     {
         if (_busy || _disposed) return;
         _opening = true;
-        _openingName = System.IO.Path.GetFileNameWithoutExtension(file.FileName);
+        _openingName = _entries.FirstOrDefault(e => e.Id == file.Reference.DocumentId)?.DisplayName
+            ?? System.IO.Path.GetFileNameWithoutExtension(file.FileName);
         try
         {
             await Run("Loading Google Drive save...", async ct => await OnOpen.InvokeAsync((file, ct)));
@@ -141,7 +189,9 @@
     private Task Disconnect() => Run("Disconnecting...", async ct =>
     {
         await Cloud.DisconnectAsync();
+        _previewOperation?.Cancel();
         _files = [];
+        _entries = [];
     });
     private async Task Run(string status, Func<CancellationToken, Task> operation)
     {
@@ -173,5 +223,7 @@
     {
         _disposed = true;
         _operation?.Cancel();
+        _previewOperation?.Cancel();
+        _previewOperation?.Dispose();
     }
 }

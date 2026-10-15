@@ -1,6 +1,7 @@
 @implements IDisposable
 @inject CloudCharacterService Cloud
 @inject CharacterTabService Tabs
+@inject CharacterService Characters
 @inject NavigationManager Nav
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
@@ -17,19 +18,12 @@
         {
             <MudProgressLinear Indeterminate="true" Class="mt-2" />
         }
-        @if (_uploaded)
-        {
-            <MudText Typo="Typo.body2" Class="mt-2">
-                Uploaded a copy. Open it from <MudLink Href="/#cloud-saves">Cloud Saves</MudLink> to continue using Drive.
-            </MudText>
-        }
     </div>
 }
 
 @code {
     [Parameter, EditorRequired] public CharacterTab? Tab { get; set; }
     private bool _busy;
-    private bool _uploaded;
     private bool _disposed;
     private CancellationTokenSource? _operation;
 
@@ -43,7 +37,6 @@
             return;
         }
         _busy = true;
-        _uploaded = false;
         using var cancellation = new CancellationTokenSource();
         _operation = cancellation;
         try
@@ -53,10 +46,11 @@
             cancellation.Token.ThrowIfCancellationRequested();
             if (!Tabs.Tabs.Contains(tab)) return;
             await Cloud.UploadCharacterAsync(tab, cancellation.Token);
+            Characters.InvalidateFileListCache();
+            Tabs.NotifyChanged();
             if (!_disposed)
             {
-                _uploaded = true;
-                Snackbar.Add("Character and session state uploaded to Google Drive.", Severity.Success);
+                Snackbar.Add("Character moved to Google Drive. This open character now uses the cloud save.", Severity.Success);
             }
         }
         catch (OperationCanceledException)

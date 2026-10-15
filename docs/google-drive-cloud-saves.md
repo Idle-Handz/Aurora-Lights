@@ -10,9 +10,23 @@ character library remains separate.
 To upload a character saved inside the app, open its **Overview** and choose
 **Upload to Drive**. This saves current character edits and includes the session
 state (HP, spell slots and resources), without opening a native file picker.
-The local character remains on the device; open the new copy from **Cloud Saves**
-to continue saving to Drive. **Upload external file** remains available for files
-accessible through the system picker.
+After Drive confirms the upload and the managed working copy is ready, the same
+open tab becomes cloud-linked and the standalone character/session files leave
+the local library. Subsequent saves update that Drive document. A failed upload
+or local handoff preserves the standalone save and reports the failure.
+**Upload external file** remains a copy operation for files selected through the
+system picker; it does not delete the original external file.
+
+Cloud Saves uses the same portrait tiles as the local character groups, with a
+cloud badge at the upper left of the portrait. Previews read the saved name,
+build details and embedded portrait without loading the character engine. They
+load progressively and are cached by account and Drive revision. The Characters
+search filters both sections, including when the local library is empty.
+
+Choose **Disconnect character** in the cloud banner to return the current draft
+and its session data to the local library, including unsent changes while offline.
+This does not delete or update the Drive file. Local filename collisions receive
+a numeric suffix. This is separate from disconnecting the Google account.
 
 Drive is authoritative. Opening or explicitly reloading a cloud character reads
 Drive and updates the managed local copy. If Drive changed after the character

@@ -17,7 +17,10 @@ public sealed class LocalCharacterCloudUploadTests
     [InlineData("offline")]
     [InlineData("cancelled")]
     [InlineData("external-change")]
-    public async Task UploadFromPrivateStorage_CapturesCurrentCharacterAndSessionWithoutLosingLocalSave(string outcome)
+    [InlineData("handoff-failed")]
+    [InlineData("cancel-after-upload")]
+    [InlineData("changed-during-upload")]
+    public async Task UploadFromPrivateStorage_ConvertsOnlyAfterConfirmedUploadAndPreservesSession(string outcome)
     {
         TestApplicationContextInstaller.EnsureInstalled();
         DataManager.Current.InitializeDirectories();
@@ -69,6 +72,8 @@ public sealed class LocalCharacterCloudUploadTests
             byte[] before = File.ReadAllBytes(path);
             using var cancellation = new CancellationTokenSource();
             if (outcome == "cancelled") cancellation.Cancel();
+            string workspace = Path.Combine(root, "cloud");
+            if (outcome == "handoff-failed") File.WriteAllText(workspace, "not a directory");
             var store = new UploadStore((fileName, content) =>
             {
                 tab.IsSaving.Should().BeTrue("the tab cannot be closed while an upload owns its snapshot");
@@ -80,18 +85,28 @@ public sealed class LocalCharacterCloudUploadTests
                     JsonNode.Parse(File.ReadAllText(SessionStore.GetSidecarPath(path)))).Should()
                     .BeTrue("the complete session sidecar travels with the character");
                 if (outcome == "offline") throw new HttpRequestException("offline");
+                if (outcome == "cancel-after-upload") cancellation.Cancel();
+                if (outcome == "changed-during-upload") File.AppendAllText(path, "\n<!-- changed during upload -->");
                 return new(new("created-file"), fileName, "1", null, content.Length, null);
             });
 
-            Func<Task> upload = async () => await LocalCharacterCloudUpload.UploadAsync(store, tab, cancellation.Token);
-            if (outcome == "success") await upload.Should().NotThrowAsync();
+            Func<Task> upload = async () => await LocalCharacterCloudUpload.UploadAsync(store, tab, workspace, "same-account", cancellation.Token);
+            bool converted = outcome is "success" or "cancel-after-upload";
+            if (converted) await upload.Should().NotThrowAsync();
             else if (outcome == "offline") await upload.Should().ThrowAsync<HttpRequestException>();
             else if (outcome == "cancelled") await upload.Should().ThrowAsync<OperationCanceledException>();
             else await upload.Should().ThrowAsync<IOException>();
 
             tab.IsSaving.Should().BeFalse();
-            tab.CloudSession.Should().BeNull("upload creates a Drive copy without replacing the local character");
-            File.Exists(path).Should().BeTrue();
+            File.Exists(path).Should().Be(!converted);
+            if (converted)
+            {
+                tab.CloudSession.Should().NotBeNull();
+                tab.File.FilePath.Should().Be(tab.CloudSession!.FilePath);
+                File.Exists(SessionStore.GetSidecarPath(path)).Should().BeFalse();
+                tab.CloudSession.HasPendingChanges.Should().BeFalse();
+            }
+            else tab.CloudSession.Should().BeNull();
             if (outcome is "cancelled" or "external-change")
             {
                 store.Creates.Should().Be(0);
@@ -101,23 +116,55 @@ public sealed class LocalCharacterCloudUploadTests
             else
             {
                 store.Creates.Should().Be(1);
-                File.ReadAllText(path).Should().Contain("Current unsaved name");
-                SessionStore.Load(path).CurrentHp.Should().Be(9);
+                File.ReadAllText(tab.File.FilePath).Should().Contain("Current unsaved name");
+                SessionStore.Load(tab.File.FilePath).CurrentHp.Should().Be(9);
                 tab.IsDirty.Should().BeFalse("the local copy was saved even if the remote upload failed");
             }
-            if (outcome == "success")
+            if (converted)
             {
                 using var downloaded = await CloudCharacterSession.OpenAsync(store,
                     Path.Combine(root, "other-device"), "same-account", new("created-file"));
                 JsonNode.DeepEquals(JsonNode.Parse(File.ReadAllText(downloaded.SessionPath)),
-                    JsonNode.Parse(File.ReadAllText(SessionStore.GetSidecarPath(path)))).Should().BeTrue();
+                    JsonNode.Parse(File.ReadAllText(SessionStore.GetSidecarPath(tab.File.FilePath)))).Should().BeTrue();
                 SessionStore.Load(downloaded.FilePath).Should().BeEquivalentTo(tab.Session,
                     "opening the uploaded character on another device restores every saved session field");
+                // Subsequent saves use the same remote document; the old local entry stays gone.
+                tab.Session.CurrentHp = 7;
+                tab.IsDirty = true;
+                (await BuildService.SaveTabAsync(tab)).Should().BeNull();
+                store.Creates.Should().Be(1);
+                store.Saves.Should().Be(1);
+                File.Exists(path).Should().BeFalse();
+
+                string blockedDirectory = Path.Combine(root, "blocked-local-directory");
+                File.WriteAllText(blockedDirectory, "occupied");
+                var cloudSession = tab.CloudSession;
+                Func<Task> failedDetach = () => LocalCharacterCloudUpload.DisconnectAsync(tab, blockedDirectory);
+                await failedDetach.Should().ThrowAsync<IOException>();
+                tab.CloudSession.Should().BeSameAs(cloudSession);
+                tab.File.FilePath.Should().Be(cloudSession!.FilePath);
+                File.Exists(tab.File.FilePath).Should().BeTrue();
+                tab.IsSaving.Should().BeFalse();
+
+                // Detach keeps even unsent edits, and never overwrites an occupied local name.
+                File.WriteAllText(path, "another character");
+                tab.Session.CurrentHp = 6;
+                tab.IsDirty = true;
+                await LocalCharacterCloudUpload.DisconnectAsync(tab, Path.GetDirectoryName(path)!);
+                tab.CloudSession.Should().BeNull();
+                tab.File.FilePath.Should().NotBe(path);
+                File.ReadAllText(path).Should().Be("another character");
+                SessionStore.Load(tab.File.FilePath).CurrentHp.Should().Be(6);
+                store.Saves.Should().Be(1, "disconnect keeps the local draft without contacting Drive");
             }
         }
         finally
         {
-            if (tab is not null) await CharacterContext.ReleaseAsync(tab);
+            if (tab is not null)
+            {
+                tab.CloudSession?.Dispose();
+                await CharacterContext.ReleaseAsync(tab);
+            }
             SelectionRuleExpanderContext.Current?.RemoveAllExpanders();
             await manager.New(false);
             oldSelection?.RemoveAllExpanders();
@@ -133,6 +180,7 @@ public sealed class LocalCharacterCloudUploadTests
     {
         public string ProviderId => "fake";
         public int Creates { get; private set; }
+        public int Saves { get; private set; }
         private CharacterDocument? _document;
         public Task<CharacterDocumentMetadata> CreateAsync(string fileName, ReadOnlyMemory<byte> content,
             CharacterDocumentReference? parentFolder = null, CancellationToken cancellationToken = default)
@@ -152,6 +200,13 @@ public sealed class LocalCharacterCloudUploadTests
             return Task.FromResult(_document with { Content = _document.Content.ToArray() });
         }
         public Task<CharacterDocumentMetadata> SaveAsync(CharacterDocumentMetadata expected, ReadOnlyMemory<byte> content,
-            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+            CancellationToken cancellationToken = default)
+        {
+            expected.Reference.Should().Be(_document!.Metadata.Reference);
+            Saves++;
+            var metadata = expected with { ProviderVersion = (Saves + 1).ToString() };
+            _document = new(metadata, content.ToArray());
+            return Task.FromResult(metadata);
+        }
     }
 }

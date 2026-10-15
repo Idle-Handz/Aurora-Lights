@@ -105,9 +105,22 @@ public sealed class CloudCharacterSession : IDisposable
     private sealed record PendingStateCache(long Version, Receipt Receipt,
         CharacterFileDiskStamp? CharacterStamp, CharacterFileDiskStamp? SessionStamp, bool Pending);
 
-    public static async Task<CloudCharacterSession> OpenAsync(
+    public static Task<CloudCharacterSession> OpenAsync(
         ICharacterDocumentStore store, string workspaceRoot, string accountId,
-        CharacterDocumentReference reference, CancellationToken cancellationToken = default)
+        CharacterDocumentReference reference, CancellationToken cancellationToken = default) =>
+        OpenCoreAsync(store, workspaceRoot, accountId, reference,
+            () => store.OpenAsync(reference, cancellationToken), cancellationToken);
+
+    /// <summary>Adopts the exact bytes confirmed by Create without another network request.</summary>
+    public static Task<CloudCharacterSession> FromUploadedAsync(
+        ICharacterDocumentStore store, string workspaceRoot, string accountId, CharacterDocument uploaded) =>
+        OpenCoreAsync(store, workspaceRoot, accountId, uploaded.Metadata.Reference,
+            () => Task.FromResult(uploaded), CancellationToken.None);
+
+    private static async Task<CloudCharacterSession> OpenCoreAsync(
+        ICharacterDocumentStore store, string workspaceRoot, string accountId,
+        CharacterDocumentReference reference, Func<Task<CharacterDocument>> readDocument,
+        CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(accountId);
         string key = Hash(System.Text.Encoding.UTF8.GetBytes(accountId + "\n" + store.ProviderId + "\n" + reference.DocumentId));
@@ -121,7 +134,7 @@ public sealed class CloudCharacterSession : IDisposable
             Receipt? receipt = ReadReceipt(path + ".cloud.json");
             if (receipt is not null && receipt.Metadata.Reference.DocumentId != reference.DocumentId)
                 throw new InvalidDataException("Cloud recovery metadata refers to a different character.");
-            CharacterDocument document = await store.OpenAsync(reference, cancellationToken);
+            CharacterDocument document = await readDocument();
             ValidateCharacter(document.Content);
             var xml = LoadXml(document.Content);
             string? sessionJson = xml.DocumentElement?[SessionNode]?.InnerText;

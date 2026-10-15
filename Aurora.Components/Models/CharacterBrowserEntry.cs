@@ -8,4 +8,5 @@ public sealed record CharacterBrowserEntry(
     string? CaptionText = null,
     string? GroupName = null,
     bool IsFavorite = false,
-    string? PortraitDataUrl = null);
+    string? PortraitDataUrl = null,
+    bool IsCloud = false);

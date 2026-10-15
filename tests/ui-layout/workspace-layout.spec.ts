@@ -47,6 +47,29 @@ async function expectNoHorizontalOverflow(page: Page) {
     .toBeLessThanOrEqual(1);
 }
 
+for (const viewport of [{ width: 1280, height: 800 }, { width: 360, height: 800 }]) {
+  test(`cloud character portrait and badge stay visible at ${viewport.width}px`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await showWorkspace(page, 'characters');
+    const card = page.locator('.character-browser-card').filter({ has: page.locator('[aria-label="Cloud save"]') });
+    await expect(card).toHaveCount(1);
+    await card.scrollIntoViewIfNeeded();
+    await expect(card).toContainText('Cloud Portrait Test');
+    await expect(card).toContainText('Wizard');
+    await expect(card.locator('img')).toBeVisible();
+    await expect.poll(() => card.locator('img').evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
+    const portrait = (await card.locator('.character-browser-portrait').boundingBox())!;
+    const badge = (await card.locator('[aria-label="Cloud save"]').boundingBox())!;
+    expect(badge.x).toBeGreaterThanOrEqual(portrait.x);
+    expect(badge.y).toBeGreaterThanOrEqual(portrait.y);
+    expect(badge.x + badge.width).toBeLessThanOrEqual(portrait.x + portrait.width / 2);
+    expect(badge.y + badge.height).toBeLessThanOrEqual(portrait.y + portrait.height / 2);
+    await card.click({ trial: true });
+    await expectNoHorizontalOverflow(page);
+    await page.screenshot({ path: `test-results/cloud-characters-${viewport.width}.png`, fullPage: true });
+  });
+}
+
 test('character library header and actions fit a narrow viewport with 200% text', async ({ page }) => {
   await page.setViewportSize({ width: 288, height: 624 });
   await showWorkspace(page, 'characters');

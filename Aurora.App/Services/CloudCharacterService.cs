@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
 using Builder.Presentation.Services.Storage;
+using Aurora.Components.Models;
 
 namespace Aurora.App.Services;
 
@@ -15,6 +16,7 @@ public sealed class CloudCharacterService
     private GoogleDriveAuthorization? _authorization;
 #endif
     private GoogleDriveCharacterDocumentStore? _store;
+    private readonly Dictionary<string, (CharacterDocumentMetadata Metadata, CharacterBrowserEntry Entry)> _previews = [];
     public string? AccountId { get; private set; }
     public string? AccountName { get; private set; }
     public bool IsConnected => AccountId is not null;
@@ -127,7 +129,20 @@ public sealed class CloudCharacterService
 
     public Task<CharacterDocumentMetadata> UploadCharacterAsync(CharacterTab tab, CancellationToken ct = default) =>
         LocalCharacterCloudUpload.UploadAsync(
-            _store ?? throw new InvalidOperationException("Connect Google Drive first."), tab, ct);
+            _store ?? throw new InvalidOperationException("Connect Google Drive first."), tab, WorkspaceRoot,
+            AccountId ?? throw new InvalidOperationException("Connect Google Drive first."), ct);
+
+    public async Task<CharacterBrowserEntry> GetBrowserEntryAsync(CharacterDocumentMetadata metadata, CancellationToken ct)
+    {
+        string key = AccountId + ":" + metadata.Reference.DocumentId;
+        if (_previews.TryGetValue(key, out var cached) && cached.Metadata == metadata) return cached.Entry;
+        var document = await (_store ?? throw new InvalidOperationException("Connect Google Drive first."))
+            .OpenAsync(metadata.Reference, ct);
+        var entry = await Task.Run(() => CloudCharacterPreview.Read(document), ct);
+        // List metadata has no conditional-write ETag; cache by the listing revision.
+        _previews[key] = (metadata, entry);
+        return entry;
+    }
 
     public async Task<CharacterDocumentMetadata?> UploadFileAsync(CancellationToken ct = default)
     {
@@ -163,6 +178,7 @@ public sealed class CloudCharacterService
         AccountId = null;
         AccountName = null;
         _store = null;
+        _previews.Clear();
     }
 
     private sealed class SecureTokenStore : IGoogleDriveTokenStore

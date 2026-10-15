@@ -42,6 +42,7 @@ else
                               EmptySubMessage="@EmptySubMessage"
                               BusyMessage="@BusyMessage"
                               ShowCreateButton="true"
+                              ShowSearchWhenEmpty="true"
                               CreateButtonText="New Character"
                               DisableCreateButton="@_preloading"
                               SearchText="@PageState.Characters.SearchText"
@@ -69,7 +70,7 @@ else
                     </button>
                 </AdditionalHeaderContent>
             </CharacterBrowser>
-            <CloudSaves OnOpen="OnCloudCharacterSelected" />
+            <CloudSaves OnOpen="OnCloudCharacterSelected" SearchText="@PageState.Characters.SearchText" />
         </BrowserContent>
     </CharacterLibraryShell>
 }
