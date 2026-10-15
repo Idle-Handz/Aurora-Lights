@@ -1,0 +1,72 @@
+name: Build Google Play bundle
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Display version, such as 0.9.6-beta (does not create a release or publish to Play)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'microsoft'
+          java-version: '21'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Install MAUI Android workload
+        run: dotnet workload install maui-android
+      - name: Test native bundle validation
+        run: python tools/test-google-play-bundle.py
+
+      - name: Build and validate signed ARM64 App Bundle
+        shell: pwsh
+        env:
+          VERSION_NAME: ${{ inputs.version }}
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          # Defaults preserve the existing Android release key setup. These optional
+          # secrets allow its passwords to change without editing workflow code.
+          ANDROID_SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_STORE_PASSWORD || 'aurora-ci' }}
+          ANDROID_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD || 'aurora-ci' }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if (!$env:KEYSTORE_B64) { throw 'ANDROID_KEYSTORE_BASE64 is not configured.' }
+          $keystore = Join-Path $env:RUNNER_TEMP 'aurora-play-upload.jks'
+          try {
+            [IO.File]::WriteAllBytes($keystore, [Convert]::FromBase64String($env:KEYSTORE_B64))
+            ./tools/publish-google-play.ps1 -VersionName $env:VERSION_NAME -KeyStore $keystore -OutputDirectory publish/google-play
+          } finally {
+            Remove-Item -LiteralPath $keystore -Force -ErrorAction SilentlyContinue
+          }
+
+      - name: Upload Play bundle and validation report
+        uses: actions/upload-artifact@v4
+        with:
+          name: google-play-arm64
+          path: |
+            publish/google-play/*-Signed.aab
+            publish/google-play/play-validation.json
+            publish/google-play/play-manifest.xml
+            publish/google-play/play-bundle-config.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload installable test APK set
+        uses: actions/upload-artifact@v4
+        with:
+          name: google-play-arm64-device-test
+          path: publish/google-play/play-device-test.apks
+          if-no-files-found: error
+          retention-days: 14

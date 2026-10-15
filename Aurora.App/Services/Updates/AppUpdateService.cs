@@ -17,6 +17,17 @@ namespace Aurora.App.Services.Updates;
 /// </summary>
 public sealed class AppUpdateService : GithubReleaseChannelService
 {
+    public bool UsesGooglePlay =>
+#if ANDROID && AURORA_GOOGLE_PLAY
+        true;
+#else
+        false;
+#endif
+
+    public override bool SupportsReleaseChecks => !UsesGooglePlay;
+
+    public string GooglePlayUrl => $"https://play.google.com/store/apps/details?id={AppInfo.Current.PackageName}";
+
     private readonly AppUpdateRestartCoordinator _restartCoordinator;
 
     public AppUpdateService(GithubReleasesClient client, CharacterTabService tabs,

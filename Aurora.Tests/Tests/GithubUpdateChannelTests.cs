@@ -19,9 +19,10 @@ public class GithubUpdateChannelTests
     // ── Test channel implementations ─────────────────────────────────────────
 
     /// <summary>Mirrors AppUpdateService's filtering: accepts any tag that doesn't start with "content-".</summary>
-    private sealed class AppChannel(GithubReleasesClient client, SemVer current = default)
+    private sealed class AppChannel(GithubReleasesClient client, SemVer current = default, bool supportsReleaseChecks = true)
         : GithubReleaseChannelService(client, "test-app")
     {
+        public override bool SupportsReleaseChecks => supportsReleaseChecks;
         protected override SemVer CurrentVersion => current;
         protected override bool TagBelongsToChannel(string tag) =>
             !tag.StartsWith("content-", StringComparison.OrdinalIgnoreCase);
@@ -44,6 +45,40 @@ public class GithubUpdateChannelTests
         protected override Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request, CancellationToken cancellationToken)
             => Task.FromResult(new HttpResponseMessage(HttpStatusCode.InternalServerError));
+    }
+
+    private sealed class CountingHandler : HttpMessageHandler
+    {
+        public int Requests { get; private set; }
+
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Requests++;
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("[]")
+            });
+        }
+    }
+
+    [Fact]
+    public async Task Store_distribution_does_not_contact_GitHub_or_offer_binary_updates()
+    {
+        var handler = new CountingHandler();
+        var channel = new AppChannel(new GithubReleasesClient(new HttpClient(handler)), supportsReleaseChecks: false);
+        int notifications = 0;
+        channel.Changed += () => notifications++;
+
+        var result = await channel.CheckAsync(includePreReleases: true);
+
+        handler.Requests.Should().Be(0);
+        notifications.Should().Be(0);
+        result.Should().BeNull();
+        channel.UpdateAvailable.Should().BeFalse();
+        channel.LastChecked.Should().BeNull();
+        channel.LastError.Should().BeNull();
+        channel.IsChecking.Should().BeFalse();
     }
 
     private static GithubReleasesClient MakeClient(params GithubRelease[] releases)
