@@ -1,0 +1,17 @@
+@inject ISnackbar Snackbar
+
+<AuroraPolicyLinks IncludeDriveDetails="IncludeDriveDetails" OnOpen="OpenAsync" />
+
+@code {
+    [Parameter] public bool IncludeDriveDetails { get; set; }
+
+    private async Task OpenAsync(string url)
+    {
+        try
+        {
+            if (await Launcher.Default.OpenAsync(url)) return;
+        }
+        catch { /* Keep the notice open and report the failed launch below. */ }
+        Snackbar.Add($"Could not open your browser. Visit {url}", Severity.Warning);
+    }
+}

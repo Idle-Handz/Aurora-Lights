@@ -48,7 +48,14 @@ public sealed class CloudCharacterService
         AccountName = null;
     }
 
-    public async Task ConnectAsync(bool interactive, CancellationToken cancellationToken = default)
+    public Task<bool> ConnectInteractiveAsync(Func<CancellationToken, Task<bool>> confirmDataUse,
+        CancellationToken cancellationToken = default) =>
+        GoogleDriveSignInFlow.RunAsync(confirmDataUse, ct => ConnectAsync(interactive: true, ct), cancellationToken);
+
+    public Task RestoreConnectionAsync(CancellationToken cancellationToken = default) =>
+        ConnectAsync(interactive: false, cancellationToken);
+
+    private async Task ConnectAsync(bool interactive, CancellationToken cancellationToken)
     {
         if (!IsSupported) throw new NotSupportedException("Google Drive sign-in is available on desktop and Android.");
 #if ANDROID

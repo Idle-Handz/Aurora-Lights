@@ -1,0 +1,1 @@
+Google Drive now explains file access, data transfers, local copies, and connection controls before you continue to Google sign-in. Cancel keeps the existing connection unchanged. Privacy Policy, Terms of Service, and Support links are available in Cloud Saves and About, with additional Drive privacy and data-management links in the notice and Cloud Saves.
