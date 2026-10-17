@@ -41,9 +41,14 @@ public sealed class CloudCharacterConcurrencyTests
             File.ReadAllText(localTab.File.FilePath).Should().Contain("Edited local B");
             if (outcome == "conflict")
             {
-                error.Should().BeNull();
+                error.Should().Contain("not saved to Google Drive");
+                cloudTab.CloudNotice.Should().Be(error);
                 File.ReadAllText(cloudTab.CloudSession!.RecoveryPath!).Should().Contain("Later edit to A");
-                cloudTab.Snapshot!.Name.Should().Be("Cloud A");
+                cloudTab.Snapshot!.Name.Should().Be("Later edit to A");
+                File.ReadAllText(cloudTab.File.FilePath).Should().Contain("Later edit to A");
+                cloudTab.IsDirty.Should().BeTrue();
+                cloudTab.CloudReloadVersion.Should().Be(0);
+                store.OpenCalls.Should().Be(1, "a conflict must not reload the remote character");
             }
             else
             {
@@ -292,6 +297,7 @@ public sealed class CloudCharacterConcurrencyTests
         public bool PauseOpen { get; set; }
         public string SaveOutcome { get; set; } = "success";
         public int SaveCalls { get; private set; }
+        public int OpenCalls { get; private set; }
         public TaskCompletionSource SaveEntered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource SaveRelease { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource OpenEntered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -299,6 +305,7 @@ public sealed class CloudCharacterConcurrencyTests
         private static CharacterDocumentMetadata Metadata => new(new("A"), "A.dnd5e", "1", null, null, null);
         public async Task<CharacterDocument> OpenAsync(CharacterDocumentReference reference, CancellationToken cancellationToken = default)
         {
+            OpenCalls++;
             if (PauseOpen) { OpenEntered.TrySetResult(); await OpenRelease.Task.WaitAsync(cancellationToken); }
             return new CharacterDocument(Metadata, content);
         }

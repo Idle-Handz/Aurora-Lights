@@ -93,10 +93,9 @@ public sealed class GoogleDriveCharacterDocumentStore : ICharacterDocumentStore
         byte[] content = buffer.ToArray();
         VerifyContent(state.Metadata, content);
         DriveFileState after = await GetMetadataAsync(reference, cancellationToken);
-        if (after.Metadata.ProviderVersion != state.Metadata.ProviderVersion
-            || after.Metadata.EntityTag != state.Metadata.EntityTag)
+        if (!HasSameContent(state.Metadata, after.Metadata))
             throw new CharacterDocumentConflictException(state.Metadata, after.Metadata);
-        return new CharacterDocument(state.Metadata, content);
+        return new CharacterDocument(after.Metadata, content);
     }
 
     public async Task<CharacterDocumentMetadata> CreateAsync(
@@ -152,10 +151,10 @@ public sealed class GoogleDriveCharacterDocumentStore : ICharacterDocumentStore
         if (current.CanEdit is false)
             throw new UnauthorizedAccessException($"Google Drive does not allow editing {current.Metadata.FileName}.");
 
-        if (!string.Equals(
-                expected.ProviderVersion,
-                current.Metadata.ProviderVersion,
-                StringComparison.Ordinal))
+        // Drive versions also advance for changes that do not alter the file's bytes.
+        // Compare against the content we opened/saved, then guard the upload with the
+        // current ETag so a content change after this check still cannot be overwritten.
+        if (!HasSameContent(expected, current.Metadata))
         {
             throw new CharacterDocumentConflictException(expected, current.Metadata);
         }
@@ -247,6 +246,13 @@ public sealed class GoogleDriveCharacterDocumentStore : ICharacterDocumentStore
         if (length == 0 || length > MaximumCharacterBytes)
             throw new InvalidDataException("A cloud character must contain between 1 byte and 32 MB.");
     }
+
+    private static bool HasSameContent(CharacterDocumentMetadata expected, CharacterDocumentMetadata current) =>
+        expected.Size is > 0 and <= MaximumCharacterBytes
+        && expected.Size == current.Size
+        && expected.ContentHash is { Length: 32 } checksum
+        && checksum.All(Uri.IsHexDigit)
+        && string.Equals(checksum, current.ContentHash, StringComparison.OrdinalIgnoreCase);
 
     private static void VerifyContent(CharacterDocumentMetadata metadata, ReadOnlySpan<byte> content)
     {

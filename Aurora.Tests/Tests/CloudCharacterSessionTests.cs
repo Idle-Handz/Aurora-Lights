@@ -284,7 +284,7 @@ public sealed class CloudCharacterSessionTests : IDisposable
     [InlineData(false, "missing-pick")]
     [InlineData(true, "uninitialized")]
     [InlineData(false, "uninitialized")]
-    public async Task DriveReload_ReportsActualHydrationResult(bool conflict, string issue)
+    public async Task DriveConflictRetainsDraft_ExplicitReloadReportsActualHydrationResult(bool conflict, string issue)
     {
         TestApplicationContextInstaller.EnsureInstalled();
         DataManager.Current.InitializeDirectories();
@@ -344,6 +344,26 @@ public sealed class CloudCharacterSessionTests : IDisposable
             }
             catch (InvalidDataException ex) { error = ex.Message; }
             File.ReadAllText(session.RecoveryPath!).Should().Contain("Unsent Local Name");
+            if (conflict)
+            {
+                error.Should().Contain("not saved to Google Drive");
+                error.Should().Contain("Recovery Files");
+                tab.CloudNotice.Should().Be(error);
+                tab.Character!.Name.Should().Be("Unsent Local Name");
+                tab.Snapshot!.Name.Should().Be("Unsent Local Name");
+                tab.Session.CurrentHp.Should().Be(1);
+                tab.IsDirty.Should().BeTrue();
+                tab.IsSaving.Should().BeFalse();
+                tab.CloudReloadVersion.Should().Be(0);
+                tab.CloudReloadFailed.Should().BeFalse();
+                session.Metadata.ProviderVersion.Should().Be("1");
+                File.ReadAllText(session.FilePath).Should().Contain("Unsent Local Name");
+                // Retrying the save must neither discard the draft nor advance its baseline.
+                (await BuildService.SaveTabAsync(tab)).Should().Contain("not saved to Google Drive");
+                tab.Snapshot.Name.Should().Be("Unsent Local Name");
+                session.Metadata.ProviderVersion.Should().Be("1");
+                return;
+            }
             File.ReadAllBytes(session.FilePath).Should().Equal(authoritative);
             tab.IsSaving.Should().BeFalse();
             if (issue != "none")

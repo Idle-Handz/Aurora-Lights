@@ -1,4 +1,4 @@
-<MudDialog Style="max-height: 90vh; width: min(700px, 95vw);">
+<MudDialog Class="picker-dialog" Style="--picker-initial-width: 700px;">
     <TitleContent>
         <MudText Typo="Typo.h6" Style="font-size: 15px; font-weight: 600;">@SlotLabel</MudText>
     </TitleContent>
@@ -102,6 +102,7 @@
         </div>
     </DialogContent>
     <DialogActions>
+        <span class="picker-resize-hint">Drag the bottom-right corner to resize</span>
         <MudButton OnClick="Cancel" Variant="Variant.Text">Cancel</MudButton>
         <MudButton Color="Color.Primary"
                    Variant="Variant.Filled"

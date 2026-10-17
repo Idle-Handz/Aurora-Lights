@@ -207,6 +207,19 @@ public sealed class CloudCharacterSession : IDisposable
         finally { IsSaving = false; _saveGate.Release(); }
     }
 
+    public async Task PreserveRecoveryAsync(SemaphoreSlim? localFileGate = null,
+        CancellationToken cancellationToken = default)
+    {
+        await _saveGate.WaitAsync(cancellationToken);
+        try
+        {
+            if (localFileGate is not null) await localFileGate.WaitAsync(cancellationToken);
+            try { PreserveRecovery(); }
+            finally { localFileGate?.Release(); }
+        }
+        finally { _saveGate.Release(); }
+    }
+
     public async Task ReloadAuthoritativeAsync(CancellationToken cancellationToken = default,
         Func<Action, Task>? applyLocalFiles = null)
     {

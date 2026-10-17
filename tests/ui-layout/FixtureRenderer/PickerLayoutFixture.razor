@@ -1,0 +1,37 @@
+@namespace FixtureRenderer
+@using MudBlazor
+@using Aurora.Components.Shared
+
+@* Real MudBlazor dialog chrome with the production picker classes and representative long content. *@
+<MudDialog Class="picker-dialog" Style="--picker-initial-width: 960px;">
+    <TitleContent><MudText Typo="Typo.h6">Divine Domain</MudText></TitleContent>
+    <DialogContent>
+        <div class="picker-layout">
+            <div class="picker-left">
+                <MudTextField T="string" Placeholder="Search…" Variant="Variant.Outlined" />
+                <div class="picker-list">
+                    @for (int i = 0; i < 60; i++)
+                    {
+                        <button type="button" class="picker-item"><div class="picker-item-name">Domain @i</div></button>
+                    }
+                </div>
+            </div>
+            <div class="picker-detail" tabindex="0" aria-label="Subclass details">
+                <div class="picker-detail-name">Winter Domain</div>
+                <div class="picker-detail-source">Layout fixture</div>
+                <RichDescription Class="picker-detail-desc" Html="@Description" />
+            </div>
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <span class="picker-resize-hint">Drag the bottom-right corner to resize</span>
+        <MudButton>Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled">Select</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private string Description => "<h5>Domain Spells</h5><table><tr><th>Cleric Level</th><th>Spells</th></tr><tr><td>1st</td><td>Snow Shield, Ice Lance</td></tr></table>"
+        + string.Concat(Enumerable.Repeat("<h5>Subclass Feature</h5><p>Complete feature rules remain readable throughout the preview.</p>", 20))
+        + "<p>Final subclass feature.</p>";
+}

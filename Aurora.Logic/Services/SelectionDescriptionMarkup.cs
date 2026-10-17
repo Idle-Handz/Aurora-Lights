@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 namespace Builder.Presentation.Services;
 
 /// <summary>
-/// Adds a compact level-by-level feature summary to class-like picker descriptions when the
+/// Expands embedded feature descriptions and adds a compact level-by-level summary when the
 /// source content does not already provide one. The summary is derived from the same grant rules
 /// the progression engine processes, so imported classes and subclasses receive the same treatment
 /// as bundled content.
@@ -30,7 +30,7 @@ public static partial class SelectionDescriptionMarkup
 
     public static string WithFeatureProgression(ElementBase element, string? descriptionMarkup)
     {
-        string markup = descriptionMarkup?.Trim() ?? string.Empty;
+        string markup = ExpandElementReferences(element, descriptionMarkup?.Trim() ?? string.Empty);
         if (!ClassLikeTypes.Contains(element.Type) || HasFeatureProgression(markup))
             return markup;
 
@@ -56,6 +56,28 @@ public static partial class SelectionDescriptionMarkup
 
         builder.Append("</tbody></table>");
         return builder.ToString();
+    }
+
+    private static string ExpandElementReferences(ElementBase owner, string markup)
+    {
+        var expandedIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { owner.Id };
+
+        string Expand(string description, int depth) => ElementReferenceRegex().Replace(description, match =>
+        {
+            string id = WebUtility.HtmlDecode(match.Groups["id"].Value).Trim();
+            if (depth >= 32 || !expandedIds.Add(id))
+                return string.Empty;
+
+            ElementBase? referenced = DataManager.Current.ElementsCollection.GetElement(id);
+            if (referenced is null)
+                return string.Empty;
+
+            // Keep the author's order and tables. The client sanitizes this markup after expansion.
+            return $"<h5>{WebUtility.HtmlEncode(referenced.Name)}</h5>"
+                + Expand(referenced.Description ?? string.Empty, depth + 1);
+        });
+
+        return Expand(markup, 0);
     }
 
     public static bool HasFeatureProgression(string? descriptionMarkup)
@@ -156,6 +178,11 @@ public static partial class SelectionDescriptionMarkup
         @"<(table|ul|ol)\b[^>]*>.*?</\1\s*>",
         RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.CultureInvariant)]
     private static partial Regex ProgressionBlockRegex();
+
+    [GeneratedRegex(
+        """<\s*div\b[^>]*?\s+element\s*=\s*(?:"(?<id>[^"]*)"|'(?<id>[^']*)'|(?<id>[^\s>/]+))[^>]*?(?:/\s*>|>\s*</\s*div\s*>)""",
+        RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.CultureInvariant)]
+    private static partial Regex ElementReferenceRegex();
 
     [GeneratedRegex(@"<[^>]*>", RegexOptions.Singleline | RegexOptions.CultureInvariant)]
     private static partial Regex HtmlTagRegex();

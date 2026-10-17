@@ -369,6 +369,7 @@ public static partial class BuildService
 
             // 1. Register the new selection (handler also unregisters the previous one).
             EnsureSelectionCandidateIsAvailable(rule, elementId, number);
+            var clericSpells = CaptureClericSpellSelections(rule, elementId, number);
             selectionMutationStarted = true;
             SelectionRuleExpanderContext.Current?.SetRegisteredElement(rule, elementId, number);
             ClearConflictingOriginAbilityScoreSelections(rule, invalidated);
@@ -477,6 +478,8 @@ public static partial class BuildService
             if (invalidated.Count > 0)
                 cm.ReprocessCharacter();
 
+            RestoreClericSpellSelections(clericSpells, invalidated);
+
             // 4.5. For background list selections (Bond, Ideal, Flaw, Personality Trait),
             //      CharacterManager.SetCharacterDetails has now populated
             //      FillableBackgroundCharacteristics from SelectionRuleListItems.
@@ -505,6 +508,11 @@ public static partial class BuildService
             //    survive a full Save() which regenerates the XML from CharacterManager state.
             if (tab.Snapshot != null && tab.Character != null)
                 FlushSnapshotToCharacter(tab.Snapshot, tab.Character);
+
+            // SaveTextEdits must use the new profile's validated preparation state,
+            // rather than patching the outgoing Cleric snapshot back into the save.
+            if (clericSpells is not null)
+                ResnapTab(tab);
 
             // 6. Full save — rebuilds entire XML from CharacterManager.Current state.
             if (saveToFile)
@@ -646,18 +654,27 @@ public static partial class BuildService
                 tab.CloudSavedEditVersion = editVersion;
                 tab.CloudNotice = "Saved to Google Drive.";
             }
-            catch (Builder.Presentation.Services.Storage.CharacterDocumentConflictException)
+            catch (Builder.Presentation.Services.Storage.CharacterDocumentConflictException ex)
             {
-                // Drive is authoritative. Preserve displaced local edits before loading its version.
+                // A failed save must not replace the character the user is editing.
+                DebugLogService.Instance.Warn("Changes were not saved to Google Drive because the Drive file changed.", ex.Message);
+                tab.IsDirty = true;
                 try
                 {
-                    error = await ReloadCloudFilesAsync(tab);
-                    tab.CloudNotice = error ?? "A newer Drive save was loaded. Unsent edits were kept in the recovery folder.";
+                    using (await CharacterContext.EnterAsync(tab))
+                    {
+                        // Include edits made while the upload was waiting for Drive.
+                        SaveCharacterFile(tab);
+                        await cloud.PreserveRecoveryAsync(tab.FileSaveSemaphore);
+                    }
+                    error = "Changes were not saved to Google Drive because the Drive file changed. "
+                        + "Your edits are still open and kept on this device and in Recovery Files. "
+                        + "Use Load Drive Save when you are ready to replace them with the Drive copy.";
                 }
-                catch (Exception ex)
+                catch (Exception recoveryEx)
                 {
-                    error = "The newer Drive save could not be loaded. Unsent edits were kept in the recovery folder. " + ex.Message;
-                    if (tab.CloudReloadFailed) tab.IsDirty = true;
+                    error = "Changes were not saved to Google Drive because the Drive file changed. "
+                        + "Your edits are still open, but a recovery copy could not be created. " + recoveryEx.Message;
                 }
             }
             catch (Exception ex)
