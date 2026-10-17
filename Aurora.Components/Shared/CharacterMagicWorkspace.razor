@@ -432,7 +432,7 @@
                     }
                 </section>
 
-                <section class="magic-detail">
+                <section class="magic-detail" tabindex="0" aria-label="Spell details">
                     @if (SelectedSpell is null)
                     {
                         <p class="magic-empty">Select a spell to see details.</p>
@@ -482,8 +482,9 @@
 
                         @if (!string.IsNullOrWhiteSpace(spellDetail.DescriptionHtml))
                         {
-                            <RichDescription Html="@spellDetail.DescriptionHtml"
-                                             Class="magic-detail-description" />
+                            <div class="magic-detail-description">
+                                <RichDescription Html="@spellDetail.DescriptionHtml" />
+                            </div>
                         }
                     }
                 </section>
@@ -620,7 +621,7 @@
                     }
                 </section>
 
-                <section class="magic-detail">
+                <section class="magic-detail" tabindex="0" aria-label="Spell details">
                     @if (SelectedSpell is null)
                     {
                         <p class="magic-empty">Select a spell to see details.</p>
@@ -670,8 +671,9 @@
 
                         @if (!string.IsNullOrWhiteSpace(spellDetail.DescriptionHtml))
                         {
-                            <RichDescription Html="@spellDetail.DescriptionHtml"
-                                             Class="magic-detail-description" />
+                            <div class="magic-detail-description">
+                                <RichDescription Html="@spellDetail.DescriptionHtml" />
+                            </div>
                         }
                     }
                 </section>
@@ -930,11 +932,59 @@
             ? $"name:{level}:{name}"
             : $"id:{id}";
 
-    // Editable spell-selection groups (cantrips + chosen known spells). The Known tab is unified
-    // across all the character's casting classes, so all non-read-only groups show (grouped by class
-    // via their own labels). Read-only granted groups are surfaced separately.
+    // Include acquired class cantrips even when a grant has no editable selection rule.
+    // Keep picker rows intact and add only missing spells as read-only rows in their class group.
+    private IReadOnlyList<MagicKnownSpellGroupModel> _knownSpellGroups = [];
+
+    private IReadOnlyList<MagicKnownSpellGroupModel> BuildKnownSpellGroups()
+    {
+        var groups = Model.KnownSpellGroups.ToList();
+        var existingSpellKeys = groups.SelectMany(group => group.Entries)
+            .Where(entry => !string.IsNullOrWhiteSpace(entry.CurrentName))
+            .Select(entry => GetSpellKey(entry.SpellId, entry.CurrentName!, entry.SpellLevel))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var section in Model.Sections)
+        {
+            var entries = section.Cantrips
+                .Where(spell => !existingSpellKeys.Contains(GetSpellKey(spell.Id, spell.Name, 0)))
+                .DistinctBy(spell => GetSpellKey(spell.Id, spell.Name, 0), StringComparer.OrdinalIgnoreCase)
+                .OrderBy(spell => spell.Name)
+                .Select(spell => new MagicKnownSpellEntryModel(
+                    Id: $"fixed:{section.Id}:{spell.Id}",
+                    Label: "Cantrip",
+                    CurrentName: spell.Name,
+                    IsReadOnly: true,
+                    SpellId: spell.Id,
+                    Source: spell.Source,
+                    School: spell.School,
+                    IsRitual: spell.IsRitual,
+                    IsConcentration: spell.IsConcentration,
+                    CastingTime: spell.CastingTime,
+                    SelectionAccess: MagicSpellSelectionAccess.Known,
+                    AccessSource: section.Label))
+                .ToList();
+            if (entries.Count == 0) continue;
+
+            int groupIndex = groups.FindIndex(group => !group.ReadOnlyGroup
+                && string.Equals(group.SectionId, section.Id, StringComparison.OrdinalIgnoreCase)
+                && group.Entries.Any(entry => entry.SpellLevel == 0));
+            if (groupIndex >= 0)
+            {
+                var group = groups[groupIndex];
+                groups[groupIndex] = group with { Entries = group.Entries.Concat(entries).ToList() };
+            }
+            else
+            {
+                groups.Add(new MagicKnownSpellGroupModel($"{section.Label} — Cantrips", section.Id, entries));
+            }
+        }
+
+        return groups;
+    }
+
     private IReadOnlyList<MagicKnownSpellGroupModel> FilteredKnownSpellGroups =>
-        Model.KnownSpellGroups
+        _knownSpellGroups
             .Where(group => !group.ReadOnlyGroup)
             .ToList();
 
@@ -971,6 +1021,7 @@
     protected override void OnParametersSet()
     {
         _castableSections = BuildCastableSections();
+        _knownSpellGroups = BuildKnownSpellGroups();
 
         // Reset to the Known tab if the selected Prepared section is gone (or never existed).
         if (State.SelectedTab != KnownTabId && State.SelectedTab != CastableTabId && !Model.Sections.Any(section => section.Id == State.SelectedTab))

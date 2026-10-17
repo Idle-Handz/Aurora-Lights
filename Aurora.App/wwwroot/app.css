@@ -1365,6 +1365,37 @@ html, body {
 }
 
 /* ── Selection picker dialog ── */
+.mud-dialog.picker-dialog {
+    width: min(var(--picker-initial-width, 960px), calc(100vw - 64px));
+    height: min(600px, calc(100vh - 64px));
+    min-width: min(560px, calc(100vw - 64px));
+    min-height: min(360px, calc(100vh - 64px));
+    max-width: calc(100vw - 64px);
+    max-height: calc(100vh - 64px);
+    resize: both;
+    overflow: hidden;
+}
+.picker-dialog .mud-dialog-content {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+.picker-dialog .mud-dialog-title,
+.picker-dialog .mud-dialog-actions {
+    flex-shrink: 0;
+}
+.picker-dialog .picker-layout {
+    flex: 1;
+    height: auto;
+    min-height: 0;
+}
+.picker-resize-hint {
+    margin-right: auto;
+    color: var(--mud-palette-text-secondary, var(--aurora-text-secondary, #a6adc8));
+    font-size: 11px;
+}
 .picker-layout {
     display: flex;
     gap: 14px;
@@ -1548,6 +1579,10 @@ html, body {
     flex-direction: column;
     gap: 8px;
 }
+.picker-detail > * {
+    /* The panel owns scrolling; rich text must not collapse into a nested scroller. */
+    flex-shrink: 0;
+}
 .picker-detail-name {
     font-size: 14px;
     font-weight: 600;
@@ -1586,6 +1621,19 @@ html, body {
 }
 
 @media (max-width: 768px) {
+    .mud-dialog.picker-dialog {
+        resize: none;
+        min-width: 0;
+    }
+    .picker-dialog .mud-dialog-content {
+        overflow-y: auto;
+    }
+    .picker-dialog .picker-layout {
+        flex: none;
+    }
+    .picker-resize-hint {
+        display: none;
+    }
     .picker-layout {
         flex-direction: column;
         height: auto;

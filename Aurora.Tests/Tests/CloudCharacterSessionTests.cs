@@ -377,7 +377,14 @@ public sealed class CloudCharacterSessionTests : IDisposable
                 }
                 return;
             }
-            error.Should().BeNull();
+            if (conflict)
+            {
+                error.Should().Contain("not saved to Google Drive");
+                error.Should().Contain("Recovery Files");
+                tab.CloudNotice.Should().Be(error);
+            }
+            else
+                error.Should().BeNull();
             tab.Character!.Name.Should().Be("Drive Newer");
             tab.Snapshot!.Name.Should().Be("Drive Newer");
             tab.Session.CurrentHp.Should().Be(7);

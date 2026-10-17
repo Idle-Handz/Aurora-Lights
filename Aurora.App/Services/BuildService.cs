@@ -646,17 +646,22 @@ public static partial class BuildService
                 tab.CloudSavedEditVersion = editVersion;
                 tab.CloudNotice = "Saved to Google Drive.";
             }
-            catch (Builder.Presentation.Services.Storage.CharacterDocumentConflictException)
+            catch (Builder.Presentation.Services.Storage.CharacterDocumentConflictException ex)
             {
                 // Drive is authoritative. Preserve displaced local edits before loading its version.
+                DebugLogService.Instance.Warn("Changes were not saved to Google Drive because the Drive file changed.", ex.Message);
                 try
                 {
-                    error = await ReloadCloudFilesAsync(tab);
-                    tab.CloudNotice = error ?? "A newer Drive save was loaded. Unsent edits were kept in the recovery folder.";
+                    string? reloadWarning = await ReloadCloudFilesAsync(tab);
+                    // Loading the remote copy is recovery, not a successful save. Returning null
+                    // would let the Magic page report "Saved" and close flows dismiss the tab.
+                    error = "Changes were not saved to Google Drive because the Drive file changed. "
+                        + (reloadWarning ?? "The current Drive save was loaded. Your unsent changes are kept in Recovery Files.");
                 }
-                catch (Exception ex)
+                catch (Exception reloadEx)
                 {
-                    error = "The newer Drive save could not be loaded. Unsent edits were kept in the recovery folder. " + ex.Message;
+                    error = "Changes were not saved to Google Drive, and the current Drive save could not be loaded. "
+                        + "Your changes are kept on this device. " + reloadEx.Message;
                     if (tab.CloudReloadFailed) tab.IsDirty = true;
                 }
             }

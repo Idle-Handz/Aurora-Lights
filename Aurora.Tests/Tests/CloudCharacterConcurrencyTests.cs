@@ -41,7 +41,8 @@ public sealed class CloudCharacterConcurrencyTests
             File.ReadAllText(localTab.File.FilePath).Should().Contain("Edited local B");
             if (outcome == "conflict")
             {
-                error.Should().BeNull();
+                error.Should().Contain("not saved to Google Drive");
+                cloudTab.CloudNotice.Should().Be(error);
                 File.ReadAllText(cloudTab.CloudSession!.RecoveryPath!).Should().Contain("Later edit to A");
                 cloudTab.Snapshot!.Name.Should().Be("Cloud A");
             }

@@ -41,6 +41,81 @@ public sealed class CharacterMagicWorkspaceTests : BunitContext
     }
 
     [Fact]
+    public async Task KnownIncludesFixedClassCantripWithoutOfferingToChangeIt()
+    {
+        var model = BuildDruidMagicModel();
+        var section = model.Sections[0];
+        section.Id = "cleric";
+        section.Label = "Cleric";
+        var ray = Spell("ID_SPELL_RAY_OF_FROST", "Ray of Frost", 0, isPrepared: true, isCantrip: true);
+        section.Cantrips = [section.Cantrips[0], ray];
+        model.KnownSpellGroups =
+        [
+            new MagicKnownSpellGroupModel("Cleric", "cleric",
+                [new MagicKnownSpellEntryModel("choice:0", "Cantrip", "Message", SpellId: "ID_SPELL_MESSAGE")])
+        ];
+        var changes = new List<string>();
+        var cut = Render<CharacterMagicWorkspace>(parameters => parameters
+            .Add(p => p.Model, model)
+            .Add(p => p.OnChangeKnownSpell, (string id) => changes.Add(id)));
+
+        cut.FindAll(".magic-spell-name").Should().Contain(name => name.TextContent == "Ray of Frost");
+        cut.FindAll("button.magic-view-tab").Single(button => button.TextContent.Trim() == "Known").Click();
+
+        var fixedRow = cut.FindAll(".magic-known-row").Single(row => row.TextContent.Contains("Ray of Frost"));
+        fixedRow.Closest("section")!.QuerySelector(".magic-section-label")!.TextContent.Should().Be("Cleric");
+        fixedRow.TextContent.Should().Contain("Known — Cleric");
+        fixedRow.QuerySelector(".magic-action-button").Should().BeNull();
+        await fixedRow.DoubleClickAsync(new());
+        changes.Should().BeEmpty();
+        cut.Find(".magic-action-button").Click();
+        changes.Should().Equal("choice:0");
+
+        cut.Find("input[aria-label='Search known spells']").Input("frost");
+        cut.Find("select[aria-label='Spell source']").Change("Player's Handbook");
+        cut.Find("select[aria-label='Spell school']").Change("Evocation");
+        cut.Find("select[aria-label='Spell level']").Change("0");
+        cut.FindAll(".magic-known-row").Should().ContainSingle().Which.TextContent.Should().Contain("Ray of Frost");
+        model.KnownSpellGroups[0].Entries.Should().ContainSingle("displaying fixed cantrips must not add selection rules");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void KnownDoesNotDuplicateCantripAlreadyInSelectionOrGrantGroup(bool granted)
+    {
+        var model = BuildDruidMagicModel();
+        model.KnownSpellGroups =
+        [
+            new MagicKnownSpellGroupModel(granted ? "Granted by Features" : "Druid", "druid",
+                [new MagicKnownSpellEntryModel("existing:0", "Cantrip", "Message", IsReadOnly: granted, SpellId: "ID_SPELL_MESSAGE")],
+                ReadOnlyGroup: granted)
+        ];
+        var cut = Render<CharacterMagicWorkspace>(parameters => parameters
+            .Add(p => p.Model, model)
+            .Add(p => p.State, new MagicWorkspaceState { SelectedTab = MagicWorkspaceState.KnownTabId }));
+
+        cut.FindAll(".magic-known-row").Should().ContainSingle().Which.TextContent.Should().Contain("Message");
+    }
+
+    [Fact]
+    public void KnownRefreshesCantripsWithoutSelectorsAndExcludesPreparedSpellList()
+    {
+        var model = BuildDruidMagicModel();
+        var cut = Render<CharacterMagicWorkspace>(parameters => parameters
+            .Add(p => p.Model, model)
+            .Add(p => p.State, new MagicWorkspaceState { SelectedTab = MagicWorkspaceState.KnownTabId }));
+
+        cut.FindAll(".magic-known-row").Should().ContainSingle().Which.TextContent.Should().Contain("Message");
+        cut.Find(".magic-section-label").TextContent.Should().Be("Druid — Cantrips");
+        model.Sections[0].Cantrips = [Spell("ID_SPELL_RAY_OF_FROST", "Ray of Frost", 0, isPrepared: true, isCantrip: true)];
+        cut.Render(parameters => parameters.Add(p => p.Model, model));
+
+        cut.FindAll(".magic-known-row").Should().ContainSingle().Which.TextContent.Should().Contain("Ray of Frost");
+        cut.Markup.Should().NotContain("Message").And.NotContain("Bless").And.NotContain("Detect Magic");
+    }
+
+    [Fact]
     public void AllTabShowsCantripsAndPreparedSpellsOnly()
     {
         var cut = Render<CharacterMagicWorkspace>(parameters => parameters

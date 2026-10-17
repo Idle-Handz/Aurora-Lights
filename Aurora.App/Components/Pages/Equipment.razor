@@ -669,6 +669,9 @@
                 break;
         }
 
+        // Dirty tabs do not raise TabsChanged again. Keep the bound notes current
+        // on every input so the next render cannot restore the previous text.
+        BuildEquipmentModel();
         MarkDirty();
         return Task.CompletedTask;
     }
