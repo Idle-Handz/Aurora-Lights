@@ -3022,7 +3022,7 @@ html, body {
 .ability-row-header  { background: var(--mud-palette-surface, var(--aurora-surface, #313244)); border-bottom: 1px solid var(--mud-palette-lines-inputs, var(--aurora-surface-raised, #45475a)); }
 .ability-row-base    { background: var(--mud-palette-background, var(--aurora-background, #1e1e2e)); border-bottom: 1px solid var(--mud-palette-lines-default, var(--aurora-surface, #313244)); padding: 8px 0; }
 .ability-row-asi     { background: var(--mud-palette-background-grey, var(--aurora-chrome, #181825)); border-bottom: 1px solid var(--mud-palette-lines-default, var(--aurora-surface, #313244)); min-height: 36px; }
-.ability-row-total   { background: var(--mud-palette-primary-hover, rgba(137, 180, 250, 0.08)); border-bottom: 1px solid var(--mud-palette-lines-default, var(--aurora-surface, #313244)); padding: 12px 0; }
+.ability-row-total   { background: var(--mud-palette-background, var(--aurora-background, #1e1e2e)); border-bottom: 1px solid var(--mud-palette-lines-default, var(--aurora-surface, #313244)); padding: 8px 0; }
 .ability-row-mod     { background: var(--mud-palette-background-grey, var(--aurora-chrome, #181825)); }
 
 /* Header row cells */
@@ -3039,9 +3039,16 @@ html, body {
 
 /* Sub-labels (base / total / modifier) */
 .ability-sublabel {
-    font-size: 11px;
-    color: var(--mud-palette-text-secondary, var(--aurora-text-secondary, #a6adc8));
+    font-size: 10px;
+    color: var(--aurora-border-strong, #585b70);
     margin-top: 1px;
+}
+
+/* Adjusted totals stay beneath their score controls. */
+.ability-total-summary {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--mud-palette-text-primary, var(--aurora-text-primary, #cdd6f4));
 }
 
 /* Base score controls */
@@ -3139,17 +3146,10 @@ html, body {
 
 /* Total score */
 .ability-total-val {
-    font-size: 32px;
+    font-size: 28px;
     font-weight: 800;
     color: var(--mud-palette-text-primary, var(--aurora-text-primary, #cdd6f4));
     line-height: 1;
-}
-
-.ability-total-label {
-    margin-top: 4px;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--mud-palette-text-primary, var(--aurora-text-primary, #cdd6f4));
 }
 
 /* Modifier */

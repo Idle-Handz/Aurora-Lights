@@ -400,18 +400,7 @@ else if (_workflowSuggestion != null)
                         }
                     </div>
 
-                    @* Keep the final score prominent even without bonuses or an assigned array value. *@
-                    <div class="ability-stats-row ability-row-total">
-                        @foreach (var row in _abilityRows)
-                        {
-                            <div class="ability-stats-cell">
-                                <output class="ability-total-val" aria-label="@($"{row.Name} total score")">@row.Item.FinalScore</output>
-                                <div class="ability-total-label">Total score</div>
-                            </div>
-                        }
-                    </div>
-
-                    @* Bonuses from ancestry, features, and other adjustments. *@
+                    @* Row 2: ASI bonuses — only shown when at least one ability has a bonus *@
                     @if (_hasAsi)
                     {
                         <div class="ability-stats-row ability-row-asi">
@@ -430,8 +419,8 @@ else if (_workflowSuggestion != null)
                         </div>
                     }
 
-                    @* Base-score controls use the same meaning in every generation method. *@
-                    <div class="ability-stats-row ability-row-base">
+                    @* Row 3: base-score controls, with the adjusted total shown beneath when bonuses apply. *@
+                    <div class="ability-stats-row ability-row-total">
                         @foreach (var row in _abilityRows)
                         {
                             <div class="ability-stats-cell">
@@ -440,6 +429,10 @@ else if (_workflowSuggestion != null)
                                     <input class="ability-manual-input" type="number" min="1" max="30" aria-label="@($"{row.Name} base score")"
                                            value="@row.Item.BaseScore"
                                            @onchange="async e => await OnManualBaseChanged(row.Item, int.TryParse(e.Value?.ToString(), out var v) ? v : row.Item.BaseScore)" />
+                                    @if (row.Item.AdditionalScore != 0)
+                                    {
+                                        <div class="ability-sublabel ability-total-summary">→ @row.Item.FinalScore total</div>
+                                    }
                                 }
                                 else if (_abilityMethod == AbilityGenMethod.PointBuy)
                                 {
@@ -450,6 +443,10 @@ else if (_workflowSuggestion != null)
                                         <button class="ability-adj-btn-sm" disabled="@(!CanIncrement(row.Item))"
                                                 @onclick="() => IncrementScore(row.Item)">+</button>
                                     </div>
+                                    @if (row.Item.AdditionalScore != 0)
+                                    {
+                                        <div class="ability-sublabel ability-total-summary">→ @row.Item.FinalScore total</div>
+                                    }
                                 }
                                 else if (_abilityMethod is AbilityGenMethod.Roll3d6 or AbilityGenMethod.Roll4d6)
                                 {
@@ -457,6 +454,10 @@ else if (_workflowSuggestion != null)
                                         <span class="ability-score-num">@row.Item.BaseScore</span>
                                         <button class="ability-roll-btn-sm" @onclick="() => RollStatAsync(row.Item)" title="Reroll" disabled="@_saving">🎲</button>
                                     </div>
+                                    @if (row.Item.AdditionalScore != 0)
+                                    {
+                                        <div class="ability-sublabel ability-total-summary">→ @row.Item.FinalScore total</div>
+                                    }
                                 }
                                 else if (_abilityMethod == AbilityGenMethod.StandardArray)
                                 {
@@ -472,13 +473,16 @@ else if (_workflowSuggestion != null)
                                             <option value="@av" selected="@(av == _arrayAssignments.GetValueOrDefault(row.Abbrev, 0))">@av</option>
                                         }
                                     </select>
+                                    @if (_arrayAssignments.GetValueOrDefault(row.Abbrev, 0) != 0 && row.Item.AdditionalScore != 0)
+                                    {
+                                        <div class="ability-sublabel ability-total-summary">→ @row.Item.FinalScore total</div>
+                                    }
                                 }
-                                <div class="ability-sublabel">Base score</div>
                             </div>
                         }
                     </div>
 
-                    @* Derived ability modifier. *@
+                    @* Row 4: modifier *@
                     <div class="ability-stats-row ability-row-mod">
                         @foreach (var row in _abilityRows)
                         {
