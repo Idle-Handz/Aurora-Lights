@@ -592,8 +592,7 @@ public static partial class BuildService
         }
 
         var sourceRestrictions = BuildSourceRestrictionSnapshot.CaptureCurrent();
-        IReadOnlySet<string> requirementIds =
-            SelectionRequirementCompatibility.ExpandForSelectionValidation(currentIds);
+        var requirements = new SelectionRequirementEvaluator(rule, currentIds);
 
         foreach (var restricted in supported
                      .Where(element => !sourceRestrictions.Allows(element))
@@ -618,8 +617,7 @@ public static partial class BuildService
         var validIds = new HashSet<string>(StringComparer.Ordinal);
         foreach (var candidate in supported)
         {
-            if (!candidate.HasRequirements ||
-                interpreter.EvaluateElementRequirementsExpression(candidate.Requirements, requirementIds))
+            if (requirements.Evaluate(candidate) != false)
             {
                 validIds.Add(candidate.Id);
             }

@@ -1,6 +1,7 @@
 using Aurora.Tests.Helpers;
 using Builder.Data;
 using Builder.Data.Rules;
+using Builder.Presentation;
 using Builder.Presentation.Services;
 using Builder.Presentation.Services.Data;
 using Xunit.Abstractions;
@@ -96,9 +97,15 @@ public sealed class SelectionDescriptionMarkupTests : IAsyncLifetime
     [InlineData("Class")]
     [InlineData("Multiclass")]
     [InlineData("Archetype")]
-    public void SelectionResolverCarriesFeatureProgressionMarkup(string elementType)
+    public async Task SelectionResolverCarriesFeatureProgressionMarkup(string elementType)
     {
         if (!ContentFixture.SkipIfUnavailable(_output)) return;
+
+        // Supply a qualified character so this test exercises description markup.
+        await CharacterManager.Current.New(true);
+        foreach (var ability in CharacterManager.Current.Character.Abilities.GetCollection())
+            ability.BaseScore = 20;
+        CharacterManager.Current.ReprocessCharacter();
 
         var rule = new SelectRule(new ElementHeader(
             "Selection Description Test",

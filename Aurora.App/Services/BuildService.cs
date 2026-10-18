@@ -440,15 +440,12 @@ public static partial class BuildService
 
                     if (!stillValid)
                     {
-                        // If the entire supported set is empty, our evaluation can't enumerate
-                        // valid candidates (e.g. no elements with that supports tag in the loaded
-                        // dataset, or an unrecognised supports expression like "Custom Race Language").
-                        // Validation is meaningless in this case — preserve the user's selection
-                        // rather than silently clearing a choice that was valid when it was made.
-                        // A pick from a source the character restricts is different: it is known to
-                        // be disallowed, so it is cleared and surfaced as a choice to make again.
+                        // An empty supported set can mean content could not be enumerated.
+                        // Preserve such existing choices unless a source restriction or an
+                        // explicitly unmet prerequisite proves the selection is no longer valid.
                         if (validIds.Count == 0 &&
-                            BuildSourceRestrictionSnapshot.CaptureCurrent().Allows(registered))
+                            BuildSourceRestrictionSnapshot.CaptureCurrent().Allows(registered) &&
+                            new SelectionRequirementEvaluator(r, currentIds).Evaluate(registered) != false)
                             continue;
 
                         DebugLogService.Instance.Log(LogLevel.Warning,
