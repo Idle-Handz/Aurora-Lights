@@ -91,6 +91,32 @@ public sealed class BuildSelectionPrerequisiteTests : IAsyncLifetime
         Options("Feat").Should().BeEquivalentTo("ID_TEST_FEAT_GENERAL", "ID_TEST_FEAT_ELF");
     }
 
+    [Theory]
+    [InlineData("ID_TEST_RACE_HUMAN,!ID_TEST_RACE_HUMAN_VARIANT", true)]
+    [InlineData("!ID_TEST_RACE_HUMAN_VARIANT,ID_TEST_RACE_HUMAN", true)]
+    [InlineData("ID_TEST_RACE_HUMAN_VARIANT || ID_TEST_RACE_HUMAN", true)]
+    [InlineData("ID_TEST_RACE_HUMAN && ID_TEST_RACE_HUMAN_VARIANT", false)]
+    [InlineData("ID_TEST_RACE_HUMAN || ID_TEST_RACE_HUMAN", true)]
+    [InlineData("ID_TEST_RACE_HUMAN && ID_TEST_RACE_HUMAN", true)]
+    [InlineData("ID_TEST_RACE_HUMAN && !ID_TEST_RACE_HUMAN", false)]
+    [InlineData("ID_TEST_RACE_ELF || ID_TEST_RACE_ELF", false)]
+    [InlineData("(ID_TEST_RACE_ELF || ID_TEST_RACE_HUMAN) && (ID_TEST_RACE_HUMAN || ID_TEST_RACE_ELF)", true)]
+    [InlineData("[int:13] && (ID_TEST_RACE_HUMAN || ID_TEST_RACE_HUMAN)", true)]
+    [InlineData("[int:14] && (ID_TEST_RACE_HUMAN || ID_TEST_RACE_HUMAN)", false)]
+    public void OverlappingAndRepeatedIdentifiersAreEvaluatedAsWholeTokens(string expression, bool expected)
+    {
+        Select("Race", "RACE_HUMAN");
+        Manager.Character.Abilities.Intelligence.BaseScore = 13;
+        Manager.ReprocessCharacter();
+        var feat = new ElementBase("Parser regression", "Feat", "Test", "ID_TEST_FEAT_PARSER")
+            { Requirements = expression };
+        DataManager.Current.ElementsCollection.Add(feat);
+
+        new ExpressionInterpreter().EvaluateElementRequirementsExpression(expression, Manager.GetElements().Select(e => e.Id))
+            .Should().Be(expected);
+        Options("Feat").Contains(feat.Id).Should().Be(expected);
+    }
+
     [Fact]
     public void ExpertiseOnlyOffersSkillsWithAnOwnedProficiencyAndRefreshesWhenItChanges()
     {
@@ -99,6 +125,38 @@ public sealed class BuildSelectionPrerequisiteTests : IAsyncLifetime
         Options("Expertise").Should().Equal("ID_TEST_EXPERTISE_ARCANA");
         Select("Skill", "SKILL_PERCEPTION");
         Options("Expertise").Should().Equal("ID_TEST_EXPERTISE_PERCEPTION");
+    }
+
+    [Theory]
+    [InlineData("Background")]
+    [InlineData("Race")]
+    [InlineData("Feat")]
+    public void PickerExpandsNestedFeatDescriptionsOnlyForTheOptionThatReferencesThem(string optionType)
+    {
+        var details = new ElementBase("Spell choices", "Feat Feature", "Test", "ID_TEST_INITIATE_DETAILS")
+            { Description = "<p>Choose two cantrips and one level 1 spell.</p>" };
+        var feat = new ElementBase("Magic Initiate", "Feat", "Test", "ID_TEST_MAGIC_INITIATE")
+            { Description = $"<p>You gain spellcasting.</p><div element='{details.Id}' />" };
+        var owner = new ElementBase("Referenced benefit", optionType, "Test", "ID_TEST_REFERENCE_OWNER")
+        {
+            Description = $"<p>Feat: Magic Initiate (Cleric).</p><div class='reference'><div element='{feat.Id}' /></div>"
+        };
+        var unrelated = new ElementBase("Unrelated option", optionType, "Test", "ID_TEST_REFERENCE_UNRELATED")
+            { Description = "<p>No spellcasting granted.</p>" };
+        foreach (var element in new[] { details, feat, owner, unrelated })
+            DataManager.Current.ElementsCollection.Add(element);
+        owner.Supports.Add("Referenced benefits");
+        unrelated.Supports.Add("Referenced benefits");
+        var rule = new SelectRule(Element("OWNER").ElementHeader);
+        rule.Attributes.Type = optionType;
+        rule.Attributes.Supports = "Referenced benefits";
+
+        var options = BuildService.GetOptions(rule);
+        options.Single(option => option.Id == owner.Id).DescriptionHtml.Should()
+            .Contain("Magic Initiate (Cleric)").And.Contain("You gain spellcasting.")
+            .And.Contain("Choose two cantrips and one level 1 spell.").And.NotContain("element=");
+        options.Single(option => option.Id == unrelated.Id).DescriptionHtml.Should()
+            .Be("<p>No spellcasting granted.</p>");
     }
 
     [Theory]

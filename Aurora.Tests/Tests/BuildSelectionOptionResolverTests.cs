@@ -29,6 +29,37 @@ public sealed class BuildSelectionOptionResolverTests : IAsyncLifetime
     public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact]
+    public async Task ResolveOptions_CustomizedDragonbornOffersAllAbilitiesAndPreventsOverlappingIncreases()
+    {
+        var handler = await CreateEmptyCharacterAsync();
+        var manager = CharacterManager.Current;
+        var customOrigin = DataManager.Current.ElementsCollection.GetElement("ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI");
+        customOrigin.Should().NotBeNull();
+        manager.RegisterElement(customOrigin!);
+        manager.ReprocessCharacter();
+        handler.SetRegisteredElement(manager.SelectionRules.Single(rule => rule.Attributes.Type == "Race"), "ID_RACE_DRAGONBORN");
+        manager.ReprocessCharacter();
+
+        foreach (int increase in new[] { 1, 2 })
+        {
+            var rule = FindAbilityScoreRule($"Custom Ability Score Increase {increase}");
+            BuildSelectionOptionResolver.ResolveOptions(rule).Select(option => option.Name)
+                .Should().BeEquivalentTo("Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma");
+        }
+
+        handler.SetRegisteredElement(FindAbilityScoreRule("Custom Ability Score Increase 2"),
+            "ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_STRENGTH_INCREASE_2");
+        manager.ReprocessCharacter();
+        BuildSelectionOptionResolver.ResolveOptions(FindAbilityScoreRule("Custom Ability Score Increase 1"))
+            .Select(option => option.Name).Should().HaveCount(5).And.NotContain("Strength");
+
+        handler.SetRegisteredElement(FindAbilityScoreRule("Custom Ability Score Increase 1"), DexterityAsi1Id);
+        manager.ReprocessCharacter();
+        BuildSelectionOptionResolver.ResolveOptions(FindAbilityScoreRule("Custom Ability Score Increase 2"))
+            .Select(option => option.Name).Should().HaveCount(5).And.Contain("Strength").And.NotContain("Dexterity");
+    }
+
+    [Fact]
     public async Task ResolveOptions_DoesNotDisableOwnedAbilityScoreIncreaseOptions()
     {
         if (!ContentFixture.SkipIfUnavailable(_output)) return;
