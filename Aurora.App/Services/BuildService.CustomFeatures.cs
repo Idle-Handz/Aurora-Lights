@@ -114,6 +114,7 @@ public static partial class BuildService
             var target = el == null ? null : EquipmentService.ResolveCustomFeatureTarget(el);
             result.Add((id, target?.Name ?? el?.Name ?? id, target?.Type ?? el?.Type ?? ""));
         }
+        result.AddRange(SidekickService.Load(file).Select(s => (s.Id, s.Name, "Sidekick")));
         return result;
     }
 
@@ -191,6 +192,11 @@ public static partial class BuildService
     /// </summary>
     public static async Task<string?> RemoveCustomFeatureAsync(CharacterTab tab, string elementId)
     {
+        if (SidekickService.IsInstanceId(elementId))
+        {
+            var result = await SidekickService.RemoveAsync(tab, elementId);
+            return result.Succeeded ? null : result.Message;
+        }
         using var scope = await CharacterContext.EnterAsync(tab);
         FlushPendingSnapshotEdits(tab);
         return await Task.Run(() =>

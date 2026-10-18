@@ -7,7 +7,7 @@ using System.Linq;
 namespace Builder.Presentation.Services.Calculator;
 
 /// <summary>Scopes legacy companion statistics to the creature and the feature that acquired it.</summary>
-internal static class CompanionRuleScope
+public static class CompanionRuleScope
 {
     public static Func<ElementBase, bool> For(CompanionElement companion, IEnumerable<ElementBase> elements)
     {

@@ -462,131 +462,10 @@
         }
     </MudTabPanel>
 
-    @if (_snap.HasCompanion)
+    @if (_snap.HasCompanion || _sidekicks.Count > 0)
     {
         <MudTabPanel Text="Companions">
-          @foreach (var comp in _snap.Companions)
-          {
-            <section style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--mud-palette-divider);">
-            <div class="section-label" style="margin-bottom: 4px;">@comp.Name</div>
-            @if (!string.IsNullOrEmpty(comp.TypeLine))
-            {
-                <div style="font-size: 13px; color: var(--mud-palette-text-secondary); margin-bottom: 12px; font-style: italic;">@comp.TypeLine</div>
-            }
-
-            @* Combat stats strip *@
-            <div class="combat-strip" style="margin-bottom: 16px;">
-                <div class="combat-stat">
-                    <div class="combat-stat-value">@comp.ArmorClass</div>
-                    <div class="combat-stat-label">Armor Class</div>
-                </div>
-                <div class="combat-sep"></div>
-                <div class="combat-stat">
-                    <div class="combat-stat-value">@comp.MaxHp</div>
-                    <div class="combat-stat-label">Max HP</div>
-                </div>
-                <div class="combat-sep"></div>
-                <div class="combat-stat">
-                    <div class="combat-stat-value">@comp.Speed ft.</div>
-                    <div class="combat-stat-label">Speed</div>
-                </div>
-                <div class="combat-sep"></div>
-                <div class="combat-stat">
-                    <div class="combat-stat-value">@comp.Initiative</div>
-                    <div class="combat-stat-label">Initiative</div>
-                </div>
-                @if (comp.Proficiency > 0)
-                {
-                    <div class="combat-sep"></div>
-                    <div class="combat-stat">
-                        <div class="combat-stat-value">+@comp.Proficiency</div>
-                        <div class="combat-stat-label">Proficiency</div>
-                    </div>
-                }
-            </div>
-
-            @* Ability scores *@
-            <div class="ability-grid" style="margin-bottom: 16px;">
-                @foreach (var ab in comp.Abilities)
-                {
-                    <div class="ability-box">
-                        <div class="ability-abbr">@ab.Abbreviation</div>
-                        <div class="ability-score">@ab.FinalScore</div>
-                        <div class="ability-mod">@ab.ModifierString</div>
-                    </div>
-                }
-            </div>
-
-            @* Traits *@
-            @if (comp.Traits.Count > 0)
-            {
-                <div class="section-label" style="margin-top: 16px; margin-bottom: 8px;">Traits</div>
-                @foreach (var t in comp.Traits)
-                {
-                    @if (!string.IsNullOrWhiteSpace(t.DescriptionHtml) ||
-                         !string.IsNullOrWhiteSpace(t.Description))
-                    {
-                        <details class="build-feature-item build-feature-expandable">
-                            <summary>@t.Name</summary>
-                            <RichDescription Html="@t.DescriptionHtml"
-                                             PlainText="@t.Description"
-                                             Class="build-feature-desc" />
-                        </details>
-                    }
-                    else
-                    {
-                        <div class="build-feature-item">@t.Name</div>
-                    }
-                }
-            }
-
-            @* Actions *@
-            @if (comp.Actions.Count > 0)
-            {
-                <div class="section-label" style="margin-top: 16px; margin-bottom: 8px;">Actions</div>
-                @foreach (var a in comp.Actions)
-                {
-                    @if (!string.IsNullOrWhiteSpace(a.DescriptionHtml) ||
-                         !string.IsNullOrWhiteSpace(a.Description))
-                    {
-                        <details class="build-feature-item build-feature-expandable">
-                            <summary>@a.Name</summary>
-                            <RichDescription Html="@a.DescriptionHtml"
-                                             PlainText="@a.Description"
-                                             Class="build-feature-desc" />
-                        </details>
-                    }
-                    else
-                    {
-                        <div class="build-feature-item">@a.Name</div>
-                    }
-                }
-            }
-
-            @* Reactions *@
-            @if (comp.Reactions.Count > 0)
-            {
-                <div class="section-label" style="margin-top: 16px; margin-bottom: 8px;">Reactions</div>
-                @foreach (var r in comp.Reactions)
-                {
-                    @if (!string.IsNullOrWhiteSpace(r.DescriptionHtml) ||
-                         !string.IsNullOrWhiteSpace(r.Description))
-                    {
-                        <details class="build-feature-item build-feature-expandable">
-                            <summary>@r.Name</summary>
-                            <RichDescription Html="@r.DescriptionHtml"
-                                             PlainText="@r.Description"
-                                             Class="build-feature-desc" />
-                        </details>
-                    }
-                    else
-                    {
-                        <div class="build-feature-item">@r.Name</div>
-                    }
-                }
-            }
-            </section>
-          }
+            <CompanionManagementPanel />
         </MudTabPanel>
     }
 
@@ -716,6 +595,7 @@
 
 @code {
     private CharacterSnapshot? _snap;
+    private IReadOnlyList<SidekickProfile> _sidekicks = [];
     private string? _portraitSrc;
     private IReadOnlyList<ClassProgressionSnapshot>? _progressions;
     private IReadOnlyList<AdvancementClassTimeline> _timeline = [];
@@ -741,6 +621,7 @@
     private void LoadFromActiveTab()
     {
         _snap             = Tabs.ActiveTab?.Snapshot;
+        _sidekicks        = SidekickService.Load(Tabs.ActiveTab?.File);
         _progressions     = Tabs.ActiveTab?.ProgressionSnapshots;
         _portraitSrc      = Tabs.ActiveTab?.File is { } f ? ResolvePortrait(f) : null;
         _selectedSpellKey = null;

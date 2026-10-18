@@ -13,6 +13,7 @@ using Builder.Presentation.Models.Collections;
 using Builder.Presentation.Models.Equipment;
 using Builder.Presentation.Models.Helpers;
 using Builder.Presentation.Models.NewFolder1;
+using Builder.Presentation.Services;
 using Builder.Presentation.UserControls.Spellcasting;
 using Builder.Presentation.ViewModels.Shell.Manage;
 
@@ -73,6 +74,7 @@ public sealed class Character : ObservableObject
 
   private readonly Companion _emptyCompanion = new Companion();
   private readonly List<Companion> _companions = new List<Companion>();
+  private readonly Dictionary<string, (string OwnerId, Companion Creature)> _defaultCompanions = new();
 
   public IReadOnlyList<Companion> Companions => _companions;
 
@@ -81,15 +83,38 @@ public sealed class Character : ObservableObject
 
   internal void SynchronizeCompanions(IEnumerable<ElementBase> elements)
   {
-    var active = elements.OfType<CompanionElement>().ToList();
+    var owned = elements.ToArray();
+    var active = owned.OfType<CompanionElement>().ToList();
     var existing = _companions.ToArray();
+    // A drake's old selection is removed before its new level-dependent default is
+    // registered. Keep its identity while the acquiring feature still exists, so
+    // profile edits and combat tracking continue to belong to the same creature.
+    var ownerIds = owned.Select(e => e.Id).ToHashSet();
+    foreach (var key in _defaultCompanions.Keys.ToArray())
+      if (!ownerIds.Contains(_defaultCompanions[key].OwnerId))
+        _defaultCompanions.Remove(key);
     _companions.Clear();
+    bool templateChanged = false;
     foreach (var element in active)
-      _companions.Add(existing.FirstOrDefault(c => ReferenceEquals(c.Element, element)) ?? new Companion(element));
+    {
+      var companion = existing.FirstOrDefault(c => ReferenceEquals(c.Element, element));
+      bool isDefault = CompanionSelectionDefaults.IsDefaultCompanion(element);
+      string key = isDefault ? "select:" + element.Aquisition.GetParentHeader()?.Id + ":" + element.Aquisition.SelectRule.Attributes.Name : string.Empty;
+      if (companion == null && isDefault && _defaultCompanions.TryGetValue(key, out var previous)
+          && !active.Contains(previous.Creature.Element) && !_companions.Contains(previous.Creature))
+      {
+        companion = previous.Creature;
+        companion.SetTemplate(element);
+        templateChanged = true;
+      }
+      companion ??= new Companion(element);
+      _companions.Add(companion);
+      if (isDefault) _defaultCompanions[key] = (element.Aquisition.GetParentHeader().Id, companion);
+    }
     // Companion is a computed property, so bindings to Character.Companion.* resolve once and
     // then keep whichever instance they first saw. Without this they stay on the empty
     // companion for the life of the view when a creature is acquired or replaced.
-    if (!existing.SequenceEqual(_companions))
+    if (templateChanged || !existing.SequenceEqual(_companions))
       this.OnPropertyChanged(nameof(Companions), nameof(Companion));
   }
 
@@ -279,6 +304,7 @@ public sealed class Character : ObservableObject
     this.MulticlassSpellSlots.Clear();
     bool hadCompanions = _companions.Count > 0;
     _companions.Clear();
+    _defaultCompanions.Clear();
     _emptyCompanion.Reset();
     if (hadCompanions)
       this.OnPropertyChanged(nameof(Companions), nameof(Companion));

@@ -561,7 +561,7 @@ else if (_workflowSuggestion != null)
             @if (_customFeatures.Count == 0)
             {
                 <MudText Color="Color.Secondary" Style="font-size:13px;">
-                    Nothing added yet. Use <b>Add Custom Feature</b> to add companions, feats, spells, or other
+                    Nothing added yet. Use <b>Add Custom Feature</b> to add companions, sidekicks, feats, spells, or other
                     options that aren't granted by your class, race, or background. Spell choices from
                     added feats appear on the <b>Magic</b> page.
                 </MudText>
@@ -576,6 +576,11 @@ else if (_workflowSuggestion != null)
                                 <div style="font-size:13px; font-weight:500;">@cf.Name</div>
                                 <div style="font-size:10px; color: var(--mud-palette-text-disabled);">@cf.Type</div>
                             </div>
+                            @if (SidekickService.IsInstanceId(cf.Id))
+                            {
+                                <MudButton Variant="Variant.Text" Size="Size.Small" Disabled="@_saving"
+                                           OnClick="() => EditSidekickAsync(cf.Id)">Edit</MudButton>
+                            }
                             <MudButton StartIcon="@Icons.Material.Filled.Delete"
                                        Variant="Variant.Text" Color="Color.Error" Size="Size.Small"
                                        Disabled="@_saving" OnClick="() => RemoveCustomFeatureAsync(cf.Id)">
@@ -1185,6 +1190,22 @@ else if (_workflowSuggestion != null)
 
         if (result is { Canceled: false, Data: string elementId })
         {
+            if (SidekickService.IsTemplate(elementId))
+            {
+                var sidekickParameters = new DialogParameters
+                {
+                    [nameof(SidekickEditDialog.Tab)] = tab,
+                    [nameof(SidekickEditDialog.Profile)] = SidekickService.Create(elementId),
+                    [nameof(SidekickEditDialog.IsNew)] = true,
+                };
+                var editor = await DialogService.ShowAsync<SidekickEditDialog>("Add Sidekick", sidekickParameters);
+                if (await editor.Result is { Canceled: false })
+                {
+                    Tabs.NotifyChanged();
+                    await LoadFromActiveTabAsync();
+                }
+                return;
+            }
             _saving = true;
             StateHasChanged();
             var error = await BuildService.AddCustomFeatureAsync(tab, elementId);
@@ -1214,7 +1235,8 @@ else if (_workflowSuggestion != null)
         _saving = false;
         if (error == null)
         {
-            Tabs.MarkClean(tab);
+            if (SidekickService.IsInstanceId(elementId)) Tabs.NotifyChanged();
+            else Tabs.MarkClean(tab);
             Snackbar.Add("Custom feature removed.", Severity.Info, cfg => cfg.VisibleStateDuration = 2500);
         }
         else
@@ -1223,6 +1245,24 @@ else if (_workflowSuggestion != null)
         }
         await LoadFromActiveTabAsync();
         StateHasChanged();
+    }
+
+    private async Task EditSidekickAsync(string id)
+    {
+        var tab = Tabs.ActiveTab;
+        var profile = SidekickService.Load(tab?.File).FirstOrDefault(s => s.Id == id);
+        if (tab == null || profile == null) return;
+        var parameters = new DialogParameters
+        {
+            [nameof(SidekickEditDialog.Tab)] = tab,
+            [nameof(SidekickEditDialog.Profile)] = profile,
+        };
+        var editor = await DialogService.ShowAsync<SidekickEditDialog>("Edit Sidekick", parameters);
+        if (await editor.Result is { Canceled: false })
+        {
+            Tabs.NotifyChanged();
+            await LoadFromActiveTabAsync();
+        }
     }
 
     // ── HP method toggle ──────────────────────────────────────────────────────────

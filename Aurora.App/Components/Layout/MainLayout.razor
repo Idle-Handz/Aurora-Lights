@@ -165,6 +165,13 @@
             <MudIcon Icon="@Icons.Material.Filled.Favorite" />
             <span>Session</span>
         </NavLink>
+        @if (SidekickService.HasCompanions(Tabs.ActiveTab))
+        {
+            <NavLink href="/companions" class="mobile-more-link" @onclick="CloseMobileMore">
+                <MudIcon Icon="@Icons.Material.Filled.Groups" />
+                <span>Companions</span>
+            </NavLink>
+        }
         <NavLink href="/sheet" class="mobile-more-link" @onclick="CloseMobileMore">
             <MudIcon Icon="@Icons.Material.Filled.Article" />
             <span>Sheet</span>

@@ -1,4 +1,4 @@
-<MudDialog Style="max-height: 90vh; width: min(720px, 95vw);">
+<MudDialog Class="picker-dialog" Style="--picker-initial-width: 960px;">
     <TitleContent>
         <MudText Typo="Typo.h6" Style="font-size: 15px; font-weight: 600;">Add Custom Feature</MudText>
     </TitleContent>
@@ -13,7 +13,7 @@
         {
             <MudSelect T="string" Value="_category" ValueChanged="OnCategoryChanged"
                        Label="Category" Dense="true" Variant="Variant.Outlined" Margin="Margin.Dense"
-                       Style="margin-bottom: 8px;">
+                       Style="flex: none; margin-bottom: 8px;">
                 @foreach (var c in _categories)
                 {
                     <MudSelectItem T="string" Value="@c">@c</MudSelectItem>
@@ -87,6 +87,7 @@
         }
     </DialogContent>
     <DialogActions>
+        <span class="picker-resize-hint">Drag the bottom-right corner to resize</span>
         <MudButton OnClick="Cancel" Variant="Variant.Text">Cancel</MudButton>
         <MudButton Color="Color.Primary"
                    Variant="Variant.Filled"

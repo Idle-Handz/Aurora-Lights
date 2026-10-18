@@ -152,6 +152,179 @@ public sealed class CustomFeatureDuplicateTests
             file.LoadCustomFeatures().Should().Equal(asi.Id);
         });
 
+    [Fact]
+    public Task SidekicksKeepIndependentEditsAcrossFullSavesAndRemoval() =>
+        WithCharacter(async (manager, file, tab) =>
+        {
+            EquipmentService.GetCustomFeatureCategories().Should().Contain("Sidekicks");
+            var templates = EquipmentService.SearchCustomFeatures("Sidekicks", "");
+            templates.Should().HaveCount(4);
+            var warrior = templates.Single(t => t.Name == "Sidekick - Warrior");
+            var first = SidekickService.Create(warrior.Id);
+            var second = SidekickService.Create(warrior.Id);
+            first.Set("name", "Rook & <friend>");
+            first.Set("hp", "22 (4d8 + 4)");
+            first.Set("features", "A custom feature.\nSecond line <stays plain text>.");
+            second.Set("name", "Robin");
+            second.Set("hp", "17");
+            var registered = manager.GetElements().Select(e => e.Id).ToArray();
+
+            (await SidekickService.SaveAsync(tab, first, isNew: true)).Succeeded.Should().BeTrue();
+            (await SidekickService.SaveAsync(tab, second, isNew: true)).Succeeded.Should().BeTrue();
+            var draft = first.Copy();
+            draft.Set("hp", "99");
+            first.Get("hp").Should().Be("22 (4d8 + 4)", "editing a draft does not mutate its original");
+            SidekickService.Load(file).First().Get("hp").Should().Be("22 (4d8 + 4)", "an unsaved draft does not touch disk");
+            (await SidekickService.SaveAsync(tab, draft)).Succeeded.Should().BeTrue();
+            tab.IsDirty = true;
+            var anotherDraft = draft.Copy();
+            anotherDraft.Set("notes", "Keep other pending character edits.");
+            (await SidekickService.SaveAsync(tab, anotherDraft)).Succeeded.Should().BeTrue();
+            tab.IsDirty.Should().BeTrue();
+
+            System.Text.Encoding.UTF8.GetString(file.SerializeCharacter(manager.Character))
+                .Should().Contain(first.Id).And.Contain(second.Id, "tab snapshots must retain newly saved sidekicks");
+
+            file.Save(manager.Character).Should().BeTrue();
+            var reopened = new CharacterFile(file.FilePath);
+            var saved = SidekickService.Load(reopened);
+            saved.Should().HaveCount(2);
+            saved[0].Name.Should().Be(first.Name);
+            saved[0].Get("features").Should().Be(first.Get("features"));
+            saved[0].Get("hp").Should().Be("99");
+            saved[1].Get("hp").Should().Be("17");
+            saved.Select(s => s.Id).Should().OnlyHaveUniqueItems();
+            BuildService.GetCustomFeatures(tab).Should().Contain(f => f.Id == first.Id && f.Type == "Sidekick");
+            manager.GetElements().Select(e => e.Id).Should().Equal(registered, "sidekick features must not alter the player character");
+            file.LoadCustomFeatures().Should().BeEmpty("sidekick instances are not player feature grants");
+
+            (await BuildService.RemoveCustomFeatureAsync(tab, first.Id)).Should().BeNull();
+            file.Save(manager.Character).Should().BeTrue();
+            SidekickService.Load(file).Should().ContainSingle().Which.Id.Should().Be(second.Id);
+            (await SidekickService.SaveAsync(tab, draft)).Succeeded.Should().BeFalse("a stale editor cannot resurrect a removed sidekick");
+        });
+
+    [Fact]
+    public Task SidekickContentSeedsEditableFieldsWithoutChangingTheTemplate() =>
+        WithCharacter(async (manager, file, tab) =>
+        {
+            var template = Creature("EXPERT");
+            template.Supports.Add("Sidekick");
+            template.ElementSetters.Add(new("sidekick role", "Expert"));
+            template.ElementSetters.Add(new("saves", "Dex +4"));
+            template.ElementSetters.Add(new("actions", "ID_EXTRAS_HELP"));
+            template.Actions.Add("ID_EXTRAS_HELP");
+            Add(template);
+            Add(Parse("""
+                <element name="Helpful" type="Companion Action" source="Test" id="ID_EXTRAS_HELP">
+                  <description><p>Help an ally.</p></description>
+                </element>
+                """));
+            EquipmentService.SearchCustomFeatures("Sidekicks", "EXPERT").Should().Contain(e => e.Id == template.Id);
+            EquipmentService.SearchCustomFeatures("Companions", "EXPERT").Should().NotContain(e => e.Id == template.Id);
+            var profile = SidekickService.Create(template.Id);
+            profile.Get("role").Should().Be("Expert");
+            profile.Choices!.Base["saves"].Should().Be("Dex +4", "the original stat block remains the calculation basis");
+            profile.Get("saves").Should().Contain("Dexterity +4");
+            profile.Get("actions").Should().Contain("Helpful").And.Contain("Help an ally.");
+            profile.Set("strength", "18");
+            (await SidekickService.SaveAsync(tab, profile, isNew: true)).Succeeded.Should().BeTrue();
+            template.Strength.Should().Be(10);
+            template.ElementSetters.GetSetter("strength").Value.Should().Be("10");
+            // The saved copy is self-contained even if its content source is later removed.
+            DataManager.Current.ElementsCollection.Remove(template);
+            SidekickService.Load(file).Single().Get("strength").Should().Be("18");
+        });
+
+    [Fact]
+    public Task SidekickProgressionAndOverridesSurviveFullSaveAndLegacyProfilesUpgradeSafely() =>
+        WithCharacter(async (manager, file, tab) =>
+        {
+            var profile = SidekickService.Create("sidekick-template:spellcaster");
+            profile.FollowOwnerLevel = false;
+            profile.Set("level", "5");
+            profile.Set("spellcasting-role", "Healer");
+            profile.Set("wisdom", "16");
+            profile.Set("spell-save-dc", "19");
+            profile.Set("proficiency", "4");
+            profile.Set("features", "Custom <healing> & support");
+            (await SidekickService.SaveAsync(tab, profile, isNew: true)).Succeeded.Should().BeTrue();
+            file.Save(manager.Character).Should().BeTrue();
+            var loaded = SidekickService.Load(new CharacterFile(file.FilePath)).Single();
+            loaded.ProgressionClass.Should().Be("Spellcaster");
+            loaded.Get("spellcasting-ability").Should().Be("Wisdom");
+            loaded.Get("spell-save-dc").Should().Be("19");
+            loaded.Get("spell-attack").Should().Be("+7");
+            loaded.Set("level", "9");
+            (await SidekickService.SaveAsync(tab, loaded)).Succeeded.Should().BeTrue();
+            loaded = SidekickService.Load(file).Single();
+            loaded.Get("spell-save-dc").Should().Be("19", "saved overrides remain customized on a later level-up");
+            loaded.Get("spell-attack").Should().Be("+7");
+            loaded.Get("spell-slots").Should().Be("1st: 4; 2nd: 3; 3rd: 2");
+            loaded.Get("features").Should().Be("Custom <healing> & support");
+            SidekickProgression.UseLevelDefault(loaded, "spell-save-dc");
+            loaded.Get("spell-save-dc").Should().Be("15");
+            loaded.Set("level", "13");
+            SidekickProgression.Refresh(loaded);
+            loaded.Get("proficiency").Should().Be("4", "an override matching the level 9 default must survive reopening and later levels");
+
+            // Simulate an older manually maintained sidekick, without progression metadata or generated fields.
+            var document = new XmlDocument();
+            document.Load(file.FilePath);
+            var entry = (XmlElement)document.SelectSingleNode("/*/sidekicks/sidekick")!;
+            entry.RemoveAttribute("progression");
+            entry.RemoveChild(entry["level-defaults"]!);
+            foreach (var key in loaded.LevelDefaults.Keys)
+                if (entry.SelectSingleNode($"field[@name='{key}']") is { } field) entry.RemoveChild(field);
+            document.Save(file.FilePath);
+            var legacy = SidekickService.Load(new CharacterFile(file.FilePath)).Single();
+            legacy.ProgressionClass.Should().Be("Spellcaster");
+            legacy.Get("class-features").Should().Contain("Potent Cantrips");
+            legacy.Get("spell-slots").Should().Be("1st: 4; 2nd: 3; 3rd: 2");
+            legacy.Get("features").Should().Be("Custom <healing> & support");
+        });
+
+    [Fact]
+    public Task ExistingSidekicksMatchOnOpeningWithoutRerollingOrRewritingRepeatedLoads() =>
+        WithCharacter(async (manager, file, tab) =>
+        {
+            var profile = SidekickService.Create("sidekick-template:warrior");
+            profile.FollowOwnerLevel = false;
+            SidekickChoices.Change(profile, new("base:hp", "12"));
+            SidekickChoices.Change(profile, new("base:hit-dice", "2d8"));
+            SidekickChoices.Change(profile, new("hp:method", "Roll"));
+            profile.Set("level", "4"); SidekickProgression.Refresh(profile);
+            var rolls = profile.Choices!.HitPoints!.Gains.Values.Select(g => g.Roll).ToArray();
+            (await SidekickService.SaveAsync(tab, profile, isNew: true)).Succeeded.Should().BeTrue();
+            var document = new XmlDocument(); document.Load(file.FilePath);
+            ((XmlElement)document.SelectSingleNode("/*/sidekicks/sidekick")!).RemoveAttribute("follow-owner-level");
+            document.Save(file.FilePath); file.InitializeDisplayPropertiesFromFilePath();
+            (await SidekickService.SynchronizeOwnerLevelsAsync(tab)).Succeeded.Should().BeTrue();
+            var saved = SidekickService.Load(file).Single();
+            saved.FollowOwnerLevel.Should().BeTrue(); saved.Get("level").Should().Be(manager.Character.Level.ToString());
+            saved.Choices!.HitPoints!.Gains.Values.Select(g => g.Roll).Should().Equal(rolls);
+            byte[] first = File.ReadAllBytes(file.FilePath);
+            (await SidekickService.SynchronizeOwnerLevelsAsync(tab)).Succeeded.Should().BeTrue();
+            File.ReadAllBytes(file.FilePath).Should().Equal(first, "a repeat page refresh must not write or reroll");
+            saved.Revision.Should().Be(profile.Revision + 1);
+        });
+
+    [Fact]
+    public Task SidekickValidationAndExternalChangesLeaveTheFileUntouched() =>
+        WithCharacter(async (manager, file, tab) =>
+        {
+            var profile = SidekickService.Create("sidekick-template:custom");
+            var before = File.ReadAllBytes(file.FilePath);
+            profile.Set("level", "21");
+            (await SidekickService.SaveAsync(tab, profile, isNew: true)).Succeeded.Should().BeFalse();
+            File.ReadAllBytes(file.FilePath).Should().Equal(before);
+            profile.Set("level", "3");
+            File.AppendAllText(file.FilePath, " ");
+            var externallyChanged = File.ReadAllBytes(file.FilePath);
+            (await SidekickService.SaveAsync(tab, profile, isNew: true)).IsExternalChange.Should().BeTrue();
+            File.ReadAllBytes(file.FilePath).Should().Equal(externallyChanged);
+        });
+
     private static ElementBase AddProxy(ElementBase target)
     {
         var proxy = Parse($"""

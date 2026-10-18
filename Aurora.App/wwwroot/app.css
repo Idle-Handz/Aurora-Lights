@@ -209,6 +209,38 @@ html, body {
     font-weight: 700;
 }
 
+.companion-nav-entry {
+    position: relative;
+}
+
+/* Anchor to the icon so the badge stays visible in the collapsed sidebar. */
+.nav-choice-badge {
+    position: absolute;
+    top: 3px;
+    left: 31px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border: 0;
+    border-radius: 9px;
+    background: var(--mud-palette-warning, #ff9800);
+    color: var(--mud-palette-warning-text, #000);
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 18px;
+    text-align: center;
+    cursor: pointer;
+}
+
+.nav-choice-badge:focus-visible {
+    outline: 2px solid var(--mud-palette-text-primary);
+    outline-offset: 2px;
+}
+
+.nav-choice-badge:disabled {
+    cursor: wait;
+}
+
 .nav-loading-row {
     display: flex;
     align-items: center;
@@ -259,15 +291,41 @@ html, body {
     padding-top: 4px;
 }
 
-.mud-dialog.se-dialog {
-    width: min(700px, 95vw);
-    max-height: 90dvh;
-}
-
-.mud-dialog.se-dialog .mud-dialog-content {
-    max-height: calc(90dvh - 118px);
+.mud-dialog.se-dialog .mud-dialog-content,
+.mud-dialog.picker-form-dialog .mud-dialog-content {
+    display: block;
     overflow-y: auto;
     overflow-x: hidden;
+}
+
+.sidekick-card {
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--mud-palette-divider);
+}
+.companion-session-panel { margin-top: 24px; }
+.companion-session-panel > summary { cursor: pointer; font-weight: 600; padding: 12px 0; }
+.sidekick-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+.sidekick-field-grid, .sidekick-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
+    gap: 12px;
+}
+.sidekick-stat-grid { margin-top: 16px; }
+.sidekick-field-wide { grid-column: 1 / -1; }
+.sidekick-field-label {
+    font-size: 12px;
+    color: var(--mud-palette-text-secondary);
+}
+.sidekick-field-value {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font-size: 14px;
 }
 
 /* Character card */

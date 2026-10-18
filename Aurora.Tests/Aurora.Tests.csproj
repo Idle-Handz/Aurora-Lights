@@ -66,6 +66,14 @@
     <Compile Include="..\Aurora.App\Services\Updates\AppUpdateRestartCoordinator.cs" Link="Linked\AppUpdateRestartCoordinator.cs" />
     <Compile Include="..\Aurora.App\Services\MauiSpellcastingSectionHandler.cs" Link="Linked\MauiSpellcastingSectionHandler.cs" />
     <Compile Include="..\Aurora.App\Services\EquipmentService.cs" Link="Linked\EquipmentService.cs" />
+    <Compile Include="..\Aurora.App\Services\CompanionProgression.cs" Link="AppServices\CompanionProgression.cs" />
+    <Compile Include="..\Aurora.App\Services\CreaturePortrait.cs" Link="AppServices\CreaturePortrait.cs" />
+    <Compile Include="..\Aurora.App\Services\SidekickHitPoints.cs" Link="AppServices\SidekickHitPoints.cs" />
+    <Compile Include="..\Aurora.App\Services\SidekickChoices.cs" Link="AppServices\SidekickChoices.cs" />
+    <Compile Include="..\Aurora.App\Services\SidekickService.cs" Link="Linked\SidekickService.cs" />
+    <Compile Include="..\Aurora.App\Services\SidekickProgression.cs" Link="Linked\SidekickProgression.cs" />
+    <Compile Include="..\Aurora.App\Services\CreatureCombatState.cs" Link="Linked\CreatureCombatState.cs" />
+    <Compile Include="..\Aurora.App\Services\CreatureManagementService.cs" Link="Linked\CreatureManagementService.cs" />
     <Compile Include="..\Aurora.App\Services\InventoryItemAdder.cs" Link="Linked\InventoryItemAdder.cs" />
     <Compile Include="..\Aurora.App\Services\ShopCatalogService.cs" Link="Linked\ShopCatalogService.cs" />
     <Compile Include="..\Aurora.App\Services\ShopTransactionService.cs" Link="Linked\ShopTransactionService.cs" />

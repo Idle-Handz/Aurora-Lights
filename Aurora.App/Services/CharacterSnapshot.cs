@@ -302,7 +302,7 @@ public sealed class CharacterSnapshot
     private static int GetAltSpeed(CharacterManager cm, string statName, string innateName)
         => Math.Max(GetStatGroupValue(cm, statName), GetStatGroupValue(cm, innateName));
 
-    private static CompanionSnapshot? BuildCompanionSnapshot(Companion comp)
+    internal static CompanionSnapshot? BuildCompanionSnapshot(Companion comp)
     {
         try
         {
@@ -339,7 +339,12 @@ public sealed class CharacterSnapshot
                 Abilities:   abilities,
                 Traits:      traits,
                 Actions:     actions,
-                Reactions:   reactions);
+                Reactions:   reactions)
+            {
+                InstanceId = comp.InstanceId,
+                TemplateId = el.Id,
+                DefaultFields = SidekickService.CompanionFields(comp)
+            };
         }
         catch
         {
@@ -1211,7 +1216,12 @@ public sealed record CompanionSnapshot(
     IReadOnlyList<CompanionAbilityEntry> Abilities,
     IReadOnlyList<FeatureEntry> Traits,
     IReadOnlyList<FeatureEntry> Actions,
-    IReadOnlyList<FeatureEntry> Reactions);
+    IReadOnlyList<FeatureEntry> Reactions)
+{
+    public string InstanceId { get; init; } = "";
+    public string TemplateId { get; init; } = "";
+    public IReadOnlyDictionary<string, string> DefaultFields { get; init; } = new Dictionary<string, string>();
+}
 
 public sealed record SpellLevelEntry(int Level, IReadOnlyList<SpellEntry> Spells, int TotalSlots = 0)
 {

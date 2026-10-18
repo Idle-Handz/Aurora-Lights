@@ -1,0 +1,39 @@
+@page "/companions"
+@implements IDisposable
+@inject CharacterTabService Tabs
+
+<PageTitle>Companions</PageTitle>
+<h1 class="mud-typography mud-typography-h4 mb-2">Companions</h1>
+
+@if (Tabs.ActiveTab is { IsLoading: true })
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mb-3" />
+    <MudText>Loading character…</MudText>
+}
+else if (Tabs.ActiveTab is { Snapshot: not null } tab)
+{
+    <MudText Typo="Typo.body2" Class="mb-4">Companions and sidekicks for @tab.Snapshot.Name.</MudText>
+    <CompanionManagementPanel @key="tab.Id" />
+}
+else
+{
+    <MudText Color="Color.Secondary">No character loaded. Open a character from the <MudLink Href="/">Characters</MudLink> page.</MudText>
+}
+
+@code {
+    private bool _disposed;
+
+    protected override void OnInitialized() => Tabs.TabsChanged += OnTabsChanged;
+
+    private void OnTabsChanged()
+    {
+        if (_disposed) return;
+        _ = InvokeAsync(() => { if (!_disposed) StateHasChanged(); });
+    }
+
+    public void Dispose()
+    {
+        _disposed = true;
+        Tabs.TabsChanged -= OnTabsChanged;
+    }
+}

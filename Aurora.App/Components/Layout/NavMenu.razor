@@ -2,6 +2,10 @@
 @inject CharacterTabService Tabs
 @inject UserPreferencesService Prefs
 @inject DebugLogService DebugLog
+@inject NavigationManager Nav
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@using Aurora.App.Components.Pages
 
 <MudNavMenu>
     @* ── Global ── *@
@@ -64,6 +68,25 @@
                 Session
             </MudNavLink>
         </MudTooltip>
+        @if (SidekickService.HasCompanions(Tabs.ActiveTab))
+        {
+            int pendingSidekicks = SidekickService.CountSidekicksNeedingChoices(Tabs.ActiveTab);
+            string companionLabel = pendingSidekicks == 0 ? "Companions"
+                : $"Companions — {pendingSidekicks} {(pendingSidekicks == 1 ? "sidekick has" : "sidekicks have")} unfinished choices";
+            <div class="companion-nav-entry">
+                <MudNavLink Href="/companions" Icon="@Icons.Material.Filled.Groups"
+                            aria-label="@companionLabel" title="@companionLabel">
+                    Companions
+                </MudNavLink>
+                @if (pendingSidekicks > 0)
+                {
+                    <button type="button" class="nav-choice-badge" @onclick="OpenPendingChoicesAsync" disabled="@_openingChoices"
+                            aria-label="Open the first sidekick with unfinished choices" title="Open unfinished sidekick choices">
+                        @(pendingSidekicks > 99 ? "99+" : pendingSidekicks.ToString())
+                    </button>
+                }
+            </div>
+        }
         <MudTooltip Text="@(_loading ? "Loading character…" : "")" Placement="Placement.Right" Delay="300" Style="display:block">
             <MudNavLink Href="/magic" Icon="@Icons.Material.Filled.AutoAwesome" Disabled="_loading">
                 Magic
@@ -84,6 +107,37 @@
 
 @code {
     private bool _disposed;
+    private bool _openingChoices;
+
+    private async Task OpenPendingChoicesAsync()
+    {
+        if (_openingChoices || Tabs.ActiveTab is not { IsLoading: false, Snapshot: not null } tab) return;
+        _openingChoices = true;
+        try
+        {
+            (await SidekickService.SynchronizeOwnerLevelsAsync(tab)).ThrowIfFailed();
+            if (_disposed || !ReferenceEquals(tab, Tabs.ActiveTab)) return;
+            var pending = SidekickService.Load(tab.File)
+                .Select(profile => (Profile: profile, Choice: SidekickChoices.Pending(profile).FirstOrDefault()))
+                .FirstOrDefault(entry => entry.Choice != null);
+            Nav.NavigateTo("/companions");
+            if (pending.Profile == null || pending.Choice == null) return;
+
+            var parameters = new DialogParameters
+            {
+                [nameof(SidekickEditDialog.Tab)] = tab,
+                [nameof(SidekickEditDialog.Profile)] = pending.Profile,
+                [nameof(SidekickEditDialog.InitialChoiceKey)] = pending.Choice.Key
+            };
+            var dialog = await DialogService.ShowAsync<SidekickEditDialog>("Edit Sidekick", parameters);
+            if (await dialog.Result is { Canceled: false }) Tabs.NotifyChanged();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(DebugLogService.Catch(ex, "NavMenu.OpenPendingChoices"), Severity.Error);
+        }
+        finally { _openingChoices = false; }
+    }
 
     protected override void OnInitialized()
     {

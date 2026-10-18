@@ -891,7 +891,8 @@ public static partial class BuildService
             // tracking rather than each save clobbering the previous list.
             var customFeatures = targetFile.LoadCustomFeatures();
 
-            targetFile.Save();
+            targetFile.Save(CharacterManager.Current.Character, document =>
+                SidekickService.SynchronizeOwnerLevels(document, CharacterManager.Current.Character.Level));
 
             if (customFeatures.Count > 0 && !targetFile.SaveCustomFeatures(customFeatures))
                 throw new InvalidOperationException("Character save completed, but custom feature tracking could not be restored.");
@@ -921,6 +922,7 @@ public static partial class BuildService
     public static void ResnapTab(CharacterTab tab)
     {
         if (tab.Character == null) return;
+        CompanionSelectionDefaults.Apply();
         tab.Snapshot             = CharacterSnapshot.From(tab.Character);
         tab.ProgressionSnapshots = SnapshotProgressionManagers();
     }
@@ -939,6 +941,7 @@ public static partial class BuildService
         ClearStaleSelectedAbilityScoreElements(invalidated);
         if (invalidated.Count > countBefore || duplicateCount > 0)
             CharacterManager.Current.ReprocessCharacter();
+        CompanionSelectionDefaults.Apply();
     }
 
     // ── Snapshot helpers (shared with Start.razor) ───────────────────────────

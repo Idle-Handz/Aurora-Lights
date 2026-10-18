@@ -2,7 +2,7 @@
 @using Builder.Presentation.Services.Data
 @inject IDialogService DialogService
 
-<MudDialog Class="se-dialog">
+<MudDialog Class="picker-dialog se-dialog" Style="--picker-initial-width: 700px;">
     <TitleContent>
         <MudText Typo="Typo.h6" Style="font-size: 15px; font-weight: 600;">Starting Equipment</MudText>
     </TitleContent>
@@ -290,6 +290,10 @@
             <MudText Color="Color.Warning" Style="font-size: 12px; margin-right: auto; padding-left: 8px;">
                 Click the highlighted items to make your choices.
             </MudText>
+        }
+        else
+        {
+            <span class="picker-resize-hint">Drag the bottom-right corner to resize</span>
         }
         <MudButton OnClick="Cancel" Variant="Variant.Text">Cancel</MudButton>
         <MudTooltip Text="@(HasUnresolved ? "Finish selecting highlighted items first." : "")" Placement="Placement.Top">

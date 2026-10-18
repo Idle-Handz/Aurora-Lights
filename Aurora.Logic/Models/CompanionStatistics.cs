@@ -5,6 +5,8 @@
 // Assembly location: C:\Program Files (x86)\Aurora\Aurora Character Builder\Aurora Builder.exe
 
 using Builder.Core;
+using System.Collections.Generic;
+using System.Linq;
 using Builder.Data.Strings;
 using Builder.Presentation.Services.Calculator;
 
@@ -27,6 +29,8 @@ public class CompanionStatistics : ObservableObject
   private int _damageBonus;
 
   public CompanionStatistics(Companion companion) => this._companion = companion;
+
+  public IReadOnlyDictionary<string, int> CalculatedValues { get; private set; } = new Dictionary<string, int>();
 
   public int Initiative
   {
@@ -96,6 +100,7 @@ public class CompanionStatistics : ObservableObject
 
   public void Reset()
   {
+    CalculatedValues = new Dictionary<string, int>();
     this.Initiative = 0;
     this.ArmorClass = 0;
     this.Proficiency = 0;
@@ -109,8 +114,10 @@ public class CompanionStatistics : ObservableObject
 
   public void Update(StatisticValuesGroupCollection statistics)
   {
+    CalculatedValues = statistics.ToDictionary(g => g.GroupName, g => g.Sum());
     this.Initiative = this._companion.Abilities.Dexterity.Modifier;
-    this.Proficiency = this._companion.Element.Proficiency;
+    this.Proficiency = statistics.ContainsGroup("companion:proficiency")
+      ? statistics.GetValue("companion:proficiency") : this._companion.Element.Proficiency;
     this.Initiative += statistics.GetValue("companion:initiative");
     this.Initiative += statistics.GetValue("companion:initiative:misc");
     this.ArmorClass = statistics.GetValue("companion:ac");

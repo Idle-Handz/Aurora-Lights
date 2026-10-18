@@ -91,6 +91,41 @@ using var library = context.Render<CharacterLibraryShell>(p => p
 File.WriteAllText(Path.Combine(AppContext.BaseDirectory, "characters.html"), library.Markup);
 
 using var dialogs = context.Render<MudDialogProvider>();
+using var creature = context.Render<CreatureManagementCard>(p => p.Add(c => c.Model, new CreatureManagementModel
+{
+    PortraitSource = "data:image/png;base64," + Convert.ToBase64String(File.ReadAllBytes("Aurora.App/wwwroot/brand/aurora-appicon.png")),
+    Notes = "Likes shiny coins. Remember to bring a spare repair kit.",
+    PendingChoices = [new("asi:4:0", "Level 4 ability improvement", "Ability improvements"), new("spell:0", "Known spell 1", "Known spells")],
+    Id = "sidekick-fixture", Name = "Rook, the party's loyal traveling companion", Subtitle = "Level 18 · Warrior sidekick",
+    MaximumHp = 75, CurrentHp = 43, TemporaryHp = 8, ArmorClass = "17", HitDice = 18, HitDiceUsed = 4,
+    Conditions = ["Poisoned", "Frightened"], AvailableConditions = ["Blinded", "Poisoned", "Frightened", "Prone"],
+    Slots = [new(1, 4, 2), new(2, 3, 0), new(3, 2, 2)],
+    Resources = [new("second-wind", "Second Wind", 1, 0, "Short or long rest", false, false), new("indomitable", "Indomitable", 2, 1, "Long rest", false, false)],
+    Details = [new("Features", string.Join("\n\n", Enumerable.Repeat("A custom feature with enough detail to check reading and wrapping.", 8)), true)]
+}));
+File.WriteAllText(Path.Combine(AppContext.BaseDirectory, "creature.html"), creature.Markup);
 await dialogs.InvokeAsync(async () => await context.Services.GetRequiredService<IDialogService>()
     .ShowAsync<PickerLayoutFixture>("Divine Domain", new DialogOptions { MaxWidth = MaxWidth.Large, FullWidth = true }));
 File.WriteAllText(Path.Combine(AppContext.BaseDirectory, "picker.html"), dialogs.Markup);
+
+using var sidekickChoices = context.Render<SidekickChoicesPanel>(p => p.Add(c => c.Model, new SidekickChoicesModel
+{
+    BaseFields = new[] { "Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma" }
+        .Select(a => new SidekickBaseField("base:" + a.ToLowerInvariant(), "Base " + a, "14")).ToArray(),
+    PendingChoices = [new("asi:4:0", "Level 4 ability improvement", "Ability improvements"), new("spell:0", "Known spell 1", "Known spells")],
+    HitPoints = new()
+    {
+        BaseLevel = 1, Method = "Average", DieSize = 8,
+        Help = "Each new level adds 1d8 + Constitution (minimum 1 HP). Average uses 5 before Constitution.",
+        Gains = [new(2, "Average", null, "5 +2 Con = +7 HP"), new(3, "Roll", 6, "6 +2 Con = +8 HP")]
+    },
+    Rows = Enumerable.Range(0, 4).Select(i => new SidekickChoiceRow($"asi:{(i < 2 ? 4 : 8)}:{i % 2}",
+        $"Level {(i < 2 ? 4 : 8)}: +1 ability ({i % 2 + 1}/2)", i == 0 ? "" : "Intelligence",
+        new[] { "", "Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma" }.Select(a => new SidekickChoiceOption(a, a.Length == 0 ? "Choose…" : a)).ToArray(), "Ability improvements"))
+        .Append(new("save", "Saving-throw proficiency", "Wisdom", [new("Wisdom", "Wisdom"), new("Intelligence", "Intelligence"), new("Charisma", "Charisma")], "Proficiencies"))
+        .Append(new("skill:0", "Skill proficiency 1", "Arcana", [new("Arcana", "Arcana"), new("History", "History")], "Proficiencies")).ToArray(),
+    Spells = [new("cantrip:0", "Cantrip 1", "Ray of Frost", "Evocation cantrip · Player's Handbook", true),
+        new("spell:0", "Known spell 1", "Not chosen", "", false)],
+    Summary = "AC 13 · HP 24 · Initiative +2 · Proficiency 3 · Spell attack +7 · Spell save DC 15"
+}));
+File.WriteAllText(Path.Combine(AppContext.BaseDirectory, "sidekick-choices.html"), sidekickChoices.Markup);

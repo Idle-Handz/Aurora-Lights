@@ -588,7 +588,7 @@ public static class EquipmentService
     /// </summary>
     public static IReadOnlyList<string> GetCustomFeatureCategories()
     {
-        var cats = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
+        var cats = new SortedSet<string>(StringComparer.OrdinalIgnoreCase) { "Sidekicks" };
         foreach (var e in DataManager.Current.ElementsCollection)
         {
             var cat = GetCustomFeatureCategory(e);
@@ -603,6 +603,7 @@ public static class EquipmentService
     /// <summary>Returns the custom-feature category for an element, or null if it isn't one.</summary>
     private static string? GetCustomFeatureCategory(Builder.Data.ElementBase e)
     {
+        if (SidekickService.IsSidekickContent(e)) return "Sidekicks";
         if (e is Builder.Data.Elements.CompanionElement) return "Companions";
         if (!ItemTypes.Contains(e.Type)) return null;
         var name = e.Name ?? "";
@@ -626,6 +627,9 @@ public static class EquipmentService
     public static IReadOnlyList<ItemSearchResult> SearchCustomFeatures(
         string category, string query, IReadOnlySet<string>? ownedElementIds = null)
     {
+        if (string.Equals(category, "Sidekicks", StringComparison.OrdinalIgnoreCase))
+            return SidekickService.SearchTemplates(query);
+
         // Build this category's spell proxies if they are not in the catalog yet. One category is
         // 2,136 items against 79,032 for every category at once, and it happens once per session.
         SpellProxyCatalog.EnsureCategory(category);
