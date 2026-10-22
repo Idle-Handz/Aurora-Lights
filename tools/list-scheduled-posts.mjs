@@ -88,7 +88,7 @@ async function main() {
   }
 
   for (const post of posts.sort((left, right) => Date.parse(left.dueAt) - Date.parse(right.dueAt))) {
-    console.log(`--- ${post.channelService} | ${formatPacificTime(post.dueAt)} | ${post.text.length} chars`);
+    console.log(`id=${post.id} service=${post.channelService} due=${formatPacificTime(post.dueAt)} chars=${post.text.length}`);
     console.log(post.text);
     console.log();
   }
