@@ -66,11 +66,26 @@ on:
         required: false
         type: boolean
         default: false
+      buffer_schedule:
+        description: Schedule the supplied X and Threads posts in Buffer.
+        required: false
+        type: boolean
+        default: false
+      buffer_posts_json:
+        description: JSON array with one X post and one Threads post.
+        required: false
+        type: string
+        default: '[]'
+      buffer_due_at_utc:
+        description: UTC time in ISO 8601 format, for example 2026-10-23T17:00:00.000Z.
+        required: false
+        type: string
+        default: ''
   workflow_call:
 
 jobs:
   test:
-    if: ${{ !inputs.buffer_api_check }}
+    if: ${{ !inputs.buffer_api_check && !inputs.buffer_schedule }}
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -162,3 +177,24 @@ jobs:
           BUFFER_X_CHANNEL_ID: ${{ vars.BUFFER_X_CHANNEL_ID }}
           BUFFER_THREADS_CHANNEL_ID: ${{ vars.BUFFER_THREADS_CHANNEL_ID }}
         run: node tools/verify-buffer-channels.mjs
+
+  buffer-schedule:
+    if: ${{ inputs.buffer_schedule }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Schedule X and Threads posts in Buffer
+        env:
+          BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
+          BUFFER_X_CHANNEL_ID: ${{ vars.BUFFER_X_CHANNEL_ID }}
+          BUFFER_THREADS_CHANNEL_ID: ${{ vars.BUFFER_THREADS_CHANNEL_ID }}
+          BUFFER_POSTS_JSON: ${{ inputs.buffer_posts_json }}
+          BUFFER_DUE_AT_UTC: ${{ inputs.buffer_due_at_utc }}
+        run: node tools/schedule-buffer-posts.mjs
