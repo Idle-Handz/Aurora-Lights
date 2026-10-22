@@ -26,7 +26,13 @@ on:
       - 'tools/legacy-restoration/**'
       - 'tools/build-release-notes.mjs'
       - 'tools/verify-buffer-channels.mjs'
+      - 'tools/verify-buffer-channels.test.mjs'
       - 'tools/schedule-buffer-posts.mjs'
+      - 'tools/schedule-buffer-posts.test.mjs'
+      - 'tools/list-scheduled-posts.mjs'
+      - 'tools/buffer-edit-post.mjs'
+      - 'tools/buffer-schema.mjs'
+      - 'tools/create-buffer-promo-drafts.mjs'
       - 'package.json'
       - 'package-lock.json'
       - 'playwright.config.ts'
@@ -57,7 +63,13 @@ on:
       - 'tools/legacy-restoration/**'
       - 'tools/build-release-notes.mjs'
       - 'tools/verify-buffer-channels.mjs'
+      - 'tools/verify-buffer-channels.test.mjs'
       - 'tools/schedule-buffer-posts.mjs'
+      - 'tools/schedule-buffer-posts.test.mjs'
+      - 'tools/list-scheduled-posts.mjs'
+      - 'tools/buffer-edit-post.mjs'
+      - 'tools/buffer-schema.mjs'
+      - 'tools/create-buffer-promo-drafts.mjs'
       - 'package.json'
       - 'package-lock.json'
       - 'playwright.config.ts'
@@ -105,7 +117,7 @@ on:
 
 jobs:
   test:
-    if: ${{ !inputs.buffer_api_check && !inputs.buffer_schedule }}
+    if: ${{ !inputs.buffer_api_check && !inputs.buffer_schedule && !inputs.buffer_list && inputs.buffer_edit_post_id == '' }}
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
