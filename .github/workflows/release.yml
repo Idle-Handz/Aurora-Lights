@@ -107,6 +107,25 @@ jobs:
           echo "Suggested next release: $SUGGESTED_TAG"
           echo "Publishing: $RESOLVED_TAG (semver=$RAW assembly=$ASM)"
 
+      - name: Check out release source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Require release-note fragments before building
+        env:
+          PREVIOUS_TAG: ${{ steps.parse.outputs.latest }}
+        run: |
+          node tools/build-release-notes.mjs \
+            --from "$PREVIOUS_TAG" \
+            --to "$GITHUB_SHA" \
+            --require-fragments >> "$GITHUB_STEP_SUMMARY"
+
   test:
     uses: ./.github/workflows/test.yml
 
@@ -578,12 +597,9 @@ jobs:
           node tools/build-release-notes.mjs \
             --from "$PREVIOUS_TAG" \
             --to "$GITHUB_SHA" \
+            --require-fragments \
             --output release-notes.md
-          if [[ -s release-notes.md ]]; then
-            cat release-notes.md >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "No release-note fragments were added since $PREVIOUS_TAG; GitHub-generated notes will be used."
-          fi
+          cat release-notes.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -601,14 +617,10 @@ jobs:
           # Glob expansion handles both first-release (no delta) and subsequent (full + delta).
           VELO_X64=$(ls artifacts/velopack-win-x64/ | xargs -I{} echo "artifacts/velopack-win-x64/{}")
           VELO_ARM64=$(ls artifacts/velopack-win-arm64/ | xargs -I{} echo "artifacts/velopack-win-arm64/{}")
-          RELEASE_FLAGS=(--draft --generate-notes)
+          RELEASE_FLAGS=(--draft --generate-notes --notes "$(cat release-notes.md)")
           if [[ "${VERSION#v}" == *-* ]]; then
             RELEASE_FLAGS+=(--prerelease)
           fi
-          if [[ -s release-notes.md ]]; then
-            RELEASE_FLAGS+=(--notes "$(cat release-notes.md)")
-          fi
-
           gh release create "$VERSION" \
             --repo "$REPO" \
             --target "$GITHUB_SHA" \
