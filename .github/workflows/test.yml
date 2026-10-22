@@ -205,3 +205,10 @@ jobs:
           BUFFER_POSTS_JSON: ${{ inputs.buffer_posts_json }}
           BUFFER_DUE_AT_UTC: ${{ inputs.buffer_due_at_utc }}
         run: node tools/schedule-buffer-posts.mjs
+
+      - name: Show scheduled Buffer posts
+        env:
+          BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
+          BUFFER_X_CHANNEL_ID: ${{ vars.BUFFER_X_CHANNEL_ID }}
+          BUFFER_THREADS_CHANNEL_ID: ${{ vars.BUFFER_THREADS_CHANNEL_ID }}
+        run: node tools/list-scheduled-posts.mjs
