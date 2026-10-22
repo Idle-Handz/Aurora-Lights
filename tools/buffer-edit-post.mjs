@@ -2,6 +2,12 @@ import { pathToFileURL } from 'node:url';
 
 const BUFFER_API_URL = 'https://api.buffer.com';
 
+function requiredEnvironment(name) {
+  const value = process.env[name];
+  if (!value || !value.trim()) throw new Error(`${name} is missing.`);
+  return value;
+}
+
 async function bufferRequest(apiKey, query) {
   const response = await fetch(BUFFER_API_URL, {
     method: 'POST',
@@ -18,9 +24,9 @@ async function bufferRequest(apiKey, query) {
 }
 
 async function main() {
-  const apiKey = process.env.BUFFER_API_KEY;
-  const postId = process.argv[2];
-  const text = process.argv[3];
+  const apiKey = requiredEnvironment('BUFFER_API_KEY');
+  const postId = requiredEnvironment('BUFFER_EDIT_POST_ID');
+  const text = requiredEnvironment('BUFFER_EDIT_POST_TEXT');
 
   const query = `mutation EditPost {
     editPost(input: { id: ${JSON.stringify(postId)}, text: ${JSON.stringify(text)} }) {
@@ -29,7 +35,12 @@ async function main() {
     }
   }`;
   const data = await bufferRequest(apiKey, query);
-  console.log(JSON.stringify(data, null, 2));
+  const result = data?.editPost;
+  if (result?.message) throw new Error(result.message);
+  if (!result?.post?.id) throw new Error('Buffer did not confirm the edit.');
+  if (result.post.text !== text) throw new Error('Buffer stored a different text than requested.');
+
+  console.log(`Edited post ${result.post.id} (${result.post.status}, due ${result.post.dueAt}, ${result.post.text.length} chars).`);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

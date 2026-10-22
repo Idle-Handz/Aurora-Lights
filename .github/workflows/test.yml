@@ -211,7 +211,9 @@ jobs:
       - name: Edit scheduled Buffer post
         env:
           BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
-        run: node tools/buffer-edit-post.mjs ${{ inputs.buffer_edit_post_id }} ${{ inputs.buffer_edit_post_text }}
+          BUFFER_EDIT_POST_ID: ${{ inputs.buffer_edit_post_id }}
+          BUFFER_EDIT_POST_TEXT: ${{ inputs.buffer_edit_post_text }}
+        run: node tools/buffer-edit-post.mjs
   buffer-schedule:
     if: ${{ inputs.buffer_schedule }}
     runs-on: ubuntu-latest
