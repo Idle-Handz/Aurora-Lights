@@ -85,6 +85,11 @@ on:
         required: false
         type: string
         default: ''
+      buffer_schema_types:
+        description: Comma-separated GraphQL type names to print from the Buffer schema.
+        required: false
+        type: string
+        default: ''
   workflow_call:
 
 jobs:
@@ -185,6 +190,22 @@ jobs:
           BUFFER_THREADS_CHANNEL_ID: ${{ vars.BUFFER_THREADS_CHANNEL_ID }}
         run: node tools/verify-buffer-channels.mjs
 
+  buffer-schema:
+    if: ${{ inputs.buffer_schema_types != '' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Print Buffer schema types
+        env:
+          BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
+        run: node tools/buffer-schema.mjs ${{ inputs.buffer_schema_types }}
   buffer-schedule:
     if: ${{ inputs.buffer_schedule }}
     runs-on: ubuntu-latest
