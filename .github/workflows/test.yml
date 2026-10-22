@@ -85,11 +85,17 @@ on:
         required: false
         type: string
         default: ''
-      buffer_schema_types:
-        description: Comma-separated GraphQL type names to print from the Buffer schema.
+      buffer_edit_post_id:
+        description: Buffer post id to edit with new text.
         required: false
         type: string
         default: ''
+      buffer_edit_post_text:
+        description: Replacement text for the post being edited.
+        required: false
+        type: string
+        default: ''
+
   workflow_call:
 
 jobs:
@@ -190,8 +196,8 @@ jobs:
           BUFFER_THREADS_CHANNEL_ID: ${{ vars.BUFFER_THREADS_CHANNEL_ID }}
         run: node tools/verify-buffer-channels.mjs
 
-  buffer-schema:
-    if: ${{ inputs.buffer_schema_types != '' }}
+  buffer-edit:
+    if: ${{ inputs.buffer_edit_post_id != '' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -202,10 +208,10 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Print Buffer schema types
+      - name: Edit scheduled Buffer post
         env:
           BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
-        run: node tools/buffer-schema.mjs ${{ inputs.buffer_schema_types }}
+        run: node tools/buffer-edit-post.mjs ${{ inputs.buffer_edit_post_id }} ${{ inputs.buffer_edit_post_text }}
   buffer-schedule:
     if: ${{ inputs.buffer_schedule }}
     runs-on: ubuntu-latest
