@@ -70,6 +70,11 @@ on:
         required: false
         type: boolean
         default: false
+      buffer_list:
+        description: List scheduled Buffer posts without changing anything.
+        required: false
+        type: boolean
+        default: false
       buffer_schedule:
         description: Schedule the supplied X and Threads posts in Buffer.
         required: false
@@ -214,6 +219,25 @@ jobs:
           BUFFER_EDIT_POST_ID: ${{ inputs.buffer_edit_post_id }}
           BUFFER_EDIT_POST_TEXT: ${{ inputs.buffer_edit_post_text }}
         run: node tools/buffer-edit-post.mjs
+  buffer-list:
+    if: ${{ inputs.buffer_list }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: List scheduled Buffer posts
+        env:
+          BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
+          BUFFER_X_CHANNEL_ID: ${{ vars.BUFFER_X_CHANNEL_ID }}
+          BUFFER_THREADS_CHANNEL_ID: ${{ vars.BUFFER_THREADS_CHANNEL_ID }}
+        run: node tools/list-scheduled-posts.mjs
+
   buffer-schedule:
     if: ${{ inputs.buffer_schedule }}
     runs-on: ubuntu-latest
