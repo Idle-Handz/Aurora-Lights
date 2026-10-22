@@ -1,0 +1,1 @@
+Build pickers now check prerequisites against the current character and choice context, including requirements with repeated or overlapping identifiers, and clear selections whose prerequisites are no longer met.
