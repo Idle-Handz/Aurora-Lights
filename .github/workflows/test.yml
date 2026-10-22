@@ -25,6 +25,14 @@ on:
       - 'tools/WpfAssemblyApi/**'
       - 'tools/legacy-restoration/**'
       - 'tools/build-release-notes.mjs'
+      - 'tools/verify-buffer-channels.mjs'
+      - 'tools/verify-buffer-channels.test.mjs'
+      - 'tools/schedule-buffer-posts.mjs'
+      - 'tools/schedule-buffer-posts.test.mjs'
+      - 'tools/list-scheduled-posts.mjs'
+      - 'tools/buffer-edit-post.mjs'
+      - 'tools/buffer-schema.mjs'
+      - 'tools/create-buffer-promo-drafts.mjs'
       - 'package.json'
       - 'package-lock.json'
       - 'playwright.config.ts'
@@ -54,16 +62,62 @@ on:
       - 'tools/WpfAssemblyApi/**'
       - 'tools/legacy-restoration/**'
       - 'tools/build-release-notes.mjs'
+      - 'tools/verify-buffer-channels.mjs'
+      - 'tools/verify-buffer-channels.test.mjs'
+      - 'tools/schedule-buffer-posts.mjs'
+      - 'tools/schedule-buffer-posts.test.mjs'
+      - 'tools/list-scheduled-posts.mjs'
+      - 'tools/buffer-edit-post.mjs'
+      - 'tools/buffer-schema.mjs'
+      - 'tools/create-buffer-promo-drafts.mjs'
       - 'package.json'
       - 'package-lock.json'
       - 'playwright.config.ts'
       - 'playwright.ui.config.ts'
       - '.github/workflows/test.yml'
   workflow_dispatch:
+    inputs:
+      buffer_api_check:
+        description: Run a read-only Buffer API channel check.
+        required: false
+        type: boolean
+        default: false
+      buffer_list:
+        description: List scheduled Buffer posts without changing anything.
+        required: false
+        type: boolean
+        default: false
+      buffer_schedule:
+        description: Schedule the supplied X and Threads posts in Buffer.
+        required: false
+        type: boolean
+        default: false
+      buffer_posts_json:
+        description: JSON array with one X post and one Threads post.
+        required: false
+        type: string
+        default: '[]'
+      buffer_due_at_utc:
+        description: UTC time in ISO 8601 format, for example 2026-10-23T17:00:00.000Z.
+        required: false
+        type: string
+        default: ''
+      buffer_edit_post_id:
+        description: Buffer post id to edit with new text.
+        required: false
+        type: string
+        default: ''
+      buffer_edit_post_text:
+        description: Replacement text for the post being edited.
+        required: false
+        type: string
+        default: ''
+
   workflow_call:
 
 jobs:
   test:
+    if: ${{ !inputs.buffer_api_check && !inputs.buffer_schedule && !inputs.buffer_list && inputs.buffer_edit_post_id == '' }}
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -114,6 +168,9 @@ jobs:
       - name: Test release-note compiler
         run: npm run test:release-notes
 
+      - name: Test Buffer scheduling helpers
+        run: npm run test:buffer
+
       - name: Install browser test dependencies
         run: npm ci
 
@@ -136,3 +193,87 @@ jobs:
             playwright-report/
           if-no-files-found: ignore
           retention-days: 7
+
+  buffer-api-check:
+    if: ${{ inputs.buffer_api_check }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify Buffer key and channel mappings without logging IDs
+        env:
+          BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
+          BUFFER_X_CHANNEL_ID: ${{ vars.BUFFER_X_CHANNEL_ID }}
+          BUFFER_THREADS_CHANNEL_ID: ${{ vars.BUFFER_THREADS_CHANNEL_ID }}
+        run: node tools/verify-buffer-channels.mjs
+
+  buffer-edit:
+    if: ${{ inputs.buffer_edit_post_id != '' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Edit scheduled Buffer post
+        env:
+          BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
+          BUFFER_EDIT_POST_ID: ${{ inputs.buffer_edit_post_id }}
+          BUFFER_EDIT_POST_TEXT: ${{ inputs.buffer_edit_post_text }}
+        run: node tools/buffer-edit-post.mjs
+  buffer-list:
+    if: ${{ inputs.buffer_list }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: List scheduled Buffer posts
+        env:
+          BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
+          BUFFER_X_CHANNEL_ID: ${{ vars.BUFFER_X_CHANNEL_ID }}
+          BUFFER_THREADS_CHANNEL_ID: ${{ vars.BUFFER_THREADS_CHANNEL_ID }}
+        run: node tools/list-scheduled-posts.mjs
+
+  buffer-schedule:
+    if: ${{ inputs.buffer_schedule }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Schedule X and Threads posts in Buffer
+        env:
+          BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
+          BUFFER_X_CHANNEL_ID: ${{ vars.BUFFER_X_CHANNEL_ID }}
+          BUFFER_THREADS_CHANNEL_ID: ${{ vars.BUFFER_THREADS_CHANNEL_ID }}
+          BUFFER_POSTS_JSON: ${{ inputs.buffer_posts_json }}
+          BUFFER_DUE_AT_UTC: ${{ inputs.buffer_due_at_utc }}
+        run: node tools/schedule-buffer-posts.mjs
+
+      - name: Show scheduled Buffer posts
+        env:
+          BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
+          BUFFER_X_CHANNEL_ID: ${{ vars.BUFFER_X_CHANNEL_ID }}
+          BUFFER_THREADS_CHANNEL_ID: ${{ vars.BUFFER_THREADS_CHANNEL_ID }}
+        run: node tools/list-scheduled-posts.mjs
