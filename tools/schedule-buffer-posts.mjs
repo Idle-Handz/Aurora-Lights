@@ -147,11 +147,14 @@ async function createScheduledPost(apiKey, channelId, service, text, dueAt) {
   }
 }
 
-function formatPacificTime(dueAt) {
+export function formatPacificTime(dueAt) {
   return new Intl.DateTimeFormat('en-US', {
     timeZone: 'America/Los_Angeles',
-    dateStyle: 'medium',
-    timeStyle: 'short',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
     timeZoneName: 'short',
   }).format(new Date(dueAt));
 }
@@ -183,12 +186,17 @@ async function main() {
     scheduledPosts.push(...await getScheduledPosts(apiKey, organizationId, channelIds));
   }
 
+  const alreadyScheduled = new Set();
   for (const [service, channelId] of targetChannels) {
-    const hasConflict = scheduledPosts.some((post) => post.channelId === channelId && Date.parse(post.dueAt) === dueTime);
-    if (hasConflict) throw new Error(`A post is already scheduled on ${service} for ${formatPacificTime(dueAt)}.`);
+    const match = scheduledPosts.find((post) => post.channelId === channelId && Date.parse(post.dueAt) === dueTime);
+    if (match) {
+      alreadyScheduled.add(service);
+      console.log(`${service === 'x' ? 'X' : 'Threads'} is already scheduled for ${formatPacificTime(dueAt)}; leaving it in place.`);
+    }
   }
 
   for (const [service, channelId] of targetChannels) {
+    if (alreadyScheduled.has(service)) continue;
     await createScheduledPost(apiKey, channelId, service, posts.get(service), dueAt);
     console.log(`Scheduled ${service === 'x' ? 'X' : 'Threads'} for ${formatPacificTime(dueAt)}.`);
   }

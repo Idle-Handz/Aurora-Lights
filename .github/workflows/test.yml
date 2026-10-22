@@ -25,6 +25,8 @@ on:
       - 'tools/WpfAssemblyApi/**'
       - 'tools/legacy-restoration/**'
       - 'tools/build-release-notes.mjs'
+      - 'tools/verify-buffer-channels.mjs'
+      - 'tools/schedule-buffer-posts.mjs'
       - 'package.json'
       - 'package-lock.json'
       - 'playwright.config.ts'
@@ -54,6 +56,8 @@ on:
       - 'tools/WpfAssemblyApi/**'
       - 'tools/legacy-restoration/**'
       - 'tools/build-release-notes.mjs'
+      - 'tools/verify-buffer-channels.mjs'
+      - 'tools/schedule-buffer-posts.mjs'
       - 'package.json'
       - 'package-lock.json'
       - 'playwright.config.ts'
@@ -135,6 +139,9 @@ jobs:
 
       - name: Test release-note compiler
         run: npm run test:release-notes
+
+      - name: Test Buffer scheduling helpers
+        run: npm run test:buffer
 
       - name: Install browser test dependencies
         run: npm ci
