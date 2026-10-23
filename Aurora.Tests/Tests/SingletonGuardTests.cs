@@ -13,6 +13,37 @@ namespace Aurora.Tests.Tests;
 /// </summary>
 public sealed class SingletonGuardTests
 {
+    [Fact]
+    public void TryEnterActiveRejectsUnclaimedAndDifferentItemsWithoutChangingActive()
+    {
+        var guard = new SingletonGuard<object>();
+        var item = new object();
+        guard.TryEnterActive(item).Should().BeNull();
+        guard.Claim(item);
+        guard.TryEnterActive(new object()).Should().BeNull();
+        guard.Active.Should().BeSameAs(item);
+        using var scope = guard.TryEnterActive(item);
+        scope.Should().NotBeNull("a rejected attempt must release the lock");
+    }
+
+    [Fact]
+    public async Task TryEnterActiveReturnsImmediatelyWhileBusyAndReleasesItsScope()
+    {
+        var guard = new SingletonGuard<object>();
+        var item = new object();
+        guard.Claim(item);
+        using (await guard.EnterAsync(item, (_, _) => Task.CompletedTask))
+            guard.TryEnterActive(item).Should().BeNull();
+        using (var scope = guard.TryEnterActive(item))
+        {
+            scope.Should().NotBeNull();
+            guard.TryEnterActive(item).Should().BeNull("the nonblocking scope holds the same engine guard");
+        }
+        using var next = guard.TryEnterActive(item);
+        next.Should().NotBeNull();
+        guard.Active.Should().BeSameAs(item);
+    }
+
     // ── Claim / Invalidate ────────────────────────────────────────────────────
 
     [Fact]

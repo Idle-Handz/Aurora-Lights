@@ -125,6 +125,34 @@ public sealed class ContentDatabaseService
 
     // ── Public API ───────────────────────────────────────────────────────────
 
+    /// <summary>Android has one app-owned writer; reclaim leftovers even when startup downloads are off.</summary>
+    public void CleanUpInterruptedImports()
+    {
+        if (!OperatingSystem.IsAndroid() || !Directory.Exists(ContentDirectory)) return;
+        try
+        {
+            using var workspace = new ContentImportWorkspace(ContentDirectory);
+            CleanCandidates(workspace);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // A refresh may already own the workspace. Cleanup must not prevent cached startup.
+            DebugLogService.Instance.Warn("Temporary content cleanup deferred.", ex.Message);
+        }
+    }
+
+    private static void CleanCandidates(ContentImportWorkspace workspace)
+    {
+        var removed = workspace.CleanCandidates((path, ex) =>
+            DebugLogService.Instance.Warn($"Temporary content cleanup skipped {path}.", ex.Message));
+        if (removed.Files > 0)
+            DebugLogService.Instance.Info($"Removed {removed.Files} interrupted content files ({removed.Bytes} bytes).");
+        var staging = workspace.CleanPreparationDirectories((path, ex) =>
+            DebugLogService.Instance.Warn($"Temporary content preparation cleanup skipped {path}.", ex.Message));
+        if (staging.Directories > 0)
+            DebugLogService.Instance.Info($"Removed {staging.Directories} interrupted content preparation folders ({staging.Bytes} bytes).");
+    }
+
     public ContentDatabaseMetadata? GetMetadata() =>
         TryRead(
             "read database metadata",
@@ -241,6 +269,8 @@ public sealed class ContentDatabaseService
             var result = await Task.Run(async () =>
             {
                 using var importTrace = ContentLoadTrace.Begin("database.import-worker");
+                using var workspace = new ContentImportWorkspace(contentDirectory);
+                if (OperatingSystem.IsAndroid()) CleanCandidates(workspace);
                 return await ImportAsync(contentDirectory, dbPath, cancellationToken);
             }, cancellationToken);
 

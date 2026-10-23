@@ -153,7 +153,89 @@ public sealed class BuildPendingSnapshotEditsTests
                 .Element("background-trinket")!.Value.Should().BeEmpty();
         });
 
-    private static void SetPendingEdits(CharacterSnapshot snap)
+    [Fact]
+    public Task CharacterExportIncludesPendingDraftAndPreservesOriginalAndDirtyState() =>
+        WithCharacter(async (_, tab, directory) =>
+        {
+            (await BuildService.AddCustomFeatureAsync(tab, ExtraId)).Should().BeNull();
+            var original = await File.ReadAllBytesAsync(tab.File.FilePath);
+            SetPendingEdits(tab.Snapshot!);
+            tab.IsDirty = true;
+            string destination = Path.Combine(directory, "export.dnd5e");
+            await BuildService.ExportCharacterAsync(tab, destination);
+            var input = XDocument.Load(destination).Root!.Element("build")!.Element("input")!;
+            input.Element("name")!.Value.Should().Be("Pending name");
+            input.Element("backstory")!.Value.Should().Be("Pending backstory\nSecond line");
+            input.Element("currency")!.Element("gold")!.Value.Should().Be("14");
+            XDocument.Load(destination).Root!.Element("custom-features")!.Elements("feature")
+                .Select(f => (string?)f.Attribute("id")).Should().Contain(ExtraId);
+            (await File.ReadAllBytesAsync(tab.File.FilePath)).Should().Equal(original);
+            tab.IsDirty.Should().BeTrue();
+        });
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public Task SheetExportAndPreviewReadCurrentDraftWithoutSavingOriginal(bool preview) =>
+        WithCharacter(async (manager, tab, directory) =>
+        {
+            var original = await File.ReadAllBytesAsync(tab.File.FilePath);
+            SetPendingEdits(tab.Snapshot!);
+            tab.IsDirty = true;
+            bool called = false;
+            var generator = new ExportProbe((file, isPreview) =>
+            {
+                called = true;
+                isPreview.Should().Be(preview);
+                manager.Character.Name.Should().Be("Pending name");
+                manager.Character.BackgroundStory.Content.Should().Be("Pending backstory\nSecond line");
+                return new FileInfo(file);
+            });
+            await BuildService.ExportSheetAsync(tab, Path.Combine(directory, "sheet.pdf"), preview, generator);
+            called.Should().BeTrue();
+            (await File.ReadAllBytesAsync(tab.File.FilePath)).Should().Equal(original);
+            tab.IsDirty.Should().BeTrue();
+        });
+
+    [Fact]
+    public Task ExportWaitsForFileWritesAndKeepsTheCapturedTabAfterSwitching() =>
+        WithCharacter(async (_, tab, directory) =>
+        {
+            string secondPath = Path.Combine(directory, "second.dnd5e");
+            File.Copy(tab.File.FilePath, secondPath);
+            var second = new CharacterTab(new CharacterFile(secondPath));
+            SetPendingEdits(tab.Snapshot!);
+            using (await CharacterContext.EnterAsync(second)) { }
+            await tab.FileSaveSemaphore.WaitAsync();
+            var export = BuildService.CaptureCharacterExportAsync(tab);
+            try { export.IsCompleted.Should().BeFalse(); }
+            finally { tab.FileSaveSemaphore.Release(); }
+            (await export).SelectSingleNode("/character/build/input/name")!.InnerText.Should().Be("Pending name");
+            XDocument.Load(secondPath).Root!.Element("build")!.Element("input")!.Element("name")!.Value.Should().Be("Original name");
+        });
+
+    [Fact]
+    public Task FailedExportReleasesLocksAndRetainsUnsavedDraft() =>
+        WithCharacter(async (_, tab, directory) =>
+        {
+            SetPendingEdits(tab.Snapshot!);
+            tab.IsDirty = true;
+            Func<Task> fail = () => BuildService.ExportSheetAsync(tab, Path.Combine(directory, "bad.pdf"), false,
+                new ExportProbe((_, _) => throw new IOException("Export failed")));
+            await fail.Should().ThrowAsync<IOException>();
+            tab.IsDirty.Should().BeTrue();
+            var export = await BuildService.CaptureCharacterExportAsync(tab);
+            export.SelectSingleNode("/character/build/input/name")!.InnerText.Should().Be("Pending name");
+            Func<Task> overwrite = () => BuildService.ExportCharacterAsync(tab, tab.File.FilePath);
+            await overwrite.Should().ThrowAsync<InvalidOperationException>();
+        });
+
+    private sealed class ExportProbe(Func<string, bool, FileInfo> generate) : Builder.Presentation.Interfaces.ICharacterSheetGenerator
+    {
+        public FileInfo GenerateNewSheet(string outputPath, bool isPreview) => generate(outputPath, isPreview);
+    }
+
+    internal static void SetPendingEdits(CharacterSnapshot snap)
     {
         snap.Name = "Pending name";
         snap.PlayerName = "Pending player";
@@ -224,7 +306,7 @@ public sealed class BuildPendingSnapshotEditsTests
         }) input.Element("currency")!.Element(pair.Key)!.Value.Should().Be(pair.Value);
     }
 
-    private static async Task WithCharacter(Func<CharacterManager, CharacterTab, string, Task> test)
+    internal static async Task WithCharacter(Func<CharacterManager, CharacterTab, string, Task> test)
     {
         TestApplicationContextInstaller.EnsureInstalled();
         DataManager.Current.InitializeDirectories();

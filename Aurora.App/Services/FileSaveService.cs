@@ -106,12 +106,27 @@ public static class FileSaveService
         // NSSavePanel is AppKit-only and has no managed binding in Mac Catalyst.
         // UIDocumentPickerViewController (folder-open mode) maps to NSOpenPanel on macOS,
         // giving the user a real Finder-style dialog. We pick a destination folder and
-        // append the suggestedFileName so the caller can write directly to the result.
+        // then ask for a file name and confirm replacement before returning a path.
         // Requires the com.apple.security.files.user-selected.read-write entitlement.
         _ = initialDirectory; // FolderPicker starts in the OS default location
         var result = await FolderPicker.Default.PickAsync(CancellationToken.None);
         if (!result.IsSuccessful) return null;
-        return Path.Combine(result.Folder.Path, suggestedFileName);
+        var page = Microsoft.Maui.Controls.Application.Current?.Windows.FirstOrDefault()?.Page
+            ?? throw new InvalidOperationException("The export dialog is unavailable until the app window opens.");
+        return await ExportDestinationSelection.ChooseAsync(result.Folder.Path, suggestedFileName,
+            (name, error) => MainThread.InvokeOnMainThreadAsync(() => page.DisplayPromptAsync(
+                "Export file", error ?? "Choose a file name.", "Save", "Cancel", initialValue: name)),
+            path => MainThread.InvokeOnMainThreadAsync(async () =>
+            {
+                string choice = await page.DisplayActionSheetAsync(
+                    $"{Path.GetFileName(path)} already exists", "Cancel", null, "Replace file", "Choose another name");
+                return choice switch
+                {
+                    "Replace file" => ExistingExportChoice.Replace,
+                    "Choose another name" => ExistingExportChoice.ChangeName,
+                    _ => ExistingExportChoice.Cancel
+                };
+            }));
     }
 #endif
 }

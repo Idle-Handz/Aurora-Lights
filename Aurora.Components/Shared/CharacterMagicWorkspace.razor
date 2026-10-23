@@ -7,12 +7,14 @@
     {
         var activeMagicSection = ActiveSection;
 
-        @* ── Spell slots: one shared pool across all caster classes (multiclass caster table),
-             always shown above the tabs. ── *@
-        @if (CombinedSlots.Count > 0)
+        @foreach (var pool in SlotPools)
         {
-            <section class="magic-slot-bar">
-                @foreach (var slotLevel in CombinedSlots)
+            <section class="magic-slot-bar" aria-label="@(pool.Label + " slots")">
+                @if (SlotPools.Count > 1 || pool.RecoversOnShortRest)
+                {
+                    <span class="magic-slot-group-label">@pool.Label@(pool.RecoversOnShortRest ? " · Short rest" : " · Long rest")</span>
+                }
+                @foreach (var slotLevel in pool.Levels)
                 {
                     var lvl = slotLevel.Level;
                     <div class="magic-slot-group">
@@ -24,10 +26,10 @@
                                 bool used = slotIndex <= slotLevel.UsedSlots;
                                 <button type="button"
                                         class="magic-slot-bubble @(used ? "used" : string.Empty)"
-                                        aria-label="@($"{Ordinal(lvl)} level spell slot {slotIndex} of {slotLevel.TotalSlots}: {(used ? "used" : "available")}")"
+                                        aria-label="@($"{(pool.RecoversOnShortRest ? pool.Label + " " : "")}{Ordinal(lvl)} level spell slot {slotIndex} of {slotLevel.TotalSlots}: {(used ? "used" : "available")}")"
                                         aria-pressed="@(used ? "true" : "false")"
                                         disabled="@(!OnToggleSlot.HasDelegate || Busy)"
-                                        @onclick="() => OnToggleSlot.InvokeAsync(new MagicSlotToggleModel(lvl, slotIndex))">
+                                        @onclick="() => OnToggleSlot.InvokeAsync(new MagicSlotToggleModel(lvl, slotIndex, pool.Id))">
                                 </button>
                             }
                             <span class="magic-slot-count">@(slotLevel.TotalSlots - slotLevel.UsedSlots)/@slotLevel.TotalSlots</span>
@@ -741,8 +743,9 @@
             || section.SpellLevels.SelectMany(level => level.Spells)
                 .Any(CanCastNow));
 
-    // Spell slots are a single shared pool across all of a character's casting classes (multiclass
-    // caster table), so aggregate every section's per-level slots into one combined bar.
+    // Older hosts can continue supplying section totals until they adopt explicit pools.
+    private IReadOnlyList<MagicSlotPoolModel> SlotPools => Model.SlotPools
+        ?? (CombinedSlots.Count > 0 ? [new("spellcasting", "Spellcasting", false, CombinedSlots)] : []);
     private IReadOnlyList<MagicSpellLevelModel> CombinedSlots =>
         Model.Sections
             .SelectMany(s => s.SpellLevels)

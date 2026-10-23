@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Builder.Presentation.Utilities;
 
 namespace Aurora.App.Services;
 
@@ -33,9 +34,7 @@ public sealed class CustomAttackReminder
 }
 
 /// <summary>
-/// Session state persisted in the character XML under a &lt;session&gt; node.
-/// WPF Aurora Builder ignores unknown nodes, so this coexists safely with
-/// the existing &lt;build&gt; data.
+/// Device-local session state persisted by SessionStore in a JSON sidecar.
 /// </summary>
 public sealed class SessionState
 {
@@ -54,8 +53,41 @@ public sealed class SessionState
     public List<string> Conditions  { get; set; } = [];
 
     // ── Spell slots ───────────────────────────────────────────────────────────
-    /// <summary>Spell slot levels 1-9 → number of slots USED (max comes from snapshot).</summary>
+    /// <summary>Regular spell slot levels 1-9 → number USED. Retained for sidecar compatibility.</summary>
     public Dictionary<int, int> SpellSlotsUsed { get; set; } = [];
+    public Dictionary<int, int> PactSpellSlotsUsed { get; set; } = [];
+    public bool SpellSlotPoolsMigrated { get; set; }
+
+    /// <summary>Old single-pool usage belongs to Pact Magic only for a Pact-only character.
+    /// For mixed casters, retain it as regular usage; the old format cannot identify its origin.</summary>
+    public void EnsureSpellSlotPools(IReadOnlyList<SpellSlotPool> pools)
+    {
+        if (SpellSlotPoolsMigrated || pools.Count == 0) return;
+        if (pools.All(pool => pool.RecoversOnShortRest))
+        {
+            foreach (var slot in SpellSlotsUsed)
+                PactSpellSlotsUsed.TryAdd(slot.Key, slot.Value);
+            SpellSlotsUsed.Clear();
+        }
+        SpellSlotPoolsMigrated = true;
+    }
+
+    private Dictionary<int, int> SlotUsage(string poolId) => poolId switch
+    {
+        SpellSlotPoolResolver.SpellcastingId => SpellSlotsUsed,
+        SpellSlotPoolResolver.PactMagicId => PactSpellSlotsUsed,
+        _ => throw new ArgumentOutOfRangeException(nameof(poolId))
+    };
+
+    public int UsedSlots(string poolId, int level, int total) =>
+        Math.Clamp(SlotUsage(poolId).GetValueOrDefault(level), 0, Math.Max(0, total));
+
+    public void ToggleSlot(string poolId, int level, int index, int total)
+    {
+        if (index < 1 || index > total) return;
+        var used = UsedSlots(poolId, level, total);
+        SlotUsage(poolId)[level] = used == index ? index - 1 : index;
+    }
 
     // ── Custom resources ──────────────────────────────────────────────────────
     public List<CustomResource> CustomResources { get; set; } = [];
@@ -71,11 +103,22 @@ public sealed class SessionState
 
     public void InitializeIfNew(int maxHp)
     {
-        if (CurrentHp < 0) CurrentHp = maxHp;
+        SetCurrentHp(CurrentHp < 0 ? maxHp : CurrentHp, maxHp);
     }
+
+    public void SetCurrentHp(int value, int maxHp) => CurrentHp = Math.Clamp(value, 0, Math.Max(0, maxHp));
+
+    public void AdjustCurrentHp(int delta, int maxHp) =>
+        CurrentHp = (int)Math.Clamp((long)CurrentHp + delta, 0, Math.Max(0, maxHp));
+
+    public void SetTemporaryHp(int value) => TempHp = Math.Max(0, value);
+
+    public void AdjustTemporaryHp(int delta) =>
+        TempHp = (int)Math.Clamp((long)TempHp + delta, 0, int.MaxValue);
 
     public void ShortRest()
     {
+        PactSpellSlotsUsed.Clear();
         DeathSaveSuccesses = 0;
         DeathSaveFailures  = 0;
         foreach (var r in CustomResources.Where(r => r.ResetOn == ResetOn.ShortRest))
@@ -89,6 +132,7 @@ public sealed class SessionState
         DeathSaveSuccesses = 0;
         DeathSaveFailures  = 0;
         SpellSlotsUsed.Clear();
+        PactSpellSlotsUsed.Clear();
         if (Exhaustion > 0) Exhaustion--;
         foreach (var r in CustomResources.Where(r => r.ResetOn is ResetOn.LongRest or ResetOn.ShortRest))
             r.Used = 0;

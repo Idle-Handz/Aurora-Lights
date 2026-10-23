@@ -9,9 +9,30 @@
 @inject PdfImportService PdfImport
 @inject AppPageStateService PageState
 @inject CloudCharacterService Cloud
+@inject CharacterDraftRecovery Drafts
 @using Builder.Presentation
 @using Builder.Presentation.Utilities
 @using Aurora.PdfImport
+
+@if (_recoveryDrafts.Count > 0)
+{
+    <MudPaper Class="pa-3 mb-3" Outlined="true" role="region" aria-label="Recover unsaved characters">
+        <MudText Typo="Typo.h6">Unsaved characters recovered</MudText>
+        <MudText Typo="Typo.body2">Open a recovery copy to continue your work, then save or upload it when ready.</MudText>
+        @foreach (var draft in _recoveryDrafts)
+        {
+            <div class="d-flex align-center flex-wrap gap-2 mt-2">
+                <MudText>@draft.Name · @draft.UpdatedUtc.ToLocalTime().ToString("g")</MudText>
+                <MudButton OnClick="@(() => OpenRecoveryAsync(draft))" Disabled="@(_recovering || _preloading || draft.IsCorrupt)">Open recovery copy</MudButton>
+                <MudButton OnClick="@(() => DiscardRecoveryAsync(draft))" Disabled="@_recovering">Discard draft</MudButton>
+            </div>
+            @if (draft.IncompleteOperation)
+            {
+                <MudText Typo="Typo.caption">A save or build change was in progress. Check this copy’s choices before continuing.</MudText>
+            }
+        }
+    </MudPaper>
+}
 
 @if (_loading)
 {
@@ -76,6 +97,45 @@ else
 }
 
 @code {
+    private IReadOnlyList<RecoveryDraftInfo> _recoveryDrafts = [];
+    private bool _recovering;
+
+    private async Task OpenRecoveryAsync(RecoveryDraftInfo draft)
+    {
+        if (_recovering) return;
+        _recovering = true;
+        try
+        {
+            string copy = Drafts.OpenCopy(draft.Id, CharSvc.CharactersDirectory);
+            var file = new Builder.Presentation.Models.CharacterFile(copy);
+            _characters = CharSvc.LoadCharacterFiles().ToList();
+            CharSvc.UpdateFileListCache(_characters);
+            RebuildBrowserEntries();
+            await OnCharacterSelected(file);
+            if (Tabs.FindTab(file) is { Character: not null, IsLoading: false })
+                Drafts.Delete(draft.Id);
+            _recoveryDrafts = Drafts.List();
+        }
+        catch (Exception ex) { Snackbar.Add($"Could not open recovery copy: {ex.Message}", Severity.Error); }
+        finally { _recovering = false; }
+    }
+
+    private async Task DiscardRecoveryAsync(RecoveryDraftInfo draft)
+    {
+        if (_recovering) return;
+        _recovering = true;
+        try
+        {
+            bool? discard = await DialogService.ShowMessageBox("Discard recovery draft?",
+                $"Discard the recovered draft for {draft.Name}?", yesText: "Discard draft", cancelText: "Keep draft");
+            if (discard != true) return;
+            Drafts.Delete(draft.Id);
+            _recoveryDrafts = Drafts.List();
+        }
+        catch (Exception ex) { Snackbar.Add($"Could not discard draft: {ex.Message}", Severity.Error); }
+        finally { _recovering = false; }
+    }
+
     private async Task OnCloudCharacterSelected((Builder.Presentation.Services.Storage.CharacterDocumentMetadata Metadata, CancellationToken Token) request)
     {
         var metadata = request.Metadata;
@@ -166,6 +226,8 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        try { _recoveryDrafts = await Task.Run(Drafts.List); }
+        catch (Exception ex) { Snackbar.Add($"Could not read recovery drafts: {ex.Message}", Severity.Warning); }
         // Fast path: render immediately from the singleton cache so return visits
         // are instant — no disk scan, no loading spinner, no portrait re-decode.
         if (CharSvc.TryGetCachedFiles(out IReadOnlyList<Builder.Presentation.Models.CharacterFile> cachedFiles))

@@ -5,6 +5,7 @@ public sealed class MagicOverviewModel
     public bool HasSpellcasting { get; set; }
     public IReadOnlyList<MagicKnownSpellGroupModel> KnownSpellGroups { get; set; } = [];
     public IReadOnlyList<MagicSpellcastingSectionModel> Sections { get; set; } = [];
+    public IReadOnlyList<MagicSlotPoolModel>? SlotPools { get; set; }
 
     // Back-compat convenience surface for older consumers that still assume a single active section.
     private MagicSpellcastingSectionModel PrimarySection => Sections.FirstOrDefault() ?? new MagicSpellcastingSectionModel();
@@ -321,4 +322,7 @@ public sealed record MagicSpellDetailModel(
 
 public sealed record MagicPreparedChangeModel(string SpellId, bool Value, string SpellcastingSectionId, string SpellcastingClass);
 
-public sealed record MagicSlotToggleModel(int Level, int SlotIndex);
+public sealed record MagicSlotPoolModel(string Id, string Label, bool RecoversOnShortRest,
+    IReadOnlyList<MagicSpellLevelModel> Levels);
+
+public sealed record MagicSlotToggleModel(int Level, int SlotIndex, string PoolId = "spellcasting");

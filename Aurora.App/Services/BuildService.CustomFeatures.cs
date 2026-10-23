@@ -18,14 +18,23 @@ public static partial class BuildService
     public static async Task<IReadOnlySet<string>> GetCustomFeatureOwnedIdsAsync(CharacterTab tab)
     {
         using var scope = await CharacterContext.EnterAsync(tab);
-        return GetCustomFeatureOwnedIds(tab.File);
+        return GetCustomFeatureOwnedIds(tab);
     }
 
-    private static HashSet<string> GetCustomFeatureOwnedIds(CharacterFile? file)
+    private static IReadOnlyList<string> GetCustomFeatureIds(CharacterTab tab) =>
+        tab.PendingCustomFeatureIds ?? tab.File.LoadCustomFeatures();
+
+    internal static void ApplyPendingCustomFeatures(CharacterTab tab, XmlDocument document)
+    {
+        if (tab.PendingCustomFeatureIds is { } ids)
+            CharacterFileSaveExtensions.ApplyCustomFeatures(document, ids);
+    }
+
+    private static HashSet<string> GetCustomFeatureOwnedIds(CharacterTab tab)
     {
         var owned = CharacterManager.Current.GetElements()
             .Select(e => e.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        foreach (string id in file?.LoadCustomFeatures() ?? [])
+        foreach (string id in GetCustomFeatureIds(tab))
         {
             var element = ResolveCustomFeatureElement(id);
             owned.Add(element == null ? id : EquipmentService.ResolveCustomFeatureTarget(element).Id);
@@ -36,9 +45,10 @@ public static partial class BuildService
     /// <summary>
     /// Adds a custom-feature proxy (an "Additional …" feat/spell/feature/etc. or a Supernatural
     /// Gift) or companion to the active character and activates its content, then
-    /// reprocesses, re-snaps, and saves. Returns null on success or an error message.
+    /// reprocesses and re-snaps. Deferred changes stay in the tab until saved or discarded.
+    /// Returns null on success or an error message.
     /// </summary>
-    public static async Task<string?> AddCustomFeatureAsync(CharacterTab tab, string elementId)
+    public static async Task<string?> AddCustomFeatureAsync(CharacterTab tab, string elementId, bool saveToFile = true)
     {
         using var scope = await CharacterContext.EnterAsync(tab);
         FlushPendingSnapshotEdits(tab);
@@ -56,9 +66,8 @@ public static partial class BuildService
                 string targetId = target.Id ?? elementId;
                 bool repeatable = EquipmentService.IsRepeatableCustomFeature(target);
 
-                var file = tab.File;
-                var list = file?.LoadCustomFeatures() ?? [];
-                if (!EquipmentService.CanAddCustomFeature(proxy, GetCustomFeatureOwnedIds(file)))
+                var list = GetCustomFeatureIds(tab).ToList();
+                if (!EquipmentService.CanAddCustomFeature(proxy, GetCustomFeatureOwnedIds(tab)))
                     return $"'{target.Name}' is already on this character and cannot be added again.";
 
                 // Ability-score elements are the exception to the normal fresh-copy rule. The legacy
@@ -76,23 +85,12 @@ public static partial class BuildService
 
                 CharacterManager.Current.RegisterElement(toRegister);
                 CharacterManager.Current.ReprocessCharacter();
+                if (repeatable || !list.Contains(targetId, StringComparer.OrdinalIgnoreCase))
+                    list.Add(targetId);
+                tab.PendingCustomFeatureIds = list;
                 ResnapTab(tab);
-                SaveCharacterFile(tab);
-
-                // Track the added id (root-level <custom-features> node) so the Extras tab can
-                // list and remove it. Written after SaveCharacterFile so it lands in the saved file.
-                if (file != null)
-                {
-                    if (repeatable || !list.Contains(targetId, StringComparer.OrdinalIgnoreCase))
-                    {
-                        list.Add(targetId);
-                        CharacterFileWriteCoordinator.Write(
-                            tab.FileSaveSemaphore,
-                            file,
-                            "Custom features",
-                            () => file.SaveCustomFeatures(list)).ThrowIfFailed();
-                    }
-                }
+                tab.IsDirty = true;
+                if (saveToFile) SaveCharacterFile(tab);
                 return (string?)null;
             }
             catch (Exception ex) { return DebugLogService.Catch(ex, "BuildService.AddCustomFeatureAsync"); }
@@ -101,14 +99,14 @@ public static partial class BuildService
 
     /// <summary>
     /// Returns the custom features added to the active character (id, display name, type),
-    /// resolved from the persisted &lt;custom-features&gt; id list.
+    /// resolved from the tab's current &lt;custom-features&gt; id list.
     /// </summary>
     public static IReadOnlyList<(string Id, string Name, string Type)> GetCustomFeatures(CharacterTab tab)
     {
         var file = tab.File;
         if (file == null) return [];
         var result = new List<(string, string, string)>();
-        foreach (var id in file.LoadCustomFeatures())
+        foreach (var id in GetCustomFeatureIds(tab))
         {
             var el = ResolveCustomFeatureElement(id);
             var target = el == null ? null : EquipmentService.ResolveCustomFeatureTarget(el);
@@ -128,10 +126,10 @@ public static partial class BuildService
     /// load. Idempotent: a feature already present as our (blank-acquisition) instance is skipped, so a
     /// duplicate call is harmless. Mirrors <see cref="AddCustomFeatureAsync"/>'s registration.
     /// </summary>
-    public static void ReapplyCustomFeatures(CharacterFile? file)
+    public static void ReapplyCustomFeatures(CharacterFile? file, IReadOnlyList<string>? pendingIds = null)
     {
         if (file == null) return;
-        var ids = file.LoadCustomFeatures();
+        var ids = pendingIds ?? file.LoadCustomFeatures();
         if (ids.Count == 0) return;
 
         var cm = CharacterManager.Current;
@@ -187,10 +185,10 @@ public static partial class BuildService
     }
 
     /// <summary>
-    /// Removes a previously added custom feature: unregisters the element, reprocesses, saves,
-    /// and drops its id from the &lt;custom-features&gt; list. Returns null on success.
+    /// Removes a previously added custom feature and its tracking id. Deferred removals stay
+    /// in the tab until saved or discarded. Returns null on success.
     /// </summary>
-    public static async Task<string?> RemoveCustomFeatureAsync(CharacterTab tab, string elementId)
+    public static async Task<string?> RemoveCustomFeatureAsync(CharacterTab tab, string elementId, bool saveToFile = true)
     {
         if (SidekickService.IsInstanceId(elementId))
         {
@@ -231,22 +229,13 @@ public static partial class BuildService
                         el.Aquisition.GrantedBy(grantRule);
                 }
                 cm.ReprocessCharacter();
+                var list = GetCustomFeatureIds(tab).ToList();
+                int index = list.FindIndex(x => string.Equals(x, elementId, StringComparison.OrdinalIgnoreCase));
+                if (index >= 0) list.RemoveAt(index);
+                tab.PendingCustomFeatureIds = list;
                 ResnapTab(tab);
-                SaveCharacterFile(tab);
-
-                var file = tab.File;
-                if (file != null)
-                {
-                    var list = file.LoadCustomFeatures();
-                    int index = list.FindIndex(x => string.Equals(x, elementId, StringComparison.OrdinalIgnoreCase));
-                    if (index >= 0)
-                        list.RemoveAt(index);
-                    CharacterFileWriteCoordinator.Write(
-                        tab.FileSaveSemaphore,
-                        file,
-                        "Custom features",
-                        () => file.SaveCustomFeatures(list)).ThrowIfFailed();
-                }
+                tab.IsDirty = true;
+                if (saveToFile) SaveCharacterFile(tab);
                 return (string?)null;
             }
             catch (Exception ex) { return DebugLogService.Catch(ex, "BuildService.RemoveCustomFeatureAsync"); }

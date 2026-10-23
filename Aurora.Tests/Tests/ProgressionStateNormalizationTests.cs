@@ -10,7 +10,7 @@ namespace Aurora.Tests.Tests;
 
 public sealed class ProgressionStateNormalizationTests : IAsyncLifetime
 {
-    private const string DruidClassId = "ID_WOTC_PHB24_CLASS_DRUID";
+    private const string DruidClassId = "ID_WOTC_PHB_CLASS_DRUID";
 
     private readonly ITestOutputHelper _output;
 
@@ -31,8 +31,7 @@ public sealed class ProgressionStateNormalizationTests : IAsyncLifetime
         var druid = DataManager.Current.ElementsCollection.GetElement(DruidClassId);
         if (druid is null)
         {
-            _output.WriteLine("[SKIP] 2024 Druid content is not available.");
-            return;
+            throw new InvalidOperationException("Required core fixture: SRD Druid content is not available.");
         }
 
         var manager = CharacterManager.Current;
@@ -47,37 +46,34 @@ public sealed class ProgressionStateNormalizationTests : IAsyncLifetime
             m.ClassElement?.Id.Equals(DruidClassId, StringComparison.OrdinalIgnoreCase) == true);
         if (druidManager is null)
         {
-            _output.WriteLine("[SKIP] Druid class progression manager was not created.");
-            return;
+            throw new InvalidOperationException("Required core fixture: Druid class progression manager was not created.");
         }
 
         SelectRule? subclassRule = manager.SelectionRules.FirstOrDefault(rule =>
             rule.ElementHeader?.Type == "Class Feature" &&
-            rule.Attributes.Name.Equals("Druid Subclass", StringComparison.OrdinalIgnoreCase));
+            rule.Attributes.Name.Equals("Druid Circle", StringComparison.OrdinalIgnoreCase));
         if (subclassRule is null)
         {
-            _output.WriteLine("[SKIP] Druid Subclass selection rule is not available.");
-            return;
+            throw new InvalidOperationException("Required core fixture: Druid Circle selection rule is not available.");
         }
 
         ElementBase? owner = FindElement(druidManager.Elements, subclassRule.ElementHeader.Id);
         ElementBase? parent = FindParent(druidManager.Elements, subclassRule.ElementHeader.Id);
         if (owner is null || parent is null)
         {
-            _output.WriteLine("[SKIP] Could not locate the Druid Subclass feature parent.");
-            return;
+            throw new InvalidOperationException("Required core fixture: Could not locate the Druid Circle feature parent.");
         }
 
-        ElementBase? duplicate = DataManager.Current.ElementsCollection.GetFresh(owner.Id);
+        ElementBase? duplicate = new ElementParser().ParseElement(owner!.ElementNode);
         if (duplicate is null)
         {
-            _output.WriteLine("[SKIP] Could not create a fresh Druid Subclass feature copy.");
-            return;
+            throw new InvalidOperationException("Required core fixture: Could not create a fresh Druid Circle feature copy.");
         }
 
         parent.RuleElements.Remove(owner);
         parent.RuleElements.Add(duplicate);
         parent.RuleElements.Add(owner);
+        manager.InvalidateElementCache();
         druidManager.ProcessExistingElements();
 
         CountMatchingSelectionRows(manager, subclassRule).Should().BeGreaterThan(1);

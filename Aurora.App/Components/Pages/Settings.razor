@@ -200,7 +200,7 @@
                     Character files (.dnd5e) are saved to and loaded from this directory.
                     @if (OperatingSystem.IsAndroid())
                     {
-                        <span> On Android, switching to <b>External Storage</b> makes files accessible from any file manager app without needing ADB or root.</span>
+                        <span> On Android, <b>External Storage</b> is still an app-specific folder. File-manager access varies by Android version. Local characters and recovery drafts are removed when you uninstall the app. Export character files or save them to Google Drive before uninstalling.</span>
                     }
                 </div>
             </div>
@@ -2335,7 +2335,7 @@
         if (_dirError == null)
         {
             await HandleContentRootChangedAsync();
-            if (_dirError == null) Snackbar.Add("Switched to external storage. Files are now accessible from the Files app.",
+            if (_dirError == null) Snackbar.Add("Switched to app-specific external storage. Use Export Character File to save a copy outside the app.",
                 Severity.Success, cfg => cfg.VisibleStateDuration = 5000);
         }
         StateHasChanged();

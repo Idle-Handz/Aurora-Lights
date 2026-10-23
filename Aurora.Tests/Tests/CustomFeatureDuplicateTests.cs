@@ -127,8 +127,10 @@ public sealed class CustomFeatureDuplicateTests
             granted.Aquisition.WasGranted.Should().BeTrue();
         });
 
-    [Fact]
-    public Task RepeatableAbilityIncreasesStillStackAndRemoveIndividually() =>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public Task RepeatableAbilityIncreasesStillStackAndRemoveIndividually(bool saveToFile) =>
         WithCharacter(async (manager, file, tab) =>
         {
             var asi = Parse("""
@@ -140,15 +142,21 @@ public sealed class CustomFeatureDuplicateTests
             Add(asi);
             var proxy = AddProxy(asi);
             int before = manager.Character.Abilities.Dexterity.AdditionalScore;
-            (await BuildService.AddCustomFeatureAsync(tab, proxy.Id)).Should().BeNull();
+            byte[] original = File.ReadAllBytes(file.FilePath);
+            (await BuildService.AddCustomFeatureAsync(tab, proxy.Id, saveToFile)).Should().BeNull();
             EquipmentService.SearchCustomFeatures("Additional Ability Score Improvement", "",
                     await BuildService.GetCustomFeatureOwnedIdsAsync(tab))
                 .Should().Contain(r => r.Id == proxy.Id);
-            (await BuildService.AddCustomFeatureAsync(tab, proxy.Id)).Should().BeNull();
+            (await BuildService.AddCustomFeatureAsync(tab, proxy.Id, saveToFile)).Should().BeNull();
             manager.Character.Abilities.Dexterity.AdditionalScore.Should().Be(before + 2);
-            file.LoadCustomFeatures().Should().Equal(asi.Id, asi.Id);
-            (await BuildService.RemoveCustomFeatureAsync(tab, asi.Id)).Should().BeNull();
+            BuildService.GetCustomFeatures(tab).Select(feature => feature.Id).Should().Equal(asi.Id, asi.Id);
+            (await BuildService.RemoveCustomFeatureAsync(tab, asi.Id, saveToFile)).Should().BeNull();
             manager.Character.Abilities.Dexterity.AdditionalScore.Should().Be(before + 1);
+            if (!saveToFile)
+            {
+                File.ReadAllBytes(file.FilePath).Should().Equal(original);
+                (await BuildService.SaveTabAsync(tab)).Should().BeNull();
+            }
             file.LoadCustomFeatures().Should().Equal(asi.Id);
         });
 

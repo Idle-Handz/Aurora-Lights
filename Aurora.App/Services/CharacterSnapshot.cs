@@ -92,6 +92,7 @@ public sealed class CharacterSnapshot
     public IReadOnlyList<string>          Cantrips     { get; init; } = [];
     public IReadOnlyList<SpellLevelEntry> SpellLevels  { get; init; } = [];
     public IReadOnlyList<SpellcastingSectionEntry> SpellcastingSections { get; init; } = [];
+    public IReadOnlyList<SpellSlotPool> SpellSlotPools { get; init; } = [];
 
     /// <summary>
     /// Always-prepared spells granted by a feat / item / species (not a spellcasting class) —
@@ -259,6 +260,7 @@ public sealed class CharacterSnapshot
             Cantrips               = primarySpellSection?.Cantrips.Select(s => s.Name).ToList() ?? [],
             SpellLevels            = primarySpellSection?.SpellLevels ?? [],
             SpellcastingSections   = spellSections,
+            SpellSlotPools         = SpellSlotPoolResolver.Resolve(cm),
             GrantedSpells          = CollectGrantedSpells(cm),
             SpellAcquisitions      = SpellAcquisitionResolver.Resolve(cm.GetElements(), allSpellInfos),
 

@@ -12,6 +12,7 @@
 @inject Aurora.App.Services.Updates.AppUpdateService AppUpdates
 @inject ContentService Content
 @inject CharacterService Characters
+@inject CharacterDraftRecovery Drafts
 
 <MudThemeProvider Theme="ActiveMudTheme" IsDarkMode="SelectedTheme.IsDark" ObserveSystemThemeChange="false" />
 <MudPopoverProvider />
@@ -125,6 +126,10 @@
             </div>
         }
         <MudContainer MaxWidth="MaxWidth.False" Class="app-content-container pa-4" Style="@ContentStyle">
+            @if (Drafts.LastError is not null)
+            {
+                <MudAlert Severity="Severity.Warning" Class="mb-3">@Drafts.LastError</MudAlert>
+            }
             @if (Tabs.ActiveTab is { CloudSession: not null } cloudTab)
             {
                 <MudPaper Class="pa-3 mb-3" Outlined="true">
@@ -266,10 +271,14 @@
     protected override void OnInitialized()
     {
         _windowCloseHandler = new(
-            work => InvokeAsync(work), TryCloseTabAsync, () => !_disposed);
+            work => InvokeAsync(work),
+            // Navigating after the active tab closes can interrupt the dispatched exit
+            // before the next tab's dialog. The exit workflow owns the whole tab sequence.
+            tab => TryCloseTabAsync(tab, navigateAfterClose: false), () => !_disposed);
         WindowClose.Handler = _windowCloseHandler;
         Tabs.TabsChanged              += OnTabsChanged;
         CharacterContext.CaptureError += OnCaptureError;
+        Drafts.Changed += OnDraftRecoveryChanged;
         Prefs.ThemeChanged            += OnThemeChanged;
         Prefs.DeveloperModeChanged    += OnDeveloperModeChanged;
         Nav.LocationChanged           += OnLocationChanged;
@@ -499,6 +508,11 @@
         _ = InvokeAsync(() => { if (!_disposed) StateHasChanged(); });
     }
 
+    private void OnDraftRecoveryChanged()
+    {
+        if (!_disposed) _ = InvokeAsync(() => { if (!_disposed) StateHasChanged(); });
+    }
+
     private void OnCaptureError(string message)
     {
         if (_disposed) return;
@@ -515,6 +529,7 @@
         if (WindowClose.Handler == _windowCloseHandler) WindowClose.Handler = null;
         Tabs.TabsChanged              -= OnTabsChanged;
         CharacterContext.CaptureError -= OnCaptureError;
+        Drafts.Changed -= OnDraftRecoveryChanged;
         Prefs.ThemeChanged            -= OnThemeChanged;
         Prefs.DeveloperModeChanged    -= OnDeveloperModeChanged;
         Nav.LocationChanged           -= OnLocationChanged;
@@ -538,7 +553,7 @@
         await TryCloseTabAsync(tab);
     }
 
-    private async Task<bool> TryCloseTabAsync(CharacterTab tab)
+    private async Task<bool> TryCloseTabAsync(CharacterTab tab, bool navigateAfterClose = true)
     {
         var wasActive = tab == Tabs.ActiveTab;
         bool closed = await CharacterClose.TryCloseAsync(
@@ -552,7 +567,7 @@
             CharacterContext.ReleaseAsync);
         if (!closed) return false;
 
-        if (wasActive)
+        if (wasActive && navigateAfterClose)
         {
             if (Tabs.ActiveTab != null)
                 Nav.NavigateTo("/character");

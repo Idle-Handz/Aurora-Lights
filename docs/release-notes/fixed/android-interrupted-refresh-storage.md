@@ -1,0 +1,1 @@
+Android now reclaims temporary database candidates and staged content copies after an interrupted refresh. Failed content writes also remove their incomplete temporary downloads, preserving the last usable file.

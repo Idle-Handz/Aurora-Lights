@@ -133,7 +133,7 @@ public sealed class CharacterBuildingFlowTests : IAsyncLifetime
         character.Should().NotBeNull();
 
         var item = character!.Inventory.Items.FirstOrDefault();
-        if (item is null) { _output.WriteLine("[SKIP] Character has no inventory items after load."); return; }
+        if (item is null) { throw new InvalidOperationException("Required core fixture: Character has no inventory items after load."); }
 
         var identifier = item.Identifier;
         var alias = $"Test Alias {Guid.NewGuid():N}";
@@ -254,7 +254,7 @@ public sealed class CharacterBuildingFlowTests : IAsyncLifetime
             .ToList()
             .FirstOrDefault(i => i.Prepare);
 
-        if (preparedInfo is null) { _output.WriteLine("[SKIP] No prepared-caster class."); return; }
+        if (preparedInfo is null) { throw new InvalidOperationException("Required core fixture: No prepared-caster class."); }
 
         var currentlyPrepared = handler.GetPreparedIds(preparedInfo.Name)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -275,7 +275,7 @@ public sealed class CharacterBuildingFlowTests : IAsyncLifetime
                 .Select(spell => spell.Id)
                 .FirstOrDefault(id => !currentlyPrepared.Contains(id));
 
-        if (unpreparedSpell is null) { _output.WriteLine("[SKIP] No unprepared spell available."); return; }
+        if (unpreparedSpell is null) { throw new InvalidOperationException("Required core fixture: No unprepared spell available."); }
 
         // Simulate what OnPreparedChangedAsync does when the user checks a spell.
         handler.SetPrepareSpell(preparedInfo, unpreparedSpell);
@@ -322,11 +322,11 @@ public sealed class CharacterBuildingFlowTests : IAsyncLifetime
 
     /// <summary>
     /// Exercises the complete build pipeline: New → register Race/Class/Background →
-    /// verify derived state → serialize → reload → compare. Uses Human Fighter Soldier
+    /// verify derived state → serialize → reload → compare. Uses Human Fighter Acolyte
     /// because these are guaranteed PHB elements present in every Aurora install.
     /// </summary>
     [Fact]
-    public async Task FullBuild_HumanFighterSoldier_HasExpectedState()
+    public async Task FullBuild_HumanFighterAcolyte_HasExpectedState()
     {
         if (!ContentFixture.SkipIfUnavailable(_output)) return;
 
@@ -336,28 +336,30 @@ public sealed class CharacterBuildingFlowTests : IAsyncLifetime
 
         var elements = DataManager.Current.ElementsCollection;
 
-        var race       = elements.GetElement("ID_PHB_RACE_HUMAN");
-        var cls        = elements.GetElement("ID_PHB_CLASS_FIGHTER");
-        var background = elements.GetElement("ID_PHB_BACKGROUND_SOLDIER");
+        var race       = elements.GetElement("ID_RACE_HUMAN");
+        var cls        = elements.GetElement("ID_WOTC_PHB_CLASS_FIGHTER");
+        var background = elements.GetElement("ID_BACKGROUND_ACOLYTE");
 
         if (race is null || cls is null || background is null)
         {
-            _output.WriteLine("[SKIP] One or more required PHB elements not found (Human/Fighter/Soldier).");
-            return;
+            throw new InvalidOperationException("Required core fixture: One or more required PHB elements not found (Human/Fighter/Soldier).");
         }
 
         var character = await CharacterManager.Current.New(initializeFirstLevel: true);
         character.Should().NotBeNull();
 
-        CharacterManager.Current.RegisterElement(race);
-        CharacterManager.Current.RegisterElement(cls);
-        CharacterManager.Current.RegisterElement(background);
+        SelectionRuleExpanderContext.Current!.SetRegisteredElement(
+            CharacterManager.Current.SelectionRules.Single(r => r.Attributes.Type == "Race"), race!.Id);
+        SelectionRuleExpanderContext.Current.SetRegisteredElement(
+            CharacterManager.Current.SelectionRules.Single(r => r.Attributes.Type == "Class"), cls!.Id);
+        SelectionRuleExpanderContext.Current.SetRegisteredElement(
+            CharacterManager.Current.SelectionRules.Single(r => r.Attributes.Type == "Background"), background!.Id);
 
         var registered = CharacterManager.Current.GetElements().ToList();
 
         registered.Select(e => e.Type).Should().Contain("Race",       because: "Human was registered");
         registered.Select(e => e.Type).Should().Contain("Class",      because: "Fighter was registered");
-        registered.Select(e => e.Type).Should().Contain("Background", because: "Soldier was registered");
+        registered.Select(e => e.Type).Should().Contain("Background", because: "Acolyte was registered");
 
         character.Level.Should().BeGreaterThanOrEqualTo(1);
         character.MaxHp.Should().BeGreaterThan(0,

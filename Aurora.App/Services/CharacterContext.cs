@@ -42,6 +42,8 @@ public static class CharacterContext
     /// <summary>The tab currently loaded into the singleton, or null if nothing is active.</summary>
     public static CharacterTab? ActiveTab => _guard.Active;
 
+    internal static IDisposable? TryEnterActive(CharacterTab tab) => _guard.TryEnterActive(tab);
+
     /// <summary>
     /// Take the context lock and ensure <paramref name="tab"/>'s character is the one loaded into
     /// <see cref="CharacterManager.Current"/>. Dispose the returned scope to release the lock.
@@ -89,6 +91,7 @@ public static class CharacterContext
     internal static async Task<Builder.Presentation.Models.CharacterFile.LoadResult> ReloadFromDiskAsync(CharacterTab tab)
     {
         tab.StateXml = null;
+        tab.PendingCustomFeatureIds = null;
         Interlocked.Increment(ref _stateVersion);
         CharacterLoadCompatibilityService.PrepareForCharacterLoad();
         var result = await tab.File.Load();
@@ -144,7 +147,8 @@ public static class CharacterContext
         if (tab.Character == null) return;
         try
         {
-            tab.StateXml = tab.File.SerializeCharacter(tab.Character);
+            tab.StateXml = tab.File.SerializeCharacter(tab.Character,
+                document => BuildService.ApplyPendingCustomFeatures(tab, document));
         }
         catch (Exception ex)
         {
@@ -204,7 +208,7 @@ public static class CharacterContext
         // 5. Re-apply custom features (Extras-tab feats/spells/ASIs). They live outside the standard
         //    build, so file.Load doesn't restore them; without this their granted content (e.g. feat
         //    spells) silently disappears on tab swap. Reads the persisted <custom-features> list.
-        BuildService.ReapplyCustomFeatures(incoming.File);
+        BuildService.ReapplyCustomFeatures(incoming.File, incoming.PendingCustomFeatureIds);
         BuildService.NormalizeSelectionState();
         CharacterManager.Current.ReprocessCharacter();
     }

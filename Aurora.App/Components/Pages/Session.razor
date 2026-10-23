@@ -189,7 +189,7 @@
                 <button class="session-hp-btn" aria-label="Decrease current hit points by 1" @onclick="() => AdjustHp(-1)">−</button>
                 <input id="session-current-hp" class="session-hp-input" type="number" aria-label="Current hit points"
                        value="@_s.CurrentHp"
-                       min="0" max="@(_snap.MaxHp + _s.TempHp)"
+                       min="0" max="@CurrentHpMaximum"
                        @onchange="OnCurrentHpChanged" />
                 <button class="session-hp-btn" aria-label="Increase current hit points by 1" @onclick="() => AdjustHp(+1)">+</button>
             </div>
@@ -353,7 +353,7 @@
 </div>
 
 @* ── Spell Slots ── *@
-@if (_spellLevels.Count > 0)
+@if (_slotPools.Count > 0)
 {
     <div class="session-card">
         <div class="session-card-title">Spell Slots</div>
@@ -361,29 +361,8 @@
         {
             <div class="session-status-label" style="margin-bottom: 8px;">@_spellcastingSummary</div>
         }
-        <div class="session-slots-grid">
-            @foreach (var entry in _spellLevels)
-            {
-                var level = entry.Level;
-                var total = entry.TotalSlots;
-                var used = ClampSlotUsage(level, total);
-                <div class="session-slot-row">
-                    <div class="session-slot-label">@OrdinalLevel(level)</div>
-                    <div class="session-pips">
-                        @for (int i = 1; i <= total; i++)
-                        {
-                            var idx = i;
-                            <button class="session-pip @(idx <= used ? "pip-slot-used" : "pip-slot-free")"
-                                    aria-label="@($"{OrdinalLevel(level)}-level spell slot {idx} of {total} used")"
-                                    aria-pressed="@(idx <= used ? "true" : "false")"
-                                    aria-description="@($"Set used slots to {(used == idx ? idx - 1 : idx)}. {total - used} of {total} slots are currently available.")"
-                                    @onclick="() => ToggleSlot(level, idx)"></button>
-                        }
-                    </div>
-                    <div class="session-slot-count">@(total - used)/@total</div>
-                </div>
-            }
-        </div>
+        <Aurora.Components.Shared.SessionSpellSlotTracker Pools="_slotPools" UsedSlots="_s.UsedSlots"
+            OnToggleSlot="@(change => ToggleSlot(change.PoolId, change.Level, change.SlotIndex))" />
     </div>
 }
 
@@ -500,7 +479,7 @@
     private CharacterTab? _tab;
     private CharacterSnapshot? _snap;
     private SessionState _s = new();
-    private List<SpellLevelEntry> _spellLevels = [];
+    private IReadOnlyList<Builder.Presentation.Utilities.SpellSlotPool> _slotPools = [];
     private IReadOnlyList<SessionAttackReminder> _attackReminders = [];
     private IReadOnlyList<SessionAttackReminder> _availableAttackReminders = [];
     private string _spellcastingSummary = string.Empty;
@@ -553,7 +532,8 @@
             if (_snap != null)
                 _s.InitializeIfNew(_snap.MaxHp);
         }
-        _spellLevels = BuildAggregatedSpellLevels(_snap);
+        _slotPools = _snap?.SpellSlotPools ?? [];
+        _s.EnsureSpellSlotPools(_slotPools);
         var attackReminderSet = BuildAttackReminderSet();
         _attackReminders = attackReminderSet.Visible;
         _availableAttackReminders = attackReminderSet.AvailableWeapons;
@@ -692,14 +672,13 @@
 
     private void AdjustHp(int delta)
     {
-        _s.CurrentHp = Math.Clamp(_s.CurrentHp + delta, 0, CurrentHpMaximum);
+        _s.AdjustCurrentHp(delta, CurrentHpMaximum);
         AutoSave();
     }
 
     private void AdjustTempHp(int delta)
     {
-        _s.TempHp = Math.Max(0, _s.TempHp + delta);
-        ClampCurrentHp();
+        _s.AdjustTemporaryHp(delta);
         AutoSave();
     }
 
@@ -707,7 +686,7 @@
     {
         if (int.TryParse(e.Value?.ToString(), out var v))
         {
-            _s.CurrentHp = Math.Clamp(v, 0, CurrentHpMaximum);
+            _s.SetCurrentHp(v, CurrentHpMaximum);
             AutoSave();
         }
     }
@@ -716,18 +695,12 @@
     {
         if (int.TryParse(e.Value?.ToString(), out var v))
         {
-            _s.TempHp = Math.Max(0, v);
-            ClampCurrentHp();
+            _s.SetTemporaryHp(v);
             AutoSave();
         }
     }
 
-    private int CurrentHpMaximum => Math.Max(0, (_snap?.MaxHp ?? 0) + _s.TempHp);
-
-    private void ClampCurrentHp()
-    {
-        _s.CurrentHp = Math.Clamp(_s.CurrentHp, 0, CurrentHpMaximum);
-    }
+    private int CurrentHpMaximum => Math.Max(0, _snap?.MaxHp ?? 0);
 
     // ── Death saves ───────────────────────────────────────────────────────────
 
@@ -770,17 +743,11 @@
 
     // ── Spell slots ───────────────────────────────────────────────────────────
 
-    private void ToggleSlot(int level, int idx)
+    private void ToggleSlot(string poolId, int level, int idx)
     {
-        var total = _spellLevels.FirstOrDefault(entry => entry.Level == level)?.TotalSlots ?? idx;
-        var used = ClampSlotUsage(level, total);
-        _s.SpellSlotsUsed[level] = used == idx ? idx - 1 : idx;
+        var total = _slotPools.FirstOrDefault(p => p.Id == poolId)?.Levels.FirstOrDefault(l => l.Level == level)?.TotalSlots ?? 0;
+        _s.ToggleSlot(poolId, level, idx, total);
         AutoSave();
-    }
-
-    private int ClampSlotUsage(int level, int total)
-    {
-        return Math.Clamp(_s.SpellSlotsUsed.GetValueOrDefault(level, 0), 0, Math.Max(0, total));
     }
 
     private async Task AddAttackReminder(SessionAttackReminder reminder)
@@ -1148,22 +1115,6 @@
         return true;
     }
 
-    private static List<SpellLevelEntry> BuildAggregatedSpellLevels(CharacterSnapshot? snap)
-    {
-        if (snap is null) return [];
-
-        return snap.SpellcastingSections
-            .SelectMany(section => section.SpellLevels)
-            .Where(level => level.TotalSlots > 0)
-            .GroupBy(level => level.Level)
-            .Select(group => new SpellLevelEntry(
-                group.Key,
-                [],
-                group.Max(level => level.TotalSlots)))
-            .OrderBy(level => level.Level)
-            .ToList();
-    }
-
     // ── Custom resources ──────────────────────────────────────────────────────
 
     private void ToggleResource(CustomResource r, int idx)
@@ -1220,7 +1171,7 @@
     {
         _s.ShortRest();
         AutoSave();
-        Snackbar.Add("Short rest taken — death saves cleared.", Severity.Info);
+        Snackbar.Add("Short rest taken — Pact Magic slots and short-rest resources restored; death saves cleared.", Severity.Info);
     }
 
     private void DoLongRest()

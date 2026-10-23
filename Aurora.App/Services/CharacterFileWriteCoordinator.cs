@@ -56,6 +56,7 @@ public static class CharacterFileWriteCoordinator
         CharacterTab tab, SessionState session, CharacterSnapshot snapshot)
     {
         long version = tab.SessionWrites.BeginChange();
+        tab.NotifyDraftStateChanged();
         var edits = SessionCharacterEdits.From(snapshot);
         await tab.FileSaveSemaphore.WaitAsync();
         try
@@ -87,6 +88,7 @@ public static class CharacterFileWriteCoordinator
         {
             tab.CloudSession?.InvalidatePendingState();
             tab.FileSaveSemaphore.Release();
+            tab.NotifyDraftStateChanged();
         }
     }
 

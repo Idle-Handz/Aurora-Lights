@@ -72,9 +72,10 @@ public class CharacterSheetEx
   public FileInfo Save(string destinationPath)
   {
     FileInfo fileInfo = this.InitializeCharacterSheet();
+    using (MemoryStream staticOutput = new MemoryStream())
     using (PdfReader reader = new PdfReader(fileInfo.FullName))
     {
-      using (FileStream os = new FileStream(destinationPath, FileMode.Create))
+      using (Stream os = this.Configuration.IsFormFillable ? new FileStream(destinationPath, FileMode.Create) : staticOutput)
       {
         using (PdfStamper stamper = new PdfStamper(reader, (Stream) os))
         {
@@ -150,19 +151,28 @@ public class CharacterSheetEx
             this.ReplaceField(stamper, "background_trinket", this.ExportContent.BackgroundContent.Trinket, dynamic: false);
           }
           stamper.FormFlattening = !this.Configuration.IsFormFillable;
-          if (this.PartialFlatteningNames.Any<string>())
+          if (this.Configuration.IsFormFillable && this.PartialFlatteningNames.Any<string>())
           {
             foreach (string partialFlatteningName in this.PartialFlatteningNames)
               stamper.PartialFormFlattening(partialFlatteningName);
             stamper.FormFlattening = true;
           }
-          if (source.Any<string>())
+          if (this.Configuration.IsFormFillable && source.Any<string>())
           {
             foreach (string name in source)
               stamper.PartialFormFlattening(name);
             stamper.FormFlattening = true;
           }
         }
+      }
+      if (!this.Configuration.IsFormFillable)
+      {
+        // iText cannot flatten image buttons added in the same stamping pass.
+        // Reopen the completed document so those fields are flattened as well.
+        using (PdfReader completed = new PdfReader(staticOutput.ToArray()))
+        using (FileStream output = new FileStream(destinationPath, FileMode.Create))
+        using (PdfStamper finalStamper = new PdfStamper(completed, output))
+          finalStamper.FormFlattening = true;
       }
     }
     fileInfo.Delete();

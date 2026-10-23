@@ -18,6 +18,9 @@ namespace Aurora.App.Services;
 public sealed class CharacterTabService
 {
     private readonly List<CharacterTab> _tabs = [];
+    private readonly CharacterDraftRecovery? _drafts;
+
+    public CharacterTabService(CharacterDraftRecovery? drafts = null) => _drafts = drafts;
 
     public IReadOnlyList<CharacterTab> Tabs => _tabs;
     public CharacterTab? ActiveTab { get; private set; }
@@ -51,6 +54,7 @@ public sealed class CharacterTabService
         var tab = new CharacterTab(file) { Character = character };
         tab.SaveStateChanged += NotifyChanged;
         _tabs.Add(tab);
+        _drafts?.Track(tab);
         ActiveTab = tab;
         TabsChanged?.Invoke();
         return tab;
@@ -106,6 +110,7 @@ public sealed class CharacterTabService
         var tab = new CharacterTab(file) { IsLoading = true };
         tab.SaveStateChanged += NotifyChanged;
         _tabs.Add(tab);
+        _drafts?.Track(tab);
         ActiveTab = tab;
         TabsChanged?.Invoke();
         return tab;
@@ -123,6 +128,7 @@ public sealed class CharacterTabService
         if (_tabs.Any(t => t.IsSaving)) throw new InvalidOperationException("Wait for character saves to finish before closing tabs.");
         foreach (var tab in _tabs)
         {
+            _drafts?.Forget(tab);
             tab.SaveStateChanged -= NotifyChanged;
             tab.CloudSession?.Dispose();
         }
@@ -142,6 +148,7 @@ public sealed class CharacterTabService
         if (idx < 0) return;
 
         _tabs.RemoveAt(idx);
+        _drafts?.Forget(tab);
         tab.SaveStateChanged -= NotifyChanged;
         tab.CloudSession?.Dispose();
 

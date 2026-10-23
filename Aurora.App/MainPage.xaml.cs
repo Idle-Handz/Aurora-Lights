@@ -1,4 +1,5 @@
 using Aurora.App.Services;
+using Microsoft.Extensions.DependencyInjection;
 namespace Aurora.App;
 
 public partial class MainPage : ContentPage
@@ -31,6 +32,14 @@ public partial class MainPage : ContentPage
             args.WebView.Settings.SetSupportZoom(true);
             args.WebView.Settings.BuiltInZoomControls = true;
             args.WebView.Settings.DisplayZoomControls = false;
+            // ConnectHandler installs BlazorWebView's history callback. Post until
+            // it finishes so our overlay/unsaved-close callback takes precedence.
+            args.WebView.Post(() =>
+            {
+                if (Microsoft.Maui.ApplicationModel.Platform.CurrentActivity is MainActivity activity &&
+                    !activity.IsDestroyed)
+                    activity.RegisterBackCallback();
+            });
 #endif
             DebugLogService.Instance.Info("BlazorWebView initialized.");
         };
@@ -97,15 +106,32 @@ public partial class MainPage : ContentPage
         }
         catch (ObjectDisposedException) { /* Continue normal Back after WebView teardown. */ }
 
-        _continueAndroidBack = true;
         try
         {
-            // Re-enter MAUI's normal Back pipeline without intercepting it again.
-#pragma warning disable CS0618, CA1422
-            activity.OnBackPressed();
-#pragma warning restore CS0618, CA1422
+            var close = Handler?.MauiContext?.Services.GetService<WindowCloseCoordinator>();
+            if (close is null)
+            {
+                DebugLogService.Instance.Warn("Android close handling is unavailable. Keep the app open until it finishes loading.");
+                return;
+            }
+
+            // Root Back is an exit request: join pending saves and offer Save/Discard/Cancel
+            // before allowing Android to finish or background this activity.
+            await close.RequestCloseAsync(() =>
+            {
+                if (activity.IsFinishing || activity.IsDestroyed) return;
+                _continueAndroidBack = true;
+                try
+                {
+                    if (activity is MainActivity mainActivity)
+                        mainActivity.ContinueAcceptedBack();
+                    else
+                        activity.MoveTaskToBack(true);
+                }
+                finally { _continueAndroidBack = false; }
+            });
         }
-        finally { _continueAndroidBack = false; }
+        catch (Exception ex) { DebugLogService.Catch(ex, "MainPage.CloseAndroidActivity"); }
     }
 
     private sealed class BackResult(Action<bool> completed) : Java.Lang.Object, Android.Webkit.IValueCallback

@@ -20,11 +20,11 @@ public sealed class SelectionRuleRegistrationTests : IAsyncLifetime
     private const string CustomizedLanguageOptionId = "ID_WOTC_TCOE_OPTION_CUSTOMIZED_LANGUAGE";
     private const string AcolyteBackgroundId = "ID_BACKGROUND_ACOLYTE";
     private const string Acolyte2024BackgroundId = "ID_WOTC_PHB24_BACKGROUND_ACOLYTE";
-    private const string DruidClassId = "ID_WOTC_PHB24_CLASS_DRUID";
-    private const string FighterClassId = "ID_PHB_CLASS_FIGHTER";
-    private const string WarlockClassId = "ID_WOTC_PHB24_CLASS_WARLOCK";
-    private const string EldritchBlastId = "ID_WOTC_PHB24_SPELL_ELDRITCH_BLAST";
-    private const string AgonizingBlastId = "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_AGONIZING_BLAST";
+    private const string DruidClassId = "ID_WOTC_PHB_CLASS_DRUID";
+    private const string FighterClassId = "ID_WOTC_PHB_CLASS_FIGHTER";
+    private const string WarlockClassId = "ID_TEST_REPEATABLE_CLASS";
+    private const string EldritchBlastId = "ID_PHB_SPELL_ELDRITCH_BLAST";
+    private const string AgonizingBlastId = "ID_TEST_REPEATABLE_INVOCATION";
     private const string ElvishLanguageId = "ID_LANGUAGE_ELVISH";
     private const string DwarvishLanguageId = "ID_LANGUAGE_DWARVISH";
     private const string DexterityAsi1Id = "ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_DEXTERITY_INCREASE_1";
@@ -192,18 +192,17 @@ public sealed class SelectionRuleRegistrationTests : IAsyncLifetime
         var druid = DataManager.Current.ElementsCollection.GetElement(DruidClassId);
         if (druid is null)
         {
-            _output.WriteLine("[SKIP] 2024 Druid is not available in the loaded content.");
-            return;
+            throw new InvalidOperationException("Required SRD Druid missing.");
         }
 
-        CharacterManager.Current.RegisterElement(druid);
+        SelectionRuleExpanderContext.Current!.SetRegisteredElement(
+            CharacterManager.Current.SelectionRules.Single(r => r.Attributes.Type == "Class"), druid!.Id);
         CharacterManager.Current.ReprocessCharacter();
 
         var selection = FindSupportedElementSelection("Spell");
         if (selection is null)
         {
-            _output.WriteLine("[SKIP] No evaluable Druid spell selection rule is available in the loaded content.");
-            return;
+            throw new InvalidOperationException("Required SRD Druid spell rule missing.");
         }
 
         handler.SetRegisteredElement(selection.Value.Rule, selection.Value.Element.Id);
@@ -251,18 +250,17 @@ public sealed class SelectionRuleRegistrationTests : IAsyncLifetime
         var fighter = DataManager.Current.ElementsCollection.GetElement(FighterClassId);
         if (fighter is null)
         {
-            _output.WriteLine("[SKIP] Fighter is not available in the loaded content.");
-            return;
+            throw new InvalidOperationException("Required core fixture: Fighter is not available in the loaded content.");
         }
 
-        CharacterManager.Current.RegisterElement(fighter);
+        SelectionRuleExpanderContext.Current!.SetRegisteredElement(
+            CharacterManager.Current.SelectionRules.Single(r => r.Attributes.Type == "Class"), fighter!.Id);
         CharacterManager.Current.ReprocessCharacter();
 
         var selection = FindSupportedElementSelection("Proficiency");
         if (selection is null)
         {
-            _output.WriteLine("[SKIP] No evaluable Fighter proficiency selection rule is available in the loaded content.");
-            return;
+            throw new InvalidOperationException("Required core fixture: No evaluable Fighter proficiency selection rule is available in the loaded content.");
         }
 
         handler.SetRegisteredElement(selection.Value.Rule, selection.Value.Element.Id);
@@ -301,7 +299,7 @@ public sealed class SelectionRuleRegistrationTests : IAsyncLifetime
     {
         if (!ContentFixture.SkipIfUnavailable(_output)) return;
 
-        var handler = await Create2024AcolyteAbilityScoreCharacterAsync();
+        var handler = await CreateCustomizedDragonbornAbilityScoreCharacterAsync();
         if (handler is null) return;
 
         var plusOneRule = FindAbilityScoreRule("Custom Ability Score Increase 1");
@@ -372,18 +370,31 @@ public sealed class SelectionRuleRegistrationTests : IAsyncLifetime
         CharacterLoadCompatibilityService.PrepareForCharacterLoad();
         await CharacterManager.Current.New(initializeFirstLevel: true);
 
+        using var fixture = new SyntheticContentScope($"""
+            <elements>
+              <element name="Repeatable fixture caster" type="Class" source="Test" id="{WarlockClassId}">
+                <setters><set name="hd">d8</set></setters>
+                <rules>
+                  <select type="Spell" name="Cantrip (Warlock)" supports="{EldritchBlastId}" level="1" />
+                  <select type="Class Feature" name="Eldritch Invocation (Warlock 2)" supports="{AgonizingBlastId}" number="2" level="2" />
+                </rules>
+              </element>
+              <element name="Repeatable invocation" type="Class Feature" source="Test" id="{AgonizingBlastId}">
+                <setters><set name="allow duplicate">true</set></setters>
+              </element>
+            </elements>
+            """);
         var warlock = DataManager.Current.ElementsCollection.GetElement(WarlockClassId);
         var agonizingBlast = DataManager.Current.ElementsCollection.GetElement(AgonizingBlastId);
         if (warlock is null || agonizingBlast is null)
         {
-            _output.WriteLine("[SKIP] 2024 Warlock repeatable invocation content is not available.");
-            return;
+            throw new InvalidOperationException("Repeatable invocation fixture is missing.");
         }
 
         agonizingBlast.AllowDuplicate.Should().BeTrue(
-            "Agonizing Blast is a source-marked repeatable Eldritch Invocation");
+            "the fixture uses the same allow duplicate metadata as repeatable content");
 
-        CharacterManager.Current.RegisterElement(warlock);
+        handler.SetRegisteredElement(CharacterManager.Current.SelectionRules.Single(r => r.Attributes.Type == "Class"), warlock!.Id);
         CharacterManager.Current.ReprocessCharacter();
 
         var cantripRule = CharacterManager.Current.SelectionRules.FirstOrDefault(rule =>
@@ -392,8 +403,7 @@ public sealed class SelectionRuleRegistrationTests : IAsyncLifetime
             rule.Attributes.RequiredLevel == 1);
         if (cantripRule is null || DataManager.Current.ElementsCollection.GetElement(EldritchBlastId) is null)
         {
-            _output.WriteLine("[SKIP] Warlock cantrip selection data is not available.");
-            return;
+            throw new InvalidOperationException("Required cantrip fixture is missing.");
         }
 
         handler.SetRegisteredElement(cantripRule, EldritchBlastId, number: 1);
@@ -471,7 +481,7 @@ public sealed class SelectionRuleRegistrationTests : IAsyncLifetime
         return handler;
     }
 
-    private async Task<TestSelectionRuleExpanderHandler?> Create2024AcolyteAbilityScoreCharacterAsync()
+    private async Task<TestSelectionRuleExpanderHandler?> CreateCustomizedDragonbornAbilityScoreCharacterAsync()
     {
         var handler = new TestSelectionRuleExpanderHandler();
         SelectionRuleExpanderContext.Current = handler;
@@ -480,13 +490,11 @@ public sealed class SelectionRuleRegistrationTests : IAsyncLifetime
 
         await CharacterManager.Current.New(initializeFirstLevel: true);
 
-        var acolyte = DataManager.Current.ElementsCollection.GetElement(Acolyte2024BackgroundId);
-        if (acolyte is null)
-        {
-            _output.WriteLine("[SKIP] 2024 Acolyte background is not available in the loaded content.");
-            return null;
-        }
-
+        var customized = DataManager.Current.ElementsCollection.GetElement("ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI");
+        var human = DataManager.Current.ElementsCollection.GetElement("ID_RACE_DRAGONBORN");
+        customized.Should().NotBeNull();
+        human.Should().NotBeNull();
+        CharacterManager.Current.RegisterElement(customized!);
         string[] requiredOptions =
         [
             DexterityAsi1Id,
@@ -500,18 +508,16 @@ public sealed class SelectionRuleRegistrationTests : IAsyncLifetime
             .ToList();
         if (missingOptions.Count > 0)
         {
-            _output.WriteLine($"[SKIP] Required ASI option(s) missing: {string.Join(", ", missingOptions)}");
-            return null;
+            throw new InvalidOperationException($"Required ASI options missing: {string.Join(", ", missingOptions)}");
         }
 
-        CharacterManager.Current.RegisterElement(acolyte);
+        handler.SetRegisteredElement(CharacterManager.Current.SelectionRules.Single(r => r.Attributes.Type == "Race"), human!.Id);
         CharacterManager.Current.ReprocessCharacter();
 
         if (!HasAbilityScoreRule("Custom Ability Score Increase 1") ||
             !HasAbilityScoreRule("Custom Ability Score Increase 2"))
         {
-            _output.WriteLine("[SKIP] 2024 Acolyte did not expose the expected ability-score selection rules.");
-            return null;
+            throw new InvalidOperationException("Customized Dragonborn ASI rules missing.");
         }
 
         return handler;
@@ -541,36 +547,11 @@ public sealed class SelectionRuleRegistrationTests : IAsyncLifetime
 
     private static (SelectRule Rule, ElementBase Element)? FindSupportedElementSelection(string type)
     {
-        var allElements = DataManager.Current.ElementsCollection
-            .Where(element => element.Type.Equals(type, StringComparison.OrdinalIgnoreCase))
-            .ToList();
-
-        foreach (var rule in CharacterManager.Current.SelectionRules
-                     .Where(candidate =>
-                         candidate.Attributes.Type.Equals(type, StringComparison.OrdinalIgnoreCase) &&
-                         candidate.Attributes.RequiredLevel <= CharacterManager.Current.Character.Level))
+        foreach (var rule in CharacterManager.Current.SelectionRules.Where(r => r.Attributes.Type == type))
         {
-            try
-            {
-                var interpreter = new ExpressionInterpreter();
-                interpreter.InitializeWithSelectionRule(rule);
-                var candidates = rule.Attributes.ContainsSupports()
-                    ? interpreter.EvaluateSupportsExpression<ElementBase>(
-                        rule.Attributes.Supports,
-                        allElements,
-                        rule.Attributes.SupportsElementIdRange())
-                    : allElements;
-                var element = candidates.FirstOrDefault();
-                if (element is not null)
-                    return (rule, element);
-            }
-            catch
-            {
-                // Some content uses spellcasting macros that are intentionally handled by
-                // the App fallback. Continue until a directly evaluable rule is found.
-            }
+            var option = BuildSelectionOptionResolver.ResolveOptions(rule).FirstOrDefault(o => !o.IsDisabled);
+            if (option is not null) return (rule, DataManager.Current.ElementsCollection.GetElement(option.Id));
         }
-
         return null;
     }
 

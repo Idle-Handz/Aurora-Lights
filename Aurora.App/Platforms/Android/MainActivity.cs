@@ -2,7 +2,9 @@ using Android.App;
 using Android.Content.PM;
 using Android.OS;
 using Android.Views;
+using AndroidX.Activity;
 using AndroidX.Core.View;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Aurora.App;
 
@@ -20,6 +22,41 @@ namespace Aurora.App;
 public class MainActivity : MauiAppCompatActivity
 {
     private bool _capturedHardwareBack;
+    private OnBackPressedCallback? _backCallback;
+
+    internal void RegisterBackCallback()
+    {
+        _backCallback ??= new CharacterBackCallback(this);
+        // The dispatcher is LIFO. BlazorWebView registers its own history callback
+        // when its handler connects, so put overlay/close handling above it.
+        _backCallback.Remove();
+        OnBackPressedDispatcher.AddCallback(this, _backCallback);
+    }
+
+    protected override void OnPostResume()
+    {
+        base.OnPostResume();
+        RegisterBackCallback();
+    }
+
+    internal void ContinueAcceptedBack()
+    {
+        if (_backCallback is not null) _backCallback.Enabled = false;
+        try { OnBackPressedDispatcher.OnBackPressed(); }
+        finally
+        {
+            if (_backCallback is not null && !IsDestroyed) _backCallback.Enabled = true;
+        }
+    }
+
+    private sealed class CharacterBackCallback(MainActivity activity) : OnBackPressedCallback(true)
+    {
+        public override void HandleOnBackPressed()
+        {
+            if (GetMainPage(activity)?.HandleAndroidBack(activity, navigateWebHistory: true) != true)
+                activity.ContinueAcceptedBack();
+        }
+    }
 
     internal static MainPage? GetMainPage(Android.App.Activity activity) =>
         Microsoft.Maui.Controls.Application.Current?.Windows
@@ -56,9 +93,7 @@ public class MainActivity : MauiAppCompatActivity
                     var page = GetMainPage(this);
                     if (page?.HandleAndroidBack(this, navigateWebHistory: true) != true)
                     {
-#pragma warning disable CS0618, CA1422
-                        OnBackPressed();
-#pragma warning restore CS0618, CA1422
+                        ContinueAcceptedBack();
                     }
                 }
                 return true;
@@ -82,6 +117,9 @@ public class MainActivity : MauiAppCompatActivity
         // Android 15 (SDK 35) forces edge-to-edge. Calling this explicitly tells the WebView
         // to report real system-bar heights via env(safe-area-inset-*) in CSS.
         WindowCompat.SetDecorFitsSystemWindows(Window!, false);
+        // Android 16 no longer dispatches KEYCODE_BACK or Activity.OnBackPressed
+        // for target API 36. Join the supported dispatcher for buttons and gestures.
+        RegisterBackCallback();
 #if AURORA_ANDROID_DIAGNOSTICS
         _probe = new AndroidResponsivenessProbe();
 #endif
@@ -101,8 +139,23 @@ public class MainActivity : MauiAppCompatActivity
     }
 
 #endif
+    protected override void OnStop()
+    {
+        // Finish local checkpoints while Android still guarantees this callback time.
+        // Do not rely on OnDestroy: background process reclamation may never call it.
+        try
+        {
+            IPlatformApplication.Current?.Services.GetService<Services.CharacterDraftRecovery>()?.CheckpointOnBackground();
+        }
+        catch (Exception ex) { Services.DebugLogService.Instance.LogException(ex, "MainActivity.OnStop recovery"); }
+        base.OnStop();
+    }
+
     protected override void OnDestroy()
     {
+        _backCallback?.Remove();
+        _backCallback?.Dispose();
+        _backCallback = null;
         Services.AndroidGoogleDriveAuthorization.OnActivityDestroyed(this);
 #if AURORA_ANDROID_DIAGNOSTICS
         _probe?.Dispose();

@@ -564,7 +564,7 @@ internal sealed class MauiCharacterSheetGenerator : ICharacterSheetGenerator
             ? stats.GetValue(info.GetPrepareAmountStatisticName()).ToString()
             : "N/A";
 
-        page.IsMulticlassSpellcaster = cm.Status.HasMulticlassSpellSlots;
+        page.IsMulticlassSpellcaster = cm.Status.HasMulticlassSpellSlots && !SpellSlotPoolResolver.IsPactMagic(info);
 
         // Spell slots
         page.Cantrips.Level = 0;
@@ -572,21 +572,8 @@ internal sealed class MauiCharacterSheetGenerator : ICharacterSheetGenerator
         {
             var levelProp = GetSpellsProperty(page, lvl);
             levelProp.Level = lvl;
-            try { levelProp.AvailableSlots = stats.GetValue(info.GetSlotStatisticName(lvl)); }
+            try { levelProp.AvailableSlots = SpellSlotPoolResolver.ForProfile(cm, info).FirstOrDefault(s => s.Level == lvl)?.TotalSlots ?? 0; }
             catch (Exception ex) { DebugLogService.Instance.LogException(ex, $"MauiCharacterSheetGenerator slot count level {lvl} for '{info.Name}'"); }
-        }
-        if (cm.Status.HasMulticlassSpellSlots)
-        {
-            var mss = cm.Character.MulticlassSpellSlots;
-            page.Spells1.AvailableSlots = mss.Slot1;
-            page.Spells2.AvailableSlots = mss.Slot2;
-            page.Spells3.AvailableSlots = mss.Slot3;
-            page.Spells4.AvailableSlots = mss.Slot4;
-            page.Spells5.AvailableSlots = mss.Slot5;
-            page.Spells6.AvailableSlots = mss.Slot6;
-            page.Spells7.AvailableSlots = mss.Slot7;
-            page.Spells8.AvailableSlots = mss.Slot8;
-            page.Spells9.AvailableSlots = mss.Slot9;
         }
 
         // Collect prepared/always-prepared IDs

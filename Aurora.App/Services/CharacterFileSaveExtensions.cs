@@ -111,7 +111,13 @@ public static class CharacterFileSaveExtensions
             return false;
 
         var doc = LoadForPatch(file, out bool updateKnownStamp);
+        if (!ApplyTextEdits(doc, snap)) return false;
+        SavePatch(file, doc, updateKnownStamp);
+        return true;
+    }
 
+    internal static bool ApplyTextEdits(XmlDocument doc, CharacterSnapshot snap)
+    {
         var root = doc.DocumentElement;
         if (root == null) return false;
 
@@ -251,8 +257,6 @@ public static class CharacterFileSaveExtensions
             }
         }
 
-        // ── write ────────────────────────────────────────────────────────────
-        SavePatch(file, doc, updateKnownStamp);
         return true;
     }
 
@@ -395,22 +399,11 @@ public static class CharacterFileSaveExtensions
         {
             var doc = LoadForPatch(file, out bool updateKnownStamp);
 
-            var root = doc.DocumentElement;
-            if (root == null) return false;
-
-            var old = root["custom-features"];
-            if (old != null) root.RemoveChild(old);
-
-            var node = doc.CreateElement("custom-features");
-            foreach (var id in ids.Where(s => !string.IsNullOrWhiteSpace(s)))
-            {
-                var fn = doc.CreateElement("feature");
-                fn.SetAttribute("id", id);
-                node.AppendChild(fn);
-            }
-            root.AppendChild(node);
+            ApplyCustomFeatures(doc, ids);
 
             SavePatch(file, doc, updateKnownStamp);
+            // In-memory tab snapshots and exports serialize the cached XML, too.
+            file.InitializeDisplayPropertiesFromFilePath();
             return true;
         }
         catch (Exception ex)
@@ -418,6 +411,21 @@ public static class CharacterFileSaveExtensions
             DebugLogService.Instance.LogException(ex, "SaveCustomFeatures");
             return false;
         }
+    }
+
+    internal static void ApplyCustomFeatures(XmlDocument document, IEnumerable<string> ids)
+    {
+        var root = document.DocumentElement
+            ?? throw new InvalidDataException("The character document has no root.");
+        if (root["custom-features"] is { } old) root.RemoveChild(old);
+        var node = document.CreateElement("custom-features");
+        foreach (string id in ids.Where(id => !string.IsNullOrWhiteSpace(id)))
+        {
+            var feature = document.CreateElement("feature");
+            feature.SetAttribute("id", id);
+            node.AppendChild(feature);
+        }
+        root.AppendChild(node);
     }
 
     /// <summary>Reads the element ids stored in the &lt;custom-features&gt; node (empty if none).</summary>

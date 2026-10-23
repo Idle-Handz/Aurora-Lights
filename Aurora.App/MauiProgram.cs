@@ -26,9 +26,9 @@ public static class MauiProgram
 #endif
 
 #if ANDROID
-        // Default to external app-specific storage on Android so user data survives uninstalls.
-        // /storage/emulated/0/Android/data/{package}/files — preserved across updates,
-        // accessible via any file manager without root. Only applied on a fresh install
+        // Default to external app-specific storage on Android. It survives app updates,
+        // but is removed on uninstall; file-manager access is restricted on modern Android.
+        // /storage/emulated/0/Android/data/{package}/files. Only applied on a fresh install
         // (empty setting); a configured path is always respected.
         if (string.IsNullOrWhiteSpace(appContext.Settings.DocumentsRootDirectory))
         {
@@ -71,6 +71,8 @@ public static class MauiProgram
         builder.Services.AddSingleton<MauiApplicationContext>(appContext);
         builder.Services.AddSingleton<AppIdentityService>();
         builder.Services.AddSingleton<CharacterService>();
+        builder.Services.AddSingleton(new CharacterDraftRecovery(
+            Path.Combine(FileSystem.Current.AppDataDirectory, "CharacterDrafts"), enabled: OperatingSystem.IsAndroid()));
         builder.Services.AddSingleton<CharacterTabService>();
         builder.Services.AddSingleton<CharacterCloseCoordinator>();
         builder.Services.AddSingleton<WindowCloseCoordinator>();

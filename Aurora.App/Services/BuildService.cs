@@ -882,17 +882,14 @@ public static partial class BuildService
             EnsureMulticlassSelectionsRegistered();
             NormalizeSelectionState();
 
-            // CharacterFile.Save() rebuilds the document from the model, dropping app-specific
-            // root nodes such as <custom-features>. Preserve that node across the rebuild so
-            // multiple custom additions (and adds interleaved with other build edits) keep their
-            // tracking rather than each save clobbering the previous list.
-            var customFeatures = targetFile.LoadCustomFeatures();
+            var customFeatures = tab.PendingCustomFeatureIds ?? targetFile.LoadCustomFeatures();
 
             targetFile.Save(CharacterManager.Current.Character, document =>
-                SidekickService.SynchronizeOwnerLevels(document, CharacterManager.Current.Character.Level));
-
-            if (customFeatures.Count > 0 && !targetFile.SaveCustomFeatures(customFeatures))
-                throw new InvalidOperationException("Character save completed, but custom feature tracking could not be restored.");
+            {
+                SidekickService.SynchronizeOwnerLevels(document, CharacterManager.Current.Character.Level);
+                if (customFeatures.Count > 0 || document.DocumentElement?["custom-features"] is not null)
+                    CharacterFileSaveExtensions.ApplyCustomFeatures(document, customFeatures);
+            });
 
             // Session state lives in a JSON sidecar (SessionStore), so a full save can't drop
             // it any more. Refreshing it here keeps the sidecar in step with the character file
@@ -905,6 +902,7 @@ public static partial class BuildService
             if (tab.Snapshot != null)
                 tab.SessionWrites.Saved(sessionVersion, SessionCharacterEdits.From(tab.Snapshot));
             tab.CloudSession?.InvalidatePendingState();
+            tab.PendingCustomFeatureIds = null;
 
             return true;
         }).ThrowIfFailed();

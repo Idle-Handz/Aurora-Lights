@@ -1205,12 +1205,15 @@ else if (_workflowSuggestion != null)
             }
             _saving = true;
             StateHasChanged();
-            var error = await BuildService.AddCustomFeatureAsync(tab, elementId);
+            bool autoSave = Prefs.AutoSaveBuildChanges;
+            var error = await BuildService.AddCustomFeatureAsync(tab, elementId, saveToFile: autoSave);
             _saving = false;
             if (error == null)
             {
-                Tabs.MarkClean(tab);
-                Snackbar.Add("Custom feature added.", Severity.Success, cfg => cfg.VisibleStateDuration = 3000);
+                if (autoSave) Tabs.MarkClean(tab);
+                else Tabs.NotifyChanged();
+                Snackbar.Add(autoSave ? "Custom feature added." : "Custom feature added. Save when ready.",
+                    Severity.Success, cfg => cfg.VisibleStateDuration = 3000);
             }
             else
             {
@@ -1228,13 +1231,16 @@ else if (_workflowSuggestion != null)
 
         _saving = true;
         StateHasChanged();
-        var error = await BuildService.RemoveCustomFeatureAsync(tab, elementId);
+        bool autoSave = Prefs.AutoSaveBuildChanges;
+        var error = await BuildService.RemoveCustomFeatureAsync(tab, elementId, saveToFile: autoSave);
         _saving = false;
         if (error == null)
         {
-            if (SidekickService.IsInstanceId(elementId)) Tabs.NotifyChanged();
-            else Tabs.MarkClean(tab);
-            Snackbar.Add("Custom feature removed.", Severity.Info, cfg => cfg.VisibleStateDuration = 2500);
+            bool sidekick = SidekickService.IsInstanceId(elementId);
+            if (autoSave && !sidekick) Tabs.MarkClean(tab);
+            else Tabs.NotifyChanged();
+            Snackbar.Add(autoSave || sidekick ? "Custom feature removed." : "Custom feature removed. Save when ready.",
+                Severity.Info, cfg => cfg.VisibleStateDuration = 2500);
         }
         else
         {

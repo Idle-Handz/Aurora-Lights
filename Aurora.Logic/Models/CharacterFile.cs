@@ -358,9 +358,12 @@ public class CharacterFile : ObservableObject
     /// writes to disk, and returns the bytes. Used by CharacterContext to capture in-memory tab state
     /// before swapping the CharacterManager singleton to a different tab's character.
     /// </summary>
-    public byte[] SerializeCharacter(Character character)
+    public byte[] SerializeCharacter(Character character) => SerializeCharacter(character, null);
+
+    public byte[] SerializeCharacter(Character character, Action<XmlDocument> updateDocument)
     {
         BuildDocument(character);
+        updateDocument?.Invoke(this._document);
         using var ms = new MemoryStream();
         using (XmlTextWriter w = new XmlTextWriter(ms, Encoding.UTF8))
         {

@@ -29,10 +29,12 @@ public sealed class CharacterTab
     internal Task<string?>? InFlightSave { get; set; }
     internal long InFlightSaveEditVersion { get; set; }
     public event Action? SaveStateChanged;
+    public event Action? DraftStateChanged;
+    internal void NotifyDraftStateChanged() => DraftStateChanged?.Invoke();
     public bool IsSaving
     {
         get => _isSaving;
-        set { _isSaving = value; SaveStateChanged?.Invoke(); }
+        set { _isSaving = value; SaveStateChanged?.Invoke(); DraftStateChanged?.Invoke(); }
     }
     public bool IsDirty
     {
@@ -41,6 +43,7 @@ public sealed class CharacterTab
         {
             if (value) EditVersion++;
             _isDirty = value || (CloudSession is not null && CloudSavedEditVersion < EditVersion);
+            DraftStateChanged?.Invoke();
         }
     }
 
@@ -49,7 +52,12 @@ public sealed class CharacterTab
     /// Stored separately because CharacterManager.Current is a singleton
     /// and gets overwritten when subsequent characters are loaded.
     /// </summary>
-    public CharacterSnapshot? Snapshot { get; set; }
+    private CharacterSnapshot? _snapshot;
+    public CharacterSnapshot? Snapshot
+    {
+        get => _snapshot;
+        set { _snapshot = value; DraftStateChanged?.Invoke(); }
+    }
     public IReadOnlyList<ClassProgressionSnapshot>? ProgressionSnapshots { get; set; }
 
     public string DisplayName => File.DisplayName ?? "Character";
@@ -65,7 +73,12 @@ public sealed class CharacterTab
     /// Build.razor shows a loading indicator instead of "no character" when this is set.
     /// Cleared by Start.razor once LoadCharacterAsync completes.
     /// </summary>
-    public bool IsLoading { get; set; }
+    private bool _isLoading;
+    public bool IsLoading
+    {
+        get => _isLoading;
+        set { _isLoading = value; DraftStateChanged?.Invoke(); }
+    }
 
     /// <summary>
     /// True when this character was just created (not loaded from an existing file).
@@ -81,6 +94,9 @@ public sealed class CharacterTab
     /// <c>StateXml is { Length: &gt; 0 }</c> treats empty the same as null, but the intent is lost.
     /// </summary>
     public byte[]? StateXml { get; set; }
+
+    /// <summary>Null means use the saved list; an empty list is a pending removal of all Extras.</summary>
+    internal IReadOnlyList<string>? PendingCustomFeatureIds { get; set; }
 
     /// <summary>
     /// Serializes concurrent writes to this character's XML file so a background full save

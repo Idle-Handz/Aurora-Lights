@@ -260,6 +260,7 @@ public sealed class ContentService
     private async Task<(ContentUpdateOutcome Outcome, string Message)> CheckForUpdatesAsync(string trigger)
     {
         string dir = GetBuiltInCustomDirectory();
+        RestorePendingContentReload();
         IReadOnlyList<string> indexNames = GetInstalledIndexNames(dir);
         if (indexNames.Count == 0)
         {
@@ -343,6 +344,7 @@ public sealed class ContentService
         }
         finally
         {
+            RestorePendingContentReload();
             IsCheckingContentUpdates = false;
             ContentUpdateCompletedUtc = DateTimeOffset.UtcNow;
             Changed?.Invoke();
@@ -393,6 +395,8 @@ public sealed class ContentService
     {
         if (HasOpenTabs)
             return "Save your changes and close all character tabs before refreshing the database.";
+        // Keep activation and acknowledgement ordered with startup/manual downloads.
+        await _contentUpdateLock.WaitAsync();
         using var refreshTrace = ContentLoadTrace.Begin("refresh");
         try
         {
@@ -433,6 +437,7 @@ public sealed class ContentService
         {
             return DebugLogService.Catch(ex, "ContentService.ReloadContentAsync");
         }
+        finally { _contentUpdateLock.Release(); }
     }
 
     // ── Startup auto-refresh ──────────────────────────────────────────────────
@@ -467,6 +472,8 @@ public sealed class ContentService
                 return;
 
             _startupRefreshAttempted = true;
+            _contentDb.CleanUpInterruptedImports();
+            RestorePendingContentReload();
             await RefreshReplacementProposalsAsync().ConfigureAwait(false);
             // Cached proposal review can take time. Read the network preference afterwards
             // so switching it off while review is running still prevents downloads.
@@ -476,12 +483,15 @@ public sealed class ContentService
                 : "Skipped: auto-download was disabled.";
             DebugLogService.Instance.Info($"Startup content update: {StartupContentUpdateStatus}");
             if (!StartupAutoDownloadEnabled.Value)
+            {
+                if (ContentReloadPending) ContentDownloaded?.Invoke("Content updates downloaded. Refresh the database to apply.");
                 return;
+            }
 
             var (outcome, message) = await CheckForUpdatesAsync("Startup").ConfigureAwait(false);
             StartupContentUpdateStatus = $"{outcome}: {message}";
             DebugLogService.Instance.Info($"Startup content update: {StartupContentUpdateStatus}");
-            if (outcome == ContentUpdateOutcome.Updated && ContentReloadPending)
+            if (ContentReloadPending)
             {
                 Changed?.Invoke();
                 ContentDownloaded?.Invoke("Content updates downloaded. Refresh the database to apply.");
@@ -500,8 +510,15 @@ public sealed class ContentService
         }
     }
 
+    private void RestorePendingContentReload()
+    {
+        if (File.Exists(Path.Combine(GetBuiltInCustomDirectory(), ContentIndexUpdateService.PendingContentChangesFileName)))
+            ContentReloadPending = true;
+    }
+
     public void ClearContentReloadPending()
     {
+        File.Delete(Path.Combine(GetBuiltInCustomDirectory(), ContentIndexUpdateService.PendingContentChangesFileName));
         if (!ContentReloadPending)
             return;
 

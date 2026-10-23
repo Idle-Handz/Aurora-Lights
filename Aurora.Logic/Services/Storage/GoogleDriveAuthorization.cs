@@ -21,6 +21,7 @@ public sealed class GoogleDriveAuthorization(
     : IGoogleDriveAccessTokenProvider
 {
     public const string Scope = "https://www.googleapis.com/auth/drive.file";
+    internal TimeProvider SignInTimeProvider { get; init; } = TimeProvider.System;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private string? _accessToken;
     private DateTimeOffset _expires;
@@ -34,30 +35,39 @@ public sealed class GoogleDriveAuthorization(
         await _gate.WaitAsync(cancellationToken);
         try
         {
-            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            timeout.CancelAfter(TimeSpan.FromMinutes(3));
-            string verifier = Base64Url(RandomNumberGenerator.GetBytes(32));
-            string state = Base64Url(RandomNumberGenerator.GetBytes(32));
-            // The OS chooses and holds the port; no find-free-port/close/rebind race.
-            using var listener = new TcpListener(IPAddress.Loopback, 0);
-            listener.Start();
-            string redirect = $"http://127.0.0.1:{((IPEndPoint)listener.LocalEndpoint).Port}/";
-            string url = "https://accounts.google.com/o/oauth2/v2/auth?" + Query(new()
+            // First-time login and a second factor can take several minutes in the browser.
+            // Keep a bounded window, while allowing the caller's Cancel action immediately.
+            using var deadline = new CancellationTokenSource(TimeSpan.FromMinutes(10), SignInTimeProvider);
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, deadline.Token);
+            try
             {
-                ["client_id"] = options.ClientId, ["redirect_uri"] = redirect,
-                ["response_type"] = "code", ["scope"] = Scope, ["state"] = state,
-                ["code_challenge"] = Base64Url(SHA256.HashData(Encoding.ASCII.GetBytes(verifier))),
-                ["code_challenge_method"] = "S256", ["access_type"] = "offline", ["prompt"] = "consent select_account"
-            });
-            await openBrowser(new Uri(url));
-            using var callback = await listener.AcceptTcpClientAsync(timeout.Token);
-            string code = await ReceiveCallbackAsync(callback, redirect, state, timeout.Token);
-            var values = ClientValues();
-            values["code"] = code;
-            values["code_verifier"] = verifier;
-            values["redirect_uri"] = redirect;
-            values["grant_type"] = "authorization_code";
-            await ExchangeAsync(values, requireRefreshToken: true, timeout.Token, validateAccount);
+                string verifier = Base64Url(RandomNumberGenerator.GetBytes(32));
+                string state = Base64Url(RandomNumberGenerator.GetBytes(32));
+                // The OS chooses and holds the port; no find-free-port/close/rebind race.
+                using var listener = new TcpListener(IPAddress.Loopback, 0);
+                listener.Start();
+                string redirect = $"http://127.0.0.1:{((IPEndPoint)listener.LocalEndpoint).Port}/";
+                string url = "https://accounts.google.com/o/oauth2/v2/auth?" + Query(new()
+                {
+                    ["client_id"] = options.ClientId, ["redirect_uri"] = redirect,
+                    ["response_type"] = "code", ["scope"] = Scope, ["state"] = state,
+                    ["code_challenge"] = Base64Url(SHA256.HashData(Encoding.ASCII.GetBytes(verifier))),
+                    ["code_challenge_method"] = "S256", ["access_type"] = "offline", ["prompt"] = "consent select_account"
+                });
+                await openBrowser(new Uri(url));
+                using var callback = await listener.AcceptTcpClientAsync(timeout.Token);
+                string code = await ReceiveCallbackAsync(callback, redirect, state, timeout.Token);
+                var values = ClientValues();
+                values["code"] = code;
+                values["code_verifier"] = verifier;
+                values["redirect_uri"] = redirect;
+                values["grant_type"] = "authorization_code";
+                await ExchangeAsync(values, requireRefreshToken: true, timeout.Token, validateAccount);
+            }
+            catch (OperationCanceledException ex) when (deadline.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+            {
+                throw new TimeoutException("Google sign-in timed out. Return to Aurora and choose Connect Google Drive to try again.", ex);
+            }
         }
         finally { _gate.Release(); }
     }

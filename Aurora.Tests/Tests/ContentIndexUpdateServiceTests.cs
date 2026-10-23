@@ -343,6 +343,7 @@ public sealed class ContentIndexUpdateServiceTests
 
     [Theory]
     [InlineData("book.xml", "<elements><element")]
+    [InlineData("book.xml", "<html><body>Temporary server error</body></html>")]
     [InlineData("child.index", "<index><files>")]
     [InlineData("child.index", "<html><body>Temporary server error</body></html>")]
     [InlineData("fix.aurora-correction", "<elements><proposal")]

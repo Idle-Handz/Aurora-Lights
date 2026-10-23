@@ -26,6 +26,7 @@ public sealed class LegacyParityScenarioTests : IAsyncLifetime
     {
         var root = Path.Combine(AppContext.BaseDirectory, "Fixtures", "ParityScenarios");
         return Directory.EnumerateFiles(root, "*.json", SearchOption.TopDirectoryOnly)
+            .Where(path => !Path.GetFileName(path).StartsWith("2024-", StringComparison.Ordinal))
             .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
             .Select(path => new object[] { path });
     }
@@ -59,6 +60,10 @@ public sealed class LegacyParityScenarioTests : IAsyncLifetime
             await AssertRoundTripAsync(scenario, snapshot);
     }
 
+    [BundledContentFact("ID_WOTC_PHB24_CLASS_DRUID", "ID_WOTC_PHB24_BACKGROUND_ACOLYTE")]
+    public Task Optional2024DruidAcolyteScenario() => Scenario_ExposesExpectedChoicesAndSurvivesRoundTrip(
+        Path.Combine(AppContext.BaseDirectory, "Fixtures", "ParityScenarios", "2024-druid-acolyte.json"));
+
     private bool EnsureScenarioElementsAvailable(CharacterParityScenario scenario)
     {
         var missing = scenario.SeedElementIds
@@ -67,8 +72,7 @@ public sealed class LegacyParityScenarioTests : IAsyncLifetime
 
         if (missing.Count == 0) return true;
 
-        _output.WriteLine($"[SKIP] {scenario.Name}: missing content element(s): {string.Join(", ", missing)}");
-        return false;
+        throw new InvalidOperationException($"Required scenario {scenario.Name} is missing: {string.Join(", ", missing)}");
     }
 
     private static async Task<CharacterParitySnapshot> BuildScenarioAsync(CharacterParityScenario scenario)

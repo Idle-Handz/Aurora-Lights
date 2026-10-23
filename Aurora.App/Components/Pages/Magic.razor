@@ -79,11 +79,16 @@
     private void BuildMagicModel()
     {
         if (_snap is null) { _magicModel = new MagicOverviewModel(); _selectedSpellModel = null; return; }
-        var slotUsage = Tabs.ActiveTab?.Session.SpellSlotsUsed ?? new Dictionary<int, int>();
+        var session = Tabs.ActiveTab?.Session ?? new SessionState();
+        session.EnsureSpellSlotPools(_snap.SpellSlotPools);
         _magicModel = new()
         {
             HasSpellcasting = _snap.HasSpellcasting,
             KnownSpellGroups = BuildKnownSpellGroups(),
+            SlotPools = _snap.SpellSlotPools.Select(pool => new MagicSlotPoolModel(
+                pool.Id, pool.Label, pool.RecoversOnShortRest,
+                pool.Levels.Select(level => new MagicSpellLevelModel(level.Level, [], level.TotalSlots,
+                    session.UsedSlots(pool.Id, level.Level, level.TotalSlots))).ToList())).ToList(),
             Sections = _snap.SpellcastingSections
                 .Select(section => new MagicSpellcastingSectionModel
                 {
@@ -106,7 +111,7 @@
                             level.Level,
                             level.Spells.Select(spell => CreateSpellListEntry(spell, level.Level, section.IsPreparedCaster)).ToList(),
                             level.TotalSlots,
-                            slotUsage.GetValueOrDefault(level.Level, 0)))
+                            0))
                         .ToList()
                 })
                 .ToList()
@@ -532,17 +537,11 @@
             return Task.CompletedTask;
         }
 
-        var used = tab.Session.SpellSlotsUsed.GetValueOrDefault(change.Level, 0);
-        int newUsed = used == change.SlotIndex ? change.SlotIndex - 1 : change.SlotIndex;
-        tab.Session.SpellSlotsUsed[change.Level] = newUsed;
-
-        foreach (var section in _snap.SpellcastingSections)
-        {
-            var level = section.SpellLevels.FirstOrDefault(l => l.Level == change.Level);
-            if (level is not null)
-                level.UsedSlots = newUsed;
-        }
-
+        var pool = _snap.SpellSlotPools.FirstOrDefault(p => p.Id == change.PoolId);
+        var capacity = pool?.Levels.FirstOrDefault(l => l.Level == change.Level);
+        if (capacity is null) return Task.CompletedTask;
+        tab.Session.EnsureSpellSlotPools(_snap.SpellSlotPools);
+        tab.Session.ToggleSlot(change.PoolId, change.Level, change.SlotIndex, capacity.TotalSlots);
         BuildMagicModel();
 
         if (SessionStore.Save(tab.File.FilePath, tab.Session))
@@ -551,6 +550,7 @@
         }
         else
         {
+            Tabs.MarkDirty(tab);
             _saveError = "Spell slot changes could not be saved yet. The current slot state is still in memory.";
             Snackbar.Add(_saveError, Severity.Warning, cfg => cfg.VisibleStateDuration = 3000);
         }
