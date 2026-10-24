@@ -1,4 +1,4 @@
-namespace Aurora.App.Services;
+namespace Aurora.Reflections.Services;
 
 /// <summary>Progress the Settings page shows while the content database is rebuilt.</summary>
 public enum AuroraImportPhase

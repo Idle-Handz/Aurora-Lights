@@ -14,7 +14,7 @@ class AssetInventoryTests(unittest.TestCase):
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
         self.root = Path(self.directory.name)
-        self.name = 'Aurora.App/Resources/Fonts/test.ttf'
+        self.name = 'Aurora.Reflections/Resources/Fonts/test.ttf'
         file = self.root / self.name
         file.parent.mkdir(parents=True)
         file.write_bytes(b'fixture-font')
@@ -73,7 +73,7 @@ class AssetInventoryTests(unittest.TestCase):
             self.verify('windows')
 
     def test_source_only_permissions_are_still_required_for_source_distribution(self):
-        name = 'Aurora.Lights/resources/old-art.jpg'
+        name = 'Aurora.Legacy/resources/old-art.jpg'
         file = self.root / name
         file.parent.mkdir(parents=True)
         file.write_bytes(b'old-art')
@@ -100,13 +100,13 @@ class AssetInventoryTests(unittest.TestCase):
         return path
 
     def test_adapter_cannot_gain_book_prose_even_if_its_asset_hash_is_refreshed(self):
-        self.add_data_asset('Aurora.App/Resources/Raw/StartingEquipment/fixture.xml',
+        self.add_data_asset('Aurora.Reflections/Resources/Raw/StartingEquipment/fixture.xml',
             b'<aurora-starting-equipment><entry>Unreviewed descriptive prose</entry></aurora-starting-equipment>')
         with self.assertRaisesRegex(ValueError, 'contains descriptive text'):
             self.verify()
 
     def test_adapter_schema_cannot_silently_expand_to_descriptions(self):
-        self.add_data_asset('Aurora.App/Resources/Raw/StartingEquipment/fixture.xml',
+        self.add_data_asset('Aurora.Reflections/Resources/Raw/StartingEquipment/fixture.xml',
             b'<aurora-starting-equipment><description /></aurora-starting-equipment>')
         with self.assertRaisesRegex(ValueError, 'Unsupported starting-equipment content'):
             self.verify()

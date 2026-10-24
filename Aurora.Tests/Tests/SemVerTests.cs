@@ -1,4 +1,4 @@
-using Aurora.App.Services.Updates;
+using Aurora.Reflections.Services.Updates;
 
 namespace Aurora.Tests.Tests;
 

@@ -6,7 +6,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
-namespace Aurora.App.Services.ContentReview;
+namespace Aurora.Reflections.Services.ContentReview;
 
 /// <summary>Read-only application content preparation; never writes SQLite or selects a winner.</summary>
 public static class CanonicalContentAnalyzer

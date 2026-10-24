@@ -12,7 +12,7 @@ for (const width of [1100, 390]) {
       + '--mud-palette-divider:#45475a; --mud-palette-surface:#313244; --mud-palette-text-secondary:#a6adc8;'
       + '--mud-palette-primary:#89b4fa; --mud-palette-error:#f38ba8; }</style></head><body>'
       + read('sidekick-choices.html') + '</body></html>');
-    await page.addScriptTag({ content: readFileSync(path.resolve('Aurora.App/wwwroot/sidekick-choices.js'), 'utf8') });
+    await page.addScriptTag({ content: readFileSync(path.resolve('Aurora.Reflections/wwwroot/sidekick-choices.js'), 'utf8') });
     const choices = page.locator('.sidekick-choices');
     // The live Blazor callback calls the same helper when the dialog opens or a link is clicked.
     await page.evaluate(() => {

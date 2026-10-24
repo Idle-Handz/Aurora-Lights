@@ -1,6 +1,6 @@
 param(
     [string]$InputPath,
-    [string]$OutputPath = (Join-Path $PSScriptRoot '../Aurora.App/Configuration/google-drive-client.json'),
+    [string]$OutputPath = (Join-Path $PSScriptRoot '../Aurora.Reflections/Configuration/google-drive-client.json'),
     [switch]$Required
 )
 

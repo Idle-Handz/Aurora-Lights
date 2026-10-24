@@ -1,0 +1,790 @@
+@inherits LayoutComponentBase
+@implements IDisposable
+@inject CharacterTabService Tabs
+@inject CharacterCloseCoordinator CharacterClose
+@inject WindowCloseCoordinator WindowClose
+@inject NavigationManager Nav
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject UserPreferencesService Prefs
+@inject AppIdentityService Brand
+@inject IJSRuntime JS
+@inject Aurora.Reflections.Services.Updates.AppUpdateService AppUpdates
+@inject ContentService Content
+@inject CharacterService Characters
+@inject CharacterDraftRecovery Drafts
+
+<MudThemeProvider Theme="ActiveMudTheme" IsDarkMode="SelectedTheme.IsDark" ObserveSystemThemeChange="false" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout Class="aurora-theme-shell">
+    <MudAppBar Elevation="1" Color="Color.Default">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu"
+                       Color="Color.Inherit"
+                       Edge="Edge.Start"
+                       OnClick="ToggleDrawer" />
+        <div class="app-brand ml-2">
+            <img src="brand/aurora-reflections-icon.png" alt="@Brand.AppName" class="app-brand-icon" />
+            <div class="app-brand-text">
+                <div class="app-brand-title">@Brand.AppName</div>
+            </div>
+        </div>
+        <MudSpacer />
+        <MudTextField T="string"
+                      Value="_compendiumQuickQuery"
+                      ValueChanged="OnCompendiumQueryChanged"
+                      Placeholder="Compendium search"
+                      Immediate="true"
+                      Margin="Margin.Dense"
+                      Variant="Variant.Outlined"
+                      Class="appbar-compendium-search"
+                      Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search"
+                      OnKeyDown="HandleCompendiumSearchKeyDown" />
+        <MudIconButton Icon="@Icons.Material.Filled.Search"
+                       Color="Color.Inherit"
+                       title="Search compendium"
+                       OnClick="NavigateToCompendiumSearch" />
+        @if (Tabs.ActiveTab?.IsDirty == true || Tabs.ActiveTab?.CloudSession is not null)
+        {
+            <MudIconButton Icon="@Icons.Material.Filled.Save"
+                           Color="Color.Primary"
+                           title="Save (Ctrl+S)"
+                           Disabled="@(Tabs.ActiveTab?.IsSaving == true)"
+                           OnClick="@(() => SaveActive())" />
+        }
+        @* Update indicator covers app releases, pending content refresh, and correction proposals.
+           It also appears while checks are running so manual/startup checks have visible feedback. *@
+        @if (ShowUpdateIndicator)
+        {
+            <MudTooltip Text="@UpdateTooltip">
+                @if (UpdateAvailableCount > 0)
+                {
+                    <MudBadge Content="@UpdateAvailableCount"
+                              Color="Color.Primary"
+                              Overlap="true"
+                              Bordered="true">
+                        <MudIconButton Icon="@UpdateIcon"
+                                       Color="Color.Inherit"
+                                       Class="@UpdateIconClass"
+                                       OnClick="OpenUpdatesPage" />
+                    </MudBadge>
+                }
+                else
+                {
+                    <MudIconButton Icon="@UpdateIcon"
+                                   Color="Color.Inherit"
+                                   Class="@UpdateIconClass"
+                                   OnClick="OpenUpdatesPage" />
+                }
+            </MudTooltip>
+        }
+        <MudMenu Icon="@Icons.Material.Filled.HelpOutline"
+                 Color="Color.Inherit"
+                 AriaLabel="Help and about"
+                 Dense="true">
+            <MudMenuItem Icon="@Icons.Material.Filled.Keyboard" OnClick="ShowShortcutsDialog">
+                Keyboard shortcuts
+            </MudMenuItem>
+            <MudMenuItem Icon="@Icons.Material.Filled.Info" OnClick="ShowAboutDialog">
+                About @Brand.AppName
+            </MudMenuItem>
+        </MudMenu>
+    </MudAppBar>
+
+    <MudDrawer @bind-Open="_drawerOpen"
+               Class="desktop-nav-drawer"
+               ClipMode="DrawerClipMode.Always"
+               Elevation="2"
+               Variant="DrawerVariant.Mini"
+               OpenMiniOnHover="true">
+        <NavMenu />
+    </MudDrawer>
+
+    <MudMainContent Class="app-main-content">
+        @* Character tab bar — only visible when one or more characters are open *@
+        @if (Tabs.Tabs.Count > 0)
+        {
+            <div class="char-tab-bar">
+                @foreach (var tab in Tabs.Tabs)
+                {
+                    <div class="char-tab @(tab == Tabs.ActiveTab ? "char-tab-active" : "")"
+                         @onclick="() => ActivateTab(tab)">
+                        <span class="char-tab-name">@tab.DisplayName</span>
+                        @if (tab.IsDirty)
+                        {
+                            <span class="char-tab-dirty" title="Unsaved changes">●</span>
+                        }
+                        <button class="char-tab-close"
+                                @onclick:stopPropagation="true"
+                                @onclick="() => CloseTabAsync(tab)"
+                                title="@(tab.IsDirty ? "Close (will prompt to save unsaved changes)" : "Close")">×</button>
+                    </div>
+                }
+            </div>
+        }
+        <MudContainer MaxWidth="MaxWidth.False" Class="app-content-container pa-4" Style="@ContentStyle">
+            @if (Drafts.LastError is not null)
+            {
+                <MudAlert Severity="Severity.Warning" Class="mb-3">@Drafts.LastError</MudAlert>
+            }
+            @if (Tabs.ActiveTab is { CloudSession: not null } cloudTab)
+            {
+                <MudPaper Class="pa-3 mb-3" Outlined="true">
+                    <div class="d-flex align-center flex-wrap gap-2">
+                        <MudIcon Icon="@Icons.Material.Filled.Cloud" />
+                        <MudText>Google Drive — @(cloudTab.IsLoading ? "Loading..." : cloudTab.IsSaving ? "Saving..." : cloudTab.CloudReloadFailed ? "Could not load Drive save" : cloudTab.IsDirty ? "Changes not yet saved to Drive" : "Cloud save loaded")</MudText>
+                        <MudButton OnClick="SaveActive" Disabled="@(cloudTab.IsSaving || cloudTab.IsLoading || cloudTab.CloudReloadFailed)">Save to Drive</MudButton>
+                        <MudButton OnClick="ReloadCloud" Disabled="@(cloudTab.IsSaving || cloudTab.IsLoading)">Load Drive Save</MudButton>
+                        <MudButton OnClick="DisconnectCloudCharacter" Disabled="@(cloudTab.IsSaving || cloudTab.IsLoading || cloudTab.CloudReloadFailed)">Disconnect character</MudButton>
+                        <MudButton OnClick="OpenCloudRecovery" Disabled="@(cloudTab.IsSaving || cloudTab.IsLoading)">Recovery Files</MudButton>
+                    </div>
+                    @if (cloudTab.CloudNotice is not null)
+                    {
+                        <MudText Typo="Typo.body2">@cloudTab.CloudNotice</MudText>
+                    }
+                </MudPaper>
+            }
+            <div class="app-page-content" @ref="_pageContent" data-focus-context="@PageFocusContext" inert="@(Tabs.ActiveTab is { IsSaving: true } or { CloudReloadFailed: true } ? string.Empty : null)">
+                <AppErrorBoundary @key="PageReloadVersion" @ref="_errorBoundary">@Body</AppErrorBoundary>
+            </div>
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+@if (_mobileMoreOpen && Tabs.ActiveTab != null)
+{
+    <div class="mobile-more-backdrop" @onclick="CloseMobileMore"></div>
+    <nav class="mobile-more-panel" aria-label="More navigation">
+        <NavLink href="/character" class="mobile-more-link" @onclick="CloseMobileMore">
+            <MudIcon Icon="@Icons.Material.Filled.Person" />
+            <span>Overview</span>
+        </NavLink>
+        <NavLink href="/shop" class="mobile-more-link" @onclick="CloseMobileMore">
+            <MudIcon Icon="@Icons.Material.Filled.Storefront" />
+            <span>Shop</span>
+        </NavLink>
+        <NavLink href="/session" class="mobile-more-link" @onclick="CloseMobileMore">
+            <MudIcon Icon="@Icons.Material.Filled.Favorite" />
+            <span>Session</span>
+        </NavLink>
+        @if (SidekickService.HasCompanions(Tabs.ActiveTab))
+        {
+            <NavLink href="/companions" class="mobile-more-link" @onclick="CloseMobileMore">
+                <MudIcon Icon="@Icons.Material.Filled.Groups" />
+                <span>Companions</span>
+            </NavLink>
+        }
+        <NavLink href="/sheet" class="mobile-more-link" @onclick="CloseMobileMore">
+            <MudIcon Icon="@Icons.Material.Filled.Article" />
+            <span>Sheet</span>
+        </NavLink>
+        <NavLink href="/manage" class="mobile-more-link" @onclick="CloseMobileMore">
+            <MudIcon Icon="@Icons.Material.Filled.ManageAccounts" />
+            <span>Manage</span>
+        </NavLink>
+        <NavLink href="/compendium" class="mobile-more-link" @onclick="CloseMobileMore">
+            <MudIcon Icon="@Icons.Material.Filled.MenuBook" />
+            <span>Compendium</span>
+        </NavLink>
+        <NavLink href="/settings" class="mobile-more-link" @onclick="CloseMobileMore">
+            <MudIcon Icon="@Icons.Material.Filled.Settings" />
+            <span>Settings</span>
+        </NavLink>
+        @if (Prefs.DevMode)
+        {
+            <NavLink href="/console" class="mobile-more-link" @onclick="CloseMobileMore">
+                <MudIcon Icon="@Icons.Material.Filled.Terminal" />
+                <span>Console</span>
+            </NavLink>
+        }
+    </nav>
+}
+
+<nav class="mobile-bottom-nav" aria-label="Primary navigation">
+    <NavLink href="/" Match="NavLinkMatch.All" class="mobile-bottom-link">
+        <MudIcon Icon="@Icons.Material.Filled.People" />
+        <span>Chars</span>
+    </NavLink>
+    @if (Tabs.ActiveTab != null)
+    {
+        <NavLink href="/build" class="mobile-bottom-link">
+            <MudIcon Icon="@Icons.Material.Filled.Build" />
+            <span>Build</span>
+        </NavLink>
+        <NavLink href="/equipment" class="mobile-bottom-link">
+            <MudIcon Icon="@Icons.Material.Filled.Shield" />
+            <span>Gear</span>
+        </NavLink>
+        <NavLink href="/magic" class="mobile-bottom-link">
+            <MudIcon Icon="@Icons.Material.Filled.AutoAwesome" />
+            <span>Magic</span>
+        </NavLink>
+        <button type="button"
+                class="mobile-bottom-link mobile-bottom-btn @(_mobileMoreOpen ? "active" : string.Empty)"
+                @onclick="() => _mobileMoreOpen = !_mobileMoreOpen">
+            <MudIcon Icon="@Icons.Material.Filled.MoreHoriz" />
+            <span>More</span>
+        </button>
+    }
+    else
+    {
+        <NavLink href="/compendium" class="mobile-bottom-link">
+            <MudIcon Icon="@Icons.Material.Filled.MenuBook" />
+            <span>Comp</span>
+        </NavLink>
+        <NavLink href="/settings" class="mobile-bottom-link">
+            <MudIcon Icon="@Icons.Material.Filled.Settings" />
+            <span>Settings</span>
+        </NavLink>
+    }
+</nav>
+
+<div class="app-status-bar">
+    <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-disabled, #6c7086);">@Brand.AppName</MudText>
+</div>
+
+@code {
+    private bool _drawerOpen = true;
+    private bool _mobileMoreOpen;
+    private AppErrorBoundary? _errorBoundary;
+    private ElementReference _pageContent;
+    private DotNetObjectReference<MainLayout>? _selfRef;
+    private string _compendiumQuickQuery = string.Empty;
+    private string? _notifiedAppUpdateTag;
+    private WindowCloseCoordinator.CloseHandler? _windowCloseHandler;
+
+    // Keep the library and its in-flight Drive operation mounted when tabs change.
+    // Character pages still remount after a cloud reload to discard cached snapshots.
+    private long PageReloadVersion => Nav.ToBaseRelativePath(Nav.Uri).Split('?', '#')[0].Length == 0
+        ? 0
+        : Tabs.ActiveTab?.CloudReloadVersion ?? 0;
+
+    private string PageFocusContext => $"{Nav.Uri}|{Tabs.ActiveTab?.Id}|{PageReloadVersion}";
+
+    private string ContentStyle => Tabs.Tabs.Count > 0
+        ? "--character-tabs-height: 34px;"
+        : "--character-tabs-height: 0px;";
+
+    protected override void OnInitialized()
+    {
+        _windowCloseHandler = new(
+            work => InvokeAsync(work),
+            // Navigating after the active tab closes can interrupt the dispatched exit
+            // before the next tab's dialog. The exit workflow owns the whole tab sequence.
+            tab => TryCloseTabAsync(tab, navigateAfterClose: false), () => !_disposed);
+        WindowClose.Handler = _windowCloseHandler;
+        Tabs.TabsChanged              += OnTabsChanged;
+        CharacterContext.CaptureError += OnCaptureError;
+        Drafts.Changed += OnDraftRecoveryChanged;
+        Prefs.ThemeChanged            += OnThemeChanged;
+        Prefs.DeveloperModeChanged    += OnDeveloperModeChanged;
+        Nav.LocationChanged           += OnLocationChanged;
+        AppUpdates.Changed            += OnUpdatesChanged;
+        Content.ContentDownloaded     += OnContentDownloaded;
+        Content.ReplacementProposalsAvailable += OnReplacementProposalsAvailable;
+        Content.Changed               += OnUpdatesChanged;
+    }
+
+    /// <summary>
+    /// Background startup refresh finished and at least one index produced new files.
+    /// We surface this as a passive snackbar — the AppBar update indicator already
+    /// gives a persistent "click here" affordance, so the snackbar just informs.
+    /// The notification is dispatched via <c>InvokeAsync</c> because the event can
+    /// fire on any thread (the startup refresh is a background <c>Task.Run</c> chain).
+    /// </summary>
+    private void OnContentDownloaded(string message)
+    {
+        if (_disposed) return;
+        _ = InvokeAsync(() =>
+        {
+            if (_disposed) return;
+            bool hasDirty = Tabs.Tabs.Any(t => t.IsDirty);
+            string suffix = hasDirty
+                ? " Open Settings > Updates to refresh when ready (you have unsaved changes)."
+                : " Open Settings > Updates to refresh, or click the update icon.";
+            Snackbar.Add(message + suffix, Severity.Info,
+                         cfg => cfg.VisibleStateDuration = 12000);
+            StateHasChanged();
+        });
+    }
+
+    private void OnReplacementProposalsAvailable(int count)
+    {
+        if (_disposed || count <= 0) return;
+        _ = InvokeAsync(() =>
+        {
+            if (_disposed) return;
+            Snackbar.Add($"{count} content correction(s) are ready to review.", Severity.Info, cfg =>
+            {
+                cfg.VisibleStateDuration = 12000;
+                cfg.Action = "Review corrections";
+                cfg.ActionColor = Color.Primary;
+                cfg.Onclick = _ =>
+                {
+                    Nav.NavigateTo("/settings?tab=content&section=corrections");
+                    return Task.CompletedTask;
+                };
+            });
+            StateHasChanged();
+        });
+    }
+
+    /// <summary>
+    /// How many distinct attention-worthy signals to badge in the AppBar:
+    ///   • a newer app release (GitHub)
+    ///   • a startup-downloaded content pack pending refresh
+    ///   • downloaded corrections ready for explicit application
+    /// </summary>
+    private int UpdateAvailableCount =>
+        (AppUpdates.UpdateAvailable ? 1 : 0) +
+        (Content.ContentReloadPending ? 1 : 0) +
+        Content.AvailableReplacementCount;
+
+    private bool UpdatesAreChecking =>
+        AppUpdates.IsChecking ||
+        Content.IsCheckingContentUpdates;
+
+    private bool ShowUpdateIndicator => UpdatesAreChecking || UpdateAvailableCount > 0;
+
+    private string UpdateIcon =>
+        UpdatesAreChecking ? Icons.Material.Filled.Sync : Icons.Material.Filled.SystemUpdateAlt;
+
+    private string? UpdateIconClass => UpdatesAreChecking ? "appbar-update-checking" : null;
+
+    private string UpdateTooltip
+    {
+        get
+        {
+            var parts = new List<string>();
+            if (Content.IsCheckingContentUpdates)
+                parts.Add(Content.ContentUpdateStatus ?? "Checking installed content sources...");
+            if (AppUpdates.IsChecking)
+                parts.Add("Checking app release...");
+            if (AppUpdates.UpdateAvailable)
+                parts.Add($"App: {AppUpdates.Latest!.LatestTag}");
+            if (Content.ContentReloadPending)
+                parts.Add("Refresh database to apply downloaded content");
+            if (Content.AvailableReplacementCount > 0)
+                parts.Add($"{Content.AvailableReplacementCount} content correction(s) ready to review");
+            return parts.Count == 0 ? "Updates" : string.Join(" • ", parts);
+        }
+    }
+
+    private void OnUpdatesChanged()
+    {
+        if (_disposed) return;
+        _ = InvokeAsync(() =>
+        {
+            if (_disposed) return;
+            NotifyAppUpdateIfAvailable();
+            StateHasChanged();
+        });
+    }
+
+    private void NotifyAppUpdateIfAvailable()
+    {
+        if (AppUpdates.Latest is not { IsNewer: true } update
+            || string.Equals(_notifiedAppUpdateTag, update.LatestTag, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        _notifiedAppUpdateTag = update.LatestTag;
+        string summary = Aurora.Components.Formatting.ReleaseNotesMarkdownFormatter.GetSummary(update.ReleaseNotes);
+        string message = string.IsNullOrWhiteSpace(summary)
+            ? $"{update.LatestTag} is available. Open Updates for details."
+            : $"{update.LatestTag} is available: {summary} Open Updates for the full release notes.";
+
+        Snackbar.Add(message, Severity.Info, cfg => cfg.VisibleStateDuration = 12000);
+    }
+
+    private void OpenUpdatesPage() =>
+        Nav.NavigateTo(UpdatesAreChecking ||
+                       AppUpdates.UpdateAvailable ||
+                       Content.ContentReloadPending
+            ? "/settings?tab=updates"
+            : "/settings?tab=content&section=corrections");
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _selfRef = DotNetObjectReference.Create(this);
+            await ApplyBrowserThemeAsync();
+            try { await JS.InvokeVoidAsync("AuroraShortcuts.register", _selfRef); } catch { }
+            try { await JS.InvokeVoidAsync("AuroraPageFocus.register", _pageContent); } catch { }
+            NotifyAppUpdateIfAvailable();
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    Content.EnsureReplacementFeedInstalled();
+                    await Content.RunStartupContentRefreshAsync(() => Prefs.AutoDownloadContentOnStartup);
+                }
+                catch (Exception ex)
+                {
+                    DebugLogService.Catch(ex, "MainLayout.StartupContentRefresh");
+                }
+            });
+        }
+    }
+
+    [JSInvokable]
+    public Task OnCtrlS()
+    {
+        if (!_disposed) _ = InvokeAsync(SaveActive);
+        return Task.CompletedTask;
+    }
+
+    private async Task ShowShortcutsDialog()
+    {
+        await DialogService.ShowMessageBox(
+            "Keyboard Shortcuts",
+            (MarkupString)"""
+            <table style="border-collapse:collapse; width:100%; font-size:13px;">
+              <tbody>
+                <tr>
+                  <td style="padding:6px 16px 6px 0; color:var(--mud-palette-primary); font-family:monospace; white-space:nowrap;">Ctrl + S</td>
+                  <td style="padding:6px 0;">Save the active character</td>
+                </tr>
+              </tbody>
+            </table>
+            <p style="font-size:12px; color:var(--mud-palette-text-disabled); margin-top:12px;">
+              More shortcuts can be added in future updates.
+            </p>
+            """,
+            yesText: "Close");
+    }
+
+    private async Task ShowAboutDialog()
+    {
+        await DialogService.ShowAsync<Aurora.Reflections.Components.Pages.AboutDialog>(
+            $"About {Brand.AppName}",
+            new DialogOptions
+            {
+                MaxWidth = MaxWidth.Small,
+                FullWidth = true,
+                CloseButton = true
+            });
+    }
+
+    private void OnThemeChanged()
+    {
+        if (_disposed) return;
+        _ = InvokeAsync(async () =>
+        {
+            if (_disposed) return;
+            await ApplyBrowserThemeAsync();
+            StateHasChanged();
+        });
+    }
+
+    private async Task ApplyBrowserThemeAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("AuroraTheme.apply", SelectedTheme.Id, SelectedTheme.IsDark);
+        }
+        catch
+        {
+            // Theme state still applies through MudThemeProvider if the WebView is shutting down.
+        }
+    }
+
+    private void OnDeveloperModeChanged()
+    {
+        if (_disposed) return;
+        _ = InvokeAsync(() => { if (!_disposed) StateHasChanged(); });
+    }
+
+    private bool _disposed;
+
+    private void OnTabsChanged()
+    {
+        if (_disposed) return;
+        _ = InvokeAsync(() => { if (!_disposed) StateHasChanged(); });
+    }
+
+    private void OnDraftRecoveryChanged()
+    {
+        if (!_disposed) _ = InvokeAsync(() => { if (!_disposed) StateHasChanged(); });
+    }
+
+    private void OnCaptureError(string message)
+    {
+        if (_disposed) return;
+        _ = InvokeAsync(() =>
+        {
+            if (!_disposed)
+                Snackbar.Add(message, Severity.Error, cfg => cfg.VisibleStateDuration = 8000);
+        });
+    }
+
+    public void Dispose()
+    {
+        _disposed = true;
+        if (WindowClose.Handler == _windowCloseHandler) WindowClose.Handler = null;
+        Tabs.TabsChanged              -= OnTabsChanged;
+        CharacterContext.CaptureError -= OnCaptureError;
+        Drafts.Changed -= OnDraftRecoveryChanged;
+        Prefs.ThemeChanged            -= OnThemeChanged;
+        Prefs.DeveloperModeChanged    -= OnDeveloperModeChanged;
+        Nav.LocationChanged           -= OnLocationChanged;
+        AppUpdates.Changed            -= OnUpdatesChanged;
+        Content.ContentDownloaded     -= OnContentDownloaded;
+        Content.ReplacementProposalsAvailable -= OnReplacementProposalsAvailable;
+        Content.Changed               -= OnUpdatesChanged;
+        try { _ = JS.InvokeVoidAsync("AuroraShortcuts.unregister"); } catch { }
+        try { _ = JS.InvokeVoidAsync("AuroraPageFocus.unregister"); } catch { }
+        _selfRef?.Dispose();
+    }
+
+    private void ActivateTab(CharacterTab tab)
+    {
+        Tabs.ActivateTab(tab);
+        Nav.NavigateTo("/character");
+    }
+
+    private async Task CloseTabAsync(CharacterTab tab)
+    {
+        await TryCloseTabAsync(tab);
+    }
+
+    private async Task<bool> TryCloseTabAsync(CharacterTab tab, bool navigateAfterClose = true)
+    {
+        var wasActive = tab == Tabs.ActiveTab;
+        bool closed = await CharacterClose.TryCloseAsync(
+            tab,
+            character => DialogService.ShowMessageBox(
+                "Unsaved Changes",
+                $"Save changes to {character.DisplayName} before closing?",
+                yesText: "Save", noText: "Discard", cancelText: "Cancel"),
+            character => BuildService.SaveTabAsync(character, coalesceRequests: true),
+            error => Snackbar.Add(error, Severity.Error),
+            CharacterContext.ReleaseAsync);
+        if (!closed) return false;
+
+        if (wasActive && navigateAfterClose)
+        {
+            if (Tabs.ActiveTab != null)
+                Nav.NavigateTo("/character");
+            else
+                Nav.NavigateTo("/");
+        }
+        return true;
+    }
+
+    private async Task SaveActive()
+    {
+        var tab = Tabs.ActiveTab;
+        if (tab == null) return;
+
+        long editVersion = tab.EditVersion;
+        var error = await BuildService.SaveTabAsync(tab, coalesceRequests: true);
+        if (error == null)
+        {
+            if (tab.EditVersion == editVersion) Tabs.MarkClean(tab);
+            Snackbar.Add(tab.CloudSession is null ? "Saved." : tab.CloudNotice ?? "Saved to Google Drive.", Severity.Success);
+        }
+        else
+        {
+            Snackbar.Add($"Save failed: {error}", Severity.Error);
+        }
+    }
+
+    private async Task ReloadCloud()
+    {
+        var tab = Tabs.ActiveTab;
+        if (tab?.CloudSession is null) return;
+        try
+        {
+            string? warning = await BuildService.ReloadCloudTabAsync(tab);
+            if (warning is not null) Snackbar.Add(warning, Severity.Warning);
+            Tabs.NotifyChanged();
+            // CloudReloadVersion recreates the page's cached session/snapshot references.
+        }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+    }
+
+    private async Task DisconnectCloudCharacter()
+    {
+        var tab = Tabs.ActiveTab;
+        if (tab?.CloudSession is null) return;
+        bool? confirmed = await DialogService.ShowMessageBox("Disconnect this character?",
+            "Keep this character and its session data in your local library. Future saves will stay on this device. The existing Google Drive file will remain unchanged.",
+            yesText: "Disconnect character", cancelText: "Cancel");
+        if (confirmed != true || !Tabs.Tabs.Contains(tab)) return;
+        try
+        {
+            await LocalCharacterCloudUpload.DisconnectAsync(tab, Characters.CharactersDirectory);
+            Characters.InvalidateFileListCache();
+            Tabs.NotifyChanged();
+            Snackbar.Add("Character disconnected. Future saves stay on this device.", Severity.Success);
+        }
+        catch (Exception ex) { Snackbar.Add($"Could not disconnect character: {ex.Message}", Severity.Error); }
+    }
+
+    private Task OpenCloudRecovery()
+    {
+        if (Tabs.ActiveTab?.CloudSession is { } cloud)
+        {
+            string directory = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(cloud.FilePath)!, "recovery");
+            System.IO.Directory.CreateDirectory(directory);
+            try
+            {
+                if (OperatingSystem.IsWindows())
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(directory) { UseShellExecute = true });
+                else
+                    Snackbar.Add("Recovery files: " + directory, Severity.Info);
+            }
+            catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+        }
+        return Task.CompletedTask;
+    }
+
+    private AppThemeDefinition SelectedTheme => AppThemes.Get(Prefs.Theme);
+
+    private MudTheme ActiveMudTheme => Prefs.Theme switch
+    {
+        AppTheme.AuroraClassic  => AuroraClassicTheme,
+        AppTheme.AuroraBorealis => AuroraBorealisTheme,
+        _                       => ReflectionsTheme
+    };
+
+    private static readonly MudTheme ReflectionsTheme = new()
+    {
+        PaletteDark = new PaletteDark
+        {
+            Primary          = "#89b4fa",
+            Secondary        = "#cba6f7",
+            Background       = "#1e1e2e",
+            BackgroundGray   = "#181825",
+            Surface          = "#313244",
+            DrawerBackground = "#181825",
+            AppbarBackground = "#181825",
+            ActionDefault    = "#cdd6f4",
+            TextPrimary      = "#cdd6f4",
+            TextSecondary    = "#a6adc8",
+            TextDisabled     = "#6c7086",
+            Divider          = "#313244",
+            LinesDefault     = "#313244",
+            LinesInputs      = "#45475a",
+            Success          = "#a6e3a1",
+            Warning          = "#f9e2af",
+            Error            = "#f38ba8",
+            Info             = "#89dceb",
+        },
+        PaletteLight = new PaletteLight
+        {
+            Primary          = "#1e66f5",
+            Secondary        = "#8839ef",
+            Background       = "#f3f5fa",
+            BackgroundGray   = "#e6e9ef",
+            Surface          = "#ffffff",
+            DrawerBackground = "#dce0e8",
+            AppbarBackground = "#ffffff",
+            ActionDefault    = "#4c4f69",
+            TextPrimary      = "#4c4f69",
+            TextSecondary    = "#6c6f85",
+            TextDisabled     = "#9ca0b0",
+            Divider          = "#ccd0da",
+            LinesDefault     = "#ccd0da",
+            LinesInputs      = "#bcc0cc",
+            Success          = "#40a02b",
+            Warning          = "#df8e1d",
+            Error            = "#d20f39",
+            Info             = "#04a5e5",
+        }
+    };
+
+    private static readonly MudTheme AuroraClassicTheme = new()
+    {
+        PaletteDark = new PaletteDark
+        {
+            Primary          = "#b38000",
+            Secondary        = "#5b9e98",
+            Background       = "#101010",
+            BackgroundGray   = "#151516",
+            Surface          = "#242425",
+            DrawerBackground = "#151516",
+            AppbarBackground = "#151516",
+            ActionDefault    = "#f7f7f7",
+            TextPrimary      = "#f7f7f7",
+            TextSecondary    = "#b9b9b9",
+            TextDisabled     = "#777777",
+            Divider          = "#333334",
+            LinesDefault     = "#333334",
+            LinesInputs      = "#515152",
+            Success          = "#62ad69",
+            Warning          = "#e18855",
+            Error            = "#d36161",
+            Info             = "#6faeaa",
+        }
+    };
+
+    private static readonly MudTheme AuroraBorealisTheme = new()
+    {
+        PaletteDark = new PaletteDark
+        {
+            Primary          = "#68d5c5",
+            Secondary        = "#c69bf4",
+            Background       = "#071416",
+            BackgroundGray   = "#081d20",
+            Surface          = "#10292d",
+            DrawerBackground = "#081d20",
+            AppbarBackground = "#081d20",
+            ActionDefault    = "#e6f6f3",
+            TextPrimary      = "#e6f6f3",
+            TextSecondary    = "#abc9c6",
+            TextDisabled     = "#668783",
+            Divider          = "#1d3a3e",
+            LinesDefault     = "#1d3a3e",
+            LinesInputs      = "#2c5054",
+            Success          = "#83d6a2",
+            Warning          = "#f3c878",
+            Error            = "#f18ca2",
+            Info             = "#77cfe2",
+        }
+    };
+
+    private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
+
+    private void CloseMobileMore() => _mobileMoreOpen = false;
+
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        if (_disposed) return;
+        _ = InvokeAsync(() =>
+        {
+            if (_disposed) return;
+            _mobileMoreOpen = false;
+            _errorBoundary?.RecoverPage();
+            StateHasChanged();
+        });
+    }
+
+    private Task OnCompendiumQueryChanged(string value)
+    {
+        _compendiumQuickQuery = value;
+        return Task.CompletedTask;
+    }
+
+    private Task HandleCompendiumSearchKeyDown(KeyboardEventArgs args)
+    {
+        if (string.Equals(args.Key, "Enter", StringComparison.OrdinalIgnoreCase))
+            NavigateToCompendiumSearch();
+
+        return Task.CompletedTask;
+    }
+
+    private void NavigateToCompendiumSearch()
+    {
+        string query = _compendiumQuickQuery.Trim();
+        Nav.NavigateTo(string.IsNullOrWhiteSpace(query)
+            ? "/compendium"
+            : $"/compendium?q={Uri.EscapeDataString(query)}");
+    }
+}

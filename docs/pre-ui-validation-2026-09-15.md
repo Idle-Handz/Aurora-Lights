@@ -64,7 +64,7 @@ No app UI, installer or release publication was launched.
 
 Two release gaps remain:
 
-1. Aurora.App/BundledTools/AuroraTranslator is Git-ignored, and the Windows build
+1. Aurora.Reflections/BundledTools/AuroraTranslator is Git-ignored, and the Windows build
    and release workflows do not fetch/build a Translator artifact. Local success
    is not clean-CI reproducibility. Pin a compatible producer artifact and require
    its presence/capability during packaging; do not choose a moving producer branch.

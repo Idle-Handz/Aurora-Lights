@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="Aurora.App/wwwroot/brand/aurora-reflections-logo.png" alt="Aurora: Reflections" width="520" />
+  <img src="Aurora.Reflections/wwwroot/brand/aurora-reflections-logo.png" alt="Aurora Reflections" width="520" />
 </p>
 
 # Aurora Lights
 
 Aurora Lights is a community-led modernization of the legacy Aurora character
-builder. Its modern client, **Aurora: Reflections**, brings Aurora content into a
+builder. Its modern client, **Aurora Reflections**, brings Aurora content into a
 new desktop experience while preserving compatibility with existing character
 files and content libraries.
 
@@ -13,10 +13,10 @@ Aurora Lights is an open-source project developed and maintained by
 [Idle Handz](https://idlehandz.com).
 
 > [!IMPORTANT]
-> Aurora: Reflections is currently a **beta preview**. Back up your character
-> files before relying on it for an important session, and keep the legacy
-> Aurora app available as a fallback while the modern client continues to mature.
-> It is not required to build or run Aurora: Reflections.
+> Aurora Reflections is currently a **beta preview**. Back up your character
+> files before relying on it for an important session, and keep Aurora Legacy
+> available as a fallback while the modern client continues to mature.
+> It is not required to build or run Aurora Reflections.
 
 ## Project-Owned Source And Dependencies
 
@@ -35,21 +35,21 @@ still uses .NET, NuGet packages, and third-party libraries under `lib`.
 See [source ownership and legacy compatibility](docs/LEGACY_RESTORATION.md) for
 the source-project mapping, completed restoration status, and parity tooling.
 
-## Install Aurora: Reflections
+## Install Aurora Reflections
 
 Windows is the recommended platform for the beta preview.
 
 1. Open the [GitHub releases page](https://github.com/Idle-Handz/Aurora-Lights/releases).
 2. Download the Windows `Setup.exe` asset for your system. Most Windows PCs use
    the `win-x64` release.
-3. Run the installer and launch **Aurora: Reflections**.
+3. Run the installer and launch **Aurora Reflections**.
 
 `Setup.exe` installs the Microsoft Edge WebView2 Runtime if it is missing.
 An internet connection is required for that download.
 
 Windows installations created through `Setup.exe` use
 [Velopack](https://velopack.io/) and can install future app updates from inside
-Aurora: Reflections. Portable or extracted copies require WebView2 to already
+Aurora Reflections. Portable or extracted copies require WebView2 to already
 be installed. They can check for new releases, but cannot apply updates in place.
 
 The v1.0 stable targets are Windows x64 and Android ARM64. Windows ARM64 and
@@ -57,7 +57,7 @@ Mac Catalyst remain experimental, and Web is deferred.
 
 ## What You Can Do
 
-Aurora: Reflections currently supports the everyday character-building flow,
+Aurora Reflections currently supports the everyday character-building flow,
 including:
 
 - opening existing `.dnd5e` character files
@@ -79,7 +79,7 @@ expose rough edges.
 Aurora Lights is not a single-client rewrite. It is an umbrella project for
 keeping Aurora useful today while exploring ways to carry it forward.
 
-- **Aurora: Reflections** (`Aurora.App`) is the primary current focus: a modern
+- **Aurora Reflections** (`Aurora.Reflections`) is the primary current focus: a modern
   MAUI client with a new interface and a gradual migration path for legacy
   Aurora users.
 - **Aurora.Web** is an early step toward a fully online character builder. It
@@ -96,8 +96,8 @@ shared compatibility layer for every client.
 
 ## Bring Existing Characters And Content
 
-On Windows, Aurora: Reflections defaults to the same
-`Documents\5e Character Builder` directory used by the legacy Aurora app.
+On Windows, Aurora Reflections defaults to the same
+`Documents\5e Character Builder` directory used by Aurora Legacy.
 Existing `.dnd5e` character files and custom XML content should appear in place;
 you do not need to import or convert them.
 
@@ -110,13 +110,13 @@ If your legacy Aurora installation uses a different storage root:
 4. Click **Sync Now**, then close any open character tabs and click
    **Reload Elements**.
 
-Aurora: Reflections creates `custom\aurora-elements.sqlite` as a cache for its
+Aurora Reflections creates `custom\aurora-elements.sqlite` as a cache for its
 modern content pipeline. Your XML files remain the source of truth, and the
 SQLite cache can be rebuilt from them.
 
 ## Legacy Aurora Compatibility
 
-Aurora: Reflections is designed to coexist with the legacy Aurora application
+Aurora Reflections is designed to coexist with Aurora Legacy
 and reuse the same character and content directory. This makes a gradual
 migration possible, but the two applications do not merge concurrent edits.
 
@@ -125,14 +125,14 @@ For the smoothest beta experience:
 - back up the entire `5e Character Builder` directory before your first beta
   session and before major content changes
 - avoid editing the same character in both applications at the same time
-- avoid running a legacy content update while Aurora: Reflections is syncing or
+- avoid running a legacy content update while Aurora Reflections is syncing or
   reloading content
 - close any open character tabs before reloading or rebuilding content
 - use **Settings > Content** to review the active content directory and sync the
   SQLite database after content changes
 
 The legacy WPF application remains in this repository as a parallel client.
-Aurora: Reflections is intended to provide a gradual migration path rather than
+Aurora Reflections is intended to provide a gradual migration path rather than
 an abrupt replacement.
 
 ## Known Limitations
@@ -152,7 +152,7 @@ Beta feedback is welcome. Please use the
 [GitHub issue tracker](https://github.com/Idle-Handz/Aurora-Lights/issues) and
 include:
 
-- the Aurora: Reflections version
+- the Aurora Reflections version
 - the platform you were using
 - a short set of reproduction steps
 - a Console screenshot when an error is visible
@@ -160,8 +160,8 @@ include:
 
 ## Project Layout
 
-- `Aurora.App`
-  MAUI Blazor Hybrid host for Aurora: Reflections. This is the primary modern
+- `Aurora.Reflections`
+  MAUI Blazor Hybrid host for Aurora Reflections. This is the primary modern
   desktop and mobile client.
 
 - `Aurora.Components`
@@ -190,10 +190,9 @@ include:
   Early browser-hosted Aurora experiment and first step toward a fully online
   builder.
 
-- `Aurora.Legacy` (`Aurora.Lights/Aurora.Legacy.csproj`)
+- `Aurora.Legacy` (`Aurora.Legacy/Aurora.Legacy.csproj`)
   Legacy-facing WPF desktop client retained as a familiar, fully functional
-  Aurora experience on updated frameworks. Its source directory keeps the
-  historical `Aurora.Lights` name to avoid unnecessary path churn.
+  Aurora experience on updated frameworks. Its source lives in `Aurora.Legacy`.
 
 ## Development
 
@@ -202,9 +201,9 @@ The repository uses .NET 10. Useful project-level build commands:
 ```powershell
 dotnet build .\Builder.Core\Builder.Core.csproj -v minimal
 dotnet build .\Aurora.Logic\Aurora.Logic.csproj -v minimal
-dotnet build .\Aurora.App\Aurora.App.csproj -v minimal -f net10.0-windows10.0.19041.0
+dotnet build .\Aurora.Reflections\Aurora.Reflections.csproj -v minimal -f net10.0-windows10.0.19041.0
 dotnet build .\Aurora.Web\Aurora.Web.csproj -v minimal
-dotnet build .\Aurora.Lights\Aurora.Legacy.csproj -v minimal
+dotnet build .\Aurora.Legacy\Aurora.Legacy.csproj -v minimal
 ```
 
 On Windows, use the explicit Reflections framework shown above. A solution-wide
@@ -215,7 +214,7 @@ Additional technical documentation:
 
 - [Contributor guide](CONTRIBUTING.md)
 - [Client feature comparison](docs/CLIENT_FEATURE_COMPARISON.md)
-- [Aurora.App README](Aurora.App/README.md)
+- [Aurora.Reflections README](Aurora.Reflections/README.md)
 - [Aurora.Logic README](Aurora.Logic/README.md)
 - [Source ownership and legacy compatibility](docs/LEGACY_RESTORATION.md)
 - [Project roadmap](docs/ROADMAP.md)

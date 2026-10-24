@@ -6,7 +6,7 @@ using Builder.Presentation.Utilities;
 using System.Xml;
 using System.Xml.Linq;
 
-namespace Aurora.App.Services;
+namespace Aurora.Reflections.Services;
 
 public enum ContentDatabaseParityStatus
 {

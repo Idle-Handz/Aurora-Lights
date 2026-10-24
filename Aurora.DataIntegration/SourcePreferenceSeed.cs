@@ -5,7 +5,7 @@ using Builder.Presentation.Services.Data;
 using Builder.Presentation.Services.Sources;
 using Microsoft.Data.Sqlite;
 
-namespace Aurora.App.Services;
+namespace Aurora.Reflections.Services;
 
 /// <summary>
 /// One-time migration of the content database's per-package switches to source restrictions.

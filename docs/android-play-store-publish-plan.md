@@ -1,6 +1,6 @@
 # Android Play Store Publish Plan
 
-This is a parking-lot plan for publishing Aurora: Reflections on Google Play.
+This is a parking-lot plan for publishing Aurora Reflections on Google Play.
 
 ## Goal
 

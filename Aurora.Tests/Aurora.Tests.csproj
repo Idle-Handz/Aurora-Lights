@@ -50,62 +50,62 @@
     <Content Include="Fixtures\CorrectionMetadata\*.xml" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
-  <!-- Update-service source files live in Aurora.App (MAUI target). Link the pure-.NET ones here
+  <!-- Update-service source files live in Aurora.Reflections (MAUI target). Link the pure-.NET ones here
        so we can test parsing, channel filtering, and comparison logic without pulling in MAUI.
        GithubReleasesClient, UpdateAvailability, and GithubReleaseChannelService have no MAUI
        dependencies; AppUpdateService does (Velopack/AppInfo) so it is not linked.
        Test helpers in GithubUpdateChannelTests cover the logic via concrete subclasses.
        DebugLogService comes from the Aurora.DataIntegration project reference. -->
   <ItemGroup>
-    <Compile Include="..\Aurora.App\Services\Updates\SemVer.cs" Link="Linked\SemVer.cs" />
-    <Compile Include="..\Aurora.App\Services\Updates\GithubReleasesClient.cs" Link="Linked\GithubReleasesClient.cs" />
-    <Compile Include="..\Aurora.App\Services\Updates\UpdateAvailability.cs" Link="Linked\UpdateAvailability.cs" />
-    <Compile Include="..\Aurora.App\Services\Updates\GithubReleaseChannelService.cs" Link="Linked\GithubReleaseChannelService.cs" />
-    <Compile Include="..\Aurora.App\Services\Updates\AppUpdateRestartCoordinator.cs" Link="Linked\AppUpdateRestartCoordinator.cs" />
-    <Compile Include="..\Aurora.App\Services\MauiSpellcastingSectionHandler.cs" Link="Linked\MauiSpellcastingSectionHandler.cs" />
-    <Compile Include="..\Aurora.App\Services\EquipmentService.cs" Link="Linked\EquipmentService.cs" />
-    <Compile Include="..\Aurora.App\Services\CompanionProgression.cs" Link="AppServices\CompanionProgression.cs" />
-    <Compile Include="..\Aurora.App\Services\CreaturePortrait.cs" Link="AppServices\CreaturePortrait.cs" />
-    <Compile Include="..\Aurora.App\Services\SidekickHitPoints.cs" Link="AppServices\SidekickHitPoints.cs" />
-    <Compile Include="..\Aurora.App\Services\SidekickChoices.cs" Link="AppServices\SidekickChoices.cs" />
-    <Compile Include="..\Aurora.App\Services\SidekickService.cs" Link="Linked\SidekickService.cs" />
-    <Compile Include="..\Aurora.App\Services\SidekickProgression.cs" Link="Linked\SidekickProgression.cs" />
-    <Compile Include="..\Aurora.App\Services\CreatureCombatState.cs" Link="Linked\CreatureCombatState.cs" />
-    <Compile Include="..\Aurora.App\Services\CreatureManagementService.cs" Link="Linked\CreatureManagementService.cs" />
-    <Compile Include="..\Aurora.App\Services\InventoryItemAdder.cs" Link="Linked\InventoryItemAdder.cs" />
-    <Compile Include="..\Aurora.App\Services\ShopCatalogService.cs" Link="Linked\ShopCatalogService.cs" />
-    <Compile Include="..\Aurora.App\Services\ShopTransactionService.cs" Link="Linked\ShopTransactionService.cs" />
-    <Compile Include="..\Aurora.App\Services\CharacterFileWriteCoordinator.cs" Link="Linked\CharacterFileWriteCoordinator.cs" />
-    <Compile Include="..\Aurora.App\Services\CharacterFileWriteHandler.cs" Link="Linked\CharacterFileWriteHandler.cs" />
-    <Compile Include="..\Aurora.App\Services\InventorySync.cs" Link="Linked\InventorySync.cs" />
-    <Compile Include="..\Aurora.App\Services\CompendiumService.cs" Link="Linked\CompendiumService.cs" />
-    <Compile Include="..\Aurora.App\Services\ContentDoctorService.cs" Link="Linked\ContentDoctorService.cs" />
-    <Compile Include="..\Aurora.App\Services\OverrideAuthoring.cs" Link="Linked\OverrideAuthoring.cs" />
-    <Compile Include="..\Aurora.App\Services\ContentService.cs" Link="Linked\ContentService.cs" />
-    <Compile Include="..\Aurora.App\Services\AttackReminderCharacterService.cs" Link="Linked\AttackReminderCharacterService.cs" />
-    <Compile Include="..\Aurora.App\Services\SessionAttackReminderService.cs" Link="Linked\SessionAttackReminderService.cs" />
-    <Compile Include="..\Aurora.App\Services\SessionState.cs" Link="Linked\SessionState.cs" />
-    <Compile Include="..\Aurora.App\Services\SessionStore.cs" Link="Linked\SessionStore.cs" />
-    <Compile Include="..\Aurora.App\Services\LocalCharacterCloudUpload.cs" Link="Linked\LocalCharacterCloudUpload.cs" />
-    <Compile Include="..\Aurora.App\Services\CloudCharacterPreview.cs" Link="Linked\CloudCharacterPreview.cs" />
-    <Compile Include="..\Aurora.App\Services\GoogleDriveClientConfiguration.cs" Link="Linked\GoogleDriveClientConfiguration.cs" />
-    <Compile Include="..\Aurora.App\Services\GoogleDriveSignInFlow.cs" Link="Linked\GoogleDriveSignInFlow.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\Updates\SemVer.cs" Link="Linked\SemVer.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\Updates\GithubReleasesClient.cs" Link="Linked\GithubReleasesClient.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\Updates\UpdateAvailability.cs" Link="Linked\UpdateAvailability.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\Updates\GithubReleaseChannelService.cs" Link="Linked\GithubReleaseChannelService.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\Updates\AppUpdateRestartCoordinator.cs" Link="Linked\AppUpdateRestartCoordinator.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\MauiSpellcastingSectionHandler.cs" Link="Linked\MauiSpellcastingSectionHandler.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\EquipmentService.cs" Link="Linked\EquipmentService.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\CompanionProgression.cs" Link="AppServices\CompanionProgression.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\CreaturePortrait.cs" Link="AppServices\CreaturePortrait.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\SidekickHitPoints.cs" Link="AppServices\SidekickHitPoints.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\SidekickChoices.cs" Link="AppServices\SidekickChoices.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\SidekickService.cs" Link="Linked\SidekickService.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\SidekickProgression.cs" Link="Linked\SidekickProgression.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\CreatureCombatState.cs" Link="Linked\CreatureCombatState.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\CreatureManagementService.cs" Link="Linked\CreatureManagementService.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\InventoryItemAdder.cs" Link="Linked\InventoryItemAdder.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\ShopCatalogService.cs" Link="Linked\ShopCatalogService.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\ShopTransactionService.cs" Link="Linked\ShopTransactionService.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\CharacterFileWriteCoordinator.cs" Link="Linked\CharacterFileWriteCoordinator.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\CharacterFileWriteHandler.cs" Link="Linked\CharacterFileWriteHandler.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\InventorySync.cs" Link="Linked\InventorySync.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\CompendiumService.cs" Link="Linked\CompendiumService.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\ContentDoctorService.cs" Link="Linked\ContentDoctorService.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\OverrideAuthoring.cs" Link="Linked\OverrideAuthoring.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\ContentService.cs" Link="Linked\ContentService.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\AttackReminderCharacterService.cs" Link="Linked\AttackReminderCharacterService.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\SessionAttackReminderService.cs" Link="Linked\SessionAttackReminderService.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\SessionState.cs" Link="Linked\SessionState.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\SessionStore.cs" Link="Linked\SessionStore.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\LocalCharacterCloudUpload.cs" Link="Linked\LocalCharacterCloudUpload.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\CloudCharacterPreview.cs" Link="Linked\CloudCharacterPreview.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\GoogleDriveClientConfiguration.cs" Link="Linked\GoogleDriveClientConfiguration.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\GoogleDriveSignInFlow.cs" Link="Linked\GoogleDriveSignInFlow.cs" />
     <!-- Exercise the app's actual refresh/preload lifecycle without a MAUI window. -->
-    <Compile Include="..\Aurora.App\Services\CharacterService.cs" Link="Linked\CharacterService.cs" />
-    <Compile Include="..\Aurora.App\Services\CharacterContext.cs" Link="Linked\CharacterContext.cs" />
-    <Compile Include="..\Aurora.App\Services\CharacterTabModel.cs" Link="Linked\CharacterTabModel.cs" />
-    <Compile Include="..\Aurora.App\Services\CharacterTabService.cs" Link="Linked\CharacterTabService.cs" />
-    <Compile Include="..\Aurora.App\Services\CharacterDraftRecovery.cs" Link="Linked\CharacterDraftRecovery.cs" />
-    <Compile Include="..\Aurora.App\Services\PdfExportFiles.cs" Link="Linked\PdfExportFiles.cs" />
-    <Compile Include="..\Aurora.App\Services\ExportDestinationSelection.cs" Link="Linked\ExportDestinationSelection.cs" />
-    <Compile Include="..\Aurora.App\Services\CharacterCloseCoordinator.cs" Link="Linked\CharacterCloseCoordinator.cs" />
-    <Compile Include="..\Aurora.App\Services\WindowCloseCoordinator.cs" Link="Linked\WindowCloseCoordinator.cs" />
-    <Compile Include="..\Aurora.App\Services\CharacterLoadNavigation.cs" Link="Linked\CharacterLoadNavigation.cs" />
-    <Compile Include="..\Aurora.App\Services\CharacterSnapshot.cs" Link="Linked\CharacterSnapshot.cs" />
-    <Compile Include="..\Aurora.App\Services\CharacterFileSaveExtensions.cs" Link="Linked\CharacterFileSaveExtensions.cs" />
-    <Compile Include="..\Aurora.App\Services\BuildService*.cs" Link="Linked\%(Filename)%(Extension)" />
-    <Compile Include="..\Aurora.App\Services\StartingEquipmentDataLoader.cs" Link="Linked\StartingEquipmentDataLoader.cs" />
-    <Compile Include="..\Aurora.App\Services\PdfImportService.cs" Link="Linked\PdfImportService.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\CharacterService.cs" Link="Linked\CharacterService.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\CharacterContext.cs" Link="Linked\CharacterContext.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\CharacterTabModel.cs" Link="Linked\CharacterTabModel.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\CharacterTabService.cs" Link="Linked\CharacterTabService.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\CharacterDraftRecovery.cs" Link="Linked\CharacterDraftRecovery.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\PdfExportFiles.cs" Link="Linked\PdfExportFiles.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\ExportDestinationSelection.cs" Link="Linked\ExportDestinationSelection.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\CharacterCloseCoordinator.cs" Link="Linked\CharacterCloseCoordinator.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\WindowCloseCoordinator.cs" Link="Linked\WindowCloseCoordinator.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\CharacterLoadNavigation.cs" Link="Linked\CharacterLoadNavigation.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\CharacterSnapshot.cs" Link="Linked\CharacterSnapshot.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\CharacterFileSaveExtensions.cs" Link="Linked\CharacterFileSaveExtensions.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\BuildService*.cs" Link="Linked\%(Filename)%(Extension)" />
+    <Compile Include="..\Aurora.Reflections\Services\StartingEquipmentDataLoader.cs" Link="Linked\StartingEquipmentDataLoader.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\PdfImportService.cs" Link="Linked\PdfImportService.cs" />
   </ItemGroup>
 
 </Project>

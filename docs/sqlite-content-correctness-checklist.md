@@ -2,7 +2,7 @@
 
 Last updated: 2026-05-09
 
-This is a focused checklist for the SQLite/content pipeline in `Aurora.App`, `Aurora.Importer`, and the synced content DB workflow.
+This is a focused checklist for the SQLite/content pipeline in `Aurora.Reflections`, `Aurora.Importer`, and the synced content DB workflow.
 
 The main goal is not just speed. It is trust:
 - the DB should be fresh
@@ -13,7 +13,7 @@ The main goal is not just speed. It is trust:
 ## Current State
 
 - The importer already has a strong normalized schema in [C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.Importer\Resources\aurora-elements-schema.sql](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.Importer/Resources/aurora-elements-schema.sql).
-- `Aurora.App` already validates required tables/columns in [C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.App\Services\DbElementLoader.cs](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.App/Services/DbElementLoader.cs).
+- `Aurora.Reflections` already validates required tables/columns in [C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.Reflections\Services\DbElementLoader.cs](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.Reflections/Services/DbElementLoader.cs).
 - Package/source ownership is much better than before, especially with source-based package association and `Internal` treated as fallback.
 - The compendium is now DB-backed first, which makes DB correctness more important than ever.
 
@@ -92,7 +92,7 @@ Why it matters:
 ### 5. Reduce DB Loader Reconstruction Risk
 
 `DbElementLoader` still reconstructs XML-like structures from normalized tables in:
-- [C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.App\Services\DbElementLoader.cs](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.App/Services/DbElementLoader.cs)
+- [C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.Reflections\Services\DbElementLoader.cs](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.Reflections/Services/DbElementLoader.cs)
 
 Follow-ups worth doing:
 - identify the most fragile reconstruction paths

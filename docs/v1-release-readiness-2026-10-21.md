@@ -143,9 +143,9 @@ A synthetic Wizard 3 / Cleric 3 correctly produces an engine spell-slot pool of 
 
 This is a mismatch between the correct shared engine calculation and the live-play interfaces. It hides usable slots and upcasting capacity during normal multiclass play.
 
-- [CharacterSnapshot.cs line 710](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.App/Services/CharacterSnapshot.cs:710) reads profile-specific statistics rather than the combined pool.
+- [CharacterSnapshot.cs line 710](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.Reflections/Services/CharacterSnapshot.cs:710) reads profile-specific statistics rather than the combined pool.
 - [CharacterMagicWorkspace.razor line 746](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.Components/Shared/CharacterMagicWorkspace.razor:746) aggregates those values with `Max`.
-- [Session.razor line 1151](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.App/Components/Pages/Session.razor:1151) repeats that aggregation.
+- [Session.razor line 1151](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.Reflections/Components/Pages/Session.razor:1151) repeats that aggregation.
 - [CharacterManager.cs line 994](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.Logic/CharacterManager.cs:994) already calculates the correct combined pool.
 
 Use a common slot-pool model derived from the engine's combined progression, preserving the distinction between slot capacity and the spells each class can learn or prepare. Acceptance should include two full casters, full/half/third caster combinations, save/reload, both play pages and PDF comparison. Pact Magic needs its own pool, as described in R2.
@@ -158,10 +158,10 @@ Setting two second-level slots as spent and calling the production `SessionState
 
 There is also no way to distinguish regular slots and Pact Magic slots of the same level: usage is a `Dictionary<int, int>` keyed only by spell level, and the Magic bar combines every casting section. A Warlock multiclass therefore cannot track the two pools independently.
 
-- [SessionState.cs line 58](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.App/Services/SessionState.cs:58)
-- [SessionState.cs line 77](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.App/Services/SessionState.cs:77)
-- [Session.razor line 1219](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.App/Components/Pages/Session.razor:1219)
-- [Magic.razor line 82](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.App/Components/Pages/Magic.razor:82)
+- [SessionState.cs line 58](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.Reflections/Services/SessionState.cs:58)
+- [SessionState.cs line 77](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.Reflections/Services/SessionState.cs:77)
+- [Session.razor line 1219](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.Reflections/Components/Pages/Session.razor:1219)
+- [Magic.razor line 82](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.Reflections/Components/Pages/Magic.razor:82)
 
 Represent pools with their own identity and recovery rule, and migrate existing sidecar usage deliberately. Cover single-class Warlock recovery, mixed pools at the same level, short rest preserving regular spent slots, long rest, both page views and persistence.
 
@@ -173,10 +173,10 @@ With an unsaved snapshot containing `LATEST UNSAVED NAME` and `LATEST UNSAVED BA
 
 The character export copies `file.FilePath` directly. PDF generation enters the character context but never applies the snapshot edits before reading `CharacterManager.Current`. This is reachable with autosave disabled; it also matters when an export races a pending save. Users can receive a successful export that does not represent the character currently shown.
 
-- [Sheet.razor line 394](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.App/Components/Pages/Sheet.razor:394)
-- [Sheet.razor line 416](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.App/Components/Pages/Sheet.razor:416)
-- [Sheet.razor line 462](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.App/Components/Pages/Sheet.razor:462)
-- [BuildService.cs line 775](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.App/Services/BuildService.cs:775) provides the existing pending-edit flush mechanism.
+- [Sheet.razor line 394](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.Reflections/Components/Pages/Sheet.razor:394)
+- [Sheet.razor line 416](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.Reflections/Components/Pages/Sheet.razor:416)
+- [Sheet.razor line 462](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.Reflections/Components/Pages/Sheet.razor:462)
+- [BuildService.cs line 775](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.Reflections/Services/BuildService.cs:775) provides the existing pending-edit flush mechanism.
 
 Capture a consistent current draft for export under the tab's context and file coordination. Respect the user's autosave preference: exporting need not silently save the original document. Alternatively, explicitly resolve pending edits before export. Cover both formats, autosave on/off, a save already in progress, failures and tab changes.
 
@@ -188,9 +188,9 @@ Capture a consistent current draft for export under the tab's context and file c
 
 This leaves a concrete safeguard gap when autosave is disabled or a save has failed. A Mac quit or an Android lifecycle transition must be tested with dirty drafts and pending cloud/session writes. The review did not reproduce native Mac quit or Android process recreation, so those exact device outcomes remain acceptance work. Android backgrounding and forced process death also need a draft-recovery policy; desktop close prompts alone cannot solve them.
 
-- [App.xaml.cs line 32](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.App/App.xaml.cs:32)
-- [MacCatalyst AppDelegate.cs line 5](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.App/Platforms/MacCatalyst/AppDelegate.cs:5)
-- [MainPage.xaml.cs line 85](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.App/MainPage.xaml.cs:85)
+- [App.xaml.cs line 32](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.Reflections/App.xaml.cs:32)
+- [MacCatalyst AppDelegate.cs line 5](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.Reflections/Platforms/MacCatalyst/AppDelegate.cs:5)
+- [MainPage.xaml.cs line 85](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.Reflections/MainPage.xaml.cs:85)
 
 For stable Android, add platform lifecycle integration and recoverable drafts, then accept the native behaviors before release. Mac can remain experimental, as accepted by the release owner.
 
@@ -200,8 +200,8 @@ For stable Android, add platform lifecycle integration and recoverable drafts, t
 
 Sheet hides Preview on Android but leaves Save PDF enabled. Its Android generator immediately throws `PlatformNotSupportedException("PDF export is not available on Android.")`. The user therefore receives a failure from a normal enabled action after configuring sheet options.
 
-- [Sheet.razor line 63](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.App/Components/Pages/Sheet.razor:63)
-- [MauiCharacterSheetGenerator.cs line 37](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.App/Services/MauiCharacterSheetGenerator.cs:37)
+- [Sheet.razor line 63](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.Reflections/Components/Pages/Sheet.razor:63)
+- [MauiCharacterSheetGenerator.cs line 37](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.Reflections/Services/MauiCharacterSheetGenerator.cs:37)
 
 Either implement and accept Android PDF export or gate the action and explain its availability before the user attempts it. The character-file sharing path remains a distinct supported operation.
 
@@ -213,8 +213,8 @@ Session shows Current HP and Temp HP as separate values, but permits Current HP 
 
 Temporary HP is a separate damage buffer; it does not increase the maximum for actual HP. [Official combat rules](https://www.dndbeyond.com/sources/dnd/basic-rules-2014/combat#TemporaryHitPoints).
 
-- [Session.razor line 190](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.App/Components/Pages/Session.razor:190)
-- [Session.razor line 725](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.App/Components/Pages/Session.razor:725)
+- [Session.razor line 190](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.Reflections/Components/Pages/Session.razor:190)
+- [Session.razor line 725](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.Reflections/Components/Pages/Session.razor:725)
 
 Clamp actual HP independently to the actual maximum. Cover temporary HP changes, healing, zero HP, persistence and any damage action separately.
 
@@ -226,7 +226,7 @@ The production MAUI generator, with Form Fillable explicitly at its false defaul
 
 The shared writer initially requests full flattening when form filling is disabled. Dynamic spell pages then supply partial-flattening names; adding those names switches iText into partial flattening and leaves other form fields intact.
 
-- [MauiCharacterSheetGenerator.cs line 52](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.App/Services/MauiCharacterSheetGenerator.cs:52)
+- [MauiCharacterSheetGenerator.cs line 52](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.Reflections/Services/MauiCharacterSheetGenerator.cs:52)
 - [CharacterSheetEx.cs line 152](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.Logic/Models/CharacterSheet/CharacterSheetEx.cs:152)
 - [CharacterSheetEx.cs line 224](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.Logic/Models/CharacterSheet/CharacterSheetEx.cs:224)
 
@@ -238,8 +238,8 @@ Honor full flattening when Form Fillable is off; use partial flattening only whe
 
 The Mac save-location helper chooses a folder and appends the suggested filename. It does not check whether that filename exists or request overwrite approval. Character export copies with `overwrite: true`; PDF generation opens its destination with `FileMode.Create`. Repeating an export to the same folder can replace a previously exported character or PDF without a Save As overwrite decision.
 
-- [FileSaveService.cs line 100](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.App/Services/FileSaveService.cs:100)
-- [Sheet.razor line 442](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.App/Components/Pages/Sheet.razor:442)
+- [FileSaveService.cs line 100](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.Reflections/Services/FileSaveService.cs:100)
+- [Sheet.razor line 442](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.Reflections/Components/Pages/Sheet.razor:442)
 - [CharacterSheetEx.cs line 77](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.Logic/Models/CharacterSheet/CharacterSheetEx.cs:77)
 
 Use a proper save-file interaction or explicitly confirm replacement and allow a different name. Verify cancellation leaves the existing destination unchanged.
@@ -250,10 +250,10 @@ Use a proper save-file interaction or explicitly confirm replacement and allow a
 
 Settings says External Storage makes files accessible from any file manager without ADB/root, and reports that files are now accessible from the Files app. The selected path is actually `GetExternalFilesDir`, an app-specific directory. Android restricts access to other applications' app-specific directories, and app-specific files are removed on uninstall. The startup comment also incorrectly says this directory survives uninstall. [Android app-specific storage documentation](https://developer.android.com/training/data-storage/app-specific).
 
-- [Settings.razor line 203](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.App/Components/Pages/Settings.razor:203)
-- [Settings.razor line 2338](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.App/Components/Pages/Settings.razor:2338)
-- [CharacterService.cs line 710](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.App/Services/CharacterService.cs:710)
-- [MauiProgram.cs line 29](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.App/MauiProgram.cs:29)
+- [Settings.razor line 203](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.Reflections/Components/Pages/Settings.razor:203)
+- [Settings.razor line 2338](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.Reflections/Components/Pages/Settings.razor:2338)
+- [CharacterService.cs line 710](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.Reflections/Services/CharacterService.cs:710)
+- [MauiProgram.cs line 29](C:/Users/Ralla/source/repos/Aurora-Lights/Aurora.Reflections/MauiProgram.cs:29)
 
 Describe the location accurately and direct users to a verified export/backup or cloud workflow before uninstalling. Cloud support improves the available recovery options, but does not automatically protect a local character that was never uploaded.
 

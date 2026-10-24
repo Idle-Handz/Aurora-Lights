@@ -1,6 +1,6 @@
 using Builder.Presentation.Models;
 
-namespace Aurora.App.Services;
+namespace Aurora.Reflections.Services;
 
 /// <summary>
 /// Turns a partial character load into something short enough to read in a toast. The full list of

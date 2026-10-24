@@ -26,7 +26,7 @@ def main():
     # generated outputs, credentials, and historical third-party oracle dependencies.
     names = subprocess.check_output(['git','ls-files','-z','--cached','--others','--exclude-standard'], cwd=ROOT).decode().split('\0')
     tracked = set(subprocess.check_output(['git','ls-files','-z','--cached'],cwd=ROOT).decode().split('\0'))
-    allowed = {'tests','.github','Aurora.App','Aurora.Components','Aurora.DataIntegration','Aurora.Documents','Aurora.Lights','Aurora.Logic','Aurora.PdfImport','Aurora.Web','Aurora.Tests','Aurora.Presentation','Aurora.Presentation.Tests','Builder.Core','Builder.Data','vendor','third-party','tools','docs','lib'}
+    allowed = {'tests','.github','Aurora.Reflections','Aurora.Components','Aurora.DataIntegration','Aurora.Documents','Aurora.Legacy','Aurora.Logic','Aurora.PdfImport','Aurora.Web','Aurora.Tests','Aurora.Presentation','Aurora.Presentation.Tests','Builder.Core','Builder.Data','vendor','third-party','tools','docs','lib'}
     root_files = {'package.json','package-lock.json','LICENSE','README.md','global.json','NuGet.Config','nuget.config','AuroraContent.props','.gitattributes','.gitignore','Directory.Build.props','Directory.Build.targets'}
     files = []
     for name in sorted(set(filter(None,names))):
@@ -47,7 +47,7 @@ def main():
         if name in {'third-party/legacy-test-only.json'}: continue
         if not (ROOT/p).is_file(): continue
         files.append(name)
-    for required in ['Aurora.App/Aurora.App.csproj','Aurora.Documents/Aurora.Documents.csproj','Aurora.Logic/Models/CharacterSheet/CharacterSheetEx.cs','third-party/LGPL-RELINKING.md','third-party/sources/'+manifest['archive']]:
+    for required in ['Aurora.Reflections/Aurora.Reflections.csproj','Aurora.Documents/Aurora.Documents.csproj','Aurora.Logic/Models/CharacterSheet/CharacterSheetEx.cs','third-party/LGPL-RELINKING.md','third-party/sources/'+manifest['archive']]:
         if required not in files: raise ValueError('Required corresponding source missing: '+required)
     hashes = {name:hashlib.sha256((ROOT/name).read_bytes()).hexdigest() for name in files}
     record = {'revision':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(), 'files':hashes, 'note':'Hashes identify the actual source, including any uncommitted changes; revision alone is insufficient.'}

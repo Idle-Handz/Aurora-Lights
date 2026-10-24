@@ -15,7 +15,7 @@
     <AndroidPackageFormats>apk</AndroidPackageFormats>
   </PropertyGroup>
   <ItemGroup>
-    <AndroidEnvironment Include="../../Aurora.App/Platforms/Android/gc.env" />
+    <AndroidEnvironment Include="../../Aurora.Reflections/Platforms/Android/gc.env" />
     <ProjectReference Include="../../Aurora.Logic/Aurora.Logic.csproj" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="FluentAssertions" Version="6.12.2" />
@@ -25,7 +25,7 @@
     <Compile Include="../../Aurora.Tests/Tests/CharacterSheetFlatteningTests.cs" Link="CharacterSheetFlatteningTests.cs" />
     <Compile Include="../../Aurora.Tests/Tests/PortablePdfFontsTests.cs" Link="PortablePdfFontsTests.cs" />
     <Compile Include="../../Aurora.Tests/Tests/PdfExportFilesTests.cs" Link="PdfExportFilesTests.cs" />
-    <Compile Include="../../Aurora.App/Services/PdfExportFiles.cs" Link="PdfExportFiles.cs" />
+    <Compile Include="../../Aurora.Reflections/Services/PdfExportFiles.cs" Link="PdfExportFiles.cs" />
     <Compile Include="../../Aurora.Tests/Helpers/TestApplicationContext.cs" Link="TestApplicationContext.cs" />
     <Using Include="Xunit" /><Using Include="FluentAssertions" />
   </ItemGroup>

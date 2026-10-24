@@ -78,7 +78,7 @@ using var browser = context.Render<CharacterBrowser>(p => p
         new CharacterBrowserEntry("test-character", "Aurora Drive Roundtrip 2026-10-08", "Level 5 Goliath Paladin", GroupName: "Aurora Disposable Acceptance Tests"),
         new CharacterBrowserEntry("cloud-character", "Cloud Portrait Test", "Level 5 - Elf", "Wizard",
             GroupName: "Cloud Saves", IsFavorite: true,
-            PortraitDataUrl: "data:image/png;base64," + Convert.ToBase64String(File.ReadAllBytes("Aurora.App/wwwroot/brand/aurora-appicon.png")),
+            PortraitDataUrl: "data:image/png;base64," + Convert.ToBase64String(File.ReadAllBytes("Aurora.Reflections/wwwroot/brand/aurora-reflections-icon.png")),
             IsCloud: true)
     ])
     .Add(c => c.DirectoryCaption, "1 character - /storage/emulated/0/Android/data/com.auroralights.app/files/5e Character Builder")
@@ -93,7 +93,7 @@ File.WriteAllText(Path.Combine(AppContext.BaseDirectory, "characters.html"), lib
 using var dialogs = context.Render<MudDialogProvider>();
 using var creature = context.Render<CreatureManagementCard>(p => p.Add(c => c.Model, new CreatureManagementModel
 {
-    PortraitSource = "data:image/png;base64," + Convert.ToBase64String(File.ReadAllBytes("Aurora.App/wwwroot/brand/aurora-appicon.png")),
+    PortraitSource = "data:image/png;base64," + Convert.ToBase64String(File.ReadAllBytes("Aurora.Reflections/wwwroot/brand/aurora-reflections-icon.png")),
     Notes = "Likes shiny coins. Remember to bring a spare repair kit.",
     PendingChoices = [new("asi:4:0", "Level 4 ability improvement", "Ability improvements"), new("spell:0", "Known spell 1", "Known spells")],
     Id = "sidekick-fixture", Name = "Rook, the party's loyal traveling companion", Subtitle = "Level 18 · Warrior sidekick",

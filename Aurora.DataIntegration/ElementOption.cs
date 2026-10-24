@@ -1,4 +1,4 @@
-namespace Aurora.App.Services;
+namespace Aurora.Reflections.Services;
 
 public sealed record ElementOption(
     string Id,

@@ -35,5 +35,5 @@ The vendored 0.8.0 packages passed **41 focused Aurora.Tests tests** for import 
 
 The full recursively fetched master index still needs an Android-device refresh with this build. The installed older APK cannot acquire the new policy solely through a content download. Do not clear app data again to address these known library failures.
 
-Android ARM64 Debug build also passed: dotnet build Aurora.App/Aurora.App.csproj -f net10.0-android -r android-arm64 -c Debug -m:1 -p:NuGetAudit=false (0 warnings, 0 errors). Device runtime and the full master-index refresh remain unverified.
+Android ARM64 Debug build also passed: dotnet build Aurora.Reflections/Aurora.Reflections.csproj -f net10.0-android -r android-arm64 -c Debug -m:1 -p:NuGetAudit=false (0 warnings, 0 errors). Device runtime and the full master-index refresh remain unverified.
 

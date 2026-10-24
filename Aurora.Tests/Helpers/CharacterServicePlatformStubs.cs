@@ -29,7 +29,7 @@ namespace Microsoft.Maui.Storage
     }
 }
 
-namespace Aurora.App.Services
+namespace Aurora.Reflections.Services
 {
     // UserPreferencesService otherwise pulls the unrelated MAUI theme/storage surface in.
     public enum HpMethod { Average, Rolled }

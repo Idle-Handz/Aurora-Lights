@@ -50,7 +50,7 @@ Runtime evidence
   major=marksweep for that setting. See gc-fix/apk-settings.json.
 
 Local change
-Aurora.App/Platforms/Android/gc.env sets MONO_GC_PARAMS=major=marksweep and is
+Aurora.Reflections/Platforms/Android/gc.env sets MONO_GC_PARAMS=major=marksweep and is
 included as AndroidEnvironment only for the Android target. The explicit file
 was chosen because an initial trial using AndroidEnableSGenConcurrent=false
 still left marksweep-conc in the generated package; that trial was discarded.

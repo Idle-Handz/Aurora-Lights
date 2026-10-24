@@ -32,7 +32,7 @@ test.beforeEach(async ({ page }) => {
             <button id="next">Cure Wounds details</button>
         </div>
     </body></html>`);
-    await page.addScriptTag({ path: path.resolve('Aurora.App/wwwroot/shortcuts.js') });
+    await page.addScriptTag({ path: path.resolve('Aurora.Reflections/wwwroot/shortcuts.js') });
     await page.evaluate(() => window.AuroraPageFocus.register(document.querySelector<HTMLElement>('#page')!));
 });
 

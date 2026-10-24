@@ -9,8 +9,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 RESOURCE_ROOTS = (
-    'Aurora.App/Resources', 'Aurora.Documents/Resources',
-    'Aurora.Logic/Resources', 'Aurora.Lights/resources',
+    'Aurora.Reflections/Resources', 'Aurora.Documents/Resources',
+    'Aurora.Logic/Resources', 'Aurora.Legacy/resources',
     'docs/branding',
 )
 MEDIA_EXTENSIONS = {
@@ -18,7 +18,7 @@ MEDIA_EXTENSIONS = {
     '.ttf', '.otf', '.woff', '.woff2', '.mp3', '.wav', '.mp4',
 }
 PRODUCTION_PROJECTS = (
-    'Aurora.App', 'Aurora.Components', 'Aurora.Documents', 'Aurora.Logic',
+    'Aurora.Reflections', 'Aurora.Components', 'Aurora.Documents', 'Aurora.Logic',
     'Aurora.Presentation', 'Aurora.DataIntegration', 'Aurora.PdfImport',
     'Builder.Core', 'Builder.Data',
 )
@@ -70,8 +70,8 @@ def verify_assets(components: dict, root: Path = ROOT, distribution: str | None 
             raise ValueError('Invalid asset distribution scope: ' + name)
         # All monitored assets are in the source bundle; the legacy default
         # portrait is additionally linked into the stable native application.
-        required = {'source'} if name.startswith(('Aurora.Lights/', 'docs/')) else {'windows', 'android', 'source'}
-        if name == 'Aurora.Lights/resources/default-portrait.png':
+        required = {'source'} if name.startswith(('Aurora.Legacy/', 'docs/')) else {'windows', 'android', 'source'}
+        if name == 'Aurora.Legacy/resources/default-portrait.png':
             required = {'windows', 'android', 'source'}
         if set(scopes) != required:
             raise ValueError('Asset distribution scope does not match packaging: ' + name)
@@ -138,7 +138,7 @@ def verify_assets(components: dict, root: Path = ROOT, distribution: str | None 
     # machine-readable integration data, rather than copied book descriptions.
     allowed_tags = {'aurora-starting-equipment', 'entry', 'starting-equipment',
                     'choice', 'option', 'item', 'gold', 'gold-alternative', 'coins'}
-    for path in (root / 'Aurora.App/Resources/Raw/StartingEquipment').rglob('*.xml'):
+    for path in (root / 'Aurora.Reflections/Resources/Raw/StartingEquipment').rglob('*.xml'):
         for node in ET.fromstring(path.read_bytes()).iter():
             if node.tag not in allowed_tags:
                 raise ValueError('Unsupported starting-equipment content; review provenance: ' + str(path))

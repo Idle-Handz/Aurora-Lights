@@ -2,7 +2,7 @@ name: Build Windows MAUI (unsigned)
 on:
   push:
     paths:
-      - 'Aurora.App/**'
+      - 'Aurora.Reflections/**'
       - 'Aurora.Logic/**'
       - 'Aurora.Components/**'
       - 'Aurora.DataIntegration/**'
@@ -22,7 +22,7 @@ jobs:
   build-windows:
     runs-on: windows-latest
     env:
-      PROJECT: Aurora.App/Aurora.App.csproj
+      PROJECT: Aurora.Reflections/Aurora.Reflections.csproj
     strategy:
       matrix:
         runtime: [win-x64, win-arm64]

@@ -1717,7 +1717,7 @@
       ],
       "state": "recorded",
       "binarySha256": "2dce8399579c789af0958042051c0afa141a0e403e0d824a4f3f7efa7b468021",
-      "binaryPath": "Aurora.App/Resources/Fonts/OpenSans-Regular.ttf"
+      "binaryPath": "Aurora.Reflections/Resources/Fonts/OpenSans-Regular.ttf"
     },
     {
       "name": "PdfPig",
@@ -5018,7 +5018,7 @@
         "https://creativecommons.org/publicdomain/zero/1.0/"
       ],
       "state": "recorded",
-      "binaryPath": "Aurora.Lights/resources/fonts/nodesto.otf",
+      "binaryPath": "Aurora.Legacy/resources/fonts/nodesto.otf",
       "binarySha256": "89408e55ad690ee005792e0ad2a3dd3662751d8b275c27d524a371fb378e6ad7"
     },
     {

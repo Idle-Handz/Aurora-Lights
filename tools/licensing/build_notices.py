@@ -5,7 +5,7 @@ from pathlib import Path
 from asset_inventory import verify_assets
 ROOT=Path(__file__).resolve().parents[2]
 SOURCE=ROOT/'third-party'
-DEST=ROOT/'Aurora.App/wwwroot/legal'
+DEST=ROOT/'Aurora.Reflections/wwwroot/legal'
 def decoded(data):
  if data.startswith((b'\xff\xfe',b'\xfe\xff')):return data.decode('utf-16')
  try:return data.decode('utf-8-sig')
@@ -25,7 +25,7 @@ def expected(data):
  archive=SOURCE/'sources'/source_manifest['archive']
  if not archive.resolve().is_relative_to(SOURCE.resolve()):raise ValueError('Source archive path escapes third-party directory')
  if hashlib.sha256(archive.read_bytes()).hexdigest()!=source_manifest['sha256']:raise ValueError('LGPL corresponding source archive hash mismatch')
- for project in ['Aurora.Documents/Aurora.Documents.csproj','Aurora.Logic/Aurora.Logic.csproj','Aurora.Lights/Aurora.Legacy.csproj','Aurora.Web/Aurora.Web.csproj']:
+ for project in ['Aurora.Documents/Aurora.Documents.csproj','Aurora.Logic/Aurora.Logic.csproj','Aurora.Legacy/Aurora.Legacy.csproj','Aurora.Web/Aurora.Web.csproj']:
   xml=ET.fromstring((ROOT/project).read_bytes())
   if any(e.get('Include','').lower()=='itextsharp' for e in xml.iter('Reference')):raise ValueError('Legacy AGPL PDF reference in '+project)
   refs=[e for e in xml.iter('PackageReference') if e.get('Include')=='iTextSharp.LGPLv2.Core']

@@ -22,7 +22,7 @@ or live content database refresh was performed as part of this uptake.
 
 ## Consumer verification
 
-- Dependency restores passed for `Aurora.Tests` and `Aurora.App` and their project
+- Dependency restores passed for `Aurora.Tests` and `Aurora.Reflections` and their project
   references. The app restore covers its Windows and Android targets on this host.
 - **104 focused tests passed, zero failed or skipped**, covering import reporting,
   unsafe-fallback protection, database trust/recovery, prepared projections,

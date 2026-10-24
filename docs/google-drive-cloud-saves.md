@@ -111,7 +111,7 @@ keep their client configuration confidential after distribution.
    **GOOGLE_DRIVE_DESKTOP_CLIENT_JSON**. Do not commit the downloaded JSON.
 3. The Windows and macOS workflows run `tools/prepare-google-drive-client.ps1`.
    It validates the desktop download and writes only ClientId and ClientSecret
-   to the ignored `Aurora.App/Configuration/google-drive-client.json`. The app
+   to the ignored `Aurora.Reflections/Configuration/google-drive-client.json`. The app
    embeds that file as `Aurora.GoogleDriveClient.json` on desktop only.
 4. The release workflow requires this secret and fails if it is missing or
    invalid. Other desktop build workflows can omit it for source/fork builds

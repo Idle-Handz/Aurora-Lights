@@ -1,7 +1,7 @@
 using System.Xml;
 using Aurora.Components.Models;
 
-namespace Aurora.App.Services;
+namespace Aurora.Reflections.Services;
 
 /// <summary>Parses a &lt;starting-equipment&gt; XmlNode into a StartingEquipmentBlock.</summary>
 public static class StartingEquipmentParser

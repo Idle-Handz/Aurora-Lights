@@ -3,7 +3,7 @@ name: Tests
 on:
   push:
     paths:
-      - 'Aurora.App/**'
+      - 'Aurora.Reflections/**'
       - 'Aurora.Components/**'
       - 'Aurora.DataIntegration/**'
       - 'Aurora.Logic/**'
@@ -14,7 +14,7 @@ on:
       - 'Builder.Core/**'
       - 'Builder.Data/**'
       - 'Aurora.Documents/**'
-      - 'Aurora.Lights/resources/**'
+      - 'Aurora.Legacy/resources/**'
       - 'Aurora.Presentation/**'
       - 'docs/release-notes/**'
       - 'docs/branding/**'
@@ -36,7 +36,7 @@ on:
       - '.github/workflows/test.yml'
   pull_request:
     paths:
-      - 'Aurora.App/**'
+      - 'Aurora.Reflections/**'
       - 'Aurora.Components/**'
       - 'Aurora.DataIntegration/**'
       - 'Aurora.Logic/**'
@@ -47,7 +47,7 @@ on:
       - 'Builder.Core/**'
       - 'Builder.Data/**'
       - 'Aurora.Documents/**'
-      - 'Aurora.Lights/resources/**'
+      - 'Aurora.Legacy/resources/**'
       - 'Aurora.Presentation/**'
       - 'docs/release-notes/**'
       - 'docs/branding/**'

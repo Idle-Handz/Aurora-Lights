@@ -50,7 +50,7 @@ or skips**, covering `ContentDoctorServiceTests`, `LocalCorrectionLifecycleTests
 `ContentLibraryUpgradeTests`.
 
 ```powershell
-dotnet build Aurora.App/Aurora.App.csproj -f net10.0-windows10.0.19041.0 --no-restore -m:1 -p:UseSharedCompilation=false
+dotnet build Aurora.Reflections/Aurora.Reflections.csproj -f net10.0-windows10.0.19041.0 --no-restore -m:1 -p:UseSharedCompilation=false
 dotnet test Aurora.Tests/Aurora.Tests.csproj --no-restore -m:1 -p:UseSharedCompilation=false --filter "FullyQualifiedName~ContentDoctorServiceTests|FullyQualifiedName~LocalCorrectionLifecycleTests|FullyQualifiedName~PreparedContentProjectionTests|FullyQualifiedName~ContentChangeScanTests|FullyQualifiedName~ContentLibraryUpgradeTests"
 ```
 

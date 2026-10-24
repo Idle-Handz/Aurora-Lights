@@ -1,7 +1,7 @@
 using Builder.Presentation;
 using Builder.Presentation.Services.Data;
 
-namespace Aurora.App.Services;
+namespace Aurora.Reflections.Services;
 
 internal static class ContentDirectoryResolver
 {

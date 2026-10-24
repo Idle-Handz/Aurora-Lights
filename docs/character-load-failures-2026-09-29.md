@@ -98,7 +98,7 @@ Repair should make the graph fresh during rule mutation, with focused convergenc
 
 ### 3. Default selections used to depend on Legacy's UI
 
-Zeke's saved Cure Wounds node is a direct grant. Current Divine Soul content supplies it through an active `Spell, Divine Magic` select rule with `default="ID_PHB_SPELL_CURE_WOUNDS"`. The Legacy expander view model applies an eligible default during initialization (`Aurora.Lights/ViewModels/SelectionRuleExpanderViewModel.cs:385`). The MAUI handler has no equivalent initialization step.
+Zeke's saved Cure Wounds node is a direct grant. Current Divine Soul content supplies it through an active `Spell, Divine Magic` select rule with `default="ID_PHB_SPELL_CURE_WOUNDS"`. The Legacy expander view model applies an eligible default during initialization (`Aurora.Legacy/ViewModels/SelectionRuleExpanderViewModel.cs:385`). The MAUI handler has no equivalent initialization step.
 
 An isolated Zeke run confirms the spell is absent after ordinary loading. Applying this exact active default restores it; saving to a disposable path and reopening succeeds with Cure Wounds present. The experiment deliberately edits in-memory state between captures, so its aggregate state-equality result is not a passing unchanged-roundtrip test. Default restoration needs shared-engine behavior with source/eligibility checks and precedence for explicitly saved choices.
 
@@ -201,7 +201,7 @@ full runs are clean with the production condition instead.
 ### Defects found and fixed
 
 - **`Character.Companion` and `Companions` raised no change notification.** `Companion` became a
-  computed property, and `Aurora.Lights` binds `Character.Companion.*` throughout
+  computed property, and `Aurora.Legacy` binds `Character.Companion.*` throughout
   `shellwindow.xaml` and `characterinformationslider.xaml`. Those bindings resolve once, so they
   would have stayed on the empty companion for the life of the view.
 - **A saved `<companions>` record that matched nothing discarded the name and portrait.** The node

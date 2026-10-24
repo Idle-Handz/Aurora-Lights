@@ -7,8 +7,8 @@ export default function globalSetup() {
     '--configuration', 'Debug', '--no-launch-profile', '-p:BuildInParallel=false'
   ], { cwd: process.cwd(), stdio: 'inherit', timeout: 120_000 });
   const output = 'tests/ui-layout/FixtureRenderer/bin/Debug/net10.0';
-  copyFileSync('Aurora.App/wwwroot/app.css', `${output}/app.css`);
-  copyFileSync('Aurora.App/Components/Layout/MainLayout.razor', `${output}/MainLayout.razor`);
+  copyFileSync('Aurora.Reflections/wwwroot/app.css', `${output}/app.css`);
+  copyFileSync('Aurora.Reflections/Components/Layout/MainLayout.razor', `${output}/MainLayout.razor`);
   for (const component of ['CharacterShopWorkspace', 'CharacterEquipmentWorkspace', 'CharacterBrowser', 'CharacterBrowserCard', 'CharacterLibraryShell', 'CharacterMagicWorkspace', 'RichDescription', 'CreatureManagementCard', 'SidekickChoicesPanel']) {
     copyFileSync(`Aurora.Components/obj/Debug/net10.0/scopedcss/Shared/${component}.razor.rz.scp.css`, `${output}/${component}.css`);
   }

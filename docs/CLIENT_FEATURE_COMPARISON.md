@@ -14,7 +14,7 @@ usable, but it should not be read as a claim of complete desktop parity.
 | Client | Project | Primary role | Current audience |
 | --- | --- | --- | --- |
 | Aurora Legacy | `Aurora.Legacy` | Keep the familiar legacy Windows application alive on updated frameworks while preserving its established workflows. | Existing Aurora users and contributors working close to the legacy application. |
-| Aurora: Reflections | `Aurora.App` | The primary modern desktop evolution, with a more session-friendly interface and a SQLite-backed content cache. | Players who want the actively developed modern desktop experience. |
+| Aurora Reflections | `Aurora.Reflections` | The primary modern desktop evolution, with a more session-friendly interface and a SQLite-backed content cache. | Players who want the actively developed modern desktop experience. |
 | Aurora.Web | `Aurora.Web` | A first step toward a browser-hosted builder. It currently provides temporary session workspaces and focused editing flows. | Contributors, testers, and players exploring an early online direction. |
 
 ## Status Legend
@@ -30,7 +30,7 @@ usable, but it should not be read as a claim of complete desktop parity.
 
 ## Installation, Platforms, And Storage
 
-| Feature | Aurora Legacy | Aurora: Reflections | Aurora.Web |
+| Feature | Aurora Legacy | Aurora Reflections | Aurora.Web |
 | --- | --- | --- | --- |
 | Primary platform | Established: Windows desktop. | Available: Windows desktop is the recommended build. Mac Catalyst and Android builds are experimental. | Available: modern web browser. |
 | Installation | Build or run the Windows application directly. | Velopack installer is the preferred Windows installation path. Portable builds can run without the full update experience. | No local install when hosted. |
@@ -42,7 +42,7 @@ usable, but it should not be read as a claim of complete desktop parity.
 
 ## Character Library And Files
 
-| Feature | Aurora Legacy | Aurora: Reflections | Aurora.Web |
+| Feature | Aurora Legacy | Aurora Reflections | Aurora.Web |
 | --- | --- | --- | --- |
 | Character library | Established: local character library and familiar navigation. | Available: searchable local library with a modern browser layout. | Partial: session-scoped character list. |
 | Create a character | Established. | Available: create a local first-level character with basic profile fields. | Partial: create a temporary character workspace with the initial profile fields. |
@@ -56,7 +56,7 @@ usable, but it should not be read as a claim of complete desktop parity.
 
 ## Content And Compendium
 
-| Feature | Aurora Legacy | Aurora: Reflections | Aurora.Web |
+| Feature | Aurora Legacy | Aurora Reflections | Aurora.Web |
 | --- | --- | --- | --- |
 | Aurora XML content | Established: reads the legacy XML model directly. | Available: XML is ingested into a SQLite cache and reconstructed for the builder engine. | Experimental: temporary uploaded XML content can be indexed for the current session. |
 | Source selection | Established. | Available: source groups and individual sources can be enabled or disabled per character. | Partial: source toggles are exposed in the browser workspace. |
@@ -67,7 +67,7 @@ usable, but it should not be read as a claim of complete desktop parity.
 
 ## Character Building And Management
 
-| Feature | Aurora Legacy | Aurora: Reflections | Aurora.Web |
+| Feature | Aurora Legacy | Aurora Reflections | Aurora.Web |
 | --- | --- | --- | --- |
 | Race, class, background, and other build selections | Established. | Available: unresolved build choices can be reviewed and changed. | Partial: browser build pages expose unresolved selection groups, search, picks, and changes. |
 | Level advancement | Established. | Available: level up, level down, and multiclass addition are available from the session workspace. | Partial: level up and level down are available from the browser Build page, including the HP method toggle (average or rolled). Multiclass level-up class selection and the guided creation banner are not yet reproduced. |
@@ -80,7 +80,7 @@ usable, but it should not be read as a claim of complete desktop parity.
 
 ## Equipment And Inventory
 
-| Feature | Aurora Legacy | Aurora: Reflections | Aurora.Web |
+| Feature | Aurora Legacy | Aurora Reflections | Aurora.Web |
 | --- | --- | --- | --- |
 | Inventory list | Established. | Available. | Partial: focused inventory list is editable in the browser workspace. |
 | Add, remove, and change quantity | Established. | Available. | Available. |
@@ -95,7 +95,7 @@ usable, but it should not be read as a claim of complete desktop parity.
 
 ## Spellcasting
 
-| Feature | Aurora Legacy | Aurora: Reflections | Aurora.Web |
+| Feature | Aurora Legacy | Aurora Reflections | Aurora.Web |
 | --- | --- | --- | --- |
 | Known spells | Established. | Available. | Partial: browser known-spell picker is available. |
 | Prepared spells | Established. | Available: prepared, granted, and always-prepared states are represented. | Partial: prepared toggles are available. |
@@ -106,7 +106,7 @@ usable, but it should not be read as a claim of complete desktop parity.
 
 ## Live Session Support
 
-| Feature | Aurora Legacy | Aurora: Reflections | Aurora.Web |
+| Feature | Aurora Legacy | Aurora Reflections | Aurora.Web |
 | --- | --- | --- | --- |
 | Dedicated live-session workspace | Not yet: the legacy client centers the sheet and builder workflows. | Available: designed for use during play. | Not yet. |
 | Hit points and temporary hit points | Sheet-driven legacy workflow. | Available. | Not yet. |
@@ -117,7 +117,7 @@ usable, but it should not be read as a claim of complete desktop parity.
 
 ## Sheets, Import, And Export
 
-| Feature | Aurora Legacy | Aurora: Reflections | Aurora.Web |
+| Feature | Aurora Legacy | Aurora Reflections | Aurora.Web |
 | --- | --- | --- | --- |
 | Character sheet preview | Established. | Available on supported desktop targets. | Not yet. |
 | Full sheet PDF export | Established. | Available: sheet settings include fillable form, formatting, page, and card options. | Not yet. |
@@ -127,7 +127,7 @@ usable, but it should not be read as a claim of complete desktop parity.
 
 ## Settings, Updates, And Diagnostics
 
-| Feature | Aurora Legacy | Aurora: Reflections | Aurora.Web |
+| Feature | Aurora Legacy | Aurora Reflections | Aurora.Web |
 | --- | --- | --- | --- |
 | Application update checks | Partial: legacy update and release information workflow. | Available for Velopack-installed Windows builds; portable builds can still check but do not have the same install path. | Not applicable: deployments update the hosted application. |
 | Content update controls | Established. | Available: settings expose content checks, downloads, synchronization, and reload actions. | Not applicable to the anonymous session model. |
@@ -136,7 +136,7 @@ usable, but it should not be read as a claim of complete desktop parity.
 
 ## Architectural Context For Contributors
 
-| Concern | Aurora Legacy | Aurora: Reflections | Aurora.Web |
+| Concern | Aurora Legacy | Aurora Reflections | Aurora.Web |
 | --- | --- | --- | --- |
 | UI framework | WPF | .NET MAUI Blazor Hybrid | Blazor web application |
 | Shared rule engine | Uses the legacy builder engine and XML model. | Uses the same underlying builder engine through a SQLite-backed reconstruction layer. | Uses the shared engine services inside temporary server-side workspaces. |
@@ -150,7 +150,7 @@ jobs:
 
 - Use **Aurora Legacy** when preserving or extending the familiar legacy
   experience is the priority.
-- Use **Aurora: Reflections** when you want the actively developed modern desktop
+- Use **Aurora Reflections** when you want the actively developed modern desktop
   client and its session-friendly workflow.
 - Use **Aurora.Web** when you want to help move the project toward a hosted
   builder without pretending that browser parity is already complete.

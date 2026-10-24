@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace Aurora.App.Services;
+namespace Aurora.Reflections.Services;
 
 /// <summary>Serializes imports across service instances/processes before reclaiming interrupted candidates.</summary>
 internal sealed class ContentImportWorkspace : IDisposable

@@ -133,7 +133,7 @@ jobs:
     needs: prep_version
     runs-on: windows-latest
     env:
-      PROJECT: Aurora.App/Aurora.App.csproj
+      PROJECT: Aurora.Reflections/Aurora.Reflections.csproj
       VERSION_SEMVER:   ${{ needs.prep_version.outputs.semver }}
       VERSION_ASSEMBLY: ${{ needs.prep_version.outputs.assembly }}
       VERSION_INFO:     ${{ needs.prep_version.outputs.info }}
@@ -241,7 +241,7 @@ jobs:
     needs: prep_version
     runs-on: windows-latest
     env:
-      PROJECT: Aurora.App/Aurora.App.csproj
+      PROJECT: Aurora.Reflections/Aurora.Reflections.csproj
       VERSION_SEMVER:   ${{ needs.prep_version.outputs.semver }}
       VERSION_ASSEMBLY: ${{ needs.prep_version.outputs.assembly }}
       VERSION_INFO:     ${{ needs.prep_version.outputs.info }}
@@ -347,7 +347,7 @@ jobs:
     needs: prep_version
     runs-on: ubuntu-latest
     env:
-      PROJECT: Aurora.App/Aurora.App.csproj
+      PROJECT: Aurora.Reflections/Aurora.Reflections.csproj
       VERSION_SEMVER:   ${{ needs.prep_version.outputs.semver }}
       VERSION_ASSEMBLY: ${{ needs.prep_version.outputs.assembly }}
       VERSION_INFO:     ${{ needs.prep_version.outputs.info }}
@@ -369,7 +369,7 @@ jobs:
         run: dotnet workload install maui-android
 
       - name: Validate licensing and notices (android-arm64)
-        run: python tools/licensing/build_notices.py --check --platform android --dependencies Aurora.App/obj/project.assets.json --require-resolved
+        run: python tools/licensing/build_notices.py --check --platform android --dependencies Aurora.Reflections/obj/project.assets.json --require-resolved
 
       - name: Prepare signing keystore
         env:
@@ -452,7 +452,7 @@ jobs:
     needs: prep_version
     runs-on: macos-26-intel
     env:
-      PROJECT: Aurora.App/Aurora.App.csproj
+      PROJECT: Aurora.Reflections/Aurora.Reflections.csproj
       VERSION_SEMVER:   ${{ needs.prep_version.outputs.semver }}
       VERSION_ASSEMBLY: ${{ needs.prep_version.outputs.assembly }}
       VERSION_INFO:     ${{ needs.prep_version.outputs.info }}
@@ -518,7 +518,7 @@ jobs:
     needs: prep_version
     runs-on: macos-26-intel
     env:
-      PROJECT: Aurora.App/Aurora.App.csproj
+      PROJECT: Aurora.Reflections/Aurora.Reflections.csproj
       VERSION_SEMVER:   ${{ needs.prep_version.outputs.semver }}
       VERSION_ASSEMBLY: ${{ needs.prep_version.outputs.assembly }}
       VERSION_INFO:     ${{ needs.prep_version.outputs.info }}

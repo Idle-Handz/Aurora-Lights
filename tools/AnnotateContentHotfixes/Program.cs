@@ -1,5 +1,5 @@
 // Stages this session's six manifest-verified hotfixes; never writes installed content.
-using Aurora.App.Services;
+using Aurora.Reflections.Services;
 using Aurora.Content;
 using Aurora.Content.Preparation;
 using Aurora.Content.Contracts;

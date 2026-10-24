@@ -17,8 +17,8 @@ small improvements to the familiar desktop application.
   character loading, progression orchestration, content handling, inventory,
   sheet generation, settings, and other shared behavior.
 
-- `Aurora.App`
-  The MAUI Blazor Hybrid host for **Aurora: Reflections**. This is the primary
+- `Aurora.Reflections`
+  The MAUI Blazor Hybrid host for **Aurora Reflections**. This is the primary
   current development focus and the best home for improvements to the modern
   desktop and mobile experience.
 
@@ -97,7 +97,7 @@ legacy compatibility matters.
 | --- | --- |
 | Familiar WPF interface, dialog, or desktop command | `Aurora.Legacy` |
 | Shared character loading, rules orchestration, inventory, or compatibility behavior | `Aurora.Logic` |
-| Reflections interface or MAUI platform integration | `Aurora.App` |
+| Reflections interface or MAUI platform integration | `Aurora.Reflections` |
 | Reusable Razor UI for modern clients | `Aurora.Components` |
 | SQLite content reconstruction or importer fidelity | `Aurora.Importer` |
 | Browser-hosted workflow | `Aurora.Web` |
@@ -111,15 +111,15 @@ The repository uses .NET 10. On Windows, useful project-level build commands
 include:
 
 ```powershell
-dotnet build .\Aurora.Lights\Aurora.Legacy.csproj -v minimal
+dotnet build .\Aurora.Legacy\Aurora.Legacy.csproj -v minimal
 dotnet build .\Aurora.Logic\Aurora.Logic.csproj -v minimal
-dotnet build .\Aurora.App\Aurora.App.csproj -v minimal -f net10.0-windows10.0.19041.0
+dotnet build .\Aurora.Reflections\Aurora.Reflections.csproj -v minimal -f net10.0-windows10.0.19041.0
 dotnet build .\Aurora.Web\Aurora.Web.csproj -v minimal
 dotnet test .\Aurora.Tests\Aurora.Tests.csproj -v minimal
 ```
 
 `Aurora.Legacy` is a Windows WPF application. Its source remains in the
-`Aurora.Lights` directory. `Aurora.Logic`, the importer, and
+`Aurora.Legacy` directory. `Aurora.Logic`, the importer, and
 the modern-client projects are intended to support broader reuse. A
 solution-wide build also attempts Reflections' Android and Mac Catalyst targets,
 so use the explicit Windows framework above unless the additional platform
@@ -127,7 +127,7 @@ workloads are installed.
 
 ## Work Safely With Legacy Data
 
-Aurora: Reflections and the legacy desktop application can share the same
+Aurora Reflections and the legacy desktop application can share the same
 `Documents\5e Character Builder` directory. When testing either client:
 
 - back up your character directory

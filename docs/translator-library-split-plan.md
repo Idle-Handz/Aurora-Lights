@@ -139,7 +139,7 @@ legacy gate permits:
 | 7 | `GrantRuleParser` / `SelectRuleParser` `spell-*` attribute cases | 0 |
 | 8 | `SelectRuleParser`: removed "missing 'spellcasting' attribute" warning | 0 |
 
-**Aurora Legacy is `Aurora.Lights/Aurora.Legacy.csproj`, and it references `Aurora.Logic`.**
+**Aurora Legacy is `Aurora.Legacy/Aurora.Legacy.csproj`, and it references `Aurora.Logic`.**
 Anything added to `Aurora.Logic`, including package references, is compiled into Legacy.
 
 **Aurora.Logic's use of the correction contracts:**
@@ -167,7 +167,7 @@ That is the mechanism that left characters with 44–100 unset items in the
 Builder.Core, Builder.Data, Aurora.Logic, Aurora.Documents, Aurora.Components,
 Aurora.Importer, Aurora.PdfImport, Aurora.Web, Aurora.Tests, and the Translator.
 Only UI projects are platform-specific: Legacy/Presentation are `net10.0-windows`
-(WPF), and Aurora.App is `net10.0-windows10.0.19041.0` + `net10.0-android` (or
+(WPF), and Aurora.Reflections is `net10.0-windows10.0.19041.0` + `net10.0-android` (or
 `-maccatalyst`) for MAUI. A plain `net10.0` library can be referenced by all of
 them, so all new projects use `net10.0`.
 
@@ -184,9 +184,9 @@ them, so all new projects use `net10.0`.
 | Project | Repo | Contents | Referenced by |
 | --- | --- | --- | --- |
 | **`Aurora.Content.Contracts`** (new, `net10.0`, no dependencies) | Translator | `LocalCorrectionDocument` + evaluation, `ContentReviewContracts`, `CanonicalContentAnalyzer` | `Aurora.Content`, `Aurora.DataIntegration`, `Aurora.Logic` (and through it Aurora.Legacy) |
-| **`Aurora.Content`** (new, `net10.0`; Contracts + `Microsoft.Data.Sqlite`) | Translator | See list below | Translator CLI, Aurora.App, Aurora.PdfImport, `Aurora.DataIntegration`, tests/tools |
+| **`Aurora.Content`** (new, `net10.0`; Contracts + `Microsoft.Data.Sqlite`) | Translator | See list below | Translator CLI, Aurora.Reflections, Aurora.PdfImport, `Aurora.DataIntegration`, tests/tools |
 | **AuroraTranslator CLI** (existing, slimmed) | Translator | Verb dispatch, baseline/regression commands, character-state engine, 5e-API models, `XellarantXmlGenerator` | — |
-| **`Aurora.DataIntegration`** (new, `net10.0`) | Lights | See list below | Aurora.App, Aurora.Tests, tools — **not** Aurora.Legacy |
+| **`Aurora.DataIntegration`** (new, `net10.0`) | Lights | See list below | Aurora.Reflections, Aurora.Tests, tools — **not** Aurora.Legacy |
 | `Aurora.Logic` | Lights | Gains small dependency-free pieces; its only new package is `Aurora.Content.Contracts` | (unchanged) |
 | `Builder.Data` | Lights | Restoration baseline + the D1 guard + the D2 attribute collection | (unchanged) |
 | `Aurora.Importer` | Lights | **Retired** | — |
@@ -229,7 +229,7 @@ overrides) load as ordinary user files, as they always have.
 - Legacy's package graph gains only `Aurora.Content.Contracts`.
 - `AuroraContent.props` supports this with `AuroraContentContractsOnly=true`.
 
-**Aurora.App afterwards:**
+**Aurora.Reflections afterwards:**
 - `ContentDatabaseService` calls `Aurora.Content` in-process, with no child
   process and no `#if WINDOWS` gate.
 - `BundledTools/AuroraTranslator`, the untracked pin/restore scripts and
@@ -461,7 +461,7 @@ Capture the baseline from the current working tree before changing anything (Pha
    - Re-vendoring an existing version is refused.
 
    **Phase 4 prerequisites found here:**
-   - **SQLite version alignment.** `Aurora.App`, `Aurora.PdfImport` and
+   - **SQLite version alignment.** `Aurora.Reflections`, `Aurora.PdfImport` and
      `Aurora.Importer` reference the floating `Microsoft.Data.Sqlite 9.*`
      (currently 9.0.20). The library needs `10.0.12`, which is what the importer
      runs in production. Referencing both would fail restore with NU1605. Pin
@@ -488,7 +488,7 @@ Capture the baseline from the current working tree before changing anything (Pha
    the SQLite 10.0.12 pin, the `Aurora.Content.*` namespaces, and real refresh
    progress.
    - `Aurora.DataIntegration` (`net10.0`) holds the content database services
-     that moved out of Aurora.App with `git mv`: `DbElementLoader`,
+     that moved out of Aurora.Reflections with `git mv`: `DbElementLoader`,
      `ContentDatabaseService`, the parity/fallback/overlay services,
      `ContentDirectoryResolver`, `DebugLogService`, `StartingEquipmentParser` and
      `ElementOption`. The app, Aurora.Tests and the rehearsal harness now share one
@@ -504,7 +504,7 @@ Capture the baseline from the current working tree before changing anything (Pha
        Android, Mac, and CI-built Windows releases. Those never had the bundled
        exe, so refresh used to fail there with "importer required". Android
        still needs an on-device check.
-   - `Microsoft.Data.Sqlite` is pinned at 10.0.12 in Aurora.App,
+   - `Microsoft.Data.Sqlite` is pinned at 10.0.12 in Aurora.Reflections,
      Aurora.Importer and Aurora.PdfImport (was a floating `9.*`).
    - `verify_content_library.sh` replaces `verify_translator_build.sh`. It builds
      the harness against a Translator checkout, or against the pinned package
@@ -516,7 +516,7 @@ Capture the baseline from the current working tree before changing anything (Pha
        service checks with identical warnings, 60/60 characters.
      - The pinned 0.2.0 package's database suite matches too.
      - Aurora.Tests 562 pass / 1 skip. Windows and Android app builds are clean.
-   - The `BundledTools` copy item in Aurora.App is now dead. It's removed with the
+   - The `BundledTools` copy item in Aurora.Reflections is now dead. It's removed with the
      other exe tooling in Phase 7.
 
    **Step 2 (2026-09-19): reads through the library.** Aurora.Content 0.3.0 adds

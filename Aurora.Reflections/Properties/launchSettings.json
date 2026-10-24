@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "Aurora.Reflections": {
+      "commandName": "Project"
+    },
+    "WSL": {
+      "commandName": "WSL2",
+      "distributionName": ""
+    }
+  }
+}

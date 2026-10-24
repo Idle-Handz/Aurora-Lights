@@ -92,7 +92,7 @@ Step 'preconditions' {
         throw "The Translator checkout is dirty. Commit there first, or pass -AllowDirty for a local experiment."
     }
     if (Get-Process -Name 'Aurora.Reflections' -ErrorAction SilentlyContinue) {
-        throw "Aurora: Reflections is running and holds the build output. Close it and run this again."
+        throw "Aurora Reflections is running and holds the build output. Close it and run this again."
     }
 }
 
@@ -112,7 +112,7 @@ Step "vendor $available" {
 
 # ── The gates, cheapest first ────────────────────────────────────────────────
 Step 'build (Windows app)' {
-    dotnet build (Join-Path $repo 'Aurora.App\Aurora.App.csproj') -f net10.0-windows10.0.19041.0 -m:1 -v:q --nologo
+    dotnet build (Join-Path $repo 'Aurora.Reflections\Aurora.Reflections.csproj') -f net10.0-windows10.0.19041.0 -m:1 -v:q --nologo
     if ($LASTEXITCODE -ne 0) { throw 'The Windows app build failed.' }
 }
 

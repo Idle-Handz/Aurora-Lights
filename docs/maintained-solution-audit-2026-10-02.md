@@ -7,12 +7,12 @@ and source claims are not used as current evidence without verification.
 
 ## Scope and limits
 
-Reviewed Aurora.App startup, updates, content, character/tab/save/build/equipment/session
+Reviewed Aurora.Reflections startup, updates, content, character/tab/save/build/equipment/session
 services and principal Razor pages; all Aurora.DataIntegration services; shared Razor
 components and their event/rendering paths; Aurora.Web import, workspace, engine/session,
 cleanup and resource limits; JSON/PDF import parsing and inference; and release tooling.
 
-No changes were made to Aurora.Lights, Builder.Core, Builder.Data, Aurora.Documents,
+No changes were made to Aurora.Legacy, Builder.Core, Builder.Data, Aurora.Documents,
 restored WPF presentation code, restored progression/character engine code, or vendor
 packages. The two changed Aurora.Logic services, `ElementIdAliases` and
 `ContentIndexUpdateService`, are maintained additions rather than restored legacy code.
@@ -48,7 +48,7 @@ under `buildtmp/corpus-review-20260929-203251/case` with separate result directo
 | Release notes | `--to` selected paths from history but read their contents from today's checkout; first-release notes also used today's index. | An isolated historical-release regression fails against the old compiler and passes with tree-specific reads. |
 | Release tag | Draft creation could associate newly created tags with a newer default-branch commit than the build used. | Workflow now passes the build's GITHUB_SHA as the release target. Verified CLI contract locally; no release was published during this audit. |
 
-Primary implementation locations: `Aurora.App/Services/CharacterService.cs`,
+Primary implementation locations: `Aurora.Reflections/Services/CharacterService.cs`,
 `CharacterContext.cs`, `BuildService.BuildTabs.cs`, `EquipmentService.cs`,
 `ContentService.cs`, `CompendiumService.cs`; `Aurora.DataIntegration/DbElementLoader.cs`,
 `ContentDatabaseService.cs`, `ContentDirectoryResolver.cs`, `ContentDatabaseParityService.cs`;
@@ -84,7 +84,7 @@ These disposable outputs are ignored build artifacts, not shipped content.
 
 ### 1. Make character changes transactional
 
-`BuildService.SaveCharacterFile` (`Aurora.App/Services/BuildService.cs:643`) performs
+`BuildService.SaveCharacterFile` (`Aurora.Reflections/Services/BuildService.cs:643`) performs
 separate character, Extras, session-sidecar and text persistence operations. A failure
 after the first write can leave partial completion. Several level/options/Extras paths
 also keep mutated memory on save failure, unlike the selection path's rollback.
@@ -106,7 +106,7 @@ full multiclass mapping now. Silently continuing can create a materially wrong c
 
 ### 3. Finish maintained-code load optimizations with explicit invalidation
 
-- `Aurora.App/Components/Pages/Magic.razor:83` builds full spell details for list metadata,
+- `Aurora.Reflections/Components/Pages/Magic.razor:83` builds full spell details for list metadata,
   and its cache is cleared on tab changes. Separate lightweight metadata from lazy detail
   generation; key character-dependent details by character/content generation.
 - `Aurora.DataIntegration/XmlContentFallbackService.cs:128` builds a full live-catalog
@@ -175,7 +175,7 @@ table and expose the cause. Coalescing is lower priority than persistence and lo
   skipped elements.
 - Final full Aurora.Tests suite: **789 passed, 0 failed, 0 skipped** (3 minutes 5 seconds).
 - Windows x64 Debug app build: **succeeded, 0 warnings, 0 errors** using
-  `dotnet build Aurora.App/Aurora.App.csproj -f net10.0-windows10.0.19041.0 --no-restore -m:1`.
+  `dotnet build Aurora.Reflections/Aurora.Reflections.csproj -f net10.0-windows10.0.19041.0 --no-restore -m:1`.
 
 Native MAUI two-tab equipment/picker interaction and Magic navigation need a manual smoke
 pass; shared-component tests do not render the MAUI pages. Android/MacCatalyst native builds,

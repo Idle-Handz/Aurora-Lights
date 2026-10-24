@@ -1,5 +1,5 @@
-using Aurora.App.Services;
-using Aurora.App.Services.Updates;
+using Aurora.Reflections.Services;
+using Aurora.Reflections.Services.Updates;
 using Builder.Presentation.Models;
 using Builder.Presentation.Utilities;
 

@@ -8,7 +8,7 @@ using Aurora.Content.Preparation;
 using Microsoft.Data.Sqlite;
 using System.Xml;
 
-namespace Aurora.App.Services;
+namespace Aurora.Reflections.Services;
 
 /// <summary>
 /// Reports whether the prepared SQLite catalog could be reconstructed completely.

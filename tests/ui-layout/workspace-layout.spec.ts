@@ -31,7 +31,7 @@ async function showWorkspace(page: Page, component: 'shop' | 'equipment' | 'char
       @media(min-width:901px) { .app-main-content { margin-left:56px } }
     </style>
     </head><body><div id="app"><div class="mud-layout">
-      <header class="mud-appbar mud-appbar-fixed-top"><div class="mud-toolbar mud-toolbar-appbar">Aurora: Reflections</div></header>
+      <header class="mud-appbar mud-appbar-fixed-top"><div class="mud-toolbar mud-toolbar-appbar">Aurora Reflections</div></header>
       <main class="mud-main-content app-main-content">
         <div class="char-tab-bar"><div class="char-tab">Layout fixture</div></div>
         <div class="mud-container mud-container-maxwidth-false app-content-container pa-4" style="--character-tabs-height:34px">
