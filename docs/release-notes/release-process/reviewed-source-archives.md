@@ -1,0 +1,1 @@
+Source downloads now use the reviewed release-source boundary, retaining rebuild instructions, third-party notices and the PDF library source materials while excluding historical test-only and private publication files.
