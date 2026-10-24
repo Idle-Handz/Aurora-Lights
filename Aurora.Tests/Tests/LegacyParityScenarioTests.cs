@@ -38,6 +38,29 @@ public sealed class LegacyParityScenarioTests : IAsyncLifetime
         if (!ContentFixture.SkipIfUnavailable(_output)) return;
 
         var scenario = CharacterParityScenario.Load(scenarioPath);
+        // Variant Human is no longer bundled. Keep its legacy selector coverage
+        // through original synthetic imported mechanics, without restoring book prose.
+        using var importedContent = scenario.SeedElementIds.Contains("ID_RACE_VARIANT_HUMAN_VARIANT")
+            ? new SyntheticContentScope("""
+                <elements>
+                  <element name="Imported test human option" type="Race Variant" source="Tests" id="ID_RACE_VARIANT_HUMAN_VARIANT">
+                    <supports>Human</supports>
+                    <rules>
+                      <select type="Racial Trait" name="Ability Score Increase (imported test option)" supports="Parity test ability choices" number="2" />
+                      <select type="Feat" name="Imported test feat choice" />
+                    </rules>
+                  </element>
+                  <element name="Test strength choice" type="Racial Trait" source="Tests" id="ID_RACE_VARIANT_HUMAN_VARIANT_STRENGTH">
+                    <supports>Parity test ability choices</supports>
+                    <rules><stat name="strength" value="1" /></rules>
+                  </element>
+                  <element name="Test dexterity choice" type="Racial Trait" source="Tests" id="ID_RACE_VARIANT_HUMAN_VARIANT_DEXTERITY">
+                    <supports>Parity test ability choices</supports>
+                    <rules><stat name="dexterity" value="1" /></rules>
+                  </element>
+                </elements>
+                """)
+            : null;
         if (!EnsureScenarioElementsAvailable(scenario)) return;
 
         var snapshot = await BuildScenarioAsync(scenario);

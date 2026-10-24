@@ -31,3 +31,8 @@ driver/firmware changes, device resets or computer restarts are part of this pas
 See [the bundled-content review](bundled-content-and-assets-2026-10-23.md),
 [the baseline migration guide](v1-public-baseline-migration.md), and
 [the earlier Android PDF acceptance](android-pdf-export-acceptance-2026-10-23.md).
+
+RC2 was superseded before promotion: its full-suite pass found that a legacy parity
+scenario still required the removed Variant Human definition. RC3 retains that
+selector coverage with original synthetic imported mechanics in the test alone.
+No removed definition or book prose is restored to the application baseline.
