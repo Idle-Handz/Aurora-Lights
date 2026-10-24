@@ -5,6 +5,7 @@
 // Assembly location: C:\Program Files (x86)\Aurora\Aurora Character Builder\Aurora Builder.exe
 
 using iTextSharp.text;
+using iTextSharp.text.pdf;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -15,28 +16,31 @@ namespace Builder.Presentation.Models.CharacterSheet.PDF;
 
 public static class FontsHelper
 {
+  public static BaseFont GetUnicodeFallback() => Aurora.Documents.Writers.PortablePdfFonts.GetBaseFont();
+
   public static Font GetRegular(float size = 12f)
   {
-    return FontsHelper.GetFont("Calibri", "calibri.ttf", size) ?? FontFactory.GetFont("Helvetica", size);
+    return FontsHelper.GetFont("Calibri", "calibri.ttf", size) ?? Aurora.Documents.Writers.PortablePdfFonts.GetFont(size, Font.NORMAL);
   }
 
   public static Font GetBold(float size = 12f)
   {
-    return FontsHelper.GetFont("Calibri Bold", "calibrib.ttf", size) ?? FontFactory.GetFont("Helvetica-Bold", size);
+    return FontsHelper.GetFont("Calibri Bold", "calibrib.ttf", size) ?? Aurora.Documents.Writers.PortablePdfFonts.GetFont(size, Font.BOLD);
   }
 
   public static Font GetItalic(float size = 12f)
   {
-    return FontsHelper.GetFont("Calibri Italic", "calibrii.ttf", size) ?? FontFactory.GetFont("Helvetica-Oblique", size);
+    return FontsHelper.GetFont("Calibri Italic", "calibrii.ttf", size) ?? Aurora.Documents.Writers.PortablePdfFonts.GetFont(size, Font.ITALIC);
   }
 
   public static Font GetBoldItalic(float size = 12f)
   {
-    return FontsHelper.GetFont("Calibri Bold Italic", "calibriz.ttf", size) ?? FontFactory.GetFont("Helvetica-BoldOblique", size);
+    return FontsHelper.GetFont("Calibri Bold Italic", "calibriz.ttf", size) ?? Aurora.Documents.Writers.PortablePdfFonts.GetFont(size, Font.BOLDITALIC);
   }
 
   public static Font GetFont(string fontName, string filename, float size = 0.0f)
   {
+    if (OperatingSystem.IsAndroid()) return null;
     try
     {
       string fontPath = FontsHelper.ResolveFontPath(filename);

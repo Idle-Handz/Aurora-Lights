@@ -195,6 +195,10 @@ jobs:
             -p:ApplicationDisplayVersion=$VERSION_ASSEMBLY \
             -o publish/win-x64
 
+      - name: Validate licensing and notices (win-x64)
+        shell: bash
+        run: python tools/licensing/build_notices.py --check --platform windows --dependencies publish/win-x64/Aurora.Reflections.deps.json --require-resolved
+
       - name: Download previous release for delta (win-x64)
         # Best-effort: skipped silently on first release or if GitHub rate-limits.
         # vpk pack still produces a full nupkg; only the delta is missing.
@@ -299,6 +303,10 @@ jobs:
             -p:ApplicationDisplayVersion=$VERSION_ASSEMBLY \
             -o publish/win-arm64
 
+      - name: Validate licensing and notices (win-arm64)
+        shell: bash
+        run: python tools/licensing/build_notices.py --check --platform windows --dependencies publish/win-arm64/Aurora.Reflections.deps.json --require-resolved
+
       - name: Download previous release for delta (win-arm64)
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -359,6 +367,9 @@ jobs:
 
       - name: Install MAUI Android workload
         run: dotnet workload install maui-android
+
+      - name: Validate licensing and notices (android-arm64)
+        run: python tools/licensing/build_notices.py --check --platform android --dependencies Aurora.App/obj/project.assets.json --require-resolved
 
       - name: Prepare signing keystore
         env:
@@ -606,6 +617,9 @@ jobs:
         with:
           path: artifacts
 
+      - name: Bundle corresponding source for LGPL relinking
+        run: python3 tools/licensing/build_source_bundle.py --output artifacts/aurora-corresponding-source.zip --require-resolved
+
       - name: Create draft release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -626,6 +640,7 @@ jobs:
             --target "$GITHUB_SHA" \
             --title "Aurora Lights $VERSION" \
             "${RELEASE_FLAGS[@]}" \
+            "artifacts/aurora-corresponding-source.zip" \
             "artifacts/android-arm64/aurora-android-arm64.apk" \
             "artifacts/macos-x64/aurora-maccatalyst-x64.zip" \
             "artifacts/macos-arm64/aurora-maccatalyst-arm64.zip" \

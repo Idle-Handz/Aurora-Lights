@@ -55,6 +55,24 @@ public static class FileSaveService
 #endif
     }
 
+    /// <summary>Save an existing PDF. False means the user cancelled; success follows a completed write.</summary>
+    public static Task<bool> SavePdfAsync(string filePath) =>
+#if ANDROID
+        AndroidDocumentSaver.SaveAsync(filePath, Path.GetFileName(filePath), "application/pdf");
+#else
+        throw new PlatformNotSupportedException("Use the desktop Save PDF action.");
+#endif
+
+    public static Task SharePdfAsync(string filePath) => MainThread.InvokeOnMainThreadAsync(() =>
+        Share.Default.RequestAsync(new ShareFileRequest
+        {
+            Title = "Share PDF",
+            File = new ShareFile(filePath, "application/pdf")
+        }));
+
+    public static Task<bool> OpenPdfAsync(string filePath) => MainThread.InvokeOnMainThreadAsync(() =>
+        Launcher.Default.OpenAsync(new OpenFileRequest("Open PDF", new ReadOnlyFile(filePath, "application/pdf"))));
+
 #if WINDOWS
     private static async Task<string?> PickSaveLocationWindowsAsync(
         string suggestedFileName,
@@ -90,7 +108,7 @@ public static class FileSaveService
 #if ANDROID
     private static Task<string?> PickSaveLocationAndroidAsync(string suggestedFileName)
     {
-        // Android has no file-save picker. Write to a cache path and follow up with
+        // Character-file export uses a temporary copy and the share sheet. Follow up with
         // ShareFileAsync so the user can send it to Files, Drive, or any other app.
         string path = Path.Combine(FileSystem.Current.CacheDirectory, suggestedFileName);
         return Task.FromResult<string?>(path);

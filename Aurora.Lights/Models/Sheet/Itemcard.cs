@@ -1,4 +1,5 @@
-﻿// Decompiled with JetBrains decompiler
+using Aurora.Documents.Helpers;
+// Decompiled with JetBrains decompiler
 // Type: Builder.Presentation.Models.Sheet.Itemcard
 // Assembly: Aurora Builder, Version=1.0.166.7407, Culture=neutral, PublicKeyToken=null
 // MVID: 09D35420-8FA0-4A71-9A21-FF952C48F8A3
@@ -55,8 +56,7 @@ public class Itemcard
     phrase.Font = font1;
     Chunk chunk1 = new Chunk(string.IsNullOrWhiteSpace(this._item.AlternativeName) ? this._item.DisplayName + Environment.NewLine : this._item.AlternativeName + Environment.NewLine);
     chunk1.Font = font2;
-    chunk1.setLineHeight(10f);
-    phrase.Add((IElement) chunk1);
+
     if (this._item.IsAdorned || this._item.Item.Type.Equals("Magic Item"))
     {
       StringBuilder stringBuilder = new StringBuilder();
@@ -89,9 +89,9 @@ public class Itemcard
       });
       phrase.Add((IElement) new Chunk(Environment.NewLine));
     }
-    List<IElement> toList = HTMLWorker.ParseToList((TextReader) new StringReader(this._item.IsAdorned ? this._item.AdornerItem.Description : this._item.Item.Description), (StyleSheet) null);
+    List<IElement> toList = HtmlWorker.ParseToList((TextReader) new StringReader(this._item.IsAdorned ? this._item.AdornerItem.Description : this._item.Item.Description), (StyleSheet) null);
     if (!this._item.IsAdorned && (this._item.Item.Type.Equals("Weapon") || this._item.Item.Type.Equals("Armor")))
-      toList = HTMLWorker.ParseToList((TextReader) new StringReader(DescriptionPanelViewModelBase.GenerateHeaderForCard((ElementBase) this._item.Item)), (StyleSheet) null);
+      toList = HtmlWorker.ParseToList((TextReader) new StringReader(DescriptionPanelViewModelBase.GenerateHeaderForCard((ElementBase) this._item.Item)), (StyleSheet) null);
     foreach (IElement element in toList)
     {
       StringBuilder stringBuilder = new StringBuilder();
@@ -112,14 +112,10 @@ public class Itemcard
       phrase.Add((IElement) chunk3);
       phrase.Add((IElement) new Chunk(Environment.NewLine));
     }
-    foreach (Chunk chunk4 in (IEnumerable<Chunk>) phrase.Chunks)
-    {
-      if (phrase.Chunks.First<Chunk>() != chunk4)
-        chunk4.setLineHeight(8f);
-    }
     ColumnText columnText = new ColumnText(stamper.GetOverContent(page));
     columnText.SetSimpleColumn(this.GetCardRectangle(pageSize, position, 2));
-    columnText.AddText(phrase);
+    columnText.AddElement(new Paragraph(10f, chunk1));
+    columnText.AddElement(new Paragraph(phrase) { Leading = 8f });
     columnText.Go();
   }
 

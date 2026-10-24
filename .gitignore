@@ -57,6 +57,9 @@ test-results/
 **/publish/
 
 # Local diagnostics and scratch output
+/artifacts/
+__pycache__/
+*.py[cod]
 /%TEMP%/
 /buildtmp/
 /tmp/

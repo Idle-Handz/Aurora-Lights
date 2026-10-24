@@ -44,3 +44,8 @@
 *.pdb       binary
 *.sqlite    binary
 *.zip       binary
+
+# Preserve upstream legal text bytes used by the notice integrity checks.
+/third-party/texts/*.txt -text
+
+/third-party/sources/*.zip -text

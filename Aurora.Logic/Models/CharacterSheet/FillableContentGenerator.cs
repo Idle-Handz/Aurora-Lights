@@ -1,4 +1,5 @@
-﻿// Decompiled with JetBrains decompiler
+using Aurora.Documents.Helpers;
+// Decompiled with JetBrains decompiler
 // Type: Builder.Presentation.Models.CharacterSheet.FillableContentGenerator
 // Assembly: Aurora Builder, Version=1.0.166.7407, Culture=neutral, PublicKeyToken=null
 // MVID: 09D35420-8FA0-4A71-9A21-FF952C48F8A3
@@ -39,7 +40,7 @@ public class FillableContentGenerator
     this._boldFont = FontsHelper.GetBold().BaseFont;
     this._boldItalicFont = FontsHelper.GetBoldItalic().BaseFont;
     this._currentFont = this._defaultFont;
-    this._currentFontColor = BaseColor.BLACK;
+    this._currentFontColor = BaseColor.Black;
   }
 
   public void SetDefault() => this._currentFont = this._defaultFont;
@@ -52,7 +53,7 @@ public class FillableContentGenerator
 
   public void SetColor(BaseColor color) => this._currentFontColor = color;
 
-  public void ResetColor() => this._currentFontColor = BaseColor.BLACK;
+  public void ResetColor() => this._currentFontColor = BaseColor.Black;
 
   [Obsolete]
   public BaseFont GetCurrentFont() => this._currentFont;
@@ -124,7 +125,7 @@ public class FillableContentGenerator
     Rectangle contentArea,
     float maximumFontSize)
   {
-    return ColumnText.FitText(FontsHelper.GetRegular(), content, contentArea, maximumFontSize, 0);
+    return PdfSignatureAppearance.FitText(FontsHelper.GetRegular(), content, contentArea, maximumFontSize, 0);
   }
 
   public void FillArea(
@@ -146,11 +147,33 @@ public class FillableContentGenerator
     float requiredFontSize,
     int alignment = 0)
   {
-    ColumnText column = new ColumnText(this._writer.DirectContent);
-    column.Alignment = alignment;
-    column.SetSimpleColumn(descriptionArea);
-    this.FillCardDescription(column, content, requiredFontSize);
-    column.Go();
+    ColumnText CreateColumn(float size)
+    {
+      var column = new ColumnText(this._writer.DirectContent) { Alignment = alignment };
+      column.SetSimpleColumn(descriptionArea);
+      this.FillCardDescription(column, content, size);
+      return column;
+    }
+
+    // Measure the formatted paragraphs, lists and tables that will actually be
+    // painted. The plain-text estimate can otherwise clip a card's final lines.
+    float size = requiredFontSize;
+    if (ColumnText.HasMoreText(CreateColumn(size).Go(true)))
+    {
+      float lower = 0.5f;
+      float upper = size;
+      if (ColumnText.HasMoreText(CreateColumn(lower).Go(true)))
+        throw new InvalidOperationException("The card description cannot fit in its available area.");
+      for (int step = 0; step < 12; step++)
+      {
+        float candidate = (lower + upper) / 2f;
+        if (ColumnText.HasMoreText(CreateColumn(candidate).Go(true))) upper = candidate;
+        else lower = candidate;
+      }
+      size = lower;
+    }
+    if (ColumnText.HasMoreText(CreateColumn(size).Go()))
+      throw new InvalidOperationException("The card description was not fully written.");
   }
 
   public void FillCardField(Rectangle area, string description, iTextSharp.text.Font font, int alignment = 0)
@@ -159,10 +182,10 @@ public class FillableContentGenerator
     ColumnText columnText = new ColumnText(this._writer.DirectContent);
     columnText.Alignment = alignment;
     columnText.SetSimpleColumn(area);
-    columnText.SetLeading(requiredFontsize, 1f);
+    columnText.SetLeading(requiredFontsize, 0f);
     Chunk chunk = new Chunk(description, font);
     chunk.Font.Size = requiredFontsize;
-    chunk.setLineHeight(requiredFontsize);
+
     Paragraph paragraph = new Paragraph(chunk);
     columnText.AddText(chunk);
     columnText.Go();
@@ -176,7 +199,7 @@ public class FillableContentGenerator
       Alignment = alignment
     };
     columnText.SetSimpleColumn(area);
-    columnText.SetLeading(requiredFontsize, 1f);
+    columnText.SetLeading(requiredFontsize, 0f);
     foreach (ContentLine contentLine in (List<ContentLine>) content)
     {
       Paragraph paragraph = new Paragraph(requiredFontsize);
@@ -193,7 +216,7 @@ public class FillableContentGenerator
 
   private void FillCardDescription(ColumnText column, string description, float fontsize)
   {
-    column.SetLeading(fontsize, 1f);
+    column.SetLeading(fontsize, 0f);
     List<IElement> elements = this.GetElements(description);
     bool flag1 = false;
     foreach (IElement element in elements)
@@ -211,6 +234,8 @@ public class FillableContentGenerator
             bool flag2 = pdfProw == rows.FirstOrDefault<PdfPRow>();
             foreach (PdfPCell cell in pdfProw.GetCells())
             {
+              // Spanning cells leave null placeholders in subsequent columns/rows.
+              if (cell?.CompositeElements == null) continue;
               foreach (IElement compositeElement in cell.CompositeElements)
               {
                 foreach (Chunk chunk2 in (IEnumerable<Chunk>) compositeElement.Chunks)
@@ -222,13 +247,13 @@ public class FillableContentGenerator
                 paragraph.Add((IElement) this.CreateIndentationChunk());
               }
             }
-            paragraph.Add(Environment.NewLine);
+            paragraph.Add(new Chunk(Environment.NewLine));
           }
-          paragraph.Add(Environment.NewLine);
+          paragraph.Add(new Chunk(Environment.NewLine));
           break;
         case List listElement:
           paragraph.Add((IElement) this.CreateListChunk(listElement));
-          paragraph.Add(Environment.NewLine);
+          paragraph.Add(new Chunk(Environment.NewLine));
           break;
         default:
           foreach (Chunk chunk in (IEnumerable<Chunk>) element.Chunks)
@@ -246,7 +271,7 @@ public class FillableContentGenerator
           }
           if (!element.Equals((object) elements.Last<IElement>()))
           {
-            paragraph.Add(Environment.NewLine);
+            paragraph.Add(new Chunk(Environment.NewLine));
             break;
           }
           break;
@@ -259,7 +284,7 @@ public class FillableContentGenerator
 
   private void FillCardField(ColumnText column, string description, iTextSharp.text.Font font)
   {
-    column.SetLeading(font.Size, 1f);
+    column.SetLeading(font.Size, 0f);
     Paragraph paragraph = new Paragraph(font.Size, description, font);
     column.AddText((Phrase) paragraph);
   }
@@ -267,7 +292,7 @@ public class FillableContentGenerator
   private List<IElement> GetElements(string description)
   {
     if (description != null)
-      return HTMLWorker.ParseToList((TextReader) new StringReader(description), (StyleSheet) null);
+      return HtmlWorker.ParseToList((TextReader) new StringReader(description), (StyleSheet) null);
     if (Debugger.IsAttached)
       Debugger.Break();
     return (List<IElement>) null;
@@ -276,9 +301,18 @@ public class FillableContentGenerator
   private Chunk CreateListChunk(List listElement)
   {
     Chunk listChunk = new Chunk();
-    Chunk symbol = listElement.Symbol;
-    foreach (Chunk chunk in (IEnumerable<Chunk>) listElement.Chunks)
-      listChunk.Append($"    {$"{symbol} {chunk.Content}"}{Environment.NewLine}");
+    foreach (IElement item in listElement.Items)
+    {
+      if (item is List nested)
+      {
+        listChunk.Append(this.CreateListChunk(nested).Content);
+        continue;
+      }
+      string text = string.Concat(item.Chunks.Select(chunk => chunk.Content)).Trim();
+      if (text.Length == 0) continue;
+      string symbol = (item as ListItem)?.ListSymbol?.Content ?? listElement.Symbol.Content;
+      listChunk.Append($"    {symbol} {text}{Environment.NewLine}");
+    }
     return listChunk;
   }
 
@@ -288,7 +322,7 @@ public class FillableContentGenerator
   {
     foreach (Chunk chunk in (IEnumerable<Chunk>) paragraph.Chunks)
     {
-      chunk.setLineHeight(fontsize);
+
       switch (chunk.Font.Style)
       {
         case -1:
@@ -315,7 +349,7 @@ public class FillableContentGenerator
   {
     foreach (Chunk chunk in (IEnumerable<Chunk>) paragraph.Chunks)
     {
-      chunk.setLineHeight(font.Size);
+
       chunk.Font = font;
     }
   }

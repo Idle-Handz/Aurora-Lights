@@ -1,25 +1,8 @@
-<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8"?>
 <elements>
 
 	<element name="Druid" type="Class" source="System Reference Document" id="ID_WOTC_PHB_CLASS_DRUID">
 		<description>
-			<!-- <p class="flavor">A priest of the Old Faith, wielding the powers of nature— moonlight and plant growth, fire and lightning—and adopting animal forms.</p> -->
-			<p>Holding high a gnarled staff wreathed with holly, an elf summons the fury of the storm and calls down explosive bolts of lightning to smite the torch-carrying orcs who threaten her forest.</p>
-			<p class="indent">Crouching out of sight on a high tree branch in the form of a leopard, a human peers out of the jungle at the strange construction of a temple of Evil Elemental Air, keeping a close eye on the cultists’ activities.</p>
-			<p class="indent">Swinging a blade formed of pure fire, a half-elf charges into a mass of skeletal soldiers, sundering the unnatural magic that gives the foul creatures the mocking semblance of life.</p>
-			<p class="indent">Whether calling on the elemental forces of nature or emulating the creatures of the animal world, druids are an embodiment of nature’s resilience, cunning, and fury. They claim no mastery over nature. Instead, they see themselves as extensions of nature’s indomitable will.</p>
-			<h4>POWER OF NATURE</h4>
-			<p>Druids revere nature above all, gaining their spells and other magical powers either from the force of nature itself or from a nature deity. Many druids pursue a mystic spirituality of transcendent union with nature rather than devotion to a divine entity, while others serve gods of wild nature, animals, or elemental forces. The ancient druidic traditions are sometimes called the Old Faith, in contrast to the worship of gods in temples and shrines.</p>
-			<p class="indent">Druid spells are oriented toward nature and animals— the power of tooth and claw, of sun and moon, of fire and storm. Druids also gain the ability to take on animal forms, and some druids make a particular study of this practice, even to the point where they prefer animal form to their natural form.</p>
-			<h4>PRESERVE THE BALANCE</h4>
-			<p>For druids, nature exists in a precarious balance. The four elements that make up a world—air, earth, fire, and water—must remain in equilibrium. If one element were to gain power over the others, the world could be destroyed, drawn into one of the elemental planes and broken apart into its component elements. Thus, druids oppose cults of Elemental Evil and others who promote one element to the exclusion of others.</p>
-			<p class="indent">Druids are also concerned with the delicate ecological balance that sustains plant and animal life, and the need for civilized folk to live in harmony with nature, not in opposition to it. Druids accept that which is cruel in nature, and they hate that which is unnatural, including aberrations (such as beholders and mind flayers) and undead (such as zombies and vampires). Druids sometimes lead raids against such creatures, especially when the monsters encroach on the druids’ territory.</p>
-			<p class="indent">Druids are often found guarding sacred sites or watching over regions of unspoiled nature. But when a significant danger arises, threatening nature’s balance or the lands they protect, druids take on a more active role in combating the threat, as adventurers.</p>
-			<h4>CREATING A DRUID</h4>
-			<p>When making a druid, consider why your character has such a close bond with nature. Perhaps your character lives in a society where the Old Faith still thrives, or was raised by a druid after being abandoned in the depths of a forest. Perhaps your character had a dramatic encounter with the spirits of nature, coming face to face with a giant eagle or dire wolf and surviving the experience. Maybe your character was born during an epic storm or a volcanic eruption, which was interpreted as a sign that becoming a druid was part of your character’s destiny.</p>
-			<p class="indent">Have you always been an adventurer as part of your druidic calling, or did you first spend time as a caretaker of a sacred grove or spring? Perhaps your homeland was befouled by evil, and you took up an adventuring life in hopes of finding a new home or purpose.</p>
-			<h5>QUICK BUILD</h5>
-			<p>You can make a druid quickly by following these suggestions. First, Wisdom should be your highest ability score, followed by Constitution. Second, choose the hermit background.</p>
 			<h3>CLASS FEATURES</h3>
 			<p>As a druid, you gain the following class features.</p>
 			<h5>HIT POINTS</h5>
@@ -71,14 +54,14 @@
 				<tr><td>19th</td><td class="left">Ability Score Improvement</td><td>4</td><td>4</td><td>3</td><td>3</td><td>3</td><td>3</td><td>2</td><td>1</td><td>1</td><td>1</td></tr>
 				<tr><td>20th</td><td class="left">Archdruid</td><td>4</td><td>4</td><td>3</td><td>3</td><td>3</td><td>3</td><td>2</td><td>2</td><td>1</td><td>1</td></tr>
 			</table>
-			<div element="ID_WOTC_PHB_CLASS_FEATURE_DRUID_DRUIDIC" />
-			<div element="ID_WOTC_PHB_CLASS_FEATURE_DRUID_SPELLCASTING_DRUID" />
-			<div element="ID_WOTC_PHB_CLASS_FEATURE_DRUID_WILDSHAPE" />
-			<div element="ID_WOTC_PHB_CLASS_FEATURE_DRUID_DRUID_CIRCLE" />
-			<div element="ID_WOTC_PHB_CLASS_FEATURE_DRUID_ABILITYSCOREIMPROVEMENT_DRUID" />
-			<div element="ID_WOTC_PHB_CLASS_FEATURE_DRUID_TIMELESS_BODY" />
-			<div element="ID_WOTC_PHB_CLASS_FEATURE_DRUID_BEAST_SPELLS" />
-			<div element="ID_WOTC_PHB_CLASS_FEATURE_DRUID_ARCHDRUID" />
+			<div element="ID_WOTC_PHB_CLASS_FEATURE_DRUID_DRUIDIC"/>
+			<div element="ID_WOTC_PHB_CLASS_FEATURE_DRUID_SPELLCASTING_DRUID"/>
+			<div element="ID_WOTC_PHB_CLASS_FEATURE_DRUID_WILDSHAPE"/>
+			<div element="ID_WOTC_PHB_CLASS_FEATURE_DRUID_DRUID_CIRCLE"/>
+			<div element="ID_WOTC_PHB_CLASS_FEATURE_DRUID_ABILITYSCOREIMPROVEMENT_DRUID"/>
+			<div element="ID_WOTC_PHB_CLASS_FEATURE_DRUID_TIMELESS_BODY"/>
+			<div element="ID_WOTC_PHB_CLASS_FEATURE_DRUID_BEAST_SPELLS"/>
+			<div element="ID_WOTC_PHB_CLASS_FEATURE_DRUID_ARCHDRUID"/>
 		</description>
 		<sheet display="false">
 			<description>A priest of the Old Faith, wielding the powers of nature—moonlight and plant growth, fire and lightning—and adopting animal forms.</description>
@@ -121,10 +104,10 @@
 				<set name="multiclass proficiencies">Light armor, medium armor, shields (druids will not wear armor or use shields made of metal)</set>
 			</setters>
 			<rules>
-				<grant type="Grants" id="ID_INTERNAL_GRANT_MULTICLASS" />
-				<grant type="Proficiency" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_LIGHT_ARMOR" />
-				<grant type="Proficiency" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_MEDIUM_ARMOR" />
-				<grant type="Proficiency" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_SHIELDS" />
+				<grant type="Grants" id="ID_INTERNAL_GRANT_MULTICLASS"/>
+				<grant type="Proficiency" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_LIGHT_ARMOR"/>
+				<grant type="Proficiency" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_MEDIUM_ARMOR"/>
+				<grant type="Proficiency" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_SHIELDS"/>
 			</rules>
 		</multiclass>
 	</element>
@@ -136,7 +119,7 @@
 			<description>You can use it to leave hidden messages. You and others who know this language automatically spot such a message. Others spot the message’s presence with a successful DC 15 Perception check but can’t decipher it without magic.</description>
 		</sheet>
 		<rules>
-			<grant type="Language" id="ID_LANGUAGE_DRUIDIC" />
+			<grant type="Language" id="ID_LANGUAGE_DRUIDIC"/>
 		</rules>
 	</element>
 	<element name="Spellcasting" type="Class Feature" source="System Reference Document" id="ID_WOTC_PHB_CLASS_FEATURE_DRUID_SPELLCASTING_DRUID">
@@ -168,31 +151,31 @@
 		</spellcasting>
 		<rules>
 			<grant type="Grants" id="ID_INTERNAL_GRANT_MULTICLASS_SPELLCASTING_SLOTS_FULL" requirements="ID_INTERNAL_GRANT_MULTICLASS"/>
-			<grant type="Grants" id="ID_INTERNAL_RITUAL_CASTING" />
-			<stat name="druid:spellcasting:slots:1" value="2" level="1" />
-			<stat name="druid:spellcasting:slots:1" value="1" level="2" />
-			<stat name="druid:spellcasting:slots:1" value="1" level="3" />
-			<stat name="druid:spellcasting:slots:2" value="2" level="3" />
-			<stat name="druid:spellcasting:slots:2" value="1" level="4" />
-			<stat name="druid:spellcasting:slots:3" value="2" level="5" />
-			<stat name="druid:spellcasting:slots:3" value="1" level="6" />
-			<stat name="druid:spellcasting:slots:4" value="1" level="7" />
-			<stat name="druid:spellcasting:slots:4" value="1" level="8" />
-			<stat name="druid:spellcasting:slots:4" value="1" level="9" />
-			<stat name="druid:spellcasting:slots:5" value="1" level="9" />
-			<stat name="druid:spellcasting:slots:5" value="1" level="10" />
-			<stat name="druid:spellcasting:slots:5" value="1" level="18" />
-			<stat name="druid:spellcasting:slots:6" value="1" level="11" />
-			<stat name="druid:spellcasting:slots:6" value="1" level="19" />
-			<stat name="druid:spellcasting:slots:7" value="1" level="13" />
-			<stat name="druid:spellcasting:slots:7" value="1" level="20" />
-			<stat name="druid:spellcasting:slots:8" value="1" level="15" />
-			<stat name="druid:spellcasting:slots:9" value="1" level="17" />
-			<stat name="druid:spellcasting:prepare" value="wisdom:modifier" />
-			<stat name="druid:spellcasting:prepare" value="level:druid" />
-			<select type="Spell" name="Cantrip (Druid)" supports="$(spellcasting:list), 0" level="1" number="2" spellcasting="Druid" />
-			<select type="Spell" name="Cantrip (Druid)" supports="$(spellcasting:list), 0" level="4" number="1" spellcasting="Druid" />
-			<select type="Spell" name="Cantrip (Druid)" supports="$(spellcasting:list), 0" level="10" number="1" spellcasting="Druid" />
+			<grant type="Grants" id="ID_INTERNAL_RITUAL_CASTING"/>
+			<stat name="druid:spellcasting:slots:1" value="2" level="1"/>
+			<stat name="druid:spellcasting:slots:1" value="1" level="2"/>
+			<stat name="druid:spellcasting:slots:1" value="1" level="3"/>
+			<stat name="druid:spellcasting:slots:2" value="2" level="3"/>
+			<stat name="druid:spellcasting:slots:2" value="1" level="4"/>
+			<stat name="druid:spellcasting:slots:3" value="2" level="5"/>
+			<stat name="druid:spellcasting:slots:3" value="1" level="6"/>
+			<stat name="druid:spellcasting:slots:4" value="1" level="7"/>
+			<stat name="druid:spellcasting:slots:4" value="1" level="8"/>
+			<stat name="druid:spellcasting:slots:4" value="1" level="9"/>
+			<stat name="druid:spellcasting:slots:5" value="1" level="9"/>
+			<stat name="druid:spellcasting:slots:5" value="1" level="10"/>
+			<stat name="druid:spellcasting:slots:5" value="1" level="18"/>
+			<stat name="druid:spellcasting:slots:6" value="1" level="11"/>
+			<stat name="druid:spellcasting:slots:6" value="1" level="19"/>
+			<stat name="druid:spellcasting:slots:7" value="1" level="13"/>
+			<stat name="druid:spellcasting:slots:7" value="1" level="20"/>
+			<stat name="druid:spellcasting:slots:8" value="1" level="15"/>
+			<stat name="druid:spellcasting:slots:9" value="1" level="17"/>
+			<stat name="druid:spellcasting:prepare" value="wisdom:modifier"/>
+			<stat name="druid:spellcasting:prepare" value="level:druid"/>
+			<select type="Spell" name="Cantrip (Druid)" supports="$(spellcasting:list), 0" level="1" number="2" spellcasting="Druid"/>
+			<select type="Spell" name="Cantrip (Druid)" supports="$(spellcasting:list), 0" level="4" number="1" spellcasting="Druid"/>
+			<select type="Spell" name="Cantrip (Druid)" supports="$(spellcasting:list), 0" level="10" number="1" spellcasting="Druid"/>
 		</rules>
 	</element>
 	<element name="Wildshape" type="Class Feature" source="System Reference Document" id="ID_WOTC_PHB_CLASS_FEATURE_DRUID_WILDSHAPE">
@@ -216,13 +199,11 @@
 			You can stay in a beast shape for {{druid wildshape:hours}} hours. You then revert to your normal form unless you expend another use of this feature. You can revert to your normal form earlier by using a bonus action on your turn. You automatically revert if you fall unconscious, drop to 0 hit points, or die.</description>
 		</sheet>
 		<rules>
-			<stat name="druid wildshape:hours" value="level:druid:half" />
+			<stat name="druid wildshape:hours" value="level:druid:half"/>
 		</rules>
 	</element>
 	<element name="Druid Circle" type="Class Feature" source="System Reference Document" id="ID_WOTC_PHB_CLASS_FEATURE_DRUID_DRUID_CIRCLE">
-		<description>
-			<p>At 2nd level, you choose to identify with a circle of druids: the Circle of the Land or the Circle of the Moon, both detailed at the end of the class description. Your choice grants you features at 2nd level and again at 6th, 10th, and 14th level.</p>
-		</description>
+		<description><p>At 2nd level, you choose to identify with a circle of druids, such as the Circle of the Land. Your choice grants you features at 2nd level and again at 6th, 10th, and 14th level.</p></description>
 		<sheet display="false">
 			<description>You choose to identify with a circle of druids.</description>
 		</sheet>
@@ -231,17 +212,17 @@
 		</rules>
 	</element>
 	<element name="Ability Score Improvement" type="Class Feature" source="System Reference Document" id="ID_WOTC_PHB_CLASS_FEATURE_DRUID_ABILITYSCOREIMPROVEMENT_DRUID">
-		<compendium display="false" />
+		<compendium display="false"/>
 		<description>
 			<p>When you reach 4th level, and again at 8th, 12th, 16th, and 19th level, you can increase one ability score of your choice by 2, or you can increase two ability scores of your choice by 1. As normal, you can’t increase an ability score above 20 using this feature.</p>
 		</description>
-		<sheet display="false" />
+		<sheet display="false"/>
 		<rules>
-			<select type="Class Feature" name="Improvement Option (Druid 4)" supports="Improvement Option,Druid,4" level="4" />
-			<select type="Class Feature" name="Improvement Option (Druid 8)" supports="Improvement Option,Druid,8" level="8" />
-			<select type="Class Feature" name="Improvement Option (Druid 12)" supports="Improvement Option,Druid,12" level="12" />
-			<select type="Class Feature" name="Improvement Option (Druid 16)" supports="Improvement Option,Druid,16" level="16" />
-			<select type="Class Feature" name="Improvement Option (Druid 19)" supports="Improvement Option,Druid,19" level="19" />
+			<select type="Class Feature" name="Improvement Option (Druid 4)" supports="Improvement Option,Druid,4" level="4"/>
+			<select type="Class Feature" name="Improvement Option (Druid 8)" supports="Improvement Option,Druid,8" level="8"/>
+			<select type="Class Feature" name="Improvement Option (Druid 12)" supports="Improvement Option,Druid,12" level="12"/>
+			<select type="Class Feature" name="Improvement Option (Druid 16)" supports="Improvement Option,Druid,16" level="16"/>
+			<select type="Class Feature" name="Improvement Option (Druid 19)" supports="Improvement Option,Druid,19" level="19"/>
 		</rules>
 	</element>
 	<element name="Timeless Body" type="Class Feature" source="System Reference Document" id="ID_WOTC_PHB_CLASS_FEATURE_DRUID_TIMELESS_BODY">
@@ -274,23 +255,23 @@
 		<supports>Druid Circle</supports>
 		<description>
 			<p>The Circle of the Land is made up of mystics and sages who safeguard ancient knowledge and rites through a vast oral tradition. These druids meet within sacred circles of trees or standing stones to whisper primal secrets in Druidic. The circle’s wisest members preside as the chief priests of communities that hold to the Old Faith and serve as advisors to the rulers of those folk. As a member of this circle, your magic is influenced by the land where you were initiated into the circle’s mysterious rites.</p>
-			<div element="ID_WOTC_PHB_ARCHETYPE_FEATURE_CIRCLE_LAND_BONUS_CANTRIP" />
-			<div element="ID_WOTC_PHB_ARCHETYPE_FEATURE_CIRCLE_LAND_NATURAL_RECOVERY" />
-			<div element="ID_WOTC_PHB_ARCHETYPE_FEATURE_CIRCLE_LAND_CIRCLE_SPELLS" />
-			<div element="ID_WOTC_PHB_ARCHETYPE_FEATURE_CIRCLE_LAND_LANDS_STRIDE" />
-			<div element="ID_WOTC_PHB_ARCHETYPE_FEATURE_CIRCLE_LAND_NATURES_WARD" />
-			<div element="ID_WOTC_PHB_ARCHETYPE_FEATURE_CIRCLE_LAND_NATURES_SANCTUARY" />
+			<div element="ID_WOTC_PHB_ARCHETYPE_FEATURE_CIRCLE_LAND_BONUS_CANTRIP"/>
+			<div element="ID_WOTC_PHB_ARCHETYPE_FEATURE_CIRCLE_LAND_NATURAL_RECOVERY"/>
+			<div element="ID_WOTC_PHB_ARCHETYPE_FEATURE_CIRCLE_LAND_CIRCLE_SPELLS"/>
+			<div element="ID_WOTC_PHB_ARCHETYPE_FEATURE_CIRCLE_LAND_LANDS_STRIDE"/>
+			<div element="ID_WOTC_PHB_ARCHETYPE_FEATURE_CIRCLE_LAND_NATURES_WARD"/>
+			<div element="ID_WOTC_PHB_ARCHETYPE_FEATURE_CIRCLE_LAND_NATURES_SANCTUARY"/>
 		</description>
 		<sheet display="false">
 			<description>The Circle of the Land is made up of mystics and sages who safeguard ancient knowledge and rites through a vast oral tradition.</description>
 		</sheet>
 		<rules>
-			<grant type="Archetype Feature" id="ID_WOTC_PHB_ARCHETYPE_FEATURE_CIRCLE_LAND_BONUS_CANTRIP" level="2" />
-			<grant type="Archetype Feature" id="ID_WOTC_PHB_ARCHETYPE_FEATURE_CIRCLE_LAND_NATURAL_RECOVERY" level="2" />
-			<grant type="Archetype Feature" id="ID_WOTC_PHB_ARCHETYPE_FEATURE_CIRCLE_LAND_CIRCLE_SPELLS" level="3" />
-			<grant type="Archetype Feature" id="ID_WOTC_PHB_ARCHETYPE_FEATURE_CIRCLE_LAND_LANDS_STRIDE" level="6" />
-			<grant type="Archetype Feature" id="ID_WOTC_PHB_ARCHETYPE_FEATURE_CIRCLE_LAND_NATURES_WARD" level="10" />
-			<grant type="Archetype Feature" id="ID_WOTC_PHB_ARCHETYPE_FEATURE_CIRCLE_LAND_NATURES_SANCTUARY" level="14" />
+			<grant type="Archetype Feature" id="ID_WOTC_PHB_ARCHETYPE_FEATURE_CIRCLE_LAND_BONUS_CANTRIP" level="2"/>
+			<grant type="Archetype Feature" id="ID_WOTC_PHB_ARCHETYPE_FEATURE_CIRCLE_LAND_NATURAL_RECOVERY" level="2"/>
+			<grant type="Archetype Feature" id="ID_WOTC_PHB_ARCHETYPE_FEATURE_CIRCLE_LAND_CIRCLE_SPELLS" level="3"/>
+			<grant type="Archetype Feature" id="ID_WOTC_PHB_ARCHETYPE_FEATURE_CIRCLE_LAND_LANDS_STRIDE" level="6"/>
+			<grant type="Archetype Feature" id="ID_WOTC_PHB_ARCHETYPE_FEATURE_CIRCLE_LAND_NATURES_WARD" level="10"/>
+			<grant type="Archetype Feature" id="ID_WOTC_PHB_ARCHETYPE_FEATURE_CIRCLE_LAND_NATURES_SANCTUARY" level="14"/>
 		</rules>
 	</element>
 	<element name="Bonus Cantrip" type="Archetype Feature" source="System Reference Document" id="ID_WOTC_PHB_ARCHETYPE_FEATURE_CIRCLE_LAND_BONUS_CANTRIP">
@@ -299,7 +280,7 @@
 		</description>
 		<sheet display="false"/>
 		<rules>
-			<select type="Spell" name="Bonus Cantrip (Druid)" supports="0,Druid" spellcasting="Druid" />
+			<select type="Spell" name="Bonus Cantrip (Druid)" supports="0,Druid" spellcasting="Druid"/>
 		</rules>
 	</element>
 	<element name="Natural Recovery" type="Archetype Feature" source="System Reference Document" id="ID_WOTC_PHB_ARCHETYPE_FEATURE_CIRCLE_LAND_NATURAL_RECOVERY">
@@ -313,10 +294,10 @@
 	</element>
 	<element name="Circle Spells" type="Archetype Feature" source="System Reference Document" id="ID_WOTC_PHB_ARCHETYPE_FEATURE_CIRCLE_LAND_CIRCLE_SPELLS">
 		<description>
-			<p>Your mystical connection to the land infuses you with the ability to cast certain spells. At 3rd, 5th, 7th, and 9th level you gain access to circle spells connected to the land where you became a druid. Choose that land—arctic, coast, desert, forest, grassland, mountain, swamp, or Underdark—and consult the associated list of spells.</p>
+			<p>Your mystical connection to the land infuses you with the ability to cast certain spells. At 3rd, 5th, 7th, and 9th level you gain access to circle spells connected to the land where you became a druid. Choose that land—arctic, coast, desert, forest, grassland, mountain, or swamp—and consult the associated list of spells.</p>
 			<p class="indent">Once you gain access to a circle spell, you always have it prepared, and it doesn’t count against the number of spells you can prepare each day. If you gain access to a spell that doesn’t appear on the druid spell list, the spell is nonetheless a druid spell for you.</p>
 		</description>
-		<sheet display="false" />
+		<sheet display="false"/>
 		<rules>
 			<select type="Archetype Feature" name="Circle Spells" supports="Circle Spells" level="3"/>
 		</rules>
@@ -364,16 +345,16 @@
 				<tr><td>9th</td><td><em>commune with nature, cone of cold</em></td></tr>
 			</table>
 		</description>
-		<sheet display="false" />
+		<sheet display="false"/>
 		<rules>
-			<grant type="Spell" id="ID_PHB_SPELL_HOLD_PERSON" level="3" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_SPIKE_GROWTH" level="3" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_SLEET_STORM" level="5" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_SLOW" level="5" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_FREEDOM_OF_MOVEMENT" level="7" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_ICE_STORM" level="7" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_COMMUNE_WITH_NATURE" level="9" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_CONE_OF_COLD" level="9" spellcasting="Druid" prepared="true" />
+			<grant type="Spell" id="ID_PHB_SPELL_HOLD_PERSON" level="3" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_SPIKE_GROWTH" level="3" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_SLEET_STORM" level="5" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_SLOW" level="5" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_FREEDOM_OF_MOVEMENT" level="7" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_ICE_STORM" level="7" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_COMMUNE_WITH_NATURE" level="9" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_CONE_OF_COLD" level="9" spellcasting="Druid" prepared="true"/>
 		</rules>
 	</element>
 	<element name="Coast Circle" type="Archetype Feature" source="System Reference Document" id="ID_WOTC_PHB_ARCHETYPE_FEATURE_CIRCLE_SPELLS_COAST">
@@ -391,16 +372,16 @@
 				<tr><td>9th</td><td><em>conjure elemental, scrying</em></td></tr>
 			</table>
 		</description>
-		<sheet display="false" />
+		<sheet display="false"/>
 		<rules>
-			<grant type="Spell" id="ID_PHB_SPELL_MIRROR_IMAGE" level="3" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_MISTY_STEP" level="3" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_WATER_BREATHING" level="5" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_WATER_WALK" level="5" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_CONTROL_WATER" level="7" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_FREEDOM_OF_MOVEMENT" level="7" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_CONJURE_ELEMENTAL" level="9" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_SCRYING" level="9" spellcasting="Druid" prepared="true" />
+			<grant type="Spell" id="ID_PHB_SPELL_MIRROR_IMAGE" level="3" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_MISTY_STEP" level="3" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_WATER_BREATHING" level="5" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_WATER_WALK" level="5" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_CONTROL_WATER" level="7" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_FREEDOM_OF_MOVEMENT" level="7" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_CONJURE_ELEMENTAL" level="9" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_SCRYING" level="9" spellcasting="Druid" prepared="true"/>
 		</rules>
 	</element>
 	<element name="Desert Circle" type="Archetype Feature" source="System Reference Document" id="ID_WOTC_PHB_ARCHETYPE_FEATURE_CIRCLE_SPELLS_DESERT">
@@ -418,16 +399,16 @@
 				<tr><td>9th</td><td><em>insect plague, wall of stone</em></td></tr>
 			</table>
 		</description>
-		<sheet display="false" />
+		<sheet display="false"/>
 		<rules>
-			<grant type="Spell" id="ID_PHB_SPELL_BLUR" level="3" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_SILENCE" level="3" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_CREATE_FOOD_AND_WATER" level="5" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_PROTECTION_FROM_ENERGY" level="5" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_BLIGHT" level="7" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_HALLUCINATORY_TERRAIN" level="7" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_INSECT_PLAGUE" level="9" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_WALL_OF_STONE" level="9" spellcasting="Druid" prepared="true" />
+			<grant type="Spell" id="ID_PHB_SPELL_BLUR" level="3" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_SILENCE" level="3" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_CREATE_FOOD_AND_WATER" level="5" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_PROTECTION_FROM_ENERGY" level="5" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_BLIGHT" level="7" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_HALLUCINATORY_TERRAIN" level="7" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_INSECT_PLAGUE" level="9" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_WALL_OF_STONE" level="9" spellcasting="Druid" prepared="true"/>
 		</rules>
 	</element>
 	<element name="Forest Circle" type="Archetype Feature" source="System Reference Document" id="ID_WOTC_PHB_ARCHETYPE_FEATURE_CIRCLE_SPELLS_FOREST">
@@ -445,16 +426,16 @@
 				<tr><td>9th</td><td><em>commune with nature, tree stride</em></td></tr>
 			</table>
 		</description>
-		<sheet display="false" />
+		<sheet display="false"/>
 		<rules>
-			<grant type="Spell" id="ID_PHB_SPELL_BARKSKIN" level="3" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_SPIDER_CLIMB" level="3" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_CALL_LIGHTNING" level="5" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_PLANT_GROWTH" level="5" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_DIVINATION" level="7" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_FREEDOM_OF_MOVEMENT" level="7" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_COMMUNE_WITH_NATURE" level="9" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_TREE_STRIDE" level="9" spellcasting="Druid" prepared="true" />
+			<grant type="Spell" id="ID_PHB_SPELL_BARKSKIN" level="3" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_SPIDER_CLIMB" level="3" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_CALL_LIGHTNING" level="5" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_PLANT_GROWTH" level="5" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_DIVINATION" level="7" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_FREEDOM_OF_MOVEMENT" level="7" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_COMMUNE_WITH_NATURE" level="9" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_TREE_STRIDE" level="9" spellcasting="Druid" prepared="true"/>
 		</rules>
 	</element>
 	<element name="Grassland Circle" type="Archetype Feature" source="System Reference Document" id="ID_WOTC_PHB_ARCHETYPE_FEATURE_CIRCLE_SPELLS_GRASSLAND">
@@ -472,16 +453,16 @@
 				<tr><td>9th</td><td><em>dream, insect plague</em></td></tr>
 			</table>
 		</description>
-		<sheet display="false" />
+		<sheet display="false"/>
 		<rules>
-			<grant type="Spell" id="ID_PHB_SPELL_INVISIBILITY" level="3" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_PASS_WITHOUT_TRACE" level="3" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_DAYLIGHT" level="5" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_HASTE" level="5" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_DIVINATION" level="7" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_FREEDOM_OF_MOVEMENT" level="7" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_DREAM" level="9" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_INSECT_PLAGUE" level="9" spellcasting="Druid" prepared="true" />
+			<grant type="Spell" id="ID_PHB_SPELL_INVISIBILITY" level="3" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_PASS_WITHOUT_TRACE" level="3" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_DAYLIGHT" level="5" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_HASTE" level="5" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_DIVINATION" level="7" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_FREEDOM_OF_MOVEMENT" level="7" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_DREAM" level="9" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_INSECT_PLAGUE" level="9" spellcasting="Druid" prepared="true"/>
 		</rules>
 	</element>
 	<element name="Mountain Circle" type="Archetype Feature" source="System Reference Document" id="ID_WOTC_PHB_ARCHETYPE_FEATURE_CIRCLE_SPELLS_MOUNTAIN">
@@ -500,14 +481,14 @@
 			</table>
 		</description>
 		<rules>
-			<grant type="Spell" id="ID_PHB_SPELL_SPIDER_CLIMB" level="3" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_SPIKE_GROWTH" level="3" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_LIGHTNING_BOLT" level="5" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_MELD_INTO_STONE" level="5" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_STONE_SHAPE" level="7" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_STONESKIN" level="7" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_PASSWALL" level="9" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_WALL_OF_STONE" level="9" spellcasting="Druid" prepared="true" />
+			<grant type="Spell" id="ID_PHB_SPELL_SPIDER_CLIMB" level="3" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_SPIKE_GROWTH" level="3" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_LIGHTNING_BOLT" level="5" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_MELD_INTO_STONE" level="5" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_STONE_SHAPE" level="7" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_STONESKIN" level="7" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_PASSWALL" level="9" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_WALL_OF_STONE" level="9" spellcasting="Druid" prepared="true"/>
 		</rules>
 	</element>
 	<element name="Swamp Circle" type="Archetype Feature" source="System Reference Document" id="ID_WOTC_PHB_ARCHETYPE_FEATURE_CIRCLE_SPELLS_SWAMP">
@@ -519,50 +500,25 @@
 				<thead>
 					<tr><td>Druid Level</td><td>Spells</td></tr>
 				</thead>
-				<tr><td>3rd</td><td><em>Melf’s acid arrow, darkness</em></td></tr>
+				<tr><td>3rd</td><td><em>Acid Arrow, darkness</em></td></tr>
 				<tr><td>5th</td><td><em>water walk, stinking cloud</em></td></tr>
 				<tr><td>7th</td><td><em>freedom of movement, locate creature</em></td></tr>
 				<tr><td>9th</td><td><em>insect plague, scrying</em></td></tr>
 			</table>
 		</description>
-		<sheet display="false" />
+		<sheet display="false"/>
 		<rules>
-			<grant type="Spell" id="ID_PHB_SPELL_MELFS_ACID_ARROW" level="3" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_DARKNESS" level="3" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_WATER_WALK" level="5" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_STINKING_CLOUD" level="5" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_FREEDOM_OF_MOVEMENT" level="7" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_LOCATE_CREATURE" level="7" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_INSECT_PLAGUE" level="9" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_SCRYING" level="9" spellcasting="Druid" prepared="true" />
+			<grant type="Spell" id="ID_PHB_SPELL_MELFS_ACID_ARROW" level="3" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_DARKNESS" level="3" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_WATER_WALK" level="5" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_STINKING_CLOUD" level="5" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_FREEDOM_OF_MOVEMENT" level="7" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_LOCATE_CREATURE" level="7" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_INSECT_PLAGUE" level="9" spellcasting="Druid" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_SCRYING" level="9" spellcasting="Druid" prepared="true"/>
 		</rules>
 	</element>
-	<element name="Underdark Circle" type="Archetype Feature" source="System Reference Document" id="ID_WOTC_PHB_ARCHETYPE_FEATURE_CIRCLE_SPELLS_UNDERDARK">
-		<supports>Circle Spells</supports>
-		<description>
-			<p>At 3rd, 5th, 7th, and 9th level you gain access to circle spells connected to the land where you became a druid.</p>
-			<p class="indent">Once you gain access to a circle spell, you always have it prepared, and it doesn’t count against the number of spells you can prepare each day. If you gain access to a spell that doesn’t appear on the druid spell list, the spell is nonetheless a druid spell for you.</p>
-			<table>
-				<thead>
-					<tr><td>Druid Level</td><td>Spells</td></tr>
-				</thead>
-				<tr><td>3rd</td><td><em>spider climb, web</em></td></tr>
-				<tr><td>5th</td><td><em>gaseous form, stinking cloud</em></td></tr>
-				<tr><td>7th</td><td><em>greater invisibility, stone shape</em></td></tr>
-				<tr><td>9th</td><td><em>cloudkill, insect plague</em></td></tr>
-			</table>
-		</description>
-		<rules>
-			<grant type="Spell" id="ID_PHB_SPELL_SPIDER_CLIMB" level="3" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_WEB" level="3" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_GASEOUS_FORM" level="5" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_STINKING_CLOUD" level="5" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_GREATER_INVISIBILITY" level="7" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_STONE_SHAPE" level="7" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_CLOUDKILL" level="9" spellcasting="Druid" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_INSECT_PLAGUE" level="9" spellcasting="Druid" prepared="true" />
-		</rules>
-	</element>
+	
 
 
 </elements>

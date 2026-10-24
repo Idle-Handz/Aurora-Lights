@@ -1,3 +1,4 @@
+using Aurora.Documents.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -44,7 +45,7 @@ public abstract class CharacterSheetDocumentWriterBase : DocumentWriterBase
 		{
 			SetFontSize(field, fontSize);
 		}
-		Stamper.AcroFields.SetField(field, content);
+		Stamper.AcroFields.SetFieldValue(field, content);
 	}
 
 	protected virtual void StampCollection(Dictionary<string, string> collection, bool setFontSize = false, float fontSize = 8f)
@@ -72,7 +73,7 @@ public abstract class CharacterSheetDocumentWriterBase : DocumentWriterBase
 
 	protected virtual void SetBackgroundColor(string field)
 	{
-		Stamper.AcroFields.SetFieldProperty(field, "bgcolor", BaseColor.WHITE, null);
+		Stamper.AcroFields.SetFieldProperty(field, "bgcolor", BaseColor.White, null);
 	}
 
 	protected virtual void SetBackgroundColor(string field, BaseColor color)
@@ -82,7 +83,7 @@ public abstract class CharacterSheetDocumentWriterBase : DocumentWriterBase
 
 	protected virtual void SetTextColor(string field)
 	{
-		Stamper.AcroFields.SetFieldProperty(field, "textcolor", BaseColor.BLACK, null);
+		Stamper.AcroFields.SetFieldProperty(field, "textcolor", BaseColor.Black, null);
 	}
 
 	protected virtual void SetTextColor(string field, BaseColor color)
@@ -92,12 +93,12 @@ public abstract class CharacterSheetDocumentWriterBase : DocumentWriterBase
 
 	protected Rectangle GetFieldRectangle(string field)
 	{
-		return Stamper.AcroFields.GetFieldPositions(field)[0].position;
+		return Stamper.AcroFields.GetWidgetPositions(field)[0].position;
 	}
 
 	protected bool ReplaceImageField(string name, string imagePath)
 	{
-		AcroFields.FieldPosition fieldPosition = Stamper.AcroFields.GetFieldPositions(name)?.FirstOrDefault();
+		PdfLayoutExtensions.FieldPosition fieldPosition = Stamper.AcroFields.GetWidgetPositions(name)?.FirstOrDefault();
 		if (fieldPosition == null)
 		{
 			return false;
@@ -124,19 +125,19 @@ public abstract class CharacterSheetDocumentWriterBase : DocumentWriterBase
 		{
 			return;
 		}
-		Rectangle position = Stamper.AcroFields.GetFieldPositions(name)[0].position;
-		Rectangle position2 = Stamper.AcroFields.GetFieldPositions(name)[0].position;
+		Rectangle position = Stamper.AcroFields.GetWidgetPositions(name)[0].position;
+		Rectangle position2 = Stamper.AcroFields.GetWidgetPositions(name)[0].position;
 		if (!FillReplaceFieldBackground)
 		{
 			position2.Left += 3f;
 			position2.Right -= 3f;
 			position2.Top += topOffset;
 		}
-		int page = Stamper.AcroFields.GetFieldPositions(name)[0].page;
+		int page = Stamper.AcroFields.GetWidgetPositions(name)[0].page;
 		Stamper.AcroFields.RemoveField(name);
 		Font regular = base.Fonts.GetRegular(fontSize);
-		float num = ColumnText.FitText(regular, content + Environment.NewLine + "<p></p>", position2, fontSize, 1);
-		num = ColumnText.FitText(regular, content, position2, fontSize, 1);
+		float num = PdfSignatureAppearance.FitText(regular, content + Environment.NewLine + "<p></p>", position2, fontSize, 1);
+		num = PdfSignatureAppearance.FitText(regular, content, position2, fontSize, 1);
 		if (SuffixWithWhitespace && num < fontSize)
 		{
 			string text = "";
@@ -180,13 +181,13 @@ public abstract class CharacterSheetDocumentWriterBase : DocumentWriterBase
 			{
 				text = text + "<p>&nbsp;</p>" + Environment.NewLine;
 			}
-			num = ColumnText.FitText(regular, content + text, position2, fontSize, 1);
+			num = PdfSignatureAppearance.FitText(regular, content + text, position2, fontSize, 1);
 		}
 		bool flag = CanFitWithDefaultLineHeight(position2, content);
 		if (FillReplaceFieldBackground || !flag)
 		{
 			PdfContentByte overContent = Stamper.GetOverContent(page);
-			position.BackgroundColor = BaseColor.WHITE;
+			position.BackgroundColor = BaseColor.White;
 			overContent.Rectangle(position);
 		}
 		ColumnText columnText = new ColumnText(Stamper.GetOverContent(page));
@@ -197,7 +198,8 @@ public abstract class CharacterSheetDocumentWriterBase : DocumentWriterBase
 
 	private void FillColumn(ColumnText column, string description, float fontSize, float lineHeight = 10f)
 	{
-		List<IElement> list = HTMLWorker.ParseToList(new StringReader(description), null);
+		column.SetLeading(lineHeight, 0f);
+		List<IElement> list = HtmlWorker.ParseToList(new StringReader(description), null);
 		foreach (IElement item in list)
 		{
 			Paragraph paragraph = new Paragraph(fontSize);
@@ -219,7 +221,7 @@ public abstract class CharacterSheetDocumentWriterBase : DocumentWriterBase
 			}
 			if (!object.Equals(item, list.Last()) || item is List)
 			{
-				paragraph.Add(Environment.NewLine);
+				paragraph.Add(new Chunk(Environment.NewLine));
 			}
 			StyleElement(paragraph, fontSize, lineHeight);
 			column.AddText(paragraph);
@@ -230,7 +232,7 @@ public abstract class CharacterSheetDocumentWriterBase : DocumentWriterBase
 	{
 		foreach (Chunk chunk in element.Chunks)
 		{
-			chunk.setLineHeight(lineHeight);
+
 			switch (chunk.Font.Style)
 			{
 			case 0:
@@ -255,14 +257,14 @@ public abstract class CharacterSheetDocumentWriterBase : DocumentWriterBase
 
 	private float GetRequiredFontSize(Rectangle rectangle, string content, float maximumFontSize)
 	{
-		return ColumnText.FitText(base.Fonts.GetRegular(), content, rectangle, maximumFontSize, 1);
+		return PdfSignatureAppearance.FitText(base.Fonts.GetRegular(), content, rectangle, maximumFontSize, 1);
 	}
 
 	public bool CanFitWithDefaultLineHeight(Rectangle position, string content, float fontSize = 10f)
 	{
 		Font regular = base.Fonts.GetRegular(fontSize);
-		float num = ColumnText.FitText(regular, content + Environment.NewLine + "<p></p>", position, fontSize, 1);
-		num = ColumnText.FitText(regular, content, position, fontSize, 1);
+		float num = PdfSignatureAppearance.FitText(regular, content + Environment.NewLine + "<p></p>", position, fontSize, 1);
+		num = PdfSignatureAppearance.FitText(regular, content, position, fontSize, 1);
 		if (SuffixWithWhitespace && num < fontSize)
 		{
 			string text = "";
@@ -294,7 +296,7 @@ public abstract class CharacterSheetDocumentWriterBase : DocumentWriterBase
 			{
 				text = text + "<p>&nbsp;</p>" + Environment.NewLine;
 			}
-			num = ColumnText.FitText(regular, content + text, position, fontSize, 1);
+			num = PdfSignatureAppearance.FitText(regular, content + text, position, fontSize, 1);
 		}
 		if (num < fontSize)
 		{

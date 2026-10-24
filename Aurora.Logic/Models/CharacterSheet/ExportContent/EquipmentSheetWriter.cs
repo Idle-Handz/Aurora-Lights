@@ -1,4 +1,5 @@
-﻿// Decompiled with JetBrains decompiler
+using Aurora.Documents.Helpers;
+// Decompiled with JetBrains decompiler
 // Type: Builder.Presentation.Models.CharacterSheet.ExportContent.EquipmentSheetWriter
 // Assembly: Aurora Builder, Version=1.0.166.7407, Culture=neutral, PublicKeyToken=null
 // MVID: 09D35420-8FA0-4A71-9A21-FF952C48F8A3
@@ -35,9 +36,9 @@ public class EquipmentSheetWriter
     {
       if (num1 != 40)
       {
-        stamper.AcroFields.SetField($"equipment_page_gear_name.{num1}", itemExportContent.Name);
-        stamper.AcroFields.SetField($"equipment_page_gear_count.{num1}", itemExportContent.Amount);
-        stamper.AcroFields.SetField($"equipment_page_gear_weight.{num1}", itemExportContent.Weight);
+        stamper.AcroFields.SetFieldValue($"equipment_page_gear_name.{num1}", itemExportContent.Name);
+        stamper.AcroFields.SetFieldValue($"equipment_page_gear_count.{num1}", itemExportContent.Amount);
+        stamper.AcroFields.SetFieldValue($"equipment_page_gear_weight.{num1}", itemExportContent.Weight);
         ++num1;
       }
       else
@@ -48,9 +49,9 @@ public class EquipmentSheetWriter
     {
       if (num2 != 20)
       {
-        stamper.AcroFields.SetField($"equipment_page_magic_gear_name.{num2}", magicItem.Name);
-        stamper.AcroFields.SetField($"equipment_page_magic_gear_count.{num2}", magicItem.Amount);
-        stamper.AcroFields.SetField($"equipment_page_magic_gear_weight.{num2}", magicItem.Weight);
+        stamper.AcroFields.SetFieldValue($"equipment_page_magic_gear_name.{num2}", magicItem.Name);
+        stamper.AcroFields.SetFieldValue($"equipment_page_magic_gear_count.{num2}", magicItem.Amount);
+        stamper.AcroFields.SetFieldValue($"equipment_page_magic_gear_weight.{num2}", magicItem.Weight);
         ++num2;
       }
       else
@@ -61,9 +62,9 @@ public class EquipmentSheetWriter
     {
       if (num3 != 10)
       {
-        stamper.AcroFields.SetField($"equipment_page_valuable_name.{num3}", valuable.Name);
-        stamper.AcroFields.SetField($"equipment_page_valuable_count.{num3}", valuable.Amount);
-        stamper.AcroFields.SetField($"equipment_page_valuable_weight.{num3}", valuable.Weight);
+        stamper.AcroFields.SetFieldValue($"equipment_page_valuable_name.{num3}", valuable.Name);
+        stamper.AcroFields.SetFieldValue($"equipment_page_valuable_count.{num3}", valuable.Amount);
+        stamper.AcroFields.SetFieldValue($"equipment_page_valuable_weight.{num3}", valuable.Weight);
         ++num3;
       }
       else
@@ -74,15 +75,15 @@ public class EquipmentSheetWriter
     {
       if (num4 != 2)
       {
-        stamper.AcroFields.SetField($"equipment_page_vehicle_{num4 + 1}_name", storageLocation.Name);
+        stamper.AcroFields.SetFieldValue($"equipment_page_vehicle_{num4 + 1}_name", storageLocation.Name);
         int num5 = 0;
         foreach (InventoryItemExportContent itemExportContent in storageLocation.Items)
         {
           if (num5 != 10)
           {
-            stamper.AcroFields.SetField($"equipment_page_vehicle_{num4 + 1}_name.{num5}", itemExportContent.Name);
-            stamper.AcroFields.SetField($"equipment_page_vehicle_{num4 + 1}_count.{num5}", itemExportContent.Amount);
-            stamper.AcroFields.SetField($"equipment_page_vehicle_{num4 + 1}_weight.{num5}", itemExportContent.Weight);
+            stamper.AcroFields.SetFieldValue($"equipment_page_vehicle_{num4 + 1}_name.{num5}", itemExportContent.Name);
+            stamper.AcroFields.SetFieldValue($"equipment_page_vehicle_{num4 + 1}_count.{num5}", itemExportContent.Amount);
+            stamper.AcroFields.SetFieldValue($"equipment_page_vehicle_{num4 + 1}_weight.{num5}", itemExportContent.Weight);
             ++num5;
           }
           else
@@ -136,19 +137,19 @@ public class EquipmentSheetWriter
         exportContent.QuestItems
       }
     })
-      stamper.AcroFields.SetField(keyValuePair.Key, keyValuePair.Value);
+      stamper.AcroFields.SetFieldValue(keyValuePair.Key, keyValuePair.Value);
     if (this._configuration.IncludeFormatting)
       this.ReplaceField(stamper, "equipment_page_magic_items", exportContent.AttunedMagicItems, 8.2f);
     else
-      stamper.AcroFields.SetField("equipment_page_magic_items", exportContent.AttunedMagicItems);
+      stamper.AcroFields.SetFieldValue("equipment_page_magic_items", exportContent.AttunedMagicItems);
   }
 
   private void WriteImage(PdfStamper stamper, string fieldName, string imagePath)
   {
     try
     {
-      IList<AcroFields.FieldPosition> fieldPositions = stamper.AcroFields.GetFieldPositions(fieldName);
-      AcroFields.FieldPosition fieldPosition = fieldPositions != null ? fieldPositions.FirstOrDefault<AcroFields.FieldPosition>() : (AcroFields.FieldPosition) null;
+      IList<PdfLayoutExtensions.FieldPosition> fieldPositions = stamper.AcroFields.GetWidgetPositions(fieldName);
+      PdfLayoutExtensions.FieldPosition fieldPosition = fieldPositions != null ? fieldPositions.FirstOrDefault<PdfLayoutExtensions.FieldPosition>() : (PdfLayoutExtensions.FieldPosition) null;
       if (fieldPosition == null || !File.Exists(imagePath))
         return;
       PushbuttonField pushbuttonField1 = new PushbuttonField(stamper.Writer, fieldPosition.position, fieldName + ":replaced");
@@ -175,12 +176,12 @@ public class EquipmentSheetWriter
   {
     if (!stamper.AcroFields.Fields.ContainsKey(name))
       return;
-    Rectangle position1 = stamper.AcroFields.GetFieldPositions(name)[0].position;
-    Rectangle position2 = stamper.AcroFields.GetFieldPositions(name)[0].position;
-    int page = stamper.AcroFields.GetFieldPositions(name)[0].page;
+    Rectangle position1 = stamper.AcroFields.GetWidgetPositions(name)[0].position;
+    Rectangle position2 = stamper.AcroFields.GetWidgetPositions(name)[0].position;
+    int page = stamper.AcroFields.GetWidgetPositions(name)[0].page;
     stamper.AcroFields.RemoveField(name);
     iTextSharp.text.Font regular = FontsHelper.GetRegular();
-    float fontsize1 = ColumnText.FitText(regular, $"{htmlContent}{Environment.NewLine}<p></p>", position2, fontsize, 1);
+    float fontsize1 = PdfSignatureAppearance.FitText(regular, $"{htmlContent}{Environment.NewLine}<p></p>", position2, fontsize, 1);
     if ((double) fontsize1 < (double) fontsize)
     {
       string str = "";
@@ -198,10 +199,10 @@ public class EquipmentSheetWriter
         str = $"{str}<p>&nbsp;</p>{Environment.NewLine}";
       if (htmlContent.Length > 7000)
         str = $"{str}<p>&nbsp;</p>{Environment.NewLine}";
-      fontsize1 = ColumnText.FitText(regular, htmlContent + str + Environment.NewLine, position2, fontsize, 1);
+      fontsize1 = PdfSignatureAppearance.FitText(regular, htmlContent + str + Environment.NewLine, position2, fontsize, 1);
     }
     PdfContentByte overContent = stamper.GetOverContent(page);
-    position1.BackgroundColor = BaseColor.WHITE;
+    position1.BackgroundColor = BaseColor.White;
     Rectangle rectangle = position1;
     overContent.Rectangle(rectangle);
     ColumnText column = new ColumnText(stamper.GetOverContent(page));

@@ -5,7 +5,7 @@ using Aurora.Tests.Helpers;
 using Builder.Presentation.Models.CharacterSheet;
 using Builder.Presentation.Models.CharacterSheet.Content;
 using iTextSharp.text.pdf;
-using PdfTextExtractor = iTextSharp.text.pdf.parser.PdfTextExtractor;
+using IndependentPdf = UglyToad.PdfPig.PdfDocument;
 
 namespace Aurora.Tests.Tests;
 
@@ -59,13 +59,14 @@ public sealed class CharacterSheetFlatteningTests
         {
             sheet.Save(output);
             using var reader = new PdfReader(output);
+            using var independent = IndependentPdf.Open(output);
             int widgets = 0;
             for (int page = 1; page <= reader.NumberOfPages; page++)
             {
-                var annotations = reader.GetPageN(page).GetAsArray(PdfName.ANNOTS);
+                var annotations = reader.GetPageN(page).GetAsArray(new PdfName("Annots"));
                 if (annotations is null) continue;
                 foreach (var reference in annotations.ArrayList)
-                    if (PdfReader.GetPdfObject(reference) is PdfDictionary annotation && annotation.GetAsName(PdfName.SUBTYPE)?.Equals(PdfName.WIDGET) == true)
+                    if (PdfReader.GetPdfObject(reference) is PdfDictionary annotation && annotation.GetAsName(new PdfName("Subtype"))?.Equals(new PdfName("Widget")) == true)
                         widgets++;
             }
             if (fillable)
@@ -79,11 +80,11 @@ public sealed class CharacterSheetFlatteningTests
             {
                 reader.AcroFields.Fields.Should().BeEmpty();
                 widgets.Should().Be(0);
-                PdfTextExtractor.GetTextFromPage(reader, 1).Should().Contain("Flattening Test Hero");
+                independent.GetPage(1).Text.Should().Contain("Flattening Test Hero");
             }
             if (spells)
             {
-                string spellContent = PdfTextExtractor.GetTextFromPage(reader, reader.NumberOfPages) +
+                string spellContent = independent.GetPage(independent.NumberOfPages).Text +
                     string.Join("\n", reader.AcroFields.Fields.Keys.Select(reader.AcroFields.GetField));
                 spellContent.Should().Contain("Magic Missile");
             }

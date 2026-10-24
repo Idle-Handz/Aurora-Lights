@@ -155,11 +155,9 @@
 		</setters>
 	</element>
 	<element name="Backpack" type="Item" source="System Reference Document" id="ID_WOTC_PHB_ITEM_BACKPACK">
-		<description>
-			<p>A backpack is a leather pack carried on the back, typically with straps to secure it. A backpack can hold 1 cubic foot/ 30 pounds of gear.</p>
-			<p class="indent">You can also strap items, such as a bedroll or a coil of rope, to the outside of a backpack.</p>
-		</description>
-		<setters>
+		<description><p>Carry gear in this container. Capacity: 1 cubic foot or 30 pounds of gear.</p>
+</description>
+<setters>
 			<set name="category">Adventuring Gear</set>
 			<set name="cost" currency="gp">2</set>
 			<set name="weight" lb="5">5 lb.</set>

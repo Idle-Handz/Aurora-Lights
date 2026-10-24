@@ -31,7 +31,10 @@ if ($LASTEXITCODE -ne 0) {
     throw "Unable to inspect oracle assembly '$oraclePath'."
 }
 
-$restoredApi = @(& dotnet $toolAssembly $restoredPath $dependencyDirectory)
+# Class-library NuGet dependencies are copied by the consuming test host.
+# Include that directory when inspecting signatures that expose PDF types.
+$testDependencies = Join-Path $repositoryRoot "Aurora.Tests/bin/$Configuration/net10.0"
+$restoredApi = @(& dotnet $toolAssembly $restoredPath $dependencyDirectory $testDependencies)
 if ($LASTEXITCODE -ne 0) {
     throw "Unable to inspect restored assembly '$restoredPath'."
 }

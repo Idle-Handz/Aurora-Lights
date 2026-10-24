@@ -52,9 +52,8 @@ Windows installations created through `Setup.exe` use
 Aurora: Reflections. Portable or extracted copies require WebView2 to already
 be installed. They can check for new releases, but cannot apply updates in place.
 
-Mac Catalyst and Android builds are also produced by the release workflow.
-Those targets are experimental and have received less hands-on testing than the
-Windows build.
+The v1.0 stable targets are Windows x64 and Android ARM64. Windows ARM64 and
+Mac Catalyst remain experimental, and Web is deferred.
 
 ## What You Can Do
 
@@ -67,7 +66,8 @@ including:
 - managing equipment, spellcasting, and source content
 - tracking session state such as hit points, spell slots, conditions, currency,
   resources, and notes
-- previewing and exporting character sheets
+- previewing and exporting character sheets; Android offers Save PDF, Share PDF,
+  and Open PDF with bundled fonts
 - checking for app and content updates
 
 The MAUI client is the active development target. Some unusual legacy files,
@@ -240,4 +240,11 @@ communities surrounding them.
 
 ## License
 
-Aurora Lights is available under the [MIT License](LICENSE).
+Aurora Lights original code is available under the [MIT License](LICENSE).
+Bundled components and content retain their own terms. See the
+[third-party inventory and notice maintenance guide](third-party/README.md).
+Offline licenses and notices are available from **About → Licenses and notices**.
+
+The public 1.0 preparation baseline uses SRD 5.1 game content. See the
+[baseline migration guide](docs/v1-public-baseline-migration.md) for display-name
+changes, imported-content compatibility and opening existing characters.

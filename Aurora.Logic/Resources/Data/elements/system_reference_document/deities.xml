@@ -1,922 +1,1009 @@
-<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8"?>
 <elements>
-  <!-- Player's Handbook -->
-	<element name="Auril" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_AURIL">
-		<description>
-			<p class="flavor">goddess of winter</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">NE</set>
-			<set name="domains">Nature, Tempest</set>
-			<set name="symbol">Six-pointed snowflake</set>
-			<set name="gender">female</set>
-		</setters>
-		<sheet>
-			<description>goddess of winter</description>
-		</sheet>
-	</element>
-	<element name="Azuth" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_AZUTH">
-		<description>
-			<p class="flavor">god of wizards</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">LN</set>
-			<set name="domains">Knowledge</set>
-			<set name="symbol">Left hand pointing upward, outlined in fire</set>
-			<set name="gender">male</set>
-		</setters>
-		<sheet>
-			<description>god of wizards</description>
-		</sheet>
-	</element>
-	<element name="Bane" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_BANE">
-		<description>
-			<p class="flavor">god of tyranny</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">LE</set>
-			<set name="domains">War</set>
-			<set name="symbol">Upright black right hand, thumb and fingers together</set>
-			<set name="gender">male</set>
-		</setters>
-		<sheet>
-			<description>god of tyranny</description>
-		</sheet>
-	</element>
-	<element name="Beshaba" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_BESHABA">
-		<description>
-			<p class="flavor">goddess of misfortune</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">CE</set>
-			<set name="domains">Trickery</set>
-			<set name="symbol">Black antlers</set>
-			<set name="gender">female</set>
-		</setters>
-		<sheet>
-			<description>goddess of misfortune</description>
-		</sheet>
-	</element>
-	<element name="Bhaal" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_BHAAL">
-		<description>
-			<p class="flavor">god of murder</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">NE</set>
-			<set name="domains">Death</set>
-			<set name="symbol">Skull surrounded by a ring of blood droplets</set>
-			<set name="gender">male</set>
-		</setters>
-		<sheet>
-			<description>god of murder</description>
-		</sheet>
-	</element>
-	<element name="Chauntea" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_CHAUNTEA">
-		<description>
-			<p class="flavor">goddess of agriculture</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">NG</set>
-			<set name="domains">Life</set>
-			<set name="symbol">Sheaf of grain or a blooming rose over grain</set>
-			<set name="gender">female</set>
-		</setters>
-		<sheet>
-			<description>goddess of agriculture</description>
-		</sheet>
-	</element>
-	<element name="Cyric" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_CYRIC">
-		<description>
-			<p class="flavor">god of lies</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">CE</set>
-			<set name="domains">Trickery</set>
-			<set name="symbol">White jawless skull on black or purple sunburst</set>
-			<set name="gender">male</set>
-		</setters>
-		<sheet>
-			<description>god of lies</description>
-		</sheet>
-	</element>
-	<element name="Deneir" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_DENEIR">
-		<description>
-			<p class="flavor">god of writing</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">NG</set>
-			<set name="domains">Knowledge</set>
-			<set name="symbol">Lit candle above an open eye</set>
-			<set name="gender">male</set>
-		</setters>
-		<sheet>
-			<description>god of writing</description>
-		</sheet>
-	</element>
-	<element name="Eldath" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_ELDATH">
-		<description>
-			<p class="flavor">goddess of peace</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">NG</set>
-			<set name="domains">Life, Nature</set>
-			<set name="symbol">Waterfall plunging into still pool</set>
-			<set name="gender">female</set>
-		</setters>
-		<sheet>
-			<description>goddess of peace</description>
-		</sheet>
-	</element>
-	<element name="Gond" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_GOND">
-		<description>
-			<p class="flavor">god of craft</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">N</set>
-			<set name="domains">Knowledge</set>
-			<set name="symbol">Toothed cog with four spokes</set>
-			<set name="gender">male</set>
-		</setters>
-		<sheet>
-			<description>god of craft</description>
-		</sheet>
-	</element>
-	<element name="Helm" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_HELM">
-		<description>
-			<p class="flavor">god of protection</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">LN</set>
-			<set name="domains">Life, Light</set>
-			<set name="symbol">Staring eye on upright left gauntlet</set>
-			<set name="gender">male</set>
-		</setters>
-		<sheet>
-			<description>god of protection</description>
-		</sheet>
-	</element>
-	<element name="Ilmater" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_ILMATER">
-		<description>
-			<p class="flavor">god of endurance</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">LG</set>
-			<set name="domains">Life</set>
-			<set name="symbol">Hands bound at the wrist with red cord</set>
-			<set name="gender">male</set>
-		</setters>
-		<sheet>
-			<description>god of endurance</description>
-		</sheet>
-	</element>
-	<element name="Kelemvor" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_KELEMVOR">
-		<description>
-			<p class="flavor">god of the dead</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">LN</set>
-			<set name="domains">Death</set>
-			<set name="symbol">Upright skeletal arm holding balanced scales</set>
-			<set name="gender">male</set>
-		</setters>
-		<sheet>
-			<description>god of the dead</description>
-		</sheet>
-	</element>
-	<element name="Lathander" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_LATHANDER">
-		<description>
-			<p class="flavor">god of birth and renewal</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">NG</set>
-			<set name="domains">Life, Light</set>
-			<set name="symbol">Road traveling into a sunrise</set>
-			<set name="gender">male</set>
-		</setters>
-		<sheet>
-			<description>god of birth and renewal</description>
-		</sheet>
-	</element>
-	<element name="Leira" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_LEIRA">
-		<description>
-			<p class="flavor">goddess of illusion</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">CN</set>
-			<set name="domains">Trickery</set>
-			<set name="symbol">Point-down triangle containing a swirl of mist</set>
-			<set name="gender">female</set>
-		</setters>
-		<sheet>
-			<description>goddess of illusion</description>
-		</sheet>
-	</element>
-	<element name="Lliira" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_LLIIRA">
-		<description>
-			<p class="flavor">goddess of joy</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">CG</set>
-			<set name="domains">Life</set>
-			<set name="symbol">Triangle of three six-pointed stars</set>
-			<set name="gender">female</set>
-		</setters>
-		<sheet>
-			<description>goddess of joy</description>
-		</sheet>
-	</element>
-	<element name="Loviatar" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_LOVIATAR">
-		<description>
-			<p class="flavor">goddess of pain</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">LE</set>
-			<set name="domains">Death</set>
-			<set name="symbol">Nine-tailed barbed scourge</set>
-			<set name="gender">female</set>
-		</setters>
-		<sheet>
-			<description>goddess of pain</description>
-		</sheet>
-	</element>
-	<element name="Malar" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_MALAR">
-		<description>
-			<p class="flavor">god of the hunt</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">CE</set>
-			<set name="domains">Nature</set>
-			<set name="symbol">Clawed paw</set>
-			<set name="gender">male</set>
-		</setters>
-		<sheet>
-			<description>god of the hunt</description>
-		</sheet>
-	</element>
-	<element name="Mask" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_MASK">
-		<description>
-			<p class="flavor">god of thieves</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">CN</set>
-			<set name="domains">Trickery</set>
-			<set name="symbol">Black mask</set>
-			<set name="gender">male</set>
-		</setters>
-		<sheet>
-			<description>god of thieves</description>
-		</sheet>
-	</element>
-	<element name="Mielikki" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_MIELIKKI">
-		<description>
-			<p class="flavor">goddess of forests</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">NG</set>
-			<set name="domains">Nature</set>
-			<set name="symbol">Unicorn’s head</set>
-			<set name="gender">female</set>
-		</setters>
-		<sheet>
-			<description>goddess of forests</description>
-		</sheet>
-	</element>
-	<element name="Milil" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_MILIL">
-		<description>
-			<p class="flavor">god of poetry and song</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">NG</set>
-			<set name="domains">Light</set>
-			<set name="symbol">Five-stringed harp made of leaves</set>
-			<set name="gender">male</set>
-		</setters>
-		<sheet>
-			<description>god of poetry and song</description>
-		</sheet>
-	</element>
-	<element name="Myrkul" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_MYRKUL">
-		<description>
-			<p class="flavor">god of death</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">NE</set>
-			<set name="domains">Death</set>
-			<set name="symbol">White human skull</set>
-			<set name="gender">male</set>
-		</setters>
-		<sheet>
-			<description>god of death</description>
-		</sheet>
-	</element>
-	<element name="Mystra" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_MYSTRA">
-		<description>
-			<p class="flavor">goddess of magic</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">NG</set>
-			<set name="domains">Knowledge</set>
-			<set name="symbol">Circle of seven stars, or nine stars encircling a flowing red mist, or a single star</set>
-			<set name="gender">female</set>
-		</setters>
-		<sheet>
-			<description>goddess of magic</description>
-		</sheet>
-	</element>
-	<element name="Oghma" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_OGHMA">
-		<description>
-			<p class="flavor">god of knowledge</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">N</set>
-			<set name="domains">Knowledge</set>
-			<set name="symbol">Blank scroll</set>
-			<set name="gender">male</set>
-		</setters>
-		<sheet>
-			<description>god of knowledge</description>
-		</sheet>
-	</element>
-	<element name="Savras" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_SAVRAS">
-		<description>
-			<p class="flavor">god of divination and fate</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">LN</set>
-			<set name="domains">Knowledge</set>
-			<set name="symbol">Crystal ball containing many kinds of eyes</set>
-			<set name="gender">male</set>
-		</setters>
-		<sheet>
-			<description>god of divination and fate</description>
-		</sheet>
-	</element>
-	<element name="Selune" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_SELUNE">
-		<description>
-			<p class="flavor">goddess of the moon</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">CG</set>
-			<set name="domains">Knowledge, Life</set>
-			<set name="symbol">Pair of eyes surrounded by seven stars</set>
-			<set name="gender">female</set>
-		</setters>
-		<sheet>
-			<description>goddess of the moon</description>
-		</sheet>
-	</element>
-	<element name="Shar" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_SHAR">
-		<description>
-			<p class="flavor">goddess of darkness and loss</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">NE</set>
-			<set name="domains">Death, Trickery</set>
-			<set name="symbol">Black disk encircled with a border</set>
-			<set name="gender">female</set>
-		</setters>
-		<sheet>
-			<description>goddess of darkness and loss</description>
-		</sheet>
-	</element>
-	<element name="Silvanus" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_SILVANUS">
-		<description>
-			<p class="flavor">god of wild nature</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">N</set>
-			<set name="domains">Nature</set>
-			<set name="symbol">Oak leaf</set>
-			<set name="gender">male</set>
-		</setters>
-		<sheet>
-			<description>god of wild nature</description>
-		</sheet>
-	</element>
-	<element name="Sune" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_SUNE">
-		<description>
-			<p class="flavor">goddess of love and beauty</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">CG</set>
-			<set name="domains">Life, Light</set>
-			<set name="symbol">Face of a beautiful red-haired woman</set>
-			<set name="gender">female</set>
-		</setters>
-		<sheet>
-			<description>goddess of love and beauty</description>
-		</sheet>
-	</element>
-	<element name="Talona" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_TALONA">
-		<description>
-			<p class="flavor">goddess of disease and poison</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">CE</set>
-			<set name="domains">Death</set>
-			<set name="symbol">Three teardrops on a triangle</set>
-			<set name="gender">female</set>
-		</setters>
-		<sheet>
-			<description>goddess of disease and poison</description>
-		</sheet>
-	</element>
-	<element name="Talos" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_TALOS">
-		<description>
-			<p class="flavor">god of storms</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">CE</set>
-			<set name="domains">Tempest</set>
-			<set name="symbol">Three lightning bolts radiating from a central point</set>
-			<set name="gender">male</set>
-		</setters>
-		<sheet>
-			<description>god of storms</description>
-		</sheet>
-	</element>
-	<element name="Tempus" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_TEMPUS">
-		<description>
-			<p class="flavor">god of war</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">N</set>
-			<set name="domains">War</set>
-			<set name="symbol">Upright flaming sword</set>
-			<set name="gender">male</set>
-		</setters>
-		<sheet>
-			<description>god of war</description>
-		</sheet>
-	</element>
-	<element name="Torm" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_TORM">
-		<description>
-			<p class="flavor">god of courage and self-sacrifice</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">LG</set>
-			<set name="domains">War</set>
-			<set name="symbol">White right gauntlet</set>
-			<set name="gender">male</set>
-		</setters>
-		<sheet>
-			<description>god of courage and self-sacrifice</description>
-		</sheet>
-	</element>
-	<element name="Tymora" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_TYMORA">
-		<description>
-			<p class="flavor">goddess of good fortune</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">CG</set>
-			<set name="domains">Trickery</set>
-			<set name="symbol">Face-up coin</set>
-			<set name="gender">female</set>
-		</setters>
-		<sheet>
-			<description>goddess of good fortune</description>
-		</sheet>
-	</element>
-	<element name="Tyr" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_TYR">
-		<description>
-			<p class="flavor">god of justice</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">LG</set>
-			<set name="domains">War</set>
-			<set name="symbol">Balanced scales resting on a warhammer</set>
-			<set name="gender">male</set>
-		</setters>
-		<sheet>
-			<description>god of justice</description>
-		</sheet>
-	</element>
-	<element name="Umberlee" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_UMBERLEE">
-		<description>
-			<p class="flavor">goddess of the sea</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">CE</set>
-			<set name="domains">Tempest</set>
-			<set name="symbol">Wave curling left and right</set>
-			<set name="gender">female</set>
-		</setters>
-		<sheet>
-			<description>goddess of the sea</description>
-		</sheet>
-	</element>
-	<element name="Waukeen" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_WAUKEEN">
-		<description>
-			<p class="flavor">goddess of trade</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">N</set>
-			<set name="domains">Knowledge, Trickery</set>
-			<set name="symbol">Upright coin with Waukeen’s profile facing left</set>
-			<set name="gender">female</set>
-		</setters>
-		<sheet>
-			<description>goddess of trade</description>
-		</sheet>
-	</element>
-
-  
-	<!-- Forgotten Realms -->
-	<element name="Bahamut" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_BAHAMUT">
-		<description>
-			<p class="flavor">dragon god of good</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">LG</set>
-			<set name="domains">Life, War</set>
-			<set name="symbol">Dragon’s head in profile</set>
-			<set name="gender">male</set>
-		</setters>
-		<sheet>
-			<description>dragon god of good</description>
-		</sheet>
-	</element>
-	<element name="Blibdoolpoolp" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_BLIBDOOLPOOLP">
-		<description>
-			<p class="flavor">kuo-toa goddess</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">NE</set>
-			<set name="domains">Death</set>
-			<set name="symbol">Lobster head or black pearl</set>
-			<set name="gender">female</set>
-		</setters>
-		<sheet>
-			<description>kuo-toa goddess</description>
-		</sheet>
-	</element>
-	<element name="Corellon Larethian" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_CORELLON_LARETHIAN">
-		<description>
-			<p class="flavor">elf deity of art and magic</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">CG</set>
-			<set name="domains">Light</set>
-			<set name="symbol">Quarter moon or starburst</set>
-			<set name="gender">male</set>
-		</setters>
-		<sheet>
-			<description>elf deity of art and magic</description>
-		</sheet>
-	</element>
-	<element name="Deep Sashelas" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_DEEP_SASHELAS">
-		<description>
-			<p class="flavor">elf god of the sea</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">CG</set>
-			<set name="domains">Nature, Tempest</set>
-			<set name="symbol">Dolphin</set>
-			<set name="gender">male</set>
-		</setters>
-		<sheet>
-			<description>elf god of the sea</description>
-		</sheet>
-	</element>
-	<element name="Eadro" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_EADRO">
-		<description>
-			<p class="flavor">merfolk deity of the sea</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">N</set>
-			<set name="domains">Nature, Tempest</set>
-			<set name="symbol">Spiral design</set>
-			<set name="gender">male</set>
-		</setters>
-		<sheet>
-			<description>merfolk deity of the sea</description>
-		</sheet>
-	</element>
-	<element name="Garl Glittergold" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_GARL_GLITTERGOLD">
-		<description>
-			<p class="flavor">gnome god of trickery and wiles</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">LG</set>
-			<set name="domains">Trickery</set>
-			<set name="symbol">Gold nugget</set>
-			<set name="gender">male</set>
-		</setters>
-		<sheet>
-			<description>gnome god of trickery and wiles</description>
-		</sheet>
-	</element>
-	<element name="Grolantor" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_GROLANTOR">
-		<description>
-			<p class="flavor">hill giant god of war</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">CE</set>
-			<set name="domains">War</set>
-			<set name="symbol">Wooden club</set>
-			<set name="gender">male</set>
-		</setters>
-		<sheet>
-			<description>hill giant god of war</description>
-		</sheet>
-	</element>
-	<element name="Gruumsh" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_GRUUMSH">
-		<description>
-			<p class="flavor">orc god of storms and war</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">CE</set>
-			<set name="domains">Tempest, War</set>
-			<set name="symbol">Unblinking eye</set>
-			<set name="gender">male</set>
-		</setters>
-		<sheet>
-			<description>orc god of storms and war</description>
-		</sheet>
-	</element>
-	<element name="Hruggek" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_HRUGGEK">
-		<description>
-			<p class="flavor">bugbear god of violence</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">CE</set>
-			<set name="domains">War</set>
-			<set name="symbol">Morningstar</set>
-			<set name="gender">male</set>
-		</setters>
-		<sheet>
-			<description>bugbear god of violence</description>
-		</sheet>
-	</element>
-	<element name="Kurtulmak" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_KURTULMAK">
-		<description>
-			<p class="flavor">kobold god of war and mining</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">LE</set>
-			<set name="domains">War</set>
-			<set name="symbol">Gnome skull</set>
-			<set name="gender">male</set>
-		</setters>
-		<sheet>
-			<description>kobold god of war and mining</description>
-		</sheet>
-	</element>
-	<element name="Laogzed" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_LAOGZED">
-		<description>
-			<p class="flavor">troglodyte god of hunger</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">CE</set>
-			<set name="domains">Death</set>
-			<set name="symbol">Image of the lizard/toad god</set>
-			<set name="gender">male</set>
-		</setters>
-		<sheet>
-			<description>troglodyte god of hunger</description>
-		</sheet>
-	</element>
-	<element name="Lolth" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_LOLTH">
-		<description>
-			<p class="flavor">drow goddess of spiders</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">CE</set>
-			<set name="domains">Trickery</set>
-			<set name="symbol">Spider</set>
-			<set name="gender">female</set>
-		</setters>
-		<sheet>
-			<description>drow goddess of spiders</description>
-		</sheet>
-	</element>
-	<element name="Maglubiyet" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_MAGLUBIYET">
-		<description>
-			<p class="flavor">goblinoid god of war</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">LE</set>
-			<set name="domains">War</set>
-			<set name="symbol">Bloody axe</set>
-			<set name="gender">male</set>
-		</setters>
-		<sheet>
-			<description>goblinoid god of war</description>
-		</sheet>
-	</element>
-	<element name="Moradin" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_MORADIN">
-		<description>
-			<p class="flavor">dwarf god of creation</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">LG</set>
-			<set name="domains">Knowledge</set>
-			<set name="symbol">Hammer and anvil</set>
-			<set name="gender">male</set>
-		</setters>
-		<sheet>
-			<description>dwarf god of creation</description>
-		</sheet>
-	</element>
-	<element name="Rillifane Rallathil" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_RILLIFANE_RALLATHIL">
-		<description>
-			<p class="flavor">wood elf god of nature</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">CG</set>
-			<set name="domains">Nature</set>
-			<set name="symbol">Oak</set>
-			<set name="gender">male</set>
-		</setters>
-		<sheet>
-			<description>wood elf god of nature</description>
-		</sheet>
-	</element>
-	<element name="Sehanine Moonbow" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_SEHANINE_MOONBOW">
-		<description>
-			<p class="flavor">elf goddess of the moon</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">CG</set>
-			<set name="domains">Knowledge</set>
-			<set name="symbol">Crescent moon</set>
-			<set name="gender">female</set>
-		</setters>
-		<sheet>
-			<description>elf goddess of the moon</description>
-		</sheet>
-	</element>
-	<element name="Sekolah" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_SEKOLAH">
-		<description>
-			<p class="flavor">sahuagin god of the hunt</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">LE</set>
-			<set name="domains">Nature, Tempest</set>
-			<set name="symbol">Shark</set>
-			<set name="gender">male</set>
-		</setters>
-		<sheet>
-			<description>sahuagin god of the hunt</description>
-		</sheet>
-	</element>
-	<element name="Semuanya" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_SEMUANYA">
-		<description>
-			<p class="flavor">lizardfolk deity of survival</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">N</set>
-			<set name="domains">Life</set>
-			<set name="symbol">Egg</set>
-			<set name="gender">male</set>
-		</setters>
-		<sheet>
-			<description>lizardfolk deity of survival</description>
-		</sheet>
-	</element>
-	<element name="Skerrit" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_SKERRIT">
-		<description>
-			<p class="flavor">centaur and satyr god of nature</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">N</set>
-			<set name="domains">Nature</set>
-			<set name="symbol">Oak growing from acorn</set>
-			<set name="gender">male</set>
-		</setters>
-		<sheet>
-			<description>centaur and satyr god of nature</description>
-		</sheet>
-	</element>
-	<element name="Skoraeus Stonebones" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_SKORAEUS_STONEBONES">
-		<description>
-			<p class="flavor">god of stone giants and art</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">N</set>
-			<set name="domains">Knowledge</set>
-			<set name="symbol">Stalactite</set>
-			<set name="gender">male</set>
-		</setters>
-		<sheet>
-			<description>god of stone giants and art</description>
-		</sheet>
-	</element>
-	<element name="Surtur" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_SURTUR">
-		<description>
-			<p class="flavor">god of fire giants and craft</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">LE</set>
-			<set name="domains">Knowledge, War</set>
-			<set name="symbol">Flaming sword</set>
-			<set name="gender">male</set>
-		</setters>
-		<sheet>
-			<description>god of fire giants and craft</description>
-		</sheet>
-	</element>
-	<element name="Thrym" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_THRYM">
-		<description>
-			<p class="flavor">god of frost giants and strength</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">CE</set>
-			<set name="domains">War</set>
-			<set name="symbol">White double-bladed axe</set>
-			<set name="gender">male</set>
-		</setters>
-		<sheet>
-			<description>god of frost giants and strength</description>
-		</sheet>
-	</element>
-	<element name="Tiamat" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_TIAMAT">
-		<description>
-			<p class="flavor">dragon goddess of evil</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">LE</set>
-			<set name="domains">Trickery</set>
-			<set name="symbol">Dragon head with five claw marks</set>
-			<set name="gender">female</set>
-		</setters>
-		<sheet>
-			<description>dragon goddess of evil</description>
-		</sheet>
-	</element>
-	<element name="Yondalla" type="Deity" source="System Reference Document" id="ID_WOTC_PHB_DEITY_YONDALLA">
-		<description>
-			<p class="flavor">halfling goddess of fertility and protection</p>
-		</description>
-		<setters>
-			<set name="setting">Forgotten Realms</set>
-			<set name="alignment">LG</set>
-			<set name="domains">Life</set>
-			<set name="symbol">Shield</set>
-			<set name="gender">female</set>
-		</setters>
-		<sheet>
-			<description>halfling goddess of fertility and protection</description>
-		</sheet>
-	</element>
+  <!--SRD 5.1, pages 360-362; CC-BY-4.0. Attribution: third-party/SRD-ATTRIBUTION.md.-->
+  <element name="The Daghdha" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_CELTIC_THE_DAGHDHA">
+    <description>
+      <p class="flavor">god of weather and crops</p>
+    </description>
+    <setters>
+      <set name="setting">Celtic</set>
+      <set name="alignment">CG</set>
+      <set name="domains">Nature, Trickery</set>
+      <set name="symbol">Bubbling cauldron or shield</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of weather and crops</description>
+    </sheet>
+  </element>
+  <element name="Arawn" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_CELTIC_ARAWN">
+    <description>
+      <p class="flavor">god of life and death</p>
+    </description>
+    <setters>
+      <set name="setting">Celtic</set>
+      <set name="alignment">NE</set>
+      <set name="domains">Life, Death</set>
+      <set name="symbol">Black star on gray background</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of life and death</description>
+    </sheet>
+  </element>
+  <element name="Belenus" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_CELTIC_BELENUS">
+    <description>
+      <p class="flavor">god of sun, light, and warmth</p>
+    </description>
+    <setters>
+      <set name="setting">Celtic</set>
+      <set name="alignment">NG</set>
+      <set name="domains">Light</set>
+      <set name="symbol">Solar disk and standing stones</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of sun, light, and warmth</description>
+    </sheet>
+  </element>
+  <element name="Brigantia" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_CELTIC_BRIGANTIA">
+    <description>
+      <p class="flavor">goddess of rivers and livestock</p>
+    </description>
+    <setters>
+      <set name="setting">Celtic</set>
+      <set name="alignment">NG</set>
+      <set name="domains">Life</set>
+      <set name="symbol">Footbridge</set>
+      <set name="gender">female</set>
+    </setters>
+    <sheet>
+      <description>goddess of rivers and livestock</description>
+    </sheet>
+  </element>
+  <element name="Diancecht" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_CELTIC_DIANCECHT">
+    <description>
+      <p class="flavor">god of medicine and healing</p>
+    </description>
+    <setters>
+      <set name="setting">Celtic</set>
+      <set name="alignment">LG</set>
+      <set name="domains">Life</set>
+      <set name="symbol">Crossed oak and mistletoe branches</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of medicine and healing</description>
+    </sheet>
+  </element>
+  <element name="Dunatis" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_CELTIC_DUNATIS">
+    <description>
+      <p class="flavor">god of mountains and peaks</p>
+    </description>
+    <setters>
+      <set name="setting">Celtic</set>
+      <set name="alignment">N</set>
+      <set name="domains">Nature</set>
+      <set name="symbol">Red sun-capped mountain peak</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of mountains and peaks</description>
+    </sheet>
+  </element>
+  <element name="Goibhniu" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_CELTIC_GOIBHNIU">
+    <description>
+      <p class="flavor">god of smiths and healing</p>
+    </description>
+    <setters>
+      <set name="setting">Celtic</set>
+      <set name="alignment">NG</set>
+      <set name="domains">Knowledge, Life</set>
+      <set name="symbol">Giant mallet over sword</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of smiths and healing</description>
+    </sheet>
+  </element>
+  <element name="Lugh" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_CELTIC_LUGH">
+    <description>
+      <p class="flavor">god of arts, travel, and commerce</p>
+    </description>
+    <setters>
+      <set name="setting">Celtic</set>
+      <set name="alignment">CN</set>
+      <set name="domains">Knowledge, Life</set>
+      <set name="symbol">Pair of long hands</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of arts, travel, and commerce</description>
+    </sheet>
+  </element>
+  <element name="Manannan mac Lir" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_CELTIC_MANANNAN_MAC_LIR">
+    <description>
+      <p class="flavor">god of oceans and sea creatures</p>
+    </description>
+    <setters>
+      <set name="setting">Celtic</set>
+      <set name="alignment">LN</set>
+      <set name="domains">Nature, Tempest</set>
+      <set name="symbol">Wave of white water on green</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of oceans and sea creatures</description>
+    </sheet>
+  </element>
+  <element name="Math Mathonwy" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_CELTIC_MATH_MATHONWY">
+    <description>
+      <p class="flavor">god of magic</p>
+    </description>
+    <setters>
+      <set name="setting">Celtic</set>
+      <set name="alignment">NE</set>
+      <set name="domains">Knowledge</set>
+      <set name="symbol">Staff</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of magic</description>
+    </sheet>
+  </element>
+  <element name="Morrigan" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_CELTIC_MORRIGAN">
+    <description>
+      <p class="flavor">goddess of battle</p>
+    </description>
+    <setters>
+      <set name="setting">Celtic</set>
+      <set name="alignment">CE</set>
+      <set name="domains">War</set>
+      <set name="symbol">Two crossed spears</set>
+      <set name="gender">female</set>
+    </setters>
+    <sheet>
+      <description>goddess of battle</description>
+    </sheet>
+  </element>
+  <element name="Nuada" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_CELTIC_NUADA">
+    <description>
+      <p class="flavor">god of war and warriors</p>
+    </description>
+    <setters>
+      <set name="setting">Celtic</set>
+      <set name="alignment">N</set>
+      <set name="domains">War</set>
+      <set name="symbol">Silver hand on black background</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of war and warriors</description>
+    </sheet>
+  </element>
+  <element name="Oghma" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_CELTIC_OGHMA">
+    <description>
+      <p class="flavor">god of speech and writing</p>
+    </description>
+    <setters>
+      <set name="setting">Celtic</set>
+      <set name="alignment">NG</set>
+      <set name="domains">Knowledge</set>
+      <set name="symbol">Unfurled scroll</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of speech and writing</description>
+    </sheet>
+  </element>
+  <element name="Silvanus" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_CELTIC_SILVANUS">
+    <description>
+      <p class="flavor">god of nature and forests</p>
+    </description>
+    <setters>
+      <set name="setting">Celtic</set>
+      <set name="alignment">N</set>
+      <set name="domains">Nature</set>
+      <set name="symbol">Summer oak tree</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of nature and forests</description>
+    </sheet>
+  </element>
+  <element name="Zeus" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_GREEK_ZEUS">
+    <description>
+      <p class="flavor">god of the sky, ruler of the gods</p>
+    </description>
+    <setters>
+      <set name="setting">Greek</set>
+      <set name="alignment">N</set>
+      <set name="domains">Tempest</set>
+      <set name="symbol">Fist full of lightning bolts</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of the sky, ruler of the gods</description>
+    </sheet>
+  </element>
+  <element name="Aphrodite" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_GREEK_APHRODITE">
+    <description>
+      <p class="flavor">goddess of love and beauty</p>
+    </description>
+    <setters>
+      <set name="setting">Greek</set>
+      <set name="alignment">CG</set>
+      <set name="domains">Light</set>
+      <set name="symbol">Sea shell</set>
+      <set name="gender">female</set>
+    </setters>
+    <sheet>
+      <description>goddess of love and beauty</description>
+    </sheet>
+  </element>
+  <element name="Apollo" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_GREEK_APOLLO">
+    <description>
+      <p class="flavor">god of light, music, and healing</p>
+    </description>
+    <setters>
+      <set name="setting">Greek</set>
+      <set name="alignment">CG</set>
+      <set name="domains">Knowledge, Life, Light</set>
+      <set name="symbol">Lyre</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of light, music, and healing</description>
+    </sheet>
+  </element>
+  <element name="Ares" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_GREEK_ARES">
+    <description>
+      <p class="flavor">god of war and strife</p>
+    </description>
+    <setters>
+      <set name="setting">Greek</set>
+      <set name="alignment">CE</set>
+      <set name="domains">War</set>
+      <set name="symbol">Spear</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of war and strife</description>
+    </sheet>
+  </element>
+  <element name="Artemis" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_GREEK_ARTEMIS">
+    <description>
+      <p class="flavor">goddess of hunting and childbirth</p>
+    </description>
+    <setters>
+      <set name="setting">Greek</set>
+      <set name="alignment">NG</set>
+      <set name="domains">Life, Nature</set>
+      <set name="symbol">Bow and arrow on lunar disk</set>
+      <set name="gender">female</set>
+    </setters>
+    <sheet>
+      <description>goddess of hunting and childbirth</description>
+    </sheet>
+  </element>
+  <element name="Athena" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_GREEK_ATHENA">
+    <description>
+      <p class="flavor">goddess of wisdom and civilization</p>
+    </description>
+    <setters>
+      <set name="setting">Greek</set>
+      <set name="alignment">LG</set>
+      <set name="domains">Knowledge, War</set>
+      <set name="symbol">Owl</set>
+      <set name="gender">female</set>
+    </setters>
+    <sheet>
+      <description>goddess of wisdom and civilization</description>
+    </sheet>
+  </element>
+  <element name="Demeter" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_GREEK_DEMETER">
+    <description>
+      <p class="flavor">goddess of agriculture</p>
+    </description>
+    <setters>
+      <set name="setting">Greek</set>
+      <set name="alignment">NG</set>
+      <set name="domains">Life</set>
+      <set name="symbol">Mare's head</set>
+      <set name="gender">female</set>
+    </setters>
+    <sheet>
+      <description>goddess of agriculture</description>
+    </sheet>
+  </element>
+  <element name="Dionysus" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_GREEK_DIONYSUS">
+    <description>
+      <p class="flavor">god of mirth and wine</p>
+    </description>
+    <setters>
+      <set name="setting">Greek</set>
+      <set name="alignment">CN</set>
+      <set name="domains">Life</set>
+      <set name="symbol">Thyrsus (staff tipped with pine cone)</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of mirth and wine</description>
+    </sheet>
+  </element>
+  <element name="Hades" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_GREEK_HADES">
+    <description>
+      <p class="flavor">god of the underworld</p>
+    </description>
+    <setters>
+      <set name="setting">Greek</set>
+      <set name="alignment">LE</set>
+      <set name="domains">Death</set>
+      <set name="symbol">Black ram</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of the underworld</description>
+    </sheet>
+  </element>
+  <element name="Hecate" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_GREEK_HECATE">
+    <description>
+      <p class="flavor">goddess of magic and the moon</p>
+    </description>
+    <setters>
+      <set name="setting">Greek</set>
+      <set name="alignment">CE</set>
+      <set name="domains">Knowledge, Trickery</set>
+      <set name="symbol">Setting moon</set>
+      <set name="gender">female</set>
+    </setters>
+    <sheet>
+      <description>goddess of magic and the moon</description>
+    </sheet>
+  </element>
+  <element name="Hephaestus" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_GREEK_HEPHAESTUS">
+    <description>
+      <p class="flavor">god of smithing and craft</p>
+    </description>
+    <setters>
+      <set name="setting">Greek</set>
+      <set name="alignment">NG</set>
+      <set name="domains">Knowledge</set>
+      <set name="symbol">Hammer and anvil</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of smithing and craft</description>
+    </sheet>
+  </element>
+  <element name="Hera" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_GREEK_HERA">
+    <description>
+      <p class="flavor">goddess of marriage and intrigue</p>
+    </description>
+    <setters>
+      <set name="setting">Greek</set>
+      <set name="alignment">CN</set>
+      <set name="domains">Trickery</set>
+      <set name="symbol">Fan of peacock feathers</set>
+      <set name="gender">female</set>
+    </setters>
+    <sheet>
+      <description>goddess of marriage and intrigue</description>
+    </sheet>
+  </element>
+  <element name="Hercules" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_GREEK_HERCULES">
+    <description>
+      <p class="flavor">god of strength and adventure</p>
+    </description>
+    <setters>
+      <set name="setting">Greek</set>
+      <set name="alignment">CG</set>
+      <set name="domains">Tempest, War</set>
+      <set name="symbol">Lion's head</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of strength and adventure</description>
+    </sheet>
+  </element>
+  <element name="Hermes" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_GREEK_HERMES">
+    <description>
+      <p class="flavor">god of travel and commerce</p>
+    </description>
+    <setters>
+      <set name="setting">Greek</set>
+      <set name="alignment">CG</set>
+      <set name="domains">Trickery</set>
+      <set name="symbol">Caduceus (winged staff and serpents)</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of travel and commerce</description>
+    </sheet>
+  </element>
+  <element name="Hestia" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_GREEK_HESTIA">
+    <description>
+      <p class="flavor">goddess of home and family</p>
+    </description>
+    <setters>
+      <set name="setting">Greek</set>
+      <set name="alignment">NG</set>
+      <set name="domains">Life</set>
+      <set name="symbol">Hearth</set>
+      <set name="gender">female</set>
+    </setters>
+    <sheet>
+      <description>goddess of home and family</description>
+    </sheet>
+  </element>
+  <element name="Nike" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_GREEK_NIKE">
+    <description>
+      <p class="flavor">goddess of victory</p>
+    </description>
+    <setters>
+      <set name="setting">Greek</set>
+      <set name="alignment">LN</set>
+      <set name="domains">War</set>
+      <set name="symbol">Winged woman</set>
+      <set name="gender">female</set>
+    </setters>
+    <sheet>
+      <description>goddess of victory</description>
+    </sheet>
+  </element>
+  <element name="Pan" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_GREEK_PAN">
+    <description>
+      <p class="flavor">god of nature</p>
+    </description>
+    <setters>
+      <set name="setting">Greek</set>
+      <set name="alignment">CN</set>
+      <set name="domains">Nature</set>
+      <set name="symbol">Syrinx (pan pipes)</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of nature</description>
+    </sheet>
+  </element>
+  <element name="Poseidon" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_GREEK_POSEIDON">
+    <description>
+      <p class="flavor">god of the sea and earthquakes</p>
+    </description>
+    <setters>
+      <set name="setting">Greek</set>
+      <set name="alignment">CN</set>
+      <set name="domains">Tempest</set>
+      <set name="symbol">Trident</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of the sea and earthquakes</description>
+    </sheet>
+  </element>
+  <element name="Tyche" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_GREEK_TYCHE">
+    <description>
+      <p class="flavor">goddess of good fortune</p>
+    </description>
+    <setters>
+      <set name="setting">Greek</set>
+      <set name="alignment">N</set>
+      <set name="domains">Trickery</set>
+      <set name="symbol">Red pentagram</set>
+      <set name="gender">female</set>
+    </setters>
+    <sheet>
+      <description>goddess of good fortune</description>
+    </sheet>
+  </element>
+  <element name="Re-Horakhty" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_EGYPTIAN_RE_HORAKHTY">
+    <description>
+      <p class="flavor">god of the sun, ruler of the gods</p>
+    </description>
+    <setters>
+      <set name="setting">Egyptian</set>
+      <set name="alignment">LG</set>
+      <set name="domains">Life, Light</set>
+      <set name="symbol">Solar disk encircled by serpent</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of the sun, ruler of the gods</description>
+    </sheet>
+  </element>
+  <element name="Anubis" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_EGYPTIAN_ANUBIS">
+    <description>
+      <p class="flavor">god of judgment and death</p>
+    </description>
+    <setters>
+      <set name="setting">Egyptian</set>
+      <set name="alignment">LN</set>
+      <set name="domains">Death</set>
+      <set name="symbol">Black jackal</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of judgment and death</description>
+    </sheet>
+  </element>
+  <element name="Apep" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_EGYPTIAN_APEP">
+    <description>
+      <p class="flavor">god of evil, fire, and serpents</p>
+    </description>
+    <setters>
+      <set name="setting">Egyptian</set>
+      <set name="alignment">NE</set>
+      <set name="domains">Trickery</set>
+      <set name="symbol">Flaming snake</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of evil, fire, and serpents</description>
+    </sheet>
+  </element>
+  <element name="Bast" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_EGYPTIAN_BAST">
+    <description>
+      <p class="flavor">goddess of cats and vengeance</p>
+    </description>
+    <setters>
+      <set name="setting">Egyptian</set>
+      <set name="alignment">CG</set>
+      <set name="domains">War</set>
+      <set name="symbol">Cat</set>
+      <set name="gender">female</set>
+    </setters>
+    <sheet>
+      <description>goddess of cats and vengeance</description>
+    </sheet>
+  </element>
+  <element name="Bes" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_EGYPTIAN_BES">
+    <description>
+      <p class="flavor">god of luck and music</p>
+    </description>
+    <setters>
+      <set name="setting">Egyptian</set>
+      <set name="alignment">CN</set>
+      <set name="domains">Trickery</set>
+      <set name="symbol">Image of the misshapen deity</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of luck and music</description>
+    </sheet>
+  </element>
+  <element name="Hathor" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_EGYPTIAN_HATHOR">
+    <description>
+      <p class="flavor">goddess of love, music, and motherhood</p>
+    </description>
+    <setters>
+      <set name="setting">Egyptian</set>
+      <set name="alignment">NG</set>
+      <set name="domains">Life, Light</set>
+      <set name="symbol">Horned cow's head with lunar disk</set>
+      <set name="gender">female</set>
+    </setters>
+    <sheet>
+      <description>goddess of love, music, and motherhood</description>
+    </sheet>
+  </element>
+  <element name="Imhotep" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_EGYPTIAN_IMHOTEP">
+    <description>
+      <p class="flavor">god of crafts and medicine</p>
+    </description>
+    <setters>
+      <set name="setting">Egyptian</set>
+      <set name="alignment">NG</set>
+      <set name="domains">Knowledge</set>
+      <set name="symbol">Step pyramid</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of crafts and medicine</description>
+    </sheet>
+  </element>
+  <element name="Isis" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_EGYPTIAN_ISIS">
+    <description>
+      <p class="flavor">goddess of fertility and magic</p>
+    </description>
+    <setters>
+      <set name="setting">Egyptian</set>
+      <set name="alignment">NG</set>
+      <set name="domains">Knowledge, Life</set>
+      <set name="symbol">Ankh and star</set>
+      <set name="gender">female</set>
+    </setters>
+    <sheet>
+      <description>goddess of fertility and magic</description>
+    </sheet>
+  </element>
+  <element name="Nephthys" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_EGYPTIAN_NEPHTHYS">
+    <description>
+      <p class="flavor">goddess of death and grief</p>
+    </description>
+    <setters>
+      <set name="setting">Egyptian</set>
+      <set name="alignment">CG</set>
+      <set name="domains">Death</set>
+      <set name="symbol">Horns around a lunar disk</set>
+      <set name="gender">female</set>
+    </setters>
+    <sheet>
+      <description>goddess of death and grief</description>
+    </sheet>
+  </element>
+  <element name="Osiris" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_EGYPTIAN_OSIRIS">
+    <description>
+      <p class="flavor">god of nature and the underworld</p>
+    </description>
+    <setters>
+      <set name="setting">Egyptian</set>
+      <set name="alignment">LG</set>
+      <set name="domains">Life, Nature</set>
+      <set name="symbol">Crook and flail</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of nature and the underworld</description>
+    </sheet>
+  </element>
+  <element name="Ptah" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_EGYPTIAN_PTAH">
+    <description>
+      <p class="flavor">god of crafts, knowledge, and secrets</p>
+    </description>
+    <setters>
+      <set name="setting">Egyptian</set>
+      <set name="alignment">LN</set>
+      <set name="domains">Knowledge</set>
+      <set name="symbol">Bull</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of crafts, knowledge, and secrets</description>
+    </sheet>
+  </element>
+  <element name="Set" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_EGYPTIAN_SET">
+    <description>
+      <p class="flavor">god of darkness and desert storms</p>
+    </description>
+    <setters>
+      <set name="setting">Egyptian</set>
+      <set name="alignment">CE</set>
+      <set name="domains">Death, Tempest, Trickery</set>
+      <set name="symbol">Coiled cobra</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of darkness and desert storms</description>
+    </sheet>
+  </element>
+  <element name="Sobek" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_EGYPTIAN_SOBEK">
+    <description>
+      <p class="flavor">god of water and crocodiles</p>
+    </description>
+    <setters>
+      <set name="setting">Egyptian</set>
+      <set name="alignment">LE</set>
+      <set name="domains">Nature, Tempest</set>
+      <set name="symbol">Crocodile head with horns and plumes</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of water and crocodiles</description>
+    </sheet>
+  </element>
+  <element name="Thoth" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_EGYPTIAN_THOTH">
+    <description>
+      <p class="flavor">god of knowledge and wisdom</p>
+    </description>
+    <setters>
+      <set name="setting">Egyptian</set>
+      <set name="alignment">N</set>
+      <set name="domains">Knowledge</set>
+      <set name="symbol">Ibis</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of knowledge and wisdom</description>
+    </sheet>
+  </element>
+  <element name="Odin" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_NORSE_ODIN">
+    <description>
+      <p class="flavor">god of knowledge and war</p>
+    </description>
+    <setters>
+      <set name="setting">Norse</set>
+      <set name="alignment">NG</set>
+      <set name="domains">Knowledge, War</set>
+      <set name="symbol">Watching blue eye</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of knowledge and war</description>
+    </sheet>
+  </element>
+  <element name="Aegir" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_NORSE_AEGIR">
+    <description>
+      <p class="flavor">god of the sea and storms</p>
+    </description>
+    <setters>
+      <set name="setting">Norse</set>
+      <set name="alignment">NE</set>
+      <set name="domains">Tempest</set>
+      <set name="symbol">Rough ocean waves</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of the sea and storms</description>
+    </sheet>
+  </element>
+  <element name="Balder" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_NORSE_BALDER">
+    <description>
+      <p class="flavor">god of beauty and poetry</p>
+    </description>
+    <setters>
+      <set name="setting">Norse</set>
+      <set name="alignment">NG</set>
+      <set name="domains">Life, Light</set>
+      <set name="symbol">Gem-encrusted silver chalice</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of beauty and poetry</description>
+    </sheet>
+  </element>
+  <element name="Forseti" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_NORSE_FORSETI">
+    <description>
+      <p class="flavor">god of justice and law</p>
+    </description>
+    <setters>
+      <set name="setting">Norse</set>
+      <set name="alignment">N</set>
+      <set name="domains">Light</set>
+      <set name="symbol">Head of a bearded man</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of justice and law</description>
+    </sheet>
+  </element>
+  <element name="Frey" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_NORSE_FREY">
+    <description>
+      <p class="flavor">god of fertility and the sun</p>
+    </description>
+    <setters>
+      <set name="setting">Norse</set>
+      <set name="alignment">NG</set>
+      <set name="domains">Life, Light</set>
+      <set name="symbol">Ice-blue greatsword</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of fertility and the sun</description>
+    </sheet>
+  </element>
+  <element name="Freya" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_NORSE_FREYA">
+    <description>
+      <p class="flavor">goddess of fertility and love</p>
+    </description>
+    <setters>
+      <set name="setting">Norse</set>
+      <set name="alignment">NG</set>
+      <set name="domains">Life</set>
+      <set name="symbol">Falcon</set>
+      <set name="gender">female</set>
+    </setters>
+    <sheet>
+      <description>goddess of fertility and love</description>
+    </sheet>
+  </element>
+  <element name="Frigga" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_NORSE_FRIGGA">
+    <description>
+      <p class="flavor">goddess of birth and fertility</p>
+    </description>
+    <setters>
+      <set name="setting">Norse</set>
+      <set name="alignment">N</set>
+      <set name="domains">Life, Light</set>
+      <set name="symbol">Cat</set>
+      <set name="gender">female</set>
+    </setters>
+    <sheet>
+      <description>goddess of birth and fertility</description>
+    </sheet>
+  </element>
+  <element name="Heimdall" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_NORSE_HEIMDALL">
+    <description>
+      <p class="flavor">god of watchfulness and loyalty</p>
+    </description>
+    <setters>
+      <set name="setting">Norse</set>
+      <set name="alignment">LG</set>
+      <set name="domains">Light, War</set>
+      <set name="symbol">Curling musical horn</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of watchfulness and loyalty</description>
+    </sheet>
+  </element>
+  <element name="Hel" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_NORSE_HEL">
+    <description>
+      <p class="flavor">goddess of the underworld</p>
+    </description>
+    <setters>
+      <set name="setting">Norse</set>
+      <set name="alignment">NE</set>
+      <set name="domains">Death</set>
+      <set name="symbol">Woman's face, rotting on one side</set>
+      <set name="gender">female</set>
+    </setters>
+    <sheet>
+      <description>goddess of the underworld</description>
+    </sheet>
+  </element>
+  <element name="Hermod" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_NORSE_HERMOD">
+    <description>
+      <p class="flavor">god of luck</p>
+    </description>
+    <setters>
+      <set name="setting">Norse</set>
+      <set name="alignment">CN</set>
+      <set name="domains">Trickery</set>
+      <set name="symbol">Winged scroll</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of luck</description>
+    </sheet>
+  </element>
+  <element name="Loki" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_NORSE_LOKI">
+    <description>
+      <p class="flavor">god of thieves and trickery</p>
+    </description>
+    <setters>
+      <set name="setting">Norse</set>
+      <set name="alignment">CE</set>
+      <set name="domains">Trickery</set>
+      <set name="symbol">Flame</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of thieves and trickery</description>
+    </sheet>
+  </element>
+  <element name="Njord" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_NORSE_NJORD">
+    <description>
+      <p class="flavor">god of sea and wind</p>
+    </description>
+    <setters>
+      <set name="setting">Norse</set>
+      <set name="alignment">NG</set>
+      <set name="domains">Nature, Tempest</set>
+      <set name="symbol">Gold coin</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of sea and wind</description>
+    </sheet>
+  </element>
+  <element name="Odur" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_NORSE_ODUR">
+    <description>
+      <p class="flavor">god of light and the sun</p>
+    </description>
+    <setters>
+      <set name="setting">Norse</set>
+      <set name="alignment">CG</set>
+      <set name="domains">Light</set>
+      <set name="symbol">Solar disk</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of light and the sun</description>
+    </sheet>
+  </element>
+  <element name="Sif" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_NORSE_SIF">
+    <description>
+      <p class="flavor">goddess of war</p>
+    </description>
+    <setters>
+      <set name="setting">Norse</set>
+      <set name="alignment">CG</set>
+      <set name="domains">War</set>
+      <set name="symbol">Upraised sword</set>
+      <set name="gender">female</set>
+    </setters>
+    <sheet>
+      <description>goddess of war</description>
+    </sheet>
+  </element>
+  <element name="Skadi" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_NORSE_SKADI">
+    <description>
+      <p class="flavor">god of earth and mountains</p>
+    </description>
+    <setters>
+      <set name="setting">Norse</set>
+      <set name="alignment">N</set>
+      <set name="domains">Nature</set>
+      <set name="symbol">Mountain peak</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of earth and mountains</description>
+    </sheet>
+  </element>
+  <element name="Surtur" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_NORSE_SURTUR">
+    <description>
+      <p class="flavor">god of fire giants and war</p>
+    </description>
+    <setters>
+      <set name="setting">Norse</set>
+      <set name="alignment">LE</set>
+      <set name="domains">War</set>
+      <set name="symbol">Flaming sword</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of fire giants and war</description>
+    </sheet>
+  </element>
+  <element name="Thor" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_NORSE_THOR">
+    <description>
+      <p class="flavor">god of storms and thunder</p>
+    </description>
+    <setters>
+      <set name="setting">Norse</set>
+      <set name="alignment">CG</set>
+      <set name="domains">Tempest, War</set>
+      <set name="symbol">Hammer</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of storms and thunder</description>
+    </sheet>
+  </element>
+  <element name="Thrym" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_NORSE_THRYM">
+    <description>
+      <p class="flavor">god of frost giants and cold</p>
+    </description>
+    <setters>
+      <set name="setting">Norse</set>
+      <set name="alignment">CE</set>
+      <set name="domains">War</set>
+      <set name="symbol">White double-bladed axe</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of frost giants and cold</description>
+    </sheet>
+  </element>
+  <element name="Tyr" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_NORSE_TYR">
+    <description>
+      <p class="flavor">god of courage and strategy</p>
+    </description>
+    <setters>
+      <set name="setting">Norse</set>
+      <set name="alignment">LN</set>
+      <set name="domains">Knowledge, War</set>
+      <set name="symbol">Sword</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of courage and strategy</description>
+    </sheet>
+  </element>
+  <element name="Uller" type="Deity" source="System Reference Document" id="ID_SRD51_DEITY_NORSE_ULLER">
+    <description>
+      <p class="flavor">god of hunting and winter</p>
+    </description>
+    <setters>
+      <set name="setting">Norse</set>
+      <set name="alignment">CN</set>
+      <set name="domains">Nature</set>
+      <set name="symbol">Longbow</set>
+      <set name="gender">male</set>
+    </setters>
+    <sheet>
+      <description>god of hunting and winter</description>
+    </sheet>
+  </element>
 </elements>

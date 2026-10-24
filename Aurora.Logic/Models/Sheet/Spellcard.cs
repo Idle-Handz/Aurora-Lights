@@ -1,4 +1,5 @@
-﻿// Decompiled with JetBrains decompiler
+using Aurora.Documents.Helpers;
+// Decompiled with JetBrains decompiler
 // Type: Builder.Presentation.Models.Sheet.Spellcard
 // Assembly: Aurora Builder, Version=1.0.166.7407, Culture=neutral, PublicKeyToken=null
 // MVID: 09D35420-8FA0-4A71-9A21-FF952C48F8A3
@@ -53,8 +54,7 @@ public class Spellcard
     phrase.Font = font1;
     Chunk chunk1 = new Chunk(this._spell.Name + Environment.NewLine);
     chunk1.Font = font4;
-    chunk1.setLineHeight(10f);
-    phrase.Add((IElement) chunk1);
+
     phrase.Add((IElement) new Chunk(this._spell.Underline + Environment.NewLine + Environment.NewLine)
     {
       Font = font5
@@ -80,7 +80,7 @@ public class Spellcard
     });
     phrase.Add((IElement) new Chunk(this._spell.Duration + Environment.NewLine + Environment.NewLine));
     MemoryStream memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(this._spell.Description));
-    foreach (IElement to in HTMLWorker.ParseToList((TextReader) new StringReader(this._spell.Description), (StyleSheet) null))
+    foreach (IElement to in HtmlWorker.ParseToList((TextReader) new StringReader(this._spell.Description), (StyleSheet) null))
     {
       this._spell.Name.Contains("Enhance Ability");
       foreach (Chunk chunk2 in (IEnumerable<Chunk>) to.Chunks)
@@ -94,14 +94,10 @@ public class Spellcard
       }
       phrase.Add((IElement) new Chunk(Environment.NewLine));
     }
-    foreach (Chunk chunk3 in (IEnumerable<Chunk>) phrase.Chunks)
-    {
-      if (phrase.Chunks.First<Chunk>() != chunk3)
-        chunk3.setLineHeight(8f);
-    }
     ColumnText columnText = new ColumnText(stamper.GetOverContent(page));
     columnText.SetSimpleColumn(this.GetCardRectangle(pageSize, position, 2));
-    columnText.AddText(phrase);
+    columnText.AddElement(new Paragraph(10f, chunk1));
+    columnText.AddElement(new Paragraph(phrase) { Leading = 8f });
     columnText.Go();
   }
 

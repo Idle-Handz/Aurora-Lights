@@ -40,6 +40,15 @@ The maintainer has confirmed authorization from the rights holders to reverse
 engineer and modify the legacy Aurora project. Supporting correspondence may be
 retained privately; it does not need to be committed with the source.
 
+On 2026-10-23, the maintainer additionally confirmed that the existing permission
+explicitly covers redistributing legacy sheet templates, gallery images, the
+default portrait, old UI icons and background artwork in Aurora Lights. The exact covered file versions and limits
+of this inventory decision are recorded in
+[`third-party/LEGACY-ASSET-PERMISSION.md`](../third-party/LEGACY-ASSET-PERMISSION.md)
+and [`third-party/assets.json`](../third-party/assets.json). This confirmation
+does not relicense those assets under MIT or clear unrelated game content,
+standalone fonts or current branding.
+
 ## Historical Restoration Authorities
 
 During the initial restoration, the following order established the

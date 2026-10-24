@@ -29,9 +29,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="itextsharp">
-      <HintPath>..\lib\itextsharp.dll</HintPath>
-    </Reference>
+    <PackageReference Include="iTextSharp.LGPLv2.Core" Version="3.8.6" />
   </ItemGroup>
 
   <ItemGroup>
@@ -41,8 +39,8 @@
 
   <!-- Embed minimal test character XML as a resource -->
   <ItemGroup>
-    <Content Include="..\tests\LegacyOracles\Builder.Data.dll" Link="LegacyOracles\Builder.Data.dll" CopyToOutputDirectory="PreserveNewest" />
-    <Content Include="..\tests\LegacyOracles\Aurora.Documents.dll" Link="LegacyOracles\Aurora.Documents.dll" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\tests\LegacyOracles\Builder.Data.dll" Link="LegacyOracles\Builder.Data.dll" CopyToOutputDirectory="PreserveNewest" Condition="Exists('..\tests\LegacyOracles\Builder.Data.dll')" />
+    <Content Include="..\tests\LegacyOracles\Aurora.Documents.dll" Link="LegacyOracles\Aurora.Documents.dll" CopyToOutputDirectory="PreserveNewest" Condition="Exists('..\tests\LegacyOracles\Aurora.Documents.dll')" />
     <EmbeddedResource Include="Fixtures\*.dnd5e" />
     <EmbeddedResource Include="Fixtures\google-drive-client.test.json" LogicalName="Aurora.GoogleDriveClient.json" />
     <Content Include="Fixtures\Characters\*.dnd5e" CopyToOutputDirectory="PreserveNewest" />
@@ -98,6 +96,7 @@
     <Compile Include="..\Aurora.App\Services\CharacterTabModel.cs" Link="Linked\CharacterTabModel.cs" />
     <Compile Include="..\Aurora.App\Services\CharacterTabService.cs" Link="Linked\CharacterTabService.cs" />
     <Compile Include="..\Aurora.App\Services\CharacterDraftRecovery.cs" Link="Linked\CharacterDraftRecovery.cs" />
+    <Compile Include="..\Aurora.App\Services\PdfExportFiles.cs" Link="Linked\PdfExportFiles.cs" />
     <Compile Include="..\Aurora.App\Services\ExportDestinationSelection.cs" Link="Linked\ExportDestinationSelection.cs" />
     <Compile Include="..\Aurora.App\Services\CharacterCloseCoordinator.cs" Link="Linked\CharacterCloseCoordinator.cs" />
     <Compile Include="..\Aurora.App\Services\WindowCloseCoordinator.cs" Link="Linked\WindowCloseCoordinator.cs" />

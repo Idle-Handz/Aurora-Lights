@@ -1,21 +1,15 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8" ?>
 <elements>
 
 	<!-- firearm weapon properties -->
 	<element name="Ammunition" type="Weapon Property" source="Core" id="ID_INTERNAL_WEAPON_PROPERTY_FIREARM_AMMUNITION">
-		<description>
-			<p>The ammunition of a firearm is destroyed upon use. Renaissance and modern firearms use bullets. Futuristic firearms are powered by a special type of ammunition called energy cells. An energy cell contains enough power for all the shots its firearm can make.</p>
-		</description>
-	</element>
+		<description><p>This compatibility property is available for imported weapons. Consult the rules supplied with that weapon or your custom content for its effect.</p></description>
+		</element>
 	<element name="Burst Fire" type="Weapon Property" source="Core" id="ID_INTERNAL_WEAPON_PROPERTY_FIREARM_BURST_FIRE">
-		<description>
-			<p>A weapon that has the burst fire property can make a normal single-target attack, or it can spray a 10-foot-cube area within normal range with shots. Each creature in the area must succeed on a DC 15 Dexterity saving throw or take the weapon's normal damage. This action uses ten pieces of ammunition.</p>
-		</description>
-	</element>
+		<description><p>This compatibility property is available for imported weapons. Consult the rules supplied with that weapon or your custom content for its effect.</p></description>
+		</element>
 	<element name="Reload" type="Weapon Property" source="Core" id="ID_INTERNAL_WEAPON_PROPERTY_FIREARM_RELOAD">
-		<description>
-			<p>A limited number of shots can be made with a weapon that has the reload property. A character must then reload it using an action or a bonus action (the character's choice).</p>
-		</description>
-	</element>
+		<description><p>This compatibility property is available for imported weapons. Consult the rules supplied with that weapon or your custom content for its effect.</p></description>
+		</element>
 
 </elements>

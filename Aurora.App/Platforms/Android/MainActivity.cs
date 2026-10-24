@@ -109,6 +109,7 @@ public class MainActivity : MauiAppCompatActivity
     {
         base.OnActivityResult(requestCode, resultCode, data);
         Services.AndroidGoogleDriveAuthorization.OnActivityResult(requestCode, resultCode, data);
+        Services.AndroidDocumentSaver.OnActivityResult(requestCode, resultCode, data);
     }
 
     protected override void OnCreate(Bundle? savedInstanceState)
@@ -157,6 +158,7 @@ public class MainActivity : MauiAppCompatActivity
         _backCallback?.Dispose();
         _backCallback = null;
         Services.AndroidGoogleDriveAuthorization.OnActivityDestroyed(this);
+        Services.AndroidDocumentSaver.OnActivityDestroyed(this);
 #if AURORA_ANDROID_DIAGNOSTICS
         _probe?.Dispose();
 #endif

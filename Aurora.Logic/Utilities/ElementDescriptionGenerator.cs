@@ -1,4 +1,4 @@
-﻿// Decompiled with JetBrains decompiler
+// Decompiled with JetBrains decompiler
 // Type: Builder.Presentation.Utilities.ElementDescriptionGenerator
 // Assembly: Aurora Builder, Version=1.0.166.7407, Culture=neutral, PublicKeyToken=null
 // MVID: 09D35420-8FA0-4A71-9A21-FF952C48F8A3
@@ -23,7 +23,7 @@ public class ElementDescriptionGenerator
   public static string GeneratePlainDescription(string description)
   {
     StringBuilder stringBuilder1 = new StringBuilder();
-    foreach (IElement to in HTMLWorker.ParseToList((TextReader) new StringReader(description), (StyleSheet) null))
+    foreach (IElement to in HtmlWorker.ParseToList((TextReader) new StringReader(description), (StyleSheet) null))
     {
       StringBuilder stringBuilder2 = new StringBuilder();
       foreach (Chunk chunk in (IEnumerable<Chunk>) to.Chunks)
@@ -47,7 +47,7 @@ public class ElementDescriptionGenerator
     List<Paragraph> columnDescription = new List<Paragraph>();
     iTextSharp.text.Font regular = FontsHelper.GetRegular();
     FontsHelper.GetBoldItalic();
-    List<IElement> toList = HTMLWorker.ParseToList((TextReader) new StringReader(description), (StyleSheet) null);
+    List<IElement> toList = HtmlWorker.ParseToList((TextReader) new StringReader(description), (StyleSheet) null);
     Paragraph paragraph = new Paragraph();
     foreach (IElement element in toList)
     {
@@ -63,9 +63,9 @@ public class ElementDescriptionGenerator
 
   public static void FillColumn(ColumnText column, string description, float fontsize)
   {
-    List<IElement> toList = HTMLWorker.ParseToList((TextReader) new StringReader(description), (StyleSheet) null);
-    column.SetLeading(fontsize, 1f);
-    float lineheight = fontsize + 0.0f;
+    List<IElement> toList = HtmlWorker.ParseToList((TextReader) new StringReader(description), (StyleSheet) null);
+    column.SetLeading(fontsize, 0f);
+
     string content = "     ";
     bool flag = false;
     foreach (IElement element in toList)
@@ -123,10 +123,10 @@ public class ElementDescriptionGenerator
       }
       flag = !(element is List);
       if (element != toList.Last<IElement>() || element is List)
-        paragraph.Add(Environment.NewLine);
+        paragraph.Add(new Chunk(Environment.NewLine));
       foreach (Chunk chunk in (IEnumerable<Chunk>) paragraph.Chunks)
       {
-        chunk.setLineHeight(lineheight);
+
         chunk.Font = string.IsNullOrWhiteSpace(chunk.Content) || paragraph.Chunks.Count <= 2 ? FontsHelper.GetRegular(fontsize) : (chunk.Content.Length > 26 || chunk.Equals((object) paragraph.Chunks.Last<Chunk>()) ? FontsHelper.GetRegular(fontsize) : FontsHelper.GetBoldItalic(fontsize));
       }
       column.AddText((Phrase) paragraph);
@@ -139,9 +139,9 @@ public class ElementDescriptionGenerator
     float fontsize,
     bool dynamicBoldItalic = true)
   {
-    List<IElement> toList = HTMLWorker.ParseToList((TextReader) new StringReader(description), (StyleSheet) null);
-    column.SetLeading(fontsize, 1f);
-    float lineheight = fontsize + 0.0f;
+    List<IElement> toList = HtmlWorker.ParseToList((TextReader) new StringReader(description), (StyleSheet) null);
+    column.SetLeading(fontsize, 0f);
+
     string str = "     ";
     foreach (IElement element in toList)
     {
@@ -158,13 +158,13 @@ public class ElementDescriptionGenerator
           paragraph.Add((IElement) chunk1);
       }
       if (element != toList.Last<IElement>() || element is List)
-        paragraph.Add(Environment.NewLine);
+        paragraph.Add(new Chunk(Environment.NewLine));
       if (dynamicBoldItalic)
       {
         bool flag = false;
         foreach (Chunk chunk in (IEnumerable<Chunk>) paragraph.Chunks)
         {
-          chunk.setLineHeight(lineheight);
+
           if (!flag && chunk == paragraph.Chunks.First<Chunk>() && !string.IsNullOrWhiteSpace(chunk.Content))
           {
             chunk.Font = FontsHelper.GetBoldItalic(fontsize);
@@ -183,7 +183,7 @@ public class ElementDescriptionGenerator
       {
         foreach (Chunk chunk in (IEnumerable<Chunk>) paragraph.Chunks)
         {
-          chunk.setLineHeight(lineheight);
+
           chunk.Font = FontsHelper.GetRegular(fontsize);
         }
       }

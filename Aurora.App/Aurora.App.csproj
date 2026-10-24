@@ -38,10 +38,8 @@
     <RuntimeIdentifiers Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android' AND '$(GITHUB_ACTIONS)' == 'true' AND '$(RuntimeIdentifier)' == ''">android-arm64;android-x64</RuntimeIdentifiers>
     <RuntimeIdentifier Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android' AND '$(GITHUB_ACTIONS)' != 'true' AND '$(RuntimeIdentifier)' == '' AND '$(RuntimeIdentifiers)' == ''">android-x64</RuntimeIdentifier>
     <EmbedAssembliesIntoApk Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">true</EmbedAssembliesIntoApk>
-    <!-- iTextSharp references System.Drawing v2.0.0.0 (old .NET Framework) which the Mono AOT
-         compiler can't resolve on Android, causing a crash at Release build time. Disable AOT
-         for the Android target so iTextSharp can be included without crashing the toolchain.
-         The app still works correctly; startup is JIT-compiled rather than pre-compiled. -->
+    <!-- Retain the accepted Android JIT configuration. The LGPL PDF migration
+         removes the old System.Drawing dependency; enabling AOT needs separate acceptance. -->
     <RunAOTCompilation Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">false</RunAOTCompilation>
     <TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
     <NoWarn>$(NoWarn);CS8618</NoWarn>

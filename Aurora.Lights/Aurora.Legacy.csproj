@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <!--
     Aurora Legacy - WPF client project file
@@ -72,9 +72,7 @@
 
   <ItemGroup>
     <!-- Remaining logic DLLs also referenced directly so the XAML temp project can find them -->
-    <Reference Include="itextsharp">
-      <HintPath>..\lib\itextsharp.dll</HintPath>
-    </Reference>
+    <PackageReference Include="iTextSharp.LGPLv2.Core" Version="3.8.6" />
     <!-- WPF-only UI stack (all replaced in Phase 3 / Aurora.App) -->
     <Reference Include="System.Windows.Interactivity">
       <HintPath>..\lib\System.Windows.Interactivity.dll</HintPath>

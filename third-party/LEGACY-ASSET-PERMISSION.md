@@ -1,0 +1,30 @@
+# Legacy Aurora asset redistribution permission record
+
+On 2026-10-23, the maintainer explicitly confirmed that the existing permission
+from the original Aurora rights holders covers redistribution of the legacy
+sheet templates, gallery images and default portrait in Aurora Lights. The
+maintainer subsequently confirmed that the permission also covers the legacy
+UI icons and background artwork, including books.jpg, hero-rest4.jpg,
+viking_hill.jpg and the old bar icons. No third-party artwork exclusion was
+stated in those confirmations.
+
+This record documents the maintainer's confirmation. The underlying permission
+and supporting correspondence may be retained privately. It is not a new MIT
+license, a change of authorship, or an independent public license for extracting
+and reusing these assets in unrelated products. Existing copyright and other
+notices in the files remain intact.
+
+The exact file versions covered by this inventory decision are recorded in
+`assets.json` under `legacy-pdf-templates`, `legacy-gallery`, and
+`legacy-default-portrait`, `legacy-source-assets` and `legacy-card-background`.
+The additional visual groups contain 73 legacy source-only images/icons and
+the card background. The template decision covers redistribution of the
+existing complete PDF files, including their embedded resources; it does not
+infer a right to redistribute separate font files or to use those fonts in new
+designs. Copies of the legacy templates and galleries retained in the release's
+corresponding-source materials have the same permission basis.
+
+No grant is inferred here for non-SRD rules/prose, separate legacy font files,
+current branding or other unreviewed assets. Those have separate inventory
+decisions. The permission scope must be revisited if a covered asset is
+replaced or used outside this recorded distribution context.

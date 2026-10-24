@@ -33,7 +33,7 @@
 {
     <MudAlert Severity="Severity.Error" Class="mb-3" ShowCloseIcon="true"
               CloseIconClicked="() => _error = null">
-        <div><b>Failed to generate PDF</b></div>
+        <div><b>PDF export failed</b></div>
         <div style="font-size:0.8em; word-break:break-all; white-space:pre-wrap;">@_error</div>
     </MudAlert>
 }
@@ -83,7 +83,12 @@
     }
     else
     {
-        <MudText Typo="Typo.body2" Color="Color.Secondary">PDF sheets are available on Windows and macOS. Export a character file below to share your character from Android.</MudText>
+        <MudButton StartIcon="@Icons.Material.Filled.Save" Color="Color.Primary" Variant="Variant.Filled"
+                   Disabled="@(_generating || _exporting)" OnClick="@(() => ExportAndroidPdfAsync(AndroidPdfAction.Save))">Save PDF</MudButton>
+        <MudButton StartIcon="@Icons.Material.Filled.Share" Variant="Variant.Outlined"
+                   Disabled="@(_generating || _exporting)" OnClick="@(() => ExportAndroidPdfAsync(AndroidPdfAction.Share))">Share PDF</MudButton>
+        <MudButton StartIcon="@Icons.Material.Filled.OpenInNew" Variant="Variant.Outlined"
+                   Disabled="@(_generating || _exporting)" OnClick="@(() => ExportAndroidPdfAsync(AndroidPdfAction.Open))">Open PDF</MudButton>
     }
 
     <MudButton StartIcon="@Icons.Material.Filled.Share"
@@ -97,13 +102,11 @@
     </MudButton>
 </div>
 
-@if (!OperatingSystem.IsAndroid())
-{
 <div class="sheet-options" style="margin-top: 20px;">
     <MudText Typo="Typo.subtitle2" Color="Color.Secondary" Style="margin-bottom: 8px;">Sheet Layout</MudText>
     <div class="sheet-options-row" style="margin-bottom: 12px;">
         <MudTooltip Text="Generate the PDF as form-fillable so fields remain editable after export.">
-            <MudChip T="string"
+            <MudChip T="string" Disabled="@(_generating || _exporting)"
                      Icon="@(Prefs.EditableSheet ? Icons.Material.Filled.CheckBox : Icons.Material.Filled.CheckBoxOutlineBlank)"
                      Color="@(Prefs.EditableSheet ? Color.Primary : Color.Default)"
                      Variant="Variant.Outlined"
@@ -112,7 +115,7 @@
             </MudChip>
         </MudTooltip>
         <MudTooltip Text="Apply styling to generated content like features and traits to improve readability.">
-            <MudChip T="string"
+            <MudChip T="string" Disabled="@(_generating || _exporting)"
                      Icon="@(Prefs.IncludeSheetFormatting ? Icons.Material.Filled.CheckBox : Icons.Material.Filled.CheckBoxOutlineBlank)"
                      Color="@(Prefs.IncludeSheetFormatting ? Color.Primary : Color.Default)"
                      Variant="Variant.Outlined"
@@ -121,7 +124,7 @@
             </MudChip>
         </MudTooltip>
         <MudTooltip Text="Swap the displayed positions of ability scores and modifiers on the sheet.">
-            <MudChip T="string"
+            <MudChip T="string" Disabled="@(_generating || _exporting)"
                      Icon="@(Prefs.FlippedSheetAbilities ? Icons.Material.Filled.CheckBox : Icons.Material.Filled.CheckBoxOutlineBlank)"
                      Color="@(Prefs.FlippedSheetAbilities ? Color.Primary : Color.Default)"
                      Variant="Variant.Outlined"
@@ -134,7 +137,7 @@
     <MudText Typo="Typo.subtitle2" Color="Color.Secondary" Style="margin-bottom: 8px;">Spellcasting Page</MudText>
     <div class="sheet-options-row" style="margin-bottom: 12px;">
         <MudTooltip Text="Include known but currently unprepared spells on prepared-caster spell pages.">
-            <MudChip T="string"
+            <MudChip T="string" Disabled="@(_generating || _exporting)"
                      Icon="@(Prefs.IncludeNonPreparedSpellsOnSheet ? Icons.Material.Filled.CheckBox : Icons.Material.Filled.CheckBoxOutlineBlank)"
                      Color="@(Prefs.IncludeNonPreparedSpellsOnSheet ? Color.Primary : Color.Default)"
                      Variant="Variant.Outlined"
@@ -143,7 +146,7 @@
             </MudChip>
         </MudTooltip>
         <MudTooltip Text="Use the older single-page spellcasting layout instead of the dynamic spell page.">
-            <MudChip T="string"
+            <MudChip T="string" Disabled="@(_generating || _exporting)"
                      Icon="@(Prefs.UseLegacySpellcastingPage ? Icons.Material.Filled.CheckBox : Icons.Material.Filled.CheckBoxOutlineBlank)"
                      Color="@(Prefs.UseLegacySpellcastingPage ? Color.Primary : Color.Default)"
                      Variant="Variant.Outlined"
@@ -156,7 +159,7 @@
     <MudText Typo="Typo.subtitle2" Color="Color.Secondary" Style="margin-bottom: 8px;">Sheet Pages</MudText>
     <div class="sheet-options-row" style="margin-bottom: 12px;">
         <MudTooltip Text="Include the character background &amp; biography page">
-            <MudChip T="string"
+            <MudChip T="string" Disabled="@(_generating || _exporting)"
                      Icon="@(Prefs.IncludeBackgroundPage ? Icons.Material.Filled.CheckBox : Icons.Material.Filled.CheckBoxOutlineBlank)"
                      Color="@(Prefs.IncludeBackgroundPage ? Color.Primary : Color.Default)"
                      Variant="Variant.Outlined"
@@ -165,7 +168,7 @@
             </MudChip>
         </MudTooltip>
         <MudTooltip Text="Include the equipment &amp; inventory page">
-            <MudChip T="string"
+            <MudChip T="string" Disabled="@(_generating || _exporting)"
                      Icon="@(Prefs.IncludeEquipmentPage ? Icons.Material.Filled.CheckBox : Icons.Material.Filled.CheckBoxOutlineBlank)"
                      Color="@(Prefs.IncludeEquipmentPage ? Color.Primary : Color.Default)"
                      Variant="Variant.Outlined"
@@ -177,7 +180,7 @@
     <MudText Typo="Typo.subtitle2" Color="Color.Secondary" Style="margin-bottom: 8px;">Card Pages</MudText>
     <div class="sheet-options-row">
         <MudTooltip Text="Add a page of spell cards to the PDF">
-            <MudChip T="string"
+            <MudChip T="string" Disabled="@(_generating || _exporting)"
                      Icon="@(Prefs.IncludeSpellCards ? Icons.Material.Filled.CheckBox : Icons.Material.Filled.CheckBoxOutlineBlank)"
                      Color="@(Prefs.IncludeSpellCards ? Color.Primary : Color.Default)"
                      Variant="Variant.Outlined"
@@ -186,7 +189,7 @@
             </MudChip>
         </MudTooltip>
         <MudTooltip Text="Add a page of item cards to the PDF">
-            <MudChip T="string"
+            <MudChip T="string" Disabled="@(_generating || _exporting)"
                      Icon="@(Prefs.IncludeItemCards ? Icons.Material.Filled.CheckBox : Icons.Material.Filled.CheckBoxOutlineBlank)"
                      Color="@(Prefs.IncludeItemCards ? Color.Primary : Color.Default)"
                      Variant="Variant.Outlined"
@@ -195,7 +198,7 @@
             </MudChip>
         </MudTooltip>
         <MudTooltip Text="Add a page of attack cards to the PDF">
-            <MudChip T="string"
+            <MudChip T="string" Disabled="@(_generating || _exporting)"
                      Icon="@(Prefs.IncludeAttackCards ? Icons.Material.Filled.CheckBox : Icons.Material.Filled.CheckBoxOutlineBlank)"
                      Color="@(Prefs.IncludeAttackCards ? Color.Primary : Color.Default)"
                      Variant="Variant.Outlined"
@@ -204,7 +207,7 @@
             </MudChip>
         </MudTooltip>
         <MudTooltip Text="Add a page of feature cards to the PDF">
-            <MudChip T="string"
+            <MudChip T="string" Disabled="@(_generating || _exporting)"
                      Icon="@(Prefs.IncludeFeatureCards ? Icons.Material.Filled.CheckBox : Icons.Material.Filled.CheckBoxOutlineBlank)"
                      Color="@(Prefs.IncludeFeatureCards ? Color.Primary : Color.Default)"
                      Variant="Variant.Outlined"
@@ -219,7 +222,7 @@
             @if (Prefs.IncludeSpellCards)
             {
                 <MudTooltip Text="Start spell cards on a new page instead of reusing the prior page when possible.">
-                    <MudChip T="string"
+                    <MudChip T="string" Disabled="@(_generating || _exporting)"
                              Icon="@(Prefs.StartSpellCardsOnNewPage ? Icons.Material.Filled.CheckBox : Icons.Material.Filled.CheckBoxOutlineBlank)"
                              Color="@(Prefs.StartSpellCardsOnNewPage ? Color.Primary : Color.Default)"
                              Variant="Variant.Outlined"
@@ -231,7 +234,7 @@
             @if (Prefs.IncludeItemCards)
             {
                 <MudTooltip Text="Start item cards on a new page instead of reusing the prior page when possible.">
-                    <MudChip T="string"
+                    <MudChip T="string" Disabled="@(_generating || _exporting)"
                              Icon="@(Prefs.StartItemCardsOnNewPage ? Icons.Material.Filled.CheckBox : Icons.Material.Filled.CheckBoxOutlineBlank)"
                              Color="@(Prefs.StartItemCardsOnNewPage ? Color.Primary : Color.Default)"
                              Variant="Variant.Outlined"
@@ -243,7 +246,7 @@
             @if (Prefs.IncludeAttackCards)
             {
                 <MudTooltip Text="Start attack cards on a new page instead of reusing the prior page when possible.">
-                    <MudChip T="string"
+                    <MudChip T="string" Disabled="@(_generating || _exporting)"
                              Icon="@(Prefs.StartAttackCardsOnNewPage ? Icons.Material.Filled.CheckBox : Icons.Material.Filled.CheckBoxOutlineBlank)"
                              Color="@(Prefs.StartAttackCardsOnNewPage ? Color.Primary : Color.Default)"
                              Variant="Variant.Outlined"
@@ -255,7 +258,7 @@
             @if (Prefs.IncludeFeatureCards)
             {
                 <MudTooltip Text="Start feature cards on a new page instead of reusing the prior page when possible.">
-                    <MudChip T="string"
+                    <MudChip T="string" Disabled="@(_generating || _exporting)"
                              Icon="@(Prefs.StartFeatureCardsOnNewPage ? Icons.Material.Filled.CheckBox : Icons.Material.Filled.CheckBoxOutlineBlank)"
                              Color="@(Prefs.StartFeatureCardsOnNewPage ? Color.Primary : Color.Default)"
                              Variant="Variant.Outlined"
@@ -267,8 +270,6 @@
         </div>
     }
 </div>
-
-}
 
 @code {
     private CharacterSnapshot? _snap;
@@ -367,6 +368,57 @@
         {
             _generating = false;
             StateHasChanged();
+        }
+    }
+
+    private enum AndroidPdfAction { Save, Share, Open }
+
+    private async Task ExportAndroidPdfAsync(AndroidPdfAction action)
+    {
+        if (_generating || _exporting) return;
+        var tab = Tabs.ActiveTab;
+        if (tab?.Snapshot is null)
+        {
+            WarnUnavailable("Load a character before exporting its PDF.");
+            return;
+        }
+        _generating = true;
+        _error = null;
+        StateHasChanged();
+        string? path = null;
+        bool completed = false;
+        try
+        {
+            path = PdfExportFiles.CreatePath(FileSystem.Current.CacheDirectory, tab.Snapshot.Name ?? "Character");
+            await BuildService.ExportSheetAsync(tab, path, isPreview: false);
+            switch (action)
+            {
+                case AndroidPdfAction.Save:
+                    if (await FileSaveService.SavePdfAsync(path))
+                        Snackbar.Add("PDF saved.", Severity.Success);
+                    break;
+                case AndroidPdfAction.Share:
+                    await FileSaveService.SharePdfAsync(path);
+                    break;
+                case AndroidPdfAction.Open:
+                    if (!await FileSaveService.OpenPdfAsync(path))
+                        WarnUnavailable("No PDF viewer opened. Use Save PDF or Share PDF instead.");
+                    break;
+            }
+            completed = true;
+        }
+        catch (Exception ex)
+        {
+            _error = action == AndroidPdfAction.Open
+                ? "The PDF could not be opened. Try Save PDF or Share PDF. " + ex.Message
+                : ex.Message;
+            DebugLogService.Instance.LogException(ex, "Android PDF " + action);
+        }
+        finally
+        {
+            if (!completed && path is not null) PdfExportFiles.DeleteFailed(path);
+            _generating = false;
+            if (!_disposed) StateHasChanged();
         }
     }
 

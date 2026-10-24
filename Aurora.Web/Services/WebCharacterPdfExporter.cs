@@ -12,7 +12,7 @@ internal static class WebCharacterPdfExporter
         Character character = CharacterManager.Current.Character;
 
         using MemoryStream stream = new();
-        using Document document = new(PageSize.LETTER, 36f, 36f, 36f, 36f);
+        using Document document = new(PageSize.Letter, 36f, 36f, 36f, 36f);
         PdfWriter.GetInstance(document, stream);
         document.Open();
 
@@ -27,7 +27,7 @@ internal static class WebCharacterPdfExporter
         document.Add(new Paragraph($"Player: {character.PlayerName}", bodyFont));
         document.Add(new Paragraph($"Background: {character.Background}", bodyFont));
         document.Add(new Paragraph($"Alignment: {character.Alignment}", bodyFont));
-        document.Add(Chunk.NEWLINE);
+        document.Add(Chunk.Newline);
 
         document.Add(new Paragraph("Abilities", sectionFont));
         PdfPTable abilities = new(6) { WidthPercentage = 100f };
@@ -38,7 +38,7 @@ internal static class WebCharacterPdfExporter
         AddAbilityCell(abilities, "WIS", character.Abilities.Wisdom.FinalScore, character.Abilities.Wisdom.ModifierString, bodyFont);
         AddAbilityCell(abilities, "CHA", character.Abilities.Charisma.FinalScore, character.Abilities.Charisma.ModifierString, bodyFont);
         document.Add(abilities);
-        document.Add(Chunk.NEWLINE);
+        document.Add(Chunk.Newline);
 
         document.Add(new Paragraph("Combat", sectionFont));
         PdfPTable combat = new(4) { WidthPercentage = 100f };
@@ -47,7 +47,7 @@ internal static class WebCharacterPdfExporter
         AddLabeledValue(combat, "Speed", character.Speed.ToString(), bodyFont);
         AddLabeledValue(combat, "Max HP", character.MaxHp.ToString(), bodyFont);
         document.Add(combat);
-        document.Add(Chunk.NEWLINE);
+        document.Add(Chunk.Newline);
 
         document.Add(new Paragraph("Skills", sectionFont));
         PdfPTable skills = new(2) { WidthPercentage = 100f };
@@ -61,7 +61,7 @@ internal static class WebCharacterPdfExporter
 
         if (character.AttacksSection.Items.Any(attack => attack.IsDisplayed))
         {
-            document.Add(Chunk.NEWLINE);
+            document.Add(Chunk.Newline);
             document.Add(new Paragraph("Attacks", sectionFont));
             PdfPTable attacks = new(4) { WidthPercentage = 100f };
             AddHeader(attacks, "Name", bodyFont);

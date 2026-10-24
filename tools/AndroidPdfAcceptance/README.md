@@ -1,0 +1,9 @@
+# Android PDF acceptance
+
+This separate test application runs synthetic PDF acceptance cases on a physical Android ARM64 device. It uses its own package (`com.auroralights.pdfacceptance`), settings and external-files directory, with no access to Aurora's private data. It links the actual production PDF engine and the shared desktop regression tests. No test hook is added to Aurora.
+
+Build with `dotnet build tools/AndroidPdfAcceptance/AndroidPdfAcceptance.csproj -c Release -m:1`. The runner deliberately uses Aurora's accepted nonconcurrent Mono GC setting. Dynamic JNI registration avoids the native callback problem observed when incrementally rebuilding this helper. After changing Android entry points, clean this project's own bin/obj before rebuilding if callback registration becomes stale.
+
+Launch its main activity to run every case. The optional `skipSheets` boolean skips the 32 full-sheet combinations; `group` selects a single test class. Test discovery uses xUnit's supported data API because Android represents CustomAttributeData arrays differently from desktop .NET. `results.json` and generated PDFs are saved under this application's external `files/pdf-acceptance` directory. Inspect the actual result file; process existence is not evidence of completion. The receiver activity accepts only PDF View/Send intents and records whether a temporary content URI can actually be read, without sending files to another account or service.
+
+For Aurora acceptance, use a complete clean `dotnet publish` package. A direct `BuildApk` target can reuse incompatible generated resource artifacts, so successful compilation and APK parsing alone are insufficient. Verify signing identity and version before any in-place update, retain a backup, then launch and exercise the installed app. Never uninstall Aurora or clear its data to get a test build working.

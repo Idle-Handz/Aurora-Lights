@@ -1,23 +1,8 @@
-<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8"?>
 <elements>
   
 	<element name="Rogue" type="Class" source="System Reference Document" id="ID_WOTC_PHB_CLASS_ROGUE">
 		<description>
-			<p>Signaling for her companions to wait, a halfling creeps forward through the dungeon hall. She presses an ear to the door, then pulls out a set of tools and picks the lock in the blink of an eye. Then she disappears into the shadows as her fighter friend moves forward to kick the door open.</p>
-			<p class="indent">A human lurks in the shadows of an alley while his accomplice prepares for her part in the ambush. When their target—a notorious slaver—passes the alleyway, the accomplice cries out, the slaver comes to investigate, and the assassin’s blade cuts his throat before he can make a sound.</p>
-			<p class="indent">Suppressing a giggle, a gnome waggles her fingers and magically lifts the key ring from the guard’s belt. In a moment, the keys are in her hand, the cell door is open, and she and her companions are free to make their escape.</p>
-			<p class="indent">Rogues rely on skill, stealth, and their foes’ vulnerabilities to get the upper hand in any situation. They have a knack for finding the solution to just about any problem, demonstrating a resourcefulness and versatility that is the cornerstone of any successful adventuring party.</p>
-			<h4>SKILL AND PRECISION</h4>
-			<p>Rogues devote as much effort to mastering the use of a variety of skills as they do to perfecting their combat abilities, giving them a broad expertise that few other characters can match. Many rogues focus on stealth and deception, while others refine the skills that help them in a dungeon environment, such as climbing, finding and disarming traps, and opening locks.</p>
-			<p class="indent">When it comes to combat, rogues prioritize cunning over brute strength. A rogue would rather make one precise strike, placing it exactly where the attack will hurt the target most, than wear an opponent down with a barrage of attacks. Rogues have an almost supernatural knack for avoiding danger, and a few learn magical tricks to supplement their other abilities.</p>
-			<h4>A SHADY LIVING</h4>
-			<p>Every town and city has its share of rogues. Most of them live up to the worst stereotypes of the class, making a living as burglars, assassins, cutpurses, and con artists. Often, these scoundrels are organized into thieves’ guilds or crime families. Plenty of rogues operate independently, but even they sometimes recruit apprentices to help them in their scams and heists. A few rogues make an honest living as locksmiths, investigators, or exterminators, which can be a dangerous job in a world where dire rats—and wererats—haunt the sewers.</p>
-			<p class="indent">As adventurers, rogues fall on both sides of the law. Some are hardened criminals who decide to seek their fortune in treasure hoards, while others take up a life of adventure to escape from the law. Some have learned and perfected their skills with the explicit purpose of infiltrating ancient ruins and hidden crypts in search of treasure.</p>
-			<h4>CREATING A ROGUE</h4>
-			<p>As you create your rogue character, consider the character’s relationship to the law. Do you have a criminal past—or present? Are you on the run from the law or from an angry thieves’ guild master? Or did you leave your guild in search of bigger risks and bigger rewards? Is it greed that drives you in your adventures, or some other desire or ideal?</p>
-			<p>What was the trigger that led you away from your previous life? Did a great con or heist gone terribly wrong cause you to reevaluate your career? Maybe you were lucky and a successful robbery gave you the coin you needed to escape the squalor of your life. Did wanderlust finally call you away from your home? Perhaps you suddenly found yourself cut off from your family or your mentor, and you had to find a new means of support. Or maybe you made a new friend—another member of your adventuring party—who showed you new possibilities for earning a living and employing your particular talents.</p>
-			<h5>QUICK BUILD</h5>
-			<p>You can make a rogue quickly by following these suggestions. First, Dexterity should be your highest ability score. Make Intelligence your next-highest if you want to excel at Investigation. Choose Charisma instead if you plan to emphasize deception and social interaction. Second, choose the criminal background.</p>
 			<h3>CLASS FEATURES</h3>
 			<p>As a rogue, you have the following class features.</p>
 			<h5>HIT POINTS</h5>
@@ -92,16 +77,16 @@
 			<set name="hd">d8</set>
 		</setters>
 		<rules>
-			<grant type="Proficiency" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_LIGHT_ARMOR" requirements="!ID_WOTC_PHB_MULTICLASS_ROGUE" />
-			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_SIMPLE_WEAPONS" requirements="!ID_WOTC_PHB_MULTICLASS_ROGUE" />
-			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_CROSSBOW_HAND" requirements="!ID_WOTC_PHB_MULTICLASS_ROGUE" />
-			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_LONGSWORD" requirements="!ID_WOTC_PHB_MULTICLASS_ROGUE" />
-			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_RAPIER" requirements="!ID_WOTC_PHB_MULTICLASS_ROGUE" />
-			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_SHORTSWORD" requirements="!ID_WOTC_PHB_MULTICLASS_ROGUE" />
-			<grant type="Proficiency" id="ID_PROFICIENCY_TOOL_PROFICIENCY_THIEVES_TOOLS" requirements="!ID_WOTC_PHB_MULTICLASS_ROGUE" />
-			<grant type="Proficiency" id="ID_PROFICIENCY_SAVINGTHROW_DEXTERITY" requirements="!ID_WOTC_PHB_MULTICLASS_ROGUE" />
-			<grant type="Proficiency" id="ID_PROFICIENCY_SAVINGTHROW_INTELLIGENCE" requirements="!ID_WOTC_PHB_MULTICLASS_ROGUE" />
-			<select type="Proficiency" name="Skill Proficiency (Rogue)" supports="Skill,Rogue" number="4" requirements="!ID_WOTC_PHB_MULTICLASS_ROGUE" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_LIGHT_ARMOR" requirements="!ID_WOTC_PHB_MULTICLASS_ROGUE"/>
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_SIMPLE_WEAPONS" requirements="!ID_WOTC_PHB_MULTICLASS_ROGUE"/>
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_CROSSBOW_HAND" requirements="!ID_WOTC_PHB_MULTICLASS_ROGUE"/>
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_LONGSWORD" requirements="!ID_WOTC_PHB_MULTICLASS_ROGUE"/>
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_RAPIER" requirements="!ID_WOTC_PHB_MULTICLASS_ROGUE"/>
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_SHORTSWORD" requirements="!ID_WOTC_PHB_MULTICLASS_ROGUE"/>
+			<grant type="Proficiency" id="ID_PROFICIENCY_TOOL_PROFICIENCY_THIEVES_TOOLS" requirements="!ID_WOTC_PHB_MULTICLASS_ROGUE"/>
+			<grant type="Proficiency" id="ID_PROFICIENCY_SAVINGTHROW_DEXTERITY" requirements="!ID_WOTC_PHB_MULTICLASS_ROGUE"/>
+			<grant type="Proficiency" id="ID_PROFICIENCY_SAVINGTHROW_INTELLIGENCE" requirements="!ID_WOTC_PHB_MULTICLASS_ROGUE"/>
+			<select type="Proficiency" name="Skill Proficiency (Rogue)" supports="Skill,Rogue" number="4" requirements="!ID_WOTC_PHB_MULTICLASS_ROGUE"/>
 			<grant type="Class Feature" id="ID_WOTC_PHB_CLASS_FEATURE_ROGUE_EXPERTISE" level="1"/>
 			<grant type="Class Feature" id="ID_WOTC_PHB_CLASS_FEATURE_ROGUE_SNEAKATTACK" level="1"/>
 			<grant type="Class Feature" id="ID_WOTC_PHB_CLASS_FEATURE_ROGUE_THIEVES_CANT" level="1"/>
@@ -123,10 +108,10 @@
 				<set name="multiclass proficiencies">Light armor, one skill from the class’s skill list, thieves’ tools</set>
 			</setters>
 			<rules>
-				<grant type="Grants" id="ID_INTERNAL_GRANT_MULTICLASS" />
-				<grant type="Proficiency" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_LIGHT_ARMOR" />
-				<select type="Proficiency" name="Skill Proficiency (Rogue)" supports="Skill,Rogue" number="1" />
-				<grant type="Proficiency" id="ID_PROFICIENCY_TOOL_PROFICIENCY_THIEVES_TOOLS" />
+				<grant type="Grants" id="ID_INTERNAL_GRANT_MULTICLASS"/>
+				<grant type="Proficiency" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_LIGHT_ARMOR"/>
+				<select type="Proficiency" name="Skill Proficiency (Rogue)" supports="Skill,Rogue" number="1"/>
+				<grant type="Proficiency" id="ID_PROFICIENCY_TOOL_PROFICIENCY_THIEVES_TOOLS"/>
 			</rules>
 		</multiclass>
 	</element>
@@ -154,17 +139,17 @@
 			You don’t need advantage on the attack roll if another enemy of the target is within 5 feet of it, that enemy isn’t incapacitated, and you don’t have disadvantage on the attack roll.</description>
 		</sheet>
 		<rules>
-			<stat name="sneak-attack:count" value="1" level="1" />
-			<stat name="sneak-attack:count" value="1" level="3" />
-			<stat name="sneak-attack:count" value="1" level="5" />
-			<stat name="sneak-attack:count" value="1" level="7" />
-			<stat name="sneak-attack:count" value="1" level="9" />
-			<stat name="sneak-attack:count" value="1" level="11" />
-			<stat name="sneak-attack:count" value="1" level="13" />
-			<stat name="sneak-attack:count" value="1" level="15" />
-			<stat name="sneak-attack:count" value="1" level="17" />
-			<stat name="sneak-attack:count" value="1" level="19" />
-			<stat name="sneak-attack:die" value="6" bonus="die" />
+			<stat name="sneak-attack:count" value="1" level="1"/>
+			<stat name="sneak-attack:count" value="1" level="3"/>
+			<stat name="sneak-attack:count" value="1" level="5"/>
+			<stat name="sneak-attack:count" value="1" level="7"/>
+			<stat name="sneak-attack:count" value="1" level="9"/>
+			<stat name="sneak-attack:count" value="1" level="11"/>
+			<stat name="sneak-attack:count" value="1" level="13"/>
+			<stat name="sneak-attack:count" value="1" level="15"/>
+			<stat name="sneak-attack:count" value="1" level="17"/>
+			<stat name="sneak-attack:count" value="1" level="19"/>
+			<stat name="sneak-attack:die" value="6" bonus="die"/>
 		</rules>
 	</element>
 	<element name="Thieves’ Cant" type="Class Feature" source="System Reference Document" id="ID_WOTC_PHB_CLASS_FEATURE_ROGUE_THIEVES_CANT">
@@ -177,7 +162,7 @@
 			In addition, you understand a set of secret signs and symbols used to convey short, simple messages, such as whether an area is dangerous or the territory of a thieves’ guild, whether loot is nearby, or whether the people in an area are easy marks or will provide a safe house for thieves on the run.</description>
 		</sheet>
 		<rules>
-			<grant type="Language" id="ID_WOTC_PHB_LANGUAGE_THIEVES_CANT" />
+			<grant type="Language" id="ID_WOTC_PHB_LANGUAGE_THIEVES_CANT"/>
 		</rules>
 	</element>
 	<element name="Cunning Action" type="Class Feature" source="System Reference Document" id="ID_WOTC_PHB_CLASS_FEATURE_ROGUE_CUNNINGACTION">
@@ -192,24 +177,24 @@
 		<description>
 			<p>At 3rd level, you choose an archetype that you emulate in the exercise of your rogue abilities. The Thief archetype is detailed here; see the Player’s Handbook for other archetypes. Your choice grants you features at 3rd level and then again at 9th, 13th, and 17th level.</p>
 		</description>
-		<sheet display="false" />
+		<sheet display="false"/>
 		<rules>
 			<select type="Archetype" name="Roguish Archetype" supports="Roguish Archetype" level="3"/>
 		</rules>
 	</element>
 	<element name="Ability Score Improvement" type="Class Feature" source="System Reference Document" id="ID_WOTC_PHB_CLASS_FEATURE_ROGUE_ABILITYSCOREIMPROVEMENT_ROGUE">
-		<compendium display="false" />
+		<compendium display="false"/>
 		<description>
 			<p>When you reach 4th level, and again at 8th, 10th, 12th, 16th, and 19th level, you can increase one ability score of your choice by 2, or you can increase two ability scores of your choice by 1. As normal, you can’t increase an ability score above 20 using this feature.</p>
 		</description>
-		<sheet display="false" />
+		<sheet display="false"/>
 		<rules>
-			<select type="Class Feature" name="Improvement Option (Rogue 4)" supports="Improvement Option,Rogue,4" level="4" />
-			<select type="Class Feature" name="Improvement Option (Rogue 8)" supports="Improvement Option,Rogue,8" level="8" />
-			<select type="Class Feature" name="Improvement Option (Rogue 10)" supports="Improvement Option,Rogue,10" level="10" />
-			<select type="Class Feature" name="Improvement Option (Rogue 12)" supports="Improvement Option,Rogue,12" level="12" />
-			<select type="Class Feature" name="Improvement Option (Rogue 16)" supports="Improvement Option,Rogue,16" level="16" />
-			<select type="Class Feature" name="Improvement Option (Rogue 19)" supports="Improvement Option,Rogue,19" level="19" />
+			<select type="Class Feature" name="Improvement Option (Rogue 4)" supports="Improvement Option,Rogue,4" level="4"/>
+			<select type="Class Feature" name="Improvement Option (Rogue 8)" supports="Improvement Option,Rogue,8" level="8"/>
+			<select type="Class Feature" name="Improvement Option (Rogue 10)" supports="Improvement Option,Rogue,10" level="10"/>
+			<select type="Class Feature" name="Improvement Option (Rogue 12)" supports="Improvement Option,Rogue,12" level="12"/>
+			<select type="Class Feature" name="Improvement Option (Rogue 16)" supports="Improvement Option,Rogue,16" level="16"/>
+			<select type="Class Feature" name="Improvement Option (Rogue 19)" supports="Improvement Option,Rogue,19" level="19"/>
 		</rules>
 	</element>
 	<element name="Uncanny Dodge" type="Class Feature" source="System Reference Document" id="ID_WOTC_PHB_CLASS_FEATURE_ROGUE_UNCANNY_DODGE">
@@ -252,7 +237,7 @@
 			<description>You have acquired greater mental strength. You gain proficiency in Wisdom saving throws.</description>
 		</sheet>
 		<rules>
-			<grant type="Proficiency" id="ID_PROFICIENCY_SAVINGTHROW_WISDOM" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_SAVINGTHROW_WISDOM"/>
 		</rules>
 	</element>
 	<element name="Elusive" type="Class Feature" source="System Reference Document" id="ID_WOTC_PHB_CLASS_FEATURE_ROGUE_ELUSIVE">
@@ -277,11 +262,11 @@
 		<supports>Roguish Archetype</supports>
 		<description>
 			<p>You hone your skills in the larcenous arts. Burglars, bandits, cutpurses, and other criminals typically follow this archetype, but so do rogues who prefer to think of themselves as professional treasure seekers, explorers, delvers, and investigators. In addition to improving your agility and stealth, you learn skills useful for delving into ancient ruins, reading unfamiliar languages, and using magic items you normally couldn’t employ.</p>
-			<div element="ID_WOTC_PHB_ARCHETYPE_FEATURE_THIEF_FASTHANDS" />
-			<div element="ID_WOTC_PHB_ARCHETYPE_FEATURE_THIEF_SECONDSTORYWORK" />
-			<div element="ID_WOTC_PHB_ARCHETYPE_FEATURE_THIEF_SUPREMESNEAK" />
-			<div element="ID_WOTC_PHB_ARCHETYPE_FEATURE_THIEF_USEMAGICDEVICE" />
-			<div element="ID_WOTC_PHB_ARCHETYPE_FEATURE_THIEF_THIEFS_REFLEXES" />
+			<div element="ID_WOTC_PHB_ARCHETYPE_FEATURE_THIEF_FASTHANDS"/>
+			<div element="ID_WOTC_PHB_ARCHETYPE_FEATURE_THIEF_SECONDSTORYWORK"/>
+			<div element="ID_WOTC_PHB_ARCHETYPE_FEATURE_THIEF_SUPREMESNEAK"/>
+			<div element="ID_WOTC_PHB_ARCHETYPE_FEATURE_THIEF_USEMAGICDEVICE"/>
+			<div element="ID_WOTC_PHB_ARCHETYPE_FEATURE_THIEF_THIEFS_REFLEXES"/>
 		</description>
 		<sheet display="false">
 			<description>You hone your skills in the larcenous arts.</description>

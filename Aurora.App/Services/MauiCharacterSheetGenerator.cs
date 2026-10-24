@@ -34,9 +34,6 @@ internal sealed class MauiCharacterSheetGenerator : ICharacterSheetGenerator
 {
     public FileInfo GenerateNewSheet(string outputPath, bool isPreview)
     {
-#if ANDROID
-        throw new PlatformNotSupportedException("PDF export is not available on Android.");
-#else
         var cm          = CharacterManager.Current;
         var character   = cm.Character;
         var elements    = cm.GetElements();
@@ -145,7 +142,6 @@ internal sealed class MauiCharacterSheetGenerator : ICharacterSheetGenerator
         }
 
         return sheet.Save(outputPath);
-#endif
     }
 
     // ── Main sheet content ───────────────────────────────────────────────────

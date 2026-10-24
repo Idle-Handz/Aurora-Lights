@@ -1,3 +1,4 @@
+using Aurora.Documents.Helpers;
 // Decompiled with JetBrains decompiler
 // Type: Builder.Presentation.Models.CharacterSheet.CharacterSheetEx
 // Assembly: Aurora Builder, Version=1.0.166.7407, Culture=neutral, PublicKeyToken=null
@@ -79,6 +80,7 @@ public class CharacterSheetEx
       {
         using (PdfStamper stamper = new PdfStamper(reader, (Stream) os))
         {
+          stamper.AcroFields.AddSubstitutionFont(Builder.Presentation.Models.CharacterSheet.PDF.FontsHelper.GetUnicodeFallback());
           this.WriteExportContent(stamper);
           List<string> source = new List<string>();
           if (this.Configuration.IncludeEquipmentPage)
@@ -365,12 +367,14 @@ label_47:
 
   private void ConcatenateReaders(IEnumerable<PdfReader> readers, Stream stream)
   {
-    PdfConcatenate pdfConcatenate = new PdfConcatenate(stream);
-    pdfConcatenate.Writer.SetMergeFields();
-    pdfConcatenate.Open();
-    foreach (PdfReader reader in readers)
-      pdfConcatenate.Writer.AddDocument(reader);
-    pdfConcatenate.Close();
+    var copy = new PdfCopyFields(stream);
+    try
+    {
+      foreach (PdfReader reader in readers)
+        copy.AddDocument(reader);
+    }
+    finally { copy.Close(); }
+    foreach (PdfReader reader in readers) reader.Close();
   }
 
   private void WriteExportContent(PdfStamper stamper)
@@ -410,7 +414,7 @@ label_47:
         this.ExportContent.Experience
       }
     })
-      stamper.AcroFields.SetField(keyValuePair.Key, keyValuePair.Value);
+      stamper.AcroFields.SetFieldValue(keyValuePair.Key, keyValuePair.Value);
     foreach (KeyValuePair<string, string> keyValuePair in new Dictionary<string, string>()
     {
       {
@@ -462,7 +466,7 @@ label_47:
         this.ExportContent.AbilitiesContent.CharismaModifier
       }
     })
-      stamper.AcroFields.SetField(keyValuePair.Key, keyValuePair.Value);
+      stamper.AcroFields.SetFieldValue(keyValuePair.Key, keyValuePair.Value);
     foreach (KeyValuePair<string, string> keyValuePair in new Dictionary<string, string>()
     {
       {
@@ -686,7 +690,7 @@ label_47:
         this.ExportContent.SkillsContent.PerceptionPassive
       }
     })
-      stamper.AcroFields.SetField(keyValuePair.Key, keyValuePair.Value);
+      stamper.AcroFields.SetFieldValue(keyValuePair.Key, keyValuePair.Value);
     foreach (KeyValuePair<string, string> keyValuePair in new Dictionary<string, string>()
     {
       {
@@ -854,7 +858,7 @@ label_47:
         this.ExportContent.AttacksCount == "1" ? this.ExportContent.AttacksCount + " Attack / Attack Action" : this.ExportContent.AttacksCount + " Attacks / Attack Action"
       }
     })
-      stamper.AcroFields.SetField(keyValuePair.Key, keyValuePair.Value);
+      stamper.AcroFields.SetFieldValue(keyValuePair.Key, keyValuePair.Value);
     stamper.SetFontSize(6f, "details_encounter_box");
     foreach (KeyValuePair<string, string> keyValuePair in new Dictionary<string, string>()
     {
@@ -872,25 +876,25 @@ label_47:
       },
       {
         "details_armor_stealth_disadvantage",
-        this.ExportContent.ArmorClassContent.StealthDisadvantage ? "Ja" : ""
+        this.ExportContent.ArmorClassContent.StealthDisadvantage ? "Yes" : "No"
       },
       {
         "details_armor_conditional",
         this.ExportContent.ArmorClassContent.ConditionalArmorClass
       }
     })
-      stamper.AcroFields.SetField(keyValuePair.Key, keyValuePair.Value);
+      stamper.AcroFields.SetFieldValue(keyValuePair.Key, keyValuePair.Value);
     int num = 1;
     foreach (CharacterSheetExportContent.AttackExportContent attackExportContent in this.ExportContent.AttacksContent)
     {
       if (num <= 4)
       {
-        stamper.AcroFields.SetField($"details_attack{num}_weapon", attackExportContent.Name);
-        stamper.AcroFields.SetField($"details_attack{num}_range", attackExportContent.Range);
-        stamper.AcroFields.SetField($"details_attack{num}_attack", attackExportContent.Bonus);
-        stamper.AcroFields.SetField($"details_attack{num}_damage", attackExportContent.Damage);
-        stamper.AcroFields.SetField($"details_attack{num}_misc", attackExportContent.Misc);
-        stamper.AcroFields.SetField($"details_attack{num}_description", attackExportContent.Description);
+        stamper.AcroFields.SetFieldValue($"details_attack{num}_weapon", attackExportContent.Name);
+        stamper.AcroFields.SetFieldValue($"details_attack{num}_range", attackExportContent.Range);
+        stamper.AcroFields.SetFieldValue($"details_attack{num}_attack", attackExportContent.Bonus);
+        stamper.AcroFields.SetFieldValue($"details_attack{num}_damage", attackExportContent.Damage);
+        stamper.AcroFields.SetFieldValue($"details_attack{num}_misc", attackExportContent.Misc);
+        stamper.AcroFields.SetFieldValue($"details_attack{num}_description", attackExportContent.Description);
         ++num;
       }
       else
@@ -898,8 +902,8 @@ label_47:
     }
     for (int index = 0; index < Math.Min(this.ExportContent.EquipmentContent.Equipment.Count, 15); ++index)
     {
-      stamper.AcroFields.SetField($"details_equipment_amount_1.{index}", this.ExportContent.EquipmentContent.Equipment[index].Item1);
-      stamper.AcroFields.SetField($"details_equipment_name_1.{index}", this.ExportContent.EquipmentContent.Equipment[index].Item2);
+      stamper.AcroFields.SetFieldValue($"details_equipment_amount_1.{index}", this.ExportContent.EquipmentContent.Equipment[index].Item1);
+      stamper.AcroFields.SetFieldValue($"details_equipment_name_1.{index}", this.ExportContent.EquipmentContent.Equipment[index].Item2);
     }
     if (!this.Configuration.IncludeFormatting)
     {
@@ -923,7 +927,7 @@ label_47:
           this.ExportContent.TemporaryRacialTraits
         }
       })
-        stamper.AcroFields.SetField(keyValuePair.Key, keyValuePair.Value);
+        stamper.AcroFields.SetFieldValue(keyValuePair.Key, keyValuePair.Value);
     }
     foreach (KeyValuePair<string, string> keyValuePair in new Dictionary<string, string>()
     {
@@ -1008,7 +1012,7 @@ label_47:
         this.ExportContent.EquipmentContent.AdditionalTreasure
       }
     })
-      stamper.AcroFields.SetField(keyValuePair.Key, keyValuePair.Value);
+      stamper.AcroFields.SetFieldValue(keyValuePair.Key, keyValuePair.Value);
     stamper.SetFontSize(0.0f, "background_feature");
     this.WriteImage(stamper, "background_portrait_image", this.ExportContent.AppearanceContent.Portrait);
     this.WriteImage(stamper, "background_organization_image", this.ExportContent.OrganizationSymbol);
@@ -1047,7 +1051,7 @@ label_47:
         this.ExportContent.CompanionOwner
       }
     })
-      stamper.AcroFields.SetField(keyValuePair.Key, keyValuePair.Value);
+      stamper.AcroFields.SetFieldValue(keyValuePair.Key, keyValuePair.Value);
     foreach (KeyValuePair<string, string> keyValuePair in new Dictionary<string, string>()
     {
       {
@@ -1099,7 +1103,7 @@ label_47:
         this.ExportContent.CompanionAbilitiesContent.CharismaModifier
       }
     })
-      stamper.AcroFields.SetField(keyValuePair.Key, keyValuePair.Value);
+      stamper.AcroFields.SetFieldValue(keyValuePair.Key, keyValuePair.Value);
     foreach (KeyValuePair<string, string> keyValuePair in new Dictionary<string, string>()
     {
       {
@@ -1323,7 +1327,7 @@ label_47:
         this.ExportContent.CompanionSkillsContent.PerceptionPassive
       }
     })
-      stamper.AcroFields.SetField(keyValuePair.Key, keyValuePair.Value);
+      stamper.AcroFields.SetFieldValue(keyValuePair.Key, keyValuePair.Value);
     foreach (KeyValuePair<string, string> keyValuePair in new Dictionary<string, string>()
     {
       {
@@ -1423,7 +1427,7 @@ label_47:
         this.ExportContent.CompanionConditionsContent.Resistances
       }
     })
-      stamper.AcroFields.SetField(keyValuePair.Key, keyValuePair.Value);
+      stamper.AcroFields.SetFieldValue(keyValuePair.Key, keyValuePair.Value);
     foreach (KeyValuePair<string, string> keyValuePair in new Dictionary<string, string>()
     {
       {
@@ -1439,7 +1443,7 @@ label_47:
         this.ExportContent.CompanionArmorClassContent.ConditionalArmorClass
       }
     })
-      stamper.AcroFields.SetField(keyValuePair.Key, keyValuePair.Value);
+      stamper.AcroFields.SetFieldValue(keyValuePair.Key, keyValuePair.Value);
     this.WriteImage(stamper, "companion_portrait_image", this.ExportContent.CompanionPortrait);
     if (this.Configuration.IncludeFormatting)
     {
@@ -1448,8 +1452,8 @@ label_47:
     }
     else
     {
-      stamper.AcroFields.SetField("companion_features", this.ExportContent.CompanionFeatures);
-      stamper.AcroFields.SetField("companion_stats", this.ExportContent.CompanionStats);
+      stamper.AcroFields.SetFieldValue("companion_features", this.ExportContent.CompanionFeatures);
+      stamper.AcroFields.SetFieldValue("companion_stats", this.ExportContent.CompanionStats);
     }
   }
 
@@ -1457,8 +1461,8 @@ label_47:
   {
     try
     {
-      IList<AcroFields.FieldPosition> fieldPositions = stamper.AcroFields.GetFieldPositions(fieldName);
-      AcroFields.FieldPosition fieldPosition = fieldPositions != null ? fieldPositions.FirstOrDefault<AcroFields.FieldPosition>() : (AcroFields.FieldPosition) null;
+      IList<PdfLayoutExtensions.FieldPosition> fieldPositions = stamper.AcroFields.GetWidgetPositions(fieldName);
+      PdfLayoutExtensions.FieldPosition fieldPosition = fieldPositions != null ? fieldPositions.FirstOrDefault<PdfLayoutExtensions.FieldPosition>() : (PdfLayoutExtensions.FieldPosition) null;
       if (fieldPosition == null || !File.Exists(imagePath))
         return;
       PushbuttonField pushbuttonField1 = new PushbuttonField(stamper.Writer, fieldPosition.position, fieldName + ":replaced");
@@ -1487,11 +1491,11 @@ label_47:
       return;
     htmlContent ??= "";
     name.Contains("features");
-    Rectangle position = stamper.AcroFields.GetFieldPositions(name)[0].position;
-    int page = stamper.AcroFields.GetFieldPositions(name)[0].page;
+    Rectangle position = stamper.AcroFields.GetWidgetPositions(name)[0].position;
+    int page = stamper.AcroFields.GetWidgetPositions(name)[0].page;
     stamper.AcroFields.RemoveField(name);
     iTextSharp.text.Font regular = Builder.Presentation.Models.CharacterSheet.PDF.FontsHelper.GetRegular();
-    float num = ColumnText.FitText(regular, $"{htmlContent}{Environment.NewLine}<p></p>", position, fontsize, 1);
+    float num = PdfSignatureAppearance.FitText(regular, $"{htmlContent}{Environment.NewLine}<p></p>", position, fontsize, 1);
     if ((double) num < (double) fontsize)
     {
       string str = "";
@@ -1515,7 +1519,7 @@ label_47:
         str = $"{str}<p>&nbsp;</p>{Environment.NewLine}";
       if (htmlContent.Length > 7000)
         str = $"{str}<p>&nbsp;</p>{Environment.NewLine}";
-      num = ColumnText.FitText(regular, htmlContent + str + Environment.NewLine, position, fontsize, 1);
+      num = PdfSignatureAppearance.FitText(regular, htmlContent + str + Environment.NewLine, position, fontsize, 1);
       if (htmlContent.Length > 6000)
         num = Math.Min(num, 5f);
     }
@@ -1568,7 +1572,7 @@ label_47:
         content.Experience
       }
     })
-      stamper.AcroFields.SetField(keyValuePair.Key, keyValuePair.Value);
+      stamper.AcroFields.SetFieldValue(keyValuePair.Key, keyValuePair.Value);
     foreach (KeyValuePair<string, string> keyValuePair in new Dictionary<string, string>()
     {
       {
@@ -1620,7 +1624,7 @@ label_47:
         content.CharismaModifier
       }
     })
-      stamper.AcroFields.SetField(keyValuePair.Key, keyValuePair.Value);
+      stamper.AcroFields.SetFieldValue(keyValuePair.Key, keyValuePair.Value);
     foreach (KeyValuePair<string, string> keyValuePair in new Dictionary<string, string>()
     {
       {
@@ -1956,7 +1960,7 @@ label_47:
         this.ExportContent.EquipmentContent.Weight
       }
     })
-      stamper.AcroFields.SetField(keyValuePair.Key, keyValuePair.Value);
+      stamper.AcroFields.SetFieldValue(keyValuePair.Key, keyValuePair.Value);
     foreach (KeyValuePair<string, string> keyValuePair in new Dictionary<string, string>()
     {
       {
@@ -1976,18 +1980,18 @@ label_47:
         content.StealthDisadvantage ? "Yes" : "No"
       }
     })
-      stamper.AcroFields.SetField(keyValuePair.Key, keyValuePair.Value);
+      stamper.AcroFields.SetFieldValue(keyValuePair.Key, keyValuePair.Value);
     int num = 1;
     foreach (CharacterSheetExportContent.AttackExportContent attackExportContent in this.ExportContent.AttacksContent)
     {
       if (num <= 4)
       {
-        stamper.AcroFields.SetField($"details_attack{num}_weapon", attackExportContent.Name);
-        stamper.AcroFields.SetField($"details_attack{num}_range", attackExportContent.Range);
-        stamper.AcroFields.SetField($"details_attack{num}_attack", attackExportContent.Bonus);
-        stamper.AcroFields.SetField($"details_attack{num}_damage", attackExportContent.Damage);
-        stamper.AcroFields.SetField($"details_attack{num}_misc", attackExportContent.Misc);
-        stamper.AcroFields.SetField($"details_attack{num}_description", attackExportContent.Description);
+        stamper.AcroFields.SetFieldValue($"details_attack{num}_weapon", attackExportContent.Name);
+        stamper.AcroFields.SetFieldValue($"details_attack{num}_range", attackExportContent.Range);
+        stamper.AcroFields.SetFieldValue($"details_attack{num}_attack", attackExportContent.Bonus);
+        stamper.AcroFields.SetFieldValue($"details_attack{num}_damage", attackExportContent.Damage);
+        stamper.AcroFields.SetFieldValue($"details_attack{num}_misc", attackExportContent.Misc);
+        stamper.AcroFields.SetFieldValue($"details_attack{num}_description", attackExportContent.Description);
         ++num;
       }
       else
@@ -1995,8 +1999,8 @@ label_47:
     }
     for (int index = 0; index < Math.Min(this.ExportContent.EquipmentContent.Equipment.Count, 15); ++index)
     {
-      stamper.AcroFields.SetField($"details_equipment_amount_1.{index}", this.ExportContent.EquipmentContent.Equipment[index].Item1);
-      stamper.AcroFields.SetField("details_equipment_name_1." + index.ToString(), this.ExportContent.EquipmentContent.Equipment[index].Item2);
+      stamper.AcroFields.SetFieldValue($"details_equipment_amount_1.{index}", this.ExportContent.EquipmentContent.Equipment[index].Item1);
+      stamper.AcroFields.SetFieldValue("details_equipment_name_1." + index.ToString(), this.ExportContent.EquipmentContent.Equipment[index].Item2);
       stamper.SetFontSize(7f, $"details_equipment_amount_1.{index}", $"details_equipment_name_1.{index}");
     }
     if (this.Configuration.IncludeFormatting)
@@ -2012,7 +2016,7 @@ label_47:
         content.FeaturesAndTraitsField
       }
     })
-      stamper.AcroFields.SetField(keyValuePair.Key, keyValuePair.Value);
+      stamper.AcroFields.SetFieldValue(keyValuePair.Key, keyValuePair.Value);
     if (!this.Configuration.IncludeFeatureCards)
       return;
     this.GenerateFeatureCards(stamper, content);
@@ -2095,10 +2099,10 @@ label_47:
         content.Trinket
       }
     })
-      stamper.AcroFields.SetField(keyValuePair.Key, keyValuePair.Value, false);
+      stamper.AcroFields.SetFieldValue(keyValuePair.Key, keyValuePair.Value);
     try
     {
-      AcroFields.FieldPosition fieldPosition = stamper.AcroFields.GetFieldPositions("background_portrait_image").FirstOrDefault<AcroFields.FieldPosition>();
+      PdfLayoutExtensions.FieldPosition fieldPosition = stamper.AcroFields.GetWidgetPositions("background_portrait_image").FirstOrDefault<PdfLayoutExtensions.FieldPosition>();
       if (fieldPosition != null)
       {
         PushbuttonField pushbuttonField1 = new PushbuttonField(stamper.Writer, fieldPosition.position, "background_portrait_image-replaced");
@@ -2116,7 +2120,7 @@ label_47:
     }
     try
     {
-      AcroFields.FieldPosition fieldPosition = stamper.AcroFields.GetFieldPositions("background_organization_image").FirstOrDefault<AcroFields.FieldPosition>();
+      PdfLayoutExtensions.FieldPosition fieldPosition = stamper.AcroFields.GetWidgetPositions("background_organization_image").FirstOrDefault<PdfLayoutExtensions.FieldPosition>();
       if (fieldPosition == null || string.IsNullOrWhiteSpace(content.OrganizationSymbol))
         return;
       PushbuttonField pushbuttonField3 = new PushbuttonField(stamper.Writer, fieldPosition.position, "background_organization_image-replaced");
@@ -2166,114 +2170,114 @@ label_47:
         content.SpellcastingNotes
       }
     })
-      stamper.AcroFields.SetField($"{keyValuePair.Key}:{page}", keyValuePair.Value);
+      stamper.AcroFields.SetFieldValue($"{keyValuePair.Key}:{page}", keyValuePair.Value);
     AcroFields acroFields1 = stamper.AcroFields;
     string name1 = $"spellcasting_slot1_count:{page}";
     int slotsCount1 = content.Spells1.SlotsCount;
     string str1 = slotsCount1.ToString();
-    acroFields1.SetField(name1, str1);
+    acroFields1.SetFieldValue(name1, str1);
     AcroFields acroFields2 = stamper.AcroFields;
     string name2 = $"spellcasting_slot2_count:{page}";
     slotsCount1 = content.Spells2.SlotsCount;
     string str2 = slotsCount1.ToString();
-    acroFields2.SetField(name2, str2);
-    stamper.AcroFields.SetField($"spellcasting_slot3_count:{page}", content.Spells3.SlotsCount.ToString());
+    acroFields2.SetFieldValue(name2, str2);
+    stamper.AcroFields.SetFieldValue($"spellcasting_slot3_count:{page}", content.Spells3.SlotsCount.ToString());
     AcroFields acroFields3 = stamper.AcroFields;
     string name3 = $"spellcasting_slot4_count:{page}";
     int slotsCount2 = content.Spells4.SlotsCount;
     string str3 = slotsCount2.ToString();
-    acroFields3.SetField(name3, str3);
+    acroFields3.SetFieldValue(name3, str3);
     AcroFields acroFields4 = stamper.AcroFields;
     string name4 = $"spellcasting_slot5_count:{page}";
     slotsCount2 = content.Spells5.SlotsCount;
     string str4 = slotsCount2.ToString();
-    acroFields4.SetField(name4, str4);
+    acroFields4.SetFieldValue(name4, str4);
     AcroFields acroFields5 = stamper.AcroFields;
     string name5 = $"spellcasting_slot6_count:{page}";
     slotsCount2 = content.Spells6.SlotsCount;
     string str5 = slotsCount2.ToString();
-    acroFields5.SetField(name5, str5);
+    acroFields5.SetFieldValue(name5, str5);
     AcroFields acroFields6 = stamper.AcroFields;
     string name6 = $"spellcasting_slot7_count:{page}";
     slotsCount2 = content.Spells7.SlotsCount;
     string str6 = slotsCount2.ToString();
-    acroFields6.SetField(name6, str6);
+    acroFields6.SetFieldValue(name6, str6);
     AcroFields acroFields7 = stamper.AcroFields;
     string name7 = $"spellcasting_slot8_count:{page}";
     slotsCount2 = content.Spells8.SlotsCount;
     string str7 = slotsCount2.ToString();
-    acroFields7.SetField(name7, str7);
+    acroFields7.SetFieldValue(name7, str7);
     AcroFields acroFields8 = stamper.AcroFields;
     string name8 = $"spellcasting_slot9_count:{page}";
     slotsCount2 = content.Spells9.SlotsCount;
     string str8 = slotsCount2.ToString();
-    acroFields8.SetField(name8, str8);
+    acroFields8.SetFieldValue(name8, str8);
     int num1 = 0;
     foreach (SpellcastingSpellContent spellcastingSpellContent in (Collection<SpellcastingSpellContent>) content.Cantrips.Collection)
     {
-      stamper.AcroFields.SetField($"spell_name_1.{num1}:{page}", spellcastingSpellContent.Name);
+      stamper.AcroFields.SetFieldValue($"spell_name_1.{num1}:{page}", spellcastingSpellContent.Name);
       ++num1;
     }
     int num2 = num1 + 1;
     foreach (SpellcastingSpellContent spellcastingSpellContent in (Collection<SpellcastingSpellContent>) content.Spells1.Collection)
     {
-      stamper.AcroFields.SetField($"spell_prepared_1.{num2}:{page}", spellcastingSpellContent.IsPrepared ? "Yes" : "No");
-      stamper.AcroFields.SetField($"spell_name_1.{num2}:{page}", spellcastingSpellContent.Name);
+      stamper.AcroFields.SetFieldValue($"spell_prepared_1.{num2}:{page}", spellcastingSpellContent.IsPrepared ? "Yes" : "No");
+      stamper.AcroFields.SetFieldValue($"spell_name_1.{num2}:{page}", spellcastingSpellContent.Name);
       ++num2;
     }
     int num3 = num2 + 1;
     foreach (SpellcastingSpellContent spellcastingSpellContent in (Collection<SpellcastingSpellContent>) content.Spells2.Collection)
     {
-      stamper.AcroFields.SetField($"spell_prepared_1.{num3}:{page}", spellcastingSpellContent.IsPrepared ? "Yes" : "No");
-      stamper.AcroFields.SetField($"spell_name_1.{num3}:{page}", spellcastingSpellContent.Name);
+      stamper.AcroFields.SetFieldValue($"spell_prepared_1.{num3}:{page}", spellcastingSpellContent.IsPrepared ? "Yes" : "No");
+      stamper.AcroFields.SetFieldValue($"spell_name_1.{num3}:{page}", spellcastingSpellContent.Name);
       ++num3;
     }
     int num4 = num3 + 1;
     foreach (SpellcastingSpellContent spellcastingSpellContent in (Collection<SpellcastingSpellContent>) content.Spells3.Collection)
     {
-      stamper.AcroFields.SetField($"spell_prepared_1.{num4}:{page}", spellcastingSpellContent.IsPrepared ? "Yes" : "No");
-      stamper.AcroFields.SetField($"spell_name_1.{num4}:{page}", spellcastingSpellContent.Name);
+      stamper.AcroFields.SetFieldValue($"spell_prepared_1.{num4}:{page}", spellcastingSpellContent.IsPrepared ? "Yes" : "No");
+      stamper.AcroFields.SetFieldValue($"spell_name_1.{num4}:{page}", spellcastingSpellContent.Name);
       ++num4;
     }
     int num5 = num4 + 1;
     foreach (SpellcastingSpellContent spellcastingSpellContent in (Collection<SpellcastingSpellContent>) content.Spells4.Collection)
     {
-      stamper.AcroFields.SetField($"spell_prepared_1.{num5}:{page}", spellcastingSpellContent.IsPrepared ? "Yes" : "No");
-      stamper.AcroFields.SetField($"spell_name_1.{num5}:{page}", spellcastingSpellContent.Name);
+      stamper.AcroFields.SetFieldValue($"spell_prepared_1.{num5}:{page}", spellcastingSpellContent.IsPrepared ? "Yes" : "No");
+      stamper.AcroFields.SetFieldValue($"spell_name_1.{num5}:{page}", spellcastingSpellContent.Name);
       ++num5;
     }
     int num6 = num5 + 1;
     foreach (SpellcastingSpellContent spellcastingSpellContent in (Collection<SpellcastingSpellContent>) content.Spells5.Collection)
     {
-      stamper.AcroFields.SetField($"spell_prepared_1.{num6}:{page}", spellcastingSpellContent.IsPrepared ? "Yes" : "No");
-      stamper.AcroFields.SetField($"spell_name_1.{num6}:{page}", spellcastingSpellContent.Name);
+      stamper.AcroFields.SetFieldValue($"spell_prepared_1.{num6}:{page}", spellcastingSpellContent.IsPrepared ? "Yes" : "No");
+      stamper.AcroFields.SetFieldValue($"spell_name_1.{num6}:{page}", spellcastingSpellContent.Name);
       ++num6;
     }
     int num7 = num6 + 1;
     foreach (SpellcastingSpellContent spellcastingSpellContent in (Collection<SpellcastingSpellContent>) content.Spells6.Collection)
     {
-      stamper.AcroFields.SetField($"spell_prepared_1.{num7}:{page}", spellcastingSpellContent.IsPrepared ? "Yes" : "No");
-      stamper.AcroFields.SetField($"spell_name_1.{num7}:{page}", spellcastingSpellContent.Name);
+      stamper.AcroFields.SetFieldValue($"spell_prepared_1.{num7}:{page}", spellcastingSpellContent.IsPrepared ? "Yes" : "No");
+      stamper.AcroFields.SetFieldValue($"spell_name_1.{num7}:{page}", spellcastingSpellContent.Name);
       ++num7;
     }
     foreach (SpellcastingSpellContent spellcastingSpellContent in (Collection<SpellcastingSpellContent>) content.Spells7.Collection)
     {
-      stamper.AcroFields.SetField($"spell_prepared_1.{num7}:{page}", spellcastingSpellContent.IsPrepared ? "Yes" : "No");
-      stamper.AcroFields.SetField($"spell_name_1.{num7}:{page}", spellcastingSpellContent.Name);
+      stamper.AcroFields.SetFieldValue($"spell_prepared_1.{num7}:{page}", spellcastingSpellContent.IsPrepared ? "Yes" : "No");
+      stamper.AcroFields.SetFieldValue($"spell_name_1.{num7}:{page}", spellcastingSpellContent.Name);
       ++num7;
     }
     int num8 = num7 + 1;
     foreach (SpellcastingSpellContent spellcastingSpellContent in (Collection<SpellcastingSpellContent>) content.Spells8.Collection)
     {
-      stamper.AcroFields.SetField($"spell_prepared_1.{num8}:{page}", spellcastingSpellContent.IsPrepared ? "Yes" : "No");
-      stamper.AcroFields.SetField($"spell_name_1.{num8}:{page}", spellcastingSpellContent.Name);
+      stamper.AcroFields.SetFieldValue($"spell_prepared_1.{num8}:{page}", spellcastingSpellContent.IsPrepared ? "Yes" : "No");
+      stamper.AcroFields.SetFieldValue($"spell_name_1.{num8}:{page}", spellcastingSpellContent.Name);
       ++num8;
     }
     int num9 = num8 + 1;
     foreach (SpellcastingSpellContent spellcastingSpellContent in (Collection<SpellcastingSpellContent>) content.Spells9.Collection)
     {
-      stamper.AcroFields.SetField($"spell_prepared_1.{num9}:{page}", spellcastingSpellContent.IsPrepared ? "Yes" : "No");
-      stamper.AcroFields.SetField($"spell_name_1.{num9}:{page}", spellcastingSpellContent.Name);
+      stamper.AcroFields.SetFieldValue($"spell_prepared_1.{num9}:{page}", spellcastingSpellContent.IsPrepared ? "Yes" : "No");
+      stamper.AcroFields.SetFieldValue($"spell_name_1.{num9}:{page}", spellcastingSpellContent.Name);
       ++num9;
     }
   }
@@ -2488,7 +2492,7 @@ label_47:
   private string GeneratePlainDescription(string description)
   {
     StringBuilder stringBuilder1 = new StringBuilder();
-    foreach (IElement to in HTMLWorker.ParseToList((TextReader) new StringReader(description), (StyleSheet) null))
+    foreach (IElement to in HtmlWorker.ParseToList((TextReader) new StringReader(description), (StyleSheet) null))
     {
       StringBuilder stringBuilder2 = new StringBuilder();
       foreach (Chunk chunk in (IEnumerable<Chunk>) to.Chunks)
@@ -2509,9 +2513,9 @@ label_47:
 
   private string GetHtmlString(RefactoredEquipmentItem _item)
   {
-    List<IElement> toList = HTMLWorker.ParseToList((TextReader) new StringReader(_item.IsAdorned ? _item.AdornerItem.Description : _item.Item.Description), (StyleSheet) null);
+    List<IElement> toList = HtmlWorker.ParseToList((TextReader) new StringReader(_item.IsAdorned ? _item.AdornerItem.Description : _item.Item.Description), (StyleSheet) null);
     if (!_item.IsAdorned && (_item.Item.Type.Equals("Weapon") || _item.Item.Type.Equals("Armor")))
-      toList = HTMLWorker.ParseToList((TextReader) new StringReader(ElementCardHelper.GenerateHeaderForCard((ElementBase) _item.Item)), (StyleSheet) null);
+      toList = HtmlWorker.ParseToList((TextReader) new StringReader(ElementCardHelper.GenerateHeaderForCard((ElementBase) _item.Item)), (StyleSheet) null);
     StringBuilder stringBuilder1 = new StringBuilder();
     foreach (IElement element in toList)
     {
@@ -2659,11 +2663,11 @@ label_47:
       }
     };
     foreach (KeyValuePair<string, string> keyValuePair in dictionary1)
-      stamper.AcroFields.SetField($"{keyValuePair.Key}:{page}", keyValuePair.Value);
+      stamper.AcroFields.SetFieldValue($"{keyValuePair.Key}:{page}", keyValuePair.Value);
     foreach (KeyValuePair<string, string> keyValuePair in dictionary2)
-      stamper.AcroFields.SetField($"{keyValuePair.Key}:{page}", keyValuePair.Value);
+      stamper.AcroFields.SetFieldValue($"{keyValuePair.Key}:{page}", keyValuePair.Value);
     foreach (KeyValuePair<string, string> keyValuePair in dictionary3)
-      stamper.AcroFields.SetField($"{keyValuePair.Key}:{page}", keyValuePair.Value);
+      stamper.AcroFields.SetFieldValue($"{keyValuePair.Key}:{page}", keyValuePair.Value);
     Dictionary<string, string> pairs1 = new Dictionary<string, string>()
     {
       {
@@ -3080,8 +3084,8 @@ label_47:
     int index = 0;
     foreach (KeyValuePair<string, string> pair in pairs)
     {
-      stamper.AcroFields.SetField($"{pair.Key}:{page}", content.GetSpell(index, true).Name);
-      stamper.AcroFields.SetField($"{pair.Value}:{page}", content.GetSpell(index, true).IsPrepared ? "Yes" : "No");
+      stamper.AcroFields.SetFieldValue($"{pair.Key}:{page}", content.GetSpell(index, true).Name);
+      stamper.AcroFields.SetFieldValue($"{pair.Value}:{page}", content.GetSpell(index, true).IsPrepared ? "Yes" : "No");
       ++index;
     }
   }
@@ -3119,7 +3123,7 @@ label_47:
         this.ExportContent.Experience
       }
     })
-      stamper.AcroFields.SetField(keyValuePair.Key, keyValuePair.Value);
+      stamper.AcroFields.SetFieldValue(keyValuePair.Key, keyValuePair.Value);
     foreach (KeyValuePair<string, string> keyValuePair in new Dictionary<string, string>()
     {
       {
@@ -3171,7 +3175,7 @@ label_47:
         this.ExportContent.AbilitiesContent.CharismaModifier
       }
     })
-      stamper.AcroFields.SetField(keyValuePair.Key, keyValuePair.Value);
+      stamper.AcroFields.SetFieldValue(keyValuePair.Key, keyValuePair.Value);
     foreach (KeyValuePair<string, string> keyValuePair in new Dictionary<string, string>()
     {
       {
@@ -3436,39 +3440,39 @@ label_47:
       },
       {
         "Wpn Name",
-        this.ExportContent.AttacksContent[0]?.Name
+        this.ExportContent.AttacksContent.ElementAtOrDefault(0)?.Name
       },
       {
         "Wpn1 AtkBonus",
-        this.ExportContent.AttacksContent[0]?.Bonus
+        this.ExportContent.AttacksContent.ElementAtOrDefault(0)?.Bonus
       },
       {
         "Wpn1 Damage",
-        this.ExportContent.AttacksContent[0]?.Damage
+        this.ExportContent.AttacksContent.ElementAtOrDefault(0)?.Damage
       },
       {
         "Wpn Name 2",
-        this.ExportContent.AttacksContent[0]?.Name
+        this.ExportContent.AttacksContent.ElementAtOrDefault(1)?.Name
       },
       {
         "Wpn2 AtkBonus ",
-        this.ExportContent.AttacksContent[0]?.Bonus
+        this.ExportContent.AttacksContent.ElementAtOrDefault(1)?.Bonus
       },
       {
         "Wpn2 Damage ",
-        this.ExportContent.AttacksContent[0]?.Damage
+        this.ExportContent.AttacksContent.ElementAtOrDefault(1)?.Damage
       },
       {
         "Wpn Name 3",
-        this.ExportContent.AttacksContent[0]?.Name
+        this.ExportContent.AttacksContent.ElementAtOrDefault(2)?.Name
       },
       {
         "Wpn3 AtkBonus  ",
-        this.ExportContent.AttacksContent[0]?.Bonus
+        this.ExportContent.AttacksContent.ElementAtOrDefault(2)?.Bonus
       },
       {
         "Wpn3 Damage ",
-        this.ExportContent.AttacksContent[0]?.Damage
+        this.ExportContent.AttacksContent.ElementAtOrDefault(2)?.Damage
       },
       {
         "AttacksSpellcasting",
@@ -3515,7 +3519,7 @@ label_47:
         this.ExportContent.BackgroundContent.Flaw
       }
     })
-      stamper.AcroFields.SetField(keyValuePair.Key, keyValuePair.Value);
+      stamper.AcroFields.SetFieldValue(keyValuePair.Key, keyValuePair.Value);
     if (this.Configuration.IncludeFormatting)
       return;
     StringBuilder stringBuilder = new StringBuilder();
@@ -3534,7 +3538,7 @@ label_47:
         this.ExportContent.Features
       }
     })
-      stamper.AcroFields.SetField(keyValuePair.Key, keyValuePair.Value);
+      stamper.AcroFields.SetFieldValue(keyValuePair.Key, keyValuePair.Value);
   }
 
   private void StampLegacyBackgroundContent(PdfStamper stamper)
@@ -3590,7 +3594,7 @@ label_47:
         this.ExportContent.Treasure
       }
     })
-      stamper.AcroFields.SetField(keyValuePair.Key, keyValuePair.Value);
+      stamper.AcroFields.SetFieldValue(keyValuePair.Key, keyValuePair.Value);
     this.WriteImage(stamper, "CHARACTER IMAGE", this.ExportContent.AppearanceContent.Portrait);
     this.WriteImage(stamper, "Faction Symbol Image", this.ExportContent.OrganizationSymbol);
   }
@@ -3631,179 +3635,179 @@ label_47:
         export.IsMulticlassSpellcaster ? "Yes" : "No"
       }
     })
-      stamper.AcroFields.SetField($"{keyValuePair.Key}:{page}", keyValuePair.Value);
+      stamper.AcroFields.SetFieldValue($"{keyValuePair.Key}:{page}", keyValuePair.Value);
     AcroFields acroFields1 = stamper.AcroFields;
     string name1 = $"spellcasting_slot1_count:{page}";
     int availableSlots = export.Spells1.AvailableSlots;
     string str1 = availableSlots.ToString();
-    acroFields1.SetField(name1, str1);
+    acroFields1.SetFieldValue(name1, str1);
     AcroFields acroFields2 = stamper.AcroFields;
     string name2 = $"spellcasting_slot2_count:{page}";
     availableSlots = export.Spells2.AvailableSlots;
     string str2 = availableSlots.ToString();
-    acroFields2.SetField(name2, str2);
+    acroFields2.SetFieldValue(name2, str2);
     AcroFields acroFields3 = stamper.AcroFields;
     string name3 = $"spellcasting_slot3_count:{page}";
     availableSlots = export.Spells3.AvailableSlots;
     string str3 = availableSlots.ToString();
-    acroFields3.SetField(name3, str3);
+    acroFields3.SetFieldValue(name3, str3);
     AcroFields acroFields4 = stamper.AcroFields;
     string name4 = $"spellcasting_slot4_count:{page}";
     availableSlots = export.Spells4.AvailableSlots;
     string str4 = availableSlots.ToString();
-    acroFields4.SetField(name4, str4);
+    acroFields4.SetFieldValue(name4, str4);
     AcroFields acroFields5 = stamper.AcroFields;
     string name5 = $"spellcasting_slot5_count:{page}";
     availableSlots = export.Spells5.AvailableSlots;
     string str5 = availableSlots.ToString();
-    acroFields5.SetField(name5, str5);
+    acroFields5.SetFieldValue(name5, str5);
     AcroFields acroFields6 = stamper.AcroFields;
     string name6 = $"spellcasting_slot6_count:{page}";
     availableSlots = export.Spells6.AvailableSlots;
     string str6 = availableSlots.ToString();
-    acroFields6.SetField(name6, str6);
+    acroFields6.SetFieldValue(name6, str6);
     AcroFields acroFields7 = stamper.AcroFields;
     string name7 = $"spellcasting_slot7_count:{page}";
     availableSlots = export.Spells7.AvailableSlots;
     string str7 = availableSlots.ToString();
-    acroFields7.SetField(name7, str7);
+    acroFields7.SetFieldValue(name7, str7);
     AcroFields acroFields8 = stamper.AcroFields;
     string name8 = $"spellcasting_slot8_count:{page}";
     availableSlots = export.Spells8.AvailableSlots;
     string str8 = availableSlots.ToString();
-    acroFields8.SetField(name8, str8);
+    acroFields8.SetFieldValue(name8, str8);
     AcroFields acroFields9 = stamper.AcroFields;
     string name9 = $"spellcasting_slot9_count:{page}";
     availableSlots = export.Spells9.AvailableSlots;
     string str9 = availableSlots.ToString();
-    acroFields9.SetField(name9, str9);
+    acroFields9.SetFieldValue(name9, str9);
     int num1 = 0;
     foreach (CharacterSheetSpellcastingPageExportContent.SpellExportContent spell in export.Cantrips.Spells)
     {
-      stamper.AcroFields.SetField($"spell_prepared_1.{num1}:{page}", spell.IsPrepared || spell.AlwaysPrepared ? "Yes" : "No");
-      stamper.AcroFields.SetField($"spell_name_1.{num1}:{page}", spell.Name);
-      stamper.AcroFields.SetField($"spell_description_1.{num1}:{page}", spell.Description);
-      stamper.AcroFields.SetField($"spell_casting_time_1.{num1}:{page}", spell.CastingTime);
-      stamper.AcroFields.SetField($"spell_casting_range_1.{num1}:{page}", spell.Range);
-      stamper.AcroFields.SetField($"spell_casting_duration_1.{num1}:{page}", spell.Duration);
-      stamper.AcroFields.SetField($"spell_casting_components_1.{num1}:{page}", spell.Components);
-      stamper.AcroFields.SetField($"spell_casting_school_1.{num1}:{page}", spell.School);
+      stamper.AcroFields.SetFieldValue($"spell_prepared_1.{num1}:{page}", spell.IsPrepared || spell.AlwaysPrepared ? "Yes" : "No");
+      stamper.AcroFields.SetFieldValue($"spell_name_1.{num1}:{page}", spell.Name);
+      stamper.AcroFields.SetFieldValue($"spell_description_1.{num1}:{page}", spell.Description);
+      stamper.AcroFields.SetFieldValue($"spell_casting_time_1.{num1}:{page}", spell.CastingTime);
+      stamper.AcroFields.SetFieldValue($"spell_casting_range_1.{num1}:{page}", spell.Range);
+      stamper.AcroFields.SetFieldValue($"spell_casting_duration_1.{num1}:{page}", spell.Duration);
+      stamper.AcroFields.SetFieldValue($"spell_casting_components_1.{num1}:{page}", spell.Components);
+      stamper.AcroFields.SetFieldValue($"spell_casting_school_1.{num1}:{page}", spell.School);
       ++num1;
     }
     int num2 = num1 + 1;
     foreach (CharacterSheetSpellcastingPageExportContent.SpellExportContent spell in export.Spells1.Spells)
     {
-      stamper.AcroFields.SetField($"spell_prepared_1.{num2}:{page}", spell.IsPrepared || spell.AlwaysPrepared ? "Yes" : "No");
-      stamper.AcroFields.SetField($"spell_name_1.{num2}:{page}", spell.Name);
-      stamper.AcroFields.SetField($"spell_description_1.{num2}:{page}", spell.Description);
-      stamper.AcroFields.SetField($"spell_casting_time_1.{num2}:{page}", spell.CastingTime);
-      stamper.AcroFields.SetField($"spell_casting_range_1.{num2}:{page}", spell.Range);
-      stamper.AcroFields.SetField($"spell_casting_duration_1.{num2}:{page}", spell.Duration);
-      stamper.AcroFields.SetField($"spell_casting_components_1.{num2}:{page}", spell.Components);
-      stamper.AcroFields.SetField($"spell_casting_school_1.{num2}:{page}", spell.School);
+      stamper.AcroFields.SetFieldValue($"spell_prepared_1.{num2}:{page}", spell.IsPrepared || spell.AlwaysPrepared ? "Yes" : "No");
+      stamper.AcroFields.SetFieldValue($"spell_name_1.{num2}:{page}", spell.Name);
+      stamper.AcroFields.SetFieldValue($"spell_description_1.{num2}:{page}", spell.Description);
+      stamper.AcroFields.SetFieldValue($"spell_casting_time_1.{num2}:{page}", spell.CastingTime);
+      stamper.AcroFields.SetFieldValue($"spell_casting_range_1.{num2}:{page}", spell.Range);
+      stamper.AcroFields.SetFieldValue($"spell_casting_duration_1.{num2}:{page}", spell.Duration);
+      stamper.AcroFields.SetFieldValue($"spell_casting_components_1.{num2}:{page}", spell.Components);
+      stamper.AcroFields.SetFieldValue($"spell_casting_school_1.{num2}:{page}", spell.School);
       ++num2;
     }
     int num3 = num2 + 1;
     foreach (CharacterSheetSpellcastingPageExportContent.SpellExportContent spell in export.Spells2.Spells)
     {
-      stamper.AcroFields.SetField($"spell_prepared_1.{num3}:{page}", spell.IsPrepared || spell.AlwaysPrepared ? "Yes" : "No");
-      stamper.AcroFields.SetField($"spell_name_1.{num3}:{page}", spell.Name);
-      stamper.AcroFields.SetField($"spell_description_1.{num3}:{page}", spell.Description);
-      stamper.AcroFields.SetField($"spell_casting_time_1.{num3}:{page}", spell.CastingTime);
-      stamper.AcroFields.SetField($"spell_casting_range_1.{num3}:{page}", spell.Range);
-      stamper.AcroFields.SetField($"spell_casting_duration_1.{num3}:{page}", spell.Duration);
-      stamper.AcroFields.SetField($"spell_casting_components_1.{num3}:{page}", spell.Components);
-      stamper.AcroFields.SetField($"spell_casting_school_1.{num3}:{page}", spell.School);
+      stamper.AcroFields.SetFieldValue($"spell_prepared_1.{num3}:{page}", spell.IsPrepared || spell.AlwaysPrepared ? "Yes" : "No");
+      stamper.AcroFields.SetFieldValue($"spell_name_1.{num3}:{page}", spell.Name);
+      stamper.AcroFields.SetFieldValue($"spell_description_1.{num3}:{page}", spell.Description);
+      stamper.AcroFields.SetFieldValue($"spell_casting_time_1.{num3}:{page}", spell.CastingTime);
+      stamper.AcroFields.SetFieldValue($"spell_casting_range_1.{num3}:{page}", spell.Range);
+      stamper.AcroFields.SetFieldValue($"spell_casting_duration_1.{num3}:{page}", spell.Duration);
+      stamper.AcroFields.SetFieldValue($"spell_casting_components_1.{num3}:{page}", spell.Components);
+      stamper.AcroFields.SetFieldValue($"spell_casting_school_1.{num3}:{page}", spell.School);
       ++num3;
     }
     int num4 = num3 + 1;
     foreach (CharacterSheetSpellcastingPageExportContent.SpellExportContent spell in export.Spells3.Spells)
     {
-      stamper.AcroFields.SetField($"spell_prepared_1.{num4}:{page}", spell.IsPrepared || spell.AlwaysPrepared ? "Yes" : "No");
-      stamper.AcroFields.SetField($"spell_name_1.{num4}:{page}", spell.Name);
-      stamper.AcroFields.SetField($"spell_description_1.{num4}:{page}", spell.Description);
-      stamper.AcroFields.SetField($"spell_casting_time_1.{num4}:{page}", spell.CastingTime);
-      stamper.AcroFields.SetField($"spell_casting_range_1.{num4}:{page}", spell.Range);
-      stamper.AcroFields.SetField($"spell_casting_duration_1.{num4}:{page}", spell.Duration);
-      stamper.AcroFields.SetField($"spell_casting_components_1.{num4}:{page}", spell.Components);
-      stamper.AcroFields.SetField($"spell_casting_school_1.{num4}:{page}", spell.School);
+      stamper.AcroFields.SetFieldValue($"spell_prepared_1.{num4}:{page}", spell.IsPrepared || spell.AlwaysPrepared ? "Yes" : "No");
+      stamper.AcroFields.SetFieldValue($"spell_name_1.{num4}:{page}", spell.Name);
+      stamper.AcroFields.SetFieldValue($"spell_description_1.{num4}:{page}", spell.Description);
+      stamper.AcroFields.SetFieldValue($"spell_casting_time_1.{num4}:{page}", spell.CastingTime);
+      stamper.AcroFields.SetFieldValue($"spell_casting_range_1.{num4}:{page}", spell.Range);
+      stamper.AcroFields.SetFieldValue($"spell_casting_duration_1.{num4}:{page}", spell.Duration);
+      stamper.AcroFields.SetFieldValue($"spell_casting_components_1.{num4}:{page}", spell.Components);
+      stamper.AcroFields.SetFieldValue($"spell_casting_school_1.{num4}:{page}", spell.School);
       ++num4;
     }
     int num5 = num4 + 1;
     foreach (CharacterSheetSpellcastingPageExportContent.SpellExportContent spell in export.Spells4.Spells)
     {
-      stamper.AcroFields.SetField($"spell_prepared_1.{num5}:{page}", spell.IsPrepared || spell.AlwaysPrepared ? "Yes" : "No");
-      stamper.AcroFields.SetField($"spell_name_1.{num5}:{page}", spell.Name);
-      stamper.AcroFields.SetField($"spell_description_1.{num5}:{page}", spell.Description);
-      stamper.AcroFields.SetField($"spell_casting_time_1.{num5}:{page}", spell.CastingTime);
-      stamper.AcroFields.SetField($"spell_casting_range_1.{num5}:{page}", spell.Range);
-      stamper.AcroFields.SetField($"spell_casting_duration_1.{num5}:{page}", spell.Duration);
-      stamper.AcroFields.SetField($"spell_casting_components_1.{num5}:{page}", spell.Components);
-      stamper.AcroFields.SetField($"spell_casting_school_1.{num5}:{page}", spell.School);
+      stamper.AcroFields.SetFieldValue($"spell_prepared_1.{num5}:{page}", spell.IsPrepared || spell.AlwaysPrepared ? "Yes" : "No");
+      stamper.AcroFields.SetFieldValue($"spell_name_1.{num5}:{page}", spell.Name);
+      stamper.AcroFields.SetFieldValue($"spell_description_1.{num5}:{page}", spell.Description);
+      stamper.AcroFields.SetFieldValue($"spell_casting_time_1.{num5}:{page}", spell.CastingTime);
+      stamper.AcroFields.SetFieldValue($"spell_casting_range_1.{num5}:{page}", spell.Range);
+      stamper.AcroFields.SetFieldValue($"spell_casting_duration_1.{num5}:{page}", spell.Duration);
+      stamper.AcroFields.SetFieldValue($"spell_casting_components_1.{num5}:{page}", spell.Components);
+      stamper.AcroFields.SetFieldValue($"spell_casting_school_1.{num5}:{page}", spell.School);
       ++num5;
     }
     int num6 = num5 + 1;
     foreach (CharacterSheetSpellcastingPageExportContent.SpellExportContent spell in export.Spells5.Spells)
     {
-      stamper.AcroFields.SetField($"spell_prepared_1.{num6}:{page}", spell.IsPrepared || spell.AlwaysPrepared ? "Yes" : "No");
-      stamper.AcroFields.SetField($"spell_name_1.{num6}:{page}", spell.Name);
-      stamper.AcroFields.SetField($"spell_description_1.{num6}:{page}", spell.Description);
-      stamper.AcroFields.SetField($"spell_casting_time_1.{num6}:{page}", spell.CastingTime);
-      stamper.AcroFields.SetField($"spell_casting_range_1.{num6}:{page}", spell.Range);
-      stamper.AcroFields.SetField($"spell_casting_duration_1.{num6}:{page}", spell.Duration);
-      stamper.AcroFields.SetField($"spell_casting_components_1.{num6}:{page}", spell.Components);
-      stamper.AcroFields.SetField($"spell_casting_school_1.{num6}:{page}", spell.School);
+      stamper.AcroFields.SetFieldValue($"spell_prepared_1.{num6}:{page}", spell.IsPrepared || spell.AlwaysPrepared ? "Yes" : "No");
+      stamper.AcroFields.SetFieldValue($"spell_name_1.{num6}:{page}", spell.Name);
+      stamper.AcroFields.SetFieldValue($"spell_description_1.{num6}:{page}", spell.Description);
+      stamper.AcroFields.SetFieldValue($"spell_casting_time_1.{num6}:{page}", spell.CastingTime);
+      stamper.AcroFields.SetFieldValue($"spell_casting_range_1.{num6}:{page}", spell.Range);
+      stamper.AcroFields.SetFieldValue($"spell_casting_duration_1.{num6}:{page}", spell.Duration);
+      stamper.AcroFields.SetFieldValue($"spell_casting_components_1.{num6}:{page}", spell.Components);
+      stamper.AcroFields.SetFieldValue($"spell_casting_school_1.{num6}:{page}", spell.School);
       ++num6;
     }
     int num7 = num6 + 1;
     foreach (CharacterSheetSpellcastingPageExportContent.SpellExportContent spell in export.Spells6.Spells)
     {
-      stamper.AcroFields.SetField($"spell_prepared_1.{num7}:{page}", spell.IsPrepared || spell.AlwaysPrepared ? "Yes" : "No");
-      stamper.AcroFields.SetField($"spell_name_1.{num7}:{page}", spell.Name);
-      stamper.AcroFields.SetField($"spell_description_1.{num7}:{page}", spell.Description);
-      stamper.AcroFields.SetField($"spell_casting_time_1.{num7}:{page}", spell.CastingTime);
-      stamper.AcroFields.SetField($"spell_casting_range_1.{num7}:{page}", spell.Range);
-      stamper.AcroFields.SetField($"spell_casting_duration_1.{num7}:{page}", spell.Duration);
-      stamper.AcroFields.SetField($"spell_casting_components_1.{num7}:{page}", spell.Components);
-      stamper.AcroFields.SetField($"spell_casting_school_1.{num7}:{page}", spell.School);
+      stamper.AcroFields.SetFieldValue($"spell_prepared_1.{num7}:{page}", spell.IsPrepared || spell.AlwaysPrepared ? "Yes" : "No");
+      stamper.AcroFields.SetFieldValue($"spell_name_1.{num7}:{page}", spell.Name);
+      stamper.AcroFields.SetFieldValue($"spell_description_1.{num7}:{page}", spell.Description);
+      stamper.AcroFields.SetFieldValue($"spell_casting_time_1.{num7}:{page}", spell.CastingTime);
+      stamper.AcroFields.SetFieldValue($"spell_casting_range_1.{num7}:{page}", spell.Range);
+      stamper.AcroFields.SetFieldValue($"spell_casting_duration_1.{num7}:{page}", spell.Duration);
+      stamper.AcroFields.SetFieldValue($"spell_casting_components_1.{num7}:{page}", spell.Components);
+      stamper.AcroFields.SetFieldValue($"spell_casting_school_1.{num7}:{page}", spell.School);
       ++num7;
     }
     foreach (CharacterSheetSpellcastingPageExportContent.SpellExportContent spell in export.Spells7.Spells)
     {
-      stamper.AcroFields.SetField($"spell_prepared_1.{num7}:{page}", spell.IsPrepared || spell.AlwaysPrepared ? "Yes" : "No");
-      stamper.AcroFields.SetField($"spell_name_1.{num7}:{page}", spell.Name);
-      stamper.AcroFields.SetField($"spell_description_1.{num7}:{page}", spell.Description);
-      stamper.AcroFields.SetField($"spell_casting_time_1.{num7}:{page}", spell.CastingTime);
-      stamper.AcroFields.SetField($"spell_casting_range_1.{num7}:{page}", spell.Range);
-      stamper.AcroFields.SetField($"spell_casting_duration_1.{num7}:{page}", spell.Duration);
-      stamper.AcroFields.SetField($"spell_casting_components_1.{num7}:{page}", spell.Components);
-      stamper.AcroFields.SetField($"spell_casting_school_1.{num7}:{page}", spell.School);
+      stamper.AcroFields.SetFieldValue($"spell_prepared_1.{num7}:{page}", spell.IsPrepared || spell.AlwaysPrepared ? "Yes" : "No");
+      stamper.AcroFields.SetFieldValue($"spell_name_1.{num7}:{page}", spell.Name);
+      stamper.AcroFields.SetFieldValue($"spell_description_1.{num7}:{page}", spell.Description);
+      stamper.AcroFields.SetFieldValue($"spell_casting_time_1.{num7}:{page}", spell.CastingTime);
+      stamper.AcroFields.SetFieldValue($"spell_casting_range_1.{num7}:{page}", spell.Range);
+      stamper.AcroFields.SetFieldValue($"spell_casting_duration_1.{num7}:{page}", spell.Duration);
+      stamper.AcroFields.SetFieldValue($"spell_casting_components_1.{num7}:{page}", spell.Components);
+      stamper.AcroFields.SetFieldValue($"spell_casting_school_1.{num7}:{page}", spell.School);
       ++num7;
     }
     int num8 = num7 + 1;
     foreach (CharacterSheetSpellcastingPageExportContent.SpellExportContent spell in export.Spells8.Spells)
     {
-      stamper.AcroFields.SetField($"spell_prepared_1.{num8}:{page}", spell.IsPrepared || spell.AlwaysPrepared ? "Yes" : "No");
-      stamper.AcroFields.SetField($"spell_name_1.{num8}:{page}", spell.Name);
-      stamper.AcroFields.SetField($"spell_description_1.{num8}:{page}", spell.Description);
-      stamper.AcroFields.SetField($"spell_casting_time_1.{num8}:{page}", spell.CastingTime);
-      stamper.AcroFields.SetField($"spell_casting_range_1.{num8}:{page}", spell.Range);
-      stamper.AcroFields.SetField($"spell_casting_duration_1.{num8}:{page}", spell.Duration);
-      stamper.AcroFields.SetField($"spell_casting_components_1.{num8}:{page}", spell.Components);
-      stamper.AcroFields.SetField($"spell_casting_school_1.{num8}:{page}", spell.School);
+      stamper.AcroFields.SetFieldValue($"spell_prepared_1.{num8}:{page}", spell.IsPrepared || spell.AlwaysPrepared ? "Yes" : "No");
+      stamper.AcroFields.SetFieldValue($"spell_name_1.{num8}:{page}", spell.Name);
+      stamper.AcroFields.SetFieldValue($"spell_description_1.{num8}:{page}", spell.Description);
+      stamper.AcroFields.SetFieldValue($"spell_casting_time_1.{num8}:{page}", spell.CastingTime);
+      stamper.AcroFields.SetFieldValue($"spell_casting_range_1.{num8}:{page}", spell.Range);
+      stamper.AcroFields.SetFieldValue($"spell_casting_duration_1.{num8}:{page}", spell.Duration);
+      stamper.AcroFields.SetFieldValue($"spell_casting_components_1.{num8}:{page}", spell.Components);
+      stamper.AcroFields.SetFieldValue($"spell_casting_school_1.{num8}:{page}", spell.School);
       ++num8;
     }
     int num9 = num8 + 1;
     foreach (CharacterSheetSpellcastingPageExportContent.SpellExportContent spell in export.Spells9.Spells)
     {
-      stamper.AcroFields.SetField($"spell_prepared_1.{num9}:{page}", spell.IsPrepared || spell.AlwaysPrepared ? "Yes" : "No");
-      stamper.AcroFields.SetField($"spell_name_1.{num9}:{page}", spell.Name);
-      stamper.AcroFields.SetField($"spell_description_1.{num9}:{page}", spell.Description);
-      stamper.AcroFields.SetField($"spell_casting_time_1.{num9}:{page}", spell.CastingTime);
-      stamper.AcroFields.SetField($"spell_casting_range_1.{num9}:{page}", spell.Range);
-      stamper.AcroFields.SetField($"spell_casting_duration_1.{num9}:{page}", spell.Duration);
-      stamper.AcroFields.SetField($"spell_casting_components_1.{num9}:{page}", spell.Components);
-      stamper.AcroFields.SetField($"spell_casting_school_1.{num9}:{page}", spell.School);
+      stamper.AcroFields.SetFieldValue($"spell_prepared_1.{num9}:{page}", spell.IsPrepared || spell.AlwaysPrepared ? "Yes" : "No");
+      stamper.AcroFields.SetFieldValue($"spell_name_1.{num9}:{page}", spell.Name);
+      stamper.AcroFields.SetFieldValue($"spell_description_1.{num9}:{page}", spell.Description);
+      stamper.AcroFields.SetFieldValue($"spell_casting_time_1.{num9}:{page}", spell.CastingTime);
+      stamper.AcroFields.SetFieldValue($"spell_casting_range_1.{num9}:{page}", spell.Range);
+      stamper.AcroFields.SetFieldValue($"spell_casting_duration_1.{num9}:{page}", spell.Duration);
+      stamper.AcroFields.SetFieldValue($"spell_casting_components_1.{num9}:{page}", spell.Components);
+      stamper.AcroFields.SetFieldValue($"spell_casting_school_1.{num9}:{page}", spell.School);
       ++num9;
     }
   }
@@ -3842,7 +3846,7 @@ label_47:
         content.Experience
       }
     })
-      stamper.AcroFields.SetField(keyValuePair.Key, keyValuePair.Value);
+      stamper.AcroFields.SetFieldValue(keyValuePair.Key, keyValuePair.Value);
     foreach (KeyValuePair<string, string> keyValuePair in new Dictionary<string, string>()
     {
       {
@@ -3894,7 +3898,7 @@ label_47:
         content.CharismaModifier
       }
     })
-      stamper.AcroFields.SetField(keyValuePair.Key, keyValuePair.Value);
+      stamper.AcroFields.SetFieldValue(keyValuePair.Key, keyValuePair.Value);
     foreach (KeyValuePair<string, string> keyValuePair in new Dictionary<string, string>()
     {
       {
@@ -4238,7 +4242,7 @@ label_47:
         content.Flaws
       }
     })
-      stamper.AcroFields.SetField(keyValuePair.Key, keyValuePair.Value);
+      stamper.AcroFields.SetFieldValue(keyValuePair.Key, keyValuePair.Value);
     if (this.Configuration.IncludeFormatting)
       return;
     foreach (KeyValuePair<string, string> keyValuePair in new Dictionary<string, string>()
@@ -4252,7 +4256,7 @@ label_47:
         content.FeaturesAndTraitsField
       }
     })
-      stamper.AcroFields.SetField(keyValuePair.Key, keyValuePair.Value);
+      stamper.AcroFields.SetFieldValue(keyValuePair.Key, keyValuePair.Value);
     this.GenerateFeatureCards(stamper, content);
   }
 
@@ -4333,10 +4337,10 @@ label_47:
         content.Trinket
       }
     })
-      stamper.AcroFields.SetField(keyValuePair.Key, keyValuePair.Value, false);
+      stamper.AcroFields.SetFieldValue(keyValuePair.Key, keyValuePair.Value);
     try
     {
-      AcroFields.FieldPosition fieldPosition = stamper.AcroFields.GetFieldPositions("background_portrait_image").FirstOrDefault<AcroFields.FieldPosition>();
+      PdfLayoutExtensions.FieldPosition fieldPosition = stamper.AcroFields.GetWidgetPositions("background_portrait_image").FirstOrDefault<PdfLayoutExtensions.FieldPosition>();
       if (fieldPosition != null)
       {
         PushbuttonField pushbuttonField1 = new PushbuttonField(stamper.Writer, fieldPosition.position, "background_portrait_image-replaced");
@@ -4354,7 +4358,7 @@ label_47:
     }
     try
     {
-      AcroFields.FieldPosition fieldPosition = stamper.AcroFields.GetFieldPositions("background_organization_image").FirstOrDefault<AcroFields.FieldPosition>();
+      PdfLayoutExtensions.FieldPosition fieldPosition = stamper.AcroFields.GetWidgetPositions("background_organization_image").FirstOrDefault<PdfLayoutExtensions.FieldPosition>();
       if (fieldPosition == null || string.IsNullOrWhiteSpace(content.OrganizationSymbol))
         return;
       PushbuttonField pushbuttonField3 = new PushbuttonField(stamper.Writer, fieldPosition.position, "background_organization_image-replaced");
@@ -4431,9 +4435,8 @@ label_47:
           paragraph.Add((IElement) new Chunk("This is a test using an ", font1));
           paragraph.Add((IElement) new Chunk("italic", font2));
           paragraph.Add((IElement) new Chunk(" font.\r\n", font1));
-          foreach (Chunk chunk in (IEnumerable<Chunk>) paragraph.Chunks)
-            chunk.setLineHeight(7f);
           ColumnText columnText = new ColumnText(instance.DirectContent);
+          columnText.SetLeading(7f, 0f);
           columnText.SetSimpleColumn(new Rectangle((float) llx1, 10f, 200f, 200f));
           columnText.AddText((Phrase) paragraph);
           columnText.AddText((Phrase) paragraph);

@@ -1,0 +1,5991 @@
+{
+  "schemaVersion": 1,
+  "scope": "Windows x64 and Android ARM64 stable packages plus assets included in corresponding source. Windows ARM64 and macOS experimental; Web deferred.",
+  "groups": [
+    {
+      "id": "legacy-rules",
+      "name": "Reviewed SRD 5.1 rules and original integration code",
+      "state": "recorded",
+      "license": "CC-BY-4.0 AND MIT",
+      "evidence": [
+        "third-party/CONTENT-SCOPE.md",
+        "third-party/srd-baseline.json",
+        "third-party/SRD-ATTRIBUTION.md"
+      ],
+      "reason": "SRD-derived text retains CC-BY-4.0. Original selectors, compatibility code and app guidance retain MIT. Non-SRD definitions/prose removed; see the exact reviewed inventory."
+    },
+    {
+      "id": "starting-equipment",
+      "name": "Starting-equipment integration data",
+      "state": "recorded",
+      "license": "MIT",
+      "evidence": [
+        "third-party/CONTENT-SCOPE.md",
+        "LICENSE"
+      ],
+      "reason": "28 first-party ID/quantity/choice maps, with no descriptive text nodes or artwork. Adapters for optional imported definitions do not bundle those definitions."
+    },
+    {
+      "id": "legacy-help",
+      "name": "Original application help and stylesheet code",
+      "state": "recorded",
+      "license": "MIT",
+      "evidence": [
+        "third-party/CONTENT-SCOPE.md",
+        "LICENSE"
+      ],
+      "reason": "Copied rulebook narrative and design sample replaced with original help; application styles retain their existing project terms. Historical OGL text has a separate record."
+    },
+    {
+      "id": "legacy-gallery",
+      "name": "Companion portraits, organization symbols and dragonmarks",
+      "state": "recorded",
+      "license": "LicenseRef-Aurora-Redistribution-Permission",
+      "evidence": [
+        "third-party/LEGACY-ASSET-PERMISSION.md",
+        "docs/LEGACY_RESTORATION.md"
+      ],
+      "reason": "Maintainer confirmed redistribution of these exact legacy visuals and complete templates on 2026-10-23. Existing notices remain; standalone fonts and non-SRD book content are separately reviewed."
+    },
+    {
+      "id": "legacy-pdf-templates",
+      "name": "PDF sheet, card and page templates",
+      "state": "recorded",
+      "license": "LicenseRef-Aurora-Redistribution-Permission",
+      "evidence": [
+        "third-party/LEGACY-ASSET-PERMISSION.md",
+        "docs/LEGACY_RESTORATION.md"
+      ],
+      "reason": "Maintainer confirmed redistribution of these exact legacy visuals and complete templates on 2026-10-23. Existing notices remain; standalone fonts and non-SRD book content are separately reviewed."
+    },
+    {
+      "id": "legacy-card-background",
+      "name": "Card background image",
+      "state": "recorded",
+      "license": "LicenseRef-Aurora-Redistribution-Permission",
+      "evidence": [
+        "third-party/LEGACY-ASSET-PERMISSION.md",
+        "docs/LEGACY_RESTORATION.md"
+      ],
+      "reason": "Maintainer confirmed redistribution of these exact legacy visuals and complete templates on 2026-10-23. Existing notices remain; standalone fonts and non-SRD book content are separately reviewed."
+    },
+    {
+      "id": "legacy-default-portrait",
+      "name": "Bundled default character portrait",
+      "state": "recorded",
+      "license": "LicenseRef-Aurora-Redistribution-Permission",
+      "evidence": [
+        "third-party/LEGACY-ASSET-PERMISSION.md",
+        "docs/LEGACY_RESTORATION.md"
+      ],
+      "reason": "Maintainer confirmed redistribution of these exact legacy visuals and complete templates on 2026-10-23. Existing notices remain; standalone fonts and non-SRD book content are separately reviewed."
+    },
+    {
+      "id": "native-branding",
+      "name": "App icons and Reflections branding",
+      "state": "recorded",
+      "license": "MIT",
+      "evidence": [
+        "third-party/BRANDING-PROVENANCE.md",
+        "LICENSE",
+        "docs/branding/working-titles/README.md"
+      ],
+      "reason": "Maintainer confirmed creating Reflections and both companion working-title logos with assistant help; original project vector/documentation covered by project terms. Unused MAUI starter SVGs excluded."
+    },
+    {
+      "id": "legacy-source-assets",
+      "name": "Additional assets retained in the legacy project source",
+      "state": "recorded",
+      "license": "LicenseRef-Aurora-Redistribution-Permission",
+      "evidence": [
+        "third-party/LEGACY-ASSET-PERMISSION.md",
+        "docs/LEGACY_RESTORATION.md"
+      ],
+      "reason": "Maintainer confirmed redistribution of these exact legacy visuals and complete templates on 2026-10-23. Existing notices remain; standalone fonts and non-SRD book content are separately reviewed."
+    },
+    {
+      "id": "font-aurora.app-opensans-regular",
+      "name": "Open Sans Regular",
+      "state": "recorded",
+      "license": "Apache-2.0",
+      "component": "Open Sans Regular",
+      "evidence": [
+        "Bundled font name-table copyright/license records and https://www.apache.org/licenses/LICENSE-2.0.txt"
+      ]
+    },
+    {
+      "id": "font-aurora.documents-opensans-regular",
+      "name": "Open Sans PDF Regular",
+      "state": "recorded",
+      "license": "OFL-1.1",
+      "component": "Open Sans PDF Regular",
+      "evidence": [
+        "https://github.com/googlefonts/opensans/blob/bd7e37632246368c60fdcbd374dbf9bad11969b6/OFL.txt"
+      ]
+    },
+    {
+      "id": "font-aurora.documents-opensans-bold",
+      "name": "Open Sans PDF Bold",
+      "state": "recorded",
+      "license": "OFL-1.1",
+      "component": "Open Sans PDF Bold",
+      "evidence": [
+        "https://github.com/googlefonts/opensans/blob/bd7e37632246368c60fdcbd374dbf9bad11969b6/OFL.txt"
+      ]
+    },
+    {
+      "id": "font-aurora.documents-opensans-italic",
+      "name": "Open Sans PDF Italic",
+      "state": "recorded",
+      "license": "OFL-1.1",
+      "component": "Open Sans PDF Italic",
+      "evidence": [
+        "https://github.com/googlefonts/opensans/blob/bd7e37632246368c60fdcbd374dbf9bad11969b6/OFL.txt"
+      ]
+    },
+    {
+      "id": "font-aurora.documents-opensans-bolditalic",
+      "name": "Open Sans PDF BoldItalic",
+      "state": "recorded",
+      "license": "OFL-1.1",
+      "component": "Open Sans PDF BoldItalic",
+      "evidence": [
+        "https://github.com/googlefonts/opensans/blob/bd7e37632246368c60fdcbd374dbf9bad11969b6/OFL.txt"
+      ]
+    },
+    {
+      "id": "font-legacy-nodesto",
+      "name": "Nodesto Caps Condensed legacy display font",
+      "state": "recorded",
+      "license": "CC0-1.0",
+      "component": "Nodesto Caps Condensed",
+      "evidence": [
+        "Embedded font name-table CC0 dedication, author Solbera",
+        "https://creativecommons.org/publicdomain/zero/1.0/legalcode.en"
+      ]
+    },
+    {
+      "id": "verified-srd-spells",
+      "name": "Verified SRD 5.1 spell baseline",
+      "state": "recorded",
+      "license": "CC-BY-4.0",
+      "evidence": [
+        "third-party/srd-spells.json",
+        "third-party/SRD-ATTRIBUTION.md",
+        "https://media.dndbeyond.com/compendium-images/srd/5.1/SRD_CC_v5.1.pdf"
+      ],
+      "reason": "319 licensed spell subjects, 17 canonical names with compatible IDs, complete restored descriptions and unchanged calculation setters; exact source pages and hash in srd-spells.json."
+    },
+    {
+      "id": "historical-ogl",
+      "name": "Preserved historical OGL notice",
+      "state": "recorded",
+      "license": "Open Game License 1.0a",
+      "evidence": [
+        "Aurora.Logic/Resources/Documents/description-ogl.html",
+        "third-party/SRD-ATTRIBUTION.md"
+      ],
+      "reason": "Historical legal text preserved verbatim; new baseline relies on CC-BY-4.0, not an inferred grant for other content."
+    }
+  ],
+  "files": [
+    {
+      "path": "Aurora.App/Resources/AppIcon/appicon.png",
+      "sha256": "c126917c8b36d5175c1d475db10d70dbf35ccd31e65f7ee4221488ecbc79a781",
+      "group": "native-branding",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.App/Resources/Fonts/OpenSans-Regular.ttf",
+      "sha256": "2dce8399579c789af0958042051c0afa141a0e403e0d824a4f3f7efa7b468021",
+      "group": "font-aurora.app-opensans-regular",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.App/Resources/Raw/StartingEquipment/acolyte.starting-equipment.xml",
+      "sha256": "123a0ef8c0b5b331aa5076e1df40678b2499c8fe3134c9be82905d50dc9ac0e0",
+      "group": "starting-equipment",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.App/Resources/Raw/StartingEquipment/artificer.starting-equipment.xml",
+      "sha256": "5e754db4334b1cc854b3b6e1c0c9c32040b380c14075d67f21b410bfd32a2eff",
+      "group": "starting-equipment",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.App/Resources/Raw/StartingEquipment/barbarian.starting-equipment.xml",
+      "sha256": "989dde060c8706de8684f929599003888f8e94137d7fbd4803d7bd18f0459f85",
+      "group": "starting-equipment",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.App/Resources/Raw/StartingEquipment/bard.starting-equipment.xml",
+      "sha256": "5d0338f537d6a29ffef7769b007f7b861a4ed3208e7c68b931654e0c6daec8f2",
+      "group": "starting-equipment",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.App/Resources/Raw/StartingEquipment/charlatan.starting-equipment.xml",
+      "sha256": "ee043c9e9b6ba5e80c16093f91469cb6893cc95fd88565d281ccfe0cfd1ca710",
+      "group": "starting-equipment",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.App/Resources/Raw/StartingEquipment/cleric.starting-equipment.xml",
+      "sha256": "5b04a58f1e998607c5f447e2f0f0489d439411a628eb93ab836d9a6b572948d6",
+      "group": "starting-equipment",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.App/Resources/Raw/StartingEquipment/criminal.starting-equipment.xml",
+      "sha256": "252d4d88030c7a49b29cc51690166b253a5e174b1bdaa184a31d620c632febab",
+      "group": "starting-equipment",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.App/Resources/Raw/StartingEquipment/druid.starting-equipment.xml",
+      "sha256": "7111ccc0cc74e8ff3358b3a961d15e0416c26416356b425e5f5666feed946502",
+      "group": "starting-equipment",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.App/Resources/Raw/StartingEquipment/entertainer.starting-equipment.xml",
+      "sha256": "66d40f37e1e9d25c7ed008f4b99048e266f65ccc2452dbadb4978d4493871ee8",
+      "group": "starting-equipment",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.App/Resources/Raw/StartingEquipment/fighter.starting-equipment.xml",
+      "sha256": "82b5bb67c4a75a78de5151cfa88bf2f69873339cf80bda37e8a6c035de302bd8",
+      "group": "starting-equipment",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.App/Resources/Raw/StartingEquipment/folk-hero.starting-equipment.xml",
+      "sha256": "923937af75f5cc0a81c2c922db1252c9da6ede14b625b2af942a76afcb4841de",
+      "group": "starting-equipment",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.App/Resources/Raw/StartingEquipment/guild-artisan.starting-equipment.xml",
+      "sha256": "4c3db5bb7bba0798f36ba9ed6b9c0d69221f479bdcf572545bf018bdbf35b51f",
+      "group": "starting-equipment",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.App/Resources/Raw/StartingEquipment/hermit.starting-equipment.xml",
+      "sha256": "2740d4e38fe9889b8dd38de5d71ebf7c467abbe8ef1da47cffa1a6da75b4d3d1",
+      "group": "starting-equipment",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.App/Resources/Raw/StartingEquipment/monk.starting-equipment.xml",
+      "sha256": "aacdcd14720b40b33264cde4a9331694fc7081fe55673a32a92c23aa36f747e8",
+      "group": "starting-equipment",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.App/Resources/Raw/StartingEquipment/noble.starting-equipment.xml",
+      "sha256": "d9a5a784b63d9647d4392eee3f4d527a30e587d6cf863e218f9d69cfa70df8de",
+      "group": "starting-equipment",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.App/Resources/Raw/StartingEquipment/outlander.starting-equipment.xml",
+      "sha256": "27ce5e7d9815c4d16747e12e59d5f4527d93d9fe6708cf583af90fbe95417d6b",
+      "group": "starting-equipment",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.App/Resources/Raw/StartingEquipment/paladin.starting-equipment.xml",
+      "sha256": "3a27a6b4f69ed4b9af07c84871a98d20b4a5f39d044c30a70a608d23c1225a91",
+      "group": "starting-equipment",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.App/Resources/Raw/StartingEquipment/players-handbook-2024-backgrounds.starting-equipment.xml",
+      "sha256": "c75e184ac1830368d55a5787caa758c6bee270487b95c6775f09650f818a2ec3",
+      "group": "starting-equipment",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.App/Resources/Raw/StartingEquipment/players-handbook-2024-classes.starting-equipment.xml",
+      "sha256": "27ef035f15e621d5ae3d5aba334b0af3fbf651c5fbce6c1cd16af138f94fbf51",
+      "group": "starting-equipment",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.App/Resources/Raw/StartingEquipment/ranger.starting-equipment.xml",
+      "sha256": "df6512d45b1b76b1884426ffdc57dbbbd170292b1b4928184b00c4ed9af19b75",
+      "group": "starting-equipment",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.App/Resources/Raw/StartingEquipment/rogue.starting-equipment.xml",
+      "sha256": "f7b271e7a6a73fec182366e01256253cd38040020bc90652b28abc8f6b669cf2",
+      "group": "starting-equipment",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.App/Resources/Raw/StartingEquipment/sage.starting-equipment.xml",
+      "sha256": "6b19b3075e2d9fc4ba1f21dc0096a3df57be60ffec3ff6cbb9814497da029d76",
+      "group": "starting-equipment",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.App/Resources/Raw/StartingEquipment/sailor.starting-equipment.xml",
+      "sha256": "96b17b7c916a45a606bcfe889af15ebca3a665c2e857af1079cdf992f2b43ab2",
+      "group": "starting-equipment",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.App/Resources/Raw/StartingEquipment/soldier.starting-equipment.xml",
+      "sha256": "8593fc86f3d1a5e366447364f5067f41a23d9b82a436ffc25ee27ff5a73768a3",
+      "group": "starting-equipment",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.App/Resources/Raw/StartingEquipment/sorcerer.starting-equipment.xml",
+      "sha256": "0b4ce0a69d8daeed17c10633b7d584c9e8a4ef459198291fc5f7631fd05f4ba0",
+      "group": "starting-equipment",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.App/Resources/Raw/StartingEquipment/urchin.starting-equipment.xml",
+      "sha256": "74664d3b4c39a617def0f91563a1cdb04363dfe7064e76d6d40f303ba985b77e",
+      "group": "starting-equipment",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.App/Resources/Raw/StartingEquipment/warlock.starting-equipment.xml",
+      "sha256": "2b3c664063305a163f54109f929ad3f1fa73b485e603d6aa3e1710264473856c",
+      "group": "starting-equipment",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.App/Resources/Raw/StartingEquipment/wizard.starting-equipment.xml",
+      "sha256": "49d0d1cd3916979ddf44e8abde82e987bafcb12d6b58a02da0cff04240299975",
+      "group": "starting-equipment",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.App/wwwroot/brand/aurora-appicon.png",
+      "sha256": "c126917c8b36d5175c1d475db10d70dbf35ccd31e65f7ee4221488ecbc79a781",
+      "group": "native-branding",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.App/wwwroot/brand/aurora-mark.svg",
+      "sha256": "182e71330d8f88b87686c6e34a0b449d3c5fa65e64add7cd96bde25a40115aec",
+      "group": "native-branding",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.App/wwwroot/brand/aurora-reflections-logo.png",
+      "sha256": "4328c804d8efde5027643c3a8b7d019eec1a0989cbf0ffafb148ddd7cec44da7",
+      "group": "native-branding",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Documents/Resources/Aurora/Pages/equipment.pdf",
+      "sha256": "289af8ba634af85595fe6614e796bfdd8cbaa16cb76cb0910bb89cb0a30785f9",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Documents/Resources/Aurora/Pages/equipment_page.pdf",
+      "sha256": "9f2bc8a8e1c0e2714ab620991445afca30a3c340c8c5218e2af83cdaeb543345",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Documents/Resources/Aurora/Pages/notes_page.pdf",
+      "sha256": "4a1a6ec88b6dc32d8307a3063d54b1ae68fc65b6601d53ba5b1d51535bb3344c",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Documents/Resources/Fonts/OpenSans-Bold.ttf",
+      "sha256": "27da758f4dcac9a65abe914c13b463b42982b9909bc65713424099f4810bd1e6",
+      "group": "font-aurora.documents-opensans-bold",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Documents/Resources/Fonts/OpenSans-BoldItalic.ttf",
+      "sha256": "d672a770037104b6af45e1336b3d3c1729c8aea940f81e010f5a8a7319c29a21",
+      "group": "font-aurora.documents-opensans-bolditalic",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Documents/Resources/Fonts/OpenSans-Italic.ttf",
+      "sha256": "93bc1bb6abf4e6b7c75d7131714061d5b57cc478abcabe4cb3519bb38fb917aa",
+      "group": "font-aurora.documents-opensans-italic",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Documents/Resources/Fonts/OpenSans-Regular.ttf",
+      "sha256": "c53aceea2dcf5b4098099c0c4d0a061d17e178a049317b42a422b1a9f7f8eb59",
+      "group": "font-aurora.documents-opensans-regular",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/OrganizationSymbols/arcane brotherhood.png",
+      "sha256": "2281e9090799b812334783fb9be0b45d2b6bb380102454892cd165fdfb6dbda2",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/OrganizationSymbols/bane.jpg",
+      "sha256": "dd51919d4dc435869924e1b36071fa267df377cf1da6da5c381f02f790acdc53",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/OrganizationSymbols/beshaba.jpg",
+      "sha256": "c9faa6c163a5c7758dcfe8e8810e3c2b07486a2b1e23e5e8b5bef572404833da",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/OrganizationSymbols/cormyr.jpg",
+      "sha256": "d0e68afc55ded2105a5d67b0ebe91b65dfd5b6fb6135ebaf3e5667c03aa2e491",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/OrganizationSymbols/cult of the dragon.jpg",
+      "sha256": "13f9f4da96305e0af49da5ff84e345c4199c13debaa091759343f28b14f7ca59",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/OrganizationSymbols/cyric.jpg",
+      "sha256": "ca6befbe7ff42d22d527cb5e46fe315c7a76d431bb31650a720d85f6c0cef3a0",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/OrganizationSymbols/eilistraee.jpg",
+      "sha256": "8b6d043065412a682859a33ab94eb26eaf6f4c2237a59a7f4f95d822793aac17",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/OrganizationSymbols/fire knives.jpg",
+      "sha256": "241962692f41ca30af3e77f8bb61e3ee33a2f1150b1ae6df1bca08883f1d481e",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/OrganizationSymbols/harpers.jpg",
+      "sha256": "6723744a15a853b79472060d09ce18321420a0ee001ea7fa792afb3cdcc0b0ae",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/OrganizationSymbols/helm.jpg",
+      "sha256": "ee1726fd3e745519605e6aa57a81e22d99b495abaf3be33d62accf85a5a319d9",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/OrganizationSymbols/ilmater.jpg",
+      "sha256": "2b94e58dc19de1686efe90c492db5071f855544c92654caccfc33f290be64d8c",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/OrganizationSymbols/iron throne.jpg",
+      "sha256": "78c055dff444f7f2b464b495204b4588c144498dcaec8feaf42b39f38a23a984",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/OrganizationSymbols/kossuth.jpg",
+      "sha256": "bef93889fd3b6ed78c72fdb78a1cdf69f2accb4e5344a3cb95e97ed5f90af802",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/OrganizationSymbols/lords alliance.jpg",
+      "sha256": "c0438ea8bbc4559d704505222d7a3a16a386833b5e4b08ba30b1867c61661318",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/OrganizationSymbols/mask.jpg",
+      "sha256": "1cf32ff3543c4c476f8a14f3784eb741965ccfcd5832db272add34f35916b66d",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/OrganizationSymbols/mystra.jpg",
+      "sha256": "e8d99226ec9217c49196233e9c677023eb651fd7002b58be731d1d354d8c125f",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/OrganizationSymbols/pelor.jpg",
+      "sha256": "7d45f62daf2b3ce56e1ddcbd9591f4f1e1e13f500a18621fece41fbafca3cb23",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/OrganizationSymbols/red wizards.jpg",
+      "sha256": "d9496dd1e120884f714efbbf12e5fb283803005d72a7c2e847cd8d4f7385d06a",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/OrganizationSymbols/shar.jpg",
+      "sha256": "12c5c6683b6040fe0f69f9be3981bdd126fb36c19f997ad3f7ea0af1a7536029",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/OrganizationSymbols/shaundakul.jpg",
+      "sha256": "ac338aa9593c850279199900ee77a96b0a8db40e9c12f5530fb1addde5d86f2d",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/OrganizationSymbols/sune.jpg",
+      "sha256": "215c9683424b851d141f8efecc6d8420288a84ab6471b06c7d6ae7fa9fd1ac72",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/OrganizationSymbols/tempus.jpg",
+      "sha256": "723d87574ef99837da6b1799fe4773b448018341c1bd43cc513f09d8501e87f9",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/OrganizationSymbols/waterdeep.jpg",
+      "sha256": "3eb2fea20fb16220c5a16bc7a2331d38b048a7a8e87faa30549f475be42ee25f",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/Page/background.pdf",
+      "sha256": "b8dcf7b7d4318bb610596beffce9688a86618aceec6ab0c28819491f788ba1c4",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/Page/companion.pdf",
+      "sha256": "815dcb1ba7cecb070cdf728038f5be07a19a18375e521ee3125f592120eaca98",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/Page/details.pdf",
+      "sha256": "254181b8a766a2025688afdf9dfe0c0be18989299164a6a10f3dd71e2123a36e",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/Page/details_2.pdf",
+      "sha256": "58c785d49f4969049253c20904e826c571fa7b9362491eb9cce1799bece44dd7",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/Page/equipmentpage.pdf",
+      "sha256": "289af8ba634af85595fe6614e796bfdd8cbaa16cb76cb0910bb89cb0a30785f9",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/Partial/Spellcasting/column_entry.pdf",
+      "sha256": "10ed4d712345723f93b34e4469ec26fde40589df0c19f5c8d18f57cc48e83373",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/Partial/Spellcasting/column_header.pdf",
+      "sha256": "17a6ecabf4d1d5ff5412179320a0374e14f37e5b9e1e5289cc90bbf010f6d343",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/Partial/Spellcasting/header.pdf",
+      "sha256": "c8e4d0fedc16644575e05a46b6ddc24b05a8c9568c619498725212e8cc862879",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/Partial/Spellcasting/red_spells_bottom.pdf",
+      "sha256": "e7dbdab7f36ef355d1c7112f72d894f3d4b20f9e9dcb933cc60696ab966e1845",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/Partial/Spellcasting/red_spells_header.pdf",
+      "sha256": "e5a21dd57cea31e4ba7ccd6e870827b57ba51a8a46386fa6dd92cf765d323446",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/Partial/Spellcasting/red_spells_middle.pdf",
+      "sha256": "c4331278bc6f231d5936fc4df88b26c37136975b1c20922a037c375c7c80caef",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/Partial/Spellcasting/red_spells_top.pdf",
+      "sha256": "bea285f0504c4f0fe0a78b65260375cc261e12a43b10f0a2461beb9679c8c6de",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/Partial/Spellcasting/red_spells_top0.pdf",
+      "sha256": "e6a398976fa7d1df2eaef895c358b8ef500e3d58bcd9b5b374aabbef7416d0a9",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/Partial/Spellcasting/red_spells_top1.pdf",
+      "sha256": "c980ef2ccce59e4e333841e20bec81df9e4e0f6e1c30cd0f354c50ab0f44623d",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/Partial/Spellcasting/red_spells_top2.pdf",
+      "sha256": "36a7d0b06c39fd04715a93f9aa3aacec0db6798f0da4c123ee9a9ef3c8455b53",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/Partial/Spellcasting/red_spells_top3.pdf",
+      "sha256": "e7211c42ea4a9bf10e8552c53242ca1074f139e797e5a3af7dd30658daf4b8b1",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/Partial/Spellcasting/red_spells_top4.pdf",
+      "sha256": "dea776f28bcf6c341349305d2a907c888f722a0f2d1ad27c79d9d9889ff23ab2",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/Partial/Spellcasting/red_spells_top5.pdf",
+      "sha256": "3d412dd6dd2114169548c5164cbbe24c4a830d453e94717d8e6cdb8afd89ea4a",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/Partial/Spellcasting/red_spells_top6.pdf",
+      "sha256": "5fe60238b56cce7a76eb1d0d37aedd2f45878c6bd7f46bb34afbdff089327e91",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/Partial/Spellcasting/red_spells_top7.pdf",
+      "sha256": "d87fd0c5cfd828c542bad77a2e8d82140d2403c676106b178a8d84a0e0cecbc4",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/Partial/Spellcasting/red_spells_top8.pdf",
+      "sha256": "5984fd548836aff4f9dff597eb57f3773cbf26bb4d66f74968a3334811319c74",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/Partial/Spellcasting/red_spells_top9.pdf",
+      "sha256": "2f74739d2d7bcbe47d36a0ce004d7cad2f79f4b2eb86bc9a917b2dba3edb58ae",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/Partial/attackcard.pdf",
+      "sha256": "49362d12d92cf5a665c49061d2961070a1454e1716e6033e36abc875d71bfcb8",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/Partial/aurora_partial_spellcollection_bottom.pdf",
+      "sha256": "b207da8fe76be84f45af85147f88f347d0d5336d37362372f65097d04b4626e7",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/Partial/card.pdf",
+      "sha256": "46ce4d59fab18fe0962f4cf2873dffa66c822be4afa48e179db514438c2bb4bb",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/Partial/partial_100h.pdf",
+      "sha256": "5e0d59ba28566d499a5291c9cb68ff004ff8acd450114c30368f56bd8b028b35",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/Partial/partial_spellcasting_header.pdf",
+      "sha256": "a8b27aea420d3effa49b89496d20e0cacd694b76a38e8013bdb4450f592e177d",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/Partial/partial_spellcasting_section_bottom.pdf",
+      "sha256": "aa0774e3fedff21b30ad2d987ee511866259b1ab6f745ad903c4a99f480a519e",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/Partial/partial_spellcasting_section_center.pdf",
+      "sha256": "d2825cc0024c04b6a8d448968321727c8aa3bf55d6e66df36f55e592f155dcc3",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/Partial/partial_spellcasting_section_top.pdf",
+      "sha256": "825918213428053491224c8963c9e304846cc44cbb07b3c7376fc75454d523ae",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/Partial/spellcard.pdf",
+      "sha256": "f4f938e31c8842d5bada5bccb528d813b31cf08116dae7b7ad47b2d823963aae",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/aurora_background_flat.pdf",
+      "sha256": "416e24df0eace6bf34c072c358eef0c67d8ce9e997776da4932c4052c409ba8d",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/aurora_cards_generic_flat.pdf",
+      "sha256": "8721e10da6602560834d2118ca172138346d1532a90f0a1d82108b8b1e00dddf",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/aurora_cards_spells_flat.pdf",
+      "sha256": "3a5f7a925208811a398ae738cd8bb64387b2e2522313fcb28facd209e6ea4c5f",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/aurora_companion.pdf",
+      "sha256": "b1a93db968a0afc5745eb4483974a1596b52ff8eb77b11649db4e17bfa356cd3",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/aurora_details_flat.pdf",
+      "sha256": "030865181f178b77fb06803e0227e7315512ee9f4a9538fbd7eddda86bf1845b",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/aurora_spellcasting_flat.pdf",
+      "sha256": "fea88fd22f1c1b14378eeee5f9f83f69356e3b11f341b665f4a8fc8cf1fa18d5",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/aurora_spelldemo_flat.pdf",
+      "sha256": "55895c11fe5a2d06fea969275bf2c13d51652060c0595bf599cd4ebc71654b0c",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/aurorapagecompanion.pdf",
+      "sha256": "1d7a54d19c5990426db39841a2a69907275ca5dbce7d54f01d8e8a098451f0df",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/charactersheet.pdf",
+      "sha256": "8e7b282db42af119c46fef696b15e7430cb1e93bd09a478780623ca1a1908a48",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/detailspage.pdf",
+      "sha256": "3e526b9bfd61a6b5452fb0e2c8cfba8120a61ec05334864cb1e22e5ccfb7de36",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/flat_details.pdf",
+      "sha256": "95f4ae6130d70a746bf6471696841530177cc3c7d67ed04d4215ea55ce4e7c77",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/layout_page_1.pdf",
+      "sha256": "f679ab708fdc068bed5401dfda0e9abc16d35bd4a0536ef4f8b304b797cd471f",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/sheet_background.pdf",
+      "sha256": "19198012d55a097b64f0d7541bd31c36d233c5be6e927bb592d876ecc4d2a770",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/sheet_character.pdf",
+      "sha256": "6a4ba96b2d4c0e8bf0786d62e151bd602b01c6a6d59a1be8114aa586601d3fe1",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/sheet_character_details.pdf",
+      "sha256": "1d9d9e280a371c0b23f35738bca206c5101ec85d004264b22f077b0a3db47f75",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/sheet_companion.pdf",
+      "sha256": "c4ec88d85db5b61c5b5d353ef81827fb1fd6124b8b3834f8fc0e95dedca30d1a",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/sheet_details.pdf",
+      "sha256": "f1fa96c35ac3bc91eb95dad15b4b5baca4b73ec49c8450f58f3b0a46958cd4b0",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/Sheets/sheet_spellcasting.pdf",
+      "sha256": "c0a50a0fbd225ec45441025575f788b9172c36699978fcda7ae68bc2ac5130b2",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/abilities-backdrop.png",
+      "sha256": "b10fed4135be2cd5dd0d173a9845d262175edcdc1c49ae606a453ffea90e3182",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/aurora-illithid.png",
+      "sha256": "f61a5f844b670edd379f4c335cb9792e8a85d7f9813d098d7d08811a8d2ed8da",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/c3wizard3.png",
+      "sha256": "c645e516bc904939b1b3f7f9385d6cedf4a8c200c3c238e392eb2dfc96a01b8e",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/contract.png",
+      "sha256": "dd186d9a53bf93a7e31cb176effc00f7226411a28cfcbd0b91197e77409ec10e",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/deck.png",
+      "sha256": "a50bbe9ec10be3a93d8f4ee22b5790dec3dd0377e63a740c35d9c5aa1daad4d6",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/elf.png",
+      "sha256": "e7f23b0ff5e18fafa57b69a4c6b79f1fb9dee40e82d3906ed2c1f779cfbe5698",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/exploration.png",
+      "sha256": "19703a6fc7d947a038b19b68945837093affcb59fbac281a1ec40fff7fff8073",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/ggr/streets.png",
+      "sha256": "f9ad298e2a6a107bbeecd802663aa56237d6eb477da200650fbfb64c9abf2c9c",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/guilds/1.png",
+      "sha256": "50d4601d2b17b983f0dab83d3b08af1274248306ec89e7d0adbbd7a4cdfdccc4",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/guilds/10.png",
+      "sha256": "47d531f626e62ca3152fa88037b9dbb91b02a69ee38f26b463defaec23dfa121",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/guilds/2.png",
+      "sha256": "5765b45dfdb32b9e2a4a474436dd51e7497db35277912f0838498b0cf99f0e44",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/guilds/3.png",
+      "sha256": "fcb027a37e4be88dd8b8f7c46f02cd99703e1898a9b8d2547eb8ab892ef122a8",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/guilds/4.png",
+      "sha256": "113dad2bc8df47490f7681fa0e705d8b1551c7347d6f5d65c813ca9d7de623cc",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/guilds/5.png",
+      "sha256": "2d531d7cc93b8d501d94033e998e1ef9b47c93166baf271e821bfc8b4d83fa91",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/guilds/6.png",
+      "sha256": "0e6e4ee692ede6ff16214587fb93cecaf11888f91017cc9e3b00191ac011cb68",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/guilds/7.png",
+      "sha256": "0569ac33de82398a846c2043ba586efcbc41e3f29c8aac5906f92b6b93b0809d",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/guilds/8.png",
+      "sha256": "cf245c28ced6e2b10504f13cd7db1c570dd6aedcfaca4ae5d78aa350adebe739",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/guilds/9.png",
+      "sha256": "4c2f6b18f42a3b328afc65df5be097f355fe529c144774e1b88df2a8dd8e60f7",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/half-elf1.png",
+      "sha256": "388350e0a085e70f746418f736e839356b0b99e5106f5c2698efb1eaba3c74c0",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/halfling.png",
+      "sha256": "406694444550ebb4de65a0d1d32600ddcdd9efb2bd75725a09090c189271505a",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/ice_caverns.jpg",
+      "sha256": "b67f6d014543da5ca74043bd1d83cbfaf0187f234385824b567fafac0e0b2e0a",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/knight.jpg",
+      "sha256": "7a4baa489b5e567fbe3497360730ae91537771b9e5ce9d6a06938b0a604d07d5",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/logo-navbar.png",
+      "sha256": "f9399f87278cb6197cba538956205caf31ceb82193b89aee7d9e902383c6d9eb",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/logo.png",
+      "sha256": "8366dfc3d15e111aaed30b1ca0c3a28fbdc3db13e246dc8e8b17bdecce66d9c7",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/logo_shadow.png",
+      "sha256": "445427e085c66deb7896eff9f156f1cb6623da982dec293a17b5d68bafffe7e3",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/magic_scrolls.jpg",
+      "sha256": "e318a0fc79ff2d0cfb9e9abdda202d1b8aba47875f076db7f0be49001a2ad069",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/mining.png",
+      "sha256": "5b789d3a5ea3d6955959450f4fb707af9f7c13ce038b6fdf856d4407bd598bc1",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/raven.png",
+      "sha256": "53d41d441787c8f9f7cf01741ae8c931b11a32e756048b58bd5d5ee6ab6e9c7a",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/splash/eberron-underground.jpg",
+      "sha256": "61b29cd01d7f1d1e1175b9e9693a3d782ebf9840e0fb6b723e06b0dfe8e6176a",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/splash/fire.png",
+      "sha256": "88095cec1c46096785821f7e25496cb6748ced782e0b4304e0322443b9b905f2",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/splash/hydia.jpg",
+      "sha256": "f9f7bb8caf97d1897cb3652a4be7c3bcb02f62f5103fdcb194e3f83f1a61c2e9",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/splash/sahuagin.jpg",
+      "sha256": "f852c051942a4cc2cc0b435afa0d7e8d04901351ba7d7d6f0e1dedfb20026d0d",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/splash/splashoption.jpg",
+      "sha256": "4b374530b8b687d35e57a3722f6e2f16a93c678b59a7c34cd65ba26d0d93e3bd",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/splash/tavern.png",
+      "sha256": "0403c281b67efaae5baffd0c72a3805a3dff951ac602ed6b2a90fa45998dc101",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/splash/ur.png",
+      "sha256": "043232e5dd2cc7050844798e3342e8845b3b03bfeff9e762d0116bd58b507f36",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/splash/warrior-cosmos.jpg",
+      "sha256": "597dd1dd075c86f080df49181e8760b6cb690107529e1a2e8572434d13258393",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/start/bl.png",
+      "sha256": "88095cec1c46096785821f7e25496cb6748ced782e0b4304e0322443b9b905f2",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/start/lighthouse.png",
+      "sha256": "c3b588f84f170504ce810eec1fb9ca640a08197dfa241261e55af5753fad45a6",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/start/shrooms.png",
+      "sha256": "3b815af472537fb91ca95001329bb46a480907d27a0e065a333a8bffbe229d0c",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/start/tl.png",
+      "sha256": "7929c3633ea5eebd15bb42c7ade2355089773919005273a9d0a585a3ecd078a4",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/start/ur.png",
+      "sha256": "043232e5dd2cc7050844798e3342e8845b3b03bfeff9e762d0116bd58b507f36",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/support-sm.jpg",
+      "sha256": "956f7d9dea2d09a28cca5c75be8076d35073733f1eacfabddc754fd8becdd4f8",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/ua-banner-sm.jpg",
+      "sha256": "feb8f36be85b1ff3029ac32046a182d71998b600dda61ccad765f181e1c8865b",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/ui/abilities-backdrop.png",
+      "sha256": "a456483e2b07eee0cd5ccb34badd4fb2da161e00966a107a6ecac2c6a259ca52",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/ui/books.jpg",
+      "sha256": "ded2dfc0abd6bc80927916264f9336b969dbf4617c9ee4c92eef93ae19b0d0f3",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/ui/c3wizard1.png",
+      "sha256": "89d2bb895b1f5eabdcb7eb3b025f66557503e6794645a1e44ae757db6d17fbd1",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/ui/compendium.jpg",
+      "sha256": "41c577df5b63c8ed5d8affb0f9ab2fd97133fcfa058c6c6cd4b48039a51e2ded",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/ui/dark.jpg",
+      "sha256": "9e0da88fca135512446ae7c4dea5ab1d76d8b1e74ec8ad811129ecae61f04992",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/ui/new_header_top.jpg",
+      "sha256": "fa52d336a9b2e441aa71e54dfdc640ad73e8b39658d44bc69a64e258cda34abe",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/ui/separator.png",
+      "sha256": "291602ae745984c7cfa93c47a56e8a2749c0f3ee9060fbc8cac1e02c584f39d8",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/ui/splash.png",
+      "sha256": "b5125e0280f0b68824065f1570c8026cfebf5e226a6881343e47e684fc9a5b1f",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/ui/tome.jpg",
+      "sha256": "9be1c3f1b6f8ec5ab0775553d12e7373e911495667920ca54e22f4b1f49cb235",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/ui/wood_002520elf_002520female_002520rogue.jpg",
+      "sha256": "f8afe9b2b73e5a8fd3c435246028f6d23476395c3b337cbb89f21a014a2d807b",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/xmas.jpg",
+      "sha256": "439478eed2ff8570e706bcb74d9a9590c3f5d127e076ce52eded07e9307f0dda",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/assets/xmas.png",
+      "sha256": "e126ab697ae7c4f20e2f0fead07927171933478eeb03eacc247c0805e54ca939",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/books.jpg",
+      "sha256": "ecf885816b0dbedbcb98b9a1762bed008dc5d90159be8f4a0c222a1e74827a09",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/default-companion.jpg",
+      "sha256": "41829dac853a87f1e786a87ab9d953ef56b538e8c279ee184b2c351ead35e2a9",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/default-companion2.jpg",
+      "sha256": "0602eb25171772ab978b0c01ffe21a9200fc504958282e84514922999edc46e3",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/default-portrait-female.jpg",
+      "sha256": "e96e0813e8ea36c953257c365a0141dfc960e2b619ef6a6a3bcc597481b0249b",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/default-portrait.png",
+      "sha256": "fe88524168dc8953af6b8beae33d89a7c5002f446bd55732b599f15e67272dc5",
+      "group": "legacy-default-portrait",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/fonts/nodesto.otf",
+      "sha256": "89408e55ad690ee005792e0ad2a3dd3662751d8b275c27d524a371fb378e6ad7",
+      "group": "font-legacy-nodesto",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/hero-rest4.jpg",
+      "sha256": "1b0854b4b4c57685168ddbd654c5f0758887580293ef6a5f73f26e6eaa3dfd10",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/icon_bars.ico",
+      "sha256": "230e9ceac14b966117a5eb61ad3e41e7f08191fc6639d4dc33443b21f5eccb0a",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/icon_bars_blue.ico",
+      "sha256": "5c97509c28bcb40f531d6dc58c038e30e1c2d9b55eafe2ccb14fe6e93039d827",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/icon_bars_blue.png",
+      "sha256": "50f045fb9adfb0af7478c16f18ccbbf79ed683e13a90d4b158ed8a691a963122",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/icon_bars_blue_upscaled.png",
+      "sha256": "b4a32802033e8d3c25676a53242c2f397af211eeb242152b47471220ce009873",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/icon_bars_blue_upscaled_v2.png",
+      "sha256": "75ddd95667eb76a3ae39750ee045a058c5e692c5ebc313e8e876a15a1d4d77e4",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/icon_bars_blue_upscaled_v3_translator.png",
+      "sha256": "6602ef09f6c17bf64c8ea8edbeef70d43c2b1fd40b21212889ddd66f164290d5",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/icon_bars_blue_upscaled_v4_translator.png",
+      "sha256": "d7a167f9deb81fe3bbe05fa40cd26cfd3c2846ab22df7cd68cbaa3fb4714d238",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/icon_bars_wide.ico",
+      "sha256": "24521f2d57d61c86c30d34490201fd1a08d8708965202c8af7ec218abed36d92",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/icons/account_16x.png",
+      "sha256": "ac12a5e447927072e0b31f930f5168e104b3c834a51b8d0d7d93d38cd161f4fa",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/icons/nextbookmark_16x.png",
+      "sha256": "c7d5f155ef31e6a18bf7aac8af8571c413198c00b08525052e1aebe43d823349",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/icons/webtestplugin_16x.png",
+      "sha256": "015f6b537fafa09929a978c807d639d5f9c0d2bc6e65fd2a45ad61e743aacd6b",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/aarakocra female.png",
+      "sha256": "42e1f8011e849e2a0585d842282bad413e60645edbaaa58c08d7d4e69f764687",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/aasimar female 2.png",
+      "sha256": "eb4bd79b594c46a4b91142bb783736342a638050ba7c8505215707e0a9ce3e4f",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/aasimar female.png",
+      "sha256": "6b487d44a8c9ea69ccd4bbd1b40c47d76fac3ba14ee8eef47c24bcd2496632f2",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/aasimar male 2.png",
+      "sha256": "e301f38eb8051fc2a59dcea02e25e119a408e35097313ef5058feb2ea5417ff5",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/aasimar male.png",
+      "sha256": "e08b421d73977525a8c8e8d940919a418dc00352eb5e8d39f9539c8cb8b1dfae",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/bugbear 2.png",
+      "sha256": "cb93a4153d720a84f60eee417654ee10e01397f64d20608a41f3af05424ab171",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/bugbear.png",
+      "sha256": "56e20ba4240353245d3009f64202644a2f764701e08218248be778373d2d74b9",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/centaur female.jpg",
+      "sha256": "11cbd9d9c4f1b7d6e940fa3b71db718b3c13e3d7466f2020888d09d968897ba9",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/centaur male.jpg",
+      "sha256": "5c7966299f446aea1dd481cda52a9cd17f80e816428c6a5766a0255cf30a0aab",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/changeling-female.png",
+      "sha256": "46f37a30eefa98ce2bacf9416d19e416985addd3d89b8c82df4f8d17acdb46da",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/changeling-male.png",
+      "sha256": "a6cae815e6a93570fba96d9f73bc1edfa64f13f3bd78fe741dda2e3147443c13",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/dark elf female ranger.jpg",
+      "sha256": "ef9f22a8ac06da3b92f07f62912a98e45da501ff28e6d14e9136347d19b17b96",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/dark elf female rogue.jpg",
+      "sha256": "48a4a7d515261561f46975f4e38dab2077ca78c5badda364caa2a4f2068267d0",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/dark elf female.jpg",
+      "sha256": "6ad3c21d2896f057c34938c184a6022c6e30a4493e5709cd6c65c99ea8761e1a",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/dark elf male avenger.png",
+      "sha256": "cbac27f842605a9e919ce8f301dcbf684ccfcdd1dda72bf2098794151e5e7ea2",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/dark elf male fighter 2.jpg",
+      "sha256": "111aa3bc41e9bda7e434ce4e05605feaca9b7c2c986347c3a28ac1f24d6f8079",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/dark elf male fighter.jpg",
+      "sha256": "fe18816d2a1c633687546c74cd17d078774ea20d6bbc61ff9125a58d52522832",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/dark elf male rogue 2.jpg",
+      "sha256": "f05d3df4de867a611eb419e45ade1726893e333030bd6598303df4bcf8883aaa",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/dark elf male sorcerer.png",
+      "sha256": "fe88524168dc8953af6b8beae33d89a7c5002f446bd55732b599f15e67272dc5",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/default.png",
+      "sha256": "fe88524168dc8953af6b8beae33d89a7c5002f446bd55732b599f15e67272dc5",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/deva female.jpg",
+      "sha256": "0a940f54732fdef84b5f94780aced3de20595aada442547f710332f228c8dc10",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/deva male.jpg",
+      "sha256": "bc9a85bb820ec0c6d5a70f8847c6088a25d69a8e784caf12b3ea36e851e2aa9a",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/deva-male.png",
+      "sha256": "1e605b2529593cd4739bf64fd64aa62ccf15030b7771398319857528d7594ca5",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/dragonborn female sorcerer.jpg",
+      "sha256": "8ec050a1427cdaac1d6b12fed175de6a038bb7c185a16f58f332dd7bbe16e571",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/dragonborn female.jpg",
+      "sha256": "68342974e5b9100e88beb09c171cd6d2d6be5c1d30f18b6516c5f103304ef0d0",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/dragonborn male fighter.jpg",
+      "sha256": "644b7f8e264362585279351b78d79059ee14426050e9dacd6ce658f1c78545f1",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/dragonborn male rogue.jpg",
+      "sha256": "5a3289826bf21da45e0325e2fa02b44017064bb6ce08d62ea2ce47a30a4ebc21",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/dragonborn male sorcerer 2.jpg",
+      "sha256": "22df1cdff8c8232b0c654d2d380448b01339d40a875a12c94f3567a46b1b5abe",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/dragonborn male sorcerer.jpg",
+      "sha256": "1664399c276ce0de7c5013baf04e9653fa75c9830aa08838dd6d94e9a3a3add1",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/dragonborn male wizard 2.jpg",
+      "sha256": "fde0bdb2268cb6455c46b100311a8c0443c448af7448f194c1787e96d1775da2",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/dragonborn male wizard.jpg",
+      "sha256": "8a9df7740ca0e3789dbd078bf6d28c598f09be3c67bf3a4082ba1bca20807438",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/dragonborn-female-1.png",
+      "sha256": "02e51d8993e7947bd3cad5317ee7372f32cb7d7f03458c7e640b4b537eda3e4d",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/dragonborn-male-1.png",
+      "sha256": "af91fe4e23b1ccecde812e7544d3792a6fce1f9a893fe9ac9df1db8ce354b122",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/dragonborn_002520male.jpg",
+      "sha256": "3988ea79551226e17fbbd57ab561b7c60ecf2942635db3eb9b6201f4e15928dc",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/duergar-female.png",
+      "sha256": "3db361a60760643f682bb24fa2742da195a5edb0cd68c9d30cfeddcf1c2d7e88",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/dwarf male cleric.jpg",
+      "sha256": "b4fc75b3f4ff1235811b14cdffe1b4e5f1a8b8940254eb37d1c525529fea6fb2",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/dwarf male monk.jpg",
+      "sha256": "317d679134aceb2bc78e2401eccd2288496f21e99b6da86e6f5cf4b78d20d7bf",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/dwarf male.jpg",
+      "sha256": "ce8295604552ed69bc4efe1aeb375412825867d2790463e3bfa104c864efc208",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/dwarf-female-2.png",
+      "sha256": "943459866a2546890413ede0500e89b0a5fdd4c99804fb44bfa0dd759e609394",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/dwarf-female.png",
+      "sha256": "f54e5e919df809134231b50c796e8a9164a637a363372f34b17ed78bac52fcb2",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/dwarf-male-1.png",
+      "sha256": "2588c3dce288a45486fe3f9c470bc0508a9d93e1a063d23c87c14fca3b0ae301",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/dwarf-male-2.png",
+      "sha256": "23f478ddb762f2148963d3c2b2a8e145a571c50b015c33497056dbbae197f708",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/dwarf-male-3.png",
+      "sha256": "46d2608f0c1127a4687d8bca140c3e78f5d4a8a2a4a2d0b3acfe819e67798f6a",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/dwarf-male-4.png",
+      "sha256": "e7043dfec2c01448c1fd2a83c94e90f0a4716198a3f938fc75e3f42786105bbe",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/dwarf-male-5.png",
+      "sha256": "e2212b912a6211bbab8e24b7f198d15b054426362d7c36101bd96a2ee671b600",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/dwarf-male-6.png",
+      "sha256": "83caab14b78f522c4c1754cff30570a6b7ec12fae2bdeb1086fa768578e821b2",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/dwarf-male-7.png",
+      "sha256": "a3a73864f1976a01652dc24c9a43cd2368cebd5fb1c13d36de0e4e9660d7daa2",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/dwarf-male-8.png",
+      "sha256": "b9cebbcd03d9ef50e873689c2863dfc9fbbbb8e15bbbc91adce1f22784da0c7e",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/eladrin-male.png",
+      "sha256": "00730060c2d9aad8f3c26d7a996adb41c7e4bfd1d247efdcaac68fc927964718",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/elf female druid.jpg",
+      "sha256": "dcb363ce8d748446e6cd34c80f08b9737a6b832c5d1e6bde385c113f597227d9",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/elf female ranger 2.jpg",
+      "sha256": "bca68220fbe989fc54c978c662189708b6b30645308229f9ae4962b582b86eb4",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/elf female ranger.jpg",
+      "sha256": "f09e8030569514cbed15ba0d2dc88a91ba58efeb01e0d6dcf5838683055095ee",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/elf female warlock.jpg",
+      "sha256": "502249e7023a9e81a0eb53ae6737bd93d5654281078fb4f6dbb27f1374075a0a",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/elf male ranger.jpg",
+      "sha256": "c63a9fe251fa572e567dba13638267dc7eb2a6bc648d58b5be29c397e61458a6",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/elf-drow-female.png",
+      "sha256": "c5aad54b80401a2fc1dd691d3a04e96a808112edffdbfa69885cdc08b2ea3d80",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/elf-female-druid.png",
+      "sha256": "1d4369354da2d29fd354cce391b45ac12ed87055bc5cf5ae4690d5f933189402",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/elf-male-1.png",
+      "sha256": "629c3e19b110aeff283090eeee50819f82ee7ee1818e5ff883be2fe0e9db5ccc",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/elf-male-3.png",
+      "sha256": "70629a9c59e64264a12596afcd9884295ef93af32145205fc7874484efeb051f",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/elf-male-4.png",
+      "sha256": "c19b3ea932c953ab0419f2e29d7cc1279f52ad659d02f3ee5eef58c4fd26b0bb",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/elf-male-5.png",
+      "sha256": "dd8a8c28c72519cafaac52a9d7324836ece41ed053f6560fa377774b86a21b7b",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/elf-male-wizard.png",
+      "sha256": "6bc2e09f6fe1ca1d08abc17f3617a8529e17a08a74b34cf9188e3d150c9032c9",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/elf-male.png",
+      "sha256": "660af7b098e81a40a8023eb22a1fa86c37c5dd247a87fc4c106d320431ace442",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/elf-ranger-female.png",
+      "sha256": "ae28339749233c30965d3cd52f0906504d527114004fb5558740d001d18ab6b9",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/firbolg female.jpg",
+      "sha256": "31ffcde1843336bd2c5b9b02f53e98e42a066d36b06888ac64068e97d7a437ca",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/firbolg male 2.jpg",
+      "sha256": "dfc5d2c55051dfd9fe35b9e7e83bcfd81afdd872d2aafb459e0567fa8ec593d4",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/firbolg male.jpg",
+      "sha256": "b040c793ad0f8ff5eca801c24ee3064c056a245096b87aaa7e0d316f0fa485ed",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/genasi female.png",
+      "sha256": "36f1bc4777ea27e52fd501ead2ba7d567ab42b63725fcd213fbe88637dc2d2fe",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/genasi male earth 2.png",
+      "sha256": "67c6b9a338af39b71f572100bbfdd831dbe9e48d1495e9de0e8df40336690fb7",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/genasi male earth.png",
+      "sha256": "c12e88f613e2e1ed8ea6374f27e771157cceef6bc7cf005a9be494b6609328ee",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/genasi-male.png",
+      "sha256": "808e60354db807d28d07e79f3543db9595be9cd3db4d1c6412f3e048529209a7",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/gith female 2.jpg",
+      "sha256": "6d1e64816acc82a7df0309076bb68238eb5f7e84fbf035f13cd6cd3770b413ae",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/gith female.jpg",
+      "sha256": "d648eb12021b95c631f4b44e6b2a71162de567dc32dc9bad24c004284719bdd9",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/gith male 2.jpg",
+      "sha256": "6aedf17f7ad0f8b4b580d90f89bba640f2b81cd07c8d949537d54b4ae0c045e9",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/gith male.jpg",
+      "sha256": "4ff94e55ccc5dacca0537ace88c0e95f3d0872c6929b841b7a4e47271cd8a525",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/gith male.png",
+      "sha256": "bef58f9384cf1fca64e5be6a7bc65fb538c7d784612c51466042f7965372d232",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/gnome male bard.jpg",
+      "sha256": "d74216b95d6302bab45d51c17e1393022264f503fe5dab30d1274660de786ca0",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/gnome male sorcerer.jpg",
+      "sha256": "8ca71bbcf8c9045e0ea006f212c577394516763f4604547202d2b909eb0bb6a3",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/gnome male wizard.jpg",
+      "sha256": "ac1f782a2d7a8dc8c21a62efc0f26689eb17516bc836f26d484757b3e62755a9",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/gnome male.jpg",
+      "sha256": "8d5f60075515d47d9af67778174a49f5a23ee91b3ac3dae0631e1552b5df3484",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/gnome-caster-male.png",
+      "sha256": "e9cd52bb017e01cae8d3c6aaa670250f8df5a1669bf8cdd122bb0ef67cd1eca0",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/gnome-female.png",
+      "sha256": "9c9afe4b48d77dc525030db8e40d3f8754eefe32d49a12eadad35719cd6c94de",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/gnome-male.png",
+      "sha256": "7df97a3d524dfc300214cb036e0a4e0be06f17e6110071349509d00004d02d1c",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/goliath male druid.jpg",
+      "sha256": "48d53c7fc05bed32cfb9b5fcea6fc70713acb8d9a58ed4d984f735327cd70ef2",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/goliath-female.png",
+      "sha256": "3ebfde04839954344c677e0c8de8e134a6f3f842fe5b638e409c2cc60a615770",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/goliath-male.png",
+      "sha256": "bcbc568c8e040570ec5d73a7ae03bc43c39b208e793fe7d3255742828b07f3b3",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/half elf female.jpg",
+      "sha256": "b0aa8839adeb22243375d6b8cc99623c571e135b2f93a3605a2304312bd08b14",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/half elf-male-2.png",
+      "sha256": "70105ea7e39cea869de39d57e33fd1625bd28d70f99a9a799fa455ffd7fae690",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/half elf-male.png",
+      "sha256": "5ea4760d0dced8d8d9f2af7529ae3bdf63e61e60f79f64aacba38b92a64658ec",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/half orc female fighter.jpg",
+      "sha256": "2fd5bfbd562168a1d2a8a7510343cf18ccfffb54e7cc52649eb285e735d48752",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/half orc female.jpg",
+      "sha256": "712cbf1f540c3ead85f6385f838692004320efbeb07e806e61d598bae1367df4",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/half orc male barbarian.jpg",
+      "sha256": "7cecc37db40889a979a25bad6e8572c989ad7d5d0defde21fb581482afc3696c",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/half orc male bard.jpg",
+      "sha256": "6273f7397a2fe644cb5274f071ff36b8ded18f801020139ccdd6ca3a19b301b4",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/half orc male monk.jpg",
+      "sha256": "fe841502c517069c5a9a287ab050701a8676b86857aa0be884d981e16defa0a0",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/half orc male.jpg",
+      "sha256": "62a655246c9c07ac706d1a87d09840ce2315933b6bffa09820879177134e0072",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/half orc-female.png",
+      "sha256": "3b1081084bb9ebd111d56af5b7bd9717ae45a338e78c9dbb64c0ba2fe927c85e",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/half orc-male.png",
+      "sha256": "017923c4f1e472296e201c350f5f8c0d8934301eedd9a2ecbe5deb8f95f8a69a",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/halfling female 2.jpg",
+      "sha256": "82ee03f0677cbcef26165331099c8b2bdf770de64ff29b0086406720a0f8feae",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/halfling female 3.jpg",
+      "sha256": "38e860eaea6071c908a48cda50f745c86d70331353c900be77d4b0730c6fedd0",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/halfling female.jpg",
+      "sha256": "6d59d38088cfbcd87eec6915e4e5cdd3e38658942eaf541aeaac0f5c73afb354",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/halfling male bard.jpg",
+      "sha256": "3f0798db71695de501c06a185be0a29e11e232afe548e056161e954e93601e38",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/halfling male.jpg",
+      "sha256": "4fbec29bba8489447d7481b0195bebe25957ee7d1757d056b9ee2c2818b8993b",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/hobgoblin.png",
+      "sha256": "533ae96f26cb2a843f0a444a2a7baf55cef2ef6ebaf38dbc53cbc511dff9887c",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/human female barbarian 2.jpg",
+      "sha256": "73ae94c3dc241d00be29445ef7f9d9f090f0cf05e0d629c306f1c020789303db",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/human female barbarian.png",
+      "sha256": "a86c6054cda532ab69a47ab24c0ea36013fc3672f06a7ef8a9911cd370bd6b66",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/human female fighter.jpg",
+      "sha256": "c8fbeaef9a5426892b7937ab6495f5dcd56705d6716ebf6a17434a027a8b410b",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/human female sorcerer.jpg",
+      "sha256": "2ce386fc70b2b27c5e15df3c9b6926fb0ad80408b1f1a7a10217e9dbbf981105",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/human female wizard.jpg",
+      "sha256": "08c297baf8b29f9bf37e6844008e4c7d8043bb95324aa4c6a123b1746cb09830",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/human male artificer.jpg",
+      "sha256": "f62f194d9eb9a1bf9bf65f2d079e56f6046753a9124138d821f08b301462d90d",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/human male fighter.jpg",
+      "sha256": "c99d528a9f32e66ad796b69b191a6ff13bc29927ebfb810997adf98c7125c493",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/human male monk.jpg",
+      "sha256": "99e269b2e39d6c8a71bd8e645a25e56d6ded328476336dac6e3f56b4a753a97f",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/human male ranger 2.jpg",
+      "sha256": "0af122c9dab6147626aa0fa3d9cd4211f09ea0d0b60514dfa272dfe2b0cce4df",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/human male rogue.jpg",
+      "sha256": "5992f0fb7eaa7a02c29487c8f5b9ea317c97da7e8aa0547d19c9f11e87f176b8",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/human male sorcerer.jpg",
+      "sha256": "6702923d791106f8607a5909f386451239560806323bc0efbeb3f09203ed6173",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/human male wizard 2.jpg",
+      "sha256": "b5290786a836a6c94e1e53745fe02e4ac834f20a532a1f477ee193c778a147e4",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/human male wizard 3.jpg",
+      "sha256": "13bdc6dd5005e20264fc4fe8363c48792346b502709b29fcde8e8c96d7f4c27f",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/human male wizard 4.png",
+      "sha256": "07c91628cc741b1ee5f56328a3871c8a57381c7ae0f72795f8497f6b469241a5",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/human male wizard.jpg",
+      "sha256": "5bf758728f56eeb47c1d807abacbaeccc695c6472c4f3cb461c20e4080e628e3",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/human-barbarian-male.png",
+      "sha256": "1830e02827b8a44766e375b3cd915aa35c3a5e134c3d2229418483d6f8b8f027",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/human-female-1.png",
+      "sha256": "96128824e2736dac412802a07de0965718dae9603c2911a8b3f320914b8d50ff",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/human-female-2.png",
+      "sha256": "d5f34febba3a08656dd37c7335d97bba02a1d85966030885fa783065e5779391",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/human-female-3.png",
+      "sha256": "f76112077846ce4a2249e363f8259bfcdd6d1646597f5a3b2341bffa2596e554",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/human-female-monk.png",
+      "sha256": "83b26dd8f38066160e74fc36a2e03f6d847533415fb2880726e6f71320b62a10",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/human-female-paladin.png",
+      "sha256": "18213b2d326b265edc0c631e5e9ee67ee6d03ec890145023a72ee7447924953b",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/human-male-1.png",
+      "sha256": "8c7ce932b49341f4c7cb4fb7e96d1a3850a1ca7e28dd60268e556a48a97a129a",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/human-male-2.png",
+      "sha256": "4b4b236d6b9b5e36b1612f85aaa8a29faffda9d5be59fffaeba4d2bfb8893317",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/human-male-cleric.png",
+      "sha256": "dae96e1e96cc4ffa6b88fffe05b0f88072078b6c49e369c2324fe9fc05bc583c",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/human-male-paladin.png",
+      "sha256": "c22dd2da5f23b4b382d38ef1214e60eef5c947bf23cdaefddd81492262db9741",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/human-male-sorcerer.png",
+      "sha256": "bd6b3991762dc74bd64c31c066578cf456420df3ff374c648dc97ce324e3b2e1",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/illithid.jpg",
+      "sha256": "669f720dc7994e09974225101436d5d60745df43b26337afbd452384dd7de67a",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/kalashtar-female.png",
+      "sha256": "42ea0920117673382b4a4548af7df5489cf8c3d1392e582638f9fa9f18a3aad3",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/kalashtar-male.png",
+      "sha256": "ad07143bd2d1f2f1417fff3c390e61d27634b037deaa1fa4896354c441b560d0",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/kenku 3.png",
+      "sha256": "a2a5e22443f926fae1d3ce6984f528e631306615350c790bb94dc00e1bc2cf7b",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/kenku-1.png",
+      "sha256": "a4006e5b1ec751a139081e838392c5e079fe583b0943826f4532b212b272f9bf",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/kenku-2.png",
+      "sha256": "8f85fff48e702e9d6ac5bfb40391fe573f4c76f54e49ccc077ab60a8e8c02e9b",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/kobold male 3.png",
+      "sha256": "d578763d98a1859ac2c9493a2d6f88584859629757b0e7e086056757fbfa4bbb",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/kobold male druid.png",
+      "sha256": "6af170a7506676d71a78e382984854873ebc96f27eebd957074e736400eb5726",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/kobold male.jpg",
+      "sha256": "27ad73ab800698e1181aeeb09eafb61407681e3618506d0c66d67f205b7193b1",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/kobold male.png",
+      "sha256": "245b77c04bc08026682007ef98bd2ddf251e8e8822be544d5249c414ecff8226",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/kobold sorcerer.png",
+      "sha256": "65ab906dcdd9c4705681470b921b2e94441e50dfdc8e543a2e01b175e7d631f3",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/kobold.png",
+      "sha256": "d8af9b70a6c6132273bc8a5ca6e0b75ef5a7cde16b79f9dee19e4cc9bae73525",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/lizardfolk 2.png",
+      "sha256": "625271d4004b5cafd86104f559d4a111f205896dbbd616295de6a0a6ed903c4a",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/lizardfolk 3.png",
+      "sha256": "8da521f24766999071e317675f7f35649c29d2ac42081b6fc77096eda11126f5",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/lizardfolk 4.png",
+      "sha256": "4f68674ecfe50740331e30ded26e2538a2b2552b68dbbd9300af361dded4a152",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/lizardfolk male.jpg",
+      "sha256": "ce657d964b98426ddab1c140c09385247c7fe0ac53777771710c235d6db44eb2",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/lizardfolk.png",
+      "sha256": "f52828912866708dde338acb4f59687f37f08d33cd921db9eff7587b87ee9213",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/loxodon druid.jpg",
+      "sha256": "9c2e84e567d3284fa693aaef1057273b6264a6829686e95ffc6a599af20485f4",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/loxodon1.jpg",
+      "sha256": "0c71598f4023fe8cf9cb09eb67bfb45770eab1c542b966ce1c7ad08172bae149",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/loxodon2.jpg",
+      "sha256": "63a1b9c77137ba6a3e7dc5cd1571d3b94204211db9f09f5a043e527338e46c27",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/loxodon3.jpg",
+      "sha256": "d32b8c34339326f6dff5d6899e186ed11068231a8b7978e80f5a680afc34d24b",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/loxodon4.jpg",
+      "sha256": "4efd228d4144c574ffbe61f844157cbbc8243849547a8d6fc7bef55e5d95668f",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/minotaur female.png",
+      "sha256": "5a48fbb1cfb04e8ec6a981ad4de2bd8c429dab377447b3dfc99052662c83ad77",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/minotaur male 2.png",
+      "sha256": "40951c71c6cd6f7f1576ca346489951d8ab9cf665456a99ade251880df0cc535",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/minotaur male 3.png",
+      "sha256": "94d1f07d454cf4848a2ed9acbc45edb9ade50002c3c71904fde1b9d47cc86eec",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/minotaur male.png",
+      "sha256": "09072fd4e1701720afb09f33cb61ad921be27359cc4e2ffe73b4147cc52a0291",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/orc female.jpg",
+      "sha256": "02479f5c8c3898472391c422c4643983e08bdfe850f2708e6e6d2116ab4c658f",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/orc male barbarian 2.jpg",
+      "sha256": "bdaa44ff9cd0d18fa3d28bb1374575ec1623855ff792ba25d40b79389749f43a",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/orc male barbarian.jpg",
+      "sha256": "3e5f4fc060ec39f67f29375a5bf4d463df9777ebf3146bd01b4db0901457e4dc",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/orc male fighter.jpg",
+      "sha256": "b836efecc74f27da0120c78ec77f0f4bfaef6b8c1d9c0af4cae84366af30bcd1",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/orc male warlock.jpg",
+      "sha256": "18edbb61bda6514ca72eb62be617d9b122b07e8e0e185d53bc796c7fce1e94f9",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/orc_002520male-1.jpg",
+      "sha256": "073b14ac91178b20f66ee9d2edc6e7b553f4a45ccd1f85a198dda4ce0583929f",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/orc_002520male.jpg",
+      "sha256": "c9603edbd23478bdbb915190903cd2fec7afc1db62d4b3acd845a3cd57933db4",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/orc_002520male_0025202.jpg",
+      "sha256": "026d11d200e680299e1444d8fdca0026f8f0843de201def23cc4d47c5e5016b3",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/revenant-male.png",
+      "sha256": "e8eac603e94ded0bc2051e50c3e2f21ca1d1df646dd52642a6a992b172fc107d",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/shadar kai female.png",
+      "sha256": "2721f73e9d855cf0f1ba04eab4ce4f42218bb73b9e95456f2210de86e32791bc",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/shardmind male 2.png",
+      "sha256": "d7897bee67dd6fd6f081a1deba5c6c2abe8abbb30fbea59e7cb277b690a89cdc",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/shardmind male.png",
+      "sha256": "a924405e13627ceef8e601b40a1896ce6047794e55bc156846aae770da044a9c",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/shifter female.png",
+      "sha256": "4bca89299d84a2925032bb14ec8cdf4433fedb03ebba8a84fed40c298f629c11",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/shifter male 2.png",
+      "sha256": "0692d436a3b21012f22686492911a80635f8a8841ca2507cdfb73df6c2e24ddf",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/shifter male.png",
+      "sha256": "5bba1d2ab57d3b8a71f6cc1c3a1f4360c9970c124673e2afd4e2c9f550408d38",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/shifter-female.png",
+      "sha256": "6b0437d0d09eedce8eccfd2d6370aca4b2aba0e3f1d27d25ebc4850d46ba3ad9",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/shifter-male.png",
+      "sha256": "97b8c77da95ec58cfb38c8f49d003b7df75348740438b1401a5fcb826d754560",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/simic hybrid female.jpg",
+      "sha256": "6b95004b3f9dae58366e2eda0f30cf39bc4b47c44a4a17dfcc0b53beff13db24",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/simic hybrid male.jpg",
+      "sha256": "404ce9ac8ce2226aa4635e6b1a99cf916ad8e7a9a5c6b14c3e6e9caef6698b4a",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/svirfneblin female.jpg",
+      "sha256": "5d40ca7ff86c6866d6e959a35caf140726c1807eb964c71ddffde85d54865e26",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/svirfneblin male.jpg",
+      "sha256": "c0f4c804fe25adaceb6c557f12fceee3cbb897c8dfcdce92cf7032aa0392088f",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/tabaxi 2.png",
+      "sha256": "eef25dcce6f494e134d1ee8715675c6e02398dbf1aff278f397c1e2696fcb220",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/tabaxi 3.png",
+      "sha256": "5988dafdbbab434db5814dcf80d672c73c6a026c3c2a6a427a66fafc76ae494d",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/tabaxi female 2.png",
+      "sha256": "dfcda2613ca823956461d948cdde3e419b036b707b1c6c9e2217f419d5ef22bc",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/tabaxi female.png",
+      "sha256": "967eff5bd1a1cbae27fe6d564edbf6f109190c6a0624fe44c711915b2c8a7e11",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/tabaxi male 2.png",
+      "sha256": "d8d720539c7f60593a54adf68ed9dd1721658121ea40fa5236fba8ef31a69d8c",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/tabaxi male.png",
+      "sha256": "c2ded1b930a65a77acf4a23e6430454fec05fb9081fa2b7e7a95d6d880e73d44",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/tabaxi.png",
+      "sha256": "2920b5fc4f7e4c0b9dd72338c798d28782ce37a67385e24a04d1fd84425eb486",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/tiefling female 1.jpg",
+      "sha256": "565c5a49c4a94fdca4d3da91a7fad7d84c79925d6821ee89229803c427e9f725",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/tiefling female 2.jpg",
+      "sha256": "39e64302bd7691a1d0bd17e43d39283e6f19f164fc4445a0e8033d5c9f99a00d",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/tiefling female sorcerer.jpg",
+      "sha256": "d1b410e255bccf09329c5cc3953dafcc3cafe3b0e10312ac1b673dc36d763245",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/tiefling male sorcerer.jpg",
+      "sha256": "bbf3263433c572f7983def938e35f73efce6571140e52c2d6817bf9ba8c775b2",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/tiefling male.jpg",
+      "sha256": "7e2a08549c1a7670e85fb1f4332eceae17bbe88ddf11bdbd5f1eae19de201774",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/tiefling-female-1.png",
+      "sha256": "079cd94f9327708d35ef94f8cbf82acabe9b16bd48d10bad1649c0c74620c4fa",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/tiefling-female.png",
+      "sha256": "7bd3b4d7a5056921418992e6c4ca18d96e3b3a9172bc862e2bf5265deee92fbc",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/tiefling-male-1.png",
+      "sha256": "be5dbfa424b91aa676ae69d9f1678c0c0fe56a27704d6e9f0d4e4ba6c881ad8d",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/tiefling-male-2.png",
+      "sha256": "3d2ffb615a54f38cb1e9325358f32c7c1cada701ba2b4e8fa96f3d5390fdb9f1",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/tiefling-male-3.png",
+      "sha256": "e062c50b9b687f47bf1344372ee138ec4165a2a1538a053b1b4f7a01af11033e",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/triton female 2.png",
+      "sha256": "0439098b6634e9328f1a6fc24fb6a067f1031ad864e8bcd0c5a45fd0f771f290",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/triton male 2.png",
+      "sha256": "ad824d3b0e646791c0840257e09fecf03d2465a66093b618dab4cebcea995b09",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/triton male 3.png",
+      "sha256": "cea3c1324f15b7f95bbafe753afc493a009d256fd3099de4996367f00c200137",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/triton male.png",
+      "sha256": "882d98660d2d66545f920c6ee8034d653023389b9678eaf7ecb950b6018ba1e2",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/triton_002520female.png",
+      "sha256": "65e850f7480c5f95618aef4ee75612d9b58ae5db774aa476687f53932c63e05b",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/vedalken female.jpg",
+      "sha256": "30447a30bd9809fa406fc8c82a20095dfa0ea3d8d6da0219b917139ba77e5e7c",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/vedalken male.jpg",
+      "sha256": "a7ca3dc6dcd1413fe2725b7c8b09dbe275da5bd74fbadc0d9257cfb5ad0fd207",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/viashino.jpg",
+      "sha256": "ce27f173f34e82da11f89d31aeec63619cdbc650d94f2c2318611a4cca91e636",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/warforged 2.png",
+      "sha256": "c397d4ec340c55addeac87804bdd1b1e8a4d3f810b98e349175a756209c7a545",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/warforged 3.png",
+      "sha256": "32aee04bfc8e9182024ee26de7c9e108c28c1b3818bdab71b823cb7c0f2a642b",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/warforged 4.jpg",
+      "sha256": "3eebb749ba3465e9c23cea427228537b032e62c936eab8f8e93dfdfe81b93c1c",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/warforged.png",
+      "sha256": "d9224012663abc9843c25e89f2a0d018a777e740b8ed691474cc08041964e045",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/warforged_002520male.png",
+      "sha256": "6c7706da6f34134b415f5a8c754a557d089b983ca3b74f2d1dc892063546e44e",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/wood elf female ranger 2.jpg",
+      "sha256": "2e496eb02671a4103091467cb76d03cb05972fe7c218fe9667295140b3524a43",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/wood elf female rogue.jpg",
+      "sha256": "f8afe9b2b73e5a8fd3c435246028f6d23476395c3b337cbb89f21a014a2d807b",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/wood_002520elf_002520female.jpg",
+      "sha256": "196b3166173f5ff0b2fbfbc56923d47eb64a0c7dc902fb6f9d53c78fb210d50b",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/yuan ti pureblood female 1.jpg",
+      "sha256": "e96e0813e8ea36c953257c365a0141dfc960e2b619ef6a6a3bcc597481b0249b",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/yuan ti pureblood female.jpg",
+      "sha256": "80b2c5061fb7073c2f824d5958cadc2d9fe7ef0c5d8b8354fef78c84caeaea55",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/portraits/yuan ti pureblood male.jpg",
+      "sha256": "120ae884e26779f4524e2a3e66b88dc61bf380a067c27b8c1426d7c7bde4db0e",
+      "group": "legacy-gallery",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/spellcard-background.jpg",
+      "sha256": "b6ace0e11dee326abc98dfffa4127b60991b5925493fe4c3ea6f162902c98d5f",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Lights/resources/viking_hill.jpg",
+      "sha256": "3f9459f219c55d8a4dc522fe51037410cf924c976eac1aea98e3d1b7bb5a9b63",
+      "group": "legacy-source-assets",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/core/conditions.xml",
+      "sha256": "1fc84ef3955d8431b8e6156398fc3fa7c036fe8c31e73d14b40eb45454eb267a",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/core/core-ability-score-increase.xml",
+      "sha256": "48291368f54c06a59554c3b08e8eca29015eb4db8bf7363be98e156f5b27fffb",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/core/core-alignments.xml",
+      "sha256": "67449c4e2649e83b056e9d1d233ce360a1545b5ccd38274a82b54b3ac79fef41",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/core/core-languages.xml",
+      "sha256": "ce62a0b817a27c14924276a20bc789c471ba28c2e32281df024fd132ed1d18e8",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/core/core-levels.xml",
+      "sha256": "b56eb5bcc1a800515b16eade5539cf70f8e94dd989dcd7a190a4ab1c1900c526",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/core/core-size.xml",
+      "sha256": "cd2937f4c5b21113dbdfc2bbfd83091a6c31678cc0a5d9c288a34e1d3bd8f907",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/core/core-vision.xml",
+      "sha256": "a966f802d96196f8a71b08513851e569d0f57cbf16f4de089292756ae441e27c",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/core/damage-type.xml",
+      "sha256": "f509f40655e39575628394cc424ab223f62be39dab47beb9dcadc4f57e399e42",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/core/internal/core-internal-grants.xml",
+      "sha256": "1d08235fc529f65a87817d0a8118d4f435b9461258d59fb67369825bee8a2d29",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/core/internal/internal-multiclassing.xml",
+      "sha256": "947a7e85c0391aa08c6636b49d3fa9306ebb417bfeab99882cbd0da706092fce",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/core/internal/internal-options.xml",
+      "sha256": "7d039d02f77f365da4a33fa8b5ab8153ca96f77024b941ae595783c07004b75d",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/core/internal/internal-sources.xml",
+      "sha256": "0e814ff6cc1ae5181f28037c0a18bfe28ea6ce82fb17a189c1759001cbef1074",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/core/internal/internal-supports.xml",
+      "sha256": "70be8c3be55524e56e9611f9b5b043a9cefe8fd422898245d020c103a1c4a2a4",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/core/internal/internal-templates.xml",
+      "sha256": "d001aaf366d2a60ce16195f1942022b4301498a55ec0839d7e7e07576a46fd58",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/core/proficiencies/proficiency-armor.xml",
+      "sha256": "b2f619368116ba78358a08a169fb89bfbf06b4901b007ed475fb5b694e6b29ca",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/core/proficiencies/proficiency-weapons.xml",
+      "sha256": "af1524bfa7203fe8eb49178a0bf8d5f4d8c991291a87c9231bb6a5e1c6f83ca8",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/core/proficiency/expertise-skills.xml",
+      "sha256": "3a5f594d743e070d1bb05901ea1f50382706df18ceb0523c6fb0d8fa8d2ef5be",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/core/proficiency/internal-skill-workarounds.xml",
+      "sha256": "538d68ccf2082721e5624ff91ea5b5dc8984fc750b25192dfc9f1df00197dfbc",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/core/proficiency/items-spellcasting-focus.xml",
+      "sha256": "0ec12e19fb3f0177e783ab8405e9ee02f3edccb748faabf37b9d2b15067de6f5",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/core/proficiency/proficiency-saving-throws.xml",
+      "sha256": "ad858619f901a46373b00d8b8b649ff5f514dbff46678fc91110b8fc1adf6733",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/core/proficiency/proficiency-skills.xml",
+      "sha256": "b47c7673a0c3218f98b9ae78582522cdc7ec78ab02df5025bfeb58993773faac",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/core/proficiency/proficiency-tools-artisans.xml",
+      "sha256": "5b49fcd5b86abede5fa30db91eeaa828bcb7ebb09a2a697371a9fbcbcdda5479",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/core/proficiency/proficiency-tools-gamingsets.xml",
+      "sha256": "b1c082f231d31eff1482c704562545eab237efcf6931abb57eb3b97da430060b",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/core/proficiency/proficiency-tools-kits.xml",
+      "sha256": "7e6fdb36096a7799ce4fa607166a86f60f02549d4167f16ff9902d942fb70de8",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/core/proficiency/proficiency-tools-misc.xml",
+      "sha256": "d885e816b90147963c37c6db3aa54d8c3ae91e4a762d789f76ecc36f535885dd",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/core/proficiency/proficiency-tools-musical-instruments.xml",
+      "sha256": "8cf3ac7f2c8a925db628641a241c3a67146b2c790901822b2b193db27cb4d55c",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/core/properties/properties-armor.xml",
+      "sha256": "750ac8afc86a326fb701daba068989550884c3510056e21f00a61e6b3513e603",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/core/properties/properties-firearms.xml",
+      "sha256": "f4dca1986bcd8bb17b09dd086b4ab094f25bc021b8cb271a4369992076bc48b4",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/core/properties/properties-weapons.xml",
+      "sha256": "d1ecaab11881d6b37f5b1e606ad690cd41a3ec4eab9bace0e5721e50d19c26e0",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/core/support/proficiency-type.xml",
+      "sha256": "1a8d922a73535b7562c0f3b4fd93a00ba23f7bb2d771c21559f8f8c929b9b645",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/core/support/properties-tools.xml",
+      "sha256": "7a84dbf1cb86d16e9d71f1e8c7784ae7f392a8538a6813b1fd2be41b6cebdf6c",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/elements/system_reference_document/backgrounds/background-acolyte.xml",
+      "sha256": "d6f9ee67dd12446fa8de81bb60e516e4e15df45344fed12339e99bb6ad6c892a",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/elements/system_reference_document/classes/class-barbarian.xml",
+      "sha256": "410f5fa8612bcb1588a815d6c97cbd4f94c93cd7c557da52c0d55fb62ae4fd8f",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/elements/system_reference_document/classes/class-bard.xml",
+      "sha256": "b3570b0ea392164024217798e733b697e7857b437a022ef6e4c066fac0039a2e",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/elements/system_reference_document/classes/class-cleric.xml",
+      "sha256": "3f4dfe51848e6d86a0acee2fdf7a053b911afe875d05094880ea90f43dcccda3",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/elements/system_reference_document/classes/class-druid.xml",
+      "sha256": "b96456a736df56a47913fcde45e098e5360eccccb81d1978638c4d1a21194def",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/elements/system_reference_document/classes/class-fighter.xml",
+      "sha256": "f42871ae279b26905347f29eff89d4c7d916b719bf4450a64941f21ae75e24bb",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/elements/system_reference_document/classes/class-monk.xml",
+      "sha256": "2137bca23f5e378c883c8b49d50e09d797eaed2cc34c7796459191c9195d144e",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/elements/system_reference_document/classes/class-paladin.xml",
+      "sha256": "0ce1991d6a5e3e3a9bba0dc10735be96c3aade8c0f2ec41aad90c1d2d68361ac",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/elements/system_reference_document/classes/class-ranger.xml",
+      "sha256": "018399cd7145c0958d68a8358ac46b533e3784923a453da1ce38b76b3319af58",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/elements/system_reference_document/classes/class-rogue.xml",
+      "sha256": "4b3b7bc69c1b3ed4da16ff718dac2dfad841ece46c4cbcdad10b9452c4785392",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/elements/system_reference_document/classes/class-sorcerer.xml",
+      "sha256": "6570deb8dc4ca1abf98814a7d90c548258ff94dbc94f140e721cce31c5fcf866",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/elements/system_reference_document/classes/class-warlock.xml",
+      "sha256": "79f979e341a63941c22a22da3e1c593c61521573c12e8f5c511f86f4b08b2386",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/elements/system_reference_document/classes/class-wizard.xml",
+      "sha256": "e614b3ce298a5797488d7206e0f91a46eb1f9a0a899c2f7c875c177be2d2e4b1",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/elements/system_reference_document/deities.xml",
+      "sha256": "acc8630da0e7e8ff3ef9a5d854ae6e59d9c029c957df9ca1a6a7b7f2efba782f",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/elements/system_reference_document/feats/grapler.xml",
+      "sha256": "fabf72743822fdff0bc2b3e394b9b62816352b490f628d9e167a18452d0eb9d8",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/elements/system_reference_document/items/items-armor.xml",
+      "sha256": "2f556c8e5cf3ca2781ecf7e02636b788007dff3d9c5954b00deb67a7e942d380",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/elements/system_reference_document/items/items-gear.xml",
+      "sha256": "846aa73e823ae2eb9d1020a70d889374636f7fc0917d6bb529acbb21b6bc5eec",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/elements/system_reference_document/items/items-instrument.xml",
+      "sha256": "eab9926402461f828f03afe6c040f61171f6a9a12ee56375713e5f825c9fc2de",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/elements/system_reference_document/items/items-packs.xml",
+      "sha256": "e60054ee7304582f275ccdbb96fdfbeb02649b9c161872bab0eef35628abd720",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/elements/system_reference_document/items/items-tools.xml",
+      "sha256": "78959dd7f9e1da7c6d38a646c7a8b864556a0028bf42290a213294ea7c4d7641",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/elements/system_reference_document/items/items-weapons.xml",
+      "sha256": "ca2e43477f39e43ed7accd01413ded882fce7d2f19ec2e946a8aad3ec597709d",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/elements/system_reference_document/items/magic/items-armor.xml",
+      "sha256": "c2d1f43fb635520478001f8ea7ee5daba854e9cfbc65119999257ec1cd76977f",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/elements/system_reference_document/items/magic/items-poison.xml",
+      "sha256": "58da35382de9001c5313f6191de89a2d6dc4beccfbffe076c04efaeda30b1230",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/elements/system_reference_document/items/magic/items-potions.xml",
+      "sha256": "d5b8cff329aa85cf90256aee96df46094619d9e0501c506e2f506ea43430864b",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/elements/system_reference_document/items/magic/items-rings.xml",
+      "sha256": "9e31e19ca1bd3a9262e9f8f3ce35de69f1ce62c8394f740a35e29efd210e3180",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/elements/system_reference_document/items/magic/items-rods.xml",
+      "sha256": "dcca9efcd9ac1f1aa1e5e5f574025f329df9076843ef82b669fcb0deda2365d0",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/elements/system_reference_document/items/magic/items-staffs.xml",
+      "sha256": "f61216f20521674e6998b9c46b1e56d9f893704c982a18f1ebaa2656aeb8007d",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/elements/system_reference_document/items/magic/items-wands.xml",
+      "sha256": "efc0ae845923038c086649dab57fc0a7f8259b968c0361bfdcf3a4b7f617ba0e",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/elements/system_reference_document/items/magic/items-weapons.xml",
+      "sha256": "ab4ff734f199e149cf1a50c1541757de0a284cfb489cecb08da1b2dd19085090",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/elements/system_reference_document/items/magic/items-wondrous.xml",
+      "sha256": "6502e451016bed933bc9a949af8020c633ac2036d0b5288890a272e6467cd6ed",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/elements/system_reference_document/races/race-dragonborn.xml",
+      "sha256": "218b54435ff4df4b72b8062795089acfd4340a31095e268e57cb7c014d06d57b",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/elements/system_reference_document/races/race-dwarf.xml",
+      "sha256": "0f22a03fc8f217cb775b644c8d88cccc2c04ab1e34b7b967fbcd50fc317a9c6b",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/elements/system_reference_document/races/race-elf.xml",
+      "sha256": "a776c5c3e9090ec6dcd1cf14709a5f5d7b54a84844fda473c7149dee148a736a",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/elements/system_reference_document/races/race-gnome.xml",
+      "sha256": "8b661239810c8e8af2fcc9109127e2a6586e4bd346edbe00bc2da068747f950e",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/elements/system_reference_document/races/race-halfelf.xml",
+      "sha256": "c35bd8bdc50fb0f48e021a1734783b924e5ae734d36714f73e4d43986f403962",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/elements/system_reference_document/races/race-halfling.xml",
+      "sha256": "da288c8cdfa4af556e91889847979fd4016e86fc01252c67ee9ea4c6e28aa7d8",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/elements/system_reference_document/races/race-halforc.xml",
+      "sha256": "d59d3510e1195006401abf8e2b80515951d1fbf6c46cfc4a4fcf49e469531b31",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/elements/system_reference_document/races/race-human.xml",
+      "sha256": "fb07d0aba4bdaf7ebf372694c4e7d0d12cefea23b9325ed3f0eaa80b243d058c",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/elements/system_reference_document/races/race-tiefling.xml",
+      "sha256": "b955a01be0cde4c9b1051eef39cc7a50d5969b8a1023eec49d87b76f7e92f84a",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/elements/system_reference_document/spells/spells.xml",
+      "sha256": "d2a9f6256c75aad655f1feec20f0c365efecbe17583845971f8ddd37435a4034",
+      "group": "verified-srd-spells",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Data/experimental/experimental.xml",
+      "sha256": "3a04bfde533e87c3d942d5563083637d4ec326cff075b94a0782d18ffe52c6f9",
+      "group": "legacy-rules",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Documents/description-abilities.html",
+      "sha256": "b33662a18b0a87ac58e3919432fb17c8e13aaed6e6f9d80421287c26e305846e",
+      "group": "legacy-help",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Documents/description-background.html",
+      "sha256": "4620447f74235badc27658159591035132f7e688b39d42436cac8dc8b7235e44",
+      "group": "legacy-help",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Documents/description-changelog.html",
+      "sha256": "0545f0828a8462055c77381b87880d35e7695e795a0ee61b2ea3db1252ce41d4",
+      "group": "legacy-help",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Documents/description-class.html",
+      "sha256": "e3fbab28fb58a6ed96cdd8f762d607b4b28a27d6c4b7ec9154851a0089ca6c3b",
+      "group": "legacy-help",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Documents/description-equipment.html",
+      "sha256": "565901c372f42fa12212a2cb19cfb251879c94b10819e47623f9d041e04bc109",
+      "group": "legacy-help",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Documents/description-feats.html",
+      "sha256": "4f1e39a0dd91bdbb68b0efa9ec782da5851c067f5680e4d9d665a8adf6e18fa4",
+      "group": "legacy-help",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Documents/description-languages.html",
+      "sha256": "a2280c390a4edab3de844d1848eedeccb32085bd3d782a14460d669ea36ac2db",
+      "group": "legacy-help",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Documents/description-notification.html",
+      "sha256": "8d0eb8cac2f391b4872aa14fb088b5eaa504742b71155ba5b7a48adedb380a3a",
+      "group": "legacy-help",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Documents/description-ogl.html",
+      "sha256": "8b8503383514f21a1b3060ef495d4e0cd2411684fa7aa5554f80cd07e4183c79",
+      "group": "historical-ogl",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Documents/description-panel-design-data.html",
+      "sha256": "83b54f68075e61b7ca60d4aecd1666ee45b00cb5c15157296ea2f1157d1c8e7d",
+      "group": "legacy-help",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Documents/description-proficiencies.html",
+      "sha256": "b601cd7929a8e0b0dcc70a5ce101a35412433c1843985e5da0723b18dee2df5b",
+      "group": "legacy-help",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Documents/description-race.html",
+      "sha256": "36dfdd08acf453535d05a43aa7bd78dd93be7835efaf0187146be38e3da7845d",
+      "group": "legacy-help",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Documents/description-skills.html",
+      "sha256": "668a9c677d55329c6f88206a4add9f4028f50973cea9eee799e81ae8f79e3252",
+      "group": "legacy-help",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Documents/stylesheet-dark.css",
+      "sha256": "cd0467eb5ccd2a4244e330b23aadb7dd45b2edc2746eef2b1c4c3fd89d743a85",
+      "group": "legacy-help",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Documents/stylesheet.css",
+      "sha256": "ff9548df50f746f76ce9af689e57104cda6e4db61e8f57e89bf7226720219cfb",
+      "group": "legacy-help",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/abyssal chicken.jpg",
+      "sha256": "93c3eab83d73eb5f06d45eb329bf320496fc05d309d76925c0334d26316976a4",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/almiraj.jpg",
+      "sha256": "158688f5f8886deb357452f27370b1ac6ff7c6af7e4d1b37344acd6e790335de",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/bat.jpg",
+      "sha256": "7cf599e3224d898935c6bbca0a087cf6d0516c22d14cad72f8807b99fa288350",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/bear.jpg",
+      "sha256": "d493b0637b331cfea1f8d795b6388d0bda87decca664dacd0523f0962ce74cec",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/beast.jpg",
+      "sha256": "0602eb25171772ab978b0c01ffe21a9200fc504958282e84514922999edc46e3",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/beetle.jpg",
+      "sha256": "74702747c2930e043a98505f12142d46b3923ca636ff5ad8277a39421dfc956c",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/boar.jpg",
+      "sha256": "3f38609b8e2ff46757e1914029ef8c78f775acb76c56e3c349b4b102fa857e35",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/cat.jpg",
+      "sha256": "410843d5044a62c9cd37253ebd222657a653f653d9ae4161daa622cf6b3b9792",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/cat2.jpg",
+      "sha256": "282d2b6aa74ea050dd99f8e57ab38049f3a892464ceddcef043336d8a44e4f4e",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/cat3.jpg",
+      "sha256": "8cf8129f0f29b23664de4599dd59d56bb8487ee00e7b1d634be9f42eb0cfcc31",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/deer.jpg",
+      "sha256": "0a0f984f1230e7e4c8bcb5c46fad46273290a887c2cffa3ce81eb816ead4e41c",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/deer2.jpg",
+      "sha256": "1b71b1acf2331b84925a9a377503fe3b39f5792a268631b330c38754db537252",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/default-portrait.jpg",
+      "sha256": "67db4cfb5515950b2d2631687d03b72de3bd159329d08b2d49f46f67b2f28a2d",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/dog.jpg",
+      "sha256": "d1f80f964fba08b641a9c0878147b7f59bc1eb667c8ff2abfa69873e03d6941b",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/frog.jpg",
+      "sha256": "84e77122662b77bcf1207a92393354ec2561c54dcef3f97eaa02b607ab8edbac",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/goat.jpg",
+      "sha256": "645b5e73681f400a9c5076bf97205a1345c91b43c02fc95e8ceebba03d1839b1",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/hawk.jpg",
+      "sha256": "9cdf1d69a212dfdbba669b081040bd45ea0ae7d7b6e6c8d45b9346685503c3cf",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/hawk2.jpg",
+      "sha256": "e49e479688a991df2cbf429ee46e4ec94b986f98021955492bd0c22a985bde8a",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/hawk3.jpg",
+      "sha256": "de9722867dacff65d0d621e17592cfc2693b26ab0b123b46fc9ec4dad9d686a2",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/hyena.jpg",
+      "sha256": "b0eef6552f29b14971d368766a5e6d4c07d82efa8da56541a60806556c5bc784",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/imp.jpg",
+      "sha256": "cefaa12971996729aea6c0a43f36d5265eddb5d278cda5941cda2cee21f66be5",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/imp2.jpg",
+      "sha256": "882ab3dfa1758863373cd14bd288a1e8fb1fef808a64804edcd3be490522b0d6",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/lizard.jpg",
+      "sha256": "25c0608ebeece2dc2289bcf2f5b72ac69892231c5588b64fd101d71a07601746",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/mastiff.jpg",
+      "sha256": "f77fad5e584e358f45863c49e598db677f5408f924198bd83fd8497a5f791a8c",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/octopus.jpg",
+      "sha256": "8936c996a97fc8a6569992d12fec52238297f699bb6756b823ae20aa1cf9544f",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/octopus2.jpg",
+      "sha256": "161558dfb2c687dbff58e1e58b6115fc6ffd7f2953dd94cbf8e72d20d9f7ca2a",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/owl.jpg",
+      "sha256": "16a8f52e2f577c56bd53820c80acf44c3635e97c11b3163fd7496463ecb93457",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/owl2.jpg",
+      "sha256": "e3384abc5ea0ec4fe0badc14aaac1327fac99eaaa0f43d18af9e5c843d12a075",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/panther.jpg",
+      "sha256": "ae3e359ec419f9ef22fb76bd671aae776b2549bbd4373d87ef3d63f747839d76",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/pseudodragon.jpg",
+      "sha256": "8aeaf6d481a49de8fec6d93765fa59a80fb0204260c74782fa84cd2012d609b7",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/pseudodragon2.jpg",
+      "sha256": "a48cbe937c46012f12b84ced8eb483602a6cdd43d545ed16798229bee1790bba",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/pteranodon.jpg",
+      "sha256": "01b4d1f67132895bfbd703dee9c6b3323f60ea74e99e118bbe60f980ba45dc84",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/quasit2.jpg",
+      "sha256": "7885363583ff952baf6dae0025429d39fa04c83081027d2ace535bed233d9410",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/raven.jpg",
+      "sha256": "246c738139e15c143f779c5511c676408dac93a8c273f546891c31c73b93a059",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/shark.jpg",
+      "sha256": "15043fec3c1d8a4deca2860a0b67c6416eeaa8deb5c9d3d7c417ec347573e540",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/snake.jpg",
+      "sha256": "8d581b51d7e95306a2657d57d5c73709867da737b4960c82e68a80b964f9b9e5",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/snake2.jpg",
+      "sha256": "a87611037c2309051de915d8cedce60148176d8ce12e1bb98cdee9e6537d72c5",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/spider.jpg",
+      "sha256": "60a5fd93b7158bdca8e58ebe88dfe3f5a7782b9c4327dcdd5984a3530be68548",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/sprite female.jpg",
+      "sha256": "91cbcb66c293c14437231893541cd64621c7f47572553f80b4ff05bff490ee87",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/sprite male.jpg",
+      "sha256": "9115a763bcfebfd538628564c8f0e5e002c90435b225ba3c30fd51434979ad5d",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/steel defender.jpg",
+      "sha256": "901996ba720d0668cee9220073adb523ddca017f9f4571e0612179f45db79d85",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/steel defender2.jpg",
+      "sha256": "40129f8aa9d33540822a4329172a437cca2b6268a34733cbca81dc3a2ee866fc",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/steel defender3.jpg",
+      "sha256": "1c0ec5775512e3fe461ffbab28182c5ed7dc5b10c80db568d2c60227ce4d6ac1",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/stirge.jpg",
+      "sha256": "5a877c621c4d710420533bc0d3d90a68709649d57c67b2943dbb743c7ac19bcb",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/wolf.jpg",
+      "sha256": "67db4cfb5515950b2d2631687d03b72de3bd159329d08b2d49f46f67b2f28a2d",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/wolf2.jpg",
+      "sha256": "48ef35b1e67dfc09fbd75594bb5e5c238aa3df6f203bed2fe3e9dbc4f36ce78c",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/CompanionPortraits/wolf3.jpg",
+      "sha256": "a73aa95b6cd58a3b65e03fdd321d3b23a69785a88458e7b10103f453133535ba",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/Dragonmarks/mark-of-detection.png",
+      "sha256": "41cc4b8ec89a7ea4aeea07ed1372da5011969aba28ff7db9f7fac1f5e0f730e2",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/Dragonmarks/mark-of-finding.png",
+      "sha256": "3afbfcafa8c6b79b9b92e670bb771720a2e201340b6f74161bf3382adae893ee",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/Dragonmarks/mark-of-handling.png",
+      "sha256": "687a21e8a6d2164464990adeee28303a57247a6a3cd6a91190e51f64f2db6946",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/Dragonmarks/mark-of-healing.png",
+      "sha256": "bf60aed19e102d99b394a393b21e205cc287a83abdfec9383eeaf9d34de5ee2b",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/Dragonmarks/mark-of-hospitality.png",
+      "sha256": "9d4b5f2d4ef8a44e4d239f5932880905d92b4b1c828da7007eb62f01b5610883",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/Dragonmarks/mark-of-making.png",
+      "sha256": "455af9478d0135bfaf1cd4feb541dcba4aefaf0bd0ce084c9776105f4e1833d0",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/Dragonmarks/mark-of-passage.png",
+      "sha256": "6601a460e119ab1380e4ea9ac506a5c3d655a8c337490f0fb623a4e6066bde03",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/Dragonmarks/mark-of-scribing.png",
+      "sha256": "9bf4215ccceb6834c353ccfdeb799cf4de99e8fe9e71f1f8418343313638e6ce",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/Dragonmarks/mark-of-sentinel.png",
+      "sha256": "4ff1550b2aab6cf88fde9c21a60b3502e3cab85e0feceb000b0d0d1896a974ac",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/Dragonmarks/mark-of-shadow.png",
+      "sha256": "b768c4d9d925b2f198feae4de0176894d2bd64ca18f48f09ef47f45945745ecd",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/Dragonmarks/mark-of-storm.png",
+      "sha256": "e8b4195ef1d57427168e322f0a354d1524466216f5a44d2943def1746f6e0bb6",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/Dragonmarks/mark-of-warding.png",
+      "sha256": "5d706494cd86e5ef617c800636e961794f88d5b7f7a6fa25b4ec927d79ea2ba1",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Faction Emerald Enclave.png",
+      "sha256": "116659712e21258a119809deef3546502cbf59c832191313e6617d68194d353c",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Faction Harper.png",
+      "sha256": "f1bcf67b0f7123c8ac5a7281403ecc95569ea9ab0ac94418469a85c2ffd272a0",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Faction LordsAlliance.png",
+      "sha256": "a55664e888ae76288b18e5c0d145b8f6ed8f63c98a10ba7b88e15e38d1d99bcb",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Faction OrderGauntlet.jpg",
+      "sha256": "c66deb7cf95eb5194fc164998b1df8756d68c6040d5d29cd998f8b95f057cebd",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Faction Zhentarim.png",
+      "sha256": "e9d5aea074e9077eaef2ceda325df50908b5c3ae9bb94091437676b2f80d158c",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Guild Azorius Senate.png",
+      "sha256": "6c8c1c5f3150f14401ed0cbd63110d8d13f25da098149ce86a13cf8c9ad125b1",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Guild Boros Legion.png",
+      "sha256": "615e8d41666e72bdbee431a7b03700c6991519e44763a628bb5a6133c0faded3",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Guild Cult of Rakdos.png",
+      "sha256": "19928e59a5b61c0c052a85d658303b69ab19f8105c9bb0636c8b67155e275520",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Guild Golgari Swarm.png",
+      "sha256": "d1feb433a4d57f603a83a4c878f2f37bcac9d3eeaa84dc39eced9c960d29dc23",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Guild Gruul Clans.png",
+      "sha256": "23a2c0cf160c257b28cdbe3f6fff292c2c695cf92a0e5efb389b738360ea22d9",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Guild House Dimir.png",
+      "sha256": "be091cf654cf2e93cded958c9e1990f92782efb7afcc8422a87c67bef3dec88b",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Guild Izzet League.png",
+      "sha256": "38aca5f3745f11de61ab0f877ae0fa25a5407843662fdfdd0144c7a05168b5b6",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Guild Orzhov Syndicate.png",
+      "sha256": "e58ed0b465f5ebcea720221f3f400739b50a178d0f1a5aa22615b67ef9e79b29",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Guild Selesnya Conclave.png",
+      "sha256": "2788bf146bc289200f15a4a7ff352bf462422c0156cfb49b7f00a9152e523c7a",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Guild Simic Combine.png",
+      "sha256": "dc9f45f03be3028c0560d5dbee7b0220657d5b2edc7e3f8b7bea7404b03e80a3",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Symbol of Amaunator.png",
+      "sha256": "0805d24f5acae1b5596850b39e48b39e0f41a6c0d6c661f59bceabbc0dc4c8d2",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Symbol of Asmodeus.png",
+      "sha256": "b0e3c1394902844569a00f0fe01a7e469dc01b484da2148215a8d3f927398b76",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Symbol of Auril.png",
+      "sha256": "636e50425bcffb40b6bfe556953e2e4be13031d95315c03877de11e975191b6a",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Symbol of Azuth.png",
+      "sha256": "48356b628da40cef15dc778d2963ccf76c7b079a2acdfab6f009631da31202bf",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Symbol of Bane.png",
+      "sha256": "cad733229ddcedcab9de404f91feba3f781b53b71fe3adb2d64112e08a8680d1",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Symbol of Beshaba.png",
+      "sha256": "8e0e8de4aa4304a6443042074880615eda8f4dce3749c09c241dbc6e7493efb5",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Symbol of Bhaal.png",
+      "sha256": "883cadc7644dc7006d798fa0472e71cdca531bece67d2b6a20c0338e91f2f124",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Symbol of Chauntea.png",
+      "sha256": "7fe3d7b5803b6bceb518c8fe442b6e612b741f9e01700d1d464b5353dcd3c4fe",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Symbol of Cyric.png",
+      "sha256": "47d2a28e14fd7682049990d555e0b09f666cc38b35832c1ddb74b0fe6d9b3637",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Symbol of Deneir.png",
+      "sha256": "9f6666a392b60a1c0645d9e85f07ddf78f5f1d718bd6a46e5ef5f3fb14e5dfb9",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Symbol of Eldath.png",
+      "sha256": "016c9ad71556f011c970df196a095cd908bba57013937212f2d4d79c4aaacb9d",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Symbol of Gond.png",
+      "sha256": "7ab2b76304fd03a117958c2ebb143e7ceadb87c259e5e12bfe2cf8d9b5e3eb6d",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Symbol of Helm.png",
+      "sha256": "f679be4c82c5618f3ec2e903ba4eea86999ff2ad6ebf44192aebab52ad9adbab",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Symbol of Hoar.png",
+      "sha256": "1a1b0ea78b0a5740d0ee748fe7b747218e8bcd30b1b4e975479d4885931412ab",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Symbol of Ilmater.png",
+      "sha256": "ffddc18a1e1e8b075f6db8213504d6bccf7d4c471a3225711a37257e2b5a5351",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Symbol of Jergal.png",
+      "sha256": "53a36640741002cf23e27c7c393e13fdaed47ec51764e26918487d588a4c8863",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Symbol of Kelemvor.png",
+      "sha256": "99f29c9ce9ec1a0598ef1091feaba4109813f4016950ffdb94f9ddcef8c2d0b2",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Symbol of Lathander.png",
+      "sha256": "5b07c1b3a1c86d9d126f5bd7c497c3a47aed4401928d9e173b5f491d789ee6ae",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Symbol of Leira.png",
+      "sha256": "ad513830065241f1654290cc497c6e2ee863dd5d97987c11f330fd915814ace6",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Symbol of Lliira.png",
+      "sha256": "d15eb5564292181ee82250659d149c84593fb5b18ff34aa08b00432aa5fdadd2",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Symbol of Loviatar.png",
+      "sha256": "d2d86de62ee7b17378ab39add367fa6074674d42481392387d384aa7fb025793",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Symbol of Malar.png",
+      "sha256": "542f24aa450ab7835ae3a3efda31457b714e946a01c53608b77ada6425fe0425",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Symbol of Mask.png",
+      "sha256": "815e7c1268b0f5d3037d7963b0386d0ef38f02404c19318a121fb18d1da4f149",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Symbol of Mielikki.png",
+      "sha256": "53c9c6f278ca9529014f6c5dad64ee930cd631286182646aa4470c15cfb11db5",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Symbol of Myrkul.png",
+      "sha256": "46d72202edf4f8417a176e69e675b5e002756689581297a0a95ec80b250b8dd9",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Symbol of Mystra.png",
+      "sha256": "8337d8d7b6e0dcebdfe932542ed6786db3edaf789c761cf84836353eb2cbf2c6",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Symbol of Oghma.png",
+      "sha256": "6e65d1c6d1adb0368a55c0a6bcb4c1f23b6e1d1049116961583570629f395fad",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Symbol of Savras.png",
+      "sha256": "18e6e38cdab3b2405501682ba6f399852906b472d3c8d85a392bad4ed0e958aa",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Symbol of Selune.png",
+      "sha256": "a5d0dad1f3a6d4a4f629290740437d883ec271a4bf0ef740a0a27e553f9a079b",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Symbol of Silvanus.png",
+      "sha256": "c8add7ebfc720e33e7e383478be04318ccaea0506445509762e6cd063aef9682",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Symbol of Sune.png",
+      "sha256": "e9ffcd7f062b9f2e7338b5aeb16c852a0c3df7cf7b39102ef6417ad4326d6c16",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Symbol of Talona.png",
+      "sha256": "d09761b0f75be5a1796d1a4daa787a5ae9985007fe9f36dc66a1810727814d80",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Symbol of Talos.png",
+      "sha256": "ff28a3542855ea082fbbf4a415e321f280fac22b33b25f3be148cac92d4ce547",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Symbol of Tempus.png",
+      "sha256": "a66a431a748618eebb730699eefb2941870494e533a95f60cc0c272935af438a",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Symbol of The Red Knight.png",
+      "sha256": "80d26719b87651861187a801606a965b202b89b45bf77dc17e7e45a12dff6437",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Symbol of Torm.png",
+      "sha256": "fe6845a21f3abad755e4920556537a4bab44c9706565c9a252dac48c25d48788",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Symbol of Tyr.png",
+      "sha256": "1b0bf76f1b8cec4bd86ee2fc4858c786c34a8b2dc1672714b7aa2ddde328d7d3",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Symbol of Umberlee.png",
+      "sha256": "196a87e749d39b76ce3f0088f3eed85e5cd0a87f83a1a7f5722741898f98b573",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Gallery/OrganizationSymbols/Symbol of Waukeen.png",
+      "sha256": "d1205ad951072b2635688307c09cf7f8174674f0554f576ab52b892473acf97a",
+      "group": "legacy-gallery",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/Page/background.pdf",
+      "sha256": "b8dcf7b7d4318bb610596beffce9688a86618aceec6ab0c28819491f788ba1c4",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/Page/companion.pdf",
+      "sha256": "815dcb1ba7cecb070cdf728038f5be07a19a18375e521ee3125f592120eaca98",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/Page/details.pdf",
+      "sha256": "254181b8a766a2025688afdf9dfe0c0be18989299164a6a10f3dd71e2123a36e",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/Page/details_2.pdf",
+      "sha256": "58c785d49f4969049253c20904e826c571fa7b9362491eb9cce1799bece44dd7",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/Page/equipmentpage.pdf",
+      "sha256": "289af8ba634af85595fe6614e796bfdd8cbaa16cb76cb0910bb89cb0a30785f9",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/Partial/Spellcasting/column_entry.pdf",
+      "sha256": "10ed4d712345723f93b34e4469ec26fde40589df0c19f5c8d18f57cc48e83373",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/Partial/Spellcasting/column_header.pdf",
+      "sha256": "17a6ecabf4d1d5ff5412179320a0374e14f37e5b9e1e5289cc90bbf010f6d343",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/Partial/Spellcasting/header.pdf",
+      "sha256": "c8e4d0fedc16644575e05a46b6ddc24b05a8c9568c619498725212e8cc862879",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/Partial/Spellcasting/red_spells_bottom.pdf",
+      "sha256": "e7dbdab7f36ef355d1c7112f72d894f3d4b20f9e9dcb933cc60696ab966e1845",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/Partial/Spellcasting/red_spells_header.pdf",
+      "sha256": "e5a21dd57cea31e4ba7ccd6e870827b57ba51a8a46386fa6dd92cf765d323446",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/Partial/Spellcasting/red_spells_middle.pdf",
+      "sha256": "c4331278bc6f231d5936fc4df88b26c37136975b1c20922a037c375c7c80caef",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/Partial/Spellcasting/red_spells_top.pdf",
+      "sha256": "bea285f0504c4f0fe0a78b65260375cc261e12a43b10f0a2461beb9679c8c6de",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/Partial/Spellcasting/red_spells_top0.pdf",
+      "sha256": "e6a398976fa7d1df2eaef895c358b8ef500e3d58bcd9b5b374aabbef7416d0a9",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/Partial/Spellcasting/red_spells_top1.pdf",
+      "sha256": "c980ef2ccce59e4e333841e20bec81df9e4e0f6e1c30cd0f354c50ab0f44623d",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/Partial/Spellcasting/red_spells_top2.pdf",
+      "sha256": "36a7d0b06c39fd04715a93f9aa3aacec0db6798f0da4c123ee9a9ef3c8455b53",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/Partial/Spellcasting/red_spells_top3.pdf",
+      "sha256": "e7211c42ea4a9bf10e8552c53242ca1074f139e797e5a3af7dd30658daf4b8b1",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/Partial/Spellcasting/red_spells_top4.pdf",
+      "sha256": "dea776f28bcf6c341349305d2a907c888f722a0f2d1ad27c79d9d9889ff23ab2",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/Partial/Spellcasting/red_spells_top5.pdf",
+      "sha256": "3d412dd6dd2114169548c5164cbbe24c4a830d453e94717d8e6cdb8afd89ea4a",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/Partial/Spellcasting/red_spells_top6.pdf",
+      "sha256": "5fe60238b56cce7a76eb1d0d37aedd2f45878c6bd7f46bb34afbdff089327e91",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/Partial/Spellcasting/red_spells_top7.pdf",
+      "sha256": "d87fd0c5cfd828c542bad77a2e8d82140d2403c676106b178a8d84a0e0cecbc4",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/Partial/Spellcasting/red_spells_top8.pdf",
+      "sha256": "5984fd548836aff4f9dff597eb57f3773cbf26bb4d66f74968a3334811319c74",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/Partial/Spellcasting/red_spells_top9.pdf",
+      "sha256": "2f74739d2d7bcbe47d36a0ce004d7cad2f79f4b2eb86bc9a917b2dba3edb58ae",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/Partial/attackcard.pdf",
+      "sha256": "49362d12d92cf5a665c49061d2961070a1454e1716e6033e36abc875d71bfcb8",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/Partial/aurora_partial_spellcollection_bottom.pdf",
+      "sha256": "b207da8fe76be84f45af85147f88f347d0d5336d37362372f65097d04b4626e7",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/Partial/card.pdf",
+      "sha256": "46ce4d59fab18fe0962f4cf2873dffa66c822be4afa48e179db514438c2bb4bb",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/Partial/partial_100h.pdf",
+      "sha256": "5e0d59ba28566d499a5291c9cb68ff004ff8acd450114c30368f56bd8b028b35",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/Partial/partial_spellcasting_header.pdf",
+      "sha256": "a8b27aea420d3effa49b89496d20e0cacd694b76a38e8013bdb4450f592e177d",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/Partial/partial_spellcasting_section_bottom.pdf",
+      "sha256": "aa0774e3fedff21b30ad2d987ee511866259b1ab6f745ad903c4a99f480a519e",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/Partial/partial_spellcasting_section_center.pdf",
+      "sha256": "d2825cc0024c04b6a8d448968321727c8aa3bf55d6e66df36f55e592f155dcc3",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/Partial/partial_spellcasting_section_top.pdf",
+      "sha256": "825918213428053491224c8963c9e304846cc44cbb07b3c7376fc75454d523ae",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/Partial/spellcard.pdf",
+      "sha256": "f4f938e31c8842d5bada5bccb528d813b31cf08116dae7b7ad47b2d823963aae",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/aurora_background_flat.pdf",
+      "sha256": "416e24df0eace6bf34c072c358eef0c67d8ce9e997776da4932c4052c409ba8d",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/aurora_cards_generic_flat.pdf",
+      "sha256": "8721e10da6602560834d2118ca172138346d1532a90f0a1d82108b8b1e00dddf",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/aurora_cards_spells_flat.pdf",
+      "sha256": "3a5f7a925208811a398ae738cd8bb64387b2e2522313fcb28facd209e6ea4c5f",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/aurora_companion.pdf",
+      "sha256": "b1a93db968a0afc5745eb4483974a1596b52ff8eb77b11649db4e17bfa356cd3",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/aurora_details_flat.pdf",
+      "sha256": "030865181f178b77fb06803e0227e7315512ee9f4a9538fbd7eddda86bf1845b",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/aurora_spellcasting_flat.pdf",
+      "sha256": "fea88fd22f1c1b14378eeee5f9f83f69356e3b11f341b665f4a8fc8cf1fa18d5",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/aurora_spelldemo_flat.pdf",
+      "sha256": "55895c11fe5a2d06fea969275bf2c13d51652060c0595bf599cd4ebc71654b0c",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/aurorapagecompanion.pdf",
+      "sha256": "1d7a54d19c5990426db39841a2a69907275ca5dbce7d54f01d8e8a098451f0df",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/charactersheet.pdf",
+      "sha256": "8e7b282db42af119c46fef696b15e7430cb1e93bd09a478780623ca1a1908a48",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/detailspage.pdf",
+      "sha256": "3e526b9bfd61a6b5452fb0e2c8cfba8120a61ec05334864cb1e22e5ccfb7de36",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/flat_details.pdf",
+      "sha256": "95f4ae6130d70a746bf6471696841530177cc3c7d67ed04d4215ea55ce4e7c77",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/layout_page_1.pdf",
+      "sha256": "f679ab708fdc068bed5401dfda0e9abc16d35bd4a0536ef4f8b304b797cd471f",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/sheet_background.pdf",
+      "sha256": "19198012d55a097b64f0d7541bd31c36d233c5be6e927bb592d876ecc4d2a770",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/sheet_character.pdf",
+      "sha256": "6a4ba96b2d4c0e8bf0786d62e151bd602b01c6a6d59a1be8114aa586601d3fe1",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/sheet_character_details.pdf",
+      "sha256": "1d9d9e280a371c0b23f35738bca206c5101ec85d004264b22f077b0a3db47f75",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/sheet_companion.pdf",
+      "sha256": "c4ec88d85db5b61c5b5d353ef81827fb1fd6124b8b3834f8fc0e95dedca30d1a",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/sheet_details.pdf",
+      "sha256": "f1fa96c35ac3bc91eb95dad15b4b5baca4b73ec49c8450f58f3b0a46958cd4b0",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/Sheets/sheet_spellcasting.pdf",
+      "sha256": "c0a50a0fbd225ec45441025575f788b9172c36699978fcda7ae68bc2ac5130b2",
+      "group": "legacy-pdf-templates",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "Aurora.Logic/Resources/card-bg.jpg",
+      "sha256": "3b6023d12479e4a6edd39d47cf91cca318e92e1ef7022ea6d3f8f6b99e67ba65",
+      "group": "legacy-card-background",
+      "distributions": [
+        "windows",
+        "android",
+        "source"
+      ]
+    },
+    {
+      "path": "docs/branding/working-titles/README.md",
+      "sha256": "fe646ee919f729430c01db2141ab680556e42ae5fa291bd372628fb64c8bce45",
+      "group": "native-branding",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "docs/branding/working-titles/aurora-constellations.png",
+      "sha256": "ab54a17c3233bf4fae906ad1ef3cc45b472799cfd694e62e623e8101ea38ff76",
+      "group": "native-branding",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "docs/branding/working-titles/aurora-reflections.png",
+      "sha256": "4328c804d8efde5027643c3a8b7d019eec1a0989cbf0ffafb148ddd7cec44da7",
+      "group": "native-branding",
+      "distributions": [
+        "source"
+      ]
+    },
+    {
+      "path": "docs/branding/working-titles/aurora-transpositions.png",
+      "sha256": "d7a167f9deb81fe3bbe05fa40cd26cfd3c2846ab22df7cd68cbaa3fb4714d238",
+      "group": "native-branding",
+      "distributions": [
+        "source"
+      ]
+    }
+  ]
+}

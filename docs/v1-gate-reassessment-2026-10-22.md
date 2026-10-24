@@ -1,0 +1,67 @@
+# v1.0 gate reassessment — October 22, 2026
+
+**Windows x64 and Android RC1 source freeze, local package acceptance and hosted CI now pass; stable v1.0 is not yet cleared.** The frozen source is local commit `b85ee99091da9a86f70b4b45db24b921eba4c1ea`, candidate `1.0.0-rc.1`. Final distribution trust/runtime acceptance, actual newer-candidate update delivery and promotion-facing information remain open. Windows ARM64 and macOS remain experimental; Web remains deferred. See [RC1 validation results](v1-rc1-validation-results-2026-10-22.md) for the exact artifacts, checks and preservation evidence.
+
+**Two earlier host blue screens remain unresolved. The owner subsequently authorized ordinary testing in a fresh software-rendered Sandbox. The [resumed acceptance record](windows-resumed-acceptance-2026-10-22.md) now documents completed Windows Drive checks, a reproduced/repaired native exit issue, focused test/package proof and controlled guest shutdown. Debugger runs and crash/pressure reproduction remain paused.** The first dump identifies a null-pointer read in `dxgmms2.sys`, Windows' graphics memory manager; the underlying trigger remains unproven. Static analysis of the second dump identifies an Intel Bluetooth D0 power request pending at `BTHUSB` (`0x9F`, subtype `0x3`), with Intel's `ibtusb` in the same device stack. The owner reported normal use. These are different immediate failure paths; no direct common cause or Aurora involvement is established. The second analysis used file reads and cached symbols, without reopening a debugger or changing devices. See the [incident record](windows-test-host-crash-2026-10-22.md). The original interrupted session retains that evidence boundary; the later resumed session completed its controlled shutdown.
+
+## Reassessment and chosen work
+
+The preceding Android passes cover the named local/export/Drive, download/storage, sustained-pressure and actual low-memory-kill recovery scenarios on the API 36 Samsung. At the initial reassessment, a fresh comparison found **all 61 files in the storage2 source-provenance record unchanged**, with no current changed production files outside that record. Android was neither rebuilt nor touched during this reassessment; its device evidence retains its original package boundaries.
+
+The earlier accepted Windows package no longer represented the current shared code. Six recorded files differ, and eight current changed production paths were outside its older manifest, including custom-feature autosave, save/export handling and content recovery. Android-only differences are not Windows regressions, but the shared differences prevent treating the old Windows package as acceptance of the current implementation.
+
+The highest-priority independent work was therefore to run the accumulated changes together and prepare a current Windows x64 candidate. A saved snapshot contains **1,428 source/resource/dependency files**; the build used that isolated tree and the required existing desktop OAuth configuration. That configuration was kept private and was not emitted as a loose package file. The original snapshot attempt omitted the linked legacy portrait resource; the snapshot was corrected before the successful build. This was a test-packaging setup error, not an Aurora runtime failure. After the host restart, the source manifest still matched and the installer retained its pre-restart hash.
+
+## Completed before the host crash
+
+| Check | Result and boundary |
+| --- | --- |
+| Combined Release core suite | **1,682 passed, zero failed; one explicit optional 2024-content skip.** No passed case logged a silent `[SKIP]`. This is a new combined run of the current fixes. |
+| App layout and interaction suite | **41 passed.** The deferred Web browser suite was not run. |
+| Current Windows publish/package | Self-contained x64 publish and pinned Velopack packaging succeeded. Existing nullable/analyzer warnings remain. |
+| Package inspection | Portable ZIP and full update package passed integrity, manifest hash/size and x64 main-executable checks. Required runtime payloads were present. No loose OAuth configuration or scratch build outputs were included. The portable package was inspected, not launched. |
+| Fresh Windows Sandbox installation | Setup exited 0, created shortcuts and launched. The guest had no prior Aurora installation or character directory. Only dedicated test inputs/results/requests were mapped; host personal app folders were not mapped. |
+| Custom-feature autosave off | Adding Grappler left both source fixtures byte-identical. Manual Save persisted the pending name and feature. Removing Grappler then stayed pending and left the saved source unchanged. |
+| Two-tab pending work and character export | B's pending name remained in its own dirty tab. Returning to A and exporting produced a separate character without Grappler while the original retained its saved feature. Export did not save the source. |
+| Pending portrait PDF | A four-page static PDF contained the later unsaved name `Windows RC Aqz`; reopened inspection found **zero fields and zero widgets**. All pages were rendered and visually checked, including portrait and spell page. Source bytes remained unchanged. |
+| Native close failure/retry | Cancel retained both dirty tabs. Saving to the deliberately read-only owned source kept the app open and source bytes unchanged. Restoring access allowed A's latest name and removal to persist. B's explicit Discard preserved its original bytes. Final character close exited the app, and shortcut relaunch reopened the saved A correctly. |
+| Content and production release discovery | Refresh reported zero changed files; subsequent compendium search returned **2,194** bundled entries. The installed Updates page displayed the new version and discovered public **v0.9.9-beta**, correctly offering no downgrade. This did not test delivery of a newer release. |
+
+The initial integrated candidate was **`1.0.0-rc.integrated1.20261022`**, built from `7c2236ede74bbde386dfc160085a263844fa8316` plus the existing local readiness work. Setup SHA-256: **`5d28b6d911ec3b06c65bf3a91e1c703a6ae981b7c064b7eaba79c099c0743118`**. It is **unsigned and unpublished**. The initial reassessment changed no production code. Subsequent local desktop sign-in and native-exit repairs are recorded below. No commit, push, tag or workflow dispatch occurred.
+
+The read-only error still attributes the failure to another app holding the file, a remaining wording improvement. The active-first native exit interruption was reproduced and repaired during the resumed acceptance below; the tested data was preserved.
+
+## Completed resumed native follow-ups
+
+Windows Drive acceptance passed on `integrated2`: manual sign-in/callback and persistent restore, one synthetic upload/save/download, real competing revision detection with local recovery, explicit Drive reload, controlled guest-app connection failure/retry, and synthetic cleanup to Drive Trash. A normal launch showed zero cloud characters afterward. Other existing Drive files were not changed.
+
+The follow-up reproduced native exit stopping after saving the active first dirty tab on Manage. Suppressing intermediate navigation restored the full prompt sequence. **19 focused close tests passed**, and the installed `integrated3` package saved both tabs and exited from one native close request. Saved XML retained distinct A/B markers; sidecars remained unchanged. Relative to `integrated2`, only `MainLayout.razor` changed in production source. Desktop authentication's earlier focused run passed 28 cases. The earlier full suite/layout totals above were not rerun for these narrow changes.
+
+The preceding resumed candidate was **`1.0.0-rc.integrated3.20261022`**, unsigned and unpublished. RC1 supersedes it in the later frozen-source/package report linked above. Setup SHA-256: **`202908c38eab6b7a90a34d6e802b6523c7f1beb8e59384e7afd618c0059daf7f`**. Its 1,428-file source manifest still matched after the native checks. Upgrade installation, archive integrity, declared package hashes/sizes and required runtime payload checks passed. The disposable guest and all test helpers are now closed. These are local checks rather than final CI or signed-download acceptance. See the [resumed record](windows-resumed-acceptance-2026-10-22.md), `artifacts/v1-oauth-recovery-2026-10-22/windows-drive-acceptance.json`, and `artifacts/v1-window-close-recovery-2026-10-22/acceptance.json`.
+
+## Hosted CI on the frozen revision
+
+The owner authorized publishing `feature_v1-rc1-freeze`; its remote head remains `b85ee99091da9a86f70b4b45db24b921eba4c1ea`. The [Tests workflow](https://github.com/Idle-Handz/Aurora-Lights/actions/runs/39886743730) passed with 1,687 core tests, five presentation tests, 19 browser regressions and 41 App layout checks; one existing optional 2024-content case was skipped. API/behavior compatibility and release-note tooling passed. Windows x64/ARM64, Android and legacy Windows CI builds also passed. CI's Android signer matches the accepted phone package. All local RC1 artifact hashes remain unchanged; CI artifacts were not installed on the phone. No source change, release tag or release was created during this follow-up. The hosted CI gate is cleared; experimental/deferred platform labels remain unchanged.
+
+## Remaining release gates, in priority order
+
+| Priority | Gate | Concrete completion evidence |
+| --- | --- | --- |
+| Host testing boundary | Investigate host failures and limit resumed testing | Both dumps identify different immediate failure paths; underlying causes remain unresolved. The owner authorized ordinary testing with virtual GPU sharing disabled. No crash reproduction or host pressure tests. A resumed feature check is not proof that the host defect is fixed. |
+| 1 | Distribution trust/runtime contract | Choose and complete Windows signing or explicitly accept unsigned delivery. Validate the final downloaded hash, publisher/SmartScreen behavior and installation when WebView2 is absent. Android RC1 retained the established signer and passed its local APK upgrade with original data preserved; any differently produced/distributed package must retain that signer. The Windows clean guest already had WebView2, so absent-runtime bootstrap remains untested. |
+| 2 | Actual production candidate update delivery | Use a deliberately published prerelease candidate when authorized, then test download/apply from an older public Windows installation, immediate restart and deferred close with dirty work. Installer migration and release discovery remain distinct evidence. Do not publish stable solely to obtain this check. |
+| 3 | Release-facing platform and support contract | At promotion, describe Windows x64/Android as stable and Windows ARM64/macOS as experimental; keep Web deferred. Align backup guidance, release notes, downloads and feature comparisons, including Drive availability and Android's desktop-only PDF limitation. Current public beta wording should not be treated as an already completed v1.0 promotion. |
+
+Older/minimum-supported Android versions, gesture navigation, lock/unlock and accessibility deserve focused samples. Lower-memory/vendor coverage, long-running leaks, whole-filesystem exhaustion and final-replacement power loss remain residual coverage limits, not newly reproduced product defects or an unbounded requirement to test every possible device and character.
+
+## Windows signing assessment updated October 23
+
+**SignPath remains a possible free route, but is not ready for this RC.** The package includes iTextSharp 5.5.13 and the owner confirmed no existing commercial license or documented AGPL distribution decision. Licensing/notices are now an explicit stable-release gate, independent of the signing purchase decision. Vendored Aurora.Content packages also lack declared license metadata. Resolve those records before relying on SignPath eligibility.
+
+The [RC1 signing and distribution assessment](v1-rc1-validation-results-2026-10-22.md#windows-signing-and-distribution-assessment-on-october-23) records current provider options, prices, package signature evidence and the remaining acceptance sequence. Azure Artifact Signing Basic is the straightforward paid fallback at USD $9.99/month/account; a free Store route requires a separate MSIX distribution. All six Windows shipping-file hashes remain unchanged. No account, application, permission grant, purchase or signing was performed.
+
+## Evidence and data preservation
+
+Evidence is under `artifacts/v1-final-gates-2026-10-22/`: `test-summary.json`, `source-manifest.json`, `prior-candidate-source-comparison.json`, `windows-candidate.json`, `package-verification.json`, `pdf-verification.json`, `public-releases.json`, `head-workflow-runs.json` and `host-crash-summary.json`. Private source snapshots, OAuth configuration and guest file observations are ignored by Git. The screenshot-backed UI observations are also present in the task history.
+
+The phone was untouched. The host's real Aurora installation and character folders were not shared with the guest. Workspace source hashes and the new installer hash were verified after reboot. This does not claim that the forced restart preserved unrelated unsaved work in other host applications. The initial guest cleanup was interrupted by the host crash. The resumed session completed evidence export and normal guest shutdown; no Windows Sandbox or acceptance helper remains active. No host-driver repair is implied.

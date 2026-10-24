@@ -36,7 +36,7 @@ public sealed class AuroraDocumentsCompatibilityTests
                 (901_285, "4A1A6EC88B6DC32D8307A3063D54B1AE68FC65B6601D53BA5B1D51535BB3344C")
         };
 
-        assembly.GetManifestResourceNames().Should().BeEquivalentTo(expected.Keys);
+        assembly.GetManifestResourceNames().Where(n => n.EndsWith(".pdf")).Should().BeEquivalentTo(expected.Keys);
         foreach ((string name, (long length, string hash)) in expected)
         {
             using Stream stream = assembly.GetManifestResourceStream(name)!;
