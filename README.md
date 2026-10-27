@@ -1,22 +1,31 @@
 <p align="center">
-  <img src="Aurora.App/wwwroot/brand/aurora-reflections-logo.png" alt="Aurora: Reflections" width="520" />
+  <a href="https://aurora.idlehandz.com/">
+    <img src="docs/branding/aurora-lights-suite-mark.svg" alt="Aurora Lights" width="112" height="112" />
+  </a>
 </p>
 
 # Aurora Lights
 
-Aurora Lights is a community-led modernization of the legacy Aurora character
-builder. Its modern client, **Aurora: Reflections**, brings Aurora content into a
-new desktop experience while preserving compatibility with existing character
-files and content libraries.
+**5e+ Character Creation Suite**
 
-Aurora Lights is an open-source project developed and maintained by
-[Idle Handz](https://idlehandz.com).
+Aurora Lights is an open-source, community-led family of D&D 5e character
+builders developed and maintained by [Idle Handz](https://idlehandz.com).
+This repository brings together **Aurora: Reflections**, **Aurora Legacy**, and
+**Aurora Web**, with shared rules, content handling, and character compatibility.
+
+**[Visit the official Aurora Lights website](https://aurora.idlehandz.com/)**
+
+| Application | What it offers | Explore |
+| --- | --- | --- |
+| **Aurora: Reflections** | Modern character creation and a dedicated Session workspace. Currently a preview; Windows is recommended. | [Overview & downloads](https://aurora.idlehandz.com/reflections/) · [User guides](https://aurora.idlehandz.com/reflections/documentation/) |
+| **Aurora Legacy** | The familiar Windows desktop workflow, maintained on updated frameworks. | [Overview & guides](https://aurora.idlehandz.com/legacy/) |
+| **Aurora Web** | A browser-based client in development. A public hosted service is not available yet. | [Development status](https://aurora.idlehandz.com/web/) |
 
 > [!IMPORTANT]
 > Aurora: Reflections is currently a **beta preview**. Back up your character
-> files before relying on it for an important session, and keep the legacy
-> Aurora app available as a fallback while the modern client continues to mature.
-> It is not required to build or run Aurora: Reflections.
+> files before relying on it for an important session, and keep Aurora Legacy
+> available as a fallback while the modern client continues to mature.
+> Aurora Legacy is not required to build or run Aurora: Reflections.
 
 ## Project-Owned Source And Dependencies
 
@@ -39,7 +48,9 @@ the source-project mapping, completed restoration status, and parity tooling.
 
 Windows is the recommended platform for the beta preview.
 
-1. Open the [GitHub releases page](https://github.com/Idle-Handz/Aurora-Lights/releases).
+1. Open the [Reflections download page](https://aurora.idlehandz.com/reflections/)
+   for a suggested download, or browse the
+   [GitHub releases](https://github.com/Idle-Handz/Aurora-Lights/releases).
 2. Download the Windows `Setup.exe` asset for your system. Most Windows PCs use
    the `win-x64` release.
 3. Run the installer and launch **Aurora: Reflections**.

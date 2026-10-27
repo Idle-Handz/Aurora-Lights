@@ -1,0 +1,20 @@
+{
+  "repository": "Idle-Handz/Aurora-Lights",
+  "preparedOn": "2026-10-27",
+  "reviewStatus": "Approved for publication on 2026-10-27",
+  "previous": {
+    "homepageUrl": "",
+    "description": "A modernized version of AuroraBuilder revamped for cross-compatibility and feature enrichment"
+  },
+  "proposed": {
+    "homepageUrl": "https://aurora.idlehandz.com/",
+    "description": "Aurora Lights — an open-source D&D 5e character creation suite with Aurora: Reflections, Aurora Legacy, and Aurora Web (in development)."
+  },
+  "readme": "README.md",
+  "notes": [
+    "The repository covers multiple clients, so its website field points to the suite homepage.",
+    "The README links separately to each client, including Reflections downloads and guides.",
+    "The repository name remains Aurora-Lights.",
+    "Apply public GitHub settings and push README changes only after explicit user approval."
+  ]
+}

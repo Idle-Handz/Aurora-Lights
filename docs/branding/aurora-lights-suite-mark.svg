@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="184" height="184" viewBox="-12 -9 184 184" role="img" aria-labelledby="title">
+  <title id="title">Aurora Lights — Northlight</title>
+  <defs>
+    <linearGradient id="star" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop stop-color="#89ece2"/>
+      <stop offset=".5" stop-color="#58b9ff"/>
+      <stop offset="1" stop-color="#7280ed"/>
+    </linearGradient>
+    <linearGradient id="tile" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop stop-color="#1a3457"/>
+      <stop offset="1" stop-color="#0e1931"/>
+    </linearGradient>
+  </defs>
+  <rect x="-11.25" y="-8.25" width="182.5" height="182.5" rx="28" fill="url(#tile)" stroke="#36547c" stroke-width="1.5"/>
+  <path fill="url(#star)" d="m80 10 12 37 37 12-37 12-12 37-12-37-37-12 37-12Z"/>
+  <path fill="none" stroke="#aaa2ff" stroke-width="12" stroke-linecap="round" d="M19 126q61-38 122 0"/>
+  <path fill="none" stroke="#72bfff" stroke-width="7" stroke-linecap="round" d="M39 145q41-23 82 0"/>
+</svg>
