@@ -1,0 +1,563 @@
+@page "/magic"
+@implements IDisposable
+@using Builder.Data.Rules
+@using Builder.Presentation.Services
+@using Builder.Presentation
+@inject CharacterTabService Tabs
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject UserPreferencesService Prefs
+
+@if (_snap is null)
+{
+    <div style="margin-top: 24px;">
+        <MudText Color="Color.Secondary">No character loaded. Open a character from the <MudLink Href="/">Characters</MudLink> page.</MudText>
+    </div>
+    return;
+}
+
+@if (!_snap.HasSpellcasting && _spellRuleGroups.Count == 0 && _snap.GrantedSpells.Count == 0)
+{
+    <div style="margin-top: 24px;">
+        <MudText Color="Color.Secondary">This character has no spellcasting.</MudText>
+    </div>
+    return;
+}
+
+@if (!Prefs.AutoSaveBuildChanges)
+{
+    <div class="page-save-bar">
+        <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">Auto-save off</MudText>
+        <MudButton StartIcon="@Icons.Material.Filled.Save"
+                   Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   Size="Size.Small"
+                   Disabled="@(_saving || !(Tabs.ActiveTab?.IsDirty == true))"
+                   OnClick="ManualSaveAsync">
+            Save
+        </MudButton>
+    </div>
+}
+@if (_saving)
+{
+    <div class="build-saving-bar">
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" Style="height: 2px;" />
+    </div>
+}
+@if (_saveError != null)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-3" ShowCloseIcon="true"
+              CloseIconClicked="() => _saveError = null">
+        <div><b>Failed to save</b></div>
+        <div style="font-size:0.8em; word-break:break-all; white-space:pre-wrap;">@_saveError</div>
+    </MudAlert>
+}
+
+<CharacterMagicWorkspace @key="_workspaceState"
+                         State="_workspaceState"
+                         Model="@MagicModel"
+                         Busy="_saving"
+                         SelectedSpellId="_selectedId"
+                         SelectedSpell="@SelectedSpellModel"
+                         OnSelectSpell="SelectSpellAsync"
+                         OnChangeKnownSpell="OpenSpellPickerByKeyAsync"
+                         OnPreparedChanged="OnPreparedChangedAsync"
+                         OnToggleSlot="PersistSlotToggleAsync" />
+
+@code {
+    private CharacterSnapshot? _snap;
+    private MagicWorkspaceState _workspaceState = new();
+    private IReadOnlyList<SelectionRuleGroup> _spellRuleGroups = [];
+    private readonly Dictionary<string, SpellDetail?> _spellDetailCache = new(StringComparer.OrdinalIgnoreCase);
+    private bool _saving;
+    private string? _saveError;
+    private string? _selectedId;
+    private SpellDetail? _spellDetail;
+    private MagicOverviewModel _magicModel = new();
+    private MagicOverviewModel MagicModel => _magicModel;
+
+    private void BuildMagicModel()
+    {
+        if (_snap is null) { _magicModel = new MagicOverviewModel(); _selectedSpellModel = null; return; }
+        var session = Tabs.ActiveTab?.Session ?? new SessionState();
+        session.EnsureSpellSlotPools(_snap.SpellSlotPools);
+        _magicModel = new()
+        {
+            HasSpellcasting = _snap.HasSpellcasting,
+            KnownSpellGroups = BuildKnownSpellGroups(),
+            SlotPools = _snap.SpellSlotPools.Select(pool => new MagicSlotPoolModel(
+                pool.Id, pool.Label, pool.RecoversOnShortRest,
+                pool.Levels.Select(level => new MagicSpellLevelModel(level.Level, [], level.TotalSlots,
+                    session.UsedSlots(pool.Id, level.Level, level.TotalSlots))).ToList())).ToList(),
+            Sections = _snap.SpellcastingSections
+                .Select(section => new MagicSpellcastingSectionModel
+                {
+                    Id = section.UniqueIdentifier,
+                    Label = section.Name,
+                    HasExtensions = section.HasExtensions,
+                    IsPreparedCaster = section.IsPreparedCaster,
+                    IsSpellbookCaster = section.IsSpellbookCaster,
+                    RitualCastingMode = section.RitualCastingMode,
+                    SpellcastingAbility = section.AbilityName,
+                    SpellcastingDc = section.SpellcastingDc,
+                    SpellcastingAttack = section.SpellcastingAttack,
+                    PreparedCount = section.PreparedCount,
+                    MaxPrepared = section.MaxPrepared,
+                    Cantrips = section.Cantrips
+                        .Select(spell => CreateSpellListEntry(spell, 0, section.IsPreparedCaster, isCantrip: true))
+                        .ToList(),
+                    SpellLevels = section.SpellLevels
+                        .Select(level => new MagicSpellLevelModel(
+                            level.Level,
+                            level.Spells.Select(spell => CreateSpellListEntry(spell, level.Level, section.IsPreparedCaster)).ToList(),
+                            level.TotalSlots,
+                            0))
+                        .ToList()
+                })
+                .ToList()
+        };
+        MagicSpellAccessClassifier.Apply(_magicModel);
+    }
+
+    private List<MagicKnownSpellGroupModel> BuildKnownSpellGroups()
+    {
+        var groups = _spellRuleGroups.Select((group, groupIndex) =>
+            new MagicKnownSpellGroupModel(
+                group.Label,
+                ResolveKnownSpellSectionId(group),
+                group.Rules.Select((entry, entryIndex) =>
+                {
+                    // Resolve the chosen spell's metadata by id so the Known-tab filters
+                    // (source/school/ritual/concentration) work on these picker rows.
+                    var d = string.IsNullOrWhiteSpace(entry.SpellId) ? null : GetSpellDetailCached(entry.SpellId!);
+                    var acquisition = _snap!.SpellAcquisitions.FirstOrDefault(a =>
+                        a.Spell.Id == entry.SpellId && a.Rule is SelectRule selectedRule
+                        && selectedRule.UniqueIdentifier == entry.Rule.UniqueIdentifier);
+                    var section = acquisition?.Profile is null ? null : _snap.SpellcastingSections
+                        .FirstOrDefault(s => s.UniqueIdentifier == acquisition.Profile.UniqueIdentifier);
+                    string ruleName = entry.Rule.Attributes.Name ?? entry.Rule.Attributes.Type ?? entry.Label;
+                    var selectionAccess = MagicSpellAccessClassifier.InferSelectionAccess(
+                        ruleName,
+                        entry.Rule.Attributes.Supports ?? string.Empty,
+                        entry.SpellLevel,
+                        entry.Rule.IsAlwaysPrepared(),
+                        section is not null,
+                        section?.IsPreparedCaster ?? false,
+                        section?.IsSpellbookCaster ?? false);
+                    string accessSource = selectionAccess switch
+                    {
+                        MagicSpellSelectionAccess.Spellbook => $"{section?.Name ?? group.Label} Spellbook",
+                        MagicSpellSelectionAccess.RitualBook => ruleName,
+                        MagicSpellSelectionAccess.Known => section?.Name ?? group.Label,
+                        _ => entry.Rule.ElementHeader?.Name ?? ruleName,
+                    };
+                    return new MagicKnownSpellEntryModel(
+                        $"{groupIndex}:{entryIndex}",
+                        entry.Label,
+                        entry.CurrentName,
+                        entry.SpellLevel,
+                        IsReadOnly: false,
+                        SpellId: entry.SpellId,
+                        Source: d?.Source ?? string.Empty,
+                        School: d?.School ?? string.Empty,
+                        IsRitual: d?.Ritual ?? false,
+                        IsConcentration: d?.Concentration ?? false,
+                        CastingTime: d?.CastingTime ?? string.Empty,
+                        SelectionAccess: selectionAccess,
+                        AccessSource: accessSource,
+                        ResolvedAccessPaths: acquisition is null ? null : ResolveAccessPaths(acquisition));
+                }).ToList()))
+            .ToList();
+
+        // Read-only spells granted by feats/items/species (e.g. dragonmark spells). Shown so
+        // non-casters can see what they have; not editable (no underlying selection rule).
+        if (_snap is { GrantedSpells.Count: > 0 })
+        {
+            var grantedEntries = _snap.GrantedSpells.Select((g, i) =>
+            {
+                var d = string.IsNullOrWhiteSpace(g.Id) ? null : GetSpellDetailCached(g.Id);
+                return new MagicKnownSpellEntryModel(
+                    Id: $"granted:{i}",
+                    Label: g.Level == 0 ? "Cantrip" : $"Level {g.Level}",
+                    CurrentName: g.Name,
+                    SpellLevel: g.Level,
+                    IsReadOnly: true,
+                    SpellId: g.Id,
+                    Source: d?.Source ?? string.Empty,
+                    School: d?.School ?? string.Empty,
+                    IsRitual: d?.Ritual ?? false,
+                    IsConcentration: d?.Concentration ?? false,
+                    CastingTime: d?.CastingTime ?? string.Empty,
+                    GrantedBy: g.Source,
+                    SelectionAccess: MagicSpellSelectionAccess.Granted,
+                    AccessSource: g.Source,
+                    ResolvedAccessPaths: g.Acquisition is null ? null : ResolveAccessPaths(g.Acquisition));
+            }).ToList();
+            groups.Add(new MagicKnownSpellGroupModel("Granted by Features", grantedEntries, ReadOnlyGroup: true));
+        }
+
+        return groups;
+    }
+
+    private IReadOnlyList<MagicSpellAccessPathModel> ResolveAccessPaths(SpellAcquisition acquisition)
+    {
+        var section = _snap!.SpellcastingSections.FirstOrDefault(s => s.UniqueIdentifier == acquisition.Profile?.UniqueIdentifier);
+        bool prepared = section?.SpellLevels.SelectMany(l => l.Spells).Any(s => s.Id == acquisition.Spell.Id && s.IsPrepared) == true;
+        int level = acquisition.Spell is Builder.Data.Elements.Spell spell ? spell.Level : -1;
+        bool slots = level > 0 && acquisition.CanUseSlots(prepared);
+        var paths = new List<MagicSpellAccessPathModel>();
+        if (acquisition.FreeUses > 0 || acquisition.IsFeature || acquisition.Preparation == SpellPreparation.RitualOnly || level == 0)
+            paths.Add(new(acquisition.Preparation == SpellPreparation.RitualOnly ? MagicSpellAccessKind.RitualBook : MagicSpellAccessKind.Granted, "", acquisition.OriginName,
+                level == 0 || acquisition.FreeUses > 0 || (acquisition.IsFeature && slots), acquisition.Preparation == SpellPreparation.RitualOnly, acquisition.IsFeature && slots, acquisition.Ability,
+                acquisition.FreeUses, acquisition.Recharge, acquisition.Diagnostic, acquisition.SlotUses));
+        if (acquisition.Profile is not null && !acquisition.IsFeature && slots)
+            paths.Add(new(acquisition.IsAlwaysPrepared ? MagicSpellAccessKind.AlwaysPrepared : MagicSpellAccessKind.Known,
+                acquisition.Profile.UniqueIdentifier, acquisition.Profile.Name, true, false, true,
+                acquisition.Profile.AbilityName));
+        return paths;
+    }
+
+    private MagicSpellDetailModel? _selectedSpellModel;
+    private MagicSpellDetailModel? SelectedSpellModel => _selectedSpellModel;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Tabs.TabsChanged += OnTabsChanged;
+        await LoadFromActiveTabAsync();
+    }
+
+    private async Task LoadFromActiveTabAsync()
+    {
+        var tab = Tabs.ActiveTab;
+        var snapshot = tab?.Snapshot;
+        IReadOnlyList<SelectionRuleGroup> spellRuleGroups = [];
+        if (tab != null && snapshot != null)
+        {
+            using (await CharacterContext.EnterAsync(tab))
+            {
+                if (_disposed || !ReferenceEquals(tab, Tabs.ActiveTab)) return;
+                spellRuleGroups = BuildService.GetSpellRuleGroups();
+            }
+        }
+
+        if (_disposed || !ReferenceEquals(tab, Tabs.ActiveTab)) return;
+        _snap = snapshot;
+        _workspaceState = tab?.MagicWorkspace ?? new();
+        _spellRuleGroups = spellRuleGroups;
+        _selectedId = null;
+        _spellDetail = null;
+        _selectedSpellModel = null;
+        _spellDetailCache.Clear();
+        BuildMagicModel();
+    }
+
+    private bool _disposed;
+
+    private void OnTabsChanged()
+    {
+        if (_disposed) return;
+        _ = InvokeAsync(async () =>
+        {
+            if (_disposed) return;
+            await LoadFromActiveTabAsync();
+            StateHasChanged();
+        });
+    }
+
+    public void Dispose()
+    {
+        _disposed = true;
+        Tabs.TabsChanged -= OnTabsChanged;
+    }
+
+    private Task SelectSpellAsync(string id)
+    {
+        _selectedId = id;
+        _spellDetail = GetSpellDetailCached(id);
+        _selectedSpellModel = _spellDetail is null
+            ? null
+            : new MagicSpellDetailModel(
+                _spellDetail.Id,
+                _spellDetail.Name,
+                _spellDetail.Source,
+                _spellDetail.Level,
+                _spellDetail.Subtitle,
+                _spellDetail.School,
+                _spellDetail.Ritual,
+                _spellDetail.Concentration,
+                _spellDetail.CastingTime,
+                _spellDetail.Range,
+                _spellDetail.Components,
+                _spellDetail.Duration,
+                _spellDetail.DescriptionHtml);
+        return Task.CompletedTask;
+    }
+
+    private SpellDetail? GetSpellDetailCached(string id)
+    {
+        if (_spellDetailCache.TryGetValue(id, out var cached))
+            return cached;
+
+        var detail = BuildService.GetSpellDetail(id);
+        _spellDetailCache[id] = detail;
+        return detail;
+    }
+
+    private MagicSpellListEntryModel CreateSpellListEntry(SpellEntry spell, int level, bool isPreparedCaster, bool isCantrip = false)
+    {
+        SpellDetail? detail = GetSpellDetailCached(spell.Id);
+        var state = spell.IsAlwaysPrepared
+            ? MagicSpellDisplayState.AlwaysPrepared
+            : isPreparedCaster
+                ? (spell.IsPrepared ? MagicSpellDisplayState.Prepared : MagicSpellDisplayState.Available)
+                : MagicSpellDisplayState.Known;
+
+        return new MagicSpellListEntryModel(
+            spell.Id,
+            spell.Name,
+            level,
+            detail?.Source ?? string.Empty,
+            detail?.School ?? string.Empty,
+            detail?.Ritual ?? false,
+            detail?.Concentration ?? false,
+            spell.IsPrepared,
+            spell.IsAlwaysPrepared,
+            isCantrip,
+            state,
+            castingTime: detail?.CastingTime ?? string.Empty,
+            grantedBy: spell.GrantedBy) { HasResolvedOwnership = true };
+    }
+
+    private string? ResolveKnownSpellSectionId(SelectionRuleGroup group)
+    {
+        var ruleIds = group.Rules.Select(entry => entry.Rule.UniqueIdentifier).ToHashSet();
+        var profiles = _snap!.SpellAcquisitions.Where(a => !a.IsFeature && a.Profile is not null
+                && a.Rule is SelectRule rule && ruleIds.Contains(rule.UniqueIdentifier))
+            .Select(a => a.Profile!.UniqueIdentifier).Distinct().ToArray();
+        return profiles.Length == 1 ? profiles[0] : null;
+    }
+
+    private async Task ManualSaveAsync()
+    {
+        var tab = Tabs.ActiveTab;
+        if (tab == null)
+        {
+            WarnUnavailable("There is no active character to save right now.");
+            return;
+        }
+        _saving = true;
+        StateHasChanged();
+        var error = await BuildService.SaveTabAsync(tab);
+        _saving = false;
+        if (error == null)
+        {
+            Tabs.MarkClean(tab);
+            Snackbar.Add("Saved.", Severity.Success, cfg => cfg.VisibleStateDuration = 2000);
+        }
+        else
+        {
+            _saveError = error;
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task OpenSpellPickerByKeyAsync(string key)
+    {
+        string[] parts = key.Split(':', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length != 2
+            || !int.TryParse(parts[0], out int groupIndex)
+            || !int.TryParse(parts[1], out int entryIndex)
+            || groupIndex < 0
+            || groupIndex >= _spellRuleGroups.Count
+            || entryIndex < 0
+            || entryIndex >= _spellRuleGroups[groupIndex].Rules.Count)
+        {
+            WarnUnavailable("That spell choice is no longer available. Try reloading the character tab.");
+            return;
+        }
+
+        await OpenSpellPickerAsync(_spellRuleGroups[groupIndex].Rules[entryIndex]);
+    }
+
+    private async Task OpenSpellPickerAsync(SelectionRuleEntry entry)
+    {
+        var tab = Tabs.ActiveTab;
+        if (tab == null)
+        {
+            WarnUnavailable("That spell choice is not available right now. Try again once the character finishes loading.");
+            return;
+        }
+
+        IReadOnlyList<ElementOption> options;
+        IReadOnlyList<SelectionRuleDiagnostic> diagnostics;
+        using (var scope = await CharacterContext.EnterAsync(tab))
+        {
+            if (_disposed || !ReferenceEquals(tab, Tabs.ActiveTab)) return;
+            options = await Task.Run(() => BuildService.GetOptions(entry.Rule, entry.Number));
+            diagnostics = SelectionRuleDiagnosticService.ExplainEmptyOptions(
+                entry.Rule, entry.Number, options.Count);
+        }
+        if (_disposed || !ReferenceEquals(tab, Tabs.ActiveTab)) return;
+
+        var parameters = new DialogParameters
+        {
+            [nameof(SelectionPickerDialog.Entry)] = entry,
+            [nameof(SelectionPickerDialog.Options)] = options,
+            [nameof(SelectionPickerDialog.Diagnostics)] = diagnostics,
+        };
+        var dialogOptions = new DialogOptions
+        {
+            MaxWidth = MaxWidth.Large,
+            FullWidth = true,
+            CloseOnEscapeKey = true,
+        };
+
+        var dialog = await DialogService.ShowAsync<SelectionPickerDialog>(entry.Label, parameters, dialogOptions);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: string selectedId })
+        {
+            _saving = true;
+            _saveError = null;
+            StateHasChanged();
+
+            bool autoSave = Prefs.AutoSaveBuildChanges;
+            var removed = await BuildService.ApplySelectionAndSaveAsync(
+                entry.Rule, selectedId, entry.Number, tab, tab.File, saveToFile: autoSave);
+
+            _saving = false;
+
+            var errors = removed.Where(s => s.StartsWith("[Error:")).ToList();
+
+            if (errors.Count > 0)
+                _saveError = string.Join("; ", errors.Select(e => e.TrimStart('[').TrimEnd(']').Replace("Error: ", "")));
+            else if (autoSave)
+            {
+                Tabs.MarkClean(tab);
+                Snackbar.Add("Changes saved.", Severity.Success, cfg => cfg.VisibleStateDuration = 2000);
+            }
+            else
+            {
+                Tabs.MarkDirty(tab);
+                Snackbar.Add($"{entry.Label} updated. Save when ready.", Severity.Info, cfg => cfg.VisibleStateDuration = 2500);
+            }
+
+            await LoadFromActiveTabAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnPreparedChangedAsync(MagicPreparedChangeModel change)
+    {
+        if (_snap is null || Tabs.ActiveTab is not { } tab)
+        {
+            WarnUnavailable("Prepared spell changes are unavailable because there is no active character.");
+            return;
+        }
+
+        var section = _snap.SpellcastingSections
+            .FirstOrDefault(candidate => string.Equals(candidate.UniqueIdentifier, change.SpellcastingSectionId, StringComparison.Ordinal));
+        if (section is null)
+        {
+            WarnUnavailable("That spellcasting section is no longer available. Try reloading the character tab.");
+            return;
+        }
+
+        SpellEntry? spell = section.SpellLevels
+            .SelectMany(level => level.Spells)
+            .FirstOrDefault(candidate => string.Equals(candidate.Id, change.SpellId, StringComparison.Ordinal));
+        if (spell is null)
+        {
+            WarnUnavailable("That spell is no longer available in the active spell list.");
+            return;
+        }
+
+        // Update the snapshot (UI) and the handler (serialisation source) atomically under the lock.
+        using (await CharacterContext.EnterAsync(tab))
+        {
+            spell.IsPrepared = change.Value;
+
+            var handler = SpellcastingSectionContext.Current;
+            if (handler is not null)
+            {
+                if (change.Value)
+                {
+                    var info = CharacterManager.Current
+                        .GetSpellcastingInformations()
+                        .FirstOrDefault(i => string.Equals(i.UniqueIdentifier, change.SpellcastingSectionId, StringComparison.Ordinal));
+                    if (info is not null)
+                        handler.SetPrepareSpell(info, change.SpellId);
+                }
+                else
+                {
+                    var info = CharacterManager.Current.GetSpellcastingInformations()
+                        .FirstOrDefault(i => i.UniqueIdentifier == change.SpellcastingSectionId);
+                    if (info is not null) handler.UnsetPrepareSpell(info, change.SpellId);
+                }
+            }
+        }
+
+        BuildMagicModel();
+        Tabs.MarkDirty(tab);
+
+        if (Prefs.AutoSaveBuildChanges)
+        {
+            _saving = true;
+            _saveError = null;
+            StateHasChanged();
+
+            string? error = await BuildService.SaveTabAsync(tab);
+
+            _saving = false;
+            if (error is null)
+            {
+                Tabs.MarkClean(tab);
+                Snackbar.Add(change.Value ? $"{spell.Name} prepared." : $"{spell.Name} unprepared.",
+                    Severity.Success, cfg => cfg.VisibleStateDuration = 1800);
+            }
+            else
+                _saveError = error;
+
+            StateHasChanged();
+        }
+        else
+        {
+            Snackbar.Add(change.Value ? $"{spell.Name} prepared. Save when ready." : $"{spell.Name} unprepared. Save when ready.",
+                Severity.Info, cfg => cfg.VisibleStateDuration = 2200);
+        }
+    }
+
+    private Task PersistSlotToggleAsync(MagicSlotToggleModel change)
+    {
+        var tab = Tabs.ActiveTab;
+        if (_snap is null || tab is null)
+        {
+            WarnUnavailable("Spell slot changes are unavailable because there is no active character.");
+            return Task.CompletedTask;
+        }
+
+        var pool = _snap.SpellSlotPools.FirstOrDefault(p => p.Id == change.PoolId);
+        var capacity = pool?.Levels.FirstOrDefault(l => l.Level == change.Level);
+        if (capacity is null) return Task.CompletedTask;
+        tab.Session.EnsureSpellSlotPools(_snap.SpellSlotPools);
+        tab.Session.ToggleSlot(change.PoolId, change.Level, change.SlotIndex, capacity.TotalSlots);
+        BuildMagicModel();
+
+        if (SessionStore.Save(tab.File.FilePath, tab.Session))
+        {
+            _saveError = null;
+        }
+        else
+        {
+            Tabs.MarkDirty(tab);
+            _saveError = "Spell slot changes could not be saved yet. The current slot state is still in memory.";
+            Snackbar.Add(_saveError, Severity.Warning, cfg => cfg.VisibleStateDuration = 3000);
+        }
+
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private void WarnUnavailable(string message) =>
+        Snackbar.Add(message, Severity.Warning, cfg => cfg.VisibleStateDuration = 2500);
+}

@@ -8,6 +8,35 @@ namespace Aurora.Tests.Tests;
 public sealed class CharacterBrowserComponentTests : BunitContext
 {
     [Fact]
+    public void Cloud_card_shows_the_portrait_and_accessible_badge_and_selects_the_same_document()
+    {
+        var entry = new CharacterBrowserEntry("drive-id", "Aria", "Level 5 - Elf",
+            PortraitDataUrl: "data:image/png;base64,AQID", IsCloud: true);
+        CharacterBrowserEntry? selected = null;
+        var cut = Render<CharacterBrowserCard>(parameters => parameters
+            .Add(p => p.Character, entry)
+            .Add(p => p.OnSelected, value => selected = value));
+        cut.Find("img").GetAttribute("src").Should().Be(entry.PortraitDataUrl);
+        cut.Find("[aria-label='Cloud save']").Should().NotBeNull();
+        cut.Find("button.character-browser-card").Click();
+        selected.Should().BeSameAs(entry);
+    }
+
+    [Fact]
+    public void Card_becomes_disabled_while_cloud_open_is_in_progress()
+    {
+        int selections = 0;
+        var entry = Entry("drive-id", "Aria", "Google Drive");
+        var cut = Render<CharacterBrowserCard>(parameters => parameters
+            .Add(p => p.Character, entry)
+            .Add(p => p.OnSelected, _ => selections++));
+        cut.Render(parameters => parameters.Add(p => p.Character, entry).Add(p => p.Disabled, true));
+        cut.Find("button.character-browser-card").HasAttribute("disabled").Should().BeTrue();
+        cut.Find("button.character-browser-card").Click();
+        selections.Should().Be(0);
+    }
+
+    [Fact]
     public void CharacterBrowser_filters_by_name_and_group()
     {
         CharacterBrowserEntry[] characters =

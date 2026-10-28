@@ -1,34 +1,5 @@
-<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8"?>
 <elements>
-	<element name="Alchemy Jug" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_ALCHEMY_JUG">
-		<description>
-			<p>This ceramic jug appears to be able to hold a gallon of liquid and weighs 12 pounds whether full or empty. Sloshing sounds can be heard from within the jug when it is shaken, even if the jug is empty.</p>
-			<p class="indent">You can use an action and name one liquid from the table below to cause the jug to produce the chosen liquid. Afterward, you can uncork the jug as an action and pour that liquid out, up to 2 gallons per minute. The maximum amount of liquid the jug can produce depends on the liquid you named.</p>
-			<p class="indent">Once the jug starts producing a liquid, it can't produce a different one, or more of one that has reached its maximum, until the next dawn.</p>
-			<table>
-				<thead>
-					<tr><td>Liquid</td><td>Max Amount</td></tr>
-				</thead>
-				<tr><td>Acid</td><td>8 ounces</td></tr>
-				<tr><td>Basic poison</td><td>1/2 ounce</td></tr>
-				<tr><td>Beer</td><td>4 gallons</td></tr>
-				<tr><td>Honey</td><td>1 gallon</td></tr>
-				<tr><td>Mayonnaise</td><td>2 gallons</td></tr>
-				<tr><td>Oil</td><td>1 quart</td></tr>
-				<tr><td>Vinegar</td><td>2 gallon</td></tr>
-				<tr><td>Water, fresh</td><td>8 gallon</td></tr>
-				<tr><td>Water, salt</td><td>12 gallon</td></tr>
-				<tr><td>Wine</td><td>1 gallon</td></tr>
-			</table>
-		</description>
-		<setters>
-			<set name="category">Wondrous Items</set>
-			<set name="cost" currency="gp">0</set>
-			<set name="weight" lb="0">0 lb.</set>
-			<set name="type">Wondrous Item</set>
-			<set name="rarity">Uncommon</set>
-		</setters>
-	</element>
 	<element name="Amulet of Proof Against Detection and Location" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_AMULET_OF_PROOF_AGAINST_DETECTION_AND_LOCATION">
 		<description>
 			<p>While wearing this amulet, you are hidden from divination magic. You can't be targeted by such magic or perceived through magical scrying sensors.</p>
@@ -181,7 +152,7 @@
 			<set name="rarity">Uncommon</set>
 		</setters>
 		<rules>
-			<stat name="speed" value="30" bonus="base" />
+			<stat name="speed" value="30" bonus="base"/>
 			<!-- todo: ignore encumbered/heavy armor speed reduction -->
 		</rules>
 	</element>
@@ -205,7 +176,7 @@
 			<set name="rarity">Uncommon</set>
 		</setters>
 		<rules>
-			<grant type="Condition" id="ID_INTERNAL_CONDITION_DAMAGE_RESISTANCE_COLD" />
+			<grant type="Condition" id="ID_INTERNAL_CONDITION_DAMAGE_RESISTANCE_COLD"/>
 		</rules>
 	</element>
 	<element name="Bracers of Archery" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_BRACERS_OF_ARCHERY">
@@ -223,10 +194,10 @@
 			<set name="rarity">Uncommon</set>
 		</setters>
 		<rules>
-			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_LONGBOW" />
-			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_SHORTBOW" />
-			<stat name="longbow:damage" value="2" />
-			<stat name="shortbow:damage" value="2" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_LONGBOW"/>
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_SHORTBOW"/>
+			<stat name="longbow:damage" value="2"/>
+			<stat name="shortbow:damage" value="2"/>
 		</rules>
 	</element>
 	<element name="Brooch of Shielding" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_BROOCH_OF_SHIELDING">
@@ -244,7 +215,7 @@
 			<set name="rarity">Uncommon</set>
 		</setters>
 		<rules>
-			<grant type="Condition" id="ID_INTERNAL_CONDITION_DAMAGE_RESISTANCE_FORCE" />
+			<grant type="Condition" id="ID_INTERNAL_CONDITION_DAMAGE_RESISTANCE_FORCE"/>
 		</rules>
 	</element>
 	<element name="Broom of Flying" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_BROOM_OF_FLYING">
@@ -260,20 +231,7 @@
 			<set name="type">Wondrous Item</set>
 			<set name="rarity">Uncommon</set>
 		</setters>
-		<rules />
-	</element>
-	<element name="Cap of Water Breathing" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_CAP_OF_WATER_BREATHING">
-		<description>
-			<p>While wearing this cap underwater, you can speak its command word as an action to create a bubble of air around your head. It allows you to breathe normally underwater. This bubble stays with you until you speak the command word again, the cap is removed, or you are no longer underwater.</p>
-		</description>
-		<setters>
-			<set name="category">Wondrous Items</set>
-			<set name="cost" currency="gp">0</set>
-			<set name="weight" lb="0">0 lb.</set>
-			<set name="slot">head</set>
-			<set name="type">Wondrous Item</set>
-			<set name="rarity">Uncommon</set>
-		</setters>
+		<rules/>
 	</element>
 	<element name="Circlet of Blasting" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_CIRCLET_OF_BLASTING">
 		<description>
@@ -303,7 +261,7 @@
 			<set name="attunement">true</set>
 			<set name="rarity">Uncommon</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Cloak of Protection" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_CLOAK_OF_PROTECTION">
 		<description>
@@ -320,13 +278,13 @@
 			<set name="rarity">Uncommon</set>
 		</setters>
 		<rules>
-			<stat name="ac:misc" value="1" />		
-			<stat name="strength:save:misc" value="1" />
-			<stat name="dexterity:save:misc" value="1" />
-			<stat name="constitution:save:misc" value="1" />
-			<stat name="intelligence:save:misc" value="1" />
-			<stat name="wisdom:save:misc" value="1" />
-			<stat name="charisma:save:misc" value="1" />
+			<stat name="ac:misc" value="1"/>		
+			<stat name="strength:save:misc" value="1"/>
+			<stat name="dexterity:save:misc" value="1"/>
+			<stat name="constitution:save:misc" value="1"/>
+			<stat name="intelligence:save:misc" value="1"/>
+			<stat name="wisdom:save:misc" value="1"/>
+			<stat name="charisma:save:misc" value="1"/>
 		</rules>
 	</element>
 	<element name="Cloak of the Manta Ray" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_CLOAK_OF_THE_MANTA_RAY">
@@ -416,20 +374,6 @@
 			<set name="rarity">Uncommon</set>
 		</setters>
 	</element>
-	<element name="Driftglobe" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_DRIFTGLOBE">
-		<description>
-			<p>This small sphere of thick glass weighs 1 pound. If you are within 60 feet of it, you can speak its command word and cause it to emanate the <em>light</em> or <em>daylight</em> spell. Once used, the <em>daylight</em> effect can't be used again until the next dawn.</p>
-			<p class="indent">You can speak another command word as an action to make the illuminated globe rise into the air and float no more than 5 feet off the ground. The globe hovers in this way until you or another creature grasps it. If you mpve more than 60 feet from the hovering globe, it follows you until it is within 60 feet of you. It takes the shortest route to do so. If prevented from moving, the globe sinks gently to the ground and becomes inactive, and its light winks out.</p>
-		</description>
-		<setters>
-			<set name="keywords">daylight</set>
-			<set name="category">Wondrous Items</set>
-			<set name="cost" currency="gp">0</set>
-			<set name="weight" lb="1">1 lb.</set>
-			<set name="type">Wondrous Item</set>
-			<set name="rarity">Uncommon</set>
-		</setters>
-	</element>
 	<element name="Dust of Disappearance" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_DUST_OF_DISAPPEARANCE">
 		<description>
 			<p>Found in a small packet, this powder resembles very fine sand. There is enough of it for one use. When you use an action to throw the dust into the air, you and each creature and object within 10 feet of you become invisible for 2d4 minutes. The duration is the same for all subjects, and the dust is consumed when its magic takes effect. If a creature affected by the dust attacks or casts a spell, the invisibility ends for that creature.</p>
@@ -469,7 +413,7 @@
 			<set name="type">Wondrous Item</set>
 			<set name="rarity">Uncommon</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Elemental Gem, Air" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_ELEMENTAL_GEM_AIR">
 		<description>
@@ -637,7 +581,7 @@
 			<set name="type">Wondrous Item</set>
 			<set name="rarity">Uncommon</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Gauntlets of Ogre Power" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_GAUNTLETS_OF_OGRE_POWER">
 		<description>
@@ -654,7 +598,7 @@
 			<set name="rarity">Uncommon</set>
 		</setters>
 		<rules>
-			<stat name="strength:score:set" value="19" bonus="base" />
+			<stat name="strength:score:set" value="19" bonus="base"/>
 		</rules>
 	</element>
 	<element name="Gem of Brightness" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_GEM_OF_BRIGHTNESS">
@@ -675,7 +619,7 @@
 			<set name="type">Wondrous Item</set>
 			<set name="rarity">Uncommon</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Gloves of Missile Snaring" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_GLOVES_OF_MISSILE_SNARING">
 		<description>
@@ -707,20 +651,6 @@
 			<set name="rarity">Uncommon</set>
 		</setters>
 	</element>
-	<element name="Gloves of Thievery" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_GLOVES_OF_THIEVERY">
-		<description>
-			<p>These gloves are invisible while worn. While wearing them, you gain a +5 bonus to Dexterity (Sleight of Hand) checks and Dexterity checks made to pick locks.</p>
-		</description>
-		<setters>
-			<set name="keywords">sleight of hand</set>
-			<set name="category">Wondrous Items</set>
-			<set name="cost" currency="gp">0</set>
-			<set name="weight" lb="0">0 lb.</set>
-			<set name="slot">hands</set>
-			<set name="type">Wondrous Item</set>
-			<set name="rarity">Uncommon</set>
-		</setters>
-	</element>
 	<element name="Goggles of Night" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_GOGGLES_OF_NIGHT">
 		<description>
 			<p>While wearing these dark lenses, you have darkvision out to a range of 60 feet. If you already have darkvision, wearing the goggles increases its range by 60 feet.</p>
@@ -735,7 +665,7 @@
 			<set name="rarity">Uncommon</set>
 		</setters>
 		<rules>
-			<grant type="Vision" id="ID_VISION_DARKVISION" />
+			<grant type="Vision" id="ID_VISION_DARKVISION"/>
 		</rules>
 	</element>
 	<element name="Hat of Disguise" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_HAT_OF_DISGUISE">
@@ -767,7 +697,7 @@
 			<set name="rarity">Uncommon</set>
 		</setters>
 		<rules>
-			<stat name="intelligence:score:set" value="19" bonus="base" />
+			<stat name="intelligence:score:set" value="19" bonus="base"/>
 		</rules>
 	</element>
 	<element name="Helm of Comprehending Languages" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_HELM_OF_COMPREHENDING_LANGUAGES">
@@ -811,7 +741,7 @@
 			<set name="rarity">Uncommon</set>
 		</setters>
 	</element>
-	<element name="Keoghtom's Ointment" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_KEOGHTOMS_OINTMENT">
+	<element name="Restorative Ointment" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_KEOGHTOMS_OINTMENT">
 		<description>
 			<p>This glass jar, 3 inches in diameter, contains 1d4 + 1 doses of a thick mixture that smells faintly of aloe. The jar and its contents weigh 1/2 pound.</p>
 			<p>As an action, one dose of the ointment can be swallowed or applied to the skin. The creature that receives it regains 2d8 + 2 hit points, ceases to be poisoned, and is cured of any disease.</p>
@@ -938,7 +868,7 @@
 			<set name="rarity">Uncommon</set>
 		</setters>
 	</element>
-	<element name="Quiver of Ehlonna" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_QUIVER_OF_EHLONNA">
+	<element name="Efficient Quiver" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_QUIVER_OF_EHLONNA">
 		<description>
 			<p>Each of the quiver's three compartments connects to an extradimensional space that allows the quiver to hold numerous items while never weighing more than 2 pounds. The shortest compartment can hold up to sixty arrows, bolts, or similar objects. The midsize compartment holds up to eighteen javelins or similar objects. The longest compartment holds up to six long objects, such as bows, quarterstaffs, or spears.</p>
 			<p class="indent">You can draw any item the quiver contains as if doing so from a regular quiver or scabbard.</p>
@@ -1009,32 +939,6 @@
 			<set name="rarity">Uncommon</set>
 		</setters>
 	</element>
-	<element name="Saddle of the Cavalier" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_SADDLE_OF_THE_CAVALIER">
-		<description>
-			<p>While in this saddle on a mount, you can't be dismounted against your will if you're conscious, and attack rolls against the mount have disadvantage.</p>
-		</description>
-		<setters>
-			<set name="keywords">mount</set>
-			<set name="category">Wondrous Items</set>
-			<set name="cost" currency="gp">0</set>
-			<set name="weight" lb="0">0 lb.</set>
-			<set name="type">Wondrous Item</set>
-			<set name="rarity">Uncommon</set>
-		</setters>
-	</element>
-	<element name="Sending Stones" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_SENDING_STONES">
-		<description>
-			<p>Sending stones come in pairs, with each smooth stone carved to match the other so the pairing is easily recognized. While you touch one stone, you can use an action to cast the <em>sending</em> spell from it. The target is the bearer of the other stone. If no creature bears the other stone, you know that fact as soon as you use the stone and don't cast the spell.</p>
-			<p class="indent">Once sending is cast through the stones, they can't be used again until the next dawn. If one of the stones in a pair is destroyed, the other one becomes nonmagical.</p>
-		</description>
-		<setters>
-			<set name="category">Wondrous Items</set>
-			<set name="cost" currency="gp">0</set>
-			<set name="weight" lb="0">0 lb.</set>
-			<set name="type">Wondrous Item</set>
-			<set name="rarity">Uncommon</set>
-		</setters>
-	</element>
 	<element name="Slippers of Spider Climbing" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_SLIPPERS_OF_SPIDER_CLIMBING">
 		<description>
 			<p>While you wear these light shoes, you can move up, down, and across vertical surfaces and upside down along ceilings, while leaving your hands free. You have a climbing speed equal to your walking speed. However, the slippers don't allow you to move this way on a slippery surface, such as one covered by ice or oil.</p>
@@ -1049,7 +953,7 @@
 			<set name="rarity">Uncommon</set>
 		</setters>
 		<rules>
-			<stat name="speed:climb" value="speed" bonus="base" />
+			<stat name="speed:climb" value="speed" bonus="base"/>
 		</rules>
 	</element>
 	<element name="Stone of Good Luck" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_STONE_OF_GOOD_LUCK">
@@ -1066,33 +970,33 @@
 			<set name="rarity">Uncommon</set>
 		</setters>
 		<rules>
-			<stat name="initiative" value="1" />
+			<stat name="initiative" value="1"/>
 
-			<stat name="acrobatics:misc" value="1" />
-			<stat name="animal handling:misc" value="1" />
-			<stat name="arcana:misc" value="1" />
-			<stat name="athletics:misc" value="1" />
-			<stat name="deception:misc" value="1" />
-			<stat name="history:misc" value="1" />
-			<stat name="insight:misc" value="1" />
-			<stat name="intimidation:misc" value="1" />
-			<stat name="investigation:misc" value="1" />
-			<stat name="medicine:misc" value="1" />
-			<stat name="nature:misc" value="1" />
-			<stat name="perception:misc" value="1" />
-			<stat name="performance:misc" value="1" />
-			<stat name="persuasion:misc" value="1" />
-			<stat name="religion:misc" value="1" />
-			<stat name="sleight of hand:misc" value="1" />
-			<stat name="stealth:misc" value="1" />
-			<stat name="survival:misc" value="1" />
+			<stat name="acrobatics:misc" value="1"/>
+			<stat name="animal handling:misc" value="1"/>
+			<stat name="arcana:misc" value="1"/>
+			<stat name="athletics:misc" value="1"/>
+			<stat name="deception:misc" value="1"/>
+			<stat name="history:misc" value="1"/>
+			<stat name="insight:misc" value="1"/>
+			<stat name="intimidation:misc" value="1"/>
+			<stat name="investigation:misc" value="1"/>
+			<stat name="medicine:misc" value="1"/>
+			<stat name="nature:misc" value="1"/>
+			<stat name="perception:misc" value="1"/>
+			<stat name="performance:misc" value="1"/>
+			<stat name="persuasion:misc" value="1"/>
+			<stat name="religion:misc" value="1"/>
+			<stat name="sleight of hand:misc" value="1"/>
+			<stat name="stealth:misc" value="1"/>
+			<stat name="survival:misc" value="1"/>
 
-			<stat name="strength:save:misc" value="1" />
-			<stat name="dexterity:save:misc" value="1" />
-			<stat name="constitution:save:misc" value="1" />
-			<stat name="intelligence:save:misc" value="1" />
-			<stat name="wisdom:save:misc" value="1" />
-			<stat name="charisma:save:misc" value="1" />
+			<stat name="strength:save:misc" value="1"/>
+			<stat name="dexterity:save:misc" value="1"/>
+			<stat name="constitution:save:misc" value="1"/>
+			<stat name="intelligence:save:misc" value="1"/>
+			<stat name="wisdom:save:misc" value="1"/>
+			<stat name="charisma:save:misc" value="1"/>
 		</rules>
 	</element>
 	<element name="Wind Fan" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_WIND_FAN">
@@ -1124,7 +1028,7 @@
 			<set name="rarity">Uncommon</set>
 		</setters>
 		<rules>
-			<stat name="speed:fly" value="speed" bonus="base" />
+			<stat name="speed:fly" value="speed" bonus="base"/>
 		</rules>
 	</element>
 	<element name="Amulet of Health" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_AMULET_OF_HEALTH">
@@ -1142,7 +1046,7 @@
 			<set name="rarity">Rare</set>
 		</setters>
 		<rules>
-			<stat name="constitution:score:set" value="19" bonus="base" />
+			<stat name="constitution:score:set" value="19" bonus="base"/>
 		</rules>
 	</element>
 	<element name="Bag of Beans" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_BAG_OF_BEANS">
@@ -1218,10 +1122,10 @@
 			<set name="rarity">Rare</set>
 		</setters>
 		<rules>
-			<stat name="constitution" value="2" />
-			<grant type="Condition" id="ID_INTERNAL_CONDITION_DAMAGE_RESISTANCE_POISON" requirements="!ID_SRD_RACE_DWARF" />
-			<grant type="Vision" id="ID_VISION_DARKVISION" requirements="!ID_SRD_RACE_DWARF" />
-			<grant type="Language" id="ID_LANGUAGE_DWARVISH" requirements="!ID_SRD_RACE_DWARF" />
+			<stat name="constitution" value="2"/>
+			<grant type="Condition" id="ID_INTERNAL_CONDITION_DAMAGE_RESISTANCE_POISON" requirements="!ID_SRD_RACE_DWARF"/>
+			<grant type="Vision" id="ID_VISION_DARKVISION" requirements="!ID_SRD_RACE_DWARF"/>
+			<grant type="Language" id="ID_LANGUAGE_DWARVISH" requirements="!ID_SRD_RACE_DWARF"/>
 		</rules>
 	</element>
 	<element name="Belt of Hill Giant Strength" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_BELT_OF_HILL_GIANT_STRENGTH">
@@ -1252,7 +1156,7 @@
 			<set name="rarity">Rare</set>
 		</setters>
 		<rules>
-			<stat name="strength:score:set" value="21" bonus="base" />
+			<stat name="strength:score:set" value="21" bonus="base"/>
 		</rules>
 	</element>
 	<element name="Belt of Stone Giant Strength" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_BELT_OF_STONE_GIANT_STRENGTH">
@@ -1273,7 +1177,7 @@
 			</table>
 		</description>
 		<setters>
-			<set name="keywords"></set>
+			<set name="keywords"/>
 			<set name="category">Wondrous Items</set>
 			<set name="cost" currency="gp">0</set>
 			<set name="weight" lb="0">0 lb.</set>
@@ -1283,7 +1187,7 @@
 			<set name="rarity">Very Rare</set>
 		</setters>
 		<rules>
-			<stat name="strength:score:set" value="21" bonus="base" />
+			<stat name="strength:score:set" value="21" bonus="base"/>
 		</rules>
 	</element>
 	<element name="Belt of Frost Giant Strength" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_BELT_OF_FROST_GIANT_STRENGTH">
@@ -1304,7 +1208,7 @@
 			</table>
 		</description>
 		<setters>
-			<set name="keywords"></set>
+			<set name="keywords"/>
 			<set name="category">Wondrous Items</set>
 			<set name="cost" currency="gp">0</set>
 			<set name="weight" lb="0">0 lb.</set>
@@ -1314,7 +1218,7 @@
 			<set name="rarity">Very Rare</set>
 		</setters>
 		<rules>
-			<stat name="strength:score:set" value="21" bonus="base" />
+			<stat name="strength:score:set" value="21" bonus="base"/>
 		</rules>
 	</element>
 	<element name="Belt of Fire Giant Strength" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_BELT_OF_FIRE_GIANT_STRENGTH">
@@ -1335,7 +1239,7 @@
 			</table>
 		</description>
 		<setters>
-			<set name="keywords"></set>
+			<set name="keywords"/>
 			<set name="category">Wondrous Items</set>
 			<set name="cost" currency="gp">0</set>
 			<set name="weight" lb="0">0 lb.</set>
@@ -1345,7 +1249,7 @@
 			<set name="rarity">Very Rare</set>
 		</setters>
 		<rules>
-			<stat name="strength:score:set" value="25" bonus="base" />
+			<stat name="strength:score:set" value="25" bonus="base"/>
 		</rules>
 	</element>
 	<element name="Belt of Cloud Giant Strength" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_BELT_OF_CLOUD_GIANT_STRENGTH">
@@ -1366,7 +1270,7 @@
 			</table>
 		</description>
 		<setters>
-			<set name="keywords"></set>
+			<set name="keywords"/>
 			<set name="category">Wondrous Items</set>
 			<set name="cost" currency="gp">0</set>
 			<set name="weight" lb="0">0 lb.</set>
@@ -1376,7 +1280,7 @@
 			<set name="rarity">Legendary</set>
 		</setters>
 		<rules>
-			<stat name="strength:score:set" value="27" bonus="base" />
+			<stat name="strength:score:set" value="27" bonus="base"/>
 		</rules>
 	</element>
 	<element name="Belt of Storm Giant Strength" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_BELT_OF_STORM_GIANT_STRENGTH">
@@ -1397,7 +1301,7 @@
 			</table>
 		</description>
 		<setters>
-			<set name="keywords"></set>
+			<set name="keywords"/>
 			<set name="category">Wondrous Items</set>
 			<set name="cost" currency="gp">0</set>
 			<set name="weight" lb="0">0 lb.</set>
@@ -1407,7 +1311,7 @@
 			<set name="rarity">Legendary</set>
 		</setters>
 		<rules>
-			<stat name="strength:score:set" value="29" bonus="base" />
+			<stat name="strength:score:set" value="29" bonus="base"/>
 		</rules>
 	</element>
 	<element name="Boots of Levitation" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_BOOTS_OF_LEVITATION">
@@ -1468,7 +1372,7 @@
 			<set name="rarity">Rare</set>
 		</setters>
 		<rules>
-			<stat name="ac:misc" value="2" equipped="[armor:none],[shield:none]" />
+			<stat name="ac:misc" value="2" equipped="[armor:none],[shield:none]"/>
 		</rules>
 	</element>
 	<element name="Brazier of Commanding Fire Elementals" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_BRAZIER_OF_COMMANDING_FIRE_ELEMENTALS">
@@ -1520,7 +1424,7 @@
 			<p class="indent">The chime can be used ten times. After the tenth time, it cracks and becomes useless.</p>
 		</description>
 		<setters>
-			<set name="keywords"></set>
+			<set name="keywords"/>
 			<set name="category">Wondrous Items</set>
 			<set name="cost" currency="gp">0</set>
 			<set name="weight" lb="1">1 lb.</set>
@@ -1533,7 +1437,7 @@
 			<p>While you wear this cloak, it projects an illusion that makes you appear to be standing in a place near your actual location, causing any creature to have disadvantage on attack rolls against you. If you take damage, the property ceases to function until the start of your next turn. This property is suppressed while you are incapacitated, restrained, or otherwise unable to move.</p>
 		</description>
 		<setters>
-			<set name="keywords"></set>
+			<set name="keywords"/>
 			<set name="category">Wondrous Items</set>
 			<set name="cost" currency="gp">0</set>
 			<set name="weight" lb="0">0 lb.</set>
@@ -1600,7 +1504,7 @@
 			<set name="rarity">Rare</set>
 		</setters>
 	</element>
-	<element name="Daern's Instant Fortress" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_DAERNS_INSTANT_FORTRESS">
+	<element name="Instant Fortress" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_DAERNS_INSTANT_FORTRESS">
 		<description>
 			<p>You can use an action to place this 1-inch metal cube on the ground and speak its command word. The cube rapidly grows into a fortress that remains until you use an action to speak the command word that dismisses it, which works only if the fortress is empty.</p>
 			<p class="indent">The fortress is a square tower, 20 feet on a side and 30 feet high, with arrow slits on all sides and a battlement atop it. Its interior is divided into two floors, with a ladder running along one wall to connect them. The ladder ends at a trapdoor leading to the roof. When activated, the tower has a small door on the side facing you. The door opens only at your command, which you can speak as a bonus action. It is immune to the <em>knock</em> spell and similar magic, such as that of a <em>chime of opening</em>.</p>
@@ -1621,7 +1525,7 @@
 			<p class="indent">You and any creature you designate when you use the shackles can use an action to remove them. Once every 30 days, the bound creature can make a DC 30 Strength (Athletics) check. On a success, the creature breaks free and destroys the shackles.</p>
 		</description>
 		<setters>
-			<set name="keywords"></set>
+			<set name="keywords"/>
 			<set name="category">Wondrous Items</set>
 			<set name="cost" currency="gp">0</set>
 			<set name="weight" lb="0">0 lb.</set>
@@ -1652,14 +1556,14 @@
 			<p class="indent">The creature exists for a duration specific to each figurine. At the end of the duration, the creature reverts to its figurine form. It reverts to a figurine early if it drops to 0 hit points or if you use an action to speak the command word again while touching it. When the creature becomes a figurine again, its property can't be used again until a certain amount of time has passed, as specified in the figurine's description.</p>
 		</description>
 		<setters>
-			<set name="keywords"></set>
+			<set name="keywords"/>
 			<set name="category">Wondrous Items</set>
 			<set name="cost" currency="gp">0</set>
 			<set name="weight" lb="0">0 lb.</set>
 			<set name="type">Wondrous Item</set>
 			<set name="rarity">Rare</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Figurine of Wondrous Power, Golden Lions" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_FIGURINE_OF_WONDROUS_POWER_GOLDEN_LIONS">
 		<description>
@@ -1669,14 +1573,14 @@
 			<p class="indent">The creature exists for a duration specific to each figurine. At the end of the duration, the creature reverts to its figurine form. It reverts to a figurine early if it drops to 0 hit points or if you use an action to speak the command word again while touching it. When the creature becomes a figurine again, its property can't be used again until a certain amount of time has passed, as specified in the figurine's description.</p>
 		</description>
 		<setters>
-			<set name="keywords"></set>
+			<set name="keywords"/>
 			<set name="category">Wondrous Items</set>
 			<set name="cost" currency="gp">0</set>
 			<set name="weight" lb="0">0 lb.</set>
 			<set name="type">Wondrous Item</set>
 			<set name="rarity">Rare</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Figurine of Wondrous Power, Ivory Goats" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_FIGURINE_OF_WONDROUS_POWER_IVORY_GOATS">
 		<description>
@@ -1691,14 +1595,14 @@
 			<p class="indent">The creature exists for a duration specific to each figurine. At the end of the duration, the creature reverts to its figurine form. It reverts to a figurine early if it drops to 0 hit points or if you use an action to speak the command word again while touching it. When the creature becomes a figurine again, its property can't be used again until a certain amount of time has passed, as specified in the figurine's description.</p>
 		</description>
 		<setters>
-			<set name="keywords"></set>
+			<set name="keywords"/>
 			<set name="category">Wondrous Items</set>
 			<set name="cost" currency="gp">0</set>
 			<set name="weight" lb="0">0 lb.</set>
 			<set name="type">Wondrous Item</set>
 			<set name="rarity">Rare</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Figurine of Wondrous Power, Marble Elephant" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_FIGURINE_OF_WONDROUS_POWER_MARBLE_ELEPHANT">
 		<description>
@@ -1708,14 +1612,14 @@
 			<p class="indent">The creature exists for a duration specific to each figurine. At the end of the duration, the creature reverts to its figurine form. It reverts to a figurine early if it drops to 0 hit points or if you use an action to speak the command word again while touching it. When the creature becomes a figurine again, its property can't be used again until a certain amount of time has passed, as specified in the figurine's description.</p>
 		</description>
 		<setters>
-			<set name="keywords"></set>
+			<set name="keywords"/>
 			<set name="category">Wondrous Items</set>
 			<set name="cost" currency="gp">0</set>
 			<set name="weight" lb="0">0 lb.</set>
 			<set name="type">Wondrous Item</set>
 			<set name="rarity">Rare</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Figurine of Wondrous Power, Onyx Dog" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_FIGURINE_OF_WONDROUS_POWER_ONYX_DOG">
 		<description>
@@ -1725,14 +1629,14 @@
 			<p class="indent">The creature exists for a duration specific to each figurine. At the end of the duration, the creature reverts to its figurine form. It reverts to a figurine early if it drops to 0 hit points or if you use an action to speak the command word again while touching it. When the creature becomes a figurine again, its property can't be used again until a certain amount of time has passed, as specified in the figurine's description.</p>
 		</description>
 		<setters>
-			<set name="keywords"></set>
+			<set name="keywords"/>
 			<set name="category">Wondrous Items</set>
 			<set name="cost" currency="gp">0</set>
 			<set name="weight" lb="0">0 lb.</set>
 			<set name="type">Wondrous Item</set>
 			<set name="rarity">Rare</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Figurine of Wondrous Power, Serpentine Owl" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_FIGURINE_OF_WONDROUS_POWER_SERPENTINE_OWL">
 		<description>
@@ -1742,14 +1646,14 @@
 			<p class="indent">The creature exists for a duration specific to each figurine. At the end of the duration, the creature reverts to its figurine form. It reverts to a figurine early if it drops to 0 hit points or if you use an action to speak the command word again while touching it. When the creature becomes a figurine again, its property can't be used again until a certain amount of time has passed, as specified in the figurine's description.</p>
 		</description>
 		<setters>
-			<set name="keywords"></set>
+			<set name="keywords"/>
 			<set name="category">Wondrous Items</set>
 			<set name="cost" currency="gp">0</set>
 			<set name="weight" lb="0">0 lb.</set>
 			<set name="type">Wondrous Item</set>
 			<set name="rarity">Rare</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Figurine of Wondrous Power, Obsidian Steed" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_FIGURINE_OF_WONDROUS_POWER_OBSIDIAN_STEED">
 		<description>
@@ -1760,14 +1664,14 @@
 			<p class="indent">The creature exists for a duration specific to each figurine. At the end of the duration, the creature reverts to its figurine form. It reverts to a figurine early if it drops to 0 hit points or if you use an action to speak the command word again while touching it. When the creature becomes a figurine again, its property can't be used again until a certain amount of time has passed, as specified in the figurine's description.</p>
 		</description>
 		<setters>
-			<set name="keywords"></set>
+			<set name="keywords"/>
 			<set name="category">Wondrous Items</set>
 			<set name="cost" currency="gp">0</set>
 			<set name="weight" lb="0">0 lb.</set>
 			<set name="type">Wondrous Item</set>
 			<set name="rarity">Very Rare</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Folding Boat" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_FOLDING_BOAT">
 		<description>
@@ -1778,7 +1682,7 @@
 			<p class="indent">The third command word causes the <em>folding boat</em> to fold back into a box, provided that no creatures are aboard. Any objects in the vessel that can't fit inside the box remain outside the box as it folds. Any objects in the vessel that can fit inside the box do so.</p>
 		</description>
 		<setters>
-			<set name="keywords"></set>
+			<set name="keywords"/>
 			<set name="category">Wondrous Items</set>
 			<set name="cost" currency="gp">0</set>
 			<set name="weight" lb="4">4 lb.</set>
@@ -1816,7 +1720,7 @@
 			<set name="rarity">Rare</set>
 		</setters>
 	</element>
-	<element name="Heward's Handy Haversack" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_HEWARDS_HANDY_HAVERSACK">
+	<element name="Handy Haversack" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_HEWARDS_HANDY_HAVERSACK">
 		<description>
 			<p>This backpack has a central pouch and two side pouches, each of which is an extradimensional space. Each side pouch can hold up to 20 pounds of material, not exceeding a volume of 2 cubic feet. The large central pouch can hold up to 8 cubic feet or 80 pounds of material. The backpack always weighs 5 pounds, regardless of its contents.</p>
 			<p class="indent">Placing an object in the haversack follows the normal rules for interacting with objects. Retrieving an item from the haversack requires you to use an action. When you reach into the haversack for a specific item, the item is always magically on top.</p>
@@ -1824,14 +1728,14 @@
 			<p class="indent">Placing the haversack inside an extradimensional space created by a <em>bag of holding</em>, <em>portable hole</em>, or similar item instantly destroys both items and opens a gate to the Astral Plane. The gate originates where the one item was placed inside the other. Any creature within 10 feet of the gate is sucked through it and deposited in a random location on the Astral Plane. The gate then closes. The gate is one-way only and can't be reopened.</p>
 		</description>
 		<setters>
-			<set name="keywords"></set>
+			<set name="keywords"/>
 			<set name="category">Wondrous Items</set>
 			<set name="cost" currency="gp">0</set>
 			<set name="weight" lb="5">5 lb.</set>
 			<set name="type">Wondrous Item</set>
 			<set name="rarity">Rare</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Horn of Blasting" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_HORN_OF_BLASTING">
 		<description>
@@ -1872,7 +1776,7 @@
 			<set name="type">Wondrous Item</set>
 			<set name="rarity">Rare</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Horn of Valhalla, Silver" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_HORN_OF_VALHALLA_SILVER">
 		<description>
@@ -1899,7 +1803,7 @@
 			<set name="type">Wondrous Item</set>
 			<set name="rarity">Rare</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Horn of Valhalla, Bronze" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_HORN_OF_VALHALLA_BRONZE">
 		<description>
@@ -1926,7 +1830,7 @@
 			<set name="type">Wondrous Item</set>
 			<set name="rarity">Very Rare</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Horn of Valhalla, Iron" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_HORN_OF_VALHALLA_IRON">
 		<description>
@@ -1946,14 +1850,14 @@
 			<p>If you blow the horn without meeting its requirement, the summoned berserkers attack you. If you meet the requirement, they are friendly to you and your companions and follow your commands.</p>
 		</description>
 		<setters>
-			<set name="keywords"></set>
+			<set name="keywords"/>
 			<set name="category">Wondrous Items</set>
 			<set name="cost" currency="gp">0</set>
 			<set name="weight" lb="0">0 lb.</set>
 			<set name="type">Wondrous Item</set>
 			<set name="rarity">Legendary</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Horseshoes of Speed" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_HORSESHOES_OF_SPEED">
 		<description>
@@ -1967,9 +1871,9 @@
 			<set name="type">Wondrous Item</set>
 			<set name="rarity">Rare</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
-	<element name="Iron Bands of Bilarro" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_IRON_BANDS_OF_BILARRO">
+	<element name="Iron Bands of Binding" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_IRON_BANDS_OF_BILARRO">
 		<description>
 			<p>This rusty iron sphere measures 3 inches in diameter and weighs 1 pound.  You can use an action to speak the command word and throw the sphere at a Huge or smaller creature you can see within 60 feet of you. As the sphere moves through the air, it opens into a tangle of metal bands.</p>
 			<p class="indent">Make a ranged attack roll with an attack bonus equal to your Dexterity modifier plus your proficiency bonus. On a hit, the target is restrained until you take a bonus action to speak the command word again to release it. Doing so, or missing with the attack, causes the bands to contract and become a sphere once more.</p>
@@ -1977,14 +1881,14 @@
 			<p class="indent">Once the bands are used, they can't be used again until the next dawn.</p>
 		</description>
 		<setters>
-			<set name="keywords"></set>
+			<set name="keywords"/>
 			<set name="category">Wondrous Items</set>
 			<set name="cost" currency="gp">0</set>
 			<set name="weight" lb="1">1 lb.</set>
 			<set name="type">Wondrous Item</set>
 			<set name="rarity">Rare</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Mantle of Spell Resistance" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_MANTLE_OF_SPELL_RESISTANCE">
 		<description>
@@ -2007,7 +1911,7 @@
 			<p class="indent">You can hurl multiple beads, or even the whole necklace, as one action. When you do so, increase the level of the <em>fireball</em> by 1 for each bead beyond the first.</p>
 		</description>
 		<setters>
-			<set name="keywords"></set>
+			<set name="keywords"/>
 			<set name="category">Wondrous Items</set>
 			<set name="cost" currency="gp">0</set>
 			<set name="weight" lb="1">1 lb.</set>
@@ -2044,7 +1948,7 @@
 			<set name="attunement" addition="by a cleric, druid, or paladin">true</set>
 			<set name="rarity">Rare</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Periapt of Proof Against Poison" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_PERIAPT_OF_PROOF_AGAINST_POISON">
 		<description>
@@ -2060,7 +1964,7 @@
 			<set name="rarity">Rare</set>
 		</setters>
 		<rules>
-			<grant type="Condition" id="ID_INTERNAL_CONDITION_DAMAGE_IMMUNITY_POISON" />
+			<grant type="Condition" id="ID_INTERNAL_CONDITION_DAMAGE_IMMUNITY_POISON"/>
 		</rules>
 	</element>
 	<element name="Portable Hole" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_PORTABLE_HOLE">
@@ -2080,7 +1984,7 @@
 			<set name="rarity">Rare</set>
 		</setters>
 	</element>
-	<element name="Quaal's Feather Token" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_QUAALS_FEATHER_TOKEN">
+	<element name="Feather Token" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_QUAALS_FEATHER_TOKEN">
 		<description>
 			<p>This tiny object looks like a feather. Different types of feather tokens exist, each with a different single-use effect. The GM chooses the kind of token or determines it randomly.</p>
 			<table>
@@ -2105,7 +2009,7 @@
 			<p>As a bonus action on your turn, you can direct the whip to fly up to 20 feet and repeat the attack against a creature within 10 feet of it. The whip disappears after 1 hour, when you use an action to dismiss it, or when you are incapacitated or die.</p>
 		</description>
 		<setters>
-			<set name="keywords"></set>
+			<set name="keywords"/>
 			<set name="category">Wondrous Items</set>
 			<set name="cost" currency="gp">0</set>
 			<set name="weight" lb="0">0 lb.</set>
@@ -2135,7 +2039,7 @@
 			<set name="rarity">Rare</set>
 		</setters>
 		<rules>
-			<grant type="Vision" id="ID_VISION_DARKVISION" />
+			<grant type="Vision" id="ID_VISION_DARKVISION"/>
 		</rules>
 	</element>
 	<element name="Rope of Entanglement" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_ROPE_OF_ENTANGLEMENT">
@@ -2235,7 +2139,7 @@
 			<p class="indent">Alternatively, when you light the candle for the first time, you can cast the <em>gate</em> spell with it. Doing so destroys the candle.</p>
 		</description>
 		<setters>
-			<set name="keywords"></set>
+			<set name="keywords"/>
 			<set name="category">Wondrous Items</set>
 			<set name="cost" currency="gp">0</set>
 			<set name="weight" lb="0">0 lb.</set>
@@ -2243,7 +2147,7 @@
 			<set name="attunement">true</set>
 			<set name="rarity">Very Rare</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Carpet of Flying" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_CARPET_OF_FLYING">
 		<description>
@@ -2263,14 +2167,14 @@
 			<p>A carpet can carry up to twice the weight shown on the table, but it flies at half speed if it carries more than its normal capacity.</p>
 		</description>
 		<setters>
-			<set name="keywords"></set>
+			<set name="keywords"/>
 			<set name="category">Wondrous Items</set>
 			<set name="cost" currency="gp">0</set>
 			<set name="weight" lb="0">0 lb.</set>
 			<set name="type">Wondrous Item</set>
 			<set name="rarity">Very Rare</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Cloak of Arachnida" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_CLOAK_OF_ARACHNIDA">
 		<description>
@@ -2294,8 +2198,8 @@
 			<set name="rarity">Very Rare</set>
 		</setters>
 		<rules>
-			<grant type="Condition" id="ID_INTERNAL_CONDITION_DAMAGE_RESISTANCE_POISON" />
-			<stat name="speed:climb" value="speed" bonus="base" />
+			<grant type="Condition" id="ID_INTERNAL_CONDITION_DAMAGE_RESISTANCE_POISON"/>
+			<stat name="speed:climb" value="speed" bonus="base"/>
 		</rules>
 	</element>
 	<element name="Crystal Ball" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_CRYSTAL_BALL">
@@ -2311,7 +2215,7 @@
 			<set name="attunement">true</set>
 			<set name="rarity">Very Rare</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Efreeti Bottle" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_EFREETI_BOTTLE">
 		<description>
@@ -2329,14 +2233,14 @@
 			</table>
 		</description>
 		<setters>
-			<set name="keywords"></set>
+			<set name="keywords"/>
 			<set name="category">Wondrous Items</set>
 			<set name="cost" currency="gp">0</set>
 			<set name="weight" lb="1">1 lb.</set>
 			<set name="type">Wondrous Item</set>
 			<set name="rarity">Very Rare</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Helm of Brilliance" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_HELM_OF_BRILLIANCE">
 		<description>
@@ -2393,8 +2297,8 @@
 			<set name="slot">misc</set>
 		</setters>
 		<rules>
-			<stat name="constitution" value="2" />
-			<stat name="constitution:max" value="2" />
+			<stat name="constitution" value="2"/>
+			<stat name="constitution:max" value="2"/>
 		</rules>
 	</element>
 	<element name="Manual of Gainful Exercise" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_MANUAL_OF_GAINFUL_EXERCISE">
@@ -2412,8 +2316,8 @@
 			<set name="slot">misc</set>
 		</setters>
 		<rules>
-			<stat name="strength" value="2" />
-			<stat name="strength:max" value="2" />
+			<stat name="strength" value="2"/>
+			<stat name="strength:max" value="2"/>
 		</rules>
 	</element>
 	<element name="Manual of Clay Golems" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_MANUAL_OF_CLAY_GOLEMS">
@@ -2531,8 +2435,8 @@
 			<set name="slot">misc</set>
 		</setters>
 		<rules>
-			<stat name="dexterity" value="2" />
-			<stat name="dexterity:max" value="2" />
+			<stat name="dexterity" value="2"/>
+			<stat name="dexterity:max" value="2"/>
 		</rules>
 	</element>
 	<element name="Mirror of Life Trapping" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_MIRROR_OF_LIFE_TRAPPING">
@@ -2554,7 +2458,7 @@
 			<set name="rarity">Very Rare</set>
 		</setters>
 	</element>
-	<element name="Nolzur's Marvelous Pigments" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_NOLZURS_MARVELOUS_PIGMENTS">
+	<element name="Marvelous Pigments" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_NOLZURS_MARVELOUS_PIGMENTS">
 		<description>
 			<p>Typically found in 1d4 pots inside a fine wooden box with a brush (weighing 1 pound in total), these pigments allow you to create three-dimensional objects by painting them in two dimensions. The paint flows from the brush to form the desired object as you concentrate on its image.</p>
 			<p class="indent">Each pot of paint is sufficient to cover 1,000 square feet of a surface, which lets you create inanimate objects or terrain features -- such as a door, a pit, flowers, trees, cells, rooms, or weapons -- that are up to 10,000 cubic feet. It takes 10 minutes to cover 100 square feet.</p>
@@ -2602,12 +2506,12 @@
 			<set name="rarity">Very Rare</set>
 		</setters>
 		<rules>
-			<stat name="strength:save:misc" value="1" />
-			<stat name="dexterity:save:misc" value="1" />
-			<stat name="constitution:save:misc" value="1" />
-			<stat name="intelligence:save:misc" value="1" />
-			<stat name="wisdom:save:misc" value="1" />
-			<stat name="charisma:save:misc" value="1" />
+			<stat name="strength:save:misc" value="1"/>
+			<stat name="dexterity:save:misc" value="1"/>
+			<stat name="constitution:save:misc" value="1"/>
+			<stat name="intelligence:save:misc" value="1"/>
+			<stat name="wisdom:save:misc" value="1"/>
+			<stat name="charisma:save:misc" value="1"/>
 		</rules>
 	</element>
 	<element name="Tome of Clear Thought" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_TOME_OF_CLEAR_THOUGHT">
@@ -2625,8 +2529,8 @@
 			<set name="slot">misc</set>
 		</setters>
 		<rules>
-			<stat name="intelligence" value="2" />
-			<stat name="intelligence:max" value="2" />
+			<stat name="intelligence" value="2"/>
+			<stat name="intelligence:max" value="2"/>
 		</rules>
 	</element>
 	<element name="Tome of Leadership and Influence" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_TOME_OF_LEADERSHIP_AND_INFLUENCE">
@@ -2644,8 +2548,8 @@
 			<set name="slot">misc</set>
 		</setters>
 		<rules>
-			<stat name="charisma" value="2" />
-			<stat name="charisma:max" value="2" />
+			<stat name="charisma" value="2"/>
+			<stat name="charisma:max" value="2"/>
 		</rules>
 	</element>
 	<element name="Tome of Understanding" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_TOME_OF_UNDERSTANDING">
@@ -2663,11 +2567,11 @@
 			<set name="slot">misc</set>
 		</setters>
 		<rules>
-			<stat name="wisdom" value="2" />
-			<stat name="wisdom:max" value="2" />
+			<stat name="wisdom" value="2"/>
+			<stat name="wisdom:max" value="2"/>
 		</rules>
 	</element>
-	<element name="Apparatus of Kwalish" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_APPARATUS_OF_KWALISH">
+	<element name="Apparatus of the Crab" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_APPARATUS_OF_KWALISH">
 		<description>
 			<p>This item first appears to be a Large sealed iron barrel weighing 500 pounds. The barrel has a hidden catch, which can be found with a successful DC 20 Intelligence (Investigation) check. Releasing the catch unlocks a hatch at one end of the barrel, allowing two Medium or smaller creatures to crawl inside. Ten levers are set in a row at the far end, each in a neutral position, able to move either up or down. When certain levers are used, the apparatus transforms to resemble a giant lobster.</p>
 			<p class="indent">The apparatus of the crab is a Large object with the following statistics:</p>
@@ -2703,23 +2607,7 @@
 			<set name="type">Wondrous Item</set>
 			<set name="rarity">Legendary</set>
 		</setters>
-		<rules />
-	</element>
-	<element name="Cloak of Invisibility" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_CLOAK_OF_INVISIBILITY">
-		<description>
-			<p>While wearing this cloak, you can pull its hood over your head to cause yourself to become invisible. While you are invisible, anything you are carrying or wearing is invisible with you. You become visible when you cease wearing the hood. Pulling the hood up or down requires an action.</p>
-			<p class="indent">Deduct the time you are invisible, in increments of 1 minute, from the cloak's maximum duration of 2 hours. After 2 hours of use, the cloak ceases to function. For every uninterrupted period of 12 hours the cloak goes unused, it regains 1 hour of duration.</p>
-		</description>
-		<setters>
-			<set name="keywords"></set>
-			<set name="category">Wondrous Items</set>
-			<set name="cost" currency="gp">0</set>
-			<set name="weight" lb="0">0 lb.</set>
-			<set name="slot">shoulders</set>
-			<set name="type">Wondrous Item</set>
-			<set name="attunement">true</set>
-			<set name="rarity">Legendary</set>
-		</setters>
+		<rules/>
 	</element>
 	<element name="Crystal Ball of Mind Reading" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_CRYSTAL_BALL_OF_MIND_READING">
 		<description>
@@ -2840,14 +2728,14 @@
 			<p class="indent"><strong><em>The Void.</em></strong> This black card spells disaster. Your soul is drawn from your body and contained in an object in a place of the GM's choice. One or more powerful beings guard the place. While your soul is trapped in this way, your body is incapacitated. A <em>wish</em> spell can't restore your soul, but the spell reveals the location of the object that holds it. You draw no more cards.</p>
 		</description>
 		<setters>
-			<set name="keywords"></set>
+			<set name="keywords"/>
 			<set name="category">Wondrous Items</set>
 			<set name="cost" currency="gp">0</set>
 			<set name="weight" lb="0">0 lb.</set>
 			<set name="type">Wondrous Item</set>
 			<set name="rarity">Legendary</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Iron Flask" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_IRON_FLASK">
 		<description>
@@ -2883,7 +2771,7 @@
 			</table>
 		</description>
 		<setters>
-			<set name="keywords"></set>
+			<set name="keywords"/>
 			<set name="category">Wondrous Items</set>
 			<set name="cost" currency="gp">0</set>
 			<set name="weight" lb="0">0 lb.</set>
@@ -2912,12 +2800,12 @@
 			<set name="rarity">Legendary</set>
 		</setters>
 		<rules>
-			<stat name="ac:robe of the archmagi" value="15" />
-			<stat name="ac:robe of the archmagi" value="dexterity:modifier" />
-			<stat name="ac:calculation" value="ac:robe of the archmagi" bonus="calculation" equipped="[armor:none]" />
+			<stat name="ac:robe of the archmagi" value="15"/>
+			<stat name="ac:robe of the archmagi" value="dexterity:modifier"/>
+			<stat name="ac:calculation" value="ac:robe of the archmagi" bonus="calculation" equipped="[armor:none]"/>
 
-			<stat name="spellcasting:attack" value="2" />
-			<stat name="spellcasting:dc" value="2" />
+			<stat name="spellcasting:attack" value="2"/>
+			<stat name="spellcasting:dc" value="2"/>
 		</rules>
 	</element>
 	<element name="Scarab of Protection" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_SCARAB_OF_PROTECTION">
@@ -2937,7 +2825,7 @@
 			<set name="attunement">true</set>
 			<set name="rarity">Legendary</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Sovereign Glue" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_SOVEREIGN_GLUE">
 		<description>
@@ -2996,7 +2884,7 @@
 			<set name="rarity">Legendary</set>
 		</setters>
 		<rules>
-			<stat name="spellcasting:attack" value="2" requirements="(ID_ALIGNMENT_LAWFUL_GOOD||ID_ALIGNMENT_NEUTRAL_GOOD||ID_ALIGNMENT_CHAOTIC_GOOD),(ID_WOTC_PHB_CLASS_CLERIC||ID_WOTC_PHB_CLASS_PALADIN)" />
+			<stat name="spellcasting:attack" value="2" requirements="(ID_ALIGNMENT_LAWFUL_GOOD||ID_ALIGNMENT_NEUTRAL_GOOD||ID_ALIGNMENT_CHAOTIC_GOOD),(ID_WOTC_PHB_CLASS_CLERIC||ID_WOTC_PHB_CLASS_PALADIN)"/>
 		</rules>
 	</element>
 	<element name="Talisman of Ultimate Evil" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_TALISMAN_OF_ULTIMATE_EVIL">
@@ -3016,7 +2904,7 @@
 			<set name="rarity">Legendary</set>
 		</setters>
 		<rules>
-			<stat name="spellcasting:attack" value="2" requirements="(ID_ALIGNMENT_LAWFUL_EVIL||ID_ALIGNMENT_NEUTRAL_EVIL||ID_ALIGNMENT_CHAOTIC_EVIL),(ID_WOTC_PHB_CLASS_CLERIC||ID_WOTC_PHB_CLASS_PALADIN)" />
+			<stat name="spellcasting:attack" value="2" requirements="(ID_ALIGNMENT_LAWFUL_EVIL||ID_ALIGNMENT_NEUTRAL_EVIL||ID_ALIGNMENT_CHAOTIC_EVIL),(ID_WOTC_PHB_CLASS_CLERIC||ID_WOTC_PHB_CLASS_PALADIN)"/>
 		</rules>
 	</element>
 	<element name="Talisman of the Sphere" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_TALISMAN_OF_THE_SPHERE">
@@ -3034,30 +2922,12 @@
 			<set name="rarity">Legendary</set>
 		</setters>
 	</element>
-	<element name="Tome of the Stilled Tongue" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_TOME_OF_THE_STILLED_TONGUE">
-		<description>
-			<p>This thick leather-bound volume has a desiccated tongue pinned to the front cover. Five of these tomes exist, and it's unknown which one is the original. The grisly cover decoration on the first tome of the stilled tongue once belonged to a treacherous former servant of the lich-god Vecna, keeper of secrets. The tongues pinned to the covers of the four copies came from other spellcasters who crossed Vecna. The first few pages of each tome are filled with indecipherable scrawls. The remaining pages are blank and pristine.</p>
-			<p class="indent">If you can attune to this item, you can use it as a spellbook and an arcane focus. In addition, while holding the tome, you can use a bonus action to cast a spell you have written in this tome, without expend in a spell slot or using any verbal or somatic component Once used, this property of the tome can't be used again until the next dawn.</p>
-			<p class="indent">While attuned to the book, you can remove the tongue from the book's cover. If you do so, all spells written in the book are permanently erased.</p>
-			<p class="indent">Vecna watches anyone using this tome. He can also write cryptic messages in the book. These messages appear at midnight and fade away after they are read.</p>
-		</description>
-		<setters>
-			<set name="keywords">spellbook, arcane focus, wizard</set>
-			<set name="category">Wondrous Items</set>
-			<set name="cost" currency="gp">0</set>
-			<set name="weight" lb="5">5 lb.</set>
-			<set name="type">Wondrous Item</set>
-			<set name="attunement" addition="by a wizard">true</set>
-			<set name="rarity">Legendary</set>
-		</setters>
-		<rules />
-	</element>
 	<element name="Universal Solvent" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_UNIVERSAL_SOLVENT">
 		<description>
 			<p>This tube holds milky liquid with a strong alcohol smell. You can use an action to pour the contents of the tube onto a surface within reach. The liquid instantly dissolves up to 1 square foot of adhesive it touches, including <em>sovereign glue.</em></p>
 		</description>
 		<setters>
-			<set name="keywords"></set>
+			<set name="keywords"/>
 			<set name="category">Wondrous Items</set>
 			<set name="cost" currency="gp">0</set>
 			<set name="weight" lb="0">0 lb.</set>
@@ -3065,7 +2935,7 @@
 			<set name="rarity">Legendary</set>
 			<set name="stackable">true</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Well of Many Worlds" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_WELL_OF_MANY_WORLDS">
 		<description>
@@ -3080,224 +2950,6 @@
 			<set name="type">Wondrous Item</set>
 			<set name="rarity">Legendary</set>
 		</setters>
-	</element>
-
-	<element name="Doss Lute" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_INSTRUMENT_OF_THE_BARDS_DOSS_LUTE">
-		<description>
-			<p>An instrument of the bards is an exquisite example of it kind, superior to an ordinary instrument in every way. Seven types of these instruments exist, each named after a legendary bard college. The following table lists the spells common to all instruments, as well as the spells specific to each one and its rarity. A creature that attempts to play the instrument without being attuned to it must succeed on a DC 15 Wisdom saving throw or take 2d4 psychic damage.</p>
-			<p class="indent">You can use an action to play the instrument and cast one of its spells. Once the instrument has been used to cast a spell, it can't be used to cast that spell again until the next dawn. The spells use your spellcasting ability and spell save DC.</p>
-			<p class="indent">When you use the instrument to cast a spell that causes targets to become charmed on a failed save, the targets have disadvantage on the saving throw. This effect applies whether you are using the instrument as the source of the spell or as a spellcasting focus.</p>
-			<table>
-				<thead>
-					<tr><td>Instrument</td><td>Rarity</td><td>Spells</td></tr>
-				</thead>
-				<tr><td>All</td><td>-</td><td>Fly, invisibility, levitate, protection from evil and good, plus the spells listed for the particular instrument</td></tr>
-				<tr><td>Anstruth harp</td><td>Very rare</td><td>Control weather, cure wounds (5th level), wall of thorns</td></tr>
-				<tr><td>Canaith mandolin</td><td>Rare</td><td>Cure wounds (3rd level) , dispel magic, protection from energy (lightning only)</td></tr>
-				<tr><td>Cli lyre</td><td>Rare</td><td>Stone shape, wall of fire, wind wall</td></tr>
-				<tr><td>Doss lute</td><td>Uncommon</td><td>Animal friendship, protection from energy (fire only) , protection from poison</td></tr>
-				<tr><td>Fochlucan</td><td>Uncommon</td><td>Entangle, faerie fire, shillelagh, bandore speak with animals</td></tr>
-				<tr><td>Mac-Fuirmidh cittern</td><td>Uncommon</td><td>Barkskin, cure wounds, fog cloud</td></tr>
-				<tr><td>Ollamh harp</td><td>Legendary</td><td>Confusion, control weather, fire storm</td></tr>
-			</table>
-		</description>
-		<setters>
-			<set name="keywords">bard</set>
-			<set name="category">Musical Instruments</set>
-			<set name="cost" currency="gp">0</set>
-			<set name="weight" lb="0">0 lb.</set>
-			<set name="type">Wondrous Item</set>
-			<set name="slot">onehand</set>
-			<set name="attunement">true</set>
-			<set name="rarity">Uncommon</set>
-		</setters>
-		<rules />
-	</element>
-	<element name="Fochlucan Bandore" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_INSTRUMENT_OF_THE_BARDS_FOCHLUCAN_BANDORE">
-		<description>
-			<p>An instrument of the bards is an exquisite example of it kind, superior to an ordinary instrument in every way. Seven types of these instruments exist, each named after a legendary bard college. The following table lists the spells common to all instruments, as well as the spells specific to each one and its rarity. A creature that attempts to play the instrument without being attuned to it must succeed on a DC 15 Wisdom saving throw or take 2d4 psychic damage.</p>
-			<p class="indent">You can use an action to play the instrument and cast one of its spells. Once the instrument has been used to cast a spell, it can't be used to cast that spell again until the next dawn. The spells use your spellcasting ability and spell save DC.</p>
-			<p class="indent">When you use the instrument to cast a spell that causes targets to become charmed on a failed save, the targets have disadvantage on the saving throw. This effect applies whether you are using the instrument as the source of the spell or as a spellcasting focus.</p>
-			<table>
-				<thead>
-					<tr><td>Instrument</td><td>Rarity</td><td>Spells</td></tr>
-				</thead>
-				<tr><td>All</td><td>-</td><td>Fly, invisibility, levitate, protection from evil and good, plus the spells listed for the particular instrument</td></tr>
-				<tr><td>Anstruth harp</td><td>Very rare</td><td>Control weather, cure wounds (5th level), wall of thorns</td></tr>
-				<tr><td>Canaith mandolin</td><td>Rare</td><td>Cure wounds (3rd level) , dispel magic, protection from energy (lightning only)</td></tr>
-				<tr><td>Cli lyre</td><td>Rare</td><td>Stone shape, wall of fire, wind wall</td></tr>
-				<tr><td>Doss lute</td><td>Uncommon</td><td>Animal friendship, protection from energy (fire only) , protection from poison</td></tr>
-				<tr><td>Fochlucan</td><td>Uncommon</td><td>Entangle, faerie fire, shillelagh, bandore speak with animals</td></tr>
-				<tr><td>Mac-Fuirmidh cittern</td><td>Uncommon</td><td>Barkskin, cure wounds, fog cloud</td></tr>
-				<tr><td>Ollamh harp</td><td>Legendary</td><td>Confusion, control weather, fire storm</td></tr>
-			</table>
-		</description>
-		<setters>
-			<set name="keywords">bard</set>
-			<set name="category">Musical Instruments</set>
-			<set name="cost" currency="gp">0</set>
-			<set name="weight" lb="0">0 lb.</set>
-			<set name="type">Wondrous Item</set>
-			<set name="slot">onehand</set>
-			<set name="attunement" addition="by a bard">true</set>
-			<set name="rarity">Uncommon</set>
-		</setters>
-		<rules />
-	</element>
-	<element name="Mac-Fuirmidh Cittern" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_INSTRUMENT_OF_THE_BARDS_MACFUIRMIDH_CITTERN">
-		<description>
-			<p>An instrument of the bards is an exquisite example of it kind, superior to an ordinary instrument in every way. Seven types of these instruments exist, each named after a legendary bard college. The following table lists the spells common to all instruments, as well as the spells specific to each one and its rarity. A creature that attempts to play the instrument without being attuned to it must succeed on a DC 15 Wisdom saving throw or take 2d4 psychic damage.</p>
-			<p class="indent">You can use an action to play the instrument and cast one of its spells. Once the instrument has been used to cast a spell, it can't be used to cast that spell again until the next dawn. The spells use your spellcasting ability and spell save DC.</p>
-			<p class="indent">When you use the instrument to cast a spell that causes targets to become charmed on a failed save, the targets have disadvantage on the saving throw. This effect applies whether you are using the instrument as the source of the spell or as a spellcasting focus.</p>
-			<table>
-				<thead>
-					<tr><td>Instrument</td><td>Rarity</td><td>Spells</td></tr>
-				</thead>
-				<tr><td>All</td><td>-</td><td>Fly, invisibility, levitate, protection from evil and good, plus the spells listed for the particular instrument</td></tr>
-				<tr><td>Anstruth harp</td><td>Very rare</td><td>Control weather, cure wounds (5th level), wall of thorns</td></tr>
-				<tr><td>Canaith mandolin</td><td>Rare</td><td>Cure wounds (3rd level) , dispel magic, protection from energy (lightning only)</td></tr>
-				<tr><td>Cli lyre</td><td>Rare</td><td>Stone shape, wall of fire, wind wall</td></tr>
-				<tr><td>Doss lute</td><td>Uncommon</td><td>Animal friendship, protection from energy (fire only) , protection from poison</td></tr>
-				<tr><td>Fochlucan</td><td>Uncommon</td><td>Entangle, faerie fire, shillelagh, bandore speak with animals</td></tr>
-				<tr><td>Mac-Fuirmidh cittern</td><td>Uncommon</td><td>Barkskin, cure wounds, fog cloud</td></tr>
-				<tr><td>Ollamh harp</td><td>Legendary</td><td>Confusion, control weather, fire storm</td></tr>
-			</table>
-		</description>
-		<setters>
-			<set name="keywords">bard</set>
-			<set name="category">Musical Instruments</set>
-			<set name="cost" currency="gp">0</set>
-			<set name="weight" lb="0">0 lb.</set>
-			<set name="type">Wondrous Item</set>
-			<set name="slot">onehand</set>
-			<set name="attunement">true</set>
-			<set name="rarity">Uncommon</set>
-		</setters>
-		<rules />
-	</element>
-	<element name="Canaith Mandolin" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_INSTRUMENT_OF_THE_BARDS_CANAITH_MANDOLIN">
-		<description>
-			<p>An instrument of the bards is an exquisite example of it kind, superior to an ordinary instrument in every way. Seven types of these instruments exist, each named after a legendary bard college. The following table lists the spells common to all instruments, as well as the spells specific to each one and its rarity. A creature that attempts to play the instrument without being attuned to it must succeed on a DC 15 Wisdom saving throw or take 2d4 psychic damage.</p>
-			<p class="indent">You can use an action to play the instrument and cast one of its spells. Once the instrument has been used to cast a spell, it can't be used to cast that spell again until the next dawn. The spells use your spellcasting ability and spell save DC.</p>
-			<p class="indent">When you use the instrument to cast a spell that causes targets to become charmed on a failed save, the targets have disadvantage on the saving throw. This effect applies whether you are using the instrument as the source of the spell or as a spellcasting focus.</p>
-			<table>
-				<thead>
-					<tr><td>Instrument</td><td>Rarity</td><td>Spells</td></tr>
-				</thead>
-				<tr><td>All</td><td>-</td><td>Fly, invisibility, levitate, protection from evil and good, plus the spells listed for the particular instrument</td></tr>
-				<tr><td>Anstruth harp</td><td>Very rare</td><td>Control weather, cure wounds (5th level), wall of thorns</td></tr>
-				<tr><td>Canaith mandolin</td><td>Rare</td><td>Cure wounds (3rd level) , dispel magic, protection from energy (lightning only)</td></tr>
-				<tr><td>Cli lyre</td><td>Rare</td><td>Stone shape, wall of fire, wind wall</td></tr>
-				<tr><td>Doss lute</td><td>Uncommon</td><td>Animal friendship, protection from energy (fire only) , protection from poison</td></tr>
-				<tr><td>Fochlucan</td><td>Uncommon</td><td>Entangle, faerie fire, shillelagh, bandore speak with animals</td></tr>
-				<tr><td>Mac-Fuirmidh cittern</td><td>Uncommon</td><td>Barkskin, cure wounds, fog cloud</td></tr>
-				<tr><td>Ollamh harp</td><td>Legendary</td><td>Confusion, control weather, fire storm</td></tr>
-			</table>
-		</description>
-		<setters>
-			<set name="keywords">bard</set>
-			<set name="category">Musical Instruments</set>
-			<set name="cost" currency="gp">0</set>
-			<set name="weight" lb="0">0 lb.</set>
-			<set name="type">Wondrous Item</set>
-			<set name="slot">onehand</set>
-			<set name="attunement">true</set>
-			<set name="rarity">Rare</set>
-		</setters>
-		<rules />
-	</element>
-	<element name="Cli Lyre" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_INSTRUMENT_OF_THE_BARDS_CLI_LYRE">
-		<description>
-			<p>An instrument of the bards is an exquisite example of it kind, superior to an ordinary instrument in every way. Seven types of these instruments exist, each named after a legendary bard college. The following table lists the spells common to all instruments, as well as the spells specific to each one and its rarity. A creature that attempts to play the instrument without being attuned to it must succeed on a DC 15 Wisdom saving throw or take 2d4 psychic damage.</p>
-			<p class="indent">You can use an action to play the instrument and cast one of its spells. Once the instrument has been used to cast a spell, it can't be used to cast that spell again until the next dawn. The spells use your spellcasting ability and spell save DC.</p>
-			<p class="indent">When you use the instrument to cast a spell that causes targets to become charmed on a failed save, the targets have disadvantage on the saving throw. This effect applies whether you are using the instrument as the source of the spell or as a spellcasting focus.</p>
-			<table>
-				<thead>
-					<tr><td>Instrument</td><td>Rarity</td><td>Spells</td></tr>
-				</thead>
-				<tr><td>All</td><td>-</td><td>Fly, invisibility, levitate, protection from evil and good, plus the spells listed for the particular instrument</td></tr>
-				<tr><td>Anstruth harp</td><td>Very rare</td><td>Control weather, cure wounds (5th level), wall of thorns</td></tr>
-				<tr><td>Canaith mandolin</td><td>Rare</td><td>Cure wounds (3rd level) , dispel magic, protection from energy (lightning only)</td></tr>
-				<tr><td>Cli lyre</td><td>Rare</td><td>Stone shape, wall of fire, wind wall</td></tr>
-				<tr><td>Doss lute</td><td>Uncommon</td><td>Animal friendship, protection from energy (fire only) , protection from poison</td></tr>
-				<tr><td>Fochlucan</td><td>Uncommon</td><td>Entangle, faerie fire, shillelagh, bandore speak with animals</td></tr>
-				<tr><td>Mac-Fuirmidh cittern</td><td>Uncommon</td><td>Barkskin, cure wounds, fog cloud</td></tr>
-				<tr><td>Ollamh harp</td><td>Legendary</td><td>Confusion, control weather, fire storm</td></tr>
-			</table>
-		</description>
-		<setters>
-			<set name="keywords">bard</set>
-			<set name="category">Musical Instruments</set>
-			<set name="cost" currency="gp">0</set>
-			<set name="weight" lb="0">0 lb.</set>
-			<set name="type">Wondrous Item</set>
-			<set name="slot">onehand</set>
-			<set name="attunement">true</set>
-			<set name="rarity">Rare</set>
-		</setters>
-		<rules />
-	</element>
-	<element name="Anstruth Harp" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_INSTRUMENT_OF_THE_BARDS_ANSTRUTH_HARP">
-		<description>
-			<p>An instrument of the bards is an exquisite example of it kind, superior to an ordinary instrument in every way. Seven types of these instruments exist, each named after a legendary bard college. The following table lists the spells common to all instruments, as well as the spells specific to each one and its rarity. A creature that attempts to play the instrument without being attuned to it must succeed on a DC 15 Wisdom saving throw or take 2d4 psychic damage.</p>
-			<p class="indent">You can use an action to play the instrument and cast one of its spells. Once the instrument has been used to cast a spell, it can't be used to cast that spell again until the next dawn. The spells use your spellcasting ability and spell save DC.</p>
-			<p class="indent">When you use the instrument to cast a spell that causes targets to become charmed on a failed save, the targets have disadvantage on the saving throw. This effect applies whether you are using the instrument as the source of the spell or as a spellcasting focus.</p>
-			<table>
-				<thead>
-					<tr><td>Instrument</td><td>Rarity</td><td>Spells</td></tr>
-				</thead>
-				<tr><td>All</td><td>-</td><td>Fly, invisibility, levitate, protection from evil and good, plus the spells listed for the particular instrument</td></tr>
-				<tr><td>Anstruth harp</td><td>Very rare</td><td>Control weather, cure wounds (5th level), wall of thorns</td></tr>
-				<tr><td>Canaith mandolin</td><td>Rare</td><td>Cure wounds (3rd level) , dispel magic, protection from energy (lightning only)</td></tr>
-				<tr><td>Cli lyre</td><td>Rare</td><td>Stone shape, wall of fire, wind wall</td></tr>
-				<tr><td>Doss lute</td><td>Uncommon</td><td>Animal friendship, protection from energy (fire only) , protection from poison</td></tr>
-				<tr><td>Fochlucan</td><td>Uncommon</td><td>Entangle, faerie fire, shillelagh, bandore speak with animals</td></tr>
-				<tr><td>Mac-Fuirmidh cittern</td><td>Uncommon</td><td>Barkskin, cure wounds, fog cloud</td></tr>
-				<tr><td>Ollamh harp</td><td>Legendary</td><td>Confusion, control weather, fire storm</td></tr>
-			</table>
-		</description>
-		<setters>
-			<set name="keywords">bard</set>
-			<set name="category">Musical Instruments</set>
-			<set name="cost" currency="gp">0</set>
-			<set name="weight" lb="0">0 lb.</set>
-			<set name="type">Wondrous Item</set>
-			<set name="slot">onehand</set>
-			<set name="attunement">true</set>
-			<set name="rarity">Very Rare</set>
-		</setters>
-		<rules />
-	</element>
-	<element name="Ollamh Harp" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_INSTRUMENT_OF_THE_BARDS_OLLAMH_HARP">
-		<description>
-			<p>An instrument of the bards is an exquisite example of it kind, superior to an ordinary instrument in every way. Seven types of these instruments exist, each named after a legendary bard college. The following table lists the spells common to all instruments, as well as the spells specific to each one and its rarity. A creature that attempts to play the instrument without being attuned to it must succeed on a DC 15 Wisdom saving throw or take 2d4 psychic damage.</p>
-			<p class="indent">You can use an action to play the instrument and cast one of its spells. Once the instrument has been used to cast a spell, it can't be used to cast that spell again until the next dawn. The spells use your spellcasting ability and spell save DC.</p>
-			<p class="indent">When you use the instrument to cast a spell that causes targets to become charmed on a failed save, the targets have disadvantage on the saving throw. This effect applies whether you are using the instrument as the source of the spell or as a spellcasting focus.</p>
-			<table>
-				<thead>
-					<tr><td>Instrument</td><td>Rarity</td><td>Spells</td></tr>
-				</thead>
-				<tr><td>All</td><td>-</td><td>Fly, invisibility, levitate, protection from evil and good, plus the spells listed for the particular instrument</td></tr>
-				<tr><td>Anstruth harp</td><td>Very rare</td><td>Control weather, cure wounds (5th level), wall of thorns</td></tr>
-				<tr><td>Canaith mandolin</td><td>Rare</td><td>Cure wounds (3rd level) , dispel magic, protection from energy (lightning only)</td></tr>
-				<tr><td>Cli lyre</td><td>Rare</td><td>Stone shape, wall of fire, wind wall</td></tr>
-				<tr><td>Doss lute</td><td>Uncommon</td><td>Animal friendship, protection from energy (fire only) , protection from poison</td></tr>
-				<tr><td>Fochlucan</td><td>Uncommon</td><td>Entangle, faerie fire, shillelagh, bandore speak with animals</td></tr>
-				<tr><td>Mac-Fuirmidh cittern</td><td>Uncommon</td><td>Barkskin, cure wounds, fog cloud</td></tr>
-				<tr><td>Ollamh harp</td><td>Legendary</td><td>Confusion, control weather, fire storm</td></tr>
-			</table>
-		</description>
-		<setters>
-			<set name="keywords">bard</set>
-			<set name="category">Musical Instruments</set>
-			<set name="cost" currency="gp">0</set>
-			<set name="weight" lb="0">0 lb.</set>
-			<set name="type">Wondrous Item</set>
-			<set name="slot">onehand</set>
-			<set name="attunement">true</set>
-			<set name="rarity">Legendary</set>
-		</setters>
-		<rules />
 	</element>
 
 	<element name="Ioun Stone, Greater Absorption" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_IOUN_STONE_GREATER_ABSORPTION">
@@ -3319,7 +2971,7 @@
 			<set name="attunement">true</set>
 			<set name="rarity">Legendary</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Ioun Stone, Mastery" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_IOUN_STONE_MASTERY">
 		<description>
@@ -3339,7 +2991,7 @@
 			<set name="rarity">Legendary</set>
 		</setters>
 		<rules>
-			<stat name="proficiency" value="1" />
+			<stat name="proficiency" value="1"/>
 		</rules>
 	</element>
 	<element name="Ioun Stone, Regeneration" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_IOUN_STONE_REGENERATION">
@@ -3359,7 +3011,7 @@
 			<set name="attunement">true</set>
 			<set name="rarity">Legendary</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Ioun Stone, Awareness" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_IOUN_STONE_AWARENESS">
 		<description>
@@ -3378,7 +3030,7 @@
 			<set name="attunement">true</set>
 			<set name="rarity">Rare</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Ioun Stone, Protection" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_IOUN_STONE_PROTECTION">
 		<description>
@@ -3398,7 +3050,7 @@
 			<set name="rarity">Rare</set>
 		</setters>
 		<rules>
-			<stat name="ac:misc" value="1" />
+			<stat name="ac:misc" value="1"/>
 		</rules>
 	</element>
 	<element name="Ioun Stone, Reserve" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_IOUN_STONE_RESERVE">
@@ -3412,7 +3064,7 @@
 			<p class="indent">A stone has AC 24, 10 hit points, and resistance to all damage. It is considered to be an object that is being worn while it orbits your head.</p>
 		</description>
 		<setters>
-			<set name="keywords"></set>
+			<set name="keywords"/>
 			<set name="category">Wondrous Items</set>
 			<set name="cost" currency="gp">0</set>
 			<set name="weight" lb="0">0 lb.</set>
@@ -3420,7 +3072,7 @@
 			<set name="attunement">true</set>
 			<set name="rarity">Rare</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Ioun Stone, Sustenance" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_IOUN_STONE_SUSTENANCE">
 		<description>
@@ -3431,7 +3083,7 @@
 			<p class="indent">A stone has AC 24, 10 hit points, and resistance to all damage. It is considered to be an object that is being worn while it orbits your head.</p>
 		</description>
 		<setters>
-			<set name="keywords"></set>
+			<set name="keywords"/>
 			<set name="category">Wondrous Items</set>
 			<set name="cost" currency="gp">0</set>
 			<set name="weight" lb="0">0 lb.</set>
@@ -3439,7 +3091,7 @@
 			<set name="attunement">true</set>
 			<set name="rarity">Rare</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Ioun Stone, Absorption" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_IOUN_STONE_ABSORPTION">
 		<description>
@@ -3451,7 +3103,7 @@
 			<p class="indent">A stone has AC 24, 10 hit points, and resistance to all damage. It is considered to be an object that is being worn while it orbits your head.</p>
 		</description>
 		<setters>
-			<set name="keywords"></set>
+			<set name="keywords"/>
 			<set name="category">Wondrous Items</set>
 			<set name="cost" currency="gp">0</set>
 			<set name="weight" lb="0">0 lb.</set>
@@ -3459,7 +3111,7 @@
 			<set name="attunement">true</set>
 			<set name="rarity">Very Rare</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Ioun Stone, Agility" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_IOUN_STONE_AGILITY">
 		<description>
@@ -3479,7 +3131,7 @@
 			<set name="rarity">Very Rare</set>
 		</setters>
 		<rules>
-			<stat name="dexterity" value="2" />
+			<stat name="dexterity" value="2"/>
 		</rules>
 	</element>
 	<element name="Ioun Stone, Fortitude" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_IOUN_STONE_FORTITUDE">
@@ -3500,7 +3152,7 @@
 			<set name="rarity">Very Rare</set>
 		</setters>
 		<rules>
-			<stat name="constitution" value="2" />
+			<stat name="constitution" value="2"/>
 		</rules>
 	</element>
 	<element name="Ioun Stone, Insight" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_IOUN_STONE_INSIGHT">
@@ -3521,7 +3173,7 @@
 			<set name="rarity">Very Rare</set>
 		</setters>
 		<rules>
-			<stat name="wisdom" value="2" />
+			<stat name="wisdom" value="2"/>
 		</rules>
 	</element>
 	<element name="Ioun Stone, Intellect" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_IOUN_STONE_INTELLECT">
@@ -3542,7 +3194,7 @@
 			<set name="rarity">Very Rare</set>
 		</setters>
 		<rules>
-			<stat name="intelligence" value="2" />
+			<stat name="intelligence" value="2"/>
 		</rules>
 	</element>
 	<element name="Ioun Stone, Leadership" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_IOUN_STONE_LEADERSHIP">
@@ -3563,7 +3215,7 @@
 			<set name="rarity">Very Rare</set>
 		</setters>
 		<rules>
-			<stat name="charisma" value="2" />
+			<stat name="charisma" value="2"/>
 		</rules>
 	</element>
 	<element name="Ioun Stone, Strength" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_IOUN_STONE_STRENGTH">
@@ -3584,7 +3236,7 @@
 			<set name="rarity">Very Rare</set>
 		</setters>
 		<rules>
-			<stat name="strength" value="2" />
+			<stat name="strength" value="2"/>
 		</rules>
 	</element>
 	<element name="Oil of Slipperiness" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_OIL_OF_SLIPPERINESS">		
@@ -3627,45 +3279,10 @@
 			<set name="stackable">true</set>
 		</setters>
 	</element>
-	<element name="Scroll of Protection" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_SCROLL_OF_PROTECTION">
-		<description>
-			<p>Each scroll of protection works against a specific type of creature chosen by the DM or determined randomly by rolling on the following table.</p>
-			<p class="indent">Using an action to read the scroll encloses you in a invisible barrier that extends from you to form a 5-footradius, 10-foot-high cylinder. For 5 minutes, this barrier prevents creatures of the specified type from entering or affecting anything within the cylinder.</p>
-			<p class="indent">The cylinder moves with you and remains centered on you. However, if you move in such a way that a creature of the specified type would be inside the cylinder, the effect ends.</p>
-			<p class="indent">A creature can attempt to overcome the barrier by using an action to make a DC 15 Charisma check. On a success, the creature ceases to be affected by the barrier.</p>
-			<table>
-				<thead>
-					<tr><td>d100</td><td>Creature Type</td></tr>
-				</thead>
-				<tr><td>01-10</td><td>Aberrations</td></tr>
-				<tr><td>11-20</td><td>Beasts</td></tr>
-				<tr><td>21-30</td><td>Celestials</td></tr>
-				<tr><td>31-40</td><td>Elementals</td></tr>
-				<tr><td>41-50</td><td>Fey</td></tr>
-				<tr><td>51-75</td><td>Fiends</td></tr>
-				<tr><td>76-80</td><td>Plants</td></tr>
-				<tr><td>81-00</td><td>Undead</td></tr>
-			</table>
-		</description>
-		<setters>
-			<set name="keywords" />
-			<set name="category">Scrolls</set>
-			<set name="cost" currency="gp">0</set>
-			<set name="weight" lb="0">0 lb.</set>
-			<set name="stackable" />
-			<set name="slot" />
-			<set name="type">Scroll</set>
-			<set name="rarity">Rare</set>
-			<set name="stackable">true</set>
-			<set name="consumable">true</set>
-		</setters>
-		<rules />
-	</element>
 	<element name="Spell Scroll, Cantrip" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_SPELL_SCROLL_CANTRIP">
 		<description>
-			<p>A <em>spell scroll</em> bears the words of a single spell, written in a mystical cipher. If the spell is on your class's spell list, you can use an action to read the scroll and cast its spell without having to provide any of the spell's components. Otherwise, the scroll is unintelligible.</p>
+			<p>A spell scroll bears the words of a single spell, written in a mystical cipher. If the spell is on your class’s spell list, you can read the scroll and cast its spell without providing any material components. Otherwise, the scroll is unintelligible. Casting the spell by reading the scroll requires the spell’s normal casting time. Once the spell is cast, the words on the scroll fade, and it crumbles to dust. If the casting is interrupted, the scroll is not lost.</p>
 			<p class="indent">If the spell is on your class's spell list but of a higher level than you can normally cast, you must make an ability check using your spellcasting ability to determine whether you cast it successfully. The DC equals 10 + the spell's level. On a failed check, the spell disappears from the scroll with no other effect.</p>
-			<p class="indent">Once the spell is cast, the words on the scroll fade, and the scroll itself crumbles to dust.</p>
 			<p class="indent">The level of the spell on the scroll determines the spell's saving throw DC and attack bonus, as well as the scroll's rarity, as shown in the Spell Scroll table.</p>
 			<table>
 				<thead>
@@ -3684,26 +3301,25 @@
 					<tr><td>9th</td><td>Legendary</td><td>19</td><td>+11</td></tr>
 				</tbody>
 			</table>
-		</description>
+		<p class="indent">A wizard spell on a spell scroll can be copied just as spells in spellbooks can be copied. When a spell is copied from a spell scroll, the copier must succeed on an Intelligence (Arcana) check with a DC equal to 10 + the spell’s level. If the check succeeds, the spell is successfully copied. Whether the check succeeds or fails, the spell scroll is destroyed.</p></description>
 		<setters>
-			<set name="keywords" />
+			<set name="keywords"/>
 			<set name="category">Scrolls</set>
 			<set name="cost" currency="gp">15</set>
 			<set name="weight" lb="0">0 lb.</set>
-			<set name="stackable" />
-			<set name="slot" />
+			<set name="stackable"/>
+			<set name="slot"/>
 			<set name="type">Scroll</set>
 			<set name="rarity">Common</set>
 			<set name="stackable">true</set>
 			<set name="consumable">true</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Spell Scroll, 1st Level" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_SPELL_SCROLL_1ST_LEVEL">
 		<description>
-			<p>A <em>spell scroll</em> bears the words of a single spell, written in a mystical cipher. If the spell is on your class's spell list, you can use an action to read the scroll and cast its spell without having to provide any of the spell's components. Otherwise, the scroll is unintelligible.</p>
+			<p>A spell scroll bears the words of a single spell, written in a mystical cipher. If the spell is on your class’s spell list, you can read the scroll and cast its spell without providing any material components. Otherwise, the scroll is unintelligible. Casting the spell by reading the scroll requires the spell’s normal casting time. Once the spell is cast, the words on the scroll fade, and it crumbles to dust. If the casting is interrupted, the scroll is not lost.</p>
 			<p class="indent">If the spell is on your class's spell list but of a higher level than you can normally cast, you must make an ability check using your spellcasting ability to determine whether you cast it successfully. The DC equals 10 + the spell's level. On a failed check, the spell disappears from the scroll with no other effect.</p>
-			<p class="indent">Once the spell is cast, the words on the scroll fade, and the scroll itself crumbles to dust.</p>
 			<p class="indent">The level of the spell on the scroll determines the spell's saving throw DC and attack bonus, as well as the scroll's rarity, as shown in the Spell Scroll table.</p>
 			<table>
 				<thead>
@@ -3722,26 +3338,25 @@
 					<tr><td>9th</td><td>Legendary</td><td>19</td><td>+11</td></tr>
 				</tbody>
 			</table>
-		</description>
+		<p class="indent">A wizard spell on a spell scroll can be copied just as spells in spellbooks can be copied. When a spell is copied from a spell scroll, the copier must succeed on an Intelligence (Arcana) check with a DC equal to 10 + the spell’s level. If the check succeeds, the spell is successfully copied. Whether the check succeeds or fails, the spell scroll is destroyed.</p></description>
 		<setters>
-			<set name="keywords" />
+			<set name="keywords"/>
 			<set name="category">Scrolls</set>
 			<set name="cost" currency="gp">25</set>
 			<set name="weight" lb="0">0 lb.</set>
-			<set name="stackable" />
-			<set name="slot" />
+			<set name="stackable"/>
+			<set name="slot"/>
 			<set name="type">Scroll</set>
 			<set name="rarity">Common</set>
 			<set name="stackable">true</set>
 			<set name="consumable">true</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Spell Scroll, 2nd Level" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_SPELL_SCROLL_2ND_LEVEL">
 		<description>
-			<p>A <em>spell scroll</em> bears the words of a single spell, written in a mystical cipher. If the spell is on your class's spell list, you can use an action to read the scroll and cast its spell without having to provide any of the spell's components. Otherwise, the scroll is unintelligible.</p>
+			<p>A spell scroll bears the words of a single spell, written in a mystical cipher. If the spell is on your class’s spell list, you can read the scroll and cast its spell without providing any material components. Otherwise, the scroll is unintelligible. Casting the spell by reading the scroll requires the spell’s normal casting time. Once the spell is cast, the words on the scroll fade, and it crumbles to dust. If the casting is interrupted, the scroll is not lost.</p>
 			<p class="indent">If the spell is on your class's spell list but of a higher level than you can normally cast, you must make an ability check using your spellcasting ability to determine whether you cast it successfully. The DC equals 10 + the spell's level. On a failed check, the spell disappears from the scroll with no other effect.</p>
-			<p class="indent">Once the spell is cast, the words on the scroll fade, and the scroll itself crumbles to dust.</p>
 			<p class="indent">The level of the spell on the scroll determines the spell's saving throw DC and attack bonus, as well as the scroll's rarity, as shown in the Spell Scroll table.</p>
 			<table>
 				<thead>
@@ -3760,26 +3375,25 @@
 					<tr><td>9th</td><td>Legendary</td><td>19</td><td>+11</td></tr>
 				</tbody>
 			</table>
-		</description>
+		<p class="indent">A wizard spell on a spell scroll can be copied just as spells in spellbooks can be copied. When a spell is copied from a spell scroll, the copier must succeed on an Intelligence (Arcana) check with a DC equal to 10 + the spell’s level. If the check succeeds, the spell is successfully copied. Whether the check succeeds or fails, the spell scroll is destroyed.</p></description>
 		<setters>
-			<set name="keywords" />
+			<set name="keywords"/>
 			<set name="category">Scrolls</set>
 			<set name="cost" currency="gp">250</set>
 			<set name="weight" lb="0">0 lb.</set>
-			<set name="stackable" />
-			<set name="slot" />
+			<set name="stackable"/>
+			<set name="slot"/>
 			<set name="type">Scroll</set>
 			<set name="rarity">Uncommon</set>
 			<set name="stackable">true</set>
 			<set name="consumable">true</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Spell Scroll, 3rd Level" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_SPELL_SCROLL_3RD_LEVEL">
 		<description>
-			<p>A <em>spell scroll</em> bears the words of a single spell, written in a mystical cipher. If the spell is on your class's spell list, you can use an action to read the scroll and cast its spell without having to provide any of the spell's components. Otherwise, the scroll is unintelligible.</p>
+			<p>A spell scroll bears the words of a single spell, written in a mystical cipher. If the spell is on your class’s spell list, you can read the scroll and cast its spell without providing any material components. Otherwise, the scroll is unintelligible. Casting the spell by reading the scroll requires the spell’s normal casting time. Once the spell is cast, the words on the scroll fade, and it crumbles to dust. If the casting is interrupted, the scroll is not lost.</p>
 			<p class="indent">If the spell is on your class's spell list but of a higher level than you can normally cast, you must make an ability check using your spellcasting ability to determine whether you cast it successfully. The DC equals 10 + the spell's level. On a failed check, the spell disappears from the scroll with no other effect.</p>
-			<p class="indent">Once the spell is cast, the words on the scroll fade, and the scroll itself crumbles to dust.</p>
 			<p class="indent">The level of the spell on the scroll determines the spell's saving throw DC and attack bonus, as well as the scroll's rarity, as shown in the Spell Scroll table.</p>
 			<table>
 				<thead>
@@ -3798,26 +3412,25 @@
 					<tr><td>9th</td><td>Legendary</td><td>19</td><td>+11</td></tr>
 				</tbody>
 			</table>
-		</description>
+		<p class="indent">A wizard spell on a spell scroll can be copied just as spells in spellbooks can be copied. When a spell is copied from a spell scroll, the copier must succeed on an Intelligence (Arcana) check with a DC equal to 10 + the spell’s level. If the check succeeds, the spell is successfully copied. Whether the check succeeds or fails, the spell scroll is destroyed.</p></description>
 		<setters>
-			<set name="keywords" />
+			<set name="keywords"/>
 			<set name="category">Scrolls</set>
 			<set name="cost" currency="gp">500</set>
 			<set name="weight" lb="0">0 lb.</set>
-			<set name="stackable" />
-			<set name="slot" />
+			<set name="stackable"/>
+			<set name="slot"/>
 			<set name="type">Scroll</set>
 			<set name="rarity">Uncommon</set>
 			<set name="stackable">true</set>
 			<set name="consumable">true</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Spell Scroll, 4th Level" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_SPELL_SCROLL_4TH_LEVEL">
 		<description>
-			<p>A <em>spell scroll</em> bears the words of a single spell, written in a mystical cipher. If the spell is on your class's spell list, you can use an action to read the scroll and cast its spell without having to provide any of the spell's components. Otherwise, the scroll is unintelligible.</p>
+			<p>A spell scroll bears the words of a single spell, written in a mystical cipher. If the spell is on your class’s spell list, you can read the scroll and cast its spell without providing any material components. Otherwise, the scroll is unintelligible. Casting the spell by reading the scroll requires the spell’s normal casting time. Once the spell is cast, the words on the scroll fade, and it crumbles to dust. If the casting is interrupted, the scroll is not lost.</p>
 			<p class="indent">If the spell is on your class's spell list but of a higher level than you can normally cast, you must make an ability check using your spellcasting ability to determine whether you cast it successfully. The DC equals 10 + the spell's level. On a failed check, the spell disappears from the scroll with no other effect.</p>
-			<p class="indent">Once the spell is cast, the words on the scroll fade, and the scroll itself crumbles to dust.</p>
 			<p class="indent">The level of the spell on the scroll determines the spell's saving throw DC and attack bonus, as well as the scroll's rarity, as shown in the Spell Scroll table.</p>
 			<table>
 				<thead>
@@ -3836,26 +3449,25 @@
 					<tr><td>9th</td><td>Legendary</td><td>19</td><td>+11</td></tr>
 				</tbody>
 			</table>
-		</description>
+		<p class="indent">A wizard spell on a spell scroll can be copied just as spells in spellbooks can be copied. When a spell is copied from a spell scroll, the copier must succeed on an Intelligence (Arcana) check with a DC equal to 10 + the spell’s level. If the check succeeds, the spell is successfully copied. Whether the check succeeds or fails, the spell scroll is destroyed.</p></description>
 		<setters>
-			<set name="keywords" />
+			<set name="keywords"/>
 			<set name="category">Scrolls</set>
 			<set name="cost" currency="gp">2500</set>
 			<set name="weight" lb="0">0 lb.</set>
-			<set name="stackable" />
-			<set name="slot" />
+			<set name="stackable"/>
+			<set name="slot"/>
 			<set name="type">Scroll</set>
 			<set name="rarity">Rare</set>
 			<set name="stackable">true</set>
 			<set name="consumable">true</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Spell Scroll, 5th Level" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_SPELL_SCROLL_5TH_LEVEL">
 		<description>
-			<p>A <em>spell scroll</em> bears the words of a single spell, written in a mystical cipher. If the spell is on your class's spell list, you can use an action to read the scroll and cast its spell without having to provide any of the spell's components. Otherwise, the scroll is unintelligible.</p>
+			<p>A spell scroll bears the words of a single spell, written in a mystical cipher. If the spell is on your class’s spell list, you can read the scroll and cast its spell without providing any material components. Otherwise, the scroll is unintelligible. Casting the spell by reading the scroll requires the spell’s normal casting time. Once the spell is cast, the words on the scroll fade, and it crumbles to dust. If the casting is interrupted, the scroll is not lost.</p>
 			<p class="indent">If the spell is on your class's spell list but of a higher level than you can normally cast, you must make an ability check using your spellcasting ability to determine whether you cast it successfully. The DC equals 10 + the spell's level. On a failed check, the spell disappears from the scroll with no other effect.</p>
-			<p class="indent">Once the spell is cast, the words on the scroll fade, and the scroll itself crumbles to dust.</p>
 			<p class="indent">The level of the spell on the scroll determines the spell's saving throw DC and attack bonus, as well as the scroll's rarity, as shown in the Spell Scroll table.</p>
 			<table>
 				<thead>
@@ -3874,26 +3486,25 @@
 					<tr><td>9th</td><td>Legendary</td><td>19</td><td>+11</td></tr>
 				</tbody>
 			</table>
-		</description>
+		<p class="indent">A wizard spell on a spell scroll can be copied just as spells in spellbooks can be copied. When a spell is copied from a spell scroll, the copier must succeed on an Intelligence (Arcana) check with a DC equal to 10 + the spell’s level. If the check succeeds, the spell is successfully copied. Whether the check succeeds or fails, the spell scroll is destroyed.</p></description>
 		<setters>
-			<set name="keywords" />
+			<set name="keywords"/>
 			<set name="category">Scrolls</set>
 			<set name="cost" currency="gp">5000</set>
 			<set name="weight" lb="0">0 lb.</set>
-			<set name="stackable" />
-			<set name="slot" />
+			<set name="stackable"/>
+			<set name="slot"/>
 			<set name="type">Scroll</set>
 			<set name="rarity">Rare</set>
 			<set name="stackable">true</set>
 			<set name="consumable">true</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Spell Scroll, 6th Level" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_SPELL_SCROLL_6TH_LEVEL">
 		<description>
-			<p>A <em>spell scroll</em> bears the words of a single spell, written in a mystical cipher. If the spell is on your class's spell list, you can use an action to read the scroll and cast its spell without having to provide any of the spell's components. Otherwise, the scroll is unintelligible.</p>
+			<p>A spell scroll bears the words of a single spell, written in a mystical cipher. If the spell is on your class’s spell list, you can read the scroll and cast its spell without providing any material components. Otherwise, the scroll is unintelligible. Casting the spell by reading the scroll requires the spell’s normal casting time. Once the spell is cast, the words on the scroll fade, and it crumbles to dust. If the casting is interrupted, the scroll is not lost.</p>
 			<p class="indent">If the spell is on your class's spell list but of a higher level than you can normally cast, you must make an ability check using your spellcasting ability to determine whether you cast it successfully. The DC equals 10 + the spell's level. On a failed check, the spell disappears from the scroll with no other effect.</p>
-			<p class="indent">Once the spell is cast, the words on the scroll fade, and the scroll itself crumbles to dust.</p>
 			<p class="indent">The level of the spell on the scroll determines the spell's saving throw DC and attack bonus, as well as the scroll's rarity, as shown in the Spell Scroll table.</p>
 			<table>
 				<thead>
@@ -3912,26 +3523,25 @@
 					<tr><td>9th</td><td>Legendary</td><td>19</td><td>+11</td></tr>
 				</tbody>
 			</table>
-		</description>
+		<p class="indent">A wizard spell on a spell scroll can be copied just as spells in spellbooks can be copied. When a spell is copied from a spell scroll, the copier must succeed on an Intelligence (Arcana) check with a DC equal to 10 + the spell’s level. If the check succeeds, the spell is successfully copied. Whether the check succeeds or fails, the spell scroll is destroyed.</p></description>
 		<setters>
-			<set name="keywords" />
+			<set name="keywords"/>
 			<set name="category">Scrolls</set>
 			<set name="cost" currency="gp">15000</set>
 			<set name="weight" lb="0">0 lb.</set>
-			<set name="stackable" />
-			<set name="slot" />
+			<set name="stackable"/>
+			<set name="slot"/>
 			<set name="type">Scroll</set>
 			<set name="rarity">Very Rare</set>
 			<set name="stackable">true</set>
 			<set name="consumable">true</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Spell Scroll, 7th Level" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_SPELL_SCROLL_7TH_LEVEL">
 		<description>
-			<p>A <em>spell scroll</em> bears the words of a single spell, written in a mystical cipher. If the spell is on your class's spell list, you can use an action to read the scroll and cast its spell without having to provide any of the spell's components. Otherwise, the scroll is unintelligible.</p>
+			<p>A spell scroll bears the words of a single spell, written in a mystical cipher. If the spell is on your class’s spell list, you can read the scroll and cast its spell without providing any material components. Otherwise, the scroll is unintelligible. Casting the spell by reading the scroll requires the spell’s normal casting time. Once the spell is cast, the words on the scroll fade, and it crumbles to dust. If the casting is interrupted, the scroll is not lost.</p>
 			<p class="indent">If the spell is on your class's spell list but of a higher level than you can normally cast, you must make an ability check using your spellcasting ability to determine whether you cast it successfully. The DC equals 10 + the spell's level. On a failed check, the spell disappears from the scroll with no other effect.</p>
-			<p class="indent">Once the spell is cast, the words on the scroll fade, and the scroll itself crumbles to dust.</p>
 			<p class="indent">The level of the spell on the scroll determines the spell's saving throw DC and attack bonus, as well as the scroll's rarity, as shown in the Spell Scroll table.</p>
 			<table>
 				<thead>
@@ -3950,26 +3560,25 @@
 					<tr><td>9th</td><td>Legendary</td><td>19</td><td>+11</td></tr>
 				</tbody>
 			</table>
-		</description>
+		<p class="indent">A wizard spell on a spell scroll can be copied just as spells in spellbooks can be copied. When a spell is copied from a spell scroll, the copier must succeed on an Intelligence (Arcana) check with a DC equal to 10 + the spell’s level. If the check succeeds, the spell is successfully copied. Whether the check succeeds or fails, the spell scroll is destroyed.</p></description>
 		<setters>
-			<set name="keywords" />
+			<set name="keywords"/>
 			<set name="category">Scrolls</set>
 			<set name="cost" currency="gp">25000</set>
 			<set name="weight" lb="0">0 lb.</set>
-			<set name="stackable" />
-			<set name="slot" />
+			<set name="stackable"/>
+			<set name="slot"/>
 			<set name="type">Scroll</set>
 			<set name="rarity">Very Rare</set>
 			<set name="stackable">true</set>
 			<set name="consumable">true</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Spell Scroll, 8th Level" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_SPELL_SCROLL_8TH_LEVEL">
 		<description>
-			<p>A <em>spell scroll</em> bears the words of a single spell, written in a mystical cipher. If the spell is on your class's spell list, you can use an action to read the scroll and cast its spell without having to provide any of the spell's components. Otherwise, the scroll is unintelligible.</p>
+			<p>A spell scroll bears the words of a single spell, written in a mystical cipher. If the spell is on your class’s spell list, you can read the scroll and cast its spell without providing any material components. Otherwise, the scroll is unintelligible. Casting the spell by reading the scroll requires the spell’s normal casting time. Once the spell is cast, the words on the scroll fade, and it crumbles to dust. If the casting is interrupted, the scroll is not lost.</p>
 			<p class="indent">If the spell is on your class's spell list but of a higher level than you can normally cast, you must make an ability check using your spellcasting ability to determine whether you cast it successfully. The DC equals 10 + the spell's level. On a failed check, the spell disappears from the scroll with no other effect.</p>
-			<p class="indent">Once the spell is cast, the words on the scroll fade, and the scroll itself crumbles to dust.</p>
 			<p class="indent">The level of the spell on the scroll determines the spell's saving throw DC and attack bonus, as well as the scroll's rarity, as shown in the Spell Scroll table.</p>
 			<table>
 				<thead>
@@ -3988,26 +3597,25 @@
 					<tr><td>9th</td><td>Legendary</td><td>19</td><td>+11</td></tr>
 				</tbody>
 			</table>
-		</description>
+		<p class="indent">A wizard spell on a spell scroll can be copied just as spells in spellbooks can be copied. When a spell is copied from a spell scroll, the copier must succeed on an Intelligence (Arcana) check with a DC equal to 10 + the spell’s level. If the check succeeds, the spell is successfully copied. Whether the check succeeds or fails, the spell scroll is destroyed.</p></description>
 		<setters>
-			<set name="keywords" />
+			<set name="keywords"/>
 			<set name="category">Scrolls</set>
 			<set name="cost" currency="gp">50000</set>
 			<set name="weight" lb="0">0 lb.</set>
-			<set name="stackable" />
-			<set name="slot" />
+			<set name="stackable"/>
+			<set name="slot"/>
 			<set name="type">Scroll</set>
 			<set name="rarity">Very Rare</set>
 			<set name="stackable">true</set>
 			<set name="consumable">true</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Spell Scroll, 9th Level" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_SPELL_SCROLL_9TH_LEVEL">
 		<description>
-			<p>A <em>spell scroll</em> bears the words of a single spell, written in a mystical cipher. If the spell is on your class's spell list, you can use an action to read the scroll and cast its spell without having to provide any of the spell's components. Otherwise, the scroll is unintelligible.</p>
+			<p>A spell scroll bears the words of a single spell, written in a mystical cipher. If the spell is on your class’s spell list, you can read the scroll and cast its spell without providing any material components. Otherwise, the scroll is unintelligible. Casting the spell by reading the scroll requires the spell’s normal casting time. Once the spell is cast, the words on the scroll fade, and it crumbles to dust. If the casting is interrupted, the scroll is not lost.</p>
 			<p class="indent">If the spell is on your class's spell list but of a higher level than you can normally cast, you must make an ability check using your spellcasting ability to determine whether you cast it successfully. The DC equals 10 + the spell's level. On a failed check, the spell disappears from the scroll with no other effect.</p>
-			<p class="indent">Once the spell is cast, the words on the scroll fade, and the scroll itself crumbles to dust.</p>
 			<p class="indent">The level of the spell on the scroll determines the spell's saving throw DC and attack bonus, as well as the scroll's rarity, as shown in the Spell Scroll table.</p>
 			<table>
 				<thead>
@@ -4026,19 +3634,19 @@
 					<tr><td>9th</td><td>Legendary</td><td>19</td><td>+11</td></tr>
 				</tbody>
 			</table>
-		</description>
+		<p class="indent">A wizard spell on a spell scroll can be copied just as spells in spellbooks can be copied. When a spell is copied from a spell scroll, the copier must succeed on an Intelligence (Arcana) check with a DC equal to 10 + the spell’s level. If the check succeeds, the spell is successfully copied. Whether the check succeeds or fails, the spell scroll is destroyed.</p></description>
 		<setters>
-			<set name="keywords" />
+			<set name="keywords"/>
 			<set name="category">Scrolls</set>
 			<set name="cost" currency="gp">250000</set>
 			<set name="weight" lb="0">0 lb.</set>
-			<set name="stackable" />
-			<set name="slot" />
+			<set name="stackable"/>
+			<set name="slot"/>
 			<set name="type">Scroll</set>
 			<set name="rarity">Legendary</set>
 			<set name="stackable">true</set>
 			<set name="consumable">true</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 </elements>

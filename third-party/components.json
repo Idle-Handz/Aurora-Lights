@@ -1,0 +1,5099 @@
+{
+  "schemaVersion": 1,
+  "reviewedDate": "2026-10-23",
+  "scope": [
+    "Windows x64",
+    "Android ARM64"
+  ],
+  "ownLicenseText": "5093b62f3fb3fc1472d463b08b43acf7071b9cf846b7336cee2e01a5cd6a21fc",
+  "components": [
+    {
+      "name": "Aurora.Content",
+      "version": "0.11.0",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "45bb5d58de4438ada8636864e1118bf67553789c5c54ea8c467388f42038e297",
+          "origin": "vendor/nuget/LICENSE-Aurora.Content.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/Xellarant/AuroraTranslator/tree/1796636803dd21e5548393070e84e6ecf9ee8695"
+      ],
+      "package": true,
+      "authors": "Xellarant",
+      "copyright": "Copyright (c) 2026 Xellarant",
+      "metadataLicenseType": null,
+      "state": "recorded",
+      "maintainerGrant": {
+        "confirmedDate": "2026-10-23",
+        "scope": "Owner confirmed authorship and MIT distribution for both libraries and vendored packages."
+      },
+      "noticePath": "vendor/nuget/LICENSE-Aurora.Content.txt",
+      "noticeSha256": "45bb5d58de4438ada8636864e1118bf67553789c5c54ea8c467388f42038e297"
+    },
+    {
+      "name": "Aurora.Content.Contracts",
+      "version": "0.11.0",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "45bb5d58de4438ada8636864e1118bf67553789c5c54ea8c467388f42038e297",
+          "origin": "vendor/nuget/LICENSE-Aurora.Content.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/Xellarant/AuroraTranslator/tree/1796636803dd21e5548393070e84e6ecf9ee8695"
+      ],
+      "package": true,
+      "authors": "Xellarant",
+      "copyright": "Copyright (c) 2026 Xellarant",
+      "metadataLicenseType": null,
+      "state": "recorded",
+      "maintainerGrant": {
+        "confirmedDate": "2026-10-23",
+        "scope": "Owner confirmed authorship and MIT distribution for both libraries and vendored packages."
+      },
+      "noticePath": "vendor/nuget/LICENSE-Aurora.Content.txt",
+      "noticeSha256": "45bb5d58de4438ada8636864e1118bf67553789c5c54ea8c467388f42038e297"
+    },
+    {
+      "name": "BouncyCastle.Cryptography",
+      "version": "2.7.0",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "be0592a6c76f398356fbf252a4fb43476fb3ca3c45331428c2f4f22c499e8311",
+          "origin": "nuget:BouncyCastle.Cryptography/2.7.0/LICENSE.md"
+        }
+      ],
+      "sources": [
+        "https://github.com/bcgit/bc-csharp/tree/4007498b13582d90ee1eda5d9920c324428b98b3"
+      ],
+      "package": true,
+      "authors": "Legion of the Bouncy Castle Inc.",
+      "state": "recorded"
+    },
+    {
+      "name": "Historical SRD OGL notice",
+      "version": "5.1",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "Open Game License 1.0a",
+      "texts": [
+        {
+          "sha256": "8b8503383514f21a1b3060ef495d4e0cd2411684fa7aa5554f80cd07e4183c79",
+          "origin": "Aurora.Logic/Resources/Documents/description-ogl.html"
+        }
+      ],
+      "sources": [
+        "https://media.dndbeyond.com/compendium-images/srd/5.1/SRD-OGL_V5.1.pdf"
+      ],
+      "state": "recorded",
+      "noticePath": "Aurora.Logic/Resources/Documents/description-ogl.html",
+      "noticeSha256": "8b8503383514f21a1b3060ef495d4e0cd2411684fa7aa5554f80cd07e4183c79",
+      "scope": "Preserved historical legal text only; does not license unrelated assets or clear mixed non-SRD content."
+    },
+    {
+      "name": "DynamicExpresso.Core",
+      "version": "1.3.1",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "2609bee7fdef763f169a8815aaf5dcbc30ed8512a1b598ae495477e9073de7e0",
+          "origin": "https://raw.githubusercontent.com/dynamicexpresso/DynamicExpresso/6dcfaa74d184d15c8e491c7baf71a2b26901c925/README.md"
+        }
+      ],
+      "sources": [
+        "https://raw.githubusercontent.com/dynamicexpresso/DynamicExpresso/6dcfaa74d184d15c8e491c7baf71a2b26901c925/README.md"
+      ],
+      "state": "recorded",
+      "binarySha256": "497ef94593e7753f14b2756b97706790db0bbf603e8189d039d0d653a8af181a",
+      "publishedNugetBinaryMatches": true,
+      "binaryPath": "lib/DynamicExpresso.Core.dll"
+    },
+    {
+      "name": "GoogleGson",
+      "version": "2.13.1.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:GoogleGson/2.13.1.1/LICENSE.md"
+        },
+        {
+          "sha256": "7e1405f51bf00284ff8b7a63ac55a3c87b2b3c78ab13aef90d2541f247f359f3",
+          "origin": "nuget:GoogleGson/2.13.1.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "iTextSharp.LGPLv2.Core",
+      "version": "3.8.6",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "LGPL-2.0-only",
+      "texts": [
+        {
+          "sha256": "cb8a96e4bdc98d8223f4008e66b5835a2fb75155f6325f15d211bde823f4fd72",
+          "origin": "https://github.com/VahidN/iTextSharp.LGPLv2.Core/blob/8f62a2d7be211c4ca9b5bfb953c7443daeeb609c/LICENSE.md"
+        }
+      ],
+      "sources": [
+        "https://github.com/VahidN/iTextSharp.LGPLv2.Core/tree/8f62a2d7be211c4ca9b5bfb953c7443daeeb609c"
+      ],
+      "package": true,
+      "authors": "Vahid Nasiri",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.Android.Runtime.Mono.36.android-arm64",
+      "version": "36.1.118",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT and included third-party licenses",
+      "texts": [
+        {
+          "sha256": "cfc21f5e8bd655ae997eec916138b707b1d290b83272c02a95c9f821b8c87310",
+          "origin": "runtime-pack:Microsoft.Android.Runtime.Mono.36.android-arm64/36.1.118/LICENSE.TXT"
+        },
+        {
+          "sha256": "f7b09b6ee5286596d12bd4eb6f82e203b59bcf0b10e48845eacb56f4c3f2b227",
+          "origin": "runtime-pack:Microsoft.Android.Runtime.Mono.36.android-arm64/36.1.118/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [],
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.AppCenter",
+      "version": "5.0.7",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "fcc7466b3a24ac3c38d7f70fbff765ec7cda1533ae16c9da2bdf68b6658ac0c9",
+          "origin": "NuGet MIT expression and exact copyright metadata"
+        }
+      ],
+      "sources": [],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.AppCenter.Analytics",
+      "version": "5.0.7",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "fcc7466b3a24ac3c38d7f70fbff765ec7cda1533ae16c9da2bdf68b6658ac0c9",
+          "origin": "NuGet MIT expression and exact copyright metadata"
+        }
+      ],
+      "sources": [],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.AppCenter.Crashes",
+      "version": "5.0.7",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "fcc7466b3a24ac3c38d7f70fbff765ec7cda1533ae16c9da2bdf68b6658ac0c9",
+          "origin": "NuGet MIT expression and exact copyright metadata"
+        }
+      ],
+      "sources": [],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.AspNetCore.Authorization",
+      "version": "10.0.0",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "307d014f65d8482314f1400ddeae7a0cbabb96c2207bcc77f6233cc10588e5d9",
+          "origin": "nuget:Microsoft.AspNetCore.Authorization/10.0.0/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/dotnet/tree/b0f34d51fccc69fd334253924abd8d6853fad7aa"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.AspNetCore.Components",
+      "version": "10.0.0",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "ae45a01fa3062e9d9932760cf834dae3ba23dbd75a75a2b919654f9c738d1ed9",
+          "origin": "nuget:Microsoft.AspNetCore.Components/10.0.0/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/dotnet/tree/b0f34d51fccc69fd334253924abd8d6853fad7aa"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.AspNetCore.Components.Analyzers",
+      "version": "10.0.0",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "ae45a01fa3062e9d9932760cf834dae3ba23dbd75a75a2b919654f9c738d1ed9",
+          "origin": "nuget:Microsoft.AspNetCore.Components.Analyzers/10.0.0/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/dotnet/tree/b0f34d51fccc69fd334253924abd8d6853fad7aa"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.AspNetCore.Components.Forms",
+      "version": "10.0.0",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "ae45a01fa3062e9d9932760cf834dae3ba23dbd75a75a2b919654f9c738d1ed9",
+          "origin": "nuget:Microsoft.AspNetCore.Components.Forms/10.0.0/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/dotnet/tree/b0f34d51fccc69fd334253924abd8d6853fad7aa"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.AspNetCore.Components.Web",
+      "version": "10.0.0",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "ae45a01fa3062e9d9932760cf834dae3ba23dbd75a75a2b919654f9c738d1ed9",
+          "origin": "nuget:Microsoft.AspNetCore.Components.Web/10.0.0/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/dotnet/tree/b0f34d51fccc69fd334253924abd8d6853fad7aa"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.AspNetCore.Components.WebView",
+      "version": "10.0.0",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "ae45a01fa3062e9d9932760cf834dae3ba23dbd75a75a2b919654f9c738d1ed9",
+          "origin": "nuget:Microsoft.AspNetCore.Components.WebView/10.0.0/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/dotnet/tree/b0f34d51fccc69fd334253924abd8d6853fad7aa"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.AspNetCore.Components.WebView.Maui",
+      "version": "10.0.110",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "d7a68596ab69b06f51ca278a6545148e4269a9381c26d597c13df5d88e08cf5b",
+          "origin": "nuget:Microsoft.AspNetCore.Components.WebView.Maui/10.0.110/LICENSE.TXT"
+        },
+        {
+          "sha256": "45fb89606fe922d1615ee62be7f42342db766685af2ebaf2fe8d2a187100687c",
+          "origin": "nuget:Microsoft.AspNetCore.Components.WebView.Maui/10.0.110/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/maui/tree/6c379bf1dc24461a985a093be3fd8a3e9bc6fc00"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.AspNetCore.Metadata",
+      "version": "10.0.0",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "307d014f65d8482314f1400ddeae7a0cbabb96c2207bcc77f6233cc10588e5d9",
+          "origin": "nuget:Microsoft.AspNetCore.Metadata/10.0.0/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/dotnet/tree/b0f34d51fccc69fd334253924abd8d6853fad7aa"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.Data.Sqlite",
+      "version": "10.0.12",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "fcc7466b3a24ac3c38d7f70fbff765ec7cda1533ae16c9da2bdf68b6658ac0c9",
+          "origin": "NuGet MIT expression and exact copyright metadata"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/dotnet/tree/95017c711e6afc1085133d440e42b4bd78155701"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.Data.Sqlite.Core",
+      "version": "10.0.12",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "fcc7466b3a24ac3c38d7f70fbff765ec7cda1533ae16c9da2bdf68b6658ac0c9",
+          "origin": "NuGet MIT expression and exact copyright metadata"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/dotnet/tree/95017c711e6afc1085133d440e42b4bd78155701"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.Extensions.Configuration",
+      "version": "10.0.0",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "6d15e10a101c6bfff2ab4429ed061bf76c456fc4b23ad6b03e0d0f8377148a21",
+          "origin": "nuget:Microsoft.Extensions.Configuration/10.0.0/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/dotnet/tree/b0f34d51fccc69fd334253924abd8d6853fad7aa"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.Extensions.Configuration.Abstractions",
+      "version": "10.0.0",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "6d15e10a101c6bfff2ab4429ed061bf76c456fc4b23ad6b03e0d0f8377148a21",
+          "origin": "nuget:Microsoft.Extensions.Configuration.Abstractions/10.0.0/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/dotnet/tree/b0f34d51fccc69fd334253924abd8d6853fad7aa"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.Extensions.Configuration.Binder",
+      "version": "10.0.0",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "6d15e10a101c6bfff2ab4429ed061bf76c456fc4b23ad6b03e0d0f8377148a21",
+          "origin": "nuget:Microsoft.Extensions.Configuration.Binder/10.0.0/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/dotnet/tree/b0f34d51fccc69fd334253924abd8d6853fad7aa"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.Extensions.Configuration.FileExtensions",
+      "version": "10.0.0",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "6d15e10a101c6bfff2ab4429ed061bf76c456fc4b23ad6b03e0d0f8377148a21",
+          "origin": "nuget:Microsoft.Extensions.Configuration.FileExtensions/10.0.0/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/dotnet/tree/b0f34d51fccc69fd334253924abd8d6853fad7aa"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.Extensions.Configuration.Json",
+      "version": "10.0.0",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "6d15e10a101c6bfff2ab4429ed061bf76c456fc4b23ad6b03e0d0f8377148a21",
+          "origin": "nuget:Microsoft.Extensions.Configuration.Json/10.0.0/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/dotnet/tree/b0f34d51fccc69fd334253924abd8d6853fad7aa"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection",
+      "version": "10.0.0",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "6d15e10a101c6bfff2ab4429ed061bf76c456fc4b23ad6b03e0d0f8377148a21",
+          "origin": "nuget:Microsoft.Extensions.DependencyInjection/10.0.0/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/dotnet/tree/b0f34d51fccc69fd334253924abd8d6853fad7aa"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.Abstractions",
+      "version": "10.0.0",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "6d15e10a101c6bfff2ab4429ed061bf76c456fc4b23ad6b03e0d0f8377148a21",
+          "origin": "nuget:Microsoft.Extensions.DependencyInjection.Abstractions/10.0.0/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/dotnet/tree/b0f34d51fccc69fd334253924abd8d6853fad7aa"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.Extensions.Diagnostics",
+      "version": "10.0.0",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "6d15e10a101c6bfff2ab4429ed061bf76c456fc4b23ad6b03e0d0f8377148a21",
+          "origin": "nuget:Microsoft.Extensions.Diagnostics/10.0.0/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/dotnet/tree/b0f34d51fccc69fd334253924abd8d6853fad7aa"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.Extensions.Diagnostics.Abstractions",
+      "version": "10.0.0",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "6d15e10a101c6bfff2ab4429ed061bf76c456fc4b23ad6b03e0d0f8377148a21",
+          "origin": "nuget:Microsoft.Extensions.Diagnostics.Abstractions/10.0.0/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/dotnet/tree/b0f34d51fccc69fd334253924abd8d6853fad7aa"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.Extensions.FileProviders.Abstractions",
+      "version": "10.0.0",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "6d15e10a101c6bfff2ab4429ed061bf76c456fc4b23ad6b03e0d0f8377148a21",
+          "origin": "nuget:Microsoft.Extensions.FileProviders.Abstractions/10.0.0/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/dotnet/tree/b0f34d51fccc69fd334253924abd8d6853fad7aa"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.Extensions.FileProviders.Composite",
+      "version": "10.0.0",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "6d15e10a101c6bfff2ab4429ed061bf76c456fc4b23ad6b03e0d0f8377148a21",
+          "origin": "nuget:Microsoft.Extensions.FileProviders.Composite/10.0.0/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/dotnet/tree/b0f34d51fccc69fd334253924abd8d6853fad7aa"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.Extensions.FileProviders.Embedded",
+      "version": "10.0.0",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "fcc7466b3a24ac3c38d7f70fbff765ec7cda1533ae16c9da2bdf68b6658ac0c9",
+          "origin": "NuGet MIT expression and exact copyright metadata"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/dotnet/tree/b0f34d51fccc69fd334253924abd8d6853fad7aa"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.Extensions.FileProviders.Physical",
+      "version": "10.0.0",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "6d15e10a101c6bfff2ab4429ed061bf76c456fc4b23ad6b03e0d0f8377148a21",
+          "origin": "nuget:Microsoft.Extensions.FileProviders.Physical/10.0.0/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/dotnet/tree/b0f34d51fccc69fd334253924abd8d6853fad7aa"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.Extensions.FileSystemGlobbing",
+      "version": "10.0.0",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "6d15e10a101c6bfff2ab4429ed061bf76c456fc4b23ad6b03e0d0f8377148a21",
+          "origin": "nuget:Microsoft.Extensions.FileSystemGlobbing/10.0.0/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/dotnet/tree/b0f34d51fccc69fd334253924abd8d6853fad7aa"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.Extensions.Hosting.Abstractions",
+      "version": "10.0.0",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "6d15e10a101c6bfff2ab4429ed061bf76c456fc4b23ad6b03e0d0f8377148a21",
+          "origin": "nuget:Microsoft.Extensions.Hosting.Abstractions/10.0.0/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/dotnet/tree/b0f34d51fccc69fd334253924abd8d6853fad7aa"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.Extensions.Http",
+      "version": "10.0.0",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "6d15e10a101c6bfff2ab4429ed061bf76c456fc4b23ad6b03e0d0f8377148a21",
+          "origin": "nuget:Microsoft.Extensions.Http/10.0.0/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/dotnet/tree/b0f34d51fccc69fd334253924abd8d6853fad7aa"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.Extensions.Localization",
+      "version": "8.0.8",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "307d014f65d8482314f1400ddeae7a0cbabb96c2207bcc77f6233cc10588e5d9",
+          "origin": "nuget:Microsoft.Extensions.Localization/8.0.8/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/aspnetcore/tree/954f61dd38b33caa2b736c73530bd5a294174437"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.Extensions.Localization.Abstractions",
+      "version": "8.0.8",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "307d014f65d8482314f1400ddeae7a0cbabb96c2207bcc77f6233cc10588e5d9",
+          "origin": "nuget:Microsoft.Extensions.Localization.Abstractions/8.0.8/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/aspnetcore/tree/954f61dd38b33caa2b736c73530bd5a294174437"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.Extensions.Logging",
+      "version": "10.0.0",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "6d15e10a101c6bfff2ab4429ed061bf76c456fc4b23ad6b03e0d0f8377148a21",
+          "origin": "nuget:Microsoft.Extensions.Logging/10.0.0/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/dotnet/tree/b0f34d51fccc69fd334253924abd8d6853fad7aa"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.Extensions.Logging.Abstractions",
+      "version": "10.0.0",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "6d15e10a101c6bfff2ab4429ed061bf76c456fc4b23ad6b03e0d0f8377148a21",
+          "origin": "nuget:Microsoft.Extensions.Logging.Abstractions/10.0.0/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/dotnet/tree/b0f34d51fccc69fd334253924abd8d6853fad7aa"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.Extensions.Logging.Debug",
+      "version": "10.0.0",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "6d15e10a101c6bfff2ab4429ed061bf76c456fc4b23ad6b03e0d0f8377148a21",
+          "origin": "nuget:Microsoft.Extensions.Logging.Debug/10.0.0/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/dotnet/tree/b0f34d51fccc69fd334253924abd8d6853fad7aa"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.Extensions.Options",
+      "version": "10.0.0",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "6d15e10a101c6bfff2ab4429ed061bf76c456fc4b23ad6b03e0d0f8377148a21",
+          "origin": "nuget:Microsoft.Extensions.Options/10.0.0/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/dotnet/tree/b0f34d51fccc69fd334253924abd8d6853fad7aa"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.Extensions.Options.ConfigurationExtensions",
+      "version": "10.0.0",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "6d15e10a101c6bfff2ab4429ed061bf76c456fc4b23ad6b03e0d0f8377148a21",
+          "origin": "nuget:Microsoft.Extensions.Options.ConfigurationExtensions/10.0.0/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/dotnet/tree/b0f34d51fccc69fd334253924abd8d6853fad7aa"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.Extensions.Primitives",
+      "version": "10.0.0",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "6d15e10a101c6bfff2ab4429ed061bf76c456fc4b23ad6b03e0d0f8377148a21",
+          "origin": "nuget:Microsoft.Extensions.Primitives/10.0.0/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/dotnet/tree/b0f34d51fccc69fd334253924abd8d6853fad7aa"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.Extensions.Validation",
+      "version": "10.0.0",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "307d014f65d8482314f1400ddeae7a0cbabb96c2207bcc77f6233cc10588e5d9",
+          "origin": "nuget:Microsoft.Extensions.Validation/10.0.0/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/dotnet/tree/b0f34d51fccc69fd334253924abd8d6853fad7aa"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.Graphics.Win2D",
+      "version": "1.4.0",
+      "platforms": [
+        "windows"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "c3ba493105fa52657c4c60d9b1680da7c01b188a8665d7a823c2a187fd259808",
+          "origin": "https://raw.githubusercontent.com/microsoft/Win2D/25680382dd2136779e10ea6084f0c5ba437ae288/LICENSE.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/microsoft/Win2D/tree/25680382dd2136779e10ea6084f0c5ba437ae288",
+        "https://github.com/microsoft/Win2D/blob/25680382dd2136779e10ea6084f0c5ba437ae288/README.md"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": null,
+      "state": "recorded",
+      "licenseReviewNote": "Retired NuGet EULA URL redirects to unrelated docs. The official Win2D README links the NuGet package and identifies its MIT license; the upstream license is preserved at the reviewed source commit."
+    },
+    {
+      "name": "Microsoft.IO.RecyclableMemoryStream",
+      "version": "3.0.1",
+      "platforms": [
+        "windows"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "fcc7466b3a24ac3c38d7f70fbff765ec7cda1533ae16c9da2bdf68b6658ac0c9",
+          "origin": "NuGet MIT expression and exact copyright metadata"
+        }
+      ],
+      "sources": [
+        "https://github.com/Microsoft/Microsoft.IO.RecyclableMemoryStream/tree/e29a28387da9018fa9605a1dcb3f7a0435aa9974"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.JSInterop",
+      "version": "10.0.0",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "307d014f65d8482314f1400ddeae7a0cbabb96c2207bcc77f6233cc10588e5d9",
+          "origin": "nuget:Microsoft.JSInterop/10.0.0/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/dotnet/tree/b0f34d51fccc69fd334253924abd8d6853fad7aa"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.Maui.Controls",
+      "version": "10.0.110",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "d7a68596ab69b06f51ca278a6545148e4269a9381c26d597c13df5d88e08cf5b",
+          "origin": "nuget:Microsoft.Maui.Controls/10.0.110/LICENSE.TXT"
+        },
+        {
+          "sha256": "45fb89606fe922d1615ee62be7f42342db766685af2ebaf2fe8d2a187100687c",
+          "origin": "nuget:Microsoft.Maui.Controls/10.0.110/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/maui/tree/6c379bf1dc24461a985a093be3fd8a3e9bc6fc00"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.Maui.Controls.Build.Tasks",
+      "version": "10.0.110",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "d7a68596ab69b06f51ca278a6545148e4269a9381c26d597c13df5d88e08cf5b",
+          "origin": "nuget:Microsoft.Maui.Controls.Build.Tasks/10.0.110/LICENSE.TXT"
+        },
+        {
+          "sha256": "45fb89606fe922d1615ee62be7f42342db766685af2ebaf2fe8d2a187100687c",
+          "origin": "nuget:Microsoft.Maui.Controls.Build.Tasks/10.0.110/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/maui/tree/6c379bf1dc24461a985a093be3fd8a3e9bc6fc00"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.Maui.Controls.Core",
+      "version": "10.0.110",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "d7a68596ab69b06f51ca278a6545148e4269a9381c26d597c13df5d88e08cf5b",
+          "origin": "nuget:Microsoft.Maui.Controls.Core/10.0.110/LICENSE.TXT"
+        },
+        {
+          "sha256": "45fb89606fe922d1615ee62be7f42342db766685af2ebaf2fe8d2a187100687c",
+          "origin": "nuget:Microsoft.Maui.Controls.Core/10.0.110/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/maui/tree/6c379bf1dc24461a985a093be3fd8a3e9bc6fc00"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.Maui.Controls.Xaml",
+      "version": "10.0.110",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "d7a68596ab69b06f51ca278a6545148e4269a9381c26d597c13df5d88e08cf5b",
+          "origin": "nuget:Microsoft.Maui.Controls.Xaml/10.0.110/LICENSE.TXT"
+        },
+        {
+          "sha256": "45fb89606fe922d1615ee62be7f42342db766685af2ebaf2fe8d2a187100687c",
+          "origin": "nuget:Microsoft.Maui.Controls.Xaml/10.0.110/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/maui/tree/6c379bf1dc24461a985a093be3fd8a3e9bc6fc00"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.Maui.Core",
+      "version": "10.0.110",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "d7a68596ab69b06f51ca278a6545148e4269a9381c26d597c13df5d88e08cf5b",
+          "origin": "nuget:Microsoft.Maui.Core/10.0.110/LICENSE.TXT"
+        },
+        {
+          "sha256": "45fb89606fe922d1615ee62be7f42342db766685af2ebaf2fe8d2a187100687c",
+          "origin": "nuget:Microsoft.Maui.Core/10.0.110/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/maui/tree/6c379bf1dc24461a985a093be3fd8a3e9bc6fc00"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.Maui.Essentials",
+      "version": "10.0.110",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "d7a68596ab69b06f51ca278a6545148e4269a9381c26d597c13df5d88e08cf5b",
+          "origin": "nuget:Microsoft.Maui.Essentials/10.0.110/LICENSE.TXT"
+        },
+        {
+          "sha256": "45fb89606fe922d1615ee62be7f42342db766685af2ebaf2fe8d2a187100687c",
+          "origin": "nuget:Microsoft.Maui.Essentials/10.0.110/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/maui/tree/6c379bf1dc24461a985a093be3fd8a3e9bc6fc00"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.Maui.Graphics",
+      "version": "10.0.110",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "d7a68596ab69b06f51ca278a6545148e4269a9381c26d597c13df5d88e08cf5b",
+          "origin": "nuget:Microsoft.Maui.Graphics/10.0.110/LICENSE.TXT"
+        },
+        {
+          "sha256": "45fb89606fe922d1615ee62be7f42342db766685af2ebaf2fe8d2a187100687c",
+          "origin": "nuget:Microsoft.Maui.Graphics/10.0.110/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/maui/tree/6c379bf1dc24461a985a093be3fd8a3e9bc6fc00"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.Maui.Graphics.Win2D.WinUI.Desktop",
+      "version": "10.0.110",
+      "platforms": [
+        "windows"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "d7a68596ab69b06f51ca278a6545148e4269a9381c26d597c13df5d88e08cf5b",
+          "origin": "nuget:Microsoft.Maui.Graphics.Win2D.WinUI.Desktop/10.0.110/LICENSE.TXT"
+        },
+        {
+          "sha256": "45fb89606fe922d1615ee62be7f42342db766685af2ebaf2fe8d2a187100687c",
+          "origin": "nuget:Microsoft.Maui.Graphics.Win2D.WinUI.Desktop/10.0.110/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/maui/tree/6c379bf1dc24461a985a093be3fd8a3e9bc6fc00"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.Maui.Resizetizer",
+      "version": "10.0.110",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "d7a68596ab69b06f51ca278a6545148e4269a9381c26d597c13df5d88e08cf5b",
+          "origin": "nuget:Microsoft.Maui.Resizetizer/10.0.110/LICENSE.TXT"
+        },
+        {
+          "sha256": "45fb89606fe922d1615ee62be7f42342db766685af2ebaf2fe8d2a187100687c",
+          "origin": "nuget:Microsoft.Maui.Resizetizer/10.0.110/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/maui/tree/6c379bf1dc24461a985a093be3fd8a3e9bc6fc00"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.NET.ILLink.Tasks",
+      "version": "10.0.13",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "6d15e10a101c6bfff2ab4429ed061bf76c456fc4b23ad6b03e0d0f8377148a21",
+          "origin": "nuget:Microsoft.NET.ILLink.Tasks/10.0.13/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/dotnet/tree/4099f83977f4d29604a9aeb971fb0a7bc1d5f699"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.NETCore.App.Runtime.Mono.android-arm64",
+      "version": "10.0.13",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT and included third-party licenses",
+      "texts": [
+        {
+          "sha256": "cfc21f5e8bd655ae997eec916138b707b1d290b83272c02a95c9f821b8c87310",
+          "origin": "runtime-pack:Microsoft.NETCore.App.Runtime.Mono.android-arm64/10.0.13/LICENSE.TXT"
+        },
+        {
+          "sha256": "66f1d4e44973185519bb4aa8a9718eb22fc7af2cc532e3ae9cfc4c127ee7fc54",
+          "origin": "runtime-pack:Microsoft.NETCore.App.Runtime.Mono.android-arm64/10.0.13/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [],
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.NETCore.App.Runtime.win-x64",
+      "version": "10.0.13",
+      "platforms": [
+        "windows"
+      ],
+      "license": "MIT and included third-party licenses",
+      "texts": [
+        {
+          "sha256": "d7a68596ab69b06f51ca278a6545148e4269a9381c26d597c13df5d88e08cf5b",
+          "origin": "runtime-pack:Microsoft.NETCore.App.Runtime.win-x64/10.0.13/LICENSE.TXT"
+        },
+        {
+          "sha256": "6d15e10a101c6bfff2ab4429ed061bf76c456fc4b23ad6b03e0d0f8377148a21",
+          "origin": "runtime-pack:Microsoft.NETCore.App.Runtime.win-x64/10.0.13/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [],
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.Web.WebView2",
+      "version": "1.0.3179.45",
+      "platforms": [
+        "windows"
+      ],
+      "license": "Microsoft software license terms",
+      "texts": [
+        {
+          "sha256": "0af8f1b807512aae39c2ac1aa4d0cae65cabecb6fd554b8439a5162a0d6eca55",
+          "origin": "nuget:Microsoft.Web.WebView2/1.0.3179.45/LICENSE.txt"
+        },
+        {
+          "sha256": "106423785c5b7eba0a8e61d1837f2132e9c828e20ad530f565d981c1df60dd90",
+          "origin": "nuget:Microsoft.Web.WebView2/1.0.3179.45/NOTICE.txt"
+        }
+      ],
+      "sources": [],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "file",
+      "state": "recorded",
+      "metadataLicenseFile": "LICENSE.txt"
+    },
+    {
+      "name": "Microsoft.Win32.SystemEvents",
+      "version": "6.0.0",
+      "platforms": [
+        "windows"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "d7a68596ab69b06f51ca278a6545148e4269a9381c26d597c13df5d88e08cf5b",
+          "origin": "nuget:Microsoft.Win32.SystemEvents/6.0.0/LICENSE.TXT"
+        },
+        {
+          "sha256": "a6344bfb229bc08d1071cec400eea216e307439f961c5943ec1b56d2245acb95",
+          "origin": "nuget:Microsoft.Win32.SystemEvents/6.0.0/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/runtime/tree/4822e3c3aa77eb82b2fb33c9321f923cf11ddde6"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Microsoft.WindowsAppSDK",
+      "version": "1.8.260529003",
+      "platforms": [
+        "windows"
+      ],
+      "license": "Microsoft software license terms",
+      "texts": [
+        {
+          "sha256": "5b11e6347756e40fe0274bc08c97f89201b94f0d50181a09a00f1f4740840501",
+          "origin": "nuget:Microsoft.WindowsAppSDK/1.8.260529003/license.txt"
+        },
+        {
+          "sha256": "e25393c0d340a1821827b093fa4dbbfcccd8feb7bf769e7fa773e3955cd5314b",
+          "origin": "nuget:Microsoft.WindowsAppSDK/1.8.260529003/NOTICE.txt"
+        }
+      ],
+      "sources": [],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "file",
+      "state": "recorded",
+      "metadataLicenseFile": "license.txt"
+    },
+    {
+      "name": "Microsoft.WindowsAppSDK.AI",
+      "version": "1.8.76",
+      "platforms": [
+        "windows"
+      ],
+      "license": "Microsoft software license terms",
+      "texts": [
+        {
+          "sha256": "5b11e6347756e40fe0274bc08c97f89201b94f0d50181a09a00f1f4740840501",
+          "origin": "nuget:Microsoft.WindowsAppSDK.AI/1.8.76/license.txt"
+        }
+      ],
+      "sources": [],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "file",
+      "state": "recorded",
+      "metadataLicenseFile": "license.txt"
+    },
+    {
+      "name": "Microsoft.WindowsAppSDK.Foundation",
+      "version": "1.8.260527000",
+      "platforms": [
+        "windows"
+      ],
+      "license": "Microsoft software license terms",
+      "texts": [
+        {
+          "sha256": "5b11e6347756e40fe0274bc08c97f89201b94f0d50181a09a00f1f4740840501",
+          "origin": "nuget:Microsoft.WindowsAppSDK.Foundation/1.8.260527000/license.txt"
+        }
+      ],
+      "sources": [],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "file",
+      "state": "recorded",
+      "metadataLicenseFile": "license.txt"
+    },
+    {
+      "name": "Microsoft.WindowsAppSDK.InteractiveExperiences",
+      "version": "1.8.260525001",
+      "platforms": [
+        "windows"
+      ],
+      "license": "Microsoft software license terms",
+      "texts": [
+        {
+          "sha256": "5b11e6347756e40fe0274bc08c97f89201b94f0d50181a09a00f1f4740840501",
+          "origin": "nuget:Microsoft.WindowsAppSDK.InteractiveExperiences/1.8.260525001/license.txt"
+        }
+      ],
+      "sources": [],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "file",
+      "state": "recorded",
+      "metadataLicenseFile": "license.txt"
+    },
+    {
+      "name": "Microsoft.WindowsAppSDK.ML",
+      "version": "1.8.2197",
+      "platforms": [
+        "windows"
+      ],
+      "license": "Microsoft software license terms",
+      "texts": [
+        {
+          "sha256": "656aab74c15aa9f9964bcdcc993eb2755cbdb4822d5e0e3bc61d2e281897f758",
+          "origin": "nuget:Microsoft.WindowsAppSDK.ML/1.8.2197/license.txt"
+        },
+        {
+          "sha256": "e00f828e0a33de591a355ae6606d2625f5758da7d2c844db7821c9dd3e3647b6",
+          "origin": "nuget:Microsoft.WindowsAppSDK.ML/1.8.2197/ThirdPartyNotices.txt"
+        }
+      ],
+      "sources": [],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "file",
+      "state": "recorded",
+      "metadataLicenseFile": "license.txt"
+    },
+    {
+      "name": "Microsoft.WindowsAppSDK.Widgets",
+      "version": "1.8.251231004",
+      "platforms": [
+        "windows"
+      ],
+      "license": "Microsoft software license terms",
+      "texts": [
+        {
+          "sha256": "f9ed00147604bdc48c7e62d127d73245781ce53903cef9c3863f8a7ef8120cc2",
+          "origin": "nuget:Microsoft.WindowsAppSDK.Widgets/1.8.251231004/license.txt"
+        }
+      ],
+      "sources": [],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "file",
+      "state": "recorded",
+      "metadataLicenseFile": "license.txt"
+    },
+    {
+      "name": "Microsoft.WindowsAppSDK.WinUI",
+      "version": "1.8.260528001",
+      "platforms": [
+        "windows"
+      ],
+      "license": "Microsoft software license terms",
+      "texts": [
+        {
+          "sha256": "5b11e6347756e40fe0274bc08c97f89201b94f0d50181a09a00f1f4740840501",
+          "origin": "nuget:Microsoft.WindowsAppSDK.WinUI/1.8.260528001/license.txt"
+        },
+        {
+          "sha256": "e25393c0d340a1821827b093fa4dbbfcccd8feb7bf769e7fa773e3955cd5314b",
+          "origin": "nuget:Microsoft.WindowsAppSDK.WinUI/1.8.260528001/NOTICE.txt"
+        },
+        {
+          "sha256": "4a9321fd173ebf4e8bbc79130794d4c3fe233acccbf7db8765e0addb8fbfb8ca",
+          "origin": "nuget:Microsoft.WindowsAppSDK.WinUI/1.8.260528001/tools/NOTICE.txt"
+        }
+      ],
+      "sources": [],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "file",
+      "state": "recorded",
+      "metadataLicenseFile": "license.txt"
+    },
+    {
+      "name": "MudBlazor",
+      "version": "7.16.0",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "d2a06829106f57d7ca6fbd42ae501328d1dbc4d2f67b437a25a1eb5d6c2f0d4b",
+          "origin": "nuget:MudBlazor/7.16.0/LICENSE"
+        }
+      ],
+      "sources": [
+        "https://github.com/MudBlazor/MudBlazor/tree/9edfff2a6cc86463e301b3b8cd21ac60a6e93a9e"
+      ],
+      "package": true,
+      "authors": "Garderoben, Henon and Contributors",
+      "copyright": "Copyright 2024 MudBlazor",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Newtonsoft.Json",
+      "version": "13.0.2",
+      "platforms": [
+        "windows"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "b98a397897ff55f76cddc380041507a95a896b2946e0188703bf0496793d6516",
+          "origin": "nuget:Newtonsoft.Json/13.0.2/LICENSE.md"
+        }
+      ],
+      "sources": [
+        "https://github.com/JamesNK/Newtonsoft.Json/tree/4fba53a324c445f06ee08e45a015c346000a7ef2"
+      ],
+      "package": true,
+      "authors": "James Newton-King",
+      "copyright": "Copyright © James Newton-King 2008",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Open Sans Regular",
+      "version": "bundled",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "Apache-2.0",
+      "texts": [
+        {
+          "sha256": "d7de1060169d50d09e5fb54861e04e33b31374c930eb150858aa79c79eebdd8f",
+          "origin": "Bundled font name-table copyright/license records and https://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "sources": [
+        "https://www.apache.org/licenses/LICENSE-2.0.txt"
+      ],
+      "state": "recorded",
+      "binarySha256": "2dce8399579c789af0958042051c0afa141a0e403e0d824a4f3f7efa7b468021",
+      "binaryPath": "Aurora.Reflections/Resources/Fonts/OpenSans-Regular.ttf"
+    },
+    {
+      "name": "PdfPig",
+      "version": "0.1.14",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "Apache-2.0",
+      "texts": [
+        {
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "origin": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/UglyToad/PdfPig/tree/88172af1c4d4f440949f59c94966c3880e3f6032"
+      ],
+      "package": true,
+      "authors": "UglyToad",
+      "copyright": null,
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "SkiaSharp",
+      "version": "4.152.0",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "89101e35a8c66fd4d6dffc1763259161d35cb564c169714ec227a768c89f2938",
+          "origin": "nuget:SkiaSharp/4.152.0/LICENSE.txt"
+        }
+      ],
+      "sources": [
+        "https://go.microsoft.com/fwlink/?linkid=868515/tree/b40fe16da7ae50d7a2b488beef6c249f012856af"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "state": "recorded"
+    },
+    {
+      "name": "SkiaSharp.NativeAssets.Android",
+      "version": "4.152.0",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "89101e35a8c66fd4d6dffc1763259161d35cb564c169714ec227a768c89f2938",
+          "origin": "nuget:SkiaSharp.NativeAssets.Android/4.152.0/LICENSE.txt"
+        },
+        {
+          "sha256": "21504c46c4c58aa64c1055bd2dcbc5f9a136b4b8c412ed3cc6740e22c5b127f5",
+          "origin": "nuget:SkiaSharp.NativeAssets.Android/4.152.0/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://go.microsoft.com/fwlink/?linkid=868515/tree/b40fe16da7ae50d7a2b488beef6c249f012856af"
+      ],
+      "package": true,
+      "state": "recorded",
+      "authors": "Microsoft"
+    },
+    {
+      "name": "SkiaSharp.NativeAssets.macOS",
+      "version": "4.152.0",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "89101e35a8c66fd4d6dffc1763259161d35cb564c169714ec227a768c89f2938",
+          "origin": "nuget:SkiaSharp.NativeAssets.macOS/4.152.0/LICENSE.txt"
+        },
+        {
+          "sha256": "21504c46c4c58aa64c1055bd2dcbc5f9a136b4b8c412ed3cc6740e22c5b127f5",
+          "origin": "nuget:SkiaSharp.NativeAssets.macOS/4.152.0/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://go.microsoft.com/fwlink/?linkid=868515/tree/b40fe16da7ae50d7a2b488beef6c249f012856af"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "state": "recorded"
+    },
+    {
+      "name": "SkiaSharp.NativeAssets.Win32",
+      "version": "4.152.0",
+      "platforms": [
+        "windows"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "89101e35a8c66fd4d6dffc1763259161d35cb564c169714ec227a768c89f2938",
+          "origin": "nuget:SkiaSharp.NativeAssets.Win32/4.152.0/LICENSE.txt"
+        },
+        {
+          "sha256": "21504c46c4c58aa64c1055bd2dcbc5f9a136b4b8c412ed3cc6740e22c5b127f5",
+          "origin": "nuget:SkiaSharp.NativeAssets.Win32/4.152.0/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://go.microsoft.com/fwlink/?linkid=868515/tree/b40fe16da7ae50d7a2b488beef6c249f012856af"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "state": "recorded"
+    },
+    {
+      "name": "SQLitePCLRaw.bundle_e_sqlite3",
+      "version": "2.1.12",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "Apache-2.0",
+      "texts": [
+        {
+          "sha256": "380b21c5bb45750a77c81a3e915d6e684e2143f08e7856cbc3ae882accb8dadf",
+          "origin": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/ericsink/SQLitePCL.raw"
+      ],
+      "package": true,
+      "authors": "Eric Sink",
+      "copyright": "Copyright 2014-2024 SourceGear, LLC",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "SQLitePCLRaw.core",
+      "version": "2.1.12",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "Apache-2.0",
+      "texts": [
+        {
+          "sha256": "380b21c5bb45750a77c81a3e915d6e684e2143f08e7856cbc3ae882accb8dadf",
+          "origin": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/ericsink/SQLitePCL.raw"
+      ],
+      "package": true,
+      "authors": "Eric Sink",
+      "copyright": "Copyright 2014-2024 SourceGear, LLC",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "SQLitePCLRaw.lib.e_sqlite3",
+      "version": "2.1.12",
+      "platforms": [
+        "windows"
+      ],
+      "license": "Apache-2.0",
+      "texts": [
+        {
+          "sha256": "380b21c5bb45750a77c81a3e915d6e684e2143f08e7856cbc3ae882accb8dadf",
+          "origin": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/ericsink/SQLitePCL.raw"
+      ],
+      "package": true,
+      "authors": "Eric Sink",
+      "copyright": "Copyright 2014-2024 SourceGear, LLC",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "SQLitePCLRaw.lib.e_sqlite3.android",
+      "version": "2.1.12",
+      "platforms": [
+        "android"
+      ],
+      "license": "Apache-2.0",
+      "texts": [
+        {
+          "sha256": "380b21c5bb45750a77c81a3e915d6e684e2143f08e7856cbc3ae882accb8dadf",
+          "origin": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/ericsink/SQLitePCL.raw"
+      ],
+      "package": true,
+      "authors": "Eric Sink",
+      "copyright": "Copyright 2014-2024 SourceGear, LLC",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "SQLitePCLRaw.provider.e_sqlite3",
+      "version": "2.1.12",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "Apache-2.0",
+      "texts": [
+        {
+          "sha256": "380b21c5bb45750a77c81a3e915d6e684e2143f08e7856cbc3ae882accb8dadf",
+          "origin": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/ericsink/SQLitePCL.raw"
+      ],
+      "package": true,
+      "authors": "Eric Sink",
+      "copyright": "Copyright 2014-2024 SourceGear, LLC",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "System.CodeDom",
+      "version": "6.0.0",
+      "platforms": [
+        "windows"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "d7a68596ab69b06f51ca278a6545148e4269a9381c26d597c13df5d88e08cf5b",
+          "origin": "nuget:System.CodeDom/6.0.0/LICENSE.TXT"
+        },
+        {
+          "sha256": "a6344bfb229bc08d1071cec400eea216e307439f961c5943ec1b56d2245acb95",
+          "origin": "nuget:System.CodeDom/6.0.0/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/runtime/tree/4822e3c3aa77eb82b2fb33c9321f923cf11ddde6"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "System.Configuration.ConfigurationManager",
+      "version": "6.0.0",
+      "platforms": [
+        "windows"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "d7a68596ab69b06f51ca278a6545148e4269a9381c26d597c13df5d88e08cf5b",
+          "origin": "nuget:System.Configuration.ConfigurationManager/6.0.0/LICENSE.TXT"
+        },
+        {
+          "sha256": "a6344bfb229bc08d1071cec400eea216e307439f961c5943ec1b56d2245acb95",
+          "origin": "nuget:System.Configuration.ConfigurationManager/6.0.0/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/runtime/tree/4822e3c3aa77eb82b2fb33c9321f923cf11ddde6"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "System.Drawing.Common",
+      "version": "6.0.0",
+      "platforms": [
+        "windows"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "d7a68596ab69b06f51ca278a6545148e4269a9381c26d597c13df5d88e08cf5b",
+          "origin": "nuget:System.Drawing.Common/6.0.0/LICENSE.TXT"
+        },
+        {
+          "sha256": "a6344bfb229bc08d1071cec400eea216e307439f961c5943ec1b56d2245acb95",
+          "origin": "nuget:System.Drawing.Common/6.0.0/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/runtime/tree/4822e3c3aa77eb82b2fb33c9321f923cf11ddde6"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "System.Management",
+      "version": "6.0.0",
+      "platforms": [
+        "windows"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "d7a68596ab69b06f51ca278a6545148e4269a9381c26d597c13df5d88e08cf5b",
+          "origin": "nuget:System.Management/6.0.0/LICENSE.TXT"
+        },
+        {
+          "sha256": "a6344bfb229bc08d1071cec400eea216e307439f961c5943ec1b56d2245acb95",
+          "origin": "nuget:System.Management/6.0.0/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/runtime/tree/4822e3c3aa77eb82b2fb33c9321f923cf11ddde6"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "System.Numerics.Tensors",
+      "version": "9.0.0",
+      "platforms": [
+        "windows"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "d7a68596ab69b06f51ca278a6545148e4269a9381c26d597c13df5d88e08cf5b",
+          "origin": "nuget:System.Numerics.Tensors/9.0.0/LICENSE.TXT"
+        },
+        {
+          "sha256": "40686c6447a7d5b5d3693068e4571b5f483d7ed335aeee773ef662440de4c5d5",
+          "origin": "nuget:System.Numerics.Tensors/9.0.0/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/runtime/tree/9d5a6a9aa463d6d10b0b0ba6d5982cc82f363dc3"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "System.Security.Cryptography.ProtectedData",
+      "version": "6.0.0",
+      "platforms": [
+        "windows"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "d7a68596ab69b06f51ca278a6545148e4269a9381c26d597c13df5d88e08cf5b",
+          "origin": "nuget:System.Security.Cryptography.ProtectedData/6.0.0/LICENSE.TXT"
+        },
+        {
+          "sha256": "a6344bfb229bc08d1071cec400eea216e307439f961c5943ec1b56d2245acb95",
+          "origin": "nuget:System.Security.Cryptography.ProtectedData/6.0.0/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/runtime/tree/4822e3c3aa77eb82b2fb33c9321f923cf11ddde6"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "System.Security.Permissions",
+      "version": "6.0.0",
+      "platforms": [
+        "windows"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "d7a68596ab69b06f51ca278a6545148e4269a9381c26d597c13df5d88e08cf5b",
+          "origin": "nuget:System.Security.Permissions/6.0.0/LICENSE.TXT"
+        },
+        {
+          "sha256": "a6344bfb229bc08d1071cec400eea216e307439f961c5943ec1b56d2245acb95",
+          "origin": "nuget:System.Security.Permissions/6.0.0/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/runtime/tree/4822e3c3aa77eb82b2fb33c9321f923cf11ddde6"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "System.ServiceModel.Syndication",
+      "version": "10.0.0",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "6d15e10a101c6bfff2ab4429ed061bf76c456fc4b23ad6b03e0d0f8377148a21",
+          "origin": "nuget:System.ServiceModel.Syndication/10.0.0/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/dotnet/tree/b0f34d51fccc69fd334253924abd8d6853fad7aa"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "System.Windows.Extensions",
+      "version": "6.0.0",
+      "platforms": [
+        "windows"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "d7a68596ab69b06f51ca278a6545148e4269a9381c26d597c13df5d88e08cf5b",
+          "origin": "nuget:System.Windows.Extensions/6.0.0/LICENSE.TXT"
+        },
+        {
+          "sha256": "a6344bfb229bc08d1071cec400eea216e307439f961c5943ec1b56d2245acb95",
+          "origin": "nuget:System.Windows.Extensions/6.0.0/THIRD-PARTY-NOTICES.TXT"
+        }
+      ],
+      "sources": [
+        "https://github.com/dotnet/runtime/tree/4822e3c3aa77eb82b2fb33c9321f923cf11ddde6"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Velopack",
+      "version": "1.0.1",
+      "platforms": [
+        "windows"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "22805c82049b14f1a214c8f166b3ccdb603a67159e14f8c63c00c3a55170de15",
+          "origin": "NuGet MIT expression and exact copyright metadata"
+        }
+      ],
+      "sources": [
+        "https://github.com/velopack/velopack/tree/f2ee71248f549cfc1fc5c4566616b9d2d94b09bb"
+      ],
+      "package": true,
+      "authors": "Velopack Ltd,Caelan Sayler,Kevin Bost",
+      "copyright": "Copyright © Velopack Ltd. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.Android.Glide",
+      "version": "4.16.0.14",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND BSD-2-Clause AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.Android.Glide/4.16.0.14/LICENSE.md"
+        },
+        {
+          "sha256": "05ebf75adcc496443b65df977e5724b8c09203d100f5f1bbdaf8d941817e587e",
+          "origin": "nuget:Xamarin.Android.Glide/4.16.0.14/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.Android.Glide.Annotations",
+      "version": "4.16.0.14",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND BSD-2-Clause AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.Android.Glide.Annotations/4.16.0.14/LICENSE.md"
+        },
+        {
+          "sha256": "05ebf75adcc496443b65df977e5724b8c09203d100f5f1bbdaf8d941817e587e",
+          "origin": "nuget:Xamarin.Android.Glide.Annotations/4.16.0.14/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.Android.Glide.DiskLruCache",
+      "version": "4.16.0.14",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND BSD-2-Clause AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.Android.Glide.DiskLruCache/4.16.0.14/LICENSE.md"
+        },
+        {
+          "sha256": "05ebf75adcc496443b65df977e5724b8c09203d100f5f1bbdaf8d941817e587e",
+          "origin": "nuget:Xamarin.Android.Glide.DiskLruCache/4.16.0.14/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.Android.Glide.GifDecoder",
+      "version": "4.16.0.14",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND BSD-2-Clause AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.Android.Glide.GifDecoder/4.16.0.14/LICENSE.md"
+        },
+        {
+          "sha256": "05ebf75adcc496443b65df977e5724b8c09203d100f5f1bbdaf8d941817e587e",
+          "origin": "nuget:Xamarin.Android.Glide.GifDecoder/4.16.0.14/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Activity",
+      "version": "1.10.1.3",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Activity/1.10.1.3/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Activity/1.10.1.3/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Activity.Ktx",
+      "version": "1.10.1.3",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Activity.Ktx/1.10.1.3/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Activity.Ktx/1.10.1.3/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Annotation",
+      "version": "1.9.1.5",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Annotation/1.9.1.5/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Annotation/1.9.1.5/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Annotation.Experimental",
+      "version": "1.5.1.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Annotation.Experimental/1.5.1.1/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Annotation.Experimental/1.5.1.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Annotation.Jvm",
+      "version": "1.9.1.5",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Annotation.Jvm/1.9.1.5/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Annotation.Jvm/1.9.1.5/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.AppCompat",
+      "version": "1.7.1.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.AppCompat/1.7.1.1/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.AppCompat/1.7.1.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.AppCompat.AppCompatResources",
+      "version": "1.7.1.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.AppCompat.AppCompatResources/1.7.1.1/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.AppCompat.AppCompatResources/1.7.1.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Arch.Core.Common",
+      "version": "2.2.0.18",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Arch.Core.Common/2.2.0.18/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Arch.Core.Common/2.2.0.18/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Arch.Core.Runtime",
+      "version": "2.2.0.18",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Arch.Core.Runtime/2.2.0.18/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Arch.Core.Runtime/2.2.0.18/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Browser",
+      "version": "1.8.0.11",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Browser/1.8.0.11/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Browser/1.8.0.11/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.CardView",
+      "version": "1.0.0.36",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.CardView/1.0.0.36/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.CardView/1.0.0.36/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Collection",
+      "version": "1.5.0.3",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Collection/1.5.0.3/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Collection/1.5.0.3/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Collection.Jvm",
+      "version": "1.5.0.3",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Collection.Jvm/1.5.0.3/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Collection.Jvm/1.5.0.3/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Collection.Ktx",
+      "version": "1.5.0.3",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Collection.Ktx/1.5.0.3/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Collection.Ktx/1.5.0.3/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Concurrent.Futures",
+      "version": "1.3.0.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Concurrent.Futures/1.3.0.1/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Concurrent.Futures/1.3.0.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.ConstraintLayout",
+      "version": "2.2.1.3",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.ConstraintLayout/2.2.1.3/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.ConstraintLayout/2.2.1.3/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.ConstraintLayout.Core",
+      "version": "1.1.1.3",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.ConstraintLayout.Core/1.1.1.3/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.ConstraintLayout.Core/1.1.1.3/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.CoordinatorLayout",
+      "version": "1.3.0.3",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.CoordinatorLayout/1.3.0.3/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.CoordinatorLayout/1.3.0.3/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Core",
+      "version": "1.16.0.3",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Core/1.16.0.3/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Core/1.16.0.3/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Core.Core.Ktx",
+      "version": "1.16.0.3",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Core.Core.Ktx/1.16.0.3/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Core.Core.Ktx/1.16.0.3/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Core.ViewTree",
+      "version": "1.0.0.3",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Core.ViewTree/1.0.0.3/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Core.ViewTree/1.0.0.3/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.CursorAdapter",
+      "version": "1.0.0.34",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.CursorAdapter/1.0.0.34/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.CursorAdapter/1.0.0.34/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.CustomView",
+      "version": "1.2.0.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.CustomView/1.2.0.1/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.CustomView/1.2.0.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.CustomView.PoolingContainer",
+      "version": "1.1.0.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.CustomView.PoolingContainer/1.1.0.1/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.CustomView.PoolingContainer/1.1.0.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.DrawerLayout",
+      "version": "1.2.0.18",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.DrawerLayout/1.2.0.18/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.DrawerLayout/1.2.0.18/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.DynamicAnimation",
+      "version": "1.1.0.3",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.DynamicAnimation/1.1.0.3/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.DynamicAnimation/1.1.0.3/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Emoji2",
+      "version": "1.5.0.6",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Emoji2/1.5.0.6/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Emoji2/1.5.0.6/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Emoji2.ViewsHelper",
+      "version": "1.5.0.6",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Emoji2.ViewsHelper/1.5.0.6/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Emoji2.ViewsHelper/1.5.0.6/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.ExifInterface",
+      "version": "1.4.1.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.ExifInterface/1.4.1.1/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.ExifInterface/1.4.1.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Fragment",
+      "version": "1.8.8.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Fragment/1.8.8.1/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Fragment/1.8.8.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Fragment.Ktx",
+      "version": "1.8.8.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Fragment.Ktx/1.8.8.1/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Fragment.Ktx/1.8.8.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Interpolator",
+      "version": "1.0.0.34",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Interpolator/1.0.0.34/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Interpolator/1.0.0.34/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Lifecycle.Common",
+      "version": "2.9.2.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Lifecycle.Common/2.9.2.1/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Lifecycle.Common/2.9.2.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Lifecycle.Common.Jvm",
+      "version": "2.9.2.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Lifecycle.Common.Jvm/2.9.2.1/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Lifecycle.Common.Jvm/2.9.2.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Lifecycle.LiveData",
+      "version": "2.9.2.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Lifecycle.LiveData/2.9.2.1/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Lifecycle.LiveData/2.9.2.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Lifecycle.LiveData.Core",
+      "version": "2.9.2.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Lifecycle.LiveData.Core/2.9.2.1/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Lifecycle.LiveData.Core/2.9.2.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Lifecycle.LiveData.Core.Ktx",
+      "version": "2.9.2.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Lifecycle.LiveData.Core.Ktx/2.9.2.1/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Lifecycle.LiveData.Core.Ktx/2.9.2.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Lifecycle.Process",
+      "version": "2.9.2.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Lifecycle.Process/2.9.2.1/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Lifecycle.Process/2.9.2.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Lifecycle.Runtime",
+      "version": "2.9.2.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Lifecycle.Runtime/2.9.2.1/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Lifecycle.Runtime/2.9.2.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Lifecycle.Runtime.Android",
+      "version": "2.9.2.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Lifecycle.Runtime.Android/2.9.2.1/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Lifecycle.Runtime.Android/2.9.2.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Lifecycle.Runtime.Ktx",
+      "version": "2.9.2.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Lifecycle.Runtime.Ktx/2.9.2.1/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Lifecycle.Runtime.Ktx/2.9.2.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Lifecycle.Runtime.Ktx.Android",
+      "version": "2.9.2.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Lifecycle.Runtime.Ktx.Android/2.9.2.1/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Lifecycle.Runtime.Ktx.Android/2.9.2.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Lifecycle.ViewModel",
+      "version": "2.9.2.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Lifecycle.ViewModel/2.9.2.1/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Lifecycle.ViewModel/2.9.2.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Lifecycle.ViewModel.Android",
+      "version": "2.9.2.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Lifecycle.ViewModel.Android/2.9.2.1/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Lifecycle.ViewModel.Android/2.9.2.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Lifecycle.ViewModel.Ktx",
+      "version": "2.9.2.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Lifecycle.ViewModel.Ktx/2.9.2.1/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Lifecycle.ViewModel.Ktx/2.9.2.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Lifecycle.ViewModelSavedState",
+      "version": "2.9.2.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Lifecycle.ViewModelSavedState/2.9.2.1/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Lifecycle.ViewModelSavedState/2.9.2.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Lifecycle.ViewModelSavedState.Android",
+      "version": "2.9.2.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Lifecycle.ViewModelSavedState.Android/2.9.2.1/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Lifecycle.ViewModelSavedState.Android/2.9.2.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Loader",
+      "version": "1.1.0.34",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Loader/1.1.0.34/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Loader/1.1.0.34/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Navigation.Common",
+      "version": "2.9.2.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Navigation.Common/2.9.2.1/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Navigation.Common/2.9.2.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Navigation.Common.Android",
+      "version": "2.9.2.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Navigation.Common.Android/2.9.2.1/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Navigation.Common.Android/2.9.2.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Navigation.Fragment",
+      "version": "2.9.2.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Navigation.Fragment/2.9.2.1/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Navigation.Fragment/2.9.2.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Navigation.Runtime",
+      "version": "2.9.2.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Navigation.Runtime/2.9.2.1/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Navigation.Runtime/2.9.2.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Navigation.Runtime.Android",
+      "version": "2.9.2.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Navigation.Runtime.Android/2.9.2.1/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Navigation.Runtime.Android/2.9.2.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Navigation.UI",
+      "version": "2.9.2.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Navigation.UI/2.9.2.1/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Navigation.UI/2.9.2.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.ProfileInstaller.ProfileInstaller",
+      "version": "1.4.1.5",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.ProfileInstaller.ProfileInstaller/1.4.1.5/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.ProfileInstaller.ProfileInstaller/1.4.1.5/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.RecyclerView",
+      "version": "1.4.0.3",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.RecyclerView/1.4.0.3/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.RecyclerView/1.4.0.3/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.ResourceInspection.Annotation",
+      "version": "1.0.1.22",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.ResourceInspection.Annotation/1.0.1.22/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.ResourceInspection.Annotation/1.0.1.22/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.SavedState",
+      "version": "1.3.1.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.SavedState/1.3.1.1/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.SavedState/1.3.1.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.SavedState.SavedState.Android",
+      "version": "1.3.1.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.SavedState.SavedState.Android/1.3.1.1/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.SavedState.SavedState.Android/1.3.1.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.SavedState.SavedState.Ktx",
+      "version": "1.3.1.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.SavedState.SavedState.Ktx/1.3.1.1/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.SavedState.SavedState.Ktx/1.3.1.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Security.SecurityCrypto",
+      "version": "1.1.0.4-alpha07",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Security.SecurityCrypto/1.1.0.4-alpha07/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Security.SecurityCrypto/1.1.0.4-alpha07/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/217e3745b7bfe068b231d07bd2856d1252ac6247"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.SlidingPaneLayout",
+      "version": "1.2.0.22",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.SlidingPaneLayout/1.2.0.22/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.SlidingPaneLayout/1.2.0.22/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Startup.StartupRuntime",
+      "version": "1.2.0.5",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Startup.StartupRuntime/1.2.0.5/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Startup.StartupRuntime/1.2.0.5/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.SwipeRefreshLayout",
+      "version": "1.1.0.29",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.SwipeRefreshLayout/1.1.0.29/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.SwipeRefreshLayout/1.1.0.29/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Tracing.Tracing",
+      "version": "1.3.0.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Tracing.Tracing/1.3.0.1/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Tracing.Tracing/1.3.0.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Tracing.Tracing.Android",
+      "version": "1.3.0.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Tracing.Tracing.Android/1.3.0.1/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Tracing.Tracing.Android/1.3.0.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Transition",
+      "version": "1.6.0.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Transition/1.6.0.1/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Transition/1.6.0.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.VectorDrawable",
+      "version": "1.2.0.8",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.VectorDrawable/1.2.0.8/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.VectorDrawable/1.2.0.8/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.VectorDrawable.Animated",
+      "version": "1.2.0.8",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.VectorDrawable.Animated/1.2.0.8/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.VectorDrawable.Animated/1.2.0.8/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.VersionedParcelable",
+      "version": "1.2.1.3",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.VersionedParcelable/1.2.1.3/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.VersionedParcelable/1.2.1.3/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.ViewPager",
+      "version": "1.1.0.4",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.ViewPager/1.1.0.4/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.ViewPager/1.1.0.4/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.ViewPager2",
+      "version": "1.1.0.8",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.ViewPager2/1.1.0.8/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.ViewPager2/1.1.0.8/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Window",
+      "version": "1.4.0.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Window/1.4.0.1/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Window/1.4.0.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Window.WindowCore",
+      "version": "1.4.0.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Window.WindowCore/1.4.0.1/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Window.WindowCore/1.4.0.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.AndroidX.Window.WindowCore.Jvm",
+      "version": "1.4.0.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.AndroidX.Window.WindowCore.Jvm/1.4.0.1/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.AndroidX.Window.WindowCore.Jvm/1.4.0.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.Build.Download",
+      "version": "0.11.4",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "3eb5742ae075721e42456b278c8715263707d5f93b393ced329234f4734f884a",
+          "origin": "nuget:Xamarin.Build.Download/0.11.4/THIRD-PARTY-NOTICE.txt"
+        },
+        {
+          "sha256": "fce5cb7d27a2197b16bb60f33801a4adfbf2e7649ba85f90d5a98bc58488c708",
+          "origin": "https://raw.githubusercontent.com/xamarin/XamarinComponents/main/LICENSE"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/XamarinComponents/tree/fd9ce2a7ea63f07b2df568a25643a4cb742d18de"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": null,
+      "state": "recorded",
+      "licenseReviewNote": "The package link to Util/Xamarin.Build.Download/LICENSE is retired; main project MIT license is preserved with the package third-party notices."
+    },
+    {
+      "name": "Xamarin.Google.Android.Material",
+      "version": "1.12.0.5",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.Google.Android.Material/1.12.0.5/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.Google.Android.Material/1.12.0.5/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.Google.Code.FindBugs.JSR305",
+      "version": "3.0.2.21",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.Google.Code.FindBugs.JSR305/3.0.2.21/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.Google.Code.FindBugs.JSR305/3.0.2.21/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.Google.Crypto.Tink.Android",
+      "version": "1.18.0.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.Google.Crypto.Tink.Android/1.18.0.1/LICENSE.md"
+        },
+        {
+          "sha256": "9133ba7182dfd4dc7c5a3205e2ee6e979fedf299e14020834e718d6aae95a600",
+          "origin": "nuget:Xamarin.Google.Crypto.Tink.Android/1.18.0.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.Google.ErrorProne.Annotations",
+      "version": "2.41.0.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.Google.ErrorProne.Annotations/2.41.0.1/LICENSE.md"
+        },
+        {
+          "sha256": "fcc5a0baffb2f1b01b593349b7275518b56621a862f44cbcfbf6bd4476b23461",
+          "origin": "nuget:Xamarin.Google.ErrorProne.Annotations/2.41.0.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.Google.Guava.ListenableFuture",
+      "version": "1.0.0.29",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.Google.Guava.ListenableFuture/1.0.0.29/LICENSE.md"
+        },
+        {
+          "sha256": "1a14e25264f604fca355c489c0d5877480ddb738cec665008bcf494ad1cdc787",
+          "origin": "nuget:Xamarin.Google.Guava.ListenableFuture/1.0.0.29/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.GooglePlayServices.Auth",
+      "version": "121.4.0.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT bindings and included upstream terms",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.GooglePlayServices.Auth/121.4.0.1/LICENSE.md"
+        },
+        {
+          "sha256": "f0482595937e7a95f5473a6c08a2319eae9c58892e4780960abd182790c69084",
+          "origin": "nuget:Xamarin.GooglePlayServices.Auth/121.4.0.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "file",
+      "state": "recorded",
+      "metadataLicenseFile": "LICENSE.md"
+    },
+    {
+      "name": "Xamarin.GooglePlayServices.Auth.Api.Phone",
+      "version": "118.2.0.3",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT bindings and included upstream terms",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.GooglePlayServices.Auth.Api.Phone/118.2.0.3/LICENSE.md"
+        },
+        {
+          "sha256": "f0482595937e7a95f5473a6c08a2319eae9c58892e4780960abd182790c69084",
+          "origin": "nuget:Xamarin.GooglePlayServices.Auth.Api.Phone/118.2.0.3/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "file",
+      "state": "recorded",
+      "metadataLicenseFile": "LICENSE.md"
+    },
+    {
+      "name": "Xamarin.GooglePlayServices.Auth.Base",
+      "version": "118.3.0.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT bindings and included upstream terms",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.GooglePlayServices.Auth.Base/118.3.0.1/LICENSE.md"
+        },
+        {
+          "sha256": "f0482595937e7a95f5473a6c08a2319eae9c58892e4780960abd182790c69084",
+          "origin": "nuget:Xamarin.GooglePlayServices.Auth.Base/118.3.0.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "file",
+      "state": "recorded",
+      "metadataLicenseFile": "LICENSE.md"
+    },
+    {
+      "name": "Xamarin.GooglePlayServices.Base",
+      "version": "118.7.2.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT bindings and included upstream terms",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.GooglePlayServices.Base/118.7.2.1/LICENSE.md"
+        },
+        {
+          "sha256": "f0482595937e7a95f5473a6c08a2319eae9c58892e4780960abd182790c69084",
+          "origin": "nuget:Xamarin.GooglePlayServices.Base/118.7.2.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "file",
+      "state": "recorded",
+      "metadataLicenseFile": "LICENSE.md"
+    },
+    {
+      "name": "Xamarin.GooglePlayServices.Basement",
+      "version": "118.7.1.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT bindings and included upstream terms",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.GooglePlayServices.Basement/118.7.1.1/LICENSE.md"
+        },
+        {
+          "sha256": "f0482595937e7a95f5473a6c08a2319eae9c58892e4780960abd182790c69084",
+          "origin": "nuget:Xamarin.GooglePlayServices.Basement/118.7.1.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "file",
+      "state": "recorded",
+      "metadataLicenseFile": "LICENSE.md"
+    },
+    {
+      "name": "Xamarin.GooglePlayServices.Fido",
+      "version": "121.2.0.3",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT bindings and included upstream terms",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.GooglePlayServices.Fido/121.2.0.3/LICENSE.md"
+        },
+        {
+          "sha256": "f0482595937e7a95f5473a6c08a2319eae9c58892e4780960abd182790c69084",
+          "origin": "nuget:Xamarin.GooglePlayServices.Fido/121.2.0.3/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "file",
+      "state": "recorded",
+      "metadataLicenseFile": "LICENSE.md"
+    },
+    {
+      "name": "Xamarin.GooglePlayServices.Tasks",
+      "version": "118.3.2.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT bindings and included upstream terms",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.GooglePlayServices.Tasks/118.3.2.1/LICENSE.md"
+        },
+        {
+          "sha256": "f0482595937e7a95f5473a6c08a2319eae9c58892e4780960abd182790c69084",
+          "origin": "nuget:Xamarin.GooglePlayServices.Tasks/118.3.2.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "file",
+      "state": "recorded",
+      "metadataLicenseFile": "LICENSE.md"
+    },
+    {
+      "name": "Xamarin.Jetbrains.Annotations",
+      "version": "26.0.2.3",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.Jetbrains.Annotations/26.0.2.3/LICENSE.md"
+        },
+        {
+          "sha256": "872d4dac04f9505fd782be74a4ff099208cdbc23fba6df9c0ac73dfdfc5aa482",
+          "origin": "nuget:Xamarin.Jetbrains.Annotations/26.0.2.3/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.JSpecify",
+      "version": "1.0.0.4",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.JSpecify/1.0.0.4/LICENSE.md"
+        },
+        {
+          "sha256": "550c765e696f8b24ca17254f722f1772365f46b142367d11db1b604645fec683",
+          "origin": "nuget:Xamarin.JSpecify/1.0.0.4/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.Kotlin.StdLib",
+      "version": "2.2.0.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.Kotlin.StdLib/2.2.0.1/LICENSE.md"
+        },
+        {
+          "sha256": "550c765e696f8b24ca17254f722f1772365f46b142367d11db1b604645fec683",
+          "origin": "nuget:Xamarin.Kotlin.StdLib/2.2.0.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.Kotlin.StdLib.Jdk7",
+      "version": "2.2.0.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.Kotlin.StdLib.Jdk7/2.2.0.1/LICENSE.md"
+        },
+        {
+          "sha256": "550c765e696f8b24ca17254f722f1772365f46b142367d11db1b604645fec683",
+          "origin": "nuget:Xamarin.Kotlin.StdLib.Jdk7/2.2.0.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.Kotlin.StdLib.Jdk8",
+      "version": "2.2.0.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.Kotlin.StdLib.Jdk8/2.2.0.1/LICENSE.md"
+        },
+        {
+          "sha256": "550c765e696f8b24ca17254f722f1772365f46b142367d11db1b604645fec683",
+          "origin": "nuget:Xamarin.Kotlin.StdLib.Jdk8/2.2.0.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.KotlinX.Coroutines.Android",
+      "version": "1.10.2.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.KotlinX.Coroutines.Android/1.10.2.1/LICENSE.md"
+        },
+        {
+          "sha256": "7e1405f51bf00284ff8b7a63ac55a3c87b2b3c78ab13aef90d2541f247f359f3",
+          "origin": "nuget:Xamarin.KotlinX.Coroutines.Android/1.10.2.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.KotlinX.Coroutines.Core",
+      "version": "1.10.2.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.KotlinX.Coroutines.Core/1.10.2.1/LICENSE.md"
+        },
+        {
+          "sha256": "7e1405f51bf00284ff8b7a63ac55a3c87b2b3c78ab13aef90d2541f247f359f3",
+          "origin": "nuget:Xamarin.KotlinX.Coroutines.Core/1.10.2.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.KotlinX.Coroutines.Core.Jvm",
+      "version": "1.10.2.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.KotlinX.Coroutines.Core.Jvm/1.10.2.1/LICENSE.md"
+        },
+        {
+          "sha256": "7e1405f51bf00284ff8b7a63ac55a3c87b2b3c78ab13aef90d2541f247f359f3",
+          "origin": "nuget:Xamarin.KotlinX.Coroutines.Core.Jvm/1.10.2.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.KotlinX.Coroutines.Play.Services",
+      "version": "1.10.2.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.KotlinX.Coroutines.Play.Services/1.10.2.1/LICENSE.md"
+        },
+        {
+          "sha256": "7e1405f51bf00284ff8b7a63ac55a3c87b2b3c78ab13aef90d2541f247f359f3",
+          "origin": "nuget:Xamarin.KotlinX.Coroutines.Play.Services/1.10.2.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.KotlinX.Serialization.Core",
+      "version": "1.9.0.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.KotlinX.Serialization.Core/1.9.0.1/LICENSE.md"
+        },
+        {
+          "sha256": "7e1405f51bf00284ff8b7a63ac55a3c87b2b3c78ab13aef90d2541f247f359f3",
+          "origin": "nuget:Xamarin.KotlinX.Serialization.Core/1.9.0.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Xamarin.KotlinX.Serialization.Core.Jvm",
+      "version": "1.9.0.1",
+      "platforms": [
+        "android"
+      ],
+      "license": "MIT AND Apache-2.0",
+      "texts": [
+        {
+          "sha256": "7f92be6c840f2584494d4986060fe7dfe8bbf02d6ab122980fa1d43ffb2ecb0f",
+          "origin": "nuget:Xamarin.KotlinX.Serialization.Core.Jvm/1.9.0.1/LICENSE.md"
+        },
+        {
+          "sha256": "7e1405f51bf00284ff8b7a63ac55a3c87b2b3c78ab13aef90d2541f247f359f3",
+          "origin": "nuget:Xamarin.KotlinX.Serialization.Core.Jvm/1.9.0.1/THIRD-PARTY-NOTICES.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/xamarin/AndroidX/tree/68db082220ebc7f370f61bf8c64e4832db889928"
+      ],
+      "package": true,
+      "authors": "Microsoft",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "metadataLicenseType": "expression",
+      "state": "recorded"
+    },
+    {
+      "name": "Open Sans PDF Regular",
+      "version": "3.003",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "OFL-1.1",
+      "texts": [
+        {
+          "sha256": "01cd5ffb3a528c219a86e49a814c6c53bd8a69b9a3c305dd237074ba1c811af7",
+          "origin": "https://github.com/googlefonts/opensans/blob/bd7e37632246368c60fdcbd374dbf9bad11969b6/OFL.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/googlefonts/opensans/tree/bd7e37632246368c60fdcbd374dbf9bad11969b6"
+      ],
+      "state": "recorded",
+      "binaryPath": "Aurora.Documents/Resources/Fonts/OpenSans-Regular.ttf",
+      "binarySha256": "c53aceea2dcf5b4098099c0c4d0a061d17e178a049317b42a422b1a9f7f8eb59",
+      "copyright": "Copyright 2020 The Open Sans Project Authors (https://github.com/googlefonts/opensans)"
+    },
+    {
+      "name": "Open Sans PDF Bold",
+      "version": "3.003",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "OFL-1.1",
+      "texts": [
+        {
+          "sha256": "01cd5ffb3a528c219a86e49a814c6c53bd8a69b9a3c305dd237074ba1c811af7",
+          "origin": "https://github.com/googlefonts/opensans/blob/bd7e37632246368c60fdcbd374dbf9bad11969b6/OFL.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/googlefonts/opensans/tree/bd7e37632246368c60fdcbd374dbf9bad11969b6"
+      ],
+      "state": "recorded",
+      "binaryPath": "Aurora.Documents/Resources/Fonts/OpenSans-Bold.ttf",
+      "binarySha256": "27da758f4dcac9a65abe914c13b463b42982b9909bc65713424099f4810bd1e6",
+      "copyright": "Copyright 2020 The Open Sans Project Authors (https://github.com/googlefonts/opensans)"
+    },
+    {
+      "name": "Open Sans PDF Italic",
+      "version": "3.003",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "OFL-1.1",
+      "texts": [
+        {
+          "sha256": "01cd5ffb3a528c219a86e49a814c6c53bd8a69b9a3c305dd237074ba1c811af7",
+          "origin": "https://github.com/googlefonts/opensans/blob/bd7e37632246368c60fdcbd374dbf9bad11969b6/OFL.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/googlefonts/opensans/tree/bd7e37632246368c60fdcbd374dbf9bad11969b6"
+      ],
+      "state": "recorded",
+      "binaryPath": "Aurora.Documents/Resources/Fonts/OpenSans-Italic.ttf",
+      "binarySha256": "93bc1bb6abf4e6b7c75d7131714061d5b57cc478abcabe4cb3519bb38fb917aa",
+      "copyright": "Copyright 2020 The Open Sans Project Authors (https://github.com/googlefonts/opensans)"
+    },
+    {
+      "name": "Open Sans PDF BoldItalic",
+      "version": "3.003",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "OFL-1.1",
+      "texts": [
+        {
+          "sha256": "01cd5ffb3a528c219a86e49a814c6c53bd8a69b9a3c305dd237074ba1c811af7",
+          "origin": "https://github.com/googlefonts/opensans/blob/bd7e37632246368c60fdcbd374dbf9bad11969b6/OFL.txt"
+        }
+      ],
+      "sources": [
+        "https://github.com/googlefonts/opensans/tree/bd7e37632246368c60fdcbd374dbf9bad11969b6"
+      ],
+      "state": "recorded",
+      "binaryPath": "Aurora.Documents/Resources/Fonts/OpenSans-BoldItalic.ttf",
+      "binarySha256": "d672a770037104b6af45e1336b3d3c1729c8aea940f81e010f5a8a7319c29a21",
+      "copyright": "Copyright 2020 The Open Sans Project Authors (https://github.com/googlefonts/opensans)"
+    },
+    {
+      "name": "Legacy Aurora templates, galleries and UI visuals",
+      "version": "bundled",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "LicenseRef-Aurora-Redistribution-Permission",
+      "texts": [
+        {
+          "sha256": "e1059550e6e3a6a74c519807c00488095e5145f04fd1d48dc1bd7af7d408caf6",
+          "origin": "third-party/LEGACY-ASSET-PERMISSION.md"
+        }
+      ],
+      "sources": [
+        "third-party/LEGACY-ASSET-PERMISSION.md"
+      ],
+      "state": "recorded",
+      "noticePath": "third-party/LEGACY-ASSET-PERMISSION.md",
+      "noticeSha256": "e1059550e6e3a6a74c519807c00488095e5145f04fd1d48dc1bd7af7d408caf6",
+      "copyright": "Original Aurora asset rights holders; existing notices retained. Redistribution permission confirmed by the maintainer; no MIT relicensing."
+    },
+    {
+      "name": "Nodesto Caps Condensed",
+      "version": "bundled 2015",
+      "platforms": [
+        "source"
+      ],
+      "license": "CC0-1.0",
+      "authors": "Solbera",
+      "copyright": "Nodesto Caps Condensed (c) Solbera, 2015; embedded name-table license explicitly associates the work with CC0.",
+      "texts": [
+        {
+          "sha256": "8bdc7b952ae0a12e08ccf9463a4750f7288f4d05bf7f2124cc5805ecaabdb01c",
+          "origin": "https://creativecommons.org/publicdomain/zero/1.0/legalcode.txt"
+        }
+      ],
+      "sources": [
+        "Embedded font name-table license records (IDs 9, 13, 14)",
+        "https://creativecommons.org/publicdomain/zero/1.0/"
+      ],
+      "state": "recorded",
+      "binaryPath": "Aurora.Legacy/resources/fonts/nodesto.otf",
+      "binarySha256": "89408e55ad690ee005792e0ad2a3dd3662751d8b275c27d524a371fb378e6ad7"
+    },
+    {
+      "name": "Verified SRD-only bundled baseline",
+      "version": "5.1 reviewed baseline",
+      "platforms": [
+        "windows",
+        "android"
+      ],
+      "license": "CC-BY-4.0",
+      "texts": [
+        {
+          "sha256": "aa40df916aaa352dd41c1c3224455bca30e63c82fdbab1cb55a6e5f3becc7291",
+          "origin": "third-party/SRD-ATTRIBUTION.md"
+        },
+        {
+          "sha256": "2ade8c89b8bbe0d859b124a9e47032c8494022f43091e8278ae8e2554a292196",
+          "origin": "https://creativecommons.org/licenses/by/4.0/legalcode.txt"
+        },
+        {
+          "sha256": "4260d256bf1c05e1f47dadf0213559c577a094c56190c6ad8a178126821436c7",
+          "origin": "third-party/CONTENT-SCOPE.md"
+        }
+      ],
+      "sources": [
+        "https://media.dndbeyond.com/compendium-images/srd/5.1/SRD_CC_v5.1.pdf"
+      ],
+      "state": "recorded",
+      "noticePath": "third-party/SRD-ATTRIBUTION.md",
+      "noticeSha256": "aa40df916aaa352dd41c1c3224455bca30e63c82fdbab1cb55a6e5f3becc7291"
+    },
+    {
+      "name": "Aurora Reflections and suite branding",
+      "version": "bundled",
+      "platforms": [
+        "windows",
+        "android",
+        "source"
+      ],
+      "license": "MIT",
+      "texts": [
+        {
+          "sha256": "029c953f9c69beb000f16cb276e3a2383d8c25b94971bc8be0bc458fd6820b1b",
+          "origin": "third-party/BRANDING-PROVENANCE.md"
+        },
+        {
+          "sha256": "5093b62f3fb3fc1472d463b08b43acf7071b9cf846b7336cee2e01a5cd6a21fc",
+          "origin": "LICENSE"
+        }
+      ],
+      "sources": [
+        "third-party/BRANDING-PROVENANCE.md"
+      ],
+      "state": "recorded",
+      "noticePath": "third-party/BRANDING-PROVENANCE.md",
+      "noticeSha256": "029c953f9c69beb000f16cb276e3a2383d8c25b94971bc8be0bc458fd6820b1b",
+      "authors": "Project maintainer; assistant-assisted artwork"
+    }
+  ],
+  "releaseIssues": [
+    {
+      "id": "pdf-library",
+      "status": "closed",
+      "reason": "Migrated shipping projects to iTextSharp.LGPLv2.Core 3.8.6. Final PDF group: 75 passing tests; independent form checks and rendered comparisons passed; matching source/relink materials and Windows/Android package dependency audits completed. See docs/pdf-library-and-notices-2026-10-23.md."
+    },
+    {
+      "id": "legacy-assets",
+      "status": "closed",
+      "reason": "Exact asset inventory, explicit maintainer grants for legacy visuals and original branding, independently licensed fonts, and reviewed SRD-only game content with original integration adapters. See third-party/CONTENT-SCOPE.md and docs/bundled-content-and-assets-2026-10-23.md. Functional acceptance is recorded separately; this does not approve an unvalidated new package."
+    }
+  ],
+  "collectionFailures": [],
+  "limitations": [
+    "Conservative dependency inventory includes build-only packages; it does not assert every package file is shipped.",
+    "Experimental macOS-specific additions are outside this Windows/Android inventory. Web remains deferred.",
+    "Legal texts and metadata are preserved as evidence, not a claim of completed legal clearance."
+  ]
+}

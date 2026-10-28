@@ -17,7 +17,7 @@ namespace Aurora.Tests.Tests;
 /// </summary>
 public sealed class MulticlassFlowTests : IAsyncLifetime
 {
-    private const string FighterClassId = "ID_PHB_CLASS_FIGHTER";
+    private const string FighterClassId = "ID_WOTC_PHB_CLASS_FIGHTER";
     private const string MulticlassPrereqGrant = "ID_INTERNAL_GRANTS_MULTICLASSING_PREREQUISITE";
 
     private readonly ITestOutputHelper _output;
@@ -33,10 +33,10 @@ public sealed class MulticlassFlowTests : IAsyncLifetime
 
         var elements = DataManager.Current.ElementsCollection;
         var fighter = elements.GetElement(FighterClassId);
-        if (fighter is null) { _output.WriteLine("[SKIP] Fighter not present."); return; }
+        if (fighter is null) { throw new InvalidOperationException("Required core fixture: Fighter not present."); }
 
         var multiclass = elements.FirstOrDefault(e => e.Type == "Multiclass");
-        if (multiclass is null) { _output.WriteLine("[SKIP] No Multiclass elements in content."); return; }
+        if (multiclass is null) { throw new InvalidOperationException("Required core fixture: No Multiclass elements in content."); }
         _output.WriteLine($"Multiclassing into: {multiclass.Name} [{multiclass.Id}]");
 
         var handler = new TestSpellHandler();
@@ -45,7 +45,8 @@ public sealed class MulticlassFlowTests : IAsyncLifetime
 
         var cm = CharacterManager.Current;
         var character = await cm.New(initializeFirstLevel: true);
-        cm.RegisterElement(fighter);
+        SelectionRuleExpanderContext.Current!.SetRegisteredElement(
+            cm.SelectionRules.Single(r => r.Attributes.Type == "Class"), fighter!.Id);
 
         // Meet every multiclass ability prerequisite by maxing all six scores, then reprocess so the
         // class grants ID_INTERNAL_GRANTS_MULTICLASSING_PREREQUISITE.
@@ -55,10 +56,11 @@ public sealed class MulticlassFlowTests : IAsyncLifetime
         character.Abilities.Intelligence.BaseScore = 15;
         character.Abilities.Wisdom.BaseScore = 15;
         character.Abilities.Charisma.BaseScore = 15;
+        cm.RegisterElement(elements.GetElement(Builder.Data.Strings.InternalOptions.AllowMulticlassing));
         cm.ReprocessCharacter();
 
         bool meetsPrereq = cm.GetElements().Any(e => e.Id == MulticlassPrereqGrant);
-        if (!meetsPrereq) { _output.WriteLine("[SKIP] Prerequisite grant not present after maxing scores."); return; }
+        if (!meetsPrereq) { throw new InvalidOperationException("Required core fixture: Prerequisite grant not present after maxing scores."); }
 
         int levelBefore = character.Level;
 
@@ -99,14 +101,15 @@ public sealed class MulticlassFlowTests : IAsyncLifetime
             var elements = DataManager.Current.ElementsCollection;
             var fighter = elements.GetElement(FighterClassId);
             var multiclass = elements.FirstOrDefault(e => e.Type == "Multiclass");
-            if (fighter is null || multiclass is null) { _output.WriteLine("[SKIP] required elements not present."); return; }
+            if (fighter is null || multiclass is null) { throw new InvalidOperationException("Required core fixture: required elements not present."); }
 
             SpellcastingSectionContext.Current = new TestSpellHandler();
             CharacterLoadCompatibilityService.PrepareForCharacterLoad();
 
             var cm = CharacterManager.Current;
             var character = await cm.New(initializeFirstLevel: true);
-            cm.RegisterElement(fighter);
+            SelectionRuleExpanderContext.Current!.SetRegisteredElement(
+            cm.SelectionRules.Single(r => r.Attributes.Type == "Class"), fighter!.Id);
 
             character.Abilities.Strength.BaseScore = 15;
             character.Abilities.Dexterity.BaseScore = 15;
@@ -114,12 +117,12 @@ public sealed class MulticlassFlowTests : IAsyncLifetime
             character.Abilities.Intelligence.BaseScore = 15;
             character.Abilities.Wisdom.BaseScore = 15;
             character.Abilities.Charisma.BaseScore = 15;
+            cm.RegisterElement(elements.GetElement(Builder.Data.Strings.InternalOptions.AllowMulticlassing));
             cm.ReprocessCharacter();
 
             if (!cm.GetElements().Any(e => e.Id == MulticlassPrereqGrant))
             {
-                _output.WriteLine("[SKIP] Prerequisite grant not present after maxing scores.");
-                return;
+                throw new InvalidOperationException("Required multiclass prerequisite grant missing.");
             }
 
             cm.NewMulticlass();
@@ -151,7 +154,7 @@ public sealed class MulticlassFlowTests : IAsyncLifetime
         var elements = DataManager.Current.ElementsCollection;
         var fighter = elements.GetElement(FighterClassId);
         var multiclass = elements.FirstOrDefault(e => e.Type == "Multiclass");
-        if (fighter is null || multiclass is null) { _output.WriteLine("[SKIP] required elements not present."); return; }
+        if (fighter is null || multiclass is null) { throw new InvalidOperationException("Required core fixture: required elements not present."); }
 
         // Reset any acquisition the other test may have stamped on this shared singleton.
         multiclass.Aquisition = new AquisitionInfo();
@@ -162,7 +165,8 @@ public sealed class MulticlassFlowTests : IAsyncLifetime
 
         var cm = CharacterManager.Current;
         await cm.New(initializeFirstLevel: true);
-        cm.RegisterElement(fighter);
+        SelectionRuleExpanderContext.Current!.SetRegisteredElement(
+            cm.SelectionRules.Single(r => r.Attributes.Type == "Class"), fighter!.Id);
 
         // Registering a raw Multiclass element (no Aquisition.SelectRule) is the old, broken order.
         Action registerRaw = () => cm.RegisterElement(multiclass);
@@ -185,14 +189,15 @@ public sealed class MulticlassFlowTests : IAsyncLifetime
 
         var elements = DataManager.Current.ElementsCollection;
         var fighter = elements.GetElement(FighterClassId);
-        if (fighter is null) { _output.WriteLine("[SKIP] Fighter not present."); return; }
+        if (fighter is null) { throw new InvalidOperationException("Required core fixture: Fighter not present."); }
 
         SpellcastingSectionContext.Current = new TestSpellHandler();
         CharacterLoadCompatibilityService.PrepareForCharacterLoad();
 
         var cm = CharacterManager.Current;
         await cm.New(initializeFirstLevel: true);
-        cm.RegisterElement(fighter);
+        SelectionRuleExpanderContext.Current!.SetRegisteredElement(
+            cm.SelectionRules.Single(r => r.Attributes.Type == "Class"), fighter!.Id);
         cm.ReprocessCharacter();
 
         // The key used by the filter: current class display names.

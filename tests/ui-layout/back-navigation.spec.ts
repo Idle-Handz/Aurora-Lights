@@ -17,7 +17,7 @@ async function showOverlayHost(page: Page, content: string) {
     .backdrop { position:absolute; inset:0 }
     .mud-dialog { position:fixed; inset:25%; background:white; z-index:20 }
   </style></head><body>${content}</body></html>`);
-  await page.addScriptTag({ path: path.resolve('Aurora.App/wwwroot/shortcuts.js') });
+  await page.addScriptTag({ path: path.resolve('Aurora.Reflections/wwwroot/shortcuts.js') });
 }
 
 const dismissOverlay = (page: Page) => page.evaluate(() => window.AuroraBack.dismissOverlay());

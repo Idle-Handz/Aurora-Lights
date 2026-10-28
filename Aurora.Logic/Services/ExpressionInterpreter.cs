@@ -27,7 +27,7 @@ public class ExpressionInterpreter
 {
   private readonly IExpressionConverter _expressionConverter;
   private const string BracketsExpression = "(\\[([^\\]])+])";
-  private const string IdentifierExpression = "ID_([^+])\\w+";
+  private const string IdentifierExpression = @"\bID_\w+\b";
   private readonly Interpreter _interpreter;
   private CharacterManager _manager;
   private SelectRule _currentRule;
@@ -58,8 +58,9 @@ public class ExpressionInterpreter
       string lowerInvariant2 = str2.ToLowerInvariant();
       expressionString = expressionString.Replace(oldValue, $"evaluate.Require(\"{lowerInvariant1}\", \"{lowerInvariant2}\")");
     }
-    foreach (string oldValue in Regex.Matches(expressionString, "ID_([^+])\\w+").Cast<Match>().Select<Match, string>((Func<Match, string>) (x => x.Value)))
-      expressionString = expressionString.Replace(oldValue, $"evaluate.Contains(ids, \"{oldValue}\")");
+    // Replace each original token once; global string replacement corrupts repeated and prefix-sharing IDs.
+    expressionString = Regex.Replace(expressionString, IdentifierExpression,
+      match => $"evaluate.Contains(ids, \"{match.Value}\")");
     this._interpreter.SetVariable("ids", (object) elementsIDs);
     return this._interpreter.Eval<bool>(expressionString);
   }

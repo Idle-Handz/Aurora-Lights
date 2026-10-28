@@ -24,7 +24,7 @@ public class DescriptionConverter
 	public string GeneratePlainDescription(string description)
 	{
 		StringBuilder stringBuilder = new StringBuilder();
-		foreach (IElement item in HTMLWorker.ParseToList(new StringReader(description), null))
+		foreach (IElement item in HtmlWorker.ParseToList(new StringReader(description), null))
 		{
 			StringBuilder stringBuilder2 = new StringBuilder();
 			foreach (Chunk chunk in item.Chunks)
@@ -53,7 +53,7 @@ public class DescriptionConverter
 		List<Paragraph> list = new List<Paragraph>();
 		Font regular = _fontsHelper.GetRegular();
 		_fontsHelper.GetBoldItalic();
-		List<IElement> list2 = HTMLWorker.ParseToList(new StringReader(description), null);
+		List<IElement> list2 = HtmlWorker.ParseToList(new StringReader(description), null);
 		Paragraph paragraph = new Paragraph();
 		foreach (IElement item in list2)
 		{
@@ -75,9 +75,9 @@ public class DescriptionConverter
 
 	public void FillColumn(ColumnText column, string description, float fontsize)
 	{
-		List<IElement> list = HTMLWorker.ParseToList(new StringReader(description), null);
-		column.SetLeading(fontsize, 1f);
-		float lineHeight = fontsize + 0f;
+		List<IElement> list = HtmlWorker.ParseToList(new StringReader(description), null);
+		column.SetLeading(fontsize, 0f);
+
 		string text = "     ";
 		bool flag = false;
 		foreach (IElement item in list)
@@ -140,11 +140,11 @@ public class DescriptionConverter
 			flag = !(item is List);
 			if (item != list.Last() || item is List)
 			{
-				paragraph.Add(Environment.NewLine);
+				paragraph.Add(new Chunk(Environment.NewLine));
 			}
 			foreach (Chunk chunk2 in paragraph.Chunks)
 			{
-				chunk2.setLineHeight(lineHeight);
+
 				if (!string.IsNullOrWhiteSpace(chunk2.Content) && paragraph.Chunks.Count > 2)
 				{
 					if (chunk2.Content.Length > 26 || chunk2.Equals(paragraph.Chunks.Last()))
@@ -167,9 +167,9 @@ public class DescriptionConverter
 
 	public void FillSheetColumn(ColumnText column, string description, float fontsize, bool dynamicBoldItalic = true)
 	{
-		List<IElement> list = HTMLWorker.ParseToList(new StringReader(description), null);
-		column.SetLeading(fontsize, 1f);
-		float lineHeight = fontsize + 0f;
+		List<IElement> list = HtmlWorker.ParseToList(new StringReader(description), null);
+		column.SetLeading(fontsize, 0f);
+
 		string arg = "     ";
 		foreach (IElement item in list)
 		{
@@ -189,14 +189,14 @@ public class DescriptionConverter
 			}
 			if (item != list.Last() || item is List)
 			{
-				paragraph.Add(Environment.NewLine);
+				paragraph.Add(new Chunk(Environment.NewLine));
 			}
 			if (dynamicBoldItalic)
 			{
 				bool flag = false;
 				foreach (Chunk chunk2 in paragraph.Chunks)
 				{
-					chunk2.setLineHeight(lineHeight);
+
 					if (!flag && chunk2 == paragraph.Chunks.First() && !string.IsNullOrWhiteSpace(chunk2.Content))
 					{
 						chunk2.Font = _fontsHelper.GetBoldItalic(fontsize);
@@ -217,7 +217,7 @@ public class DescriptionConverter
 			{
 				foreach (Chunk chunk3 in paragraph.Chunks)
 				{
-					chunk3.setLineHeight(lineHeight);
+
 					chunk3.Font = _fontsHelper.GetRegular(fontsize);
 				}
 			}

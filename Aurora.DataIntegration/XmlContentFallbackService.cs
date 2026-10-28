@@ -12,7 +12,7 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Xml;
 
-namespace Aurora.App.Services;
+namespace Aurora.Reflections.Services;
 
 /// <summary>
 /// Index of the published prepared definitions (or XML when no catalog has been published).

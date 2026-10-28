@@ -1,0 +1,25 @@
+{
+  "name": "iTextSharp",
+  "version": "5.5.13",
+  "platforms": [
+    "windows",
+    "android"
+  ],
+  "license": "AGPL-3.0 with upstream additional terms",
+  "texts": [
+    {
+      "sha256": "abf00687d6482774348535c0b24f758bc6ca8d2ff6660d349b06a8f28f1ab41f",
+      "origin": "https://raw.githubusercontent.com/itext/itextsharp/5.5.13/LICENSE.md"
+    },
+    {
+      "sha256": "32a0a7381bbcb97b043b34595a1f440557d5cfe904f4d91770b0abb465e8db25",
+      "origin": "https://raw.githubusercontent.com/itext/itextsharp/5.5.13/gnu-agpl-v3.0.md"
+    }
+  ],
+  "sources": [
+    "https://github.com/itext/itextsharp/tree/5.5.13"
+  ],
+  "state": "replacement-required",
+  "binarySha256": "2938200b7c0300c31aa458860b9f4f684f4f3f5893ab0f1d67c9d797168cad17",
+  "binaryPath": "lib/itextsharp.dll"
+}

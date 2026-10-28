@@ -4,7 +4,7 @@ using Builder.Presentation;
 using Builder.Presentation.Services;
 using Builder.Presentation.Services.Sources;
 
-namespace Aurora.App.Services;
+namespace Aurora.Reflections.Services;
 
 /// <summary>
 /// Keeps content a character restricts out of its automatic grants. Without this, restricting a

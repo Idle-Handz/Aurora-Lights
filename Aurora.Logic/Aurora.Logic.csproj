@@ -7,7 +7,7 @@
     ApplicationManager, CharacterManager, and supporting infrastructure.
 
     Target: net10.0 (no -windows) so this library can be consumed by
-    Aurora.App (MAUI Blazor Hybrid) on Windows, macOS, iOS, and Android.
+    Aurora.Reflections (MAUI Blazor Hybrid) on Windows, macOS, iOS, and Android.
 
     Note: ~16 ViewModels and ~9 Commands still reference System.Windows.*
     (beyond ICommand) and remain in the WPF project pending platform
@@ -57,10 +57,8 @@
       <HintPath>..\lib\DynamicExpresso.Core.dll</HintPath>
     </Reference>
 
-    <!-- PDF generation (replace with iText7 later) -->
-    <Reference Include="itextsharp">
-      <HintPath>..\lib\itextsharp.dll</HintPath>
-    </Reference>
+    <!-- PDF generation (LGPL v2; see third-party/README.md) -->
+    <PackageReference Include="iTextSharp.LGPLv2.Core" Version="3.8.6" />
 
   </ItemGroup>
 
@@ -86,7 +84,7 @@
     <EmbeddedResource Include="Resources\Gallery\**\*.jpg" />
     <EmbeddedResource Include="Resources\Gallery\**\*.png" />
     <EmbeddedResource Include="Resources\card-bg.jpg" />
-    <EmbeddedResource Include="..\Aurora.Lights\resources\default-portrait.png"
+    <EmbeddedResource Include="..\Aurora.Legacy\resources\default-portrait.png"
                       Link="Resources\default-portrait.png"
                       LogicalName="Builder.Presentation.Resources.default-portrait.png" />
     <EmbeddedResource Include="Resources\Sheets\**\*.pdf" />

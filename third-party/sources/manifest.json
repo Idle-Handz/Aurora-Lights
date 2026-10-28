@@ -1,0 +1,12 @@
+{
+  "name": "iTextSharp.LGPLv2.Core",
+  "version": "3.8.6",
+  "license": "LGPL-2.0-only",
+  "repository": "https://github.com/VahidN/iTextSharp.LGPLv2.Core",
+  "commit": "8f62a2d7be211c4ca9b5bfb953c7443daeeb609c",
+  "archive": "iTextSharp.LGPLv2.Core-3.8.6-8f62a2d7.zip",
+  "sha256": "2424eaf6ecf71bd099de2f7ec83d26dd13e30b1dbcd84e4c1206ac049f48779d",
+  "origin": "https://codeload.github.com/VahidN/iTextSharp.LGPLv2.Core/zip/8f62a2d7be211c4ca9b5bfb953c7443daeeb609c",
+  "modified": false,
+  "packageSha256": "0ee33a409274cec7402ba8f8b4cc6770e693789a8c8bf4aa8ebc60ea7178c2e2"
+}

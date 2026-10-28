@@ -1,5 +1,5 @@
-using Aurora.App.Services;
-using Aurora.App.Services.Updates;
+using Aurora.Reflections.Services;
+using Aurora.Reflections.Services.Updates;
 using Builder.Presentation.Models;
 using Builder.Presentation.Utilities;
 
@@ -75,6 +75,61 @@ public sealed class WindowCloseTests : IDisposable
             tab.Snapshot!.Notes1.Should().Be("Unsaved notes");
         }
         else _tabs.Tabs.Should().BeEmpty();
+        _errors.Should().BeEmpty();
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData(false)]
+    public async Task TwoInitiallyDirtyTabsKeepTheSecondDraftUntilItsOwnDecision(bool? secondChoice)
+    {
+        var first = OpenTab(dirty: true);
+        var second = OpenTab(dirty: true);
+        first.Snapshot!.Notes1 = "First draft";
+        second.Snapshot!.Notes1 = "Second draft";
+        _tabs.ActivateTab(first);
+        var prompts = new List<CharacterTab>();
+        var saved = new List<CharacterTab>();
+        var enteredSave = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var finishSave = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        int nativeCloses = 0;
+        _confirm = tab =>
+        {
+            prompts.Add(tab);
+            return Task.FromResult(tab == first ? (bool?)true : secondChoice);
+        };
+        _save = async tab =>
+        {
+            saved.Add(tab);
+            enteredSave.TrySetResult();
+            await finishSave.Task;
+            return null;
+        };
+        var window = Window();
+
+        Task<bool> closing = window.RequestCloseAsync(() => nativeCloses++);
+        await enteredSave.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        _tabs.Tabs.Should().Equal(first, second);
+        _tabs.ActiveTab.Should().BeSameAs(first);
+        prompts.Should().Equal(first);
+        nativeCloses.Should().Be(0);
+        finishSave.SetResult();
+
+        (await closing.WaitAsync(TimeSpan.FromSeconds(5))).Should().Be(secondChoice is not null);
+        prompts.Should().Equal(first, second);
+        saved.Should().Equal(first);
+        if (secondChoice is null)
+        {
+            nativeCloses.Should().Be(0);
+            _tabs.Tabs.Should().ContainSingle().Which.Should().BeSameAs(second);
+            _tabs.ActiveTab.Should().BeSameAs(second);
+            second.IsDirty.Should().BeTrue();
+            second.Snapshot.Notes1.Should().Be("Second draft");
+            _confirm = _ => Task.FromResult<bool?>(false);
+            (await window.RequestCloseAsync(() => nativeCloses++)).Should().BeTrue();
+        }
+        _tabs.Tabs.Should().BeEmpty();
+        nativeCloses.Should().Be(1);
         _errors.Should().BeEmpty();
     }
 

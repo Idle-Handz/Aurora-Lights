@@ -3,7 +3,7 @@ name: Build WPF (Aurora.Legacy)
 on:
   push:
     paths:
-      - 'Aurora.Lights/**'
+      - 'Aurora.Legacy/**'
       - 'Aurora.Logic/**'
       - 'Builder.Core/**'
       - 'Builder.Data/**'
@@ -20,7 +20,7 @@ jobs:
   build-wpf:
     runs-on: windows-latest
     env:
-      PROJECT: Aurora.Lights/Aurora.Legacy.csproj
+      PROJECT: Aurora.Legacy/Aurora.Legacy.csproj
 
     steps:
       - uses: actions/checkout@v4

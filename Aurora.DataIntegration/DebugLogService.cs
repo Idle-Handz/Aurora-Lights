@@ -1,4 +1,4 @@
-namespace Aurora.App.Services;
+namespace Aurora.Reflections.Services;
 
 public enum LogLevel { Info, Warning, Error }
 

@@ -94,6 +94,7 @@ export function compileReleaseNotes({
   repositoryRoot,
   from,
   to = "HEAD",
+  requireFragments = false,
   runGit = execFileSync,
 }) {
   const fragments = findReleaseNotePaths({
@@ -115,7 +116,16 @@ export function compileReleaseNotes({
     };
   });
 
-  return renderReleaseNotes(fragments);
+  const notes = renderReleaseNotes(fragments);
+  if (requireFragments && !notes) {
+    throw new Error(
+      `No release-note fragments were added since ${from || "(none)"} for ${to}. ` +
+        "Add a new, non-empty Markdown file under " +
+        "docs/release-notes/{added,improved,fixed,release-process}/ before releasing.",
+    );
+  }
+
+  return notes;
 }
 
 function parseArguments(args) {
@@ -124,10 +134,15 @@ function parseArguments(args) {
     from: "",
     to: "HEAD",
     output: "",
+    requireFragments: false,
   };
 
   for (let index = 0; index < args.length; index += 1) {
     const argument = args[index];
+    if (argument === "--require-fragments") {
+      options.requireFragments = true;
+      continue;
+    }
     const value = args[index + 1];
 
     if (!["--root", "--from", "--to", "--output"].includes(argument) || !value) {

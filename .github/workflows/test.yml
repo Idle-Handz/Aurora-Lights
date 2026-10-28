@@ -3,7 +3,7 @@ name: Tests
 on:
   push:
     paths:
-      - 'Aurora.App/**'
+      - 'Aurora.Reflections/**'
       - 'Aurora.Components/**'
       - 'Aurora.DataIntegration/**'
       - 'Aurora.Logic/**'
@@ -14,8 +14,10 @@ on:
       - 'Builder.Core/**'
       - 'Builder.Data/**'
       - 'Aurora.Documents/**'
+      - 'Aurora.Legacy/resources/**'
       - 'Aurora.Presentation/**'
       - 'docs/release-notes/**'
+      - 'docs/branding/**'
       - 'lib/**'
       - 'AuroraContent.props'
       - 'nuget.config'
@@ -24,6 +26,8 @@ on:
       - 'tools/AssemblyApi/**'
       - 'tools/WpfAssemblyApi/**'
       - 'tools/legacy-restoration/**'
+      - 'tools/licensing/**'
+      - 'third-party/**'
       - 'tools/build-release-notes.mjs'
       - 'package.json'
       - 'package-lock.json'
@@ -32,7 +36,7 @@ on:
       - '.github/workflows/test.yml'
   pull_request:
     paths:
-      - 'Aurora.App/**'
+      - 'Aurora.Reflections/**'
       - 'Aurora.Components/**'
       - 'Aurora.DataIntegration/**'
       - 'Aurora.Logic/**'
@@ -43,8 +47,10 @@ on:
       - 'Builder.Core/**'
       - 'Builder.Data/**'
       - 'Aurora.Documents/**'
+      - 'Aurora.Legacy/resources/**'
       - 'Aurora.Presentation/**'
       - 'docs/release-notes/**'
+      - 'docs/branding/**'
       - 'lib/**'
       - 'AuroraContent.props'
       - 'nuget.config'
@@ -53,6 +59,8 @@ on:
       - 'tools/AssemblyApi/**'
       - 'tools/WpfAssemblyApi/**'
       - 'tools/legacy-restoration/**'
+      - 'tools/licensing/**'
+      - 'third-party/**'
       - 'tools/build-release-notes.mjs'
       - 'package.json'
       - 'package-lock.json'
@@ -80,6 +88,12 @@ jobs:
           cache: npm
 
       # Keep native commands in separate steps so a later success cannot mask a failure.
+      - name: Test bundled asset provenance checks
+        run: python -m unittest discover -s tools/licensing -p "test_*.py"
+
+      - name: Verify bundled licenses and corresponding source
+        run: python tools/licensing/build_notices.py --check
+
       - name: Restore core .NET tests
         run: dotnet restore Aurora.Tests/Aurora.Tests.csproj
 

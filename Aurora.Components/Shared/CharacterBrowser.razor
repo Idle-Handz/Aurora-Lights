@@ -33,7 +33,7 @@
         </div>
     }
 
-    @if (Characters.Count > 0)
+    @if (Characters.Count > 0 || ShowSearchWhenEmpty)
     {
         <div class="character-browser-search-row">
             <div class="character-browser-search-wrap">
@@ -150,6 +150,9 @@
 
     [Parameter]
     public bool AutoFocusSearch { get; set; }
+
+    [Parameter]
+    public bool ShowSearchWhenEmpty { get; set; }
 
     [Parameter]
     public EventCallback<CharacterBrowserEntry> OnSelected { get; set; }

@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace Aurora.App.Services;
+namespace Aurora.Reflections.Services;
 
 /// <summary>Optional phase trace for device diagnostics; inactive unless a host attaches a sink.</summary>
 internal static class ContentLoadTrace

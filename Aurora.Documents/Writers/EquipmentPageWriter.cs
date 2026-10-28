@@ -203,9 +203,9 @@ public sealed class EquipmentPageWriter : CharacterSheetDocumentWriterBase
 
 	private void WriteAdventuringGearSeparator(string name, int index)
 	{
-		SetTextColor($"equipment_page_gear_name.{index}", BaseColor.DARK_GRAY);
-		SetTextColor($"equipment_page_gear_count.{index}", BaseColor.DARK_GRAY);
-		SetTextColor($"equipment_page_gear_weight.{index}", BaseColor.DARK_GRAY);
+		SetTextColor($"equipment_page_gear_name.{index}", BaseColor.DarkGray);
+		SetTextColor($"equipment_page_gear_count.{index}", BaseColor.DarkGray);
+		SetTextColor($"equipment_page_gear_weight.{index}", BaseColor.DarkGray);
 		Stamp($"equipment_page_gear_name.{index}", name, setFontSize: true, 6f);
 		Stamp($"equipment_page_gear_count.{index}", "#", setFontSize: true, 6f);
 		Stamp($"equipment_page_gear_weight.{index}", "lb.", setFontSize: true, 6f);

@@ -1,4 +1,5 @@
-﻿// Decompiled with JetBrains decompiler
+using Aurora.Documents.Helpers;
+// Decompiled with JetBrains decompiler
 // Type: Builder.Presentation.Models.CharacterSheet.ExportContent.CharacterSheetWriterBase
 // Assembly: Aurora Builder, Version=1.0.166.7407, Culture=neutral, PublicKeyToken=null
 // MVID: 09D35420-8FA0-4A71-9A21-FF952C48F8A3
@@ -31,8 +32,8 @@ public class CharacterSheetWriterBase
 
   protected bool ReplaceImageField(string name, string imagePath)
   {
-    IList<AcroFields.FieldPosition> fieldPositions = this.Stamper.AcroFields.GetFieldPositions(name);
-    AcroFields.FieldPosition fieldPosition = fieldPositions != null ? fieldPositions.FirstOrDefault<AcroFields.FieldPosition>() : (AcroFields.FieldPosition) null;
+    IList<PdfLayoutExtensions.FieldPosition> fieldPositions = this.Stamper.AcroFields.GetWidgetPositions(name);
+    PdfLayoutExtensions.FieldPosition fieldPosition = fieldPositions != null ? fieldPositions.FirstOrDefault<PdfLayoutExtensions.FieldPosition>() : (PdfLayoutExtensions.FieldPosition) null;
     if (fieldPosition == null || !File.Exists(imagePath))
       return false;
     Image instance = Image.GetInstance(imagePath);
@@ -50,12 +51,12 @@ public class CharacterSheetWriterBase
   {
     if (!this.Stamper.AcroFields.Fields.ContainsKey(name))
       return;
-    Rectangle position1 = this.Stamper.AcroFields.GetFieldPositions(name)[0].position;
-    Rectangle position2 = this.Stamper.AcroFields.GetFieldPositions(name)[0].position;
-    int page = this.Stamper.AcroFields.GetFieldPositions(name)[0].page;
+    Rectangle position1 = this.Stamper.AcroFields.GetWidgetPositions(name)[0].position;
+    Rectangle position2 = this.Stamper.AcroFields.GetWidgetPositions(name)[0].position;
+    int page = this.Stamper.AcroFields.GetWidgetPositions(name)[0].page;
     this.Stamper.AcroFields.RemoveField(name);
     iTextSharp.text.Font regular = FontsHelper.GetRegular();
-    float fontsize1 = ColumnText.FitText(regular, $"{htmlContent}{Environment.NewLine}<p></p>", position2, fontsize, 1);
+    float fontsize1 = PdfSignatureAppearance.FitText(regular, $"{htmlContent}{Environment.NewLine}<p></p>", position2, fontsize, 1);
     if ((double) fontsize1 < (double) fontsize)
     {
       string str = "";
@@ -73,10 +74,10 @@ public class CharacterSheetWriterBase
         str = $"{str}<p>&nbsp;</p>{Environment.NewLine}";
       if (htmlContent.Length > 7000)
         str = $"{str}<p>&nbsp;</p>{Environment.NewLine}";
-      fontsize1 = ColumnText.FitText(regular, htmlContent + str + Environment.NewLine, position2, fontsize, 1);
+      fontsize1 = PdfSignatureAppearance.FitText(regular, htmlContent + str + Environment.NewLine, position2, fontsize, 1);
     }
     PdfContentByte overContent = this.Stamper.GetOverContent(page);
-    position1.BackgroundColor = BaseColor.WHITE;
+    position1.BackgroundColor = BaseColor.White;
     Rectangle rectangle = position1;
     overContent.Rectangle(rectangle);
     ColumnText column = new ColumnText(this.Stamper.GetOverContent(page));

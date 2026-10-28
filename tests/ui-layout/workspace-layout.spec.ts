@@ -5,10 +5,11 @@ import path from 'node:path';
 const read = (file: string) => readFileSync(path.resolve(file), 'utf8');
 const output = 'tests/ui-layout/FixtureRenderer/bin/Debug/net10.0';
 
-async function showWorkspace(page: Page, component: 'shop' | 'equipment' | 'characters', options = { long: false, cloud: false }) {
+async function showWorkspace(page: Page, component: 'shop' | 'equipment' | 'characters' | 'magic-all' | 'magic-prepared', options = { long: false, cloud: false }) {
   const componentNames = component === 'shop' ? ['CharacterShopWorkspace']
     : component === 'equipment' ? ['CharacterEquipmentWorkspace']
-      : ['CharacterBrowser', 'CharacterBrowserCard', 'CharacterLibraryShell'];
+      : component.startsWith('magic-') ? ['CharacterMagicWorkspace', 'RichDescription']
+        : ['CharacterBrowser', 'CharacterBrowserCard', 'CharacterLibraryShell'];
   const markup = read(`${output}/${component === 'shop' ? `shop-${options.long ? 'long' : 'short'}` : component}.html`);
   const css = componentNames.map(name => read(`${output}/${name}.css`)).join('\n');
 
@@ -30,12 +31,12 @@ async function showWorkspace(page: Page, component: 'shop' | 'equipment' | 'char
       @media(min-width:901px) { .app-main-content { margin-left:56px } }
     </style>
     </head><body><div id="app"><div class="mud-layout">
-      <header class="mud-appbar mud-appbar-fixed-top"><div class="mud-toolbar mud-toolbar-appbar">Aurora: Reflections</div></header>
+      <header class="mud-appbar mud-appbar-fixed-top"><div class="mud-toolbar mud-toolbar-appbar">Aurora Reflections</div></header>
       <main class="mud-main-content app-main-content">
         <div class="char-tab-bar"><div class="char-tab">Layout fixture</div></div>
         <div class="mud-container mud-container-maxwidth-false app-content-container pa-4" style="--character-tabs-height:34px">
           ${options.cloud ? '<div class="mud-paper pa-3 mb-3"><div class="d-flex align-center flex-wrap gap-2"><span>Google Drive — Cloud save loaded</span><button class="mud-button-root">Save to Drive</button><button class="mud-button-root">Load Drive Save</button><button class="mud-button-root">Recovery Files</button></div></div>' : ''}
-          ${wrapper}${markup}</div>
+          ${wrapper}${component.startsWith('magic-') ? '<div class="page-save-bar">Auto-save off <button class="mud-button-root">Save</button></div>' : ''}${markup}</div>
         </div>
       </main>
     </div><nav class="mobile-bottom-nav">${['Chars', 'Build', 'Gear', 'Magic', 'More'].map(name => `<a class="mobile-bottom-link"><span>${name}</span></a>`).join('')}</nav>
@@ -45,6 +46,64 @@ async function showWorkspace(page: Page, component: 'shop' | 'equipment' | 'char
 async function expectNoHorizontalOverflow(page: Page) {
   expect(await page.evaluate(() => Math.max(document.body.scrollWidth, document.documentElement.scrollWidth) - innerWidth))
     .toBeLessThanOrEqual(1);
+}
+
+for (const component of ['magic-all', 'magic-prepared'] as const) {
+  for (const viewport of [{ width: 1280, height: 720 }, { width: 390, height: 844 }]) {
+    test(`spell details scroll from attack damage to higher levels in ${component} at ${viewport.width}px`, async ({ page }) => {
+      await page.setViewportSize(viewport);
+      await showWorkspace(page, component, { long: true, cloud: true });
+      const detail = page.getByRole('region', { name: 'Spell details' });
+      const description = detail.locator('.magic-detail-description');
+      const first = description.locator('p').first();
+      const last = description.locator('p').last();
+      expect(await description.evaluate(el => el.scrollHeight - el.clientHeight),
+        'The description must retain its full height instead of becoming a tiny nested scroller').toBeLessThanOrEqual(1);
+      if (viewport.width > 900) {
+        // With the cloud/save bars on a short screen, the page can scroll to reveal the card.
+        await detail.scrollIntoViewIfNeeded();
+        await expect(detail).toBeInViewport();
+        const listScrollBefore = await page.locator('.magic-list').evaluate(el => el.scrollTop);
+        await detail.hover();
+        await page.mouse.wheel(0, 300);
+        await expect.poll(() => detail.evaluate(el => el.scrollTop)).toBeGreaterThan(0);
+        await detail.evaluate(el => { el.scrollTop = 0; });
+        await detail.focus();
+        await page.keyboard.press('End');
+        await expect(last).toBeInViewport({ ratio: 1 });
+        expect(await page.locator('.magic-list').evaluate(el => el.scrollTop)).toBe(listScrollBefore);
+      }
+      await first.scrollIntoViewIfNeeded();
+      await expect(first).toBeInViewport({ ratio: 1 });
+      await last.scrollIntoViewIfNeeded();
+      await expect(last).toBeInViewport({ ratio: 1 });
+      await expectNoHorizontalOverflow(page);
+      await page.screenshot({ path: `test-results/${component}-${viewport.width}.png`, fullPage: true });
+    });
+  }
+}
+
+for (const viewport of [{ width: 1280, height: 800 }, { width: 360, height: 800 }]) {
+  test(`cloud character portrait and badge stay visible at ${viewport.width}px`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await showWorkspace(page, 'characters');
+    const card = page.locator('.character-browser-card').filter({ has: page.locator('[aria-label="Cloud save"]') });
+    await expect(card).toHaveCount(1);
+    await card.scrollIntoViewIfNeeded();
+    await expect(card).toContainText('Cloud Portrait Test');
+    await expect(card).toContainText('Wizard');
+    await expect(card.locator('img')).toBeVisible();
+    await expect.poll(() => card.locator('img').evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
+    const portrait = (await card.locator('.character-browser-portrait').boundingBox())!;
+    const badge = (await card.locator('[aria-label="Cloud save"]').boundingBox())!;
+    expect(badge.x).toBeGreaterThanOrEqual(portrait.x);
+    expect(badge.y).toBeGreaterThanOrEqual(portrait.y);
+    expect(badge.x + badge.width).toBeLessThanOrEqual(portrait.x + portrait.width / 2);
+    expect(badge.y + badge.height).toBeLessThanOrEqual(portrait.y + portrait.height / 2);
+    await card.click({ trial: true });
+    await expectNoHorizontalOverflow(page);
+    await page.screenshot({ path: `test-results/cloud-characters-${viewport.width}.png`, fullPage: true });
+  });
 }
 
 test('character library header and actions fit a narrow viewport with 200% text', async ({ page }) => {

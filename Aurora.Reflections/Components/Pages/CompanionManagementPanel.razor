@@ -1,0 +1,97 @@
+@implements IDisposable
+@inject CharacterTabService Tabs
+@inject IDialogService DialogService
+@using Aurora.Components.Models
+@using Aurora.Components.Shared
+
+@if (_error != null)
+{
+    <MudAlert Severity="Severity.Error" role="alert">@_error</MudAlert>
+}
+@if (_profiles.Count == 0 && _error == null)
+{
+    <MudText Typo="Typo.body2">No companions or sidekicks yet. Add one through <MudLink Href="/build">Build → Extras → Add Custom Feature</MudLink>.</MudText>
+}
+@if (_profiles.Count > 0)
+{
+    <MudText Typo="Typo.caption">Combat changes save automatically for each creature. Rest buttons affect only that creature.</MudText>
+}
+@foreach (var profile in _profiles)
+{
+    <CreatureManagementCard @key="@($"{_tab?.Id}:{profile.Id}")" Model="@CreatureManagementService.Model(profile)" Busy="_busy"
+                            OnEdit="() => EditAsync(profile)" OnResolveChoices="key => EditAsync(profile, key)" OnAction="action => ActAsync(profile.Id, action)"
+                            OnSaveNotes='notes => ChangeAsync(profile.Id, p => p.Set("notes", notes))'
+                            OnEditResource="resourceId => EditResourceAsync(profile, resourceId)" />
+}
+
+@code {
+    private CharacterTab? _tab;
+    private IReadOnlyList<SidekickProfile> _profiles = [];
+    private string? _error;
+    private bool _busy;
+    private bool _disposed;
+    protected override async Task OnInitializedAsync()
+    {
+        Tabs.TabsChanged += OnChanged;
+        await LoadAsync();
+    }
+    private async Task LoadAsync()
+    {
+        var tab = Tabs.ActiveTab;
+        try
+        {
+            if (tab?.Snapshot != null)
+                (await SidekickService.SynchronizeOwnerLevelsAsync(tab)).ThrowIfFailed();
+            if (_disposed || !ReferenceEquals(tab, Tabs.ActiveTab)) return;
+            _tab = tab;
+            _profiles = tab?.Snapshot == null ? [] : SidekickService.LoadAll(tab);
+        }
+        catch (Exception ex)
+        {
+            if (_disposed || !ReferenceEquals(tab, Tabs.ActiveTab)) return;
+            _profiles = [];
+            _error = DebugLogService.Catch(ex, "CompanionManagementPanel.Load");
+        }
+    }
+    private void OnChanged()
+    {
+        if (_disposed) return;
+        _ = InvokeAsync(async () => { if (!_disposed) { await LoadAsync(); StateHasChanged(); } });
+    }
+    public void Dispose() { _disposed = true; Tabs.TabsChanged -= OnChanged; }
+    private Task ActAsync(string id, CreatureAction action) => ChangeAsync(id, profile => CreatureManagementService.Apply(profile, action));
+    private async Task ChangeAsync(string id, Action<SidekickProfile> change, CharacterTab? capturedTab = null)
+    {
+        var tab = capturedTab ?? _tab;
+        if (_busy || tab == null) return;
+        _busy = true;
+        _error = null;
+        try
+        {
+            var result = await SidekickService.MutateAsync(tab, id, change);
+            if (result.Succeeded) Tabs.NotifyChanged();
+            else _error = result.Message;
+            await LoadAsync();
+        }
+        finally { _busy = false; }
+    }
+    private async Task EditAsync(SidekickProfile profile, string? choiceKey = null)
+    {
+        var tab = _tab;
+        if (_busy || tab == null) return;
+        var parameters = new DialogParameters { [nameof(SidekickEditDialog.Tab)] = tab, [nameof(SidekickEditDialog.Profile)] = profile,
+            [nameof(SidekickEditDialog.InitialChoiceKey)] = choiceKey };
+        var dialog = await DialogService.ShowAsync<SidekickEditDialog>(profile.IsCompanion ? "Edit Companion" : "Edit Sidekick", parameters);
+        if (await dialog.Result is { Canceled: false }) { _error = null; Tabs.NotifyChanged(); await LoadAsync(); }
+    }
+    private async Task EditResourceAsync(SidekickProfile profile, string id)
+    {
+        var tab = _tab;
+        if (_busy || tab == null) return;
+        var resource = CreatureCombat.Resources(profile).FirstOrDefault(r => r.Id == id);
+        var parameters = new DialogParameters { [nameof(AddResourceDialog.Existing)] = resource, [nameof(AddResourceDialog.IsEdit)] = resource != null };
+        var dialog = await DialogService.ShowAsync<AddResourceDialog>(resource == null ? "Add Resource" : "Edit Resource", parameters);
+        if (await dialog.Result is { Canceled: false, Data: CustomResource updated })
+            await ChangeAsync(profile.Id, p => CreatureManagementService.SetResource(p, updated), tab);
+    }
+}

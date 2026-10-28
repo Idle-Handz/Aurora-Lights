@@ -189,9 +189,21 @@ public class CardPageGenerator : PageGenerator
     contentGenerator.FillCardField(new Rectangle(area2.Left + 2f, area2.Bottom + 1f, area2.Right - 1f, area2.Top - 1.5f), content.CastingTime, FontsHelper.GetRegular(6f));
     contentGenerator.FillCardField(new Rectangle(areaUnder2.Left + 2f, areaUnder2.Bottom + 1f, areaUnder2.Right - 1f, areaUnder2.Top - 1.5f), content.Range, FontsHelper.GetRegular(6f));
     contentGenerator.FillCardField(new Rectangle(areaUnder3.Left + 2f, areaUnder3.Bottom + 1f, areaUnder3.Right - 1f, areaUnder3.Top - 1.5f), content.Duration, FontsHelper.GetRegular(6f));
-    contentGenerator.FillCardField(new Rectangle(areaUnder4.Left + 2f, areaUnder4.Bottom + 1f, areaUnder4.Right - 1f, areaUnder4.Top - 1.5f), content.Components, FontsHelper.GetRegular(6f));
-    float requiredFontsize = contentGenerator.CalculateRequiredFontsize($"{content.DescriptionHtml}{Environment.NewLine}<p></p>", new Rectangle(area3.Left + 2f, area3.Bottom + 2f, area3.Right - 2f, area3.Top - 2f), 6f);
-    contentGenerator.FillCardArea(new Rectangle(area3.Left + 2f, area3.Bottom + 2f, area3.Right - 2f, area3.Top - 2f), content.DescriptionHtml, requiredFontsize);
+    Rectangle componentArea = new Rectangle(areaUnder4.Left + 2f, areaUnder4.Bottom + 1f, areaUnder4.Right - 1f, areaUnder4.Top - 1.5f);
+    string components = content.Components ?? string.Empty;
+    string description = content.DescriptionHtml ?? string.Empty;
+    if (contentGenerator.CalculateRequiredFontsize(components, componentArea, 6f) < 4.5f)
+    {
+      // Long material requirements need readable space, rather than tiny text
+      // squeezed into the single-line component header.
+      description = "<p><b>Components.</b> " + System.Net.WebUtility.HtmlEncode(components) + "</p>" + description;
+      int materialStart = components.IndexOf('(');
+      string prefix = materialStart > 0 ? components.Substring(0, materialStart).Trim() : string.Empty;
+      components = prefix.Length is > 0 and < 20 ? prefix + " (details below)" : "See description";
+    }
+    contentGenerator.FillCardField(componentArea, components, FontsHelper.GetRegular(6f));
+    float requiredFontsize = contentGenerator.CalculateRequiredFontsize($"{description}{Environment.NewLine}<p></p>", new Rectangle(area3.Left + 2f, area3.Bottom + 2f, area3.Right - 2f, area3.Top - 2f), 6f);
+    contentGenerator.FillCardArea(new Rectangle(area3.Left + 2f, area3.Bottom + 2f, area3.Right - 2f, area3.Top - 2f), description, requiredFontsize);
     Rectangle area4 = new Rectangle(areaUnder5.Left + 3f, areaUnder5.Bottom, areaUnder5.Right - 3f, areaUnder5.Top);
     iTextSharp.text.Font italic = FontsHelper.GetItalic(6f);
     contentGenerator.FillCardField(area4, content.LeftFooter, italic);

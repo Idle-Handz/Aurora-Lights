@@ -47,13 +47,13 @@ try {
         "-p:FileVersion=$assemblyVersion.0",
         "-p:InformationalVersion=$VersionName"
     )
-    & dotnet publish Aurora.App/Aurora.App.csproj -f net10.0-android -r android-arm64 `
+    & dotnet publish Aurora.Reflections/Aurora.Reflections.csproj -f net10.0-android -r android-arm64 `
         -c Release -m:1 -o $outputPath @properties
     if ($LASTEXITCODE -ne 0) { throw "Android publish failed ($LASTEXITCODE)." }
 
     # Ask the workload that built the app for its tools; do not download a second,
     # potentially incompatible bundletool or guess a machine-specific SDK path.
-    $sdkJson = & dotnet msbuild Aurora.App/Aurora.App.csproj -nologo `
+    $sdkJson = & dotnet msbuild Aurora.Reflections/Aurora.Reflections.csproj -nologo `
         -p:TargetFramework=net10.0-android -p:RuntimeIdentifier=android-arm64 `
         -t:_ResolveSdks -getProperty:JavaSdkDirectory,AndroidSdkDirectory,MonoAndroidToolsDirectory
     if ($LASTEXITCODE -ne 0) { throw 'Could not resolve the Android SDK tools.' }

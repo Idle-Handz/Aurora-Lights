@@ -20,11 +20,10 @@ public sealed class AdvancementTimelineQueryTests : IAsyncLifetime
     {
         if (!ContentFixture.SkipIfUnavailable(_output)) return;
 
-        var fighter = DataManager.Current.ElementsCollection.GetElement("ID_PHB_CLASS_FIGHTER");
+        var fighter = DataManager.Current.ElementsCollection.GetElement("ID_WOTC_PHB_CLASS_FIGHTER");
         if (fighter is null)
         {
-            _output.WriteLine("[SKIP] PHB Fighter element not found.");
-            return;
+            throw new InvalidOperationException("Required core fixture: PHB Fighter element not found.");
         }
 
         SpellcastingSectionContext.Current = new TestSpellHandler();

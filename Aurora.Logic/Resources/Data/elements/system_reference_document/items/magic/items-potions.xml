@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8"?>
 <elements>
 	<element name="Potion of Climbing" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_CLIMBING">		
 		<description>
@@ -85,20 +85,6 @@
 	<element name="Potion of Animal Friendship" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_ANIMAL_FRIENDSHIP">		
 		<description>
 			<p>When you drink this potion, you can cast the <em>animal friendship</em> spell (save DC 13) for 1 hour at will. Agitating this muddy liquid brings little bits into view: a fish scale, a hummingbird tongue, a cat claw, or a squirrel hair.</p>
-		</description>
-		<setters>
-			<set name="category">Potions</set>
-			<set name="cost" currency="gp">0</set>
-			<set name="weight" lb="0.5">1/2 lb.</set>
-			<set name="type">Potion</set>
-			<set name="rarity">Uncommon</set>
-			<set name="stackable">true</set>
-		</setters>
-	</element>
-	<element name="Potion of Fire Breath" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_FIRE_BREATH">		
-		<description>
-			<p>After drinking this potion, you can use a bonus action to exhale fire at a target within 30 feet of you. The target must make a DC 13 Dexterity saving throw, taking 4d6 fire damage on a failed save, or half as much damage on a successful one. The effect tends after you exhale the fire three times or when 1 hour has passed.</p>
-			<p class="indent">This potion’s orange liquid flickers, and smoke fills the top of the container and wafts out whenever it is opened.</p>
 		</description>
 		<setters>
 			<set name="category">Potions</set>
@@ -294,20 +280,6 @@
 			<set name="stackable">true</set>
 		</setters>
 	</element>
-	<element name="Elixir of Health" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_ELIXIR_OF_HEALTH">		
-		<description>
-			<p>When you drink this potion, it cures any disease afflicting you, and it removes the blinded, deafened, paralyzed, and poisoned conditions. The clear red liquid has tiny bubbles of light in it.</p>
-		</description>
-		<setters>
-			<set name="keywords">disease</set>
-			<set name="category">Potions</set>
-			<set name="cost" currency="gp">0</set>
-			<set name="weight" lb="0.5">1/2 lb.</set>
-			<set name="type">Potion</set>
-			<set name="rarity">Rare</set>
-			<set name="stackable">true</set>
-		</setters>
-	</element>
 	<element name="Potion of Clairvoyance" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_CLAIRVOYANCE">		
 		<description>
 			<p>When you drink this potion, you gain the effect of the <em>clairvoyance</em> spell. An eyeball bobs in this yellowish liquid but vanishes when the potion is opened.</p>
@@ -390,20 +362,6 @@
 			<set name="stackable">true</set>
 		</setters>
 	</element>
-	<element name="Potion of Invulnerability" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_INVULNERABILITY">		
-		<description>
-			<p>For 1 minute after you drink this potion, you have resistance to all damage. The potion's syrupy liquid looks like liquified iron.</p>
-		</description>
-		<setters>
-			<set name="keywords">resistance</set>
-			<set name="category">Potions</set>
-			<set name="cost" currency="gp">0</set>
-			<set name="weight" lb="0.5">1/2 lb.</set>
-			<set name="type">Potion</set>
-			<set name="rarity">Rare</set>
-			<set name="stackable">true</set>
-		</setters>
-	</element>
 	<element name="Potion of Mind Reading" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_MIND_READING">		
 		<description>
 			<p>When you drink this potion, you gain the effect of the<em>detect thoughts</em> spell (save DC 13). The potion’s dense, purple liquid has an ovoid cloud of pink floating in it.</p>
@@ -473,38 +431,11 @@
 			<set name="stackable">true</set>
 		</setters>
 	</element>
-	<element name="Potion of Longevity" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_LONGEVITY">		
-		<description>
-			<p>When you drink this potion, your physical age is reduced by 1d6 + 6 years, to a minimum of 13 years. Each time you subsequently drink a <em>potion of longevity</em>, there is 10 percent cumulative chance that you instead age by 1d6 + 6 years. Suspended in this amber liquid are a scorpion's tail, an adder's fang, a dead spider, and a tiny heart that, against all reason, is still beating. These ingredients vanish when the potion is opened.</p>
-		</description>
-		<setters>
-			<set name="category">Potions</set>
-			<set name="cost" currency="gp">0</set>
-			<set name="weight" lb="0.5">1/2 lb.</set>
-			<set name="type">Potion</set>
-			<set name="rarity">Very Rare</set>
-			<set name="stackable">true</set>
-		</setters>
-	</element>
 	<element name="Potion of Speed" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_SPEED">		
 		<description>
 			<p>When you drink this potion, you gain the effect of the <em>haste</em> spell for 1 minute (no concentration required). The potion’s yellow fluid is streaked with black and swirls on its own.</p>
 		</description>
 		<setters>
-			<set name="category">Potions</set>
-			<set name="cost" currency="gp">0</set>
-			<set name="weight" lb="0.5">1/2 lb.</set>
-			<set name="type">Potion</set>
-			<set name="rarity">Very Rare</set>
-			<set name="stackable">true</set>
-		</setters>
-	</element>
-	<element name="Potion of Vitality" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_VITALITY">		
-		<description>
-			<p>When you drink this potion, it removes any exhaustion you are suffering and cures any disease or poison affecting you. For the next 24 hours, you regain the maximum number of hit points for any Hit Die you spend. The potion's crimson liquid regularly pulses with dull light, calling to mind a heartbeat.</p>
-		</description>
-		<setters>
-			<set name="keywords">disease, poison</set>
 			<set name="category">Potions</set>
 			<set name="cost" currency="gp">0</set>
 			<set name="weight" lb="0.5">1/2 lb.</set>

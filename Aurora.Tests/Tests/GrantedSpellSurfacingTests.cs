@@ -21,8 +21,8 @@ public sealed class GrantedSpellSurfacingTests : IAsyncLifetime
 {
     // SRD Tiefling → Infernal Legacy (Racial Trait) → grants Thaumaturgy cantrip.
     private const string TieflingRaceId = "ID_RACE_TIEFLING";
-    private const string FighterClassId = "ID_PHB_CLASS_FIGHTER";
-    private const string SorcererClassId = "ID_PHB_CLASS_SORCERER";
+    private const string FighterClassId = "ID_WOTC_PHB_CLASS_FIGHTER";
+    private const string SorcererClassId = "ID_WOTC_PHB_CLASS_SORCERER";
     private const string InfernalLegacyId = "ID_RACIAL_TRAIT_INFERNAL_LEGACY";
     private const string ThaumaturgyId = "ID_PHB_SPELL_THAUMATURGY";
 
@@ -48,8 +48,7 @@ public sealed class GrantedSpellSurfacingTests : IAsyncLifetime
         var fighter = elements.GetElement(FighterClassId);
         if (race is null || fighter is null)
         {
-            _output.WriteLine("[SKIP] Tiefling or Fighter not present.");
-            return;
+            throw new InvalidOperationException("Required core fixture: Tiefling or Fighter not present.");
         }
 
         var handler = new TestSpellHandler();
@@ -119,7 +118,7 @@ public sealed class GrantedSpellSurfacingTests : IAsyncLifetime
         // The custom-feature path registers the resolved underlying element directly. Use a GetFresh
         // instance so this test doesn't mutate the shared singleton's acquisition across runs.
         var grantor = elements.GetFresh(InfernalLegacyId);
-        if (cls is null || grantor is null) { _output.WriteLine("[SKIP] required elements not present."); return; }
+        if (cls is null || grantor is null) { throw new InvalidOperationException("Required core fixture: required elements not present."); }
 
         var handler = new TestSpellHandler();
         SpellcastingSectionContext.Current = handler;
@@ -152,7 +151,7 @@ public sealed class GrantedSpellSurfacingTests : IAsyncLifetime
         var elements = DataManager.Current.ElementsCollection;
         var fighter = elements.GetElement(FighterClassId);
         var grantor = elements.GetFresh(InfernalLegacyId);
-        if (fighter is null || grantor is null) { _output.WriteLine("[SKIP] required elements not present."); return; }
+        if (fighter is null || grantor is null) { throw new InvalidOperationException("Required core fixture: required elements not present."); }
 
         var handler = new TestSpellHandler();
         SpellcastingSectionContext.Current = handler;

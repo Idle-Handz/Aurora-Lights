@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8"?>
 <elements>
 	<element name="Weapon, +1" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_WEAPON_1">
 		<description>
@@ -14,7 +14,7 @@
 			<set name="weapon">ID_INTERNAL_WEAPON_CATEGORY_SIMPLE_MELEE||ID_INTERNAL_WEAPON_CATEGORY_SIMPLE_RANGED||ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_MELEE||ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_RANGED</set>
 			<set name="name-format">{{parent}} +{{enhancement}}</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Weapon, +2" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_WEAPON_2">
 		<description>
@@ -30,7 +30,7 @@
 			<set name="weapon">ID_INTERNAL_WEAPON_CATEGORY_SIMPLE_MELEE||ID_INTERNAL_WEAPON_CATEGORY_SIMPLE_RANGED||ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_MELEE||ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_RANGED</set>
 			<set name="name-format">{{parent}} +{{enhancement}}</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Weapon, +3" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_WEAPON_3">
 		<description>
@@ -46,7 +46,7 @@
 			<set name="weapon">ID_INTERNAL_WEAPON_CATEGORY_SIMPLE_MELEE||ID_INTERNAL_WEAPON_CATEGORY_SIMPLE_RANGED||ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_MELEE||ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_RANGED</set>
 			<set name="name-format">{{parent}} +{{enhancement}}</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Javelin of Lightning" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_JAVELIN_OF_LIGHTNING">
 		<description>
@@ -63,28 +63,7 @@
 			<set name="weapon">Javelin</set>
 			<set name="name-format">Javelin of Lightning</set>
 		</setters>
-		<rules />
-	</element>
-	<element name="Sword of Vengeance" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_SWORD_OF_VENGEANCE">
-		<description>
-			<p>You gain a +1 bonus to attack and damage rolls made with this magic weapon.</p>
-			<p class="indent"><strong><em>Curse.</em></strong> This sword is cursed and possessed by a vengeful spirit. Becoming attuned to it extends the curse to you. As long as you remain cursed, you are unwilling to part with the sword, keeping it on your person at all times. While attuned to this weapon, you have disadvantage on attack rolls made with weapons other than this one.</p>
-			<p class="indent">In addition, while the sword is on your person, you must succeed on a DC 15 Wisdom saving throw whenever you take damage in combat. On a failed save you must attack the creature that damaged you until you drop to 0 hit points or it does, or until you can't reach the creature to make a melee attack against it.</p>
-			<p class="indent">You can break the curse in the usual ways. Alternatively, casting banishment on the sword forces the vengeful spirit to leave it. The sword then becomes a +1 weapon with no other properties.</p>
-		</description>
-		<setters>
-			<set name="keywords">sword</set>
-			<set name="category">Magic Weapons</set>
-			<set name="cost" currency="gp">0</set>
-			<set name="weight" lb="0">0 lb.</set>
-			<set name="type" addition="any sword">Weapon</set>
-			<set name="attunement">true</set>
-			<set name="rarity">Uncommon</set>
-			<set name="enhancement">1</set>
-			<set name="weapon">ID_INTERNAL_WEAPON_GROUP_SWORDS</set>
-			<set name="name-format">{{parent}} of Vengeance</set>
-		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Trident of Fish Command" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_TRIDENT_OF_FISH_COMMAND">
 		<description>
@@ -101,24 +80,6 @@
 			<set name="weapon">Trident</set>
 			<set name="name-format">Trident of Fish Command</set>
 		</setters>
-	</element>
-	<element name="Weapon of Warning" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_WEAPON_OF_WARNING">
-		<description>
-			<p>This magic weapon warns you of danger. While the weapon is on your person, you have advantage on initiative rolls. In addition, you and any of your companions within 30 feet of you can't be surprised, except when incapacitated by something other than nonmagical sleep. The weapon magically awakens you and your companions within range if any of you are sleeping naturally when combat begins.</p>
-		</description>
-		<setters>
-			<set name="category">Magic Weapons</set>
-			<set name="cost" currency="gp">0</set>
-			<set name="weight" lb="0">0 lb.</set>
-			<set name="type" addition="any">Weapon</set>
-			<set name="attunement">true</set>
-			<set name="rarity">Uncommon</set>
-			<set name="weapon">ID_INTERNAL_WEAPON_CATEGORY_SIMPLE_MELEE||ID_INTERNAL_WEAPON_CATEGORY_SIMPLE_RANGED||ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_MELEE||ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_RANGED</set>
-			<set name="name-format">{{parent}} of Warning</set>
-		</setters>
-		<rules>
-			<grant type="Grants" id="ID_INTERNAL_GRANTS_INITIATIVE_ADVANTAGE" />
-		</rules>
 	</element>
 	<element name="Berserker Axe" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_BERSERKER_AXE">
 		<description>
@@ -138,7 +99,7 @@
 			<set name="weapon">ID_INTERNAL_WEAPON_GROUP_AXES</set>
 			<set name="name-format">Berserker {{parent}}</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Dagger of Venom" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_DAGGER_OF_VENOM">
 		<description>
@@ -155,7 +116,7 @@
 			<set name="enhancement">1</set>
 			<set name="weapon">Dagger</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Dragon Slayer" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_DRAGON_SLAYER">
 		<description>
@@ -172,7 +133,7 @@
 			<set name="enhancement">1</set>
 			<set name="weapon">ID_INTERNAL_WEAPON_GROUP_SWORDS</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Flame Tongue" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_FLAME_TONGUE">
 		<description>
@@ -188,7 +149,7 @@
 			<set name="rarity">Rare</set>
 			<set name="weapon">ID_INTERNAL_WEAPON_GROUP_SWORDS</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Giant Slayer" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_GIANT_SLAYER">
 		<description>
@@ -205,7 +166,7 @@
 			<set name="enhancement">1</set>
 			<set name="weapon">ID_INTERNAL_WEAPON_GROUP_SWORDS||ID_INTERNAL_WEAPON_GROUP_AXES</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Mace of Disruption" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_MACE_OF_DISRUPTION">
 		<description>
@@ -222,7 +183,7 @@
 			<set name="rarity">Rare</set>
 			<set name="weapon">ID_INTERNAL_WEAPON_GROUP_MACES</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Mace of Smiting" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_MACE_OF_SMITING">
 		<description>
@@ -239,7 +200,7 @@
 			<set name="enhancement">1</set>
 			<set name="weapon">ID_INTERNAL_WEAPON_GROUP_MACES</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Mace of Terror" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_MACE_OF_TERROR">
 		<description>
@@ -256,7 +217,7 @@
 			<set name="rarity">Rare</set>
 			<set name="weapon">ID_INTERNAL_WEAPON_GROUP_MACES</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Sun Blade" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_SUN_BLADE">
 		<description>
@@ -275,7 +236,7 @@
 			<set name="enhancement">2</set>
 			<set name="weapon">Longsword</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Sword of Life Stealing" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_SWORD_OF_LIFE_STEALING">
 		<description>
@@ -292,7 +253,7 @@
 			<set name="weapon">ID_INTERNAL_WEAPON_GROUP_SWORDS</set>
 			<set name="name-format">{{parent}} of Life Stealing</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Sword of Wounding" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_SWORD_OF_WOUNDING">
 		<description>
@@ -310,14 +271,14 @@
 			<set name="weapon">ID_INTERNAL_WEAPON_GROUP_SWORDS</set>
 			<set name="name-format">{{parent}} of Wounding</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Vicious Weapon" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_VICIOUS_WEAPON">
 		<description>
 			<p>When you roll a 20 on your attack roll with this magic weapon, your critical hit deals an extra 2d6 damage of the weapon's type.</p>
 		</description>
 		<setters>
-			<set name="keywords" />
+			<set name="keywords"/>
 			<set name="category">Magic Weapons</set>
 			<set name="cost" currency="gp">0</set>
 			<set name="weight" lb="0">0 lb.</set>
@@ -326,7 +287,7 @@
 			<set name="weapon">ID_INTERNAL_WEAPON_CATEGORY_SIMPLE_MELEE||ID_INTERNAL_WEAPON_CATEGORY_SIMPLE_RANGED||ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_MELEE||ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_RANGED</set>
 			<set name="name-format">Vicious {{parent}}</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Dancing Sword" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_DANCING_SWORD">
 		<description>
@@ -345,7 +306,7 @@
 			<set name="weapon">ID_INTERNAL_WEAPON_GROUP_SWORDS</set>
 			<set name="name-format">Dancing {{parent}}</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Dwarven Thrower" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_DWARVEN_THROWER">
 		<supports>ID_INTERNAL_WEAPON_PROPERTY_THROWN</supports>
@@ -363,7 +324,7 @@
 			<set name="enhancement">3</set>
 			<set name="weapon">Warhammer</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Frost Brand" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_FROST_BRAND">
 		<description>
@@ -381,7 +342,7 @@
 			<set name="rarity">Very Rare</set>
 			<set name="weapon">ID_INTERNAL_WEAPON_GROUP_SWORDS</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Nine Lives Stealer" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_NINE_LIVES_STEALER">
 		<description>
@@ -399,7 +360,7 @@
 			<set name="enhancement">2</set>
 			<set name="weapon">ID_INTERNAL_WEAPON_GROUP_SWORDS</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Oathbow" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_OATHBOW">
 		<description>
@@ -417,7 +378,7 @@
 			<set name="rarity">Very Rare</set>
 			<set name="weapon">Longbow</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Scimitar of Speed" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_SCIMITAR_OF_SPEED">
 		<description>
@@ -469,7 +430,7 @@
 			<set name="enhancement">3</set>
 			<set name="weapon">ID_INTERNAL_WEAPON_GROUP_SWORDS</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Hammer of Thunderbolts" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_HAMMER_OF_THUNDERBOLTS">
 		<description>
@@ -487,7 +448,7 @@
 			<set name="enhancement">1</set>
 			<set name="weapon">ID_INTERNAL_WEAPON_GROUP_MAULS</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Holy Avenger" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_HOLY_AVENGER">
 		<description>
@@ -505,7 +466,7 @@
 			<set name="enhancement">3</set>
 			<set name="weapon">ID_INTERNAL_WEAPON_GROUP_SWORDS</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Luck Blade" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_LUCK_BLADE">
 		<description>
@@ -524,40 +485,7 @@
 			<set name="enhancement">1</set>
 			<set name="weapon">ID_INTERNAL_WEAPON_GROUP_SWORDS</set>
 		</setters>
-		<rules />
-	</element>
-	<element name="Sword of Answering" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_SWORD_OF_ANSWERING">
-		<!-- todo: create 9 seperate weapons based on alignment ? -->
-		<description>
-			<p>In the world of Greyhawk, only nine of these blades are known to exist. Each is patterned after the legendary sword Fragarach, which is variously translated as "Final Word." Each of the nine swords has its own name and alignment, and each bears a different gem in its pommel.</p>
-			<p class="indent">You gain a +3 bonus to attack and damage rolls made with this sword. In addition, while you hold the sword, you can use your reaction to make one melee attack with it against any creature in your reach that deals damage to you. You have advantage on the attack roll, and any damage dealt with this special attack ignores any damage immunity or resistance the target has.</p>
-			<table>
-				<thead>
-					<tr><td>Name</td><td>Alignment</td><td>Gem</td></tr>
-				</thead>
-				<tr><td>Answerer</td><td>Chaotic good</td><td>Emerald</td></tr>
-				<tr><td>Back Talker</td><td>Chaotic evil</td><td>Jet</td></tr>
-				<tr><td>Concluder</td><td>Lawful neutral</td><td>Amethyst</td></tr>
-				<tr><td>Last Quip</td><td>Chaotic neutral</td><td>Tourmaline</td></tr>
-				<tr><td>Rebutter</td><td>Neutral good</td><td>Topaz</td></tr>
-				<tr><td>Replier</td><td>Neutral</td><td>Peridot</td></tr>
-				<tr><td>Retorter</td><td>Lawful good</td><td>Aquamarine</td></tr>
-				<tr><td>Scather</td><td>Lawful evil</td><td>Garnet</td></tr>
-				<tr><td>Squelcher</td><td>Neutral evil</td><td>Spinel</td></tr>
-			</table>
-		</description>
-		<setters>
-			<set name="keywords">longsword</set>
-			<set name="category">Magic Weapons</set>
-			<set name="cost" currency="gp">0</set>
-			<set name="weight" lb="0">0 lb.</set>
-			<set name="type" addition="longsword">Weapon</set>
-			<set name="attunement" addition="by a creature with the same alignment as the sword">true</set>
-			<set name="rarity">Legendary</set>
-			<set name="enhancement">3</set>
-			<set name="weapon">Longsword</set>
-		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Vorpal Sword" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_VORPAL_SWORD">
 		<description>
@@ -575,7 +503,7 @@
 			<set name="enhancement">3</set>
 			<set name="weapon">ID_INTERNAL_WEAPON_GROUP_SWORDS, ID_INTERNAL_DAMAGE_TYPE_SLASHING</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 
 	<!-- ammunition -->
@@ -593,7 +521,7 @@
 			<set name="type" addition="arrow">Weapon</set>
 			<set name="rarity">Very Rare</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Ammunition, +1" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_AMMUNITION_1">
 		<description>
@@ -608,7 +536,7 @@
 			<set name="rarity">Uncommon</set>
 			<set name="enhancement">1</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Ammunition, +2" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_AMMUNITION_2">
 		<description>
@@ -623,7 +551,7 @@
 			<set name="rarity">Rare</set>
 			<set name="enhancement">2</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Ammunition, +3" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_AMMUNITION_3">
 		<description>
@@ -638,6 +566,6 @@
 			<set name="rarity">Very Rare</set>
 			<set name="enhancement">3</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 </elements>

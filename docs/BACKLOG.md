@@ -354,7 +354,7 @@ characters were edited during native acceptance.
   are marked dirty by this path; a later patch failure warns without establishing
   the same pending-edit guard for a local tab. Full failure/close behavior needs
   reproduction before claiming end-to-end edit loss.
-- **Location:** [Session.razor](../Aurora.App/Components/Pages/Session.razor),
+- **Location:** [Session.razor](../Aurora.Reflections/Components/Pages/Session.razor),
   `SaveSession`, `PersistSessionChanges`, and `HandleSessionPatchFailureAsync`.
 - **Correction:** track all required writes, retain local pending state until
   they succeed, and make success messages and close handling reflect completion.
@@ -398,7 +398,7 @@ characters were edited during native acceptance.
   import interaction remains a code-trace finding.
 - **Location:** [DndBeyondJsonImporter.cs](../Aurora.PdfImport/DndBeyondJsonImporter.cs),
   class parsing; [CharacterInferenceEngine.cs](../Aurora.PdfImport/CharacterInferenceEngine.cs);
-  [PdfImportService.cs](../Aurora.App/Services/PdfImportService.cs), main-class level-up loop.
+  [PdfImportService.cs](../Aurora.Reflections/Services/PdfImportService.cs), main-class level-up loop.
 - **Correction:** explicitly warn and stop unsupported multiclass conversion, or
   implement per-class/subclass/level mapping. Choose and document the supported
   import contract before treating a lossy result as successful.
@@ -423,7 +423,7 @@ characters were edited during native acceptance.
   analysis. Storage uses the sanitized character name plus extension and
   `WriteAllBytesAsync` replaces an existing destination. A same-name,
   same-extension preview can replace a portrait before confirmation.
-- **Location:** [PdfImportService.cs](../Aurora.App/Services/PdfImportService.cs),
+- **Location:** [PdfImportService.cs](../Aurora.Reflections/Services/PdfImportService.cs),
   portrait download/extraction and `SavePortraitBytesAsync`.
 - **Correction:** stage imports at unique paths and commit the selected portrait
   only with the confirmed import; clean up only artifacts owned by that attempt.
@@ -444,7 +444,7 @@ characters were edited during native acceptance.
 - **Impact/evidence:** once all six values are assigned, each dropdown excludes
   values used elsewhere and removes its empty option. Each dropdown is left with
   its current value, blocking reassignment within Standard Array.
-- **Location:** [App Build.razor](../Aurora.App/Components/Pages/Build.razor) and
+- **Location:** [App Build.razor](../Aurora.Reflections/Components/Pages/Build.razor) and
   [Web Build.razor](../Aurora.Web/Components/Pages/Build.razor), array controls and
   available-value filtering. Both clients were identified by the October audit.
 - **Correction:** retain a clear/reassign action or implement an explicit swap;
@@ -463,7 +463,7 @@ characters were edited during native acceptance.
 - **Impact/evidence:** selecting Point Buy clamps base scores to 8-15 directly
   and recalculates points, without the normal `ApplyAbilityChangesAsync` path.
   Recalculation, snapshots, dirty state, and persistence can diverge.
-- **Location:** [App Build.razor](../Aurora.App/Components/Pages/Build.razor),
+- **Location:** [App Build.razor](../Aurora.Reflections/Components/Pages/Build.razor),
   `SetAbilityMethod` and `ApplyAbilityChangesAsync`.
 - **Correction:** apply score conversion through the normal ability-edit
   contract, with explicit behavior when existing scores must change.
@@ -486,8 +486,8 @@ characters were edited during native acceptance.
   normally after leaving the field. The keyboard handler invokes save directly.
   Typing and pressing Ctrl+S without leaving the field may save the prior value
   while reporting success; native interaction still needs reproduction.
-- **Location:** [NarrativeField.razor](../Aurora.App/Components/Shared/NarrativeField.razor)
-  and [shortcuts.js](../Aurora.App/wwwroot/shortcuts.js), `OnCtrlS` dispatch.
+- **Location:** [NarrativeField.razor](../Aurora.Reflections/Components/Shared/NarrativeField.razor)
+  and [shortcuts.js](../Aurora.Reflections/wwwroot/shortcuts.js), `OnCtrlS` dispatch.
 - **Correction:** keep draft values current on input or explicitly flush focused
   edits before saving; avoid introducing a full disk save on each keystroke.
 - **Done when:** typing into single-line and multiline narrative fields followed
@@ -578,8 +578,8 @@ characters were edited during native acceptance.
   another local character being unable to enter its context. Cloud save/reload
   holds the global context while awaiting network work. The audit observed a
   30-second context timeout versus requests allowed to run for 90 seconds.
-- **Location:** [BuildService.cs](../Aurora.App/Services/BuildService.cs),
-  `SaveTabCoreAsync` and cloud reload paths; [CharacterContext.cs](../Aurora.App/Services/CharacterContext.cs).
+- **Location:** [BuildService.cs](../Aurora.Reflections/Services/BuildService.cs),
+  `SaveTabCoreAsync` and cloud reload paths; [CharacterContext.cs](../Aurora.Reflections/Services/CharacterContext.cs).
 - **Correction:** capture a consistent payload under the global context, perform
   network work with appropriate per-tab coordination, and reacquire context only
   for guarded state updates. Preserve edit-version/conflict/recovery protections.
@@ -601,7 +601,7 @@ characters were edited during native acceptance.
   reads and hashes the character and session files; a clean cloud tab's dirty
   getter can invoke it repeatedly during rendering. No UI timing claim is made.
 - **Location:** [CloudCharacterSession.cs](../Aurora.Logic/Services/Storage/CloudCharacterSession.cs),
-  `HasPendingChanges` / `HashFile`; [CharacterTabModel.cs](../Aurora.App/Services/CharacterTabModel.cs).
+  `HasPendingChanges` / `HashFile`; [CharacterTabModel.cs](../Aurora.Reflections/Services/CharacterTabModel.cs).
 - **Correction/done when:** cache pending state with explicit invalidation and
   retain authoritative hashes at save/reconciliation boundaries. Measure file
   reads during unchanged rerenders, and verify external edits still invalidate
@@ -625,7 +625,7 @@ characters were edited during native acceptance.
   per keystroke. App HP/condition/slot changes also schedule currency and notes
   XML patches even when those fields did not change.
 - **Location:** [WebCharacterEngineService.cs](../Aurora.Web/Services/WebCharacterEngineService.cs),
-  equipment-note updates; [Session.razor](../Aurora.App/Components/Pages/Session.razor),
+  equipment-note updates; [Session.razor](../Aurora.Reflections/Components/Pages/Session.razor),
   `PersistSessionChanges`.
 - **Correction/done when:** coalesce note persistence and write only affected
   data. Count writes for a representative typing/session sequence; flush the final

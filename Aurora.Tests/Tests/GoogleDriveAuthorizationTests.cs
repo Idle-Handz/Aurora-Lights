@@ -76,6 +76,126 @@ public sealed class GoogleDriveAuthorizationTests
         if (callback is not null) (await callback).Dispose();
     }
 
+    [Fact]
+    public async Task DesktopFlow_AllowsLoginAndSecondFactorBeyondThreeMinutes()
+    {
+        var clock = new SignInClock();
+        var tokens = new TokenStore();
+        using var handler = new TokenHandler();
+        using var http = new HttpClient(handler);
+        using var callbackHttp = new HttpClient();
+        using var guard = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        var authorization = new GoogleDriveAuthorization(http, tokens, new("test-client", null))
+            { SignInTimeProvider = clock };
+        Task<HttpResponseMessage>? callback = null;
+
+        await authorization.SignInAsync(uri =>
+        {
+            var query = HttpUtility.ParseQueryString(uri.Query);
+            handler.ExpectedChallenge = query["code_challenge"]!;
+            clock.Advance(TimeSpan.FromMinutes(4));
+            callback = callbackHttp.GetAsync(query["redirect_uri"] + "?state=" +
+                Uri.EscapeDataString(query["state"]!) + "&code=test-code", guard.Token);
+            return Task.CompletedTask;
+        }, guard.Token);
+
+        using var response = await callback!;
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        tokens.Value.Should().Be("new-refresh");
+        handler.Requests.Should().Be(1);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DesktopFlow_ExpiryOrCancelClosesListenerPreservesCredentialsAndAllowsRetry(bool cancelByUser)
+    {
+        var clock = new SignInClock();
+        var tokens = new TokenStore();
+        using var handler = new TokenHandler();
+        using var http = new HttpClient(handler);
+        using var callbackHttp = new HttpClient();
+        using var guard = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        using var caller = CancellationTokenSource.CreateLinkedTokenSource(guard.Token);
+        var authorization = new GoogleDriveAuthorization(http, tokens, new("test-client", null))
+            { SignInTimeProvider = clock };
+        string? expiredRedirect = null;
+        Func<Task> signIn = () => authorization.SignInAsync(uri =>
+        {
+            expiredRedirect = HttpUtility.ParseQueryString(uri.Query)["redirect_uri"];
+            if (cancelByUser) caller.Cancel();
+            else clock.Advance(TimeSpan.FromMinutes(11));
+            return Task.CompletedTask;
+        }, caller.Token);
+
+        if (cancelByUser)
+            await signIn.Should().ThrowAsync<OperationCanceledException>();
+        else
+            await signIn.Should().ThrowAsync<TimeoutException>()
+                .WithMessage("*timed out*Connect Google Drive*try again*");
+        tokens.Writes.Should().Be(0);
+        tokens.Value.Should().Be("previous-refresh");
+        handler.Requests.Should().Be(0);
+        Func<Task> lateCallback = async () =>
+        {
+            using var response = await callbackHttp.GetAsync(expiredRedirect, guard.Token);
+        };
+        await lateCallback.Should().ThrowAsync<HttpRequestException>();
+
+        Task<HttpResponseMessage>? callback = null;
+        await authorization.SignInAsync(uri =>
+        {
+            var query = HttpUtility.ParseQueryString(uri.Query);
+            handler.ExpectedChallenge = query["code_challenge"]!;
+            callback = callbackHttp.GetAsync(query["redirect_uri"] + "?state=" +
+                Uri.EscapeDataString(query["state"]!) + "&code=test-code", guard.Token);
+            return Task.CompletedTask;
+        }, guard.Token);
+        using var retryResponse = await callback!;
+        retryResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        tokens.Value.Should().Be("new-refresh");
+        tokens.Writes.Should().Be(1);
+    }
+
+    // Advance only the OAuth deadline; the real loopback socket still exercises cleanup and retry.
+    private sealed class SignInClock : TimeProvider
+    {
+        private TimeSpan _elapsed;
+        private readonly List<Deadline> _deadlines = [];
+        public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
+        {
+            period.Should().Be(Timeout.InfiniteTimeSpan);
+            var deadline = new Deadline(this, callback, state);
+            deadline.Change(dueTime, period);
+            _deadlines.Add(deadline);
+            return deadline;
+        }
+        public void Advance(TimeSpan amount)
+        {
+            _elapsed += amount;
+            foreach (var deadline in _deadlines.ToArray()) deadline.FireIfDue();
+        }
+        private sealed class Deadline(SignInClock clock, TimerCallback callback, object? state) : ITimer
+        {
+            private TimeSpan? _due;
+            private bool _disposed;
+            public bool Change(TimeSpan dueTime, TimeSpan period)
+            {
+                if (_disposed) return false;
+                _due = dueTime == Timeout.InfiniteTimeSpan ? null : clock._elapsed + dueTime;
+                return true;
+            }
+            public void FireIfDue()
+            {
+                if (_disposed || _due is null || _due > clock._elapsed) return;
+                _due = null;
+                callback(state);
+            }
+            public void Dispose() => _disposed = true;
+            public ValueTask DisposeAsync() { Dispose(); return ValueTask.CompletedTask; }
+        }
+    }
+
     private sealed class TokenStore : IGoogleDriveTokenStore
     {
         public int Writes { get; private set; }

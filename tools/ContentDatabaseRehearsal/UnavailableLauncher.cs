@@ -1,4 +1,4 @@
-namespace Aurora.App.Services;
+namespace Aurora.Reflections.Services;
 
 // The actual selection/spell handlers are linked from MauiContextStubs.cs.
 // Its unrelated platform launcher must never open external files during rehearsal.

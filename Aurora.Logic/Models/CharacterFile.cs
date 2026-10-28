@@ -340,10 +340,14 @@ public class CharacterFile : ObservableObject
 
     public bool Save() => this.Save(CharacterManager.Current.Character);
 
-    public bool Save(Character character)
+    public bool Save(Character character) => Save(character, null);
+
+    /// <summary>Updates client extension data before the same atomic character write.</summary>
+    public bool Save(Character character, Action<XmlDocument> updateDocument)
     {
         this.EnsureNoExternalFileChanges();
         BuildDocument(character);
+        updateDocument?.Invoke(this._document);
         CharacterFileIo.SaveXmlDocumentAtomic(this._filepath, this._document);
         this.RefreshKnownDiskStamp();
         return true;
@@ -354,9 +358,12 @@ public class CharacterFile : ObservableObject
     /// writes to disk, and returns the bytes. Used by CharacterContext to capture in-memory tab state
     /// before swapping the CharacterManager singleton to a different tab's character.
     /// </summary>
-    public byte[] SerializeCharacter(Character character)
+    public byte[] SerializeCharacter(Character character) => SerializeCharacter(character, null);
+
+    public byte[] SerializeCharacter(Character character, Action<XmlDocument> updateDocument)
     {
         BuildDocument(character);
+        updateDocument?.Invoke(this._document);
         using var ms = new MemoryStream();
         using (XmlTextWriter w = new XmlTextWriter(ms, Encoding.UTF8))
         {
@@ -778,7 +785,6 @@ public class CharacterFile : ObservableObject
             await this.ReadChildElements(node, companion);
         }
         await ReplayDeferredChildElements();
-        this.ReadCompanionNode(buildNode, character);
         // Legacy initialized defaults in its selection controls. Recover an old direct
         // grant only where current content explicitly offers that same eligible default.
         var savedGrantIds = elementsNode.SelectNodes(".//element[@id and not(@registered)]")
@@ -806,6 +812,10 @@ public class CharacterFile : ObservableObject
             Logger.Info("removed inactive ability-score selections while loading {0}: {1}",
                 this.FileName, string.Join(", ", removedAsiChoices.Select(e => e.ElementId)));
         }
+        // Older saves may omit a predefined companion selection. Create those creatures
+        // before restoring their saved identities, names, portraits, and profile links.
+        CompanionSelectionDefaults.Apply();
+        this.ReadCompanionNode(buildNode, character);
         var afterNormalization = CharacterManager.Current.GetElements().Select(e => e.Id).ToArray();
         // Compare actual identities and occurrences. Extra grants must neither
         // trigger an error nor offset a missing character-used element.
@@ -1778,6 +1788,8 @@ public class CharacterFile : ObservableObject
     {
         XmlNode parentNode1 = parentNode.AppendChild(this._document.CreateNode(XmlNodeType.Element, "companion", (string)null));
         if (companion.Element != null) parentNode1.AppendAttribute("id", companion.Element.Id);
+        parentNode1.AppendAttribute("instance", companion.InstanceId);
+        parentNode1.AppendAttribute("origin", companion.AcquisitionKey);
         parentNode1.AppendAttribute("name", companion.CompanionName.Content);
         XmlNode parentNode2 = parentNode1.AppendChild(this._document.CreateNode(XmlNodeType.Element, "attributes", (string)null));
         foreach (AbilityItem abilityItem in companion.Abilities.GetCollection())
@@ -1806,7 +1818,9 @@ public class CharacterFile : ObservableObject
                 // saved id here is read rather than requiring it to still be current.
                 string savedId = ElementIdAliases.Resolve(DataManager.Current.ElementsCollection,
                     node.GetAttributeValue("id"))?.Id ?? node.GetAttributeValue("id");
-                var match = available.FirstOrDefault(c => c.Element.Id == savedId);
+                string origin = ReadOptionalAttribute(node, "origin");
+                var match = available.FirstOrDefault(c => c.Element.Id == savedId
+                    && (string.IsNullOrEmpty(origin) || c.AcquisitionKey == origin));
                 if (match == null)
                 {
                     Logger.Warning("no active companion matches the saved record {0}; its name and portrait are not restored",
@@ -1843,6 +1857,9 @@ public class CharacterFile : ObservableObject
 
     private static void ReadCompanionDetails(XmlNode node1, Companion companion)
     {
+        string instance = ReadOptionalAttribute(node1, "instance");
+        if (instance != null && instance.StartsWith("companion-instance:", StringComparison.Ordinal))
+            companion.InstanceId = instance;
         if (!companion.CompanionName.EqualsOriginalContent(node1.GetAttributeValue("name")))
             companion.CompanionName.Content = node1.GetAttributeValue("name");
         XmlNode node2 = node1.ChildNodes.Cast<XmlNode>().FirstOrDefault<XmlNode>((Func<XmlNode, bool>)(x => x.Name.Equals("portrait")));

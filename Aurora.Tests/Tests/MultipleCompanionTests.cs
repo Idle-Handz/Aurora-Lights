@@ -1,4 +1,4 @@
-using Aurora.App.Services;
+using Aurora.Reflections.Services;
 using Aurora.Content;
 using Aurora.Tests.Helpers;
 using Builder.Data.Elements;
@@ -82,11 +82,67 @@ public sealed class MultipleCompanionTests
             for (int i = 0; i < manager.Character.Companions.Count; i++)
                 manager.Character.Companions[i].CompanionName.Content = "Pet " + i;
             file.Save(manager.Character).Should().BeTrue();
+            tab.Snapshot = CharacterSnapshot.From(manager.Character);
+            var instanceIds = manager.Character.Companions.Select(c => c.InstanceId).ToArray();
+            instanceIds.Should().OnlyHaveUniqueItems();
+            // Existing characters have no management identities. Their first profile edit upgrades
+            // those records atomically, without requiring a separate full character save.
+            var legacyDocument = new System.Xml.XmlDocument();
+            legacyDocument.Load(file.FilePath);
+            foreach (System.Xml.XmlElement node in legacyDocument.SelectNodes("/*/build/companions/companion")!)
+            {
+                node.RemoveAttribute("instance");
+                node.RemoveAttribute("origin");
+            }
+            legacyDocument.Save(file.FilePath);
+            file.InitializeDisplayPropertiesFromFilePath();
+            var profiles = SidekickService.LoadAll(tab);
+            profiles.Should().HaveCount(4);
+            var edited = profiles[2];
+            edited.Set("name", "Custom cat");
+            edited.Set("ac", "21");
+            edited.Set("hp", "25");
+            edited.Set("strength", "18");
+            edited.Set("spell-slots", "1st: 2");
+            edited.Set("notes", "Only this cat <keeps> these changes.");
+            (await SidekickService.SaveAsync(tab, edited)).Succeeded.Should().BeTrue();
+            tab.IsDirty = true;
+            (await SidekickService.MutateAsync(tab, edited.Id, p =>
+            {
+                CreatureCombat.GrantTemporaryHp(p, 3);
+                CreatureCombat.Damage(p, 8);
+                CreatureCombat.SetCondition(p, "Poisoned", true);
+                CreatureCombat.AdjustSlot(p, 1, 1);
+            })).Succeeded.Should().BeTrue();
+            tab.IsDirty.Should().BeTrue("management saves must not mark unrelated edits clean");
+            (await SidekickService.SaveAsync(tab, edited)).Succeeded.Should().BeFalse("a stale profile editor must not overwrite newer combat tracking");
+            var sidekick = SidekickService.Create("sidekick-template:spellcaster");
+            sidekick.Set("hp", "18");
+            (await SidekickService.SaveAsync(tab, sidekick, isNew: true)).Succeeded.Should().BeTrue();
+            (await SidekickService.MutateAsync(tab, sidekick.Id, p => CreatureCombat.Damage(p, 4))).Succeeded.Should().BeTrue();
+            file.Save(manager.Character).Should().BeTrue();
             await CharacterContext.InvalidateAsync();
             var loaded = await service.LoadCharacterAsync(file);
             loaded.Success.Should().BeTrue(loaded.Message);
             AssertCompanions(manager);
             manager.Character.Companions.Select(c => c.CompanionName.Content).Should().Equal("Pet 0", "Pet 1", "Pet 2", "Pet 3");
+            manager.Character.Companions.Select(c => c.InstanceId).Should().Equal(instanceIds);
+            tab.Snapshot = CharacterSnapshot.From(manager.Character);
+            profiles = SidekickService.LoadAll(tab);
+            profiles.Should().HaveCount(5);
+            var saved = profiles.Single(p => p.Id == edited.Id);
+            saved.Name.Should().Be("Custom cat");
+            saved.Get("ac").Should().Be("21");
+            saved.Get("strength").Should().Be("18");
+            saved.Get("notes").Should().Be("Only this cat <keeps> these changes.");
+            CreatureCombat.CurrentHp(saved).Should().Be(20);
+            saved.Combat.Conditions.Should().Equal("Poisoned");
+            saved.Combat.SpellSlotsUsed[1].Should().Be(1);
+            var otherCat = profiles.Single(p => p.Id == instanceIds[3]);
+            otherCat.Get("ac").Should().Be("13");
+            CreatureCombat.CurrentHp(otherCat).Should().Be(5);
+            otherCat.Combat.Conditions.Should().BeEmpty();
+            CreatureCombat.CurrentHp(profiles.Single(p => p.Id == sidekick.Id)).Should().Be(14);
             BuildService.ReapplyCustomFeatures(file);
             BuildService.ReapplyCustomFeatures(file);
             AssertCompanions(manager);
@@ -99,6 +155,8 @@ public sealed class MultipleCompanionTests
             manager.Character.Companions.Count(c => c.Element.Id == "ID_TEST_CAT").Should().Be(2);
             (await BuildService.RemoveCustomFeatureAsync(tab, "ID_TEST_CAT")).Should().BeNull();
             manager.Character.Companions.Should().HaveCount(2);
+            SidekickService.LoadAll(tab).Should().NotContain(p => p.Id == edited.Id || p.Id == instanceIds[3]);
+            (await SidekickService.MutateAsync(tab, edited.Id, p => CreatureCombat.Heal(p, 1))).Succeeded.Should().BeFalse();
             manager.Character.Companions.Single(c => c.Element.Id == "ID_TEST_CAT").Element.Aquisition.WasSelected.Should().BeTrue();
             handler = SelectionRuleExpanderContext.Current;
             handler.SetRegisteredElement(manager.SelectionRules.Single(r => r.Attributes.Name == "Pet"), "ID_TEST_OX");

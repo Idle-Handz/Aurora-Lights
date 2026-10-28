@@ -14,6 +14,12 @@ namespace Builder.Presentation.Models;
 
 public class Companion : StatisticsBase
 {
+  // Stable per creature, including two companions using the same content definition.
+  public string InstanceId { get; internal set; } = "companion-instance:" + System.Guid.NewGuid().ToString("N");
+  public string AcquisitionKey => Element?.Aquisition.WasSelected == true
+    ? "select:" + Element.Aquisition.GetParentHeader()?.Id + ":" + Element.Aquisition.SelectRule.Attributes.Name
+    : Element?.Aquisition.WasGranted == true ? "grant:" + Element.Aquisition.GetParentHeader()?.Id : "extra";
+
   public Companion(CompanionElement element = null)
   {
     this.Abilities.DisablePointsCalculation = true;

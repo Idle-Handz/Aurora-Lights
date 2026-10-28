@@ -36,6 +36,16 @@ public sealed class SingletonGuard<T> where T : class
     /// after an external load on the thread that performed the load.</summary>
     public void Claim(T item) => _active = item;
 
+    /// <summary>Enters only an already-active item without waiting or swapping. Used by
+    /// synchronous lifecycle callbacks, which cannot wait for work dispatched to their own thread.</summary>
+    public IDisposable? TryEnterActive(T item)
+    {
+        if (!_lock.Wait(0)) return null;
+        if (ReferenceEquals(_active, item)) return new LockScope(_lock);
+        _lock.Release();
+        return null;
+    }
+
     /// <summary>Clears active if it is the same object as <paramref name="item"/>.</summary>
     public async Task ReleaseAsync(T item)
     {

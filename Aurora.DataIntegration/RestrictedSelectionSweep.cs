@@ -3,7 +3,7 @@ using Builder.Data;
 using Builder.Presentation;
 using Builder.Presentation.Services;
 
-namespace Aurora.App.Services;
+namespace Aurora.Reflections.Services;
 
 /// <summary>
 /// Takes back what a restricted source gave a character: the picks it supplied. Its grants are
@@ -34,7 +34,7 @@ public static class RestrictedSelectionSweep
                 if (restrictions.Allows(registered))
                     continue;
 
-                DebugLogService.Instance.Log(Aurora.App.Services.LogLevel.Warning,
+                DebugLogService.Instance.Log(Aurora.Reflections.Services.LogLevel.Warning,
                     $"[Restrict] clearing '{registered.Id}' from '{registered.Source}': " +
                     $"rule='{rule.Attributes.Name ?? rule.Attributes.Type}'");
                 try

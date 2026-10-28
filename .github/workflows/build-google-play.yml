@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Display version, such as 0.9.6-beta (does not create a release or publish to Play)'
+        description: 'Display version, such as 1.0.0 (does not create a release or publish to Play)'
         required: true
         type: string
 

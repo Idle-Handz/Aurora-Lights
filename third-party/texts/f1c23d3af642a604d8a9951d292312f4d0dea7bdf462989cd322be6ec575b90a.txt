@@ -1,0 +1,82 @@
+# Bundled content boundary for the public 1.0 preparation build
+
+The baseline uses the 2014-rules System Reference Document 5.1, under
+CC-BY-4.0. It does not attempt a rules-edition migration to SRD 5.2.1.
+Attribution and the complete license are retained separately. Directory names
+and historical `PHB`, `DMG` or `MM` identifiers are compatibility metadata, not
+claims that the complete books are licensed or bundled.
+
+## SRD-derived content
+
+`srd-spells.json` records the 319 licensed spell subjects, source heading pages,
+compatibility names and exact resource hash. Seventeen display names were
+changed to their SRD names without changing their identifiers. Forty-two
+non-SRD spell definitions were removed. Ten truncated descriptions were
+restored from the actual SRD text; transcription errors were corrected.
+
+The remaining catalogue contains twelve classes, their twelve SRD subclasses,
+nine races, four SRD subraces, Acolyte, Grappler, 343 magic-item variants and 67
+historical-pantheon deities from SRD pages 360-362. Item variants share licensed
+parent rules. The removed 27 magic items and 61 Forgotten Realms/nonhuman
+deities have not been silently mapped to a different item or deity. Eight magic
+item display names now use their SRD names while retaining the existing IDs.
+
+The final cleanup also removes the Human variant and six associated bonus
+helpers, five unused non-SRD elf traits, the Underdark circle option, and two
+non-SRD gaming-set items with their two proficiencies. Imported content can
+provide definitions for these identifiers. A missing definition is reported
+when a character is loaded; loading does not rewrite the existing save.
+
+Additional class/race narrative, setting-specific subrace prose, creature lore,
+expanded tool activity/DC descriptions and book marketing copy have been
+removed or replaced. Tool entries use the SRD's actual tool rules. The legacy
+help pages now contain original application guidance. Original name suggestions
+replace the copied book name lists without changing the generator's field or
+format contracts. Calculation rules for retained entries are unchanged, except
+for removing the two grants to excluded gaming-set proficiencies. The spell-header comparison also corrected Wind Walk from 1 action to the SRD casting time of 1 minute, a duration-unit typo and a duplicated material-component phrase.
+
+`srd-baseline.json` records the final resource hashes, subject identifiers,
+source sections, original integration boundary and deliberate exclusions.
+Changes require a fresh provenance review; an asset hash refresh alone cannot
+approve new spell subjects or erase the recorded source boundary.
+
+## Original application integration code
+
+The starting-equipment XML is original first-party integration data: element
+IDs, quantities, selection labels and coin-roll parameters. The audit of all
+28 files found no descriptive text nodes, artwork or book passages. Some maps
+refer to optional imported classes/backgrounds, including Artificer and 2024
+content. Keeping an adapter for an identifier does not bundle the corresponding
+class/background definition. The maps remain under MIT and keep imported
+characters' equipment workflows available.
+
+The same distinction applies to original ability-bonus calculations, selector
+labels, source bibliography and application settings. Customization settings
+and firearm-property compatibility markers now use original application help,
+not copied non-SRD explanatory prose. A favored-enemy selector label is not a
+bundled monster stat block or monster lore entry.
+
+This classification of the original ID/quantity maps and functional code is
+an inference from their contents and authorship, informed by the U.S. Copyright
+Office's distinction between methods/systems/names and expressive text:
+https://www.copyright.gov/circs/circ33.pdf. It is not a general license to copy
+rulebook prose, art, character descriptions or third-party databases.
+
+## Assets and distribution scope
+
+Legacy templates, galleries, default portrait, UI icons and backgrounds use
+the maintainer-confirmed redistribution permission recorded in
+`LEGACY-ASSET-PERMISSION.md`, not MIT or the SRD license. Complete templates
+retain their embedded resources and existing notices. Standalone fonts have
+separate license records: Open Sans (Apache-2.0/OFL-1.1) and Nodesto (CC0).
+The unused unverified Zelda font is excluded from release source.
+
+Current branding provenance is recorded in `BRANDING-PROVENANCE.md`.
+User-imported content and installed character/app data are outside this
+baseline migration and have not been accessed or changed. The inventory
+covers the actual release resources and corresponding-source payload, not
+every historical file in Git or the contents of users' imported libraries.
+
+Windows x64 and Android ARM64 are the stable targets. Windows ARM64 and macOS
+remain experimental, and Web remains deferred. A passing licensing gate does
+not freeze, sign or publish a new application package.

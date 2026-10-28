@@ -81,7 +81,7 @@ Required boundaries established by the investigation:
   supplied XML content and retained the metadata in the round-trip test.
 - `Aurora.Logic/Services/Data/DataManager.cs`: direct `element` discovery for XML
   loading, with the compatibility repair pass.
-- `Aurora.App/Services/RawUserXmlOverlayService.cs`: the same direct-node discovery,
+- `Aurora.Reflections/Services/RawUserXmlOverlayService.cs`: the same direct-node discovery,
   typed parser dispatch, and `ElementsFile` append discovery. Inspected directly;
   tests exercise its file reader, repair pass, and typed parsers, not the singleton
   service against the installed user directory.
@@ -124,7 +124,7 @@ descendant-based discovery; they are not a proposed production payload format.
 
 ```powershell
 dotnet test Aurora.Tests/Aurora.Tests.csproj --no-restore --filter FullyQualifiedName~CorrectionMetadataCompatibilityTests
-python tools/test-correction-metadata.py --overrides 'C:\Users\Ralla\Documents\5e Character Builder\custom\user\local\id-hotfixes-20260913' --translator 'C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.App\BundledTools\AuroraTranslator\AuroraTranslator.exe'
+python tools/test-correction-metadata.py --overrides 'C:\Users\Ralla\Documents\5e Character Builder\custom\user\local\id-hotfixes-20260913' --translator 'C:\Users\Ralla\source\repos\Aurora-Lights\Aurora.Reflections\BundledTools\AuroraTranslator\AuroraTranslator.exe'
 ```
 
 The CLI probe reads original files and creates a new temporary directory for its

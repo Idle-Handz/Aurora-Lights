@@ -4,6 +4,13 @@ The Play build is separate from the existing GitHub APK release. Preparing it do
 not publish an app, create a Play release, or require a D-U-N-S number. Account
 verification and the first Play upload remain manual steps.
 
+This branch includes the post-RC5 public 1.0 preparation changes: caster spell
+retention, native recovery fixes, portable-font PDF export, the reviewed SRD-only
+baseline, and matching third-party notices. Public Drive access has been verified
+for the existing release identity. Play-delivered builds still need their own
+app-signing/OAuth and internal-track acceptance. Windows ARM64 and macOS remain
+experimental; Web is deferred. See [current release status](v1.0-release-status.md).
+
 ## Build identity
 
 - App: **Aurora: Reflections**
@@ -11,8 +18,8 @@ verification and the first Play upload remain manual steps.
 - Format: release-signed **Android App Bundle (.aab)**
 - Devices: **ARM64**, Android 7.0 / API 24 and later. This first Play bundle does
   not include 32-bit ARM or x86/x64 devices.
-- Target: checked against **API 36 or later**, the phone/tablet submission
-  requirement as of October 2026.
+- Build target: checked against **API 36 or later**. Confirm the current Play
+  submission requirement using the official reference before uploading.
 - Native packaging: 16 KB alignment requested in the bundle configuration;
   actual native ELF segments and generated APK ZIP alignment are verified.
 - Version code: UTC seconds since 2020-01-01, matching the APK workflows' scheme.
@@ -31,7 +38,7 @@ After this workflow is on the default branch:
 
 1. Open Actions > **Build Google Play bundle** > Run workflow.
 2. Select the source branch and enter its display version, for example
-   `0.9.6-beta`. This does not create a Git tag or GitHub release.
+   `1.0.0`. This does not create a Git tag or GitHub release.
 3. Download **google-play-arm64** after the job succeeds.
 4. The only Play upload is **com.auroralights.app-Signed.aab**. Keep its
    `play-validation.json`, `play-manifest.xml`, and `play-bundle-config.json`
@@ -56,7 +63,7 @@ and `ANDROID_SIGNING_KEY_PASSWORD` in the process environment, then run:
 
 ```powershell
 ./tools/publish-google-play.ps1 `
-    -VersionName '0.9.6-beta' `
+    -VersionName '1.0.0' `
     -KeyStore ./aurora-release.jks
 ```
 
@@ -76,6 +83,11 @@ The validator checks:
 - Bundletool-generated APK signatures and 16 KB ZIP alignment.
 
 The report describes packaging checks, not runtime or Play review approval.
+The build script targets `Aurora.Reflections/Aurora.Reflections.csproj`. Preserve
+the existing signing identity and permanent `com.auroralights.app` package ID;
+the project rename is not a new Android application. A successor to the accepted
+RC5 APK must use a version code greater than `215061784`.
+
 Installing the `.apks` archive requires bundletool:
 
 ```text
@@ -113,6 +125,15 @@ java -jar <bundletool.jar> install-apks --apks=<output>/play-device-test.apks
 - Upgrade from the previous internal test without losing local characters.
 - Exercise a 16 KB page-size device/emulator as well as a normal device. Passing
   static alignment checks alone does not demonstrate runtime compatibility.
+
+## Matching source and notices
+
+Run the strict notice and asset checks for the exact Play revision before
+distribution. Keep the SRD baseline and reviewed asset provenance; do not restore
+old bundled content from earlier branches. Provide the corresponding application
+and LGPL library source, build options, and relink instructions for that same
+Play build. An earlier RC's source archive is not a substitute for a changed
+bundle. See [third-party notices](../third-party/README.md).
 
 ## Play Console material still to complete
 

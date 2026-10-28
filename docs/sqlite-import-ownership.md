@@ -10,9 +10,9 @@ Audited 2026-09-12. Runtime XML ingestion is outside this audit's replacement sc
 
 ## Current application behavior
 
-- `Aurora.App/Services/ContentDatabaseService.cs`: `SyncAsync` launches the bundled Windows Translator with `sqlite-import` only when exactly one content directory is configured and the executable exists. Otherwise it calls `AuroraContentImporter.Import`. A Translator process failure returns a failed result; it does not invoke the copied importer afterward.
-- `Aurora.App/Services/ContentService.cs`: reload checks staleness and syncs before reloading elements. It does not inspect the returned sync result. Consequently, a failed sync does not itself force XML loading: the loader may still accept an existing database.
-- `Aurora.App/Services/CharacterService.cs`: a failed database load invokes runtime XML loading. Successful database loads also receive raw user XML overlays and an unsynced-content merge in `DbElementLoader`. Those are runtime ingestion, not SQLite writes.
+- `Aurora.Reflections/Services/ContentDatabaseService.cs`: `SyncAsync` launches the bundled Windows Translator with `sqlite-import` only when exactly one content directory is configured and the executable exists. Otherwise it calls `AuroraContentImporter.Import`. A Translator process failure returns a failed result; it does not invoke the copied importer afterward.
+- `Aurora.Reflections/Services/ContentService.cs`: reload checks staleness and syncs before reloading elements. It does not inspect the returned sync result. Consequently, a failed sync does not itself force XML loading: the loader may still accept an existing database.
+- `Aurora.Reflections/Services/CharacterService.cs`: a failed database load invokes runtime XML loading. Successful database loads also receive raw user XML overlays and an unsynced-content merge in `DbElementLoader`. Those are runtime ingestion, not SQLite writes.
 - `Aurora.Importer/AuroraSqliteImporter.cs`: contains the copied XML-to-SQLite importer, schema setup, version-based reimport, and resolution logic. It still writes data version 10.
 - `Aurora.Importer/AuroraContentImporter.cs`: package enable/disable writes `content_packages` and calls `RebuildCacheOnly`, which rebuilds resolution caches and deferred relationships using copied logic. This is a second production SQLite mutation path, separate from full import.
 - `tools/RunImporter/Program.cs`: developer utility invokes the copied importer directly. `ContentDatabaseTrustTests` also use it to build test databases.

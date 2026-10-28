@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><IsPackable>false</IsPackable></PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+    <PackageReference Include="FluentAssertions" Version="6.12.2" />
+    <Reference Include="Aurora.Documents"><HintPath>../../../tests/LegacyOracles/Aurora.Documents.dll</HintPath></Reference>
+    <Reference Include="itextsharp"><HintPath>../../../lib/itextsharp.dll</HintPath></Reference>
+    <Compile Include="../../../Aurora.Tests/Tests/AuroraDocumentsCompatibilityTests.cs" Link="AuroraDocumentsCompatibilityTests.cs" />
+    <Compile Include="../../../Aurora.Tests/LegacyTypeContract.cs" Link="LegacyTypeContract.cs" />
+    <Using Include="Xunit" /><Using Include="FluentAssertions" />
+    <Content Include="../../../tests/LegacyOracles/Aurora.Documents.dll" Link="LegacyOracles/Aurora.Documents.dll" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

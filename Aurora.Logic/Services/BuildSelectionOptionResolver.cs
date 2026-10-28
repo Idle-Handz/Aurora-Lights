@@ -108,6 +108,8 @@ public static class BuildSelectionOptionResolver
                 }
             }
 
+            var requirements = new SelectionRequirementEvaluator(rule,
+                CharacterManager.Current.GetElements().Select(element => element.Id));
             bool isSpellRule = string.Equals(rule.Attributes.Type, "Spell", StringComparison.OrdinalIgnoreCase);
             OwnedSelections owned = GetOwnedNonRepeatableSelections(rule, currentSelectionId);
             List<BuildSelectionOption> options = BuildElementOptions(
@@ -115,6 +117,7 @@ public static class BuildSelectionOptionResolver
                 isSpellRule,
                 currentSelectionId,
                 owned,
+                requirements,
                 settings);
 
             // An evaluated expression may correctly exclude every candidate. Recovery must
@@ -127,6 +130,7 @@ public static class BuildSelectionOptionResolver
                     isSpellRule: true,
                     currentSelectionId,
                     owned,
+                    requirements,
                     settings);
             }
 
@@ -139,6 +143,7 @@ public static class BuildSelectionOptionResolver
                     isSpellRule: false,
                     currentSelectionId,
                     owned,
+                    requirements,
                     settings);
             }
 
@@ -150,6 +155,7 @@ public static class BuildSelectionOptionResolver
                     isSpellRule,
                     currentSelectionId,
                     owned,
+                    requirements,
                     settings);
 
                 if (fallback.Count > 0)
@@ -216,12 +222,14 @@ public static class BuildSelectionOptionResolver
         bool isSpellRule,
         string? currentSelectionId,
         OwnedSelections owned,
+        SelectionRequirementEvaluator requirements,
         BuildSelectionOptionResolverSettings settings)
     {
         return OrderElementOptions(
                 elements
                     .Where(element => !string.IsNullOrWhiteSpace(element.Name))
                     .Where(element => !IsSourceRestricted(element, settings))
+                    .Where(element => requirements.Evaluate(element) == true)
                     .Select(element => CreateElementOption(
                         element,
                         isSpellRule,

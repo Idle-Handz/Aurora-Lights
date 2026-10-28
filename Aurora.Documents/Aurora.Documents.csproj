@@ -15,12 +15,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="itextsharp">
-      <HintPath>..\lib\itextsharp.dll</HintPath>
-    </Reference>
+    <PackageReference Include="iTextSharp.LGPLv2.Core" Version="3.8.6" />
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Resources\Fonts\*.ttf" />
     <EmbeddedResource Include="Resources\Aurora\Pages\equipment.pdf"
                       LogicalName="Aurora.Documents.Resources.Aurora.Pages.equipment.pdf" />
     <EmbeddedResource Include="Resources\Aurora\Pages\equipment_page.pdf"

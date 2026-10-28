@@ -3,13 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aurora.Legacy", "Aurora.Lights\Aurora.Legacy.csproj", "{1452F300-6B85-46E2-9262-AC19BA5BBF9F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aurora.Legacy", "Aurora.Legacy\Aurora.Legacy.csproj", "{1452F300-6B85-46E2-9262-AC19BA5BBF9F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aurora.Logic", "Aurora.Logic\Aurora.Logic.csproj", "{57719405-4860-4995-B845-1DE22BD8F675}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Builder.Core", "Builder.Core\Builder.Core.csproj", "{288BB7FB-C6C7-473E-B700-241445FE825D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aurora.App", "Aurora.App\Aurora.App.csproj", "{7E1216A2-5E35-4031-9299-ADD6E6122CA9}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aurora.Reflections", "Aurora.Reflections\Aurora.Reflections.csproj", "{7E1216A2-5E35-4031-9299-ADD6E6122CA9}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aurora.Web", "Aurora.Web\Aurora.Web.csproj", "{AB49B9EC-C464-4C16-ABE6-B1C36B836272}"
 EndProject

@@ -41,9 +41,11 @@ public sealed record ContentIndexUpdateResult(
 /// </summary>
 public sealed class ContentIndexUpdateService
 {
+    public const string PendingContentChangesFileName = ".aurora-content-reload-pending";
     private static readonly TimeSpan DefaultEntryDownloadTimeout = TimeSpan.FromSeconds(30);
     private static readonly HttpClient SharedHttpClient = new();
     private readonly HttpClient _httpClient;
+    private readonly Func<string, Stream> _openWrite;
 
     public ContentIndexUpdateService()
         : this(SharedHttpClient)
@@ -51,8 +53,14 @@ public sealed class ContentIndexUpdateService
     }
 
     public ContentIndexUpdateService(HttpClient httpClient)
+        : this(httpClient, path => new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+    {
+    }
+
+    internal ContentIndexUpdateService(HttpClient httpClient, Func<string, Stream> openWrite)
     {
         _httpClient = httpClient;
+        _openWrite = openWrite;
     }
 
     public async Task<ContentIndexUpdateResult> UpdateAsync(
@@ -251,7 +259,10 @@ public sealed class ContentIndexUpdateService
                 throw new InvalidDataException("Embedded local correction metadata protects this file from automatic replacement. Update its authoritative source and review the local correction instead.");
 
             if (changed)
+            {
+                MarkPendingContentChange(state.RootDirectory, destinationPath);
                 await WriteFileAtomicallyAsync(destinationPath, remoteBytes, cancellationToken).ConfigureAwait(false);
+            }
 
             try
             {
@@ -368,6 +379,7 @@ public sealed class ContentIndexUpdateService
                         Aurora.Content.Contracts.LocalCorrectionDocument.HasMetadata(File.ReadAllText(targetPath)))
                         throw new InvalidDataException("Embedded local correction metadata protects this file from automatic deletion. Review the local correction before retiring it.");
 
+                    MarkPendingContentChange(state.RootDirectory, targetPath);
                     File.Delete(targetPath);
                     state.MarkLocalChange(obsolete.Name);
                 }
@@ -447,7 +459,16 @@ public sealed class ContentIndexUpdateService
         return combined;
     }
 
-    private static async Task WriteFileAtomicallyAsync(
+    private static void MarkPendingContentChange(string rootDirectory, string path)
+    {
+        if (!Path.GetExtension(path).Equals(".xml", StringComparison.OrdinalIgnoreCase)) return;
+        // Write ahead of replacement/deletion so process loss cannot hide an unactivated change.
+        // Concurrent entry downloads may create the same empty marker safely.
+        using var marker = new FileStream(Path.Combine(rootDirectory, PendingContentChangesFileName),
+            FileMode.OpenOrCreate, FileAccess.Write, FileShare.ReadWrite);
+    }
+
+    private async Task WriteFileAtomicallyAsync(
         string destinationPath,
         byte[] bytes,
         CancellationToken cancellationToken)
@@ -456,8 +477,20 @@ public sealed class ContentIndexUpdateService
         if (!string.IsNullOrWhiteSpace(directory))
             Directory.CreateDirectory(directory);
         string tempPath = destinationPath + ".tmp-" + Guid.NewGuid().ToString("N");
-        await File.WriteAllBytesAsync(tempPath, bytes, cancellationToken).ConfigureAwait(false);
-        File.Move(tempPath, destinationPath, overwrite: true);
+        try
+        {
+            await using (var output = _openWrite(tempPath))
+                await output.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
+            File.Move(tempPath, destinationPath, overwrite: true);
+        }
+        finally
+        {
+            // A short write (including exhausted storage) must not accumulate abandoned payloads.
+            // Preserve the original exception if storage also refuses cleanup.
+            try { File.Delete(tempPath); }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+        }
     }
 
     private static async Task<bool> CacheMatchesFileAsync(
@@ -489,8 +522,10 @@ public sealed class ContentIndexUpdateService
         XDocument document = XDocument.Load(reader);
         if (isIndex && document.Root?.Name != "index")
             throw new InvalidDataException("The downloaded file is not an Aurora index.");
-        if (isProposal && document.Root?.Name != "elements")
-            throw new InvalidDataException("The downloaded file is not an Aurora correction proposal.");
+        if ((isProposal || extension.Equals(".xml", StringComparison.OrdinalIgnoreCase)) && document.Root?.Name != "elements")
+            throw new InvalidDataException(isProposal
+                ? "The downloaded file is not an Aurora correction proposal."
+                : "The downloaded file is not an Aurora content document.");
     }
 
     private static string GetCachePath(string rootDirectory, string url)

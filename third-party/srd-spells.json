@@ -1,0 +1,1695 @@
+{
+  "schemaVersion": 1,
+  "sourceUrl": "https://media.dndbeyond.com/compendium-images/srd/5.1/SRD_CC_v5.1.pdf",
+  "sourceSha256": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0",
+  "license": "CC-BY-4.0",
+  "notice": "third-party/SRD-ATTRIBUTION.md",
+  "section": "Spell descriptions, SRD 5.1 pages 114-194 (heading pages 114-193)",
+  "resourcePath": "Aurora.Logic/Resources/Data/elements/system_reference_document/spells/spells.xml",
+  "resourceSha256": "d2a9f6256c75aad655f1feec20f0c365efecbe17583845971f8ddd37435a4034",
+  "subjects": [
+    {
+      "id": "ID_PHB_SPELL_ACID_SPLASH",
+      "name": "Acid Splash",
+      "srdPage": 114
+    },
+    {
+      "id": "ID_PHB_SPELL_AID",
+      "name": "Aid",
+      "srdPage": 114
+    },
+    {
+      "id": "ID_PHB_SPELL_ALARM",
+      "name": "Alarm",
+      "srdPage": 114
+    },
+    {
+      "id": "ID_PHB_SPELL_ALTER_SELF",
+      "name": "Alter Self",
+      "srdPage": 114
+    },
+    {
+      "id": "ID_PHB_SPELL_ANIMAL_FRIENDSHIP",
+      "name": "Animal Friendship",
+      "srdPage": 115
+    },
+    {
+      "id": "ID_PHB_SPELL_ANIMAL_MESSENGER",
+      "name": "Animal Messenger",
+      "srdPage": 115
+    },
+    {
+      "id": "ID_PHB_SPELL_ANIMAL_SHAPES",
+      "name": "Animal Shapes",
+      "srdPage": 115
+    },
+    {
+      "id": "ID_PHB_SPELL_ANIMATE_DEAD",
+      "name": "Animate Dead",
+      "srdPage": 115
+    },
+    {
+      "id": "ID_PHB_SPELL_ANIMATE_OBJECTS",
+      "name": "Animate Objects",
+      "srdPage": 116
+    },
+    {
+      "id": "ID_PHB_SPELL_ANTILIFE_SHELL",
+      "name": "Antilife Shell",
+      "srdPage": 116
+    },
+    {
+      "id": "ID_PHB_SPELL_ANTIMAGIC_FIELD",
+      "name": "Antimagic Field",
+      "srdPage": 117
+    },
+    {
+      "id": "ID_PHB_SPELL_ANTIPATHY_SYMPATHY",
+      "name": "Antipathy/Sympathy",
+      "srdPage": 117
+    },
+    {
+      "id": "ID_PHB_SPELL_ARCANE_EYE",
+      "name": "Arcane Eye",
+      "srdPage": 118
+    },
+    {
+      "id": "ID_PHB_SPELL_ARCANE_LOCK",
+      "name": "Arcane Lock",
+      "srdPage": 118
+    },
+    {
+      "id": "ID_PHB_SPELL_ASTRAL_PROJECTION",
+      "name": "Astral Projection",
+      "srdPage": 119
+    },
+    {
+      "id": "ID_PHB_SPELL_AUGURY",
+      "name": "Augury",
+      "srdPage": 120
+    },
+    {
+      "id": "ID_PHB_SPELL_AWAKEN",
+      "name": "Awaken",
+      "srdPage": 120
+    },
+    {
+      "id": "ID_PHB_SPELL_BANE",
+      "name": "Bane",
+      "srdPage": 120
+    },
+    {
+      "id": "ID_PHB_SPELL_BANISHMENT",
+      "name": "Banishment",
+      "srdPage": 120
+    },
+    {
+      "id": "ID_PHB_SPELL_BARKSKIN",
+      "name": "Barkskin",
+      "srdPage": 121
+    },
+    {
+      "id": "ID_PHB_SPELL_BEACON_OF_HOPE",
+      "name": "Beacon of Hope",
+      "srdPage": 121
+    },
+    {
+      "id": "ID_PHB_SPELL_BESTOW_CURSE",
+      "name": "Bestow Curse",
+      "srdPage": 121
+    },
+    {
+      "id": "ID_PHB_SPELL_BIGBYS_HAND",
+      "name": "Arcane Hand",
+      "srdPage": 118
+    },
+    {
+      "id": "ID_PHB_SPELL_BLADE_BARRIER",
+      "name": "Blade Barrier",
+      "srdPage": 122
+    },
+    {
+      "id": "ID_PHB_SPELL_BLESS",
+      "name": "Bless",
+      "srdPage": 122
+    },
+    {
+      "id": "ID_PHB_SPELL_BLIGHT",
+      "name": "Blight",
+      "srdPage": 122
+    },
+    {
+      "id": "ID_PHB_SPELL_BLINDNESS_DEAFNESS",
+      "name": "Blindness/Deafness",
+      "srdPage": 122
+    },
+    {
+      "id": "ID_PHB_SPELL_BLINK",
+      "name": "Blink",
+      "srdPage": 122
+    },
+    {
+      "id": "ID_PHB_SPELL_BLUR",
+      "name": "Blur",
+      "srdPage": 123
+    },
+    {
+      "id": "ID_PHB_SPELL_BRANDING_SMITE",
+      "name": "Branding Smite",
+      "srdPage": 123
+    },
+    {
+      "id": "ID_PHB_SPELL_BURNING_HANDS",
+      "name": "Burning Hands",
+      "srdPage": 123
+    },
+    {
+      "id": "ID_PHB_SPELL_CALL_LIGHTNING",
+      "name": "Call Lightning",
+      "srdPage": 123
+    },
+    {
+      "id": "ID_PHB_SPELL_CALM_EMOTIONS",
+      "name": "Calm Emotions",
+      "srdPage": 123
+    },
+    {
+      "id": "ID_PHB_SPELL_CHAIN_LIGHTNING",
+      "name": "Chain Lightning",
+      "srdPage": 124
+    },
+    {
+      "id": "ID_PHB_SPELL_CHARM_PERSON",
+      "name": "Charm Person",
+      "srdPage": 124
+    },
+    {
+      "id": "ID_PHB_SPELL_CHILL_TOUCH",
+      "name": "Chill Touch",
+      "srdPage": 124
+    },
+    {
+      "id": "ID_PHB_SPELL_CIRCLE_OF_DEATH",
+      "name": "Circle of Death",
+      "srdPage": 124
+    },
+    {
+      "id": "ID_PHB_SPELL_CLAIRVOYANCE",
+      "name": "Clairvoyance",
+      "srdPage": 124
+    },
+    {
+      "id": "ID_PHB_SPELL_CLONE",
+      "name": "Clone",
+      "srdPage": 125
+    },
+    {
+      "id": "ID_PHB_SPELL_CLOUDKILL",
+      "name": "Cloudkill",
+      "srdPage": 125
+    },
+    {
+      "id": "ID_PHB_SPELL_COLOR_SPRAY",
+      "name": "Color Spray",
+      "srdPage": 125
+    },
+    {
+      "id": "ID_PHB_SPELL_COMMAND",
+      "name": "Command",
+      "srdPage": 125
+    },
+    {
+      "id": "ID_PHB_SPELL_COMMUNE",
+      "name": "Commune",
+      "srdPage": 126
+    },
+    {
+      "id": "ID_PHB_SPELL_COMMUNE_WITH_NATURE",
+      "name": "Commune with Nature",
+      "srdPage": 126
+    },
+    {
+      "id": "ID_PHB_SPELL_COMPREHEND_LANGUAGES",
+      "name": "Comprehend Languages",
+      "srdPage": 126
+    },
+    {
+      "id": "ID_PHB_SPELL_COMPULSION",
+      "name": "Compulsion",
+      "srdPage": 126
+    },
+    {
+      "id": "ID_PHB_SPELL_CONE_OF_COLD",
+      "name": "Cone of Cold",
+      "srdPage": 127
+    },
+    {
+      "id": "ID_PHB_SPELL_CONFUSION",
+      "name": "Confusion",
+      "srdPage": 127
+    },
+    {
+      "id": "ID_PHB_SPELL_CONJURE_ANIMALS",
+      "name": "Conjure Animals",
+      "srdPage": 127
+    },
+    {
+      "id": "ID_PHB_SPELL_CONJURE_CELESTIAL",
+      "name": "Conjure Celestial",
+      "srdPage": 127
+    },
+    {
+      "id": "ID_PHB_SPELL_CONJURE_ELEMENTAL",
+      "name": "Conjure Elemental",
+      "srdPage": 128
+    },
+    {
+      "id": "ID_PHB_SPELL_CONJURE_FEY",
+      "name": "Conjure Fey",
+      "srdPage": 128
+    },
+    {
+      "id": "ID_PHB_SPELL_CONJURE_MINOR_ELEMENTALS",
+      "name": "Conjure Minor Elementals",
+      "srdPage": 128
+    },
+    {
+      "id": "ID_PHB_SPELL_CONJURE_WOODLAND_BEINGS",
+      "name": "Conjure Woodland Beings",
+      "srdPage": 129
+    },
+    {
+      "id": "ID_PHB_SPELL_CONTACT_OTHER_PLANE",
+      "name": "Contact Other Plane",
+      "srdPage": 129
+    },
+    {
+      "id": "ID_PHB_SPELL_CONTAGION",
+      "name": "Contagion",
+      "srdPage": 129
+    },
+    {
+      "id": "ID_PHB_SPELL_CONTINGENCY",
+      "name": "Contingency",
+      "srdPage": 130
+    },
+    {
+      "id": "ID_PHB_SPELL_CONTINUAL_FLAME",
+      "name": "Continual Flame",
+      "srdPage": 130
+    },
+    {
+      "id": "ID_PHB_SPELL_CONTROL_WATER",
+      "name": "Control Water",
+      "srdPage": 130
+    },
+    {
+      "id": "ID_PHB_SPELL_CONTROL_WEATHER",
+      "name": "Control Weather",
+      "srdPage": 131
+    },
+    {
+      "id": "ID_PHB_SPELL_COUNTERSPELL",
+      "name": "Counterspell",
+      "srdPage": 131
+    },
+    {
+      "id": "ID_PHB_SPELL_CREATE_FOOD_AND_WATER",
+      "name": "Create Food and Water",
+      "srdPage": 131
+    },
+    {
+      "id": "ID_PHB_SPELL_CREATE_OR_DESTROY_WATER",
+      "name": "Create or Destroy Water",
+      "srdPage": 132
+    },
+    {
+      "id": "ID_PHB_SPELL_CREATE_UNDEAD",
+      "name": "Create Undead",
+      "srdPage": 132
+    },
+    {
+      "id": "ID_PHB_SPELL_CREATION",
+      "name": "Creation",
+      "srdPage": 132
+    },
+    {
+      "id": "ID_PHB_SPELL_CURE_WOUNDS",
+      "name": "Cure Wounds",
+      "srdPage": 132
+    },
+    {
+      "id": "ID_PHB_SPELL_DANCING_LIGHTS",
+      "name": "Dancing Lights",
+      "srdPage": 133
+    },
+    {
+      "id": "ID_PHB_SPELL_DARKNESS",
+      "name": "Darkness",
+      "srdPage": 133
+    },
+    {
+      "id": "ID_PHB_SPELL_DARKVISION",
+      "name": "Darkvision",
+      "srdPage": 133
+    },
+    {
+      "id": "ID_PHB_SPELL_DAYLIGHT",
+      "name": "Daylight",
+      "srdPage": 133
+    },
+    {
+      "id": "ID_PHB_SPELL_DEATH_WARD",
+      "name": "Death Ward",
+      "srdPage": 133
+    },
+    {
+      "id": "ID_PHB_SPELL_DELAYED_BLAST_FIREBALL",
+      "name": "Delayed Blast Fireball",
+      "srdPage": 133
+    },
+    {
+      "id": "ID_PHB_SPELL_DEMIPLANE",
+      "name": "Demiplane",
+      "srdPage": 134
+    },
+    {
+      "id": "ID_PHB_SPELL_DETECT_EVIL_AND_GOOD",
+      "name": "Detect Evil and Good",
+      "srdPage": 134
+    },
+    {
+      "id": "ID_PHB_SPELL_DETECT_MAGIC",
+      "name": "Detect Magic",
+      "srdPage": 134
+    },
+    {
+      "id": "ID_PHB_SPELL_DETECT_POISON_AND_DISEASE",
+      "name": "Detect Poison and Disease",
+      "srdPage": 134
+    },
+    {
+      "id": "ID_PHB_SPELL_DETECT_THOUGHTS",
+      "name": "Detect Thoughts",
+      "srdPage": 135
+    },
+    {
+      "id": "ID_PHB_SPELL_DIMENSION_DOOR",
+      "name": "Dimension Door",
+      "srdPage": 135
+    },
+    {
+      "id": "ID_PHB_SPELL_DISGUISE_SELF",
+      "name": "Disguise Self",
+      "srdPage": 135
+    },
+    {
+      "id": "ID_PHB_SPELL_DISINTEGRATE",
+      "name": "Disintegrate",
+      "srdPage": 135
+    },
+    {
+      "id": "ID_PHB_SPELL_DISPEL_EVIL_AND_GOOD",
+      "name": "Dispel Evil and Good",
+      "srdPage": 136
+    },
+    {
+      "id": "ID_PHB_SPELL_DISPEL_MAGIC",
+      "name": "Dispel Magic",
+      "srdPage": 136
+    },
+    {
+      "id": "ID_PHB_SPELL_DIVINATION",
+      "name": "Divination",
+      "srdPage": 136
+    },
+    {
+      "id": "ID_PHB_SPELL_DIVINE_FAVOR",
+      "name": "Divine Favor",
+      "srdPage": 136
+    },
+    {
+      "id": "ID_PHB_SPELL_DIVINE_WORD",
+      "name": "Divine Word",
+      "srdPage": 137
+    },
+    {
+      "id": "ID_PHB_SPELL_DOMINATE_BEAST",
+      "name": "Dominate Beast",
+      "srdPage": 137
+    },
+    {
+      "id": "ID_PHB_SPELL_DOMINATE_MONSTER",
+      "name": "Dominate Monster",
+      "srdPage": 137
+    },
+    {
+      "id": "ID_PHB_SPELL_DOMINATE_PERSON",
+      "name": "Dominate Person",
+      "srdPage": 138
+    },
+    {
+      "id": "ID_PHB_SPELL_DRAWMIJS_INSTANT_SUMMONS",
+      "name": "Instant Summons",
+      "srdPage": 157
+    },
+    {
+      "id": "ID_PHB_SPELL_DREAM",
+      "name": "Dream",
+      "srdPage": 138
+    },
+    {
+      "id": "ID_PHB_SPELL_DRUIDCRAFT",
+      "name": "Druidcraft",
+      "srdPage": 138
+    },
+    {
+      "id": "ID_PHB_SPELL_EARTHQUAKE",
+      "name": "Earthquake",
+      "srdPage": 139
+    },
+    {
+      "id": "ID_PHB_SPELL_ELDRITCH_BLAST",
+      "name": "Eldritch Blast",
+      "srdPage": 139
+    },
+    {
+      "id": "ID_PHB_SPELL_ENHANCE_ABILITY",
+      "name": "Enhance Ability",
+      "srdPage": 139
+    },
+    {
+      "id": "ID_PHB_SPELL_ENLARGE_REDUCE",
+      "name": "Enlarge/Reduce",
+      "srdPage": 140
+    },
+    {
+      "id": "ID_PHB_SPELL_ENTANGLE",
+      "name": "Entangle",
+      "srdPage": 140
+    },
+    {
+      "id": "ID_PHB_SPELL_ENTHRALL",
+      "name": "Enthrall",
+      "srdPage": 140
+    },
+    {
+      "id": "ID_PHB_SPELL_ETHEREALNESS",
+      "name": "Etherealness",
+      "srdPage": 140
+    },
+    {
+      "id": "ID_PHB_SPELL_EVARDS_BLACK_TENTACLES",
+      "name": "Black Tentacles",
+      "srdPage": 121
+    },
+    {
+      "id": "ID_PHB_SPELL_EXPEDITIOUS_RETREAT",
+      "name": "Expeditious Retreat",
+      "srdPage": 141
+    },
+    {
+      "id": "ID_PHB_SPELL_EYEBITE",
+      "name": "Eyebite",
+      "srdPage": 141
+    },
+    {
+      "id": "ID_PHB_SPELL_FABRICATE",
+      "name": "Fabricate",
+      "srdPage": 141
+    },
+    {
+      "id": "ID_PHB_SPELL_FAERIE_FIRE",
+      "name": "Faerie Fire",
+      "srdPage": 141
+    },
+    {
+      "id": "ID_PHB_SPELL_FALSE_LIFE",
+      "name": "False Life",
+      "srdPage": 142
+    },
+    {
+      "id": "ID_PHB_SPELL_FEAR",
+      "name": "Fear",
+      "srdPage": 142
+    },
+    {
+      "id": "ID_PHB_SPELL_FEATHER_FALL",
+      "name": "Feather Fall",
+      "srdPage": 142
+    },
+    {
+      "id": "ID_PHB_SPELL_FEEBLEMIND",
+      "name": "Feeblemind",
+      "srdPage": 142
+    },
+    {
+      "id": "ID_PHB_SPELL_FIND_FAMILIAR",
+      "name": "Find Familiar",
+      "srdPage": 143
+    },
+    {
+      "id": "ID_PHB_SPELL_FIND_STEED",
+      "name": "Find Steed",
+      "srdPage": 143
+    },
+    {
+      "id": "ID_PHB_SPELL_FIND_THE_PATH",
+      "name": "Find the Path",
+      "srdPage": 143
+    },
+    {
+      "id": "ID_PHB_SPELL_FIND_TRAPS",
+      "name": "Find Traps",
+      "srdPage": 144
+    },
+    {
+      "id": "ID_PHB_SPELL_FINGER_OF_DEATH",
+      "name": "Finger of Death",
+      "srdPage": 144
+    },
+    {
+      "id": "ID_PHB_SPELL_FIRE_BOLT",
+      "name": "Fire Bolt",
+      "srdPage": 144
+    },
+    {
+      "id": "ID_PHB_SPELL_FIRE_SHIELD",
+      "name": "Fire Shield",
+      "srdPage": 144
+    },
+    {
+      "id": "ID_PHB_SPELL_FIRE_STORM",
+      "name": "Fire Storm",
+      "srdPage": 145
+    },
+    {
+      "id": "ID_PHB_SPELL_FIREBALL",
+      "name": "Fireball",
+      "srdPage": 144
+    },
+    {
+      "id": "ID_PHB_SPELL_FLAME_BLADE",
+      "name": "Flame Blade",
+      "srdPage": 145
+    },
+    {
+      "id": "ID_PHB_SPELL_FLAME_STRIKE",
+      "name": "Flame Strike",
+      "srdPage": 145
+    },
+    {
+      "id": "ID_PHB_SPELL_FLAMING_SPHERE",
+      "name": "Flaming Sphere",
+      "srdPage": 145
+    },
+    {
+      "id": "ID_PHB_SPELL_FLESH_TO_STONE",
+      "name": "Flesh to Stone",
+      "srdPage": 145
+    },
+    {
+      "id": "ID_PHB_SPELL_FLY",
+      "name": "Fly",
+      "srdPage": 146
+    },
+    {
+      "id": "ID_PHB_SPELL_FOG_CLOUD",
+      "name": "Fog Cloud",
+      "srdPage": 146
+    },
+    {
+      "id": "ID_PHB_SPELL_FORBIDDANCE",
+      "name": "Forbiddance",
+      "srdPage": 146
+    },
+    {
+      "id": "ID_PHB_SPELL_FORCECAGE",
+      "name": "Forcecage",
+      "srdPage": 147
+    },
+    {
+      "id": "ID_PHB_SPELL_FORESIGHT",
+      "name": "Foresight",
+      "srdPage": 147
+    },
+    {
+      "id": "ID_PHB_SPELL_FREEDOM_OF_MOVEMENT",
+      "name": "Freedom of Movement",
+      "srdPage": 147
+    },
+    {
+      "id": "ID_PHB_SPELL_GASEOUS_FORM",
+      "name": "Gaseous Form",
+      "srdPage": 148
+    },
+    {
+      "id": "ID_PHB_SPELL_GATE",
+      "name": "Gate",
+      "srdPage": 148
+    },
+    {
+      "id": "ID_PHB_SPELL_GEAS",
+      "name": "Geas",
+      "srdPage": 148
+    },
+    {
+      "id": "ID_PHB_SPELL_GENTLE_REPOSE",
+      "name": "Gentle Repose",
+      "srdPage": 148
+    },
+    {
+      "id": "ID_PHB_SPELL_GIANT_INSECT",
+      "name": "Giant Insect",
+      "srdPage": 149
+    },
+    {
+      "id": "ID_PHB_SPELL_GLIBNESS",
+      "name": "Glibness",
+      "srdPage": 149
+    },
+    {
+      "id": "ID_PHB_SPELL_GLOBE_OF_INVULNERABILITY",
+      "name": "Globe of Invulnerability",
+      "srdPage": 149
+    },
+    {
+      "id": "ID_PHB_SPELL_GLYPH_OF_WARDING",
+      "name": "Glyph of Warding",
+      "srdPage": 149
+    },
+    {
+      "id": "ID_PHB_SPELL_GOODBERRY",
+      "name": "Goodberry",
+      "srdPage": 150
+    },
+    {
+      "id": "ID_PHB_SPELL_GREASE",
+      "name": "Grease",
+      "srdPage": 150
+    },
+    {
+      "id": "ID_PHB_SPELL_GREATER_INVISIBILITY",
+      "name": "Greater Invisibility",
+      "srdPage": 150
+    },
+    {
+      "id": "ID_PHB_SPELL_GREATER_RESTORATION",
+      "name": "Greater Restoration",
+      "srdPage": 150
+    },
+    {
+      "id": "ID_PHB_SPELL_GUARDIAN_OF_FAITH",
+      "name": "Guardian of Faith",
+      "srdPage": 150
+    },
+    {
+      "id": "ID_PHB_SPELL_GUARDS_AND_WARDS",
+      "name": "Guards and Wards",
+      "srdPage": 151
+    },
+    {
+      "id": "ID_PHB_SPELL_GUIDANCE",
+      "name": "Guidance",
+      "srdPage": 151
+    },
+    {
+      "id": "ID_PHB_SPELL_GUIDING_BOLT",
+      "name": "Guiding Bolt",
+      "srdPage": 151
+    },
+    {
+      "id": "ID_PHB_SPELL_GUST_OF_WIND",
+      "name": "Gust of Wind",
+      "srdPage": 152
+    },
+    {
+      "id": "ID_PHB_SPELL_HALLOW",
+      "name": "Hallow",
+      "srdPage": 152
+    },
+    {
+      "id": "ID_PHB_SPELL_HALLUCINATORY_TERRAIN",
+      "name": "Hallucinatory Terrain",
+      "srdPage": 152
+    },
+    {
+      "id": "ID_PHB_SPELL_HARM",
+      "name": "Harm",
+      "srdPage": 153
+    },
+    {
+      "id": "ID_PHB_SPELL_HASTE",
+      "name": "Haste",
+      "srdPage": 153
+    },
+    {
+      "id": "ID_PHB_SPELL_HEAL",
+      "name": "Heal",
+      "srdPage": 153
+    },
+    {
+      "id": "ID_PHB_SPELL_HEALING_WORD",
+      "name": "Healing Word",
+      "srdPage": 153
+    },
+    {
+      "id": "ID_PHB_SPELL_HEAT_METAL",
+      "name": "Heat Metal",
+      "srdPage": 153
+    },
+    {
+      "id": "ID_PHB_SPELL_HELLISH_REBUKE",
+      "name": "Hellish Rebuke",
+      "srdPage": 154
+    },
+    {
+      "id": "ID_PHB_SPELL_HEROES_FEAST",
+      "name": "Heroes’ Feast",
+      "srdPage": 154
+    },
+    {
+      "id": "ID_PHB_SPELL_HEROISM",
+      "name": "Heroism",
+      "srdPage": 154
+    },
+    {
+      "id": "ID_PHB_SPELL_HOLD_MONSTER",
+      "name": "Hold Monster",
+      "srdPage": 154
+    },
+    {
+      "id": "ID_PHB_SPELL_HOLD_PERSON",
+      "name": "Hold Person",
+      "srdPage": 154
+    },
+    {
+      "id": "ID_PHB_SPELL_HOLY_AURA",
+      "name": "Holy Aura",
+      "srdPage": 155
+    },
+    {
+      "id": "ID_PHB_SPELL_HUNTERS_MARK",
+      "name": "Hunter’s Mark",
+      "srdPage": 155
+    },
+    {
+      "id": "ID_PHB_SPELL_HYPNOTIC_PATTERN",
+      "name": "Hypnotic Pattern",
+      "srdPage": 155
+    },
+    {
+      "id": "ID_PHB_SPELL_ICE_STORM",
+      "name": "Ice Storm",
+      "srdPage": 155
+    },
+    {
+      "id": "ID_PHB_SPELL_IDENTIFY",
+      "name": "Identify",
+      "srdPage": 155
+    },
+    {
+      "id": "ID_PHB_SPELL_ILLUSORY_SCRIPT",
+      "name": "Illusory Script",
+      "srdPage": 156
+    },
+    {
+      "id": "ID_PHB_SPELL_IMPRISONMENT",
+      "name": "Imprisonment",
+      "srdPage": 156
+    },
+    {
+      "id": "ID_PHB_SPELL_INCENDIARY_CLOUD",
+      "name": "Incendiary Cloud",
+      "srdPage": 157
+    },
+    {
+      "id": "ID_PHB_SPELL_INFLICT_WOUNDS",
+      "name": "Inflict Wounds",
+      "srdPage": 157
+    },
+    {
+      "id": "ID_PHB_SPELL_INSECT_PLAGUE",
+      "name": "Insect Plague",
+      "srdPage": 157
+    },
+    {
+      "id": "ID_PHB_SPELL_INVISIBILITY",
+      "name": "Invisibility",
+      "srdPage": 157
+    },
+    {
+      "id": "ID_PHB_SPELL_JUMP",
+      "name": "Jump",
+      "srdPage": 158
+    },
+    {
+      "id": "ID_PHB_SPELL_KNOCK",
+      "name": "Knock",
+      "srdPage": 158
+    },
+    {
+      "id": "ID_PHB_SPELL_LEGEND_LORE",
+      "name": "Legend Lore",
+      "srdPage": 158
+    },
+    {
+      "id": "ID_PHB_SPELL_LEOMUNDS_SECRET_CHEST",
+      "name": "Secret Chest",
+      "srdPage": 177
+    },
+    {
+      "id": "ID_PHB_SPELL_LEOMUNDS_TINY_HUT",
+      "name": "Tiny Hut",
+      "srdPage": 187
+    },
+    {
+      "id": "ID_PHB_SPELL_LESSER_RESTORATION",
+      "name": "Lesser Restoration",
+      "srdPage": 158
+    },
+    {
+      "id": "ID_PHB_SPELL_LEVITATE",
+      "name": "Levitate",
+      "srdPage": 158
+    },
+    {
+      "id": "ID_PHB_SPELL_LIGHT",
+      "name": "Light",
+      "srdPage": 159
+    },
+    {
+      "id": "ID_PHB_SPELL_LIGHTNING_BOLT",
+      "name": "Lightning Bolt",
+      "srdPage": 159
+    },
+    {
+      "id": "ID_PHB_SPELL_LOCATE_ANIMALS_OR_PLANTS",
+      "name": "Locate Animals or Plants",
+      "srdPage": 159
+    },
+    {
+      "id": "ID_PHB_SPELL_LOCATE_CREATURE",
+      "name": "Locate Creature",
+      "srdPage": 159
+    },
+    {
+      "id": "ID_PHB_SPELL_LOCATE_OBJECT",
+      "name": "Locate Object",
+      "srdPage": 159
+    },
+    {
+      "id": "ID_PHB_SPELL_LONGSTRIDER",
+      "name": "Longstrider",
+      "srdPage": 160
+    },
+    {
+      "id": "ID_PHB_SPELL_MAGE_ARMOR",
+      "name": "Mage Armor",
+      "srdPage": 160
+    },
+    {
+      "id": "ID_PHB_SPELL_MAGE_HAND",
+      "name": "Mage Hand",
+      "srdPage": 160
+    },
+    {
+      "id": "ID_PHB_SPELL_MAGIC_CIRCLE",
+      "name": "Magic Circle",
+      "srdPage": 160
+    },
+    {
+      "id": "ID_PHB_SPELL_MAGIC_JAR",
+      "name": "Magic Jar",
+      "srdPage": 160
+    },
+    {
+      "id": "ID_PHB_SPELL_MAGIC_MISSILE",
+      "name": "Magic Missile",
+      "srdPage": 161
+    },
+    {
+      "id": "ID_PHB_SPELL_MAGIC_MOUTH",
+      "name": "Magic Mouth",
+      "srdPage": 161
+    },
+    {
+      "id": "ID_PHB_SPELL_MAGIC_WEAPON",
+      "name": "Magic Weapon",
+      "srdPage": 161
+    },
+    {
+      "id": "ID_PHB_SPELL_MAJOR_IMAGE",
+      "name": "Major Image",
+      "srdPage": 162
+    },
+    {
+      "id": "ID_PHB_SPELL_MASS_CURE_WOUNDS",
+      "name": "Mass Cure Wounds",
+      "srdPage": 162
+    },
+    {
+      "id": "ID_PHB_SPELL_MASS_HEAL",
+      "name": "Mass Heal",
+      "srdPage": 163
+    },
+    {
+      "id": "ID_PHB_SPELL_MASS_HEALING_WORD",
+      "name": "Mass Healing Word",
+      "srdPage": 163
+    },
+    {
+      "id": "ID_PHB_SPELL_MASS_SUGGESTION",
+      "name": "Mass Suggestion",
+      "srdPage": 163
+    },
+    {
+      "id": "ID_PHB_SPELL_MAZE",
+      "name": "Maze",
+      "srdPage": 163
+    },
+    {
+      "id": "ID_PHB_SPELL_MELD_INTO_STONE",
+      "name": "Meld into Stone",
+      "srdPage": 163
+    },
+    {
+      "id": "ID_PHB_SPELL_MELFS_ACID_ARROW",
+      "name": "Acid Arrow",
+      "srdPage": 114
+    },
+    {
+      "id": "ID_PHB_SPELL_MENDING",
+      "name": "Mending",
+      "srdPage": 164
+    },
+    {
+      "id": "ID_PHB_SPELL_MESSAGE",
+      "name": "Message",
+      "srdPage": 164
+    },
+    {
+      "id": "ID_PHB_SPELL_METEOR_SWARM",
+      "name": "Meteor Swarm",
+      "srdPage": 164
+    },
+    {
+      "id": "ID_PHB_SPELL_MIND_BLANK",
+      "name": "Mind Blank",
+      "srdPage": 164
+    },
+    {
+      "id": "ID_PHB_SPELL_MINOR_ILLUSION",
+      "name": "Minor Illusion",
+      "srdPage": 164
+    },
+    {
+      "id": "ID_PHB_SPELL_MIRAGE_ARCANE",
+      "name": "Mirage Arcane",
+      "srdPage": 165
+    },
+    {
+      "id": "ID_PHB_SPELL_MIRROR_IMAGE",
+      "name": "Mirror Image",
+      "srdPage": 165
+    },
+    {
+      "id": "ID_PHB_SPELL_MISLEAD",
+      "name": "Mislead",
+      "srdPage": 165
+    },
+    {
+      "id": "ID_PHB_SPELL_MISTY_STEP",
+      "name": "Misty Step",
+      "srdPage": 165
+    },
+    {
+      "id": "ID_PHB_SPELL_MODIFY_MEMORY",
+      "name": "Modify Memory",
+      "srdPage": 166
+    },
+    {
+      "id": "ID_PHB_SPELL_MOONBEAM",
+      "name": "Moonbeam",
+      "srdPage": 166
+    },
+    {
+      "id": "ID_PHB_SPELL_MORDENKAINENS_FAITHFUL_HOUND",
+      "name": "Faithful Hound",
+      "srdPage": 142
+    },
+    {
+      "id": "ID_PHB_SPELL_MORDENKAINENS_MAGNIFICENT_MANSION",
+      "name": "Magnificent Mansion",
+      "srdPage": 162
+    },
+    {
+      "id": "ID_PHB_SPELL_MORDENKAINENS_PRIVATE_SANCTUM",
+      "name": "Private Sanctum",
+      "srdPage": 171
+    },
+    {
+      "id": "ID_PHB_SPELL_MORDENKAINENS_SWORD",
+      "name": "Arcane Sword",
+      "srdPage": 119
+    },
+    {
+      "id": "ID_PHB_SPELL_MOVE_EARTH",
+      "name": "Move Earth",
+      "srdPage": 166
+    },
+    {
+      "id": "ID_PHB_SPELL_NONDETECTION",
+      "name": "Nondetection",
+      "srdPage": 167
+    },
+    {
+      "id": "ID_PHB_SPELL_NYSTULS_MAGIC_AURA",
+      "name": "Arcanist’s Magic Aura",
+      "srdPage": 119
+    },
+    {
+      "id": "ID_PHB_SPELL_OTILUKES_FREEZING_SPHERE",
+      "name": "Freezing Sphere",
+      "srdPage": 147
+    },
+    {
+      "id": "ID_PHB_SPELL_OTILUKES_RESILIENT_SPHERE",
+      "name": "Resilient Sphere",
+      "srdPage": 175
+    },
+    {
+      "id": "ID_PHB_SPELL_OTTOS_IRRESISTIBLE_DANCE",
+      "name": "Irresistible Dance",
+      "srdPage": 158
+    },
+    {
+      "id": "ID_PHB_SPELL_PASS_WITHOUT_TRACE",
+      "name": "Pass without Trace",
+      "srdPage": 167
+    },
+    {
+      "id": "ID_PHB_SPELL_PASSWALL",
+      "name": "Passwall",
+      "srdPage": 167
+    },
+    {
+      "id": "ID_PHB_SPELL_PHANTASMAL_KILLER",
+      "name": "Phantasmal Killer",
+      "srdPage": 167
+    },
+    {
+      "id": "ID_PHB_SPELL_PHANTOM_STEED",
+      "name": "Phantom Steed",
+      "srdPage": 167
+    },
+    {
+      "id": "ID_PHB_SPELL_PLANAR_ALLY",
+      "name": "Planar Ally",
+      "srdPage": 168
+    },
+    {
+      "id": "ID_PHB_SPELL_PLANAR_BINDING",
+      "name": "Planar Binding",
+      "srdPage": 168
+    },
+    {
+      "id": "ID_PHB_SPELL_PLANE_SHIFT",
+      "name": "Plane Shift",
+      "srdPage": 168
+    },
+    {
+      "id": "ID_PHB_SPELL_PLANT_GROWTH",
+      "name": "Plant Growth",
+      "srdPage": 169
+    },
+    {
+      "id": "ID_PHB_SPELL_POISON_SPRAY",
+      "name": "Poison Spray",
+      "srdPage": 169
+    },
+    {
+      "id": "ID_PHB_SPELL_POLYMORPH",
+      "name": "Polymorph",
+      "srdPage": 169
+    },
+    {
+      "id": "ID_PHB_SPELL_POWER_WORD_KILL",
+      "name": "Power Word Kill",
+      "srdPage": 170
+    },
+    {
+      "id": "ID_PHB_SPELL_POWER_WORD_STUN",
+      "name": "Power Word Stun",
+      "srdPage": 170
+    },
+    {
+      "id": "ID_PHB_SPELL_PRAYER_OF_HEALING",
+      "name": "Prayer of Healing",
+      "srdPage": 170
+    },
+    {
+      "id": "ID_PHB_SPELL_PRESTIDIGITATION",
+      "name": "Prestidigitation",
+      "srdPage": 170
+    },
+    {
+      "id": "ID_PHB_SPELL_PRISMATIC_SPRAY",
+      "name": "Prismatic Spray",
+      "srdPage": 170
+    },
+    {
+      "id": "ID_PHB_SPELL_PRISMATIC_WALL",
+      "name": "Prismatic Wall",
+      "srdPage": 171
+    },
+    {
+      "id": "ID_PHB_SPELL_PRODUCE_FLAME",
+      "name": "Produce Flame",
+      "srdPage": 172
+    },
+    {
+      "id": "ID_PHB_SPELL_PROGRAMMED_ILLUSION",
+      "name": "Programmed Illusion",
+      "srdPage": 172
+    },
+    {
+      "id": "ID_PHB_SPELL_PROJECT_IMAGE",
+      "name": "Project Image",
+      "srdPage": 172
+    },
+    {
+      "id": "ID_PHB_SPELL_PROTECTION_FROM_ENERGY",
+      "name": "Protection from Energy",
+      "srdPage": 173
+    },
+    {
+      "id": "ID_PHB_SPELL_PROTECTION_FROM_EVIL_AND_GOOD",
+      "name": "Protection from Evil and Good",
+      "srdPage": 173
+    },
+    {
+      "id": "ID_PHB_SPELL_PROTECTION_FROM_POISON",
+      "name": "Protection from Poison",
+      "srdPage": 173
+    },
+    {
+      "id": "ID_PHB_SPELL_PURIFY_FOOD_AND_DRINK",
+      "name": "Purify Food and Drink",
+      "srdPage": 173
+    },
+    {
+      "id": "ID_PHB_SPELL_RAISE_DEAD",
+      "name": "Raise Dead",
+      "srdPage": 173
+    },
+    {
+      "id": "ID_PHB_SPELL_RARYS_TELEPATHIC_BOND",
+      "name": "Telepathic Bond",
+      "srdPage": 185
+    },
+    {
+      "id": "ID_PHB_SPELL_RAY_OF_ENFEEBLEMENT",
+      "name": "Ray of Enfeeblement",
+      "srdPage": 174
+    },
+    {
+      "id": "ID_PHB_SPELL_RAY_OF_FROST",
+      "name": "Ray of Frost",
+      "srdPage": 174
+    },
+    {
+      "id": "ID_PHB_SPELL_REGENERATE",
+      "name": "Regenerate",
+      "srdPage": 174
+    },
+    {
+      "id": "ID_PHB_SPELL_REINCARNATE",
+      "name": "Reincarnate",
+      "srdPage": 174
+    },
+    {
+      "id": "ID_PHB_SPELL_REMOVE_CURSE",
+      "name": "Remove Curse",
+      "srdPage": 174
+    },
+    {
+      "id": "ID_PHB_SPELL_RESISTANCE",
+      "name": "Resistance",
+      "srdPage": 175
+    },
+    {
+      "id": "ID_PHB_SPELL_RESURRECTION",
+      "name": "Resurrection",
+      "srdPage": 175
+    },
+    {
+      "id": "ID_PHB_SPELL_REVERSE_GRAVITY",
+      "name": "Reverse Gravity",
+      "srdPage": 175
+    },
+    {
+      "id": "ID_PHB_SPELL_REVIVIFY",
+      "name": "Revivify",
+      "srdPage": 175
+    },
+    {
+      "id": "ID_PHB_SPELL_ROPE_TRICK",
+      "name": "Rope Trick",
+      "srdPage": 176
+    },
+    {
+      "id": "ID_PHB_SPELL_SACRED_FLAME",
+      "name": "Sacred Flame",
+      "srdPage": 176
+    },
+    {
+      "id": "ID_PHB_SPELL_SANCTUARY",
+      "name": "Sanctuary",
+      "srdPage": 176
+    },
+    {
+      "id": "ID_PHB_SPELL_SCORCHING_RAY",
+      "name": "Scorching Ray",
+      "srdPage": 176
+    },
+    {
+      "id": "ID_PHB_SPELL_SCRYING",
+      "name": "Scrying",
+      "srdPage": 176
+    },
+    {
+      "id": "ID_PHB_SPELL_SEE_INVISIBILITY",
+      "name": "See Invisibility",
+      "srdPage": 177
+    },
+    {
+      "id": "ID_PHB_SPELL_SEEMING",
+      "name": "Seeming",
+      "srdPage": 177
+    },
+    {
+      "id": "ID_PHB_SPELL_SENDING",
+      "name": "Sending",
+      "srdPage": 177
+    },
+    {
+      "id": "ID_PHB_SPELL_SEQUESTER",
+      "name": "Sequester",
+      "srdPage": 178
+    },
+    {
+      "id": "ID_PHB_SPELL_SHAPECHANGE",
+      "name": "Shapechange",
+      "srdPage": 178
+    },
+    {
+      "id": "ID_PHB_SPELL_SHATTER",
+      "name": "Shatter",
+      "srdPage": 178
+    },
+    {
+      "id": "ID_PHB_SPELL_SHIELD",
+      "name": "Shield",
+      "srdPage": 179
+    },
+    {
+      "id": "ID_PHB_SPELL_SHIELD_OF_FAITH",
+      "name": "Shield of Faith",
+      "srdPage": 179
+    },
+    {
+      "id": "ID_PHB_SPELL_SHILLELAGH",
+      "name": "Shillelagh",
+      "srdPage": 179
+    },
+    {
+      "id": "ID_PHB_SPELL_SHOCKING_GRASP",
+      "name": "Shocking Grasp",
+      "srdPage": 179
+    },
+    {
+      "id": "ID_PHB_SPELL_SILENCE",
+      "name": "Silence",
+      "srdPage": 179
+    },
+    {
+      "id": "ID_PHB_SPELL_SILENT_IMAGE",
+      "name": "Silent Image",
+      "srdPage": 179
+    },
+    {
+      "id": "ID_PHB_SPELL_SIMULACRUM",
+      "name": "Simulacrum",
+      "srdPage": 180
+    },
+    {
+      "id": "ID_PHB_SPELL_SLEEP",
+      "name": "Sleep",
+      "srdPage": 180
+    },
+    {
+      "id": "ID_PHB_SPELL_SLEET_STORM",
+      "name": "Sleet Storm",
+      "srdPage": 180
+    },
+    {
+      "id": "ID_PHB_SPELL_SLOW",
+      "name": "Slow",
+      "srdPage": 180
+    },
+    {
+      "id": "ID_PHB_SPELL_SPARE_THE_DYING",
+      "name": "Spare the Dying",
+      "srdPage": 181
+    },
+    {
+      "id": "ID_PHB_SPELL_SPEAK_WITH_ANIMALS",
+      "name": "Speak with Animals",
+      "srdPage": 181
+    },
+    {
+      "id": "ID_PHB_SPELL_SPEAK_WITH_DEAD",
+      "name": "Speak with Dead",
+      "srdPage": 181
+    },
+    {
+      "id": "ID_PHB_SPELL_SPEAK_WITH_PLANTS",
+      "name": "Speak with Plants",
+      "srdPage": 181
+    },
+    {
+      "id": "ID_PHB_SPELL_SPIDER_CLIMB",
+      "name": "Spider Climb",
+      "srdPage": 182
+    },
+    {
+      "id": "ID_PHB_SPELL_SPIKE_GROWTH",
+      "name": "Spike Growth",
+      "srdPage": 182
+    },
+    {
+      "id": "ID_PHB_SPELL_SPIRIT_GUARDIANS",
+      "name": "Spirit Guardians",
+      "srdPage": 182
+    },
+    {
+      "id": "ID_PHB_SPELL_SPIRITUAL_WEAPON",
+      "name": "Spiritual Weapon",
+      "srdPage": 182
+    },
+    {
+      "id": "ID_PHB_SPELL_STINKING_CLOUD",
+      "name": "Stinking Cloud",
+      "srdPage": 182
+    },
+    {
+      "id": "ID_PHB_SPELL_STONE_SHAPE",
+      "name": "Stone Shape",
+      "srdPage": 183
+    },
+    {
+      "id": "ID_PHB_SPELL_STONESKIN",
+      "name": "Stoneskin",
+      "srdPage": 183
+    },
+    {
+      "id": "ID_PHB_SPELL_STORM_OF_VENGEANCE",
+      "name": "Storm of Vengeance",
+      "srdPage": 183
+    },
+    {
+      "id": "ID_PHB_SPELL_SUGGESTION",
+      "name": "Suggestion",
+      "srdPage": 183
+    },
+    {
+      "id": "ID_PHB_SPELL_SUNBEAM",
+      "name": "Sunbeam",
+      "srdPage": 184
+    },
+    {
+      "id": "ID_PHB_SPELL_SUNBURST",
+      "name": "Sunburst",
+      "srdPage": 184
+    },
+    {
+      "id": "ID_PHB_SPELL_SYMBOL",
+      "name": "Symbol",
+      "srdPage": 184
+    },
+    {
+      "id": "ID_PHB_SPELL_TASHAS_HIDEOUS_LAUGHTER",
+      "name": "Hideous Laughter",
+      "srdPage": 154
+    },
+    {
+      "id": "ID_PHB_SPELL_TELEKINESIS",
+      "name": "Telekinesis",
+      "srdPage": 185
+    },
+    {
+      "id": "ID_PHB_SPELL_TELEPORT",
+      "name": "Teleport",
+      "srdPage": 185
+    },
+    {
+      "id": "ID_PHB_SPELL_TELEPORTATION_CIRCLE",
+      "name": "Teleportation Circle",
+      "srdPage": 186
+    },
+    {
+      "id": "ID_PHB_SPELL_TENSERS_FLOATING_DISK",
+      "name": "Floating Disk",
+      "srdPage": 146
+    },
+    {
+      "id": "ID_PHB_SPELL_THAUMATURGY",
+      "name": "Thaumaturgy",
+      "srdPage": 187
+    },
+    {
+      "id": "ID_PHB_SPELL_THUNDERWAVE",
+      "name": "Thunderwave",
+      "srdPage": 187
+    },
+    {
+      "id": "ID_PHB_SPELL_TIME_STOP",
+      "name": "Time Stop",
+      "srdPage": 187
+    },
+    {
+      "id": "ID_PHB_SPELL_TONGUES",
+      "name": "Tongues",
+      "srdPage": 187
+    },
+    {
+      "id": "ID_PHB_SPELL_TRANSPORT_VIA_PLANTS",
+      "name": "Transport via Plants",
+      "srdPage": 188
+    },
+    {
+      "id": "ID_PHB_SPELL_TREE_STRIDE",
+      "name": "Tree Stride",
+      "srdPage": 188
+    },
+    {
+      "id": "ID_PHB_SPELL_TRUE_POLYMORPH",
+      "name": "True Polymorph",
+      "srdPage": 188
+    },
+    {
+      "id": "ID_PHB_SPELL_TRUE_RESURRECTION",
+      "name": "True Resurrection",
+      "srdPage": 189
+    },
+    {
+      "id": "ID_PHB_SPELL_TRUE_SEEING",
+      "name": "True Seeing",
+      "srdPage": 189
+    },
+    {
+      "id": "ID_PHB_SPELL_TRUE_STRIKE",
+      "name": "True Strike",
+      "srdPage": 189
+    },
+    {
+      "id": "ID_PHB_SPELL_UNSEEN_SERVANT",
+      "name": "Unseen Servant",
+      "srdPage": 189
+    },
+    {
+      "id": "ID_PHB_SPELL_VAMPIRIC_TOUCH",
+      "name": "Vampiric Touch",
+      "srdPage": 189
+    },
+    {
+      "id": "ID_PHB_SPELL_VICIOUS_MOCKERY",
+      "name": "Vicious Mockery",
+      "srdPage": 189
+    },
+    {
+      "id": "ID_PHB_SPELL_WALL_OF_FIRE",
+      "name": "Wall of Fire",
+      "srdPage": 190
+    },
+    {
+      "id": "ID_PHB_SPELL_WALL_OF_FORCE",
+      "name": "Wall of Force",
+      "srdPage": 190
+    },
+    {
+      "id": "ID_PHB_SPELL_WALL_OF_ICE",
+      "name": "Wall of Ice",
+      "srdPage": 190
+    },
+    {
+      "id": "ID_PHB_SPELL_WALL_OF_STONE",
+      "name": "Wall of Stone",
+      "srdPage": 190
+    },
+    {
+      "id": "ID_PHB_SPELL_WALL_OF_THORNS",
+      "name": "Wall of Thorns",
+      "srdPage": 191
+    },
+    {
+      "id": "ID_PHB_SPELL_WARDING_BOND",
+      "name": "Warding Bond",
+      "srdPage": 191
+    },
+    {
+      "id": "ID_PHB_SPELL_WATER_BREATHING",
+      "name": "Water Breathing",
+      "srdPage": 191
+    },
+    {
+      "id": "ID_PHB_SPELL_WATER_WALK",
+      "name": "Water Walk",
+      "srdPage": 191
+    },
+    {
+      "id": "ID_PHB_SPELL_WEB",
+      "name": "Web",
+      "srdPage": 192
+    },
+    {
+      "id": "ID_PHB_SPELL_WEIRD",
+      "name": "Weird",
+      "srdPage": 192
+    },
+    {
+      "id": "ID_PHB_SPELL_WIND_WALK",
+      "name": "Wind Walk",
+      "srdPage": 192
+    },
+    {
+      "id": "ID_PHB_SPELL_WIND_WALL",
+      "name": "Wind Wall",
+      "srdPage": 192
+    },
+    {
+      "id": "ID_PHB_SPELL_WISH",
+      "name": "Wish",
+      "srdPage": 193
+    },
+    {
+      "id": "ID_PHB_SPELL_WORD_OF_RECALL",
+      "name": "Word of Recall",
+      "srdPage": 193
+    },
+    {
+      "id": "ID_PHB_SPELL_ZONE_OF_TRUTH",
+      "name": "Zone of Truth",
+      "srdPage": 193
+    }
+  ],
+  "compatibilityRenames": [
+    {
+      "id": "ID_PHB_SPELL_BIGBYS_HAND",
+      "oldName": "Bigby’s Hand",
+      "newName": "Arcane Hand"
+    },
+    {
+      "id": "ID_PHB_SPELL_DRAWMIJS_INSTANT_SUMMONS",
+      "oldName": "Drawmij’s Instant Summons",
+      "newName": "Instant Summons"
+    },
+    {
+      "id": "ID_PHB_SPELL_EVARDS_BLACK_TENTACLES",
+      "oldName": "Evard’s Black Tentacles",
+      "newName": "Black Tentacles"
+    },
+    {
+      "id": "ID_PHB_SPELL_LEOMUNDS_SECRET_CHEST",
+      "oldName": "Leomund’s Secret Chest",
+      "newName": "Secret Chest"
+    },
+    {
+      "id": "ID_PHB_SPELL_LEOMUNDS_TINY_HUT",
+      "oldName": "Leomund’s Tiny Hut",
+      "newName": "Tiny Hut"
+    },
+    {
+      "id": "ID_PHB_SPELL_MELFS_ACID_ARROW",
+      "oldName": "Melf’s Acid Arrow",
+      "newName": "Acid Arrow"
+    },
+    {
+      "id": "ID_PHB_SPELL_MORDENKAINENS_FAITHFUL_HOUND",
+      "oldName": "Mordenkainen’s Faithful Hound",
+      "newName": "Faithful Hound"
+    },
+    {
+      "id": "ID_PHB_SPELL_MORDENKAINENS_MAGNIFICENT_MANSION",
+      "oldName": "Mordenkainen’s Magnificent Mansion",
+      "newName": "Magnificent Mansion"
+    },
+    {
+      "id": "ID_PHB_SPELL_MORDENKAINENS_PRIVATE_SANCTUM",
+      "oldName": "Mordenkainen’s Private Sanctum",
+      "newName": "Private Sanctum"
+    },
+    {
+      "id": "ID_PHB_SPELL_MORDENKAINENS_SWORD",
+      "oldName": "Mordenkainen’s Sword",
+      "newName": "Arcane Sword"
+    },
+    {
+      "id": "ID_PHB_SPELL_NYSTULS_MAGIC_AURA",
+      "oldName": "Nystul’s Magic Aura",
+      "newName": "Arcanist’s Magic Aura"
+    },
+    {
+      "id": "ID_PHB_SPELL_OTILUKES_FREEZING_SPHERE",
+      "oldName": "Otiluke’s Freezing Sphere",
+      "newName": "Freezing Sphere"
+    },
+    {
+      "id": "ID_PHB_SPELL_OTILUKES_RESILIENT_SPHERE",
+      "oldName": "Otiluke’s Resilient Sphere",
+      "newName": "Resilient Sphere"
+    },
+    {
+      "id": "ID_PHB_SPELL_OTTOS_IRRESISTIBLE_DANCE",
+      "oldName": "Otto’s Irresistible Dance",
+      "newName": "Irresistible Dance"
+    },
+    {
+      "id": "ID_PHB_SPELL_RARYS_TELEPATHIC_BOND",
+      "oldName": "Rary’s Telepathic Bond",
+      "newName": "Telepathic Bond"
+    },
+    {
+      "id": "ID_PHB_SPELL_TASHAS_HIDEOUS_LAUGHTER",
+      "oldName": "Tasha’s Hideous Laughter",
+      "newName": "Hideous Laughter"
+    },
+    {
+      "id": "ID_PHB_SPELL_TENSERS_FLOATING_DISK",
+      "oldName": "Tenser’s Floating Disk",
+      "newName": "Floating Disk"
+    }
+  ],
+  "review": "319 spell subjects and source pages verified against the official spell-description headings. Existing runtime metadata and retained identifiers preserved. Other game-content files remain under scope review. Complete SRD passages restored for ten previously truncated spells; transcription corrections and canonical display references applied. Calculation setters and rules remain unchanged. Header review corrected Wind Walk casting time to 1 minute, a duration-unit typo and a duplicated material-component phrase."
+}

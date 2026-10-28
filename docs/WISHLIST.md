@@ -13,7 +13,7 @@ duplicating bug status here; this wishlist retains broader feature requests.
 
 ---
 
-## Aurora.Web — Parity Gaps vs. Aurora: Reflections
+## Aurora.Web — Parity Gaps vs. Aurora Reflections
 
 Features that exist and work on the desktop client but have no equivalent in the
 browser workflow yet.

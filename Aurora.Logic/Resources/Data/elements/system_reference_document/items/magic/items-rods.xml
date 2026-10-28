@@ -1,68 +1,5 @@
-<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8"?>
 <elements>
-	<element name="Rod of the Pact Keeper, +1" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_ROD_OF_THE_PACT_KEEPER_1">
-		<description>
-			<p>While holding this rod, you gain a +1 bonus spell attack rolls and to the saving throw DCs of your warlock spells.</p>
-			<p class="indent">In addition, you can regain one warlock spell slot as an action while holding the rod. You can’t use this property again until you finish a long rest.</p>
-		</description>
-		<setters>
-			<set name="keywords">warlock</set>
-			<set name="category">Rods</set>
-			<set name="cost" currency="gp">0</set>
-			<set name="weight" lb="2">2 lb.</set>
-			<set name="type">Rod</set>
-			<set name="slot">onehand</set>
-			<set name="attunement" addition="by a warlock">true</set>
-			<set name="rarity">Uncommon</set>
-			<set name="enhancement">1</set>
-		</setters>
-		<rules>
-			<stat name="warlock:spellcasting:attack" value="1" />
-			<stat name="warlock:spellcasting:dc" value="1" />
-		</rules>
-	</element>
-	<element name="Rod of the Pact Keeper, +2" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_ROD_OF_THE_PACT_KEEPER_2">
-		<description>
-			<p>While holding this rod, you gain a +2 bonus spell attack rolls and to the saving throw DCs of your warlock spells.</p>
-			<p class="indent">In addition, you can regain one warlock spell slot as an action while holding the rod. You can’t use this property again until you finish a long rest.</p>
-		</description>
-		<setters>
-			<set name="keywords">warlock</set>
-			<set name="category">Rods</set>
-			<set name="cost" currency="gp">0</set>
-			<set name="weight" lb="2">2 lb.</set>
-			<set name="type">Rod</set>
-			<set name="slot">onehand</set>
-			<set name="attunement" addition="by a warlock">true</set>
-			<set name="rarity">Rare</set>
-			<set name="enhancement">2</set>
-		</setters>
-		<rules>
-			<stat name="warlock:spellcasting:attack" value="2" />
-			<stat name="warlock:spellcasting:dc" value="2" />
-		</rules>
-	</element>
-	<element name="Rod of the Pact Keeper, +3" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_ROD_OF_THE_PACT_KEEPER_3">
-		<description>
-			<p>While holding this rod, you gain a +3 bonus spell attack rolls and to the saving throw DCs of your warlock spells.</p>
-			<p class="indent">In addition, you can regain one warlock spell slot as an action while holding the rod. You can’t use this property again until you finish a long rest.</p>
-		</description>
-		<setters>
-			<set name="keywords">warlock</set>
-			<set name="category">Rods</set>
-			<set name="cost" currency="gp">0</set>
-			<set name="weight" lb="2">2 lb.</set>
-			<set name="type">Rod</set>
-			<set name="slot">onehand</set>
-			<set name="attunement" addition="by a warlock">true</set>
-			<set name="rarity">Very Rare</set>
-			<set name="enhancement">3</set>
-		</setters>
-		<rules>
-			<stat name="warlock:spellcasting:attack" value="3" />
-			<stat name="warlock:spellcasting:dc" value="3" />
-		</rules>
-	</element>
 	<element name="Rod of Rulership" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_ROD_OF_RULERSHIP">
 		<description>
 			<p>You can use an action to present the rod and command obedience from each creature of your choice that you can see within 120 feet of you. Each target must succeed on a DC 15 Wisdom saving throw or be charmed by you for 8 hours. While charmed in this way, the creature regards you as its trusted leader. If harmed by you or your companions, or commanded to do something contrary to its nature, a target ceases to be charmed in this way. The rod can’t be used again until the next dawn.</p>
@@ -77,7 +14,7 @@
 			<set name="attunement">true</set>
 			<set name="rarity">Rare</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<!-- <element name="Tentacle Rod" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_TENTACLE_ROD">
 		<description>
@@ -103,7 +40,7 @@
 			<p class="indent">A newly found rod has 1d10 levels of spell energy stored in it already. A rod that can no longer absorb spell energy and has no energy remaining becomes nonmagical.</p>
 		</description>
 		<setters>
-			<set name="keywords" />
+			<set name="keywords"/>
 			<set name="category">Rods</set>
 			<set name="cost" currency="gp">0</set>
 			<set name="weight" lb="2">2 lb.</set>
@@ -112,7 +49,7 @@
 			<set name="attunement">true</set>
 			<set name="rarity">Very Rare</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Rod of Alertness" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_ROD_OF_ALERTNESS">
 		<description>
@@ -123,7 +60,7 @@
 			<p class="indent">The rod’s head stops glowing and the effect ends after 10 minutes, or when a creature uses an action to pull the rod from the ground. This property can’t be used again until the next dawn.</p>
 		</description>
 		<setters>
-			<set name="keywords" />
+			<set name="keywords"/>
 			<set name="category">Rods</set>
 			<set name="cost" currency="gp">0</set>
 			<set name="weight" lb="2">2 lb.</set>
@@ -132,7 +69,7 @@
 			<set name="attunement">true</set>
 			<set name="rarity">Very Rare</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Rod of Security" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_ROD_OF_SECURITY">
 		<description>
@@ -141,7 +78,7 @@
 			<p class="indent">When the time runs out or you use an action to end it, all visitors reappear in the location they occupied when you activated the rod, or an unoccupied space nearest that location. The rod can’t be used again until ten days have passed.</p>
 		</description>
 		<setters>
-			<set name="keywords" />
+			<set name="keywords"/>
 			<set name="category">Rods</set>
 			<set name="cost" currency="gp">0</set>
 			<set name="weight" lb="2">2 lb.</set>
@@ -149,7 +86,7 @@
 			<set name="slot">onehand</set>
 			<set name="rarity">Very Rare</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<element name="Rod of Lordly Might" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_ROD_OF_LORDLY_MIGHT">
 		<description>
@@ -166,7 +103,7 @@
 			<p class="indent"><strong><em>Terrify.</em></strong> While holding the rod, you can use an action to force each creature you can see within 30 feet of you to make a DC 17 Wisdom saving throw. On a failure, a target is frightened of you for 1 minute. A frightened target can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success. This property can’t be used again until the next dawn.</p>
 		</description>
 		<setters>
-			<set name="keywords" />
+			<set name="keywords"/>
 			<set name="category">Rods</set>
 			<set name="cost" currency="gp">0</set>
 			<set name="weight" lb="2">2 lb.</set>
@@ -177,7 +114,7 @@
 			<set name="weapon">Mace</set>
 			<set name="enhancement">3</set>
 		</setters>
-		<rules />
+		<rules/>
 	</element>
 	<!-- <element name="Rod of Resurrection" type="Magic Item" source="System Reference Document" id="ID_WOTC_DMG_MAGIC_ITEM_ROD_OF_RESURRECTION">
 		<description>

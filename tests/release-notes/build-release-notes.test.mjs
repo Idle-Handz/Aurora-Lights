@@ -1,9 +1,17 @@
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { execFileSync, spawnSync } from "node:child_process";
+import {
+  existsSync,
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 import {
   compileReleaseNotes,
@@ -59,8 +67,18 @@ test("normalizeFragment accepts a wrapped sentence and removes an accidental bul
   );
 });
 
-test("compileReleaseNotes includes only fragments added after the previous tag", () => {
+test("compileReleaseNotes requires new fragments when requested and reads the selected revision", () => {
   const repositoryRoot = mkdtempSync(join(tmpdir(), "aurora-release-notes-"));
+  const outputPath = join(repositoryRoot, "release-notes.md");
+  const runCompiler = (...args) =>
+    spawnSync(
+      process.execPath,
+      [
+        fileURLToPath(new URL("../../tools/build-release-notes.mjs", import.meta.url)),
+        ...args,
+      ],
+      { cwd: repositoryRoot, encoding: "utf8" },
+    );
 
   try {
     execFileSync("git", ["init", "--quiet"], { cwd: repositoryRoot });
@@ -89,11 +107,48 @@ test("compileReleaseNotes includes only fragments added after the previous tag",
     });
     execFileSync("git", ["tag", "v1.0.0"], { cwd: repositoryRoot });
 
+    assert.equal(compileReleaseNotes({ repositoryRoot, from: "v1.0.0" }), "");
+    assert.throws(
+      () => compileReleaseNotes({
+        repositoryRoot,
+        from: "v1.0.0",
+        requireFragments: true,
+      }),
+      /No release-note fragments were added since v1\.0\.0/,
+    );
+
     writeFileSync(
       publishedFragment,
       "Edited wording for an already published fix.\n",
       "utf8",
     );
+    const archiveDirectory = join(
+      repositoryRoot,
+      "docs/release-notes/published/v1.0.0/fixed",
+    );
+    mkdirSync(archiveDirectory, { recursive: true });
+    writeFileSync(join(archiveDirectory, "backfilled.md"), "A historical fix.\n", "utf8");
+    writeFileSync(
+      join(repositoryRoot, "docs/release-notes/README.md"),
+      "Fragment instructions.\n",
+      "utf8",
+    );
+    execFileSync("git", ["add", "."], { cwd: repositoryRoot });
+    execFileSync("git", ["commit", "--quiet", "-m", "Restore historical notes"], {
+      cwd: repositoryRoot,
+    });
+
+    const missingNotes = runCompiler(
+      "--require-fragments", "--from", "v1.0.0", "--output", outputPath,
+    );
+    assert.equal(missingNotes.status, 1);
+    assert.match(
+      missingNotes.stderr,
+      /No release-note fragments were added since v1\.0\.0/,
+    );
+    assert.match(missingNotes.stderr, /Add a new, non-empty Markdown file/);
+    assert.equal(existsSync(outputPath), false);
+
     writeFileSync(
       join(fixedDirectory, "new.md"),
       "A newly added fix.\n",
@@ -108,15 +163,30 @@ test("compileReleaseNotes includes only fragments added after the previous tag",
       compileReleaseNotes({
         repositoryRoot,
         from: "v1.0.0",
+        requireFragments: true,
       }),
       ["## What’s new", "", "### Fixed", "", "- A newly added fix.", ""].join(
         "\n",
       ),
     );
 
+    const withNotes = runCompiler(
+      "--from", "v1.0.0", "--require-fragments", "--output", outputPath,
+    );
+    assert.equal(withNotes.status, 0, withNotes.stderr);
+    assert.equal(
+      readFileSync(outputPath, "utf8"),
+      compileReleaseNotes({ repositoryRoot, from: "v1.0.0", requireFragments: true }),
+    );
+
     // The requested release tree, not today's checkout/index, owns its fragments.
     assert.equal(
-      compileReleaseNotes({ repositoryRoot, from: "(none)", to: "v1.0.0" }),
+      compileReleaseNotes({
+        repositoryRoot,
+        from: "(none)",
+        to: "v1.0.0",
+        requireFragments: true,
+      }),
       ["## What’s new", "", "### Fixed", "", "- An already published fix.", ""].join("\n"),
     );
     writeFileSync(join(fixedDirectory, "new.md"), "Uncommitted future wording.\n", "utf8");
@@ -124,6 +194,14 @@ test("compileReleaseNotes includes only fragments added after the previous tag",
       compileReleaseNotes({ repositoryRoot, from: "v1.0.0", to: "HEAD" }),
       ["## What’s new", "", "### Fixed", "", "- A newly added fix.", ""].join("\n"),
     );
+    writeFileSync(join(fixedDirectory, "empty.md"), "\n  \n", "utf8");
+    execFileSync("git", ["add", "docs/release-notes/fixed/empty.md"], { cwd: repositoryRoot });
+    execFileSync("git", ["commit", "--quiet", "-m", "Add an invalid empty fragment"], {
+      cwd: repositoryRoot,
+    });
+    const emptyNote = runCompiler("--from", "v1.0.0", "--require-fragments");
+    assert.equal(emptyNote.status, 1);
+    assert.match(emptyNote.stderr, /Release-note fragment is empty/);
   } finally {
     rmSync(repositoryRoot, { recursive: true, force: true });
   }

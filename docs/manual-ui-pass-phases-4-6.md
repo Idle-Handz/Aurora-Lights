@@ -62,7 +62,7 @@ still worth reading.
 Build and run:
 
 ```bash
-dotnet build Aurora.App/Aurora.App.csproj -f net10.0-windows10.0.19041.0
+dotnet build Aurora.Reflections/Aurora.Reflections.csproj -f net10.0-windows10.0.19041.0
 ```
 
 ## 1. First launch after the upgrade
@@ -283,7 +283,7 @@ that character is not in the table above but behaves the same way.
 Legacy keeps applying local corrections, and a save from either app now preserves
 what the other stores.
 
-1. Build and run Legacy: `dotnet build Aurora.Lights/Aurora.Legacy.csproj`.
+1. Build and run Legacy: `dotnet build Aurora.Legacy/Aurora.Legacy.csproj`.
 2. Open a character Reflections saved.
 3. Check a corrected item appears once, not twice. The installed content now
    carries three managed correction files — the Farmer background, the Stoneheart

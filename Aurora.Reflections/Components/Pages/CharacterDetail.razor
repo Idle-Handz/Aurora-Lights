@@ -1,0 +1,971 @@
+@page "/character"
+@implements IDisposable
+@inject CharacterTabService Tabs
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@using Builder.Presentation.Models
+
+@if (_snap is null)
+{
+    <MudText Color="Color.Secondary">No character loaded. <MudLink Href="/">Go to Characters</MudLink></MudText>
+    return;
+}
+
+@* ── Header ── *@
+<div class="detail-header">
+    <div class="detail-portrait" style="position: relative;">
+        @if (!string.IsNullOrEmpty(_portraitSrc))
+        {
+            <img src="@_portraitSrc" alt="@_snap.Name" class="detail-portrait-img" />
+        }
+        else
+        {
+            <MudIcon Icon="@Icons.Material.Filled.Person" Style="font-size: 72px; color: var(--mud-palette-text-disabled);" />
+        }
+        <div class="portrait-change-overlay" @onclick="OpenPortraitPickerAsync" title="Change portrait">
+            <MudIcon Icon="@Icons.Material.Filled.Edit" Style="font-size: 16px;" />
+        </div>
+    </div>
+    <div class="detail-header-info">
+        <div class="detail-name">@_snap.Name</div>
+        <div class="detail-build">Level @_snap.Level &nbsp;·&nbsp; @_snap.Race</div>
+        <div class="detail-build">@_snap.Class</div>
+        @if (!string.IsNullOrEmpty(_snap.Archetype))
+        {
+            <div class="detail-sub">@_snap.Archetype</div>
+        }
+        @if (!string.IsNullOrEmpty(_snap.Background))
+        {
+            <div class="detail-sub">@_snap.Background Background</div>
+        }
+        @if (!string.IsNullOrEmpty(_snap.Alignment))
+        {
+            <div class="detail-sub">@_snap.Alignment</div>
+        }
+        <UploadToDriveButton @key="Tabs.ActiveTab?.Id" Tab="Tabs.ActiveTab" />
+    </div>
+</div>
+
+@* ── Combat stat strip ── *@
+<div class="combat-strip" style="margin-bottom: 20px;">
+    <div class="combat-stat">
+        <div class="combat-stat-value">@_snap.ArmorClass</div>
+        <div class="combat-stat-label">Armor Class</div>
+    </div>
+    <div class="combat-sep"></div>
+    <div class="combat-stat">
+        <div class="combat-stat-value">@_snap.MaxHp</div>
+        <div class="combat-stat-label">Max HP</div>
+    </div>
+    <div class="combat-sep"></div>
+    <div class="combat-stat">
+        <div class="combat-stat-value">@_snap.Speed ft.</div>
+        <div class="combat-stat-label">Speed</div>
+    </div>
+    @if (_snap.SpeedFly > 0)
+    {
+        <div class="combat-sep"></div>
+        <div class="combat-stat">
+            <div class="combat-stat-value">@_snap.SpeedFly ft.</div>
+            <div class="combat-stat-label">Fly</div>
+        </div>
+    }
+    @if (_snap.SpeedClimb > 0)
+    {
+        <div class="combat-sep"></div>
+        <div class="combat-stat">
+            <div class="combat-stat-value">@_snap.SpeedClimb ft.</div>
+            <div class="combat-stat-label">Climb</div>
+        </div>
+    }
+    @if (_snap.SpeedSwim > 0)
+    {
+        <div class="combat-sep"></div>
+        <div class="combat-stat">
+            <div class="combat-stat-value">@_snap.SpeedSwim ft.</div>
+            <div class="combat-stat-label">Swim</div>
+        </div>
+    }
+    @if (_snap.SpeedBurrow > 0)
+    {
+        <div class="combat-sep"></div>
+        <div class="combat-stat">
+            <div class="combat-stat-value">@_snap.SpeedBurrow ft.</div>
+            <div class="combat-stat-label">Burrow</div>
+        </div>
+    }
+    <div class="combat-sep"></div>
+    <div class="combat-stat">
+        <div class="combat-stat-value">@FormatBonus(_snap.Initiative)</div>
+        <div class="combat-stat-label">Initiative</div>
+    </div>
+    <div class="combat-sep"></div>
+    <div class="combat-stat">
+        <div class="combat-stat-value">@FormatBonus(_snap.Proficiency)</div>
+        <div class="combat-stat-label">Proficiency</div>
+    </div>
+</div>
+
+@* ── Abilities + Skills ── *@
+<div class="detail-advancement-strip">
+    <div class="detail-advancement-meta">
+        <div class="section-label" style="margin-bottom: 6px;">Advancement</div>
+        <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-disabled);">
+            Level @_snap.Level
+            @if (!BuildService.CanLevelUp)   { <span> · Max level</span>   }
+            @if (!BuildService.CanLevelDown) { <span> · Level 1 min</span> }
+        </MudText>
+    </div>
+    <div class="detail-advancement-actions">
+        <MudButton StartIcon="@Icons.Material.Filled.Add"
+                   Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   Size="Size.Small"
+                   Disabled="@(!BuildService.CanLevelUp || _advancementBusy)"
+                   OnClick="LevelUpAsync">
+            Level Up
+        </MudButton>
+
+        <MudButton StartIcon="@Icons.Material.Filled.Remove"
+                   Variant="Variant.Outlined"
+                   Color="Color.Default"
+                   Size="Size.Small"
+                   Disabled="@(!BuildService.CanLevelDown || _advancementBusy)"
+                   OnClick="LevelDownAsync">
+            Level Down
+        </MudButton>
+
+        @if (BuildService.HasMainClass && BuildService.CanLevelUp)
+        {
+            <MudButton StartIcon="@Icons.Material.Filled.MergeType"
+                       Variant="Variant.Outlined"
+                       Color="Color.Secondary"
+                       Size="Size.Small"
+                       Disabled="@_advancementBusy"
+                       OnClick="OpenMulticlassDialog">
+                Add Multiclass
+            </MudButton>
+        }
+
+        <div class="build-hp-toggle" title="How HP is assigned on each level-up">
+            <span class="build-hp-label">HP:</span>
+            <button class="build-hp-btn @(BuildService.IsUsingAverageHp ? "active" : "")"
+                    disabled="@_advancementBusy"
+                    @onclick="() => SetHpMethodAsync(HpMethod.Average)">Avg</button>
+            <button class="build-hp-btn @(!BuildService.IsUsingAverageHp ? "active" : "")"
+                    disabled="@_advancementBusy"
+                    @onclick="() => SetHpMethodAsync(HpMethod.Rolled)">Roll</button>
+        </div>
+
+    </div>
+</div>
+
+<div class="overview-two-col mb-section">
+
+    @* Left: ability scores with inline save bonuses *@
+    <div>
+        <div class="section-label">Ability Scores</div>
+        <div class="ability-grid">
+            @foreach (var ability in _snap.Abilities)
+            {
+                <div class="ability-box">
+                    <div class="ability-abbr">@ability.Abbreviation.ToUpperInvariant()</div>
+                    <div class="ability-score">@ability.FinalScore</div>
+                    <div class="ability-mod">@ability.ModifierString</div>
+                    <div class="ability-save-label">SAVE</div>
+                    <div class="ability-save @(ability.SaveIsProficient ? "ability-save-prof" : "")">
+                        <span class="prof-dot @(ability.SaveIsProficient ? "prof-dot-filled" : "")" style="width:6px;height:6px;"></span>
+                        @ability.SaveBonusString
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    @* Right: skills *@
+    <div>
+        <div class="section-label">Skills</div>
+        <div class="skill-list">
+            @foreach (var skill in _snap.Skills)
+            {
+                <div class="skill-row">
+                    <span class="prof-dot @(skill.IsProficient ? (skill.IsExpertise ? "prof-dot-expertise" : "prof-dot-filled") : "")"></span>
+                    <span class="skill-bonus">@FormatBonus(skill.FinalBonus)</span>
+                    <span class="skill-name">@skill.Name</span>
+                    <span class="skill-ability">(@skill.AbilityAbbreviation.ToUpperInvariant())</span>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@* ── Proficiencies & Languages ── *@
+@{
+    bool hasProfs = _snap.Languages.Count > 0 || _snap.ArmorProficiencies.Count > 0 ||
+                   _snap.WeaponProficiencies.Count > 0 || _snap.ToolProficiencies.Count > 0;
+}
+@if (hasProfs)
+{
+    <div class="section-label">Proficiencies &amp; Languages</div>
+    <div class="prof-grid mb-section">
+        @if (_snap.Languages.Count > 0)
+        {
+            <div class="prof-group">
+                <div class="prof-group-label">Languages</div>
+                <div class="prof-group-items">@string.Join(", ", _snap.Languages)</div>
+            </div>
+        }
+        @if (_snap.ArmorProficiencies.Count > 0)
+        {
+            <div class="prof-group">
+                <div class="prof-group-label">Armor</div>
+                <div class="prof-group-items">@string.Join(", ", _snap.ArmorProficiencies)</div>
+            </div>
+        }
+        @if (_snap.WeaponProficiencies.Count > 0)
+        {
+            <div class="prof-group">
+                <div class="prof-group-label">Weapons</div>
+                <div class="prof-group-items">@string.Join(", ", _snap.WeaponProficiencies)</div>
+            </div>
+        }
+        @if (_snap.ToolProficiencies.Count > 0)
+        {
+            <div class="prof-group">
+                <div class="prof-group-label">Tools</div>
+                <div class="prof-group-items">@string.Join(", ", _snap.ToolProficiencies)</div>
+            </div>
+        }
+    </div>
+}
+
+@* ── Background info ── *@
+@if (!string.IsNullOrWhiteSpace(_snap.Backstory))
+{
+    <div class="section-label">Backstory</div>
+    <div class="bg-text mb-section">@_snap.Backstory</div>
+}
+
+@if (!string.IsNullOrWhiteSpace(_snap.BackgroundFeatureName))
+{
+    <div class="section-label">Background Feature</div>
+    <div class="build-feature-name mb-section" style="margin-top: 0;">
+        @_snap.BackgroundFeatureName
+        @if (!string.IsNullOrWhiteSpace(_snap.BackgroundFeatureDescription))
+        {
+            <div class="bg-text" style="margin-top: 4px; font-weight: 400;">@_snap.BackgroundFeatureDescription</div>
+        }
+    </div>
+}
+
+@{
+    bool hasAppearance = !string.IsNullOrWhiteSpace(_snap.Age)    ||
+                         !string.IsNullOrWhiteSpace(_snap.Height) ||
+                         !string.IsNullOrWhiteSpace(_snap.Weight) ||
+                         !string.IsNullOrWhiteSpace(_snap.Eyes)   ||
+                         !string.IsNullOrWhiteSpace(_snap.Hair)   ||
+                         !string.IsNullOrWhiteSpace(_snap.Skin)   ||
+                         !string.IsNullOrWhiteSpace(_snap.Gender);
+}
+@if (hasAppearance)
+{
+    <div class="section-label">Appearance</div>
+    <div class="appearance-grid mb-section">
+        @AppearanceRow("Age",    _snap.Age)
+        @AppearanceRow("Height", _snap.Height)
+        @AppearanceRow("Weight", _snap.Weight)
+        @AppearanceRow("Eyes",   _snap.Eyes)
+        @AppearanceRow("Hair",   _snap.Hair)
+        @AppearanceRow("Skin",   _snap.Skin)
+        @AppearanceRow("Gender", _snap.Gender)
+    </div>
+}
+
+@if (!string.IsNullOrWhiteSpace(_snap.AdditionalFeatures))
+{
+    <div class="section-label">Additional Features &amp; Traits</div>
+    <div class="bg-text mb-section">@_snap.AdditionalFeatures</div>
+}
+
+@if (!string.IsNullOrWhiteSpace(_snap.Organisation) || !string.IsNullOrWhiteSpace(_snap.Allies))
+{
+    <div class="section-label">Affiliations</div>
+    <div class="appearance-grid affiliation-grid mb-section">
+        @AppearanceRow("Organisation", _snap.Organisation)
+        @AppearanceRow("Allies",       _snap.Allies)
+    </div>
+}
+
+@if (!string.IsNullOrWhiteSpace(_snap.Trinket))
+{
+    <div class="section-label">Trinket</div>
+    <div class="bg-text mb-section">@_snap.Trinket</div>
+}
+
+@if (!string.IsNullOrWhiteSpace(_snap.Notes1) || !string.IsNullOrWhiteSpace(_snap.Notes2))
+{
+    <div class="section-label">Notes</div>
+    @if (!string.IsNullOrWhiteSpace(_snap.Notes1))
+    {
+        <div class="bg-text">@_snap.Notes1</div>
+    }
+    @if (!string.IsNullOrWhiteSpace(_snap.Notes2))
+    {
+        <div class="bg-text" style="margin-top: 8px;">@_snap.Notes2</div>
+    }
+    <div class="mb-section"></div>
+}
+
+@* ── Tabs: Race | Class | Advancement | Spells ── *@
+<MudTabs Elevation="0" Rounded="false" ApplyEffectsToContainer="true" Class="detail-tabs" PanelClass="detail-tab-panel">
+
+    @* Race *@
+    <MudTabPanel Text="Race">
+        <div class="section-label">Race</div>
+        <div class="build-primary-text">@_snap.Race</div>
+        @if (!string.IsNullOrEmpty(_snap.Dragonmark))
+        {
+            <div class="build-secondary-text" style="margin-top: 4px;">Dragonmark of @_snap.Dragonmark</div>
+        }
+        @if (!string.IsNullOrEmpty(_snap.Deity))
+        {
+            <div class="build-secondary-text" style="margin-top: 4px;">Deity: @_snap.Deity</div>
+        }
+
+        @if (_snap.RaceFeatures.Count > 0)
+        {
+            <div class="section-label" style="margin-top: 16px;">Racial Traits</div>
+            @foreach (var feat in _snap.RaceFeatures)
+            {
+                <div class="feature-block">
+                    <div class="feature-name">@feat.Name</div>
+                    @if (!string.IsNullOrWhiteSpace(feat.DescriptionHtml) ||
+                         !string.IsNullOrWhiteSpace(feat.Description))
+                    {
+                        <RichDescription Html="@feat.DescriptionHtml"
+                                         PlainText="@feat.Description"
+                                         Class="feature-desc" />
+                    }
+                </div>
+            }
+        }
+    </MudTabPanel>
+
+    @* Class *@
+    <MudTabPanel Text="Class">
+        @if (_progressions is { Count: > 0 })
+        {
+            @foreach (var cls in _progressions)
+            {
+                <div class="build-section">
+                    <div class="build-class-header">
+                        <div class="build-primary-text">@cls.ClassName</div>
+                        <div class="build-badges">
+                            <span class="build-badge">Level @cls.Level</span>
+                            @if (!string.IsNullOrEmpty(cls.HitDie))
+                            {
+                                <span class="build-badge">@cls.HitDie</span>
+                            }
+                            @if (!cls.IsMainClass)
+                            {
+                                <span class="build-badge build-badge-multi">Multiclass</span>
+                            }
+                        </div>
+                    </div>
+                    @if (cls.IsMainClass && !string.IsNullOrEmpty(_snap.Archetype))
+                    {
+                        <div class="build-secondary-text" style="margin-top: 4px;">@_snap.Archetype</div>
+                    }
+                    @if (cls.Features.Count > 0)
+                    {
+                        <div class="section-label" style="margin-top: 14px;">Features</div>
+                        @foreach (var f in cls.Features)
+                        {
+                            <div class="feature-block">
+                                <div class="feature-name">@f.Name</div>
+                                @if (!string.IsNullOrWhiteSpace(f.DescriptionHtml) ||
+                                     !string.IsNullOrWhiteSpace(f.Description))
+                                {
+                                    <RichDescription Html="@f.DescriptionHtml"
+                                                     PlainText="@f.Description"
+                                                     Class="feature-desc" />
+                                }
+                            </div>
+                        }
+                    }
+                </div>
+            }
+        }
+        else
+        {
+            <div class="build-primary-text">@_snap.Class</div>
+            @if (!string.IsNullOrEmpty(_snap.Archetype))
+            {
+                <div class="build-secondary-text" style="margin-top: 4px;">@_snap.Archetype</div>
+            }
+        }
+    </MudTabPanel>
+
+    @* Advancement *@
+    <MudTabPanel Text="Advancement">
+        @if (_timeline.Count == 0)
+        {
+            <MudText Color="Color.Secondary" Typo="Typo.body2" Style="margin-top: 8px;">
+                No advancement data available. Build your character on the Build page first.
+            </MudText>
+        }
+        else
+        {
+            @foreach (var cls in _timeline)
+            {
+                <div class="build-section">
+                    <div class="build-class-header">
+                        <div class="build-primary-text">@cls.ClassName</div>
+                        <div class="build-badges">
+                            <span class="build-badge">@cls.HitDie</span>
+                            @if (!cls.IsMainClass)
+                            {
+                                <span class="build-badge build-badge-multi">Multiclass</span>
+                            }
+                        </div>
+                    </div>
+                    <table class="advancement-table">
+                        <thead>
+                            <tr>
+                                <th>Level</th>
+                                <th>Avg HP</th>
+                                <th>Features</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in cls.Levels)
+                            {
+                                <tr>
+                                    <td class="adv-level">@row.Level</td>
+                                    <td class="adv-hp">+@row.AverageHp</td>
+                                    <td class="adv-features">
+                                        @if (row.Features.Count == 0)
+                                        {
+                                            <span style="color: var(--mud-palette-text-disabled);">—</span>
+                                        }
+                                        else
+                                        {
+                                            @string.Join(", ", row.Features.Select(f => f.Name))
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        }
+    </MudTabPanel>
+
+    @if (_snap.HasCompanion || _sidekicks.Count > 0)
+    {
+        <MudTabPanel Text="Companions">
+            <CompanionManagementPanel />
+        </MudTabPanel>
+    }
+
+    @* Spells (only if the character has spellcasting) *@
+    @if (_snap.HasSpellcasting)
+    {
+        <MudTabPanel Text="Spells">
+            @if (_snap.SpellcastingSections.Count > 1)
+            {
+                <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;">
+                    @foreach (var magicSection in _snap.SpellcastingSections)
+                    {
+                        var id = magicSection.UniqueIdentifier;
+                        <MudChip T="string"
+                                 Variant="Variant.Outlined"
+                                 Color="@(id == _activeSpellSectionId ? Color.Primary : Color.Default)"
+                                 OnClick="@(() => SelectSpellSection(id))">
+                            @magicSection.Name
+                        </MudChip>
+                    }
+                </div>
+            }
+
+            @* Spellcasting stats *@
+            <div class="combat-strip" style="margin-bottom: 16px;">
+                <div class="combat-stat">
+                    <div class="combat-stat-value" style="font-size: 14px; font-weight: 600;">@ActiveSpellSection?.Name</div>
+                    <div class="combat-stat-label">Class</div>
+                </div>
+                <div class="combat-sep"></div>
+                <div class="combat-stat">
+                    <div class="combat-stat-value" style="font-size: 14px; font-weight: 600;">@ActiveSpellSection?.AbilityName</div>
+                    <div class="combat-stat-label">Ability</div>
+                </div>
+                <div class="combat-sep"></div>
+                <div class="combat-stat">
+                    <div class="combat-stat-value">@ActiveSpellSection?.SpellcastingDc</div>
+                    <div class="combat-stat-label">Spell DC</div>
+                </div>
+                <div class="combat-sep"></div>
+                <div class="combat-stat">
+                    <div class="combat-stat-value">@ActiveSpellSection?.SpellcastingAttack</div>
+                    <div class="combat-stat-label">Spell Attack</div>
+                </div>
+            </div>
+
+            @* Two-column layout: spell list on left, detail on right *@
+            <div class="spell-overview-layout">
+                @* ── Left: scrollable spell list (cantrips always shown; leveled spells filtered to prepared) ── *@
+                <div class="spell-overview-list">
+                    @if (ActiveSpellSectionCantrips.Count > 0)
+                    {
+                        <div class="section-label">Cantrips</div>
+                        @foreach (var cantrip in ActiveSpellSectionCantrips)
+                        {
+                            <div class="spell-overview-row @(_selectedSpellKey == cantrip.Id ? "spell-overview-selected" : "")"
+                                 @onclick="() => SelectSpell(cantrip.Id)">
+                                <span class="spell-dot spell-dot-cantrip"></span>
+                                <span class="spell-name">@cantrip.Name</span>
+                            </div>
+                        }
+                    }
+
+                    @foreach (var lvl in ActiveSpellLevels)
+                    {
+                        var preparedSpells = lvl.Spells.Where(s => s.IsPrepared).ToList();
+                        @if (preparedSpells.Count > 0)
+                        {
+                            <div class="section-label" style="margin-top: 10px;">@Ordinal(lvl.Level) Level</div>
+                            @foreach (var spell in preparedSpells)
+                            {
+                                <div class="spell-overview-row @(_selectedSpellKey == spell.Id ? "spell-overview-selected" : "")"
+                                     @onclick="() => SelectSpell(spell.Id)">
+                                    <span class="spell-dot spell-dot-prepared"></span>
+                                    <span class="spell-name spell-name-prepared">@spell.Name</span>
+                                </div>
+                            }
+                        }
+                    }
+                </div>
+
+                @* ── Right: detail panel ── *@
+                <div class="spell-overview-detail">
+                    @if (_spellDetail != null)
+                    {
+                        <div class="spell-detail-name">@_spellDetail.Name</div>
+                        <div class="spell-detail-meta">
+                            @if (!string.IsNullOrEmpty(_spellDetail.Subtitle))
+                            {
+                                <span class="spell-detail-subtitle">@_spellDetail.Subtitle</span>
+                            }
+                            @if (!string.IsNullOrEmpty(_spellDetail.Source))
+                            {
+                                <span class="spell-detail-source">@_spellDetail.Source</span>
+                            }
+                        </div>
+                        @if (!string.IsNullOrEmpty(_spellDetail.CastingTime) ||
+                             !string.IsNullOrEmpty(_spellDetail.Range) ||
+                             !string.IsNullOrEmpty(_spellDetail.Components) ||
+                             !string.IsNullOrEmpty(_spellDetail.Duration))
+                        {
+                            <div class="spell-detail-props">
+                                @SpellPropRow("Casting Time", _spellDetail.CastingTime)
+                                @SpellPropRow("Range",        _spellDetail.Range)
+                                @SpellPropRow("Components",   _spellDetail.Components)
+                                @SpellPropRow("Duration",     _spellDetail.Duration)
+                            </div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(_spellDetail.DescriptionHtml) ||
+                             !string.IsNullOrWhiteSpace(_spellDetail.Description))
+                        {
+                            <RichDescription Html="@_spellDetail.DescriptionHtml"
+                                             PlainText="@_spellDetail.Description"
+                                             Class="spell-detail-desc" />
+                        }
+                    }
+                    else
+                    {
+                        <div class="spell-detail-empty">Select a spell to see details.</div>
+                    }
+                </div>
+            </div>
+        </MudTabPanel>
+    }
+
+</MudTabs>
+
+@code {
+    private CharacterSnapshot? _snap;
+    private IReadOnlyList<SidekickProfile> _sidekicks = [];
+    private string? _portraitSrc;
+    private IReadOnlyList<ClassProgressionSnapshot>? _progressions;
+    private IReadOnlyList<AdvancementClassTimeline> _timeline = [];
+    private string?      _selectedSpellKey;
+    private SpellDetail? _spellDetail;
+    private string? _activeSpellSectionId;
+    private IReadOnlyList<(string Id, string Name)> _activeSpellCantrips = [];
+    private bool _advancementBusy;
+
+    private SpellcastingSectionEntry? ActiveSpellSection =>
+        _snap?.SpellcastingSections.FirstOrDefault(section => section.UniqueIdentifier == _activeSpellSectionId)
+        ?? _snap?.SpellcastingSections.FirstOrDefault();
+
+    private IReadOnlyList<(string Id, string Name)> ActiveSpellSectionCantrips => _activeSpellCantrips;
+    private IReadOnlyList<SpellLevelEntry> ActiveSpellLevels => ActiveSpellSection?.SpellLevels ?? [];
+
+    protected override void OnInitialized()
+    {
+        Tabs.TabsChanged += OnTabsChanged;
+        LoadFromActiveTab();
+    }
+
+    private void LoadFromActiveTab()
+    {
+        _snap             = Tabs.ActiveTab?.Snapshot;
+        _sidekicks        = SidekickService.Load(Tabs.ActiveTab?.File);
+        _progressions     = Tabs.ActiveTab?.ProgressionSnapshots;
+        _portraitSrc      = Tabs.ActiveTab?.File is { } f ? ResolvePortrait(f) : null;
+        _selectedSpellKey = null;
+        _spellDetail      = null;
+        _timeline         = Tabs.ActiveTab?.Snapshot?.AdvancementTimeline ?? [];
+
+        _activeSpellSectionId = _snap?.SpellcastingSections.FirstOrDefault()?.UniqueIdentifier;
+        RefreshActiveSpellCantrips();
+    }
+
+    private bool _disposed;
+
+    private void OnTabsChanged()
+    {
+        if (_disposed) return;
+        _ = InvokeAsync(() =>
+        {
+            if (_disposed) return;
+            LoadFromActiveTab();
+            StateHasChanged();
+        });
+    }
+
+    public void Dispose()
+    {
+        _disposed = true;
+        Tabs.TabsChanged -= OnTabsChanged;
+    }
+
+    private void SelectSpellSection(string id)
+    {
+        _activeSpellSectionId = id;
+        _selectedSpellKey = null;
+        _spellDetail = null;
+        RefreshActiveSpellCantrips();
+    }
+
+    private void RefreshActiveSpellCantrips()
+    {
+        _activeSpellCantrips = ActiveSpellSection?.Cantrips
+            .Select(spell => (spell.Id, spell.Name))
+            .ToList()
+            ?? [];
+    }
+
+    private async Task OpenPortraitPickerAsync()
+    {
+        var tab = Tabs.ActiveTab;
+        if (tab == null) return;
+
+        var options = new PickOptions
+        {
+            PickerTitle = "Choose a portrait image",
+            FileTypes   = new FilePickerFileType(new Dictionary<DevicePlatform, IEnumerable<string>>
+            {
+                [DevicePlatform.WinUI]       = [".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp"],
+                [DevicePlatform.MacCatalyst] = ["public.image"],
+                [DevicePlatform.Android]     = ["image/*"],
+                [DevicePlatform.iOS]         = ["public.image"],
+            }),
+        };
+
+        FileResult? pick;
+        try { pick = await FilePicker.Default.PickAsync(options); }
+        catch { pick = null; }
+
+        if (pick == null) return;
+
+        try
+        {
+            string portraitsDir = Builder.Presentation.Services.Data.DataManager.Current.UserDocumentsPortraitsDirectory;
+            Directory.CreateDirectory(portraitsDir);
+            // Unique filename so two characters can't pick files with the same name (e.g.
+            // "portrait.png", "Screenshot.png") and silently overwrite each other's portrait.
+            string ext = Path.GetExtension(pick.FileName);
+            if (string.IsNullOrWhiteSpace(ext)) ext = ".img";
+            string stem = string.Concat((tab.File.DisplayName ?? "portrait")
+                .Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
+            string fileName = $"{stem}_{Guid.NewGuid():N}{ext}";
+            string destPath = Path.Combine(portraitsDir, fileName);
+            // Use stream copy — FullPath is a content:// URI on Android and is not a real file path.
+            using (var src  = await pick.OpenReadAsync())
+            using (var dest = File.Create(destPath))
+                await src.CopyToAsync(dest);
+
+            // Enter and immediately release so SaveTabAsync can acquire the same lock.
+            // (SingletonGuard is non-reentrant — holding the scope across SaveTabAsync deadlocks.)
+            {
+                using var scope = await CharacterContext.EnterAsync(tab);
+                var cm = Builder.Presentation.CharacterManager.Current;
+                cm.Character.PortraitFilename = destPath;
+                cm.Status.IsUserPortrait = true;
+            }
+
+            var saveError = await BuildService.SaveTabAsync(tab);
+            if (saveError != null)
+            {
+                Snackbar.Add($"Portrait changed but save failed: {saveError}", Severity.Warning);
+            }
+            else
+            {
+                tab.File.DisplayPortraitFilePath = destPath;
+                tab.File.DisplayPortraitBase64 = string.Empty;
+                _portraitSrc = ResolvePortraitFromBytes(destPath);
+                Snackbar.Add("Portrait updated.", Severity.Success, cfg => cfg.VisibleStateDuration = 2000);
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Could not change portrait: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task LevelUpAsync()
+    {
+        var tab = Tabs.ActiveTab;
+        if (tab == null)
+        {
+            Snackbar.Add("There is no active character to level up.", Severity.Warning);
+            return;
+        }
+
+        _advancementBusy = true;
+        StateHasChanged();
+        var (error, hpGained, isAverage) = await BuildService.LevelUpMainAsync(tab);
+        _advancementBusy = false;
+        if (error == null)
+        {
+            tab.IsNew = false;
+            Tabs.MarkClean(tab);
+            string hpNote = hpGained > 0
+                ? $" · +{hpGained} HP ({(isAverage ? "avg" : "rolled")})"
+                : "";
+            Snackbar.Add($"Level {_snap?.Level + 1 ?? 0}{hpNote}", Severity.Success,
+                cfg => cfg.VisibleStateDuration = 5000);
+        }
+        else
+        {
+            Snackbar.Add(error, Severity.Error);
+        }
+
+        LoadFromActiveTab();
+        StateHasChanged();
+    }
+
+    private async Task LevelDownAsync()
+    {
+        var tab = Tabs.ActiveTab;
+        if (tab == null)
+        {
+            Snackbar.Add("There is no active character to level down.", Severity.Warning);
+            return;
+        }
+
+        _advancementBusy = true;
+        StateHasChanged();
+        var error = await BuildService.LevelDownAsync(tab);
+        _advancementBusy = false;
+        if (error == null)
+        {
+            Tabs.MarkClean(tab);
+            Snackbar.Add("Level removed.", Severity.Info, cfg => cfg.VisibleStateDuration = 2000);
+        }
+        else
+        {
+            Snackbar.Add(error, Severity.Error);
+        }
+
+        LoadFromActiveTab();
+        StateHasChanged();
+    }
+
+    private async Task SetHpMethodAsync(HpMethod method)
+    {
+        var tab = Tabs.ActiveTab;
+        if (tab == null)
+        {
+            Snackbar.Add("There is no active character to update.", Severity.Warning);
+            return;
+        }
+
+        _advancementBusy = true;
+        StateHasChanged();
+        var error = await BuildService.SetHpMethodAsync(tab, method);
+        _advancementBusy = false;
+        if (error == null)
+        {
+            Tabs.MarkClean(tab);
+            Snackbar.Add($"HP method set to {(method == HpMethod.Average ? "average" : "rolled")}.",
+                Severity.Info, cfg => cfg.VisibleStateDuration = 3000);
+        }
+        else
+        {
+            Snackbar.Add(error, Severity.Error);
+        }
+
+        LoadFromActiveTab();
+        StateHasChanged();
+    }
+
+    private async Task OpenMulticlassDialog()
+    {
+        var tab = Tabs.ActiveTab;
+        if (tab == null)
+        {
+            Snackbar.Add("There is no active character to multiclass.", Severity.Warning);
+            return;
+        }
+
+        _advancementBusy = true;
+        StateHasChanged();
+        var options = await BuildService.GetAvailableMulticlassOptionsAsync(tab);
+        _advancementBusy = false;
+        StateHasChanged();
+        if (options.Count == 0)
+        {
+            Snackbar.Add("No multiclass options are currently available for this character.", Severity.Warning);
+            return;
+        }
+
+        var fakeEntry = new SelectionRuleEntry(
+            Rule: null!,
+            Number: 1,
+            Label: "Add Multiclass",
+            CurrentName: null,
+            RequiredLevel: 0);
+
+        var parameters = new DialogParameters
+        {
+            [nameof(SelectionPickerDialog.Entry)]   = fakeEntry,
+            [nameof(SelectionPickerDialog.Options)] = options,
+        };
+        var dialogOptions = new DialogOptions
+        {
+            MaxWidth         = MaxWidth.Large,
+            FullWidth        = true,
+            CloseOnEscapeKey = true,
+        };
+
+        var dialog = await DialogService.ShowAsync<SelectionPickerDialog>("Add Multiclass", parameters, dialogOptions);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: string selectedId })
+        {
+            _advancementBusy = true;
+            StateHasChanged();
+            var error = await BuildService.AddMulticlassLevelAsync(tab, selectedId);
+            _advancementBusy = false;
+            if (error == null)
+            {
+                Tabs.MarkClean(tab);
+                Snackbar.Add("Multiclass added.", Severity.Success, cfg => cfg.VisibleStateDuration = 2000);
+            }
+            else
+            {
+                Snackbar.Add(error, Severity.Error);
+            }
+
+            LoadFromActiveTab();
+            StateHasChanged();
+        }
+    }
+
+    private static string? ResolvePortrait(Builder.Presentation.Models.CharacterFile file)
+    {
+        // The "image/png" MIME is cosmetic: these data URLs are only consumed by an <img> in the
+        // WebView, which sniffs the actual bytes, so JPEG/GIF/WebP portraits render fine regardless.
+        if (!string.IsNullOrEmpty(file.DisplayPortraitBase64))
+            return $"data:image/png;base64,{file.DisplayPortraitBase64}";
+
+        if (!string.IsNullOrEmpty(file.DisplayPortraitFilePath))
+        {
+            try
+            {
+                if (File.Exists(file.DisplayPortraitFilePath))
+                {
+                    var bytes = File.ReadAllBytes(file.DisplayPortraitFilePath);
+                    return $"data:image/png;base64,{Convert.ToBase64String(bytes)}";
+                }
+            }
+            catch { }
+        }
+
+        return null;
+    }
+
+    private static string? ResolvePortraitFromBytes(string path)
+    {
+        try
+        {
+            if (File.Exists(path))
+            {
+                var bytes = File.ReadAllBytes(path);
+                return $"data:image/png;base64,{Convert.ToBase64String(bytes)}";
+            }
+        }
+        catch { }
+
+        return null;
+    }
+
+    private void SelectSpell(string id)
+    {
+        _selectedSpellKey = id;
+        _spellDetail      = BuildService.GetSpellDetail(id);
+    }
+
+    private static string FormatBonus(int value) => value >= 0 ? $"+{value}" : $"{value}";
+
+    private static string Ordinal(int n) => n switch
+    {
+        1 => "1st", 2 => "2nd", 3 => "3rd", _ => $"{n}th",
+    };
+
+    private RenderFragment SpellPropRow(string label, string value) => builder =>
+    {
+        if (string.IsNullOrWhiteSpace(value)) return;
+        builder.OpenElement(0, "div");
+        builder.AddAttribute(1, "class", "spell-prop-row");
+        builder.OpenElement(2, "span");
+        builder.AddAttribute(3, "class", "spell-prop-label");
+        builder.AddContent(4, label);
+        builder.CloseElement();
+        builder.OpenElement(5, "span");
+        builder.AddAttribute(6, "class", "spell-prop-value");
+        builder.AddContent(7, value);
+        builder.CloseElement();
+        builder.CloseElement();
+    };
+
+    private RenderFragment AppearanceRow(string label, string value) => builder =>
+    {
+        if (string.IsNullOrWhiteSpace(value)) return;
+        builder.OpenElement(0, "div");
+        builder.AddAttribute(1, "class", "appearance-row");
+        builder.OpenElement(2, "span");
+        builder.AddAttribute(3, "class", "appearance-label");
+        builder.AddContent(4, label);
+        builder.CloseElement();
+        builder.OpenElement(5, "span");
+        builder.AddAttribute(6, "class", "appearance-value");
+        builder.AddContent(7, value);
+        builder.CloseElement();
+        builder.CloseElement();
+    };
+}

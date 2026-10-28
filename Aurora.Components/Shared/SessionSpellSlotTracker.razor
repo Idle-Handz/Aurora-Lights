@@ -1,0 +1,39 @@
+@using Builder.Presentation.Utilities
+@using Aurora.Components.Models
+
+<div class="session-slots-grid">
+    @foreach (var pool in Pools)
+    {
+        <section aria-label="@(pool.Label + " slots")">
+            <div class="session-status-label">@pool.Label · @(pool.RecoversOnShortRest ? "Short rest" : "Long rest")</div>
+            @foreach (var entry in pool.Levels)
+            {
+                var level = entry.Level;
+                var total = entry.TotalSlots;
+                var used = Math.Clamp(UsedSlots(pool.Id, level, total), 0, total);
+                <div class="session-slot-row">
+                    <div class="session-slot-label">@Ordinal(level)</div>
+                    <div class="session-pips">
+                        @for (int i = 1; i <= total; i++)
+                        {
+                            var idx = i;
+                            <button type="button" class="session-pip @(idx <= used ? "pip-slot-used" : "pip-slot-free")"
+                                    aria-label="@($"{pool.Label} {Ordinal(level)}-level spell slot {idx} of {total}: {(idx <= used ? "used" : "available")}")"
+                                    aria-pressed="@(idx <= used ? "true" : "false")"
+                                    disabled="@(!OnToggleSlot.HasDelegate)"
+                                    @onclick="() => OnToggleSlot.InvokeAsync(new MagicSlotToggleModel(level, idx, pool.Id))"></button>
+                        }
+                    </div>
+                    <div class="session-slot-count">@(total - used)/@total</div>
+                </div>
+            }
+        </section>
+    }
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<SpellSlotPool> Pools { get; set; } = [];
+    [Parameter] public Func<string, int, int, int> UsedSlots { get; set; } = (_, _, _) => 0;
+    [Parameter] public EventCallback<MagicSlotToggleModel> OnToggleSlot { get; set; }
+    private static string Ordinal(int level) => level switch { 1 => "1st", 2 => "2nd", 3 => "3rd", _ => $"{level}th" };
+}

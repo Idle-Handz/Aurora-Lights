@@ -1,0 +1,1355 @@
+@page "/session"
+@implements IDisposable
+@inject CharacterTabService Tabs
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@using Builder.Presentation.Models
+
+@if (_tab is null || _snap is null)
+{
+    <div style="margin-top: 24px;">
+        <MudText Color="Color.Secondary">No character loaded. Open a character from the <MudLink Href="/">Characters</MudLink> page.</MudText>
+    </div>
+    return;
+}
+
+<div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px;">
+    <div class="page-header-row">
+        <MudText Typo="Typo.h6" Style="margin: 0;">@_snap.Name</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary" Style="margin: 0;">
+            Level @_snap.Level @_snap.Race @_snap.Class
+        </MudText>
+    </div>
+    <MudTooltip Text="Save session">
+        <MudIconButton Icon="@Icons.Material.Filled.Save"
+                       aria-label="Save session"
+                       Class="session-save-button"
+                       Size="Size.Small"
+                       Color="Color.Primary"
+                       OnClick="SaveSession"
+                       Style="margin-top: 2px;" />
+    </MudTooltip>
+</div>
+
+<div class="combat-strip session-combat-strip">
+    <div class="combat-stat">
+        <div class="combat-stat-value">@_snap.ArmorClass</div>
+        <div class="combat-stat-label">AC</div>
+    </div>
+    <div class="combat-sep"></div>
+    <div class="combat-stat">
+        <div class="combat-stat-value">@FormatBonus(_snap.Initiative)</div>
+        <div class="combat-stat-label">Initiative</div>
+    </div>
+    <div class="combat-sep"></div>
+    <div class="combat-stat">
+        <div class="combat-stat-value">@FormatBonus(_snap.Proficiency)</div>
+        <div class="combat-stat-label">Proficiency</div>
+    </div>
+    <div class="combat-sep"></div>
+    <div class="combat-stat">
+        <div class="combat-stat-value">@_snap.Speed ft.</div>
+        <div class="combat-stat-label">Speed</div>
+    </div>
+</div>
+
+<div class="session-card">
+    <div class="session-card-title-row">
+        <div class="session-card-title">Attack Reminders</div>
+        <MudMenu Icon="@Icons.Material.Filled.AddCircleOutline"
+                 AriaLabel="Add attack reminder"
+                 PopoverClass="session-add-menu"
+                 Size="Size.Small"
+                 Dense="true"
+                 AnchorOrigin="Origin.BottomRight"
+                 TransformOrigin="Origin.TopRight">
+            @if (_availableAttackReminders.Count == 0)
+            {
+                <MudMenuItem Disabled="true">No inventory weapon reminders</MudMenuItem>
+            }
+            else
+            {
+                @foreach (var reminder in _availableAttackReminders)
+                {
+                    var row = reminder;
+                    <MudMenuItem OnClick="() => AddAttackReminder(row)">
+                        @row.Name
+                    </MudMenuItem>
+                }
+            }
+            <MudDivider />
+            <MudMenuItem OnClick="OpenAddCustomAttackReminderDialog">Custom reminder...</MudMenuItem>
+        </MudMenu>
+    </div>
+
+    @if (_attackReminders.Count == 0)
+    {
+        <MudText Typo="Typo.body2" Color="Color.Secondary" Style="font-size: 12px;">
+            No attack reminders shown. Add a weapon from inventory, or add unarmed/racial attacks on the Equipment page.
+        </MudText>
+    }
+    else
+    {
+        <div class="session-attack-table">
+            <div class="session-attack-row session-attack-header">
+                <span>Name</span>
+                <span>Attack</span>
+                <span>Damage</span>
+                <span>Range</span>
+                <span></span>
+            </div>
+            @foreach (var reminder in _attackReminders)
+            {
+                var row = reminder;
+                <div class="session-attack-row">
+                    <span>@row.Name</span>
+                    <span>@row.Attack</span>
+                    <span>@row.Damage</span>
+                    <span>@row.Range</span>
+                    <span class="session-attack-actions">
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                       Size="Size.Small"
+                                       Color="Color.Secondary"
+                                       title="Edit reminder"
+                                       aria-label="@($"Edit {row.Name} attack reminder")"
+                                       OnClick="() => OpenEditAttackReminderDialog(row)" />
+                        <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
+                                       Size="Size.Small"
+                                       Color="Color.Secondary"
+                                       title="Remove reminder"
+                                       aria-label="@($"Remove {row.Name} attack reminder")"
+                                       OnClick="() => RemoveAttackReminder(row)" />
+                    </span>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<div class="detail-advancement-strip session-advancement-strip">
+    <div class="detail-advancement-meta">
+        <div class="section-label" style="margin-bottom: 6px;">Advancement</div>
+        <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-disabled);">
+            Level @_snap.Level
+            @if (!BuildService.CanLevelUp)   { <span> · Max level</span>   }
+            @if (!BuildService.CanLevelDown) { <span> · Level 1 min</span> }
+        </MudText>
+    </div>
+    <div class="detail-advancement-actions">
+        <MudButton StartIcon="@Icons.Material.Filled.Add"
+                   Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   Size="Size.Small"
+                   Disabled="@(!BuildService.CanLevelUp || _advancementBusy)"
+                   OnClick="LevelUpAsync">
+            Level Up
+        </MudButton>
+
+        <MudButton StartIcon="@Icons.Material.Filled.Remove"
+                   Variant="Variant.Outlined"
+                   Color="Color.Default"
+                   Size="Size.Small"
+                   Disabled="@(!BuildService.CanLevelDown || _advancementBusy)"
+                   OnClick="LevelDownAsync">
+            Level Down
+        </MudButton>
+
+        @if (BuildService.HasMainClass && BuildService.CanLevelUp)
+        {
+            <MudButton StartIcon="@Icons.Material.Filled.MergeType"
+                       Variant="Variant.Outlined"
+                       Color="Color.Secondary"
+                       Size="Size.Small"
+                       Disabled="@_advancementBusy"
+                       OnClick="OpenMulticlassDialog">
+                Add Multiclass
+            </MudButton>
+        }
+    </div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(_saveError))
+{
+    <MudAlert Severity="Severity.Error" Dense="true" Variant="Variant.Outlined" Style="margin-bottom: 16px;">
+        @_saveError
+    </MudAlert>
+}
+
+@* ── HP + Status side by side ── *@
+<div class="session-pair-row">
+
+@* HP Row *@
+<div class="session-card">
+    <div class="session-card-title">Hit Points</div>
+    <div class="session-hp-row">
+        @* Current HP *@
+        <div class="session-hp-block">
+            <label class="session-hp-label" for="session-current-hp">Current</label>
+            <div class="session-hp-controls">
+                <button class="session-hp-btn" aria-label="Decrease current hit points by 1" @onclick="() => AdjustHp(-1)">−</button>
+                <input id="session-current-hp" class="session-hp-input" type="number" aria-label="Current hit points"
+                       value="@_s.CurrentHp"
+                       min="0" max="@CurrentHpMaximum"
+                       @onchange="OnCurrentHpChanged" />
+                <button class="session-hp-btn" aria-label="Increase current hit points by 1" @onclick="() => AdjustHp(+1)">+</button>
+            </div>
+            <div class="session-hp-max">/ @_snap.MaxHp</div>
+        </div>
+
+        <div class="session-hp-sep"></div>
+
+        @* Temp HP *@
+        <div class="session-hp-block">
+            <label class="session-hp-label" for="session-temp-hp">Temp</label>
+            <div class="session-hp-controls">
+                <button class="session-hp-btn" aria-label="Decrease temporary hit points by 1" @onclick="() => AdjustTempHp(-1)">−</button>
+                <input id="session-temp-hp" class="session-hp-input" type="number" aria-label="Temporary hit points"
+                       value="@_s.TempHp"
+                       min="0" max="999"
+                       @onchange="OnTempHpChanged" />
+                <button class="session-hp-btn" aria-label="Increase temporary hit points by 1" @onclick="() => AdjustTempHp(+1)">+</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@* Status *@
+<div class="session-card">
+    <div class="session-card-title">Status</div>
+    <div class="session-status-row">
+
+        @* Inspiration *@
+        <button class="session-inspiration-btn @(_s.Inspiration ? "inspiration-on" : "")"
+                aria-pressed="@(_s.Inspiration ? "true" : "false")"
+                @onclick="ToggleInspiration">
+            <span class="inspiration-star" aria-hidden="true">★</span>
+            Inspiration
+        </button>
+
+        @* Exhaustion *@
+        <div class="session-exhaustion-block">
+            <div class="session-status-label">Exhaustion</div>
+            <div class="session-pips">
+                @for (int i = 1; i <= 6; i++)
+                {
+                    var lvl = i;
+                    <button class="session-pip @(lvl <= _s.Exhaustion ? "pip-exhaustion" : "pip-empty")"
+                            title="@ExhaustionTooltip(lvl)"
+                            aria-label="@($"Exhaustion level {lvl}")"
+                            aria-pressed="@(lvl <= _s.Exhaustion ? "true" : "false")"
+                            aria-description="@($"Set exhaustion to level {(_s.Exhaustion == lvl ? lvl - 1 : lvl)}. {ExhaustionTooltip(lvl)}")"
+                            @onclick="() => SetExhaustion(lvl)"></button>
+                }
+            </div>
+            @if (_s.Exhaustion > 0)
+            {
+                <div class="session-exhaustion-label">Level @_s.Exhaustion</div>
+            }
+        </div>
+
+        @* Death saves *@
+        <div class="session-death-row">
+            <div class="session-death-block">
+                <div class="session-death-label" style="color: var(--mud-palette-success);">Saves</div>
+                <div class="session-pips">
+                    @for (int i = 1; i <= 3; i++)
+                    {
+                        var idx = i;
+                        <button class="session-pip @(idx <= _s.DeathSaveSuccesses ? "pip-success" : "pip-empty")"
+                                title="Death save success @idx of 3 (3 successes = stabilize)"
+                                aria-label="@($"Death save success {idx} of 3")"
+                                aria-pressed="@(idx <= _s.DeathSaveSuccesses ? "true" : "false")"
+                                aria-description="@($"Set death save successes to {(_s.DeathSaveSuccesses == idx ? idx - 1 : idx)}. Three successes stabilize the character.")"
+                                @onclick="() => ToggleDeathSuccess(idx)"></button>
+                    }
+                </div>
+            </div>
+            <div class="session-death-block">
+                <div class="session-death-label" style="color: var(--mud-palette-error);">Fails</div>
+                <div class="session-pips">
+                    @for (int i = 1; i <= 3; i++)
+                    {
+                        var idx = i;
+                        <button class="session-pip @(idx <= _s.DeathSaveFailures ? "pip-failure" : "pip-empty")"
+                                title="Death save failure @idx of 3 (3 failures = death)"
+                                aria-label="@($"Death save failure {idx} of 3")"
+                                aria-pressed="@(idx <= _s.DeathSaveFailures ? "true" : "false")"
+                                aria-description="@($"Set death save failures to {(_s.DeathSaveFailures == idx ? idx - 1 : idx)}. Three failures result in death.")"
+                                @onclick="() => ToggleDeathFailure(idx)"></button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* Conditions *@
+    <div class="session-conditions-row" style="margin-top: 10px;">
+        <div class="session-status-label" style="margin-bottom: 6px;">Conditions</div>
+        <div class="session-conditions-list">
+            @foreach (var cond in _s.Conditions.ToList())
+            {
+                var c = cond;
+                <div class="session-condition-chip">
+                    @c
+                    <button class="session-condition-remove" aria-label="@($"Remove {c} condition")" @onclick="() => RemoveCondition(c)">×</button>
+                </div>
+            }
+            <MudMenu Icon="@Icons.Material.Filled.Add"
+                     AriaLabel="Add condition"
+                     PopoverClass="session-add-menu"
+                     Size="Size.Small"
+                     Dense="true"
+                     AnchorOrigin="Origin.BottomLeft"
+                     TransformOrigin="Origin.TopLeft">
+                @foreach (var cond in _allConditions)
+                {
+                    var c = cond;
+                    <MudMenuItem Disabled="@_s.Conditions.Contains(c)"
+                                 OnClick="() => AddCondition(c)">@c</MudMenuItem>
+                }
+            </MudMenu>
+        </div>
+    </div>
+</div>
+
+</div>@* end session-pair-row *@
+
+@* ── Currency ── *@
+<div class="session-card">
+    <div class="session-card-title">Currency</div>
+    <div class="session-currency-strip">
+        <label class="session-coin-cell">
+            <input class="session-coin-input" type="number" min="0" aria-label="Copper pieces"
+                   value="@_snap.CoinCopper"
+                   @onchange='e => OnCoinChanged("cp", e)' />
+            <span class="session-coin-label">CP</span>
+        </label>
+        <label class="session-coin-cell">
+            <input class="session-coin-input" type="number" min="0" aria-label="Silver pieces"
+                   value="@_snap.CoinSilver"
+                   @onchange='e => OnCoinChanged("sp", e)' />
+            <span class="session-coin-label">SP</span>
+        </label>
+        <label class="session-coin-cell">
+            <input class="session-coin-input" type="number" min="0" aria-label="Electrum pieces"
+                   value="@_snap.CoinElectrum"
+                   @onchange='e => OnCoinChanged("ep", e)' />
+            <span class="session-coin-label">EP</span>
+        </label>
+        <label class="session-coin-cell">
+            <input class="session-coin-input" type="number" min="0" aria-label="Gold pieces"
+                   value="@_snap.CoinGold"
+                   @onchange='e => OnCoinChanged("gp", e)' />
+            <span class="session-coin-label">GP</span>
+        </label>
+        <label class="session-coin-cell">
+            <input class="session-coin-input" type="number" min="0" aria-label="Platinum pieces"
+                   value="@_snap.CoinPlatinum"
+                   @onchange='e => OnCoinChanged("pp", e)' />
+            <span class="session-coin-label">PP</span>
+        </label>
+    </div>
+</div>
+
+@* ── Spell Slots ── *@
+@if (_slotPools.Count > 0)
+{
+    <div class="session-card">
+        <div class="session-card-title">Spell Slots</div>
+        @if (!string.IsNullOrWhiteSpace(_spellcastingSummary))
+        {
+            <div class="session-status-label" style="margin-bottom: 8px;">@_spellcastingSummary</div>
+        }
+        <Aurora.Components.Shared.SessionSpellSlotTracker Pools="_slotPools" UsedSlots="_s.UsedSlots"
+            OnToggleSlot="@(change => ToggleSlot(change.PoolId, change.Level, change.SlotIndex))" />
+    </div>
+}
+
+@* ── Custom Resources ── *@
+<div class="session-card">
+    <div class="session-card-title-row">
+        <div class="session-card-title">Resources</div>
+        <MudIconButton Icon="@Icons.Material.Filled.AddCircleOutline"
+                       aria-label="Add resource"
+                       Size="Size.Small"
+                       OnClick="OpenAddResourceDialog"
+                       Style="color: var(--mud-palette-primary); padding: 2px;" />
+    </div>
+
+    @if (_s.CustomResources.Count == 0)
+    {
+        <MudText Typo="Typo.body2" Color="Color.Secondary" Style="font-size: 12px;">
+            No resources tracked. Use + to add Bardic Inspiration, Ki Points, etc.
+        </MudText>
+    }
+    else
+    {
+        <div class="session-resources-list">
+            @foreach (var res in _s.CustomResources.ToList())
+            {
+                var r = res;
+                <div class="session-resource-row">
+                    <div class="session-resource-name">
+                        @r.Name
+                        <span class="session-resource-reset">(@ResetLabel(r.ResetOn))</span>
+                    </div>
+                    @if (r.UseNumeric)
+                    {
+                        <div class="session-resource-numeric">
+                            <button class="session-hp-btn" aria-label="@($"Expend one {r.Name}")" @onclick="() => AdjustResource(r, -1)">−</button>
+                            <span class="session-resource-val">@r.Remaining/@r.Max</span>
+                            <button class="session-hp-btn" aria-label="@($"Recover one {r.Name}")" @onclick="() => AdjustResource(r, +1)">+</button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="session-pips">
+                            @for (int i = 1; i <= r.Max; i++)
+                            {
+                                var idx = i;
+                                <button class="session-pip @(idx <= r.Used ? "pip-resource-used" : "pip-slot-free")"
+                                        aria-label="@($"{r.Name} resource {idx} of {r.Max} used")"
+                                        aria-pressed="@(idx <= r.Used ? "true" : "false")"
+                                        aria-description="@($"Set used resources to {(r.Used == idx ? idx - 1 : idx)}. {r.Remaining} of {r.Max} are currently available.")"
+                                        @onclick="() => ToggleResource(r, idx)"></button>
+                            }
+                        </div>
+                    }
+                    <div class="session-resource-actions">
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                       aria-label="@($"Edit {r.Name} resource")"
+                                       Size="Size.Small"
+                                       OnClick="() => OpenEditResourceDialog(r)"
+                                       Style="color: var(--mud-palette-text-disabled); padding: 2px;" />
+                        <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
+                                       aria-label="@($"Remove {r.Name} resource")"
+                                       Size="Size.Small"
+                                       OnClick="() => RemoveResource(r)"
+                                       Style="color: var(--mud-palette-text-disabled); padding: 2px;" />
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@* ── Notes ── *@
+<div class="session-card">
+    <div class="session-card-title">Notes</div>
+    <div class="session-notes-row">
+        <textarea class="session-notes-area"
+                  aria-label="Notes"
+                  rows="4"
+                  placeholder="Notes…"
+                  value="@_snap.Notes1"
+                  @oninput="args => OnNotesInput(1, args.Value?.ToString() ?? string.Empty)"
+                  @onchange="args => SaveNotesInput(1, args.Value?.ToString() ?? string.Empty)"></textarea>
+        <textarea class="session-notes-area"
+                  aria-label="More notes"
+                  rows="4"
+                  placeholder="More notes…"
+                  value="@_snap.Notes2"
+                  @oninput="args => OnNotesInput(2, args.Value?.ToString() ?? string.Empty)"
+                  @onchange="args => SaveNotesInput(2, args.Value?.ToString() ?? string.Empty)"></textarea>
+    </div>
+</div>
+
+@* ── Rest Buttons ── *@
+<div class="session-rest-row">
+    <MudButton Variant="Variant.Outlined"
+               Color="Color.Default"
+               StartIcon="@Icons.Material.Filled.Bedtime"
+               OnClick="DoShortRest">
+        Short Rest
+    </MudButton>
+    <MudButton Variant="Variant.Filled"
+               Color="Color.Primary"
+               StartIcon="@Icons.Material.Filled.NightShelter"
+               OnClick="DoLongRest">
+        Long Rest
+    </MudButton>
+</div>
+
+<details class="companion-session-panel"><summary>Companions and sidekicks</summary><CompanionManagementPanel /></details>
+
+@code {
+    private static string FormatBonus(int value) => value >= 0 ? $"+{value}" : value.ToString();
+
+    private CharacterTab? _tab;
+    private CharacterSnapshot? _snap;
+    private SessionState _s = new();
+    private IReadOnlyList<Builder.Presentation.Utilities.SpellSlotPool> _slotPools = [];
+    private IReadOnlyList<SessionAttackReminder> _attackReminders = [];
+    private IReadOnlyList<SessionAttackReminder> _availableAttackReminders = [];
+    private string _spellcastingSummary = string.Empty;
+    private string? _saveError;
+    private bool _advancementBusy;
+    private bool _attackEntryMigrationRunning;
+
+    private static readonly string[] _allConditions =
+    [
+        "Blinded", "Charmed", "Deafened", "Frightened",
+        "Grappled", "Incapacitated", "Invisible", "Paralyzed", "Petrified",
+        "Poisoned", "Prone", "Restrained", "Stunned", "Unconscious"
+    ];
+
+    protected override void OnInitialized()
+    {
+        Tabs.TabsChanged += OnTabsChanged;
+        Refresh();
+    }
+
+    private bool _disposed;
+
+    private void OnTabsChanged()
+    {
+        if (_disposed) return;
+        _ = InvokeAsync(() =>
+        {
+            if (_disposed) return;
+            Refresh();
+            StateHasChanged();
+        });
+    }
+
+    public void Dispose()
+    {
+        _disposed = true;
+        Tabs.TabsChanged -= OnTabsChanged;
+    }
+
+    private void Refresh()
+    {
+        _tab  = Tabs.ActiveTab;
+        _snap = _tab?.Snapshot;
+        if (_tab != null)
+        {
+            _s = _tab.Session;
+            // Only initialise once the snapshot exists — during eager navigation the tab
+            // can be present while still loading, and InitializeIfNew(0) would permanently
+            // stamp CurrentHp = 0 instead of max HP.
+            if (_snap != null)
+                _s.InitializeIfNew(_snap.MaxHp);
+        }
+        _slotPools = _snap?.SpellSlotPools ?? [];
+        _s.EnsureSpellSlotPools(_slotPools);
+        var attackReminderSet = BuildAttackReminderSet();
+        _attackReminders = attackReminderSet.Visible;
+        _availableAttackReminders = attackReminderSet.AvailableWeapons;
+        QueueLegacyAttackReminderMigration();
+        _spellcastingSummary = _snap?.SpellcastingSections.Count > 1
+            ? string.Join(", ", _snap.SpellcastingSections.Select(section => section.Name).Distinct(StringComparer.OrdinalIgnoreCase))
+            : string.Empty;
+    }
+
+    // ── Advancement ──────────────────────────────────────────────────────────────
+
+    private async Task LevelUpAsync()
+    {
+        var tab = Tabs.ActiveTab;
+        if (tab == null)
+        {
+            Snackbar.Add("There is no active character to level up.", Severity.Warning);
+            return;
+        }
+
+        _advancementBusy = true;
+        StateHasChanged();
+        var (error, hpGained, isAverage) = await BuildService.LevelUpMainAsync(tab);
+        _advancementBusy = false;
+        if (error == null)
+        {
+            tab.IsNew = false;
+            Tabs.MarkClean(tab);
+            string hpNote = hpGained > 0
+                ? $" · +{hpGained} HP ({(isAverage ? "avg" : "rolled")})"
+                : "";
+            Snackbar.Add($"Level {_snap?.Level + 1 ?? 0}{hpNote}", Severity.Success,
+                cfg => cfg.VisibleStateDuration = 5000);
+        }
+        else
+        {
+            _saveError = error;
+        }
+
+        Refresh();
+        StateHasChanged();
+    }
+
+    private async Task LevelDownAsync()
+    {
+        var tab = Tabs.ActiveTab;
+        if (tab == null)
+        {
+            Snackbar.Add("There is no active character to level down.", Severity.Warning);
+            return;
+        }
+
+        _advancementBusy = true;
+        StateHasChanged();
+        var error = await BuildService.LevelDownAsync(tab);
+        _advancementBusy = false;
+        if (error == null)
+        {
+            Tabs.MarkClean(tab);
+            Snackbar.Add("Level removed.", Severity.Info, cfg => cfg.VisibleStateDuration = 2000);
+        }
+        else
+        {
+            _saveError = error;
+        }
+
+        Refresh();
+        StateHasChanged();
+    }
+
+    private async Task OpenMulticlassDialog()
+    {
+        var tab = Tabs.ActiveTab;
+        if (tab == null)
+        {
+            Snackbar.Add("There is no active character to multiclass.", Severity.Warning);
+            return;
+        }
+
+        _advancementBusy = true;
+        StateHasChanged();
+        var options = await BuildService.GetAvailableMulticlassOptionsAsync(tab);
+        _advancementBusy = false;
+        StateHasChanged();
+        if (options.Count == 0)
+        {
+            Snackbar.Add("No multiclass options are currently available for this character.", Severity.Warning);
+            return;
+        }
+
+        var fakeEntry = new SelectionRuleEntry(
+            Rule: null!,
+            Number: 1,
+            Label: "Add Multiclass",
+            CurrentName: null,
+            RequiredLevel: 0);
+
+        var parameters = new DialogParameters
+        {
+            [nameof(SelectionPickerDialog.Entry)]   = fakeEntry,
+            [nameof(SelectionPickerDialog.Options)] = options,
+        };
+        var dialogOptions = new DialogOptions
+        {
+            MaxWidth         = MaxWidth.Large,
+            FullWidth        = true,
+            CloseOnEscapeKey = true,
+        };
+
+        var dialog = await DialogService.ShowAsync<SelectionPickerDialog>("Add Multiclass", parameters, dialogOptions);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: string selectedId })
+        {
+            _advancementBusy = true;
+            _saveError = null;
+            StateHasChanged();
+            var error = await BuildService.AddMulticlassLevelAsync(tab, selectedId);
+            _advancementBusy = false;
+            if (error == null)
+            {
+                Tabs.MarkClean(tab);
+                Snackbar.Add("Multiclass added.", Severity.Success, cfg => cfg.VisibleStateDuration = 2000);
+            }
+            else
+            {
+                _saveError = error;
+            }
+
+            Refresh();
+            StateHasChanged();
+        }
+    }
+
+    // ── HP ────────────────────────────────────────────────────────────────────
+
+    private void AdjustHp(int delta)
+    {
+        _s.AdjustCurrentHp(delta, CurrentHpMaximum);
+        AutoSave();
+    }
+
+    private void AdjustTempHp(int delta)
+    {
+        _s.AdjustTemporaryHp(delta);
+        AutoSave();
+    }
+
+    private void OnCurrentHpChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var v))
+        {
+            _s.SetCurrentHp(v, CurrentHpMaximum);
+            AutoSave();
+        }
+    }
+
+    private void OnTempHpChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var v))
+        {
+            _s.SetTemporaryHp(v);
+            AutoSave();
+        }
+    }
+
+    private int CurrentHpMaximum => Math.Max(0, _snap?.MaxHp ?? 0);
+
+    // ── Death saves ───────────────────────────────────────────────────────────
+
+    private void ToggleDeathSuccess(int idx)
+    {
+        _s.DeathSaveSuccesses = _s.DeathSaveSuccesses == idx ? idx - 1 : idx;
+        AutoSave();
+    }
+
+    private void ToggleDeathFailure(int idx)
+    {
+        _s.DeathSaveFailures = _s.DeathSaveFailures == idx ? idx - 1 : idx;
+        AutoSave();
+    }
+
+    // ── Status ────────────────────────────────────────────────────────────────
+
+    private void ToggleInspiration()
+    {
+        _s.Inspiration = !_s.Inspiration;
+        AutoSave();
+    }
+
+    private void SetExhaustion(int lvl)
+    {
+        _s.Exhaustion = _s.Exhaustion == lvl ? lvl - 1 : lvl;
+        AutoSave();
+    }
+
+    private void AddCondition(string cond)
+    {
+        if (!_s.Conditions.Contains(cond)) { _s.Conditions.Add(cond); AutoSave(); }
+    }
+
+    private void RemoveCondition(string cond)
+    {
+        _s.Conditions.Remove(cond);
+        AutoSave();
+    }
+
+    // ── Spell slots ───────────────────────────────────────────────────────────
+
+    private void ToggleSlot(string poolId, int level, int idx)
+    {
+        var total = _slotPools.FirstOrDefault(p => p.Id == poolId)?.Levels.FirstOrDefault(l => l.Level == level)?.TotalSlots ?? 0;
+        _s.ToggleSlot(poolId, level, idx, total);
+        AutoSave();
+    }
+
+    private async Task AddAttackReminder(SessionAttackReminder reminder)
+    {
+        if (!reminder.IsWeapon || string.IsNullOrWhiteSpace(reminder.Key))
+            return;
+
+        var tab = Tabs.ActiveTab;
+        if (tab?.Character is null || reminder.EquipmentIdentifier is not { } equipmentIdentifier)
+        {
+            Snackbar.Add("That weapon is no longer available on the active character.", Severity.Warning);
+            return;
+        }
+
+        int sourceIndex = reminder.SourceAttackIndex;
+        bool createdAttackEntry = sourceIndex < 0;
+        if (createdAttackEntry)
+        {
+            using (await CharacterContext.EnterAsync(tab))
+            {
+                BuildService.FlushPendingSnapshotEdits(tab);
+                sourceIndex = AttackReminderCharacterService.EnsureWeaponAttackEntry(
+                    tab.Character,
+                    equipmentIdentifier);
+                if (sourceIndex >= 0)
+                    BuildService.ResnapTab(tab);
+            }
+
+            if (sourceIndex < 0)
+            {
+                Snackbar.Add("Could not create a saved attack entry for that weapon.", Severity.Error);
+                return;
+            }
+
+            _snap = tab.Snapshot;
+            reminder = FindReminderBySourceIndex(sourceIndex) ?? reminder;
+        }
+
+        if (!_s.AttackReminderWeaponIds.Contains(reminder.Key, StringComparer.OrdinalIgnoreCase))
+            _s.AttackReminderWeaponIds.Add(reminder.Key);
+
+        if (createdAttackEntry)
+            await SaveAttackEntryChangesAsync(tab, "Attack reminder added, but its saved attack entry could not be written yet.");
+        else
+            AutoSave();
+
+        RefreshAttackReminders();
+    }
+
+    private void QueueLegacyAttackReminderMigration()
+    {
+        if (_attackEntryMigrationRunning ||
+            !_attackReminders.Any(reminder => reminder.IsWeapon && reminder.SourceAttackIndex < 0))
+        {
+            return;
+        }
+
+        _attackEntryMigrationRunning = true;
+        _ = InvokeAsync(MigrateLegacyAttackRemindersAsync);
+    }
+
+    private async Task MigrateLegacyAttackRemindersAsync()
+    {
+        try
+        {
+            var tab = Tabs.ActiveTab;
+            if (tab?.Character is null)
+                return;
+
+            var pending = _attackReminders
+                .Where(reminder => reminder.IsWeapon &&
+                                   reminder.SourceAttackIndex < 0 &&
+                                   reminder.EquipmentIdentifier is not null)
+                .ToList();
+            if (pending.Count == 0)
+                return;
+
+            var migrated = new List<(SessionAttackReminder Reminder, int SourceIndex)>();
+            using (await CharacterContext.EnterAsync(tab))
+            {
+                BuildService.FlushPendingSnapshotEdits(tab);
+                foreach (var reminder in pending)
+                {
+                    int sourceIndex = AttackReminderCharacterService.EnsureWeaponAttackEntry(
+                        tab.Character,
+                        reminder.EquipmentIdentifier!);
+                    if (sourceIndex >= 0)
+                        migrated.Add((reminder, sourceIndex));
+                }
+
+                if (migrated.Count > 0)
+                    BuildService.ResnapTab(tab);
+            }
+
+            if (migrated.Count == 0)
+                return;
+
+            _snap = tab.Snapshot;
+            foreach (var (oldReminder, sourceIndex) in migrated)
+            {
+                bool selectedByOldKey = _s.AttackReminderWeaponIds.RemoveAll(id =>
+                    string.Equals(id, oldReminder.Key, StringComparison.OrdinalIgnoreCase)) > 0;
+                var migratedReminder = FindReminderBySourceIndex(sourceIndex);
+                if (selectedByOldKey && migratedReminder is not null &&
+                    !_s.AttackReminderWeaponIds.Contains(migratedReminder.Key, StringComparer.OrdinalIgnoreCase))
+                {
+                    _s.AttackReminderWeaponIds.Add(migratedReminder.Key);
+                }
+            }
+
+            await SaveAttackEntryChangesAsync(
+                tab,
+                "An existing attack reminder was upgraded in memory, but its saved attack entry could not be written yet.");
+            RefreshAttackReminders();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            DebugLogService.Instance.LogException(ex, "Session.MigrateLegacyAttackRemindersAsync");
+            Snackbar.Add("Existing attack reminders could not be upgraded to saved attack entries.", Severity.Error);
+        }
+        finally
+        {
+            _attackEntryMigrationRunning = false;
+        }
+    }
+
+    private async Task OpenAddCustomAttackReminderDialog()
+    {
+        var parameters = new DialogParameters
+        {
+            [nameof(CustomAttackReminderDialog.SavesToCharacter)] = true,
+        };
+        var dialog = await DialogService.ShowAsync<CustomAttackReminderDialog>("Add Attack Reminder", parameters);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: CustomAttackReminder customReminder })
+        {
+            var tab = Tabs.ActiveTab;
+            if (tab?.Character is null)
+            {
+                Snackbar.Add("There is no active character to receive that attack.", Severity.Warning);
+                return;
+            }
+
+            using (await CharacterContext.EnterAsync(tab))
+            {
+                BuildService.FlushPendingSnapshotEdits(tab);
+                AttackReminderCharacterService.AddAttackEntry(tab.Character, customReminder);
+                BuildService.ResnapTab(tab);
+            }
+
+            _snap = tab.Snapshot;
+            await SaveAttackEntryChangesAsync(tab, "The attack was added in memory, but could not be written to the character file yet.");
+            RefreshAttackReminders();
+        }
+    }
+
+    private async Task OpenEditAttackReminderDialog(SessionAttackReminder reminder)
+    {
+        CustomAttackReminder existing;
+        if (reminder.CustomIdentifier is { } customIdentifier)
+        {
+            existing = _s.CustomAttackReminders.FirstOrDefault(custom =>
+                string.Equals(custom.Id, customIdentifier, StringComparison.OrdinalIgnoreCase))
+                ?? ToEditableReminder(reminder);
+        }
+        else
+        {
+            existing = ToEditableReminder(reminder);
+        }
+
+        var parameters = new DialogParameters
+        {
+            [nameof(CustomAttackReminderDialog.Existing)] = existing,
+            [nameof(CustomAttackReminderDialog.IsEdit)] = true,
+            [nameof(CustomAttackReminderDialog.SavesToCharacter)] = true,
+        };
+        var dialog = await DialogService.ShowAsync<CustomAttackReminderDialog>("Edit Attack Reminder", parameters);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: CustomAttackReminder updated })
+        {
+            await ApplyAttackReminderEditAsync(reminder, updated);
+        }
+    }
+
+    private async Task ApplyAttackReminderEditAsync(
+        SessionAttackReminder reminder,
+        CustomAttackReminder updated)
+    {
+        var tab = Tabs.ActiveTab;
+        if (tab?.Character is null)
+        {
+            Snackbar.Add("There is no active character to update.", Severity.Warning);
+            return;
+        }
+
+        int sourceIndex = reminder.SourceAttackIndex;
+        using (await CharacterContext.EnterAsync(tab))
+        {
+            BuildService.FlushPendingSnapshotEdits(tab);
+            if (sourceIndex < 0 && reminder.EquipmentIdentifier is { } equipmentIdentifier)
+            {
+                sourceIndex = AttackReminderCharacterService.EnsureWeaponAttackEntry(
+                    tab.Character,
+                    equipmentIdentifier);
+            }
+            else if (sourceIndex < 0 && reminder.IsCustom)
+            {
+                sourceIndex = AttackReminderCharacterService.AddAttackEntry(tab.Character, updated);
+            }
+
+            if (sourceIndex < 0 ||
+                !AttackReminderCharacterService.ApplyEdits(tab.Character, sourceIndex, updated))
+            {
+                Snackbar.Add("The saved attack entry could not be found.", Severity.Error);
+                return;
+            }
+
+            BuildService.ResnapTab(tab);
+        }
+
+        if (reminder.CustomIdentifier is { } customIdentifier)
+        {
+            _s.CustomAttackReminders.RemoveAll(custom =>
+                string.Equals(custom.Id, customIdentifier, StringComparison.OrdinalIgnoreCase));
+        }
+
+        _snap = tab.Snapshot;
+        if (reminder.IsWeapon)
+        {
+            bool selectedByOldKey = _s.AttackReminderWeaponIds.RemoveAll(id =>
+                string.Equals(id, reminder.Key, StringComparison.OrdinalIgnoreCase)) > 0;
+            var updatedReminder = FindReminderBySourceIndex(sourceIndex);
+            if (selectedByOldKey && updatedReminder is not null &&
+                !_s.AttackReminderWeaponIds.Contains(updatedReminder.Key, StringComparer.OrdinalIgnoreCase))
+            {
+                _s.AttackReminderWeaponIds.Add(updatedReminder.Key);
+            }
+        }
+
+        await SaveAttackEntryChangesAsync(tab, "The attack was updated in memory, but could not be written to the character file yet.");
+        RefreshAttackReminders();
+    }
+
+    private static CustomAttackReminder ToEditableReminder(SessionAttackReminder reminder) => new()
+    {
+        Id = reminder.CustomIdentifier ?? Guid.NewGuid().ToString("N")[..8],
+        Name = reminder.Name,
+        Attack = reminder.Attack,
+        Damage = reminder.Damage,
+        Range = reminder.Range,
+    };
+
+    private void RemoveAttackReminder(SessionAttackReminder reminder)
+    {
+        if (reminder.CustomIdentifier is { } customIdentifier)
+        {
+            _s.CustomAttackReminders.RemoveAll(custom =>
+                string.Equals(custom.Id, customIdentifier, StringComparison.OrdinalIgnoreCase));
+        }
+        else if (reminder.IsWeapon)
+        {
+            bool removedLegacyWeaponSelection = false;
+            if (reminder.EquipmentIdentifier is { } identifier)
+            {
+                removedLegacyWeaponSelection = _s.AttackReminderWeaponIds.RemoveAll(id =>
+                    string.Equals(id, identifier, StringComparison.OrdinalIgnoreCase)) > 0;
+            }
+
+            _s.AttackReminderWeaponIds.RemoveAll(id =>
+                string.Equals(id, reminder.Key, StringComparison.OrdinalIgnoreCase));
+
+            if (removedLegacyWeaponSelection && reminder.EquipmentIdentifier is { } legacyIdentifier)
+            {
+                foreach (var remaining in _attackReminders.Where(other =>
+                    other.IsWeapon &&
+                    string.Equals(other.EquipmentIdentifier, legacyIdentifier, StringComparison.OrdinalIgnoreCase) &&
+                    !string.Equals(other.Key, reminder.Key, StringComparison.OrdinalIgnoreCase)))
+                {
+                    if (!_s.AttackReminderWeaponIds.Contains(remaining.Key, StringComparer.OrdinalIgnoreCase))
+                        _s.AttackReminderWeaponIds.Add(remaining.Key);
+                }
+            }
+        }
+        else if (!_s.HiddenDefaultAttackReminderKeys.Contains(reminder.Key, StringComparer.OrdinalIgnoreCase))
+        {
+            _s.HiddenDefaultAttackReminderKeys.Add(reminder.Key);
+        }
+
+        AutoSave();
+        RefreshAttackReminders();
+    }
+
+    private void RefreshAttackReminders()
+    {
+        var attackReminderSet = BuildAttackReminderSet();
+        _attackReminders = attackReminderSet.Visible;
+        _availableAttackReminders = attackReminderSet.AvailableWeapons;
+    }
+
+    private SessionAttackReminderSet BuildAttackReminderSet()
+    {
+        if (_snap is null)
+            return new SessionAttackReminderSet([], []);
+
+        var attacks = _snap.Attacks
+            .Select(attack => new SessionAttackSource(
+                attack.Name,
+                attack.Attack,
+                attack.Damage,
+                attack.Range,
+                attack.EquipmentIdentifier,
+                attack.SourceIndex))
+            .ToList();
+
+        var inventory = _snap.InventoryItems
+            .Select(item => new SessionInventorySource(
+                item.Identifier,
+                item.IsEquipped,
+                item.EquippedLocation,
+                item.Name,
+                item.IsWeaponLike,
+                item.Damage,
+                item.Range,
+                item.CalculatedAttack,
+                item.CalculatedDamage,
+                item.CalculatedRange))
+            .ToList();
+
+        return SessionAttackReminderService.Build(
+            attacks,
+            inventory,
+            _s.AttackReminderWeaponIds,
+            _s.HiddenDefaultAttackReminderKeys,
+            _s.CustomAttackReminders);
+    }
+
+    private SessionAttackReminder? FindReminderBySourceIndex(int sourceIndex)
+    {
+        if (sourceIndex < 0)
+            return null;
+
+        var set = BuildAttackReminderSet();
+        return set.Visible
+            .Concat(set.AvailableWeapons)
+            .FirstOrDefault(reminder => reminder.SourceAttackIndex == sourceIndex);
+    }
+
+    private async Task<bool> SaveAttackEntryChangesAsync(CharacterTab tab, string failureMessage)
+    {
+        string? error = await BuildService.SaveTabAsync(tab);
+        if (error is not null)
+        {
+            Tabs.MarkDirty(tab);
+            _saveError = $"{failureMessage} {error}";
+            Snackbar.Add(_saveError, Severity.Error);
+            StateHasChanged();
+            return false;
+        }
+
+        _saveError = null;
+        Tabs.MarkClean(tab);
+        return true;
+    }
+
+    // ── Custom resources ──────────────────────────────────────────────────────
+
+    private void ToggleResource(CustomResource r, int idx)
+    {
+        r.Used = r.Used == idx ? idx - 1 : idx;
+        AutoSave();
+    }
+
+    private void AdjustResource(CustomResource r, int delta)
+    {
+        // delta is the change in Remaining: +1 = recover one, -1 = expend one.
+        r.Used = Math.Clamp(r.Used - delta, 0, r.Max);
+        AutoSave();
+    }
+
+    private async Task OpenAddResourceDialog()
+    {
+        var dialog = await DialogService.ShowAsync<AddResourceDialog>("Add Resource");
+        var result = await dialog.Result;
+        if (result is { Canceled: false, Data: CustomResource res })
+        {
+            _s.CustomResources.Add(res);
+            AutoSave();
+        }
+    }
+
+    private async Task OpenEditResourceDialog(CustomResource existing)
+    {
+        var parameters = new DialogParameters<AddResourceDialog>
+        {
+            { x => x.Existing, existing },
+            { x => x.IsEdit,   true     },
+        };
+        var dialog = await DialogService.ShowAsync<AddResourceDialog>("Edit Resource", parameters);
+        var result = await dialog.Result;
+        if (result is { Canceled: false, Data: CustomResource updated })
+        {
+            var idx = _s.CustomResources.IndexOf(existing);
+            if (idx >= 0) _s.CustomResources[idx] = updated;
+            else           _s.CustomResources.Add(updated);
+            AutoSave();
+        }
+    }
+
+    private void RemoveResource(CustomResource r)
+    {
+        _s.CustomResources.Remove(r);
+        AutoSave();
+    }
+
+    // ── Rest ──────────────────────────────────────────────────────────────────
+
+    private void DoShortRest()
+    {
+        _s.ShortRest();
+        AutoSave();
+        Snackbar.Add("Short rest taken — Pact Magic slots and short-rest resources restored; death saves cleared.", Severity.Info);
+    }
+
+    private void DoLongRest()
+    {
+        if (_snap is null) return;
+        _s.LongRest(_snap.MaxHp);
+        AutoSave();
+        Snackbar.Add("Long rest taken — HP, slots, and resources restored.", Severity.Success);
+    }
+
+    // ── Currency ─────────────────────────────────────────────────────────────
+
+    private void OnCoinChanged(string coinId, ChangeEventArgs e)
+    {
+        if (_snap is null) return;
+        if (!long.TryParse(e.Value?.ToString(), out long val)) return;
+        val = Math.Max(0, val);
+        switch (coinId)
+        {
+            case "cp": _snap.CoinCopper   = val; break;
+            case "sp": _snap.CoinSilver   = val; break;
+            case "ep": _snap.CoinElectrum = val; break;
+            case "gp": _snap.CoinGold     = val; break;
+            case "pp": _snap.CoinPlatinum = val; break;
+        }
+        // Write through to the model (like OnNotesInput): ResnapTab rebuilds the snapshot
+        // from the Character, so snapshot-only edits would be reverted by a level-up or
+        // any other full save.
+        if (_tab?.Character is { } ch)
+            ch.Inventory.Coins.Set(_snap.CoinCopper, _snap.CoinSilver, _snap.CoinElectrum, _snap.CoinGold, _snap.CoinPlatinum);
+        PersistSessionChanges();
+    }
+
+    // ── Persistence ───────────────────────────────────────────────────────────
+
+    private void AutoSave()
+    {
+        PersistSessionChanges();
+    }
+
+    private async Task SaveSession()
+    {
+        if (_tab?.CloudSession is not null)
+        {
+            var error = await BuildService.SaveTabAsync(_tab);
+            if (error is not null) Snackbar.Add(error, Severity.Error);
+            else
+            {
+                Tabs.MarkClean(_tab);
+                Snackbar.Add(_tab.CloudNotice ?? "Saved to Google Drive.", Severity.Success);
+            }
+            return;
+        }
+        if (await PersistSessionChangesAsync())
+        {
+            Snackbar.Add("Session saved.", Severity.Success);
+        }
+    }
+
+    private void OnNotesInput(int field, string value)
+    {
+        if (_snap is null) return;
+        if (field == 1) _snap.Notes1 = value;
+        else            _snap.Notes2 = value;
+        if (_tab?.Character is { } ch)
+        {
+            if (field == 1) ch.Notes1 = value;
+            else            ch.Notes2 = value;
+        }
+        if (_tab is { } tab)
+        {
+            bool wasDirty = tab.IsDirty;
+            tab.SessionWrites.BeginChange();
+            if (!wasDirty) Tabs.NotifyChanged();
+        }
+    }
+
+    private void SaveNotesInput(int field, string value)
+    {
+        OnNotesInput(field, value);
+        AutoSave();
+    }
+
+    private void PersistSessionChanges() => _ = PersistSessionChangesAsync();
+
+    private async Task<bool> PersistSessionChangesAsync()
+    {
+        if (_tab is null || _snap is null) return false;
+        var tab = _tab;
+        var saving = CharacterFileWriteCoordinator.SaveSessionAsync(tab, _s, _snap);
+        if (tab.CloudSession is not null) Tabs.MarkDirty(tab);
+        else Tabs.NotifyChanged();
+
+        var result = await saving;
+        Tabs.NotifyChanged();
+        if (result.Succeeded)
+        {
+            if (!_disposed && _tab == tab && !tab.SessionWrites.HasPendingChanges) _saveError = null;
+            return true;
+        }
+
+        if (!_disposed && _tab == tab && tab.SessionWrites.HasPendingChanges)
+        {
+            _saveError = "Some session changes could not be saved yet. Your current values are still in memory; retry Save before closing the character.";
+            await InvokeAsync(() => HandleSessionPatchFailureAsync(tab, result));
+        }
+        return false;
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private async Task HandleSessionPatchFailureAsync(CharacterTab tab, CharacterFileWriteResult result)
+    {
+        if (_disposed) return;
+
+        if (result.IsExternalChange)
+        {
+            Snackbar.Add(
+                "Session state was saved, but the character file changed on disk. Notes and currency are still pending. Review the external changes before retrying or discarding these edits.",
+                Severity.Warning,
+                cfg => cfg.VisibleStateDuration = 7000);
+
+            return;
+        }
+
+        if (result.Exception is not null)
+            DebugLogService.Instance.LogException(result.Exception, "Session.PersistSessionChanges");
+
+        Snackbar.Add(
+            $"Some session changes could not be saved. Your edits are still pending. {result.Message}",
+            Severity.Warning,
+            cfg => cfg.VisibleStateDuration = 7000);
+    }
+
+    private async Task ReloadAfterExternalChangeAsync(CharacterTab tab)
+    {
+        try
+        {
+            using var scope = await CharacterContext.EnterAsync(tab);
+            await CharacterContext.ReloadFromDiskAsync(tab);
+            BuildService.ResnapTab(tab);
+            tab.SessionWrites.Saved(tab.SessionWrites.Version, SessionCharacterEdits.From(tab.Snapshot!));
+            Refresh();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            DebugLogService.Instance.LogException(ex, "Session.ReloadAfterExternalChangeAsync");
+            Snackbar.Add(
+                "The character file changed on disk, but Reflections could not reload it automatically. Close and reopen the character before making more session changes.",
+                Severity.Error,
+                cfg => cfg.VisibleStateDuration = 9000);
+        }
+    }
+
+    private static string ExhaustionTooltip(int level) => level switch
+    {
+        1 => "Level 1: Disadvantage on ability checks",
+        2 => "Level 2: Speed halved",
+        3 => "Level 3: Disadvantage on attack rolls and saving throws",
+        4 => "Level 4: Hit point maximum halved",
+        5 => "Level 5: Speed reduced to 0",
+        6 => "Level 6: Death",
+        _ => $"Exhaustion level {level}"
+    };
+
+    private static string OrdinalLevel(int level) => level switch
+    {
+        1 => "1st",
+        2 => "2nd",
+        3 => "3rd",
+        _ => $"{level}th"
+    };
+
+    private static string ResetLabel(ResetOn r) => r switch
+    {
+        ResetOn.LongRest  => "LR",
+        ResetOn.ShortRest => "SR",
+        _                 => "Manual"
+    };
+}

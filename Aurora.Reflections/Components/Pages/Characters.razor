@@ -1,0 +1,755 @@
+@page "/"
+@implements IDisposable
+@inject CharacterService CharSvc
+@inject CharacterTabService Tabs
+@inject NavigationManager Nav
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject UserPreferencesService Prefs
+@inject PdfImportService PdfImport
+@inject AppPageStateService PageState
+@inject CloudCharacterService Cloud
+@inject CharacterDraftRecovery Drafts
+@using Builder.Presentation
+@using Builder.Presentation.Utilities
+@using Aurora.PdfImport
+
+@if (_recoveryDrafts.Count > 0)
+{
+    <MudPaper Class="pa-3 mb-3" Outlined="true" role="region" aria-label="Recover unsaved characters">
+        <MudText Typo="Typo.h6">Unsaved characters recovered</MudText>
+        <MudText Typo="Typo.body2">Open a recovery copy to continue your work, then save or upload it when ready.</MudText>
+        @foreach (var draft in _recoveryDrafts)
+        {
+            <div class="d-flex align-center flex-wrap gap-2 mt-2">
+                <MudText>@draft.Name · @draft.UpdatedUtc.ToLocalTime().ToString("g")</MudText>
+                <MudButton OnClick="@(() => OpenRecoveryAsync(draft))" Disabled="@(_recovering || _preloading || draft.IsCorrupt)">Open recovery copy</MudButton>
+                <MudButton OnClick="@(() => DiscardRecoveryAsync(draft))" Disabled="@_recovering">Discard draft</MudButton>
+            </div>
+            @if (draft.IncompleteOperation)
+            {
+                <MudText Typo="Typo.caption">A save or build change was in progress. Check this copy’s choices before continuing.</MudText>
+            }
+        }
+    </MudPaper>
+}
+
+@if (_loading)
+{
+    <div style="display: flex; align-items: center; gap: 12px; margin-top: 24px;">
+        <MudProgressCircular Indeterminate="true" Size="Size.Small" />
+        <MudText Color="Color.Secondary">Loading characters...</MudText>
+    </div>
+}
+
+@if (_error is not null)
+{
+    <MudAlert Severity="@(_warning ? Severity.Warning : Severity.Error)" Class="mt-4">
+        <pre style="white-space: pre-wrap; font-size: 11px; max-height: 300px; overflow-y: auto; margin: 0;">@_error</pre>
+    </MudAlert>
+    @if (_warning)
+    {
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-2" OnClick="NavigateToCharacter">Open anyway</MudButton>
+    }
+}
+else
+{
+    <CharacterLibraryShell>
+        <BrowserContent>
+            <CharacterBrowser Characters="@BrowserEntries"
+                              Title="Characters"
+                              DirectoryCaption="@DirectoryCaption"
+                              EmptyMessage="@EmptyMessage"
+                              EmptySubMessage="@EmptySubMessage"
+                              BusyMessage="@BusyMessage"
+                              ShowCreateButton="true"
+                              ShowSearchWhenEmpty="true"
+                              CreateButtonText="New Character"
+                              DisableCreateButton="@_preloading"
+                              SearchText="@PageState.Characters.SearchText"
+                              SearchTextChanged="OnBrowserSearchChanged"
+                              SelectedId="@(Tabs.ActiveTab?.File.FilePath)"
+                              OnCreate="OnNewCharacter"
+                              OnSelected="OnBrowserSelected"
+                              OnDelete="OnDeleteCharacter"
+                              OnEditGroup="OnEditGroupCharacter"
+                              OnRenameGroup="OnRenameGroup">
+                <AdditionalHeaderContent>
+                    <button class="character-browser-create"
+                            type="button"
+                            style="background: transparent; border-color: var(--mud-palette-primary); color: var(--mud-palette-primary);"
+                            @onclick="OnImportPdf"
+                            disabled="@_preloading">
+                        Import Character
+                    </button>
+                    <button class="character-browser-create"
+                            type="button"
+                            style="background: transparent; border-color: var(--mud-palette-primary); color: var(--mud-palette-primary);"
+                            @onclick="OnImportFile"
+                            disabled="@(_preloading || _importingFile)">
+                        Open File
+                    </button>
+                </AdditionalHeaderContent>
+            </CharacterBrowser>
+            <CloudSaves OnOpen="OnCloudCharacterSelected" SearchText="@PageState.Characters.SearchText" />
+        </BrowserContent>
+    </CharacterLibraryShell>
+}
+
+@code {
+    private IReadOnlyList<RecoveryDraftInfo> _recoveryDrafts = [];
+    private bool _recovering;
+
+    private async Task OpenRecoveryAsync(RecoveryDraftInfo draft)
+    {
+        if (_recovering) return;
+        _recovering = true;
+        try
+        {
+            string copy = Drafts.OpenCopy(draft.Id, CharSvc.CharactersDirectory);
+            var file = new Builder.Presentation.Models.CharacterFile(copy);
+            _characters = CharSvc.LoadCharacterFiles().ToList();
+            CharSvc.UpdateFileListCache(_characters);
+            RebuildBrowserEntries();
+            await OnCharacterSelected(file);
+            if (Tabs.FindTab(file) is { Character: not null, IsLoading: false })
+                Drafts.Delete(draft.Id);
+            _recoveryDrafts = Drafts.List();
+        }
+        catch (Exception ex) { Snackbar.Add($"Could not open recovery copy: {ex.Message}", Severity.Error); }
+        finally { _recovering = false; }
+    }
+
+    private async Task DiscardRecoveryAsync(RecoveryDraftInfo draft)
+    {
+        if (_recovering) return;
+        _recovering = true;
+        try
+        {
+            bool? discard = await DialogService.ShowMessageBox("Discard recovery draft?",
+                $"Discard the recovered draft for {draft.Name}?", yesText: "Discard draft", cancelText: "Keep draft");
+            if (discard != true) return;
+            Drafts.Delete(draft.Id);
+            _recoveryDrafts = Drafts.List();
+        }
+        catch (Exception ex) { Snackbar.Add($"Could not discard draft: {ex.Message}", Severity.Error); }
+        finally { _recovering = false; }
+    }
+
+    private async Task OnCloudCharacterSelected((Builder.Presentation.Services.Storage.CharacterDocumentMetadata Metadata, CancellationToken Token) request)
+    {
+        var metadata = request.Metadata;
+        using var openingNavigation = new CharacterLoadNavigation(Nav, Tabs);
+        var existing = Tabs.Tabs.FirstOrDefault(t => t.CloudSession?.Metadata.Reference.DocumentId == metadata.Reference.DocumentId);
+        if (existing is not null)
+        {
+            string? warning = await BuildService.ReloadCloudTabAsync(existing);
+            if (warning is not null) Snackbar.Add(warning, Severity.Warning);
+            Tabs.NotifyChanged();
+            openingNavigation.TryOpenOverview(existing);
+            return;
+        }
+
+        var session = await Cloud.OpenAsync(metadata.Reference, request.Token);
+        if (!openingNavigation.IsCurrent)
+        {
+            session.Dispose();
+            return;
+        }
+        openingNavigation.Dispose();
+        var file = new Builder.Presentation.Models.CharacterFile(session.FilePath);
+        var tab = Tabs.OpenLoadingTab(file);
+        tab.CloudSession = session;
+        using var navigation = new CharacterLoadNavigation(Nav, Tabs);
+        try
+        {
+            var result = await CharSvc.LoadCharacterAsync(file);
+            if (!Tabs.Tabs.Contains(tab)) return;
+            if (CharSvc.CurrentCharacter is null
+                || !CharacterFileIdentity.RefersToSameFile(CharSvc.CurrentCharacterFile, file))
+                throw new InvalidOperationException(result.Message);
+            tab.Character = CharSvc.CurrentCharacter;
+            tab.Snapshot = CharacterSnapshot.From(tab.Character);
+            tab.ProgressionSnapshots = SnapshotProgressionManagers();
+            tab.Session = LoadSessionWithWarning(file);
+            tab.IsLoading = false;
+            CharacterContext.ClaimAfterLoad(tab);
+            Tabs.NotifyChanged();
+            if (!result.Success) Snackbar.Add(result.Message, Severity.Warning);
+            navigation.TryOpenOverview(tab);
+        }
+        catch { Tabs.CloseTab(tab); throw; }
+    }
+
+    private bool _disposed;
+    private List<Builder.Presentation.Models.CharacterFile> _characters = [];
+    private List<CharacterBrowserEntry> _browserEntries = [];
+    private CancellationTokenSource? _portraitCts;
+    private bool _loading = true;
+    private bool _preloading;
+    private bool _importingFile;
+    private string? _error;
+    private bool _warning;
+
+    private IReadOnlyList<CharacterBrowserEntry> BrowserEntries => _browserEntries;
+
+    private IReadOnlyList<string> ExistingGroups =>
+        new[] { "Characters" }
+            .Concat(
+                _characters
+                    .Select(c => c.CollectionGroupName)
+                    .Where(g => !string.IsNullOrWhiteSpace(g) &&
+                                !string.Equals(g, "Characters", StringComparison.OrdinalIgnoreCase))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(g => g, StringComparer.OrdinalIgnoreCase))
+            .ToList();
+
+    private string DirectoryCaption =>
+        _characters.Count == 0
+            ? CharSvc.CharactersDirectory
+            : $"{_characters.Count} character{(_characters.Count == 1 ? string.Empty : "s")} - {CharSvc.CharactersDirectory}";
+
+    private string EmptyMessage =>
+        $"No characters found in {CharSvc.CharactersDirectory}.";
+
+    private string EmptySubMessage =>
+        "Tap \"New Character\" to get started, or import an existing .dnd5e file.";
+
+    private string? BusyMessage => _preloading ? "Loading content data..." : null;
+
+    public void Dispose()
+    {
+        _disposed = true;
+        _portraitCts?.Cancel();
+        _portraitCts?.Dispose();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try { _recoveryDrafts = await Task.Run(Drafts.List); }
+        catch (Exception ex) { Snackbar.Add($"Could not read recovery drafts: {ex.Message}", Severity.Warning); }
+        // Fast path: render immediately from the singleton cache so return visits
+        // are instant — no disk scan, no loading spinner, no portrait re-decode.
+        if (CharSvc.TryGetCachedFiles(out IReadOnlyList<Builder.Presentation.Models.CharacterFile> cachedFiles))
+        {
+            _characters = cachedFiles.ToList();
+            RebuildBrowserEntries();
+            _loading = false;
+            _ = RunPreloadAsync();
+            return;
+        }
+
+        // Cold start: scan from disk on a background thread.
+        try
+        {
+            CharSvc.EnsureInitialized();
+            _characters = await Task.Run(() => CharSvc.LoadCharacterFiles().ToList());
+            if (!_disposed)
+            {
+                CharSvc.UpdateFileListCache(_characters);
+                RebuildBrowserEntries();
+            }
+        }
+        catch (Exception ex)
+        {
+            DebugLogService.Instance.LogException(ex, "CharactersPage.OnInitializedAsync");
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+
+        _ = RunPreloadAsync();
+    }
+
+    private void RebuildBrowserEntries()
+    {
+        _portraitCts?.Cancel();
+        _portraitCts?.Dispose();
+        _portraitCts = new CancellationTokenSource();
+        _browserEntries = _characters.Select(ToBrowserEntry).ToList();
+        _ = LoadPortraitsAsync(_portraitCts.Token);
+    }
+
+    private async Task LoadPortraitsAsync(CancellationToken ct)
+    {
+        var snapshot = _characters.ToList();
+        if (snapshot.Count == 0) return;
+
+        // Load up to 4 portraits in parallel. Each one updates the grid the
+        // moment it finishes so the user sees portraits appear progressively
+        // rather than all at once after a long wait.
+        using var throttle = new SemaphoreSlim(4, 4);
+
+        async Task LoadOneAsync(Builder.Presentation.Models.CharacterFile character, int index)
+        {
+            await throttle.WaitAsync(ct);
+            string? url;
+            try
+            {
+                if (ct.IsCancellationRequested || _disposed) return;
+                url = await Task.Run(() => ToPortraitDataUrl(character), ct);
+            }
+            catch (OperationCanceledException) { return; }
+            finally { throttle.Release(); }
+
+            if (url == null || ct.IsCancellationRequested || _disposed) return;
+
+            // Store in the singleton cache so return visits don't re-decode.
+            CharSvc.CachePortrait(character.FilePath, url);
+
+            // Mutate the list and notify the UI on the dispatcher thread.
+            await InvokeAsync(() =>
+            {
+                if (!ct.IsCancellationRequested &&
+                    !_disposed &&
+                    index < _browserEntries.Count &&
+                    string.Equals(_browserEntries[index].Id, character.FilePath, StringComparison.Ordinal))
+                {
+                    _browserEntries[index] = _browserEntries[index] with { PortraitDataUrl = url };
+                    StateHasChanged();
+                }
+            });
+        }
+
+        try
+        {
+            await Task.WhenAll(snapshot.Select((c, i) => LoadOneAsync(c, i)));
+        }
+        catch (OperationCanceledException) { }
+    }
+
+    private async Task RunPreloadAsync()
+    {
+        if (_disposed) return;
+        _preloading = true;
+        if (!_disposed) await InvokeAsync(() => { if (!_disposed) StateHasChanged(); });
+
+        try
+        {
+            await CharSvc.PreloadAsync();
+
+            if (!_disposed)
+            {
+                string? mruPath = Prefs.MruCharacterPath;
+                if (!string.IsNullOrEmpty(mruPath))
+                {
+                    Builder.Presentation.Models.CharacterFile? mruFile = _characters.FirstOrDefault(file => file.FilePath == mruPath);
+                    // Only preload if the character isn't already in memory — re-triggering
+                    // a load races against the fast path's CharacterSnapshot.From call:
+                    // the background file.Load() rebuilds CharacterManager.Current in-place
+                    // and resets SpellcastingSectionContext (prepared spells), producing
+                    // corrupted snapshots (wrong level, missing spells) on second open.
+                    if (mruFile != null && Tabs.FindTab(mruFile) == null && !CharSvc.IsPreloaded(mruFile))
+                    {
+                        CharSvc.BeginPreload(mruFile);
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            DebugLogService.Instance.LogException(ex, "CharactersPage.RunPreloadAsync");
+            if (!_disposed)
+            {
+                await InvokeAsync(() =>
+                {
+                    if (!_disposed)
+                        Snackbar.Add($"Could not preload content data: {ex.Message}", Severity.Warning);
+                });
+            }
+        }
+        finally
+        {
+            _preloading = false;
+            if (!_disposed) await InvokeAsync(() => { if (!_disposed) StateHasChanged(); });
+        }
+    }
+
+    private async Task OnCharacterSelected(Builder.Presentation.Models.CharacterFile characterFile)
+    {
+        CharacterTab? existing = Tabs.FindTab(characterFile);
+        if (existing != null)
+        {
+            Tabs.ActivateTab(existing);
+            Nav.NavigateTo("/character");
+            return;
+        }
+
+        if (CharSvc.IsPreloaded(characterFile) && !CharSvc.IsCharacterLoading)
+        {
+            CharacterTab tab = Tabs.OpenTab(characterFile, CharSvc.CurrentCharacter!);
+            tab.Snapshot = CharacterSnapshot.From(CharSvc.CurrentCharacter!);
+            tab.ProgressionSnapshots = SnapshotProgressionManagers();
+            tab.Session = LoadSessionWithWarning(characterFile);
+            CharacterContext.ClaimAfterLoad(tab);
+            Nav.NavigateTo("/character");
+            return;
+        }
+
+        _error = null;
+        _warning = false;
+        CharacterTab loadingTab = Tabs.OpenLoadingTab(characterFile);
+        using var navigation = new CharacterLoadNavigation(Nav, Tabs, loadingRoute: "/build");
+
+        try
+        {
+            (bool success, string message) = await CharSvc.LoadCharacterAsync(characterFile);
+            // Closing a loading tab must not attach or claim its late result.
+            if (!Tabs.Tabs.Contains(loadingTab)) return;
+
+            if (success
+                && CharSvc.CurrentCharacter != null
+                && CharacterFileIdentity.RefersToSameFile(CharSvc.CurrentCharacterFile, characterFile))
+            {
+                loadingTab.Character = CharSvc.CurrentCharacter;
+                loadingTab.Snapshot = CharacterSnapshot.From(CharSvc.CurrentCharacter);
+                loadingTab.ProgressionSnapshots = SnapshotProgressionManagers();
+                loadingTab.Session = LoadSessionWithWarning(characterFile);
+                loadingTab.IsLoading = false;
+                CharacterContext.ClaimAfterLoad(loadingTab);
+                Tabs.NotifyChanged();
+                navigation.TryOpenOverview(loadingTab);
+                return;
+            }
+
+            if (CharSvc.CurrentCharacter != null
+                && CharacterFileIdentity.RefersToSameFile(CharSvc.CurrentCharacterFile, characterFile))
+            {
+                loadingTab.Character = CharSvc.CurrentCharacter;
+                loadingTab.Snapshot = CharacterSnapshot.From(CharSvc.CurrentCharacter);
+                loadingTab.ProgressionSnapshots = SnapshotProgressionManagers();
+                loadingTab.Session = LoadSessionWithWarning(characterFile);
+                loadingTab.IsLoading = false;
+                CharacterContext.ClaimAfterLoad(loadingTab);
+                Tabs.NotifyChanged();
+                navigation.TryOpenOverview(loadingTab);
+                string warningMessage = string.IsNullOrEmpty(message)
+                    ? $"Warning: {characterFile.DisplayName} loaded with missing elements; some features may not display."
+                    : message;
+                Snackbar.Add(warningMessage, Severity.Warning);
+                return;
+            }
+
+            Tabs.CloseTab(loadingTab);
+            string errorMessage = string.IsNullOrEmpty(message)
+                ? $"Could not load {characterFile.DisplayName}."
+                : $"Could not load {characterFile.DisplayName}: {message}";
+            Snackbar.Add(errorMessage, Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            DebugLogService.Instance.LogException(ex, "CharactersPage.OnCharacterSelected");
+            Tabs.CloseTab(loadingTab);
+            Snackbar.Add($"{characterFile.DisplayName}: {ex.GetType().Name} - {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void NavigateToCharacter() => Nav.NavigateTo("/character");
+
+    private async Task OnImportPdf()
+    {
+        var dialog = await DialogService.ShowAsync<PdfImportDialog>("Import Character",
+            new DialogOptions { MaxWidth = MaxWidth.Medium, CloseButton = true });
+        await dialog.Result;
+        _characters = CharSvc.LoadCharacterFiles().ToList();
+        CharSvc.UpdateFileListCache(_characters);
+        RebuildBrowserEntries();
+        StateHasChanged();
+    }
+
+    private async Task OnImportFile()
+    {
+        _importingFile = true;
+        StateHasChanged();
+
+        Builder.Presentation.Models.CharacterFile? imported = null;
+        try
+        {
+            var (file, error) = await CharSvc.ImportCharacterFromFileAsync();
+
+            if (file == null && error == null)
+            {
+                // User cancelled the picker — nothing to do.
+                return;
+            }
+
+            if (error != null)
+            {
+                Snackbar.Add(error, Severity.Error);
+                return;
+            }
+
+            imported = file;
+            _characters = CharSvc.LoadCharacterFiles().ToList();
+            CharSvc.UpdateFileListCache(_characters);
+            RebuildBrowserEntries();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            DebugLogService.Instance.LogException(ex, "CharactersPage.OnImportFile");
+            Snackbar.Add($"Import failed: {ex.Message}", Severity.Error);
+            return;
+        }
+        finally
+        {
+            _importingFile = false;
+            StateHasChanged();
+        }
+
+        if (imported != null)
+            await OnCharacterSelected(imported);
+    }
+
+    private async Task OnNewCharacter()
+    {
+        var parameters = new DialogParameters<NewCharacterDialog>
+        {
+            { d => d.ExistingGroups, ExistingGroups }
+        };
+        IDialogReference dialog = await DialogService.ShowAsync<NewCharacterDialog>("New Character", parameters);
+        DialogResult? result = await dialog.Result;
+        if (result is not { Canceled: false, Data: NewCharacterInfo info })
+        {
+            return;
+        }
+
+        _error = null;
+        _warning = false;
+
+        try
+        {
+            (Builder.Presentation.Models.CharacterFile? file, string? error) =
+                await CharSvc.CreateNewCharacterAsync(info.Name, info.PlayerName, Prefs.DefaultHpMethod,
+                    Prefs.DefaultFeats, Prefs.DefaultMulticlassing,
+                    Prefs.DefaultCustomOrigin, Prefs.DefaultCustomLanguage, Prefs.DefaultCustomProficiency);
+
+            if (file == null || CharSvc.CurrentCharacter == null)
+            {
+                _error = error ?? "Failed to create character.";
+                StateHasChanged();
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(info.Group))
+                file.UpdateGroupName(info.Group);
+
+            CharacterTab tab = Tabs.OpenTab(file, CharSvc.CurrentCharacter);
+            tab.Snapshot = CharacterSnapshot.From(CharSvc.CurrentCharacter);
+            tab.ProgressionSnapshots = SnapshotProgressionManagers();
+            tab.IsNew = true;
+            CharacterContext.ClaimAfterLoad(tab);
+
+            _characters = CharSvc.LoadCharacterFiles().ToList();
+            CharSvc.UpdateFileListCache(_characters);
+            RebuildBrowserEntries();
+            Nav.NavigateTo("/build");
+        }
+        catch (Exception ex)
+        {
+            DebugLogService.Instance.LogException(ex, "CharactersPage.OnNewCharacter");
+            _error = $"{ex.GetType().Name}: {ex.Message}";
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnBrowserSelected(CharacterBrowserEntry entry)
+    {
+        Builder.Presentation.Models.CharacterFile? character = _characters.FirstOrDefault(candidate =>
+            string.Equals(candidate.FilePath, entry.Id, StringComparison.Ordinal));
+
+        if (character != null)
+        {
+            await OnCharacterSelected(character);
+        }
+    }
+
+    private Task OnBrowserSearchChanged(string searchText)
+    {
+        PageState.Characters.SearchText = searchText;
+        return Task.CompletedTask;
+    }
+
+    private async Task OnDeleteCharacter(CharacterBrowserEntry entry)
+    {
+        Builder.Presentation.Models.CharacterFile? file = _characters.FirstOrDefault(candidate =>
+            string.Equals(candidate.FilePath, entry.Id, StringComparison.Ordinal));
+        if (file == null) return;
+
+        bool? confirmed = await DialogService.ShowMessageBox(
+            "Delete Character?",
+            $"Are you sure you want to permanently delete \"{file.DisplayName}\"? This cannot be undone.",
+            yesText: "Delete", cancelText: "Cancel");
+        if (confirmed != true) return;
+
+        // Close the tab if this character is currently open.
+        CharacterTab? tab = Tabs.FindTab(file);
+        if (tab != null)
+        {
+            await CharacterContext.ReleaseAsync(tab);
+            Tabs.CloseTab(tab);
+        }
+
+        try
+        {
+            CharSvc.DeleteCharacterFile(file);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Could not delete {file.DisplayName}: {ex.Message}", Severity.Error);
+            return;
+        }
+
+        _characters = CharSvc.LoadCharacterFiles().ToList();
+        CharSvc.UpdateFileListCache(_characters);
+        RebuildBrowserEntries();
+        StateHasChanged();
+    }
+
+    private async Task OnEditGroupCharacter(CharacterBrowserEntry entry)
+    {
+        Builder.Presentation.Models.CharacterFile? file = _characters.FirstOrDefault(c =>
+            string.Equals(c.FilePath, entry.Id, StringComparison.Ordinal));
+        if (file == null) return;
+
+        var parameters = new DialogParameters<EditGroupDialog>
+        {
+            { d => d.CurrentGroup,    file.CollectionGroupName },
+            { d => d.ExistingGroups,  ExistingGroups }
+        };
+        IDialogReference dialog = await DialogService.ShowAsync<EditGroupDialog>("Edit Group", parameters);
+        DialogResult? result = await dialog.Result;
+        if (result is not { Canceled: false, Data: string newGroup })
+            return;
+
+        string resolved = string.IsNullOrWhiteSpace(newGroup) ? "Characters" : newGroup;
+        if (string.Equals(resolved, file.CollectionGroupName, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        try
+        {
+            file.UpdateGroupName(resolved);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Could not update group: {ex.Message}", Severity.Error);
+            return;
+        }
+
+        _characters = CharSvc.LoadCharacterFiles().ToList();
+        CharSvc.UpdateFileListCache(_characters);
+        RebuildBrowserEntries();
+        StateHasChanged();
+    }
+
+    private async Task OnRenameGroup(string currentGroup)
+    {
+        var parameters = new DialogParameters<EditGroupDialog>
+        {
+            { d => d.CurrentGroup,    currentGroup },
+            { d => d.ExistingGroups,  ExistingGroups }
+        };
+        IDialogReference dialog = await DialogService.ShowAsync<EditGroupDialog>("Rename Group", parameters);
+        DialogResult? result = await dialog.Result;
+        if (result is not { Canceled: false, Data: string newGroup })
+            return;
+
+        string resolved = string.IsNullOrWhiteSpace(newGroup) ? "Characters" : newGroup;
+        if (string.Equals(resolved, currentGroup, StringComparison.Ordinal))
+            return;
+
+        List<Builder.Presentation.Models.CharacterFile> groupCharacters = _characters
+            .Where(file => string.Equals(ResolveGroupName(file.CollectionGroupName), currentGroup, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        HashSet<string> groupCharacterPaths = groupCharacters
+            .Select(file => file.FilePath)
+            .ToHashSet(StringComparer.Ordinal);
+
+        try
+        {
+            foreach (Builder.Presentation.Models.CharacterFile file in groupCharacters)
+                file.UpdateGroupName(resolved);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Could not rename group: {ex.Message}", Severity.Error);
+            return;
+        }
+
+        _characters = CharSvc.LoadCharacterFiles().ToList();
+        CharSvc.UpdateFileListCache(_characters);
+        RebuildBrowserEntries();
+        int remainingCount = _characters.Count(file =>
+            groupCharacterPaths.Contains(file.FilePath) &&
+            !string.Equals(ResolveGroupName(file.CollectionGroupName), resolved, StringComparison.Ordinal));
+        if (remainingCount > 0)
+        {
+            Snackbar.Add(
+                $"Renamed group to \"{resolved}\", but {remainingCount} character file{(remainingCount == 1 ? " remains" : "s remain")} in \"{currentGroup}\".",
+                Severity.Warning);
+        }
+        else
+        {
+            Snackbar.Add($"Renamed group to \"{resolved}\".", Severity.Success);
+        }
+        StateHasChanged();
+    }
+
+    private SessionState LoadSessionWithWarning(Builder.Presentation.Models.CharacterFile file)
+    {
+        SessionState session = SessionStore.Load(file.FilePath, out bool corrupted);
+        if (corrupted)
+        {
+            Snackbar.Add(
+                $"{file.DisplayName}: saved session data (current HP, conditions, spell slots) couldn't be read and was reset to defaults.",
+                Severity.Warning,
+                cfg => cfg.VisibleStateDuration = 6000);
+        }
+        return session;
+    }
+
+    private static IReadOnlyList<ClassProgressionSnapshot> SnapshotProgressionManagers() =>
+        BuildService.SnapshotProgressionManagers();
+
+    private static string ResolveGroupName(string? groupName) =>
+        string.IsNullOrWhiteSpace(groupName) ? "Characters" : groupName;
+
+    private CharacterBrowserEntry ToBrowserEntry(Builder.Presentation.Models.CharacterFile character) =>
+        new(
+            character.FilePath,
+            character.DisplayName,
+            $"Level {character.DisplayLevel} - {character.DisplayRace}",
+            character.DisplayClass,
+            string.IsNullOrWhiteSpace(character.CollectionGroupName) ? null : character.CollectionGroupName,
+            character.CollectionGroupName,
+            character.IsFavorite,
+            PortraitDataUrl: CharSvc.GetCachedPortrait(character.FilePath));
+
+    private static string? ToPortraitDataUrl(Builder.Presentation.Models.CharacterFile character)
+    {
+        if (!string.IsNullOrEmpty(character.DisplayPortraitBase64))
+        {
+            return $"data:image/png;base64,{character.DisplayPortraitBase64}";
+        }
+
+        if (!string.IsNullOrEmpty(character.DisplayPortraitFilePath))
+        {
+            try
+            {
+                if (File.Exists(character.DisplayPortraitFilePath))
+                {
+                    byte[] bytes = File.ReadAllBytes(character.DisplayPortraitFilePath);
+                    return $"data:image/png;base64,{Convert.ToBase64String(bytes)}";
+                }
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        return null;
+    }
+}

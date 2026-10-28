@@ -13,7 +13,7 @@ public sealed class BuildSelectionOptionResolverTests : IAsyncLifetime
 {
     private const string Acolyte2024BackgroundId = "ID_WOTC_PHB24_BACKGROUND_ACOLYTE";
     private const string DexterityAsi1Id = "ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_DEXTERITY_INCREASE_1";
-    private const string DruidClassId = "ID_WOTC_PHB24_CLASS_DRUID";
+    private const string DruidClassId = "ID_WOTC_PHB_CLASS_DRUID";
     private const string ElvishLanguageId = "ID_LANGUAGE_ELVISH";
     private const string DwarvishLanguageId = "ID_LANGUAGE_DWARVISH";
     private const string HumanRaceId = "ID_RACE_HUMAN";
@@ -29,20 +29,50 @@ public sealed class BuildSelectionOptionResolverTests : IAsyncLifetime
     public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact]
+    public async Task ResolveOptions_CustomizedDragonbornOffersAllAbilitiesAndPreventsOverlappingIncreases()
+    {
+        var handler = await CreateEmptyCharacterAsync();
+        var manager = CharacterManager.Current;
+        var customOrigin = DataManager.Current.ElementsCollection.GetElement("ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI");
+        customOrigin.Should().NotBeNull();
+        manager.RegisterElement(customOrigin!);
+        manager.ReprocessCharacter();
+        handler.SetRegisteredElement(manager.SelectionRules.Single(rule => rule.Attributes.Type == "Race"), "ID_RACE_DRAGONBORN");
+        manager.ReprocessCharacter();
+
+        foreach (int increase in new[] { 1, 2 })
+        {
+            var rule = FindAbilityScoreRule($"Custom Ability Score Increase {increase}");
+            BuildSelectionOptionResolver.ResolveOptions(rule).Select(option => option.Name)
+                .Should().BeEquivalentTo("Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma");
+        }
+
+        handler.SetRegisteredElement(FindAbilityScoreRule("Custom Ability Score Increase 2"),
+            "ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_STRENGTH_INCREASE_2");
+        manager.ReprocessCharacter();
+        BuildSelectionOptionResolver.ResolveOptions(FindAbilityScoreRule("Custom Ability Score Increase 1"))
+            .Select(option => option.Name).Should().HaveCount(5).And.NotContain("Strength");
+
+        handler.SetRegisteredElement(FindAbilityScoreRule("Custom Ability Score Increase 1"), DexterityAsi1Id);
+        manager.ReprocessCharacter();
+        BuildSelectionOptionResolver.ResolveOptions(FindAbilityScoreRule("Custom Ability Score Increase 2"))
+            .Select(option => option.Name).Should().HaveCount(5).And.Contain("Strength").And.NotContain("Dexterity");
+    }
+
+    [Fact]
     public async Task ResolveOptions_DoesNotDisableOwnedAbilityScoreIncreaseOptions()
     {
         if (!ContentFixture.SkipIfUnavailable(_output)) return;
 
         var handler = await CreateEmptyCharacterAsync();
-        var background = DataManager.Current.ElementsCollection.GetElement(Acolyte2024BackgroundId);
+        var customized = DataManager.Current.ElementsCollection.GetElement("ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI");
+        var human = DataManager.Current.ElementsCollection.GetElement("ID_RACE_DRAGONBORN");
         var ownedAsi = DataManager.Current.ElementsCollection.GetElement(DexterityAsi1Id);
-        if (background is null || ownedAsi is null)
-        {
-            _output.WriteLine("[SKIP] 2024 Acolyte ASI content is not available.");
-            return;
-        }
-
-        CharacterManager.Current.RegisterElement(background);
+        customized.Should().NotBeNull();
+        human.Should().NotBeNull();
+        ownedAsi.Should().NotBeNull();
+        CharacterManager.Current.RegisterElement(customized!);
+        handler.SetRegisteredElement(CharacterManager.Current.SelectionRules.Single(r => r.Attributes.Type == "Race"), human!.Id);
         CharacterManager.Current.RegisterElement(ownedAsi);
         CharacterManager.Current.ReprocessCharacter();
 
@@ -129,26 +159,17 @@ public sealed class BuildSelectionOptionResolverTests : IAsyncLifetime
 
         await CreateEmptyCharacterAsync();
         var druid = DataManager.Current.ElementsCollection.GetElement(DruidClassId);
-        if (druid is null)
-        {
-            _output.WriteLine("[SKIP] 2024 Druid is not available in the loaded content.");
-            return;
-        }
-
-        CharacterManager.Current.RegisterElement(druid);
+        druid.Should().NotBeNull("SRD Druid is required test content");
+        CharacterManager.Current.RegisterElement(druid!);
         CharacterManager.Current.ReprocessCharacter();
 
         var rule = CharacterManager.Current.SelectionRules.FirstOrDefault(candidate =>
             candidate.Attributes.Type.Equals("Spell", StringComparison.OrdinalIgnoreCase) &&
             (candidate.Attributes.Supports?.Contains("$(", StringComparison.Ordinal) ?? false));
 
-        if (rule is null)
-        {
-            _output.WriteLine("[SKIP] No dynamic spell-selection rule is available in the loaded content.");
-            return;
-        }
+        rule.Should().NotBeNull("SRD Druid supplies a dynamic cantrip selection");
 
-        var options = BuildSelectionOptionResolver.ResolveOptions(rule, number: 1);
+        var options = BuildSelectionOptionResolver.ResolveOptions(rule!, number: 1);
 
         options.Should().NotBeEmpty(
             "dynamic spellcasting supports expressions should fall back to spell access/support matching");
@@ -490,23 +511,21 @@ public sealed class BuildSelectionOptionResolverTests : IAsyncLifetime
 
         await CreateEmptyCharacterAsync();
         var rule = CreateSelectRule("Feat", "Feat");
+        using var twins = AddTwinFeatFixtures();
         var (first, second) = FindTwinOptions(rule);
-        if (first is null || second is null)
-        {
-            _output.WriteLine("[SKIP] no two feats of one name survive as separate options here.");
-            return;
-        }
+        first.Should().NotBeNull();
+        second.Should().NotBeNull();
 
-        var held = DataManager.Current.ElementsCollection.GetElement(first.Id);
+        var held = DataManager.Current.ElementsCollection.GetElement(first!.Id);
         held.Should().NotBeNull();
         CharacterManager.Current.RegisterElement(held!);
         CharacterManager.Current.ReprocessCharacter();
 
         var options = BuildSelectionOptionResolver.ResolveOptions(rule, number: 1);
-        options.Should().Contain(option => option.Id == second.Id, "the other printing is still offered");
-        options.Single(option => option.Id == second.Id).IsDisabled.Should().BeTrue(
+        options.Should().Contain(option => option.Id == second!.Id, "the other printing is still offered");
+        options.Single(option => option.Id == second!.Id).IsDisabled.Should().BeTrue(
             "holding one printing of a name means the character already has that feat");
-        options.Where(option => !string.Equals(option.Name, first.Name, StringComparison.OrdinalIgnoreCase))
+        options.Where(option => !string.Equals(option.Name, first!.Name, StringComparison.OrdinalIgnoreCase))
             .Should().Contain(option => !option.IsDisabled, "unrelated feats stay selectable");
     }
 
@@ -517,24 +536,36 @@ public sealed class BuildSelectionOptionResolverTests : IAsyncLifetime
 
         var handler = await CreateEmptyCharacterAsync();
         var rule = CreateSelectRule("Feat", "Feat");
+        using var twins = AddTwinFeatFixtures();
         var (first, second) = FindTwinOptions(rule);
-        if (first is null || second is null)
-        {
-            _output.WriteLine("[SKIP] no two feats of one name survive as separate options here.");
-            return;
-        }
+        first.Should().NotBeNull();
+        second.Should().NotBeNull();
 
-        var held = DataManager.Current.ElementsCollection.GetElement(first.Id);
-        CharacterManager.Current.RegisterElement(held!);
-        handler.SetRegisteredElement(rule, first.Id);
+        handler.SetRegisteredElement(rule, first!.Id);
         CharacterManager.Current.ReprocessCharacter();
 
         var options = BuildSelectionOptionResolver.ResolveOptions(rule, number: 1);
 
-        options.Single(option => option.Id == first.Id).IsCurrentSelection.Should().BeTrue();
-        options.Single(option => option.Id == second.Id).IsDisabled.Should().BeFalse(
+        options.Single(option => option.Id == first!.Id).IsCurrentSelection.Should().BeTrue();
+        options.Single(option => option.Id == second!.Id).IsDisabled.Should().BeFalse(
             "swapping this pick for the other ruleset's printing replaces it rather than doubling it");
     }
+
+    private static IDisposable AddTwinFeatFixtures()
+    {
+        var catalog = DataManager.Current.ElementsCollection;
+        var first = new ElementBase("Fixture twin feat", "Feat", "Fixture 2014", "ID_TEST_TWIN_FEAT_2014").Construct<Builder.Data.Elements.Feat>();
+        var second = new ElementBase("Fixture twin feat", "Feat", "Fixture 2024", "ID_TEST_TWIN_FEAT_2024").Construct<Builder.Data.Elements.Feat>();
+        first.Description = "<p>First printing.</p>";
+        second.Description = "<p>Second printing with revised description.</p>";
+        var unrelated = new ElementBase("Unrelated fixture feat", "Feat", "Fixture", "ID_TEST_UNRELATED_FEAT").Construct<Builder.Data.Elements.Feat>();
+        catalog.Add(first);
+        catalog.Add(second);
+        catalog.Add(unrelated);
+        return new RemoveFixtures(() => { catalog.Remove(first); catalog.Remove(second); catalog.Remove(unrelated); });
+    }
+
+    private sealed class RemoveFixtures(Action remove) : IDisposable { public void Dispose() => remove(); }
 
     /// <summary>Two options of one name that survive option de-duplication, or nulls.</summary>
     private static (BuildSelectionOption? First, BuildSelectionOption? Second) FindTwinOptions(SelectRule rule)

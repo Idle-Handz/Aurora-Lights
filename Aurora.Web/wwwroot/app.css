@@ -71,7 +71,7 @@ h1:focus {
     --aurora-shadow-color: rgba(0, 0, 0, 0.25);
     --aurora-shadow-hover-color: rgba(0, 0, 0, 0.4);
 
-    /* Mirror into MudBlazor palette vars so shared components (authored for Aurora.App's MudBlazor dark theme) pick the matching dark values. */
+    /* Mirror into MudBlazor palette vars so shared components (authored for Aurora.Reflections's MudBlazor dark theme) pick the matching dark values. */
     --mud-palette-text-primary: #cdd6f4;
     --mud-palette-text-secondary: #a6adc8;
     --mud-palette-surface: #313244;

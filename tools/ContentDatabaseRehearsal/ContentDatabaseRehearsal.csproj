@@ -9,7 +9,7 @@
     <ProjectReference Include="../../Aurora.Logic/Aurora.Logic.csproj" />
     <ProjectReference Include="../../Aurora.Components/Aurora.Components.csproj" />
     <ProjectReference Include="../../Aurora.DataIntegration/Aurora.DataIntegration.csproj" />
-    <Compile Include="../../Aurora.App/Services/MauiSpellcastingSectionHandler.cs" Link="App/MauiSpellcastingSectionHandler.cs" />
-    <Compile Include="../../Aurora.App/Services/MauiContextStubs.cs" Link="App/MauiContextStubs.cs" />
+    <Compile Include="../../Aurora.Reflections/Services/MauiSpellcastingSectionHandler.cs" Link="App/MauiSpellcastingSectionHandler.cs" />
+    <Compile Include="../../Aurora.Reflections/Services/MauiContextStubs.cs" Link="App/MauiContextStubs.cs" />
   </ItemGroup>
 </Project>

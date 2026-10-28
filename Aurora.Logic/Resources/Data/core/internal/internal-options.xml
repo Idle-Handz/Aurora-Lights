@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8" ?>
 <elements>
 
   <element name="Feats" type="Option" source="Internal" id="ID_INTERNAL_OPTION_ALLOW_FEATS">
@@ -30,44 +30,35 @@
   </element>
 
   <element name="Customized Language" type="Option" source="Internal" id="ID_WOTC_TCOE_OPTION_CUSTOMIZED_LANGUAGE">
-    <description>
-      <p>You can replace one language granted by your race with any other standard language of your choice.</p>
-      <p class="indent">This optional rule is drawn from Tasha's Cauldron of Everything (Customizing Your Origin).</p>
-    </description>
-    <setters>
+    <description><p>Enable replacement language choices in the character builder. Only choices available in the loaded content can be selected.</p></description>
+		<setters>
       <set name="default">true</set>
-      <set name="short">Replace your racial language with any standard language of your choice.</set>
+      <set name="short">Enable replacement language choices in the character builder. Only choices available in the loaded content can be selected.</set>
     </setters>
     <sheet display="false">
-      <description>Your racial language is replaced with a standard language of your choice.</description>
+      <description>Enable replacement language choices in the character builder. Only choices available in the loaded content can be selected.</description>
     </sheet>
   </element>
 
   <element name="Customized Proficiencies" type="Option" source="Internal" id="ID_WOTC_TCOE_OPTION_CUSTOMIZED_PROFICIENCY">
-    <description>
-      <p>If your race grants you proficiency in a skill, you can replace that proficiency with proficiency in another skill of your choice.</p>
-      <p class="indent">This optional rule is drawn from Tasha's Cauldron of Everything (Customizing Your Origin).</p>
-    </description>
-    <setters>
+    <description><p>Enable replacement skill choices for supported racial proficiencies. Review the available choices in the build panel.</p></description>
+		<setters>
       <set name="default">true</set>
-      <set name="short">Replace a racial skill proficiency with any other skill proficiency of your choice.</set>
+      <set name="short">Enable replacement skill choices for supported racial proficiencies. Review the available choices in the build panel.</set>
     </setters>
     <sheet display="false">
-      <description>Your racial skill proficiency is replaced with a skill proficiency of your choice.</description>
+      <description>Enable replacement skill choices for supported racial proficiencies. Review the available choices in the build panel.</description>
     </sheet>
   </element>
 
   <element name="Customized Ability Score Increases" type="Option" source="Internal" id="ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI">
-    <description>
-      <p>If you'd like your character to follow their own path, you may move the ability score increases that come with your race to different ability scores. The increases must still be divided in the same way as the original trait — if your race normally grants a +2 and a +1, you still choose one ability for the +2 and a different ability for the +1.</p>
-      <p class="indent">This optional rule is drawn from Tasha's Cauldron of Everything (Customizing Your Origin).</p>
-    </description>
-    <setters>
+    <description><p>Enable reassignment of supported racial ability bonuses. The builder keeps the existing bonus amounts and asks for their new ability targets.</p></description>
+		<setters>
       <set name="default">true</set>
-      <set name="short">Move racial ability score increases to ability scores of your choice (+2 to one, +1 to a different one).</set>
+      <set name="short">Enable reassignment of supported racial ability bonuses. The builder keeps the existing bonus amounts and asks for their new ability targets.</set>
     </setters>
     <sheet display="false">
-      <description>Your racial ability score increases are applied to ability scores of your choice.</description>
+      <description>Enable reassignment of supported racial ability bonuses. The builder keeps the existing bonus amounts and asks for their new ability targets.</description>
     </sheet>
   </element>
 

@@ -1,0 +1,158 @@
+@using Aurora.Components.Models
+
+<section class="creature-card" aria-label="@($"Manage {Model.Name}")" data-creature-id="@Model.Id">
+    <div class="creature-header">
+        <div class="creature-identity">
+            @if (Model.PortraitSource is { } portrait)
+            {
+                <img class="creature-portrait" src="@portrait" alt="@($"Portrait of {Model.Name}")" />
+            }
+            <div><h3>@Model.Name</h3><div class="creature-muted">@Model.Subtitle</div></div>
+        </div>
+        <div class="creature-actions">
+            <button type="button" @onclick="OnEdit" disabled="@Busy">@(Model.PortraitSource == null ? "Add portrait" : "Change portrait")</button>
+        <button type="button" @onclick="OnEdit" disabled="@Busy">Edit profile</button>
+        </div>
+    </div>
+    @if (Model.PendingChoices.Count > 0)
+    {
+        <div class="creature-pending" role="status">
+            <div><strong>Choices needed (@Model.PendingChoices.Count)</strong>
+                <div>@string.Join(" · ", Model.PendingChoices.GroupBy(c => c.Group).Select(g => $"{g.Key}: {g.Count()}"))</div>
+            </div>
+            <button type="button" disabled="@Busy" data-action="finish-choices"
+                    @onclick="() => OnResolveChoices.InvokeAsync(Model.PendingChoices[0].Key)">Finish choices</button>
+        </div>
+    }
+    <div class="creature-combat-grid">
+        <div class="creature-section">
+            <h4>Hit points</h4>
+            <div class="creature-hp" aria-live="polite">
+                <strong>@Model.CurrentHp / @(Model.MaximumHp?.ToString() ?? "—") HP</strong>
+                <span>@Model.TemporaryHp temporary · AC @Model.ArmorClass</span>
+            </div>
+            @if (Model.MaximumHp is null)
+            {
+                <p class="creature-muted">Set a numeric Maximum HP in Edit profile to use damage and healing.</p>
+            }
+            <label>Damage / healing amount<input type="number" @bind="_amount" @bind:event="oninput" min="0" max="999999" disabled="@Busy" /></label>
+            <div class="creature-actions">
+                <button type="button" data-action="damage" @onclick='() => Send("damage", _amount)' disabled="@(Busy || Model.MaximumHp is null || _amount <= 0)" class="creature-damage">Damage</button>
+                <button type="button" data-action="heal" @onclick='() => Send("heal", _amount)' disabled="@(Busy || Model.MaximumHp is null || _amount <= 0)" class="creature-heal">Heal</button>
+                <button type="button" data-action="temporary-hp" @onclick='() => Send("temporary-hp", _amount)' disabled="@(Busy || _amount <= 0)">Grant temp HP</button>
+                <button type="button" @onclick='() => Send("clear-temporary-hp")' disabled="@(Busy || Model.TemporaryHp == 0)">Clear temp HP</button>
+            </div>
+            <p class="creature-muted">Damage uses temporary HP first. Granting temporary HP keeps the higher amount.</p>
+        </div>
+        <div class="creature-section">
+            <h4>Conditions</h4>
+            <div class="creature-condition-list">
+                @foreach (string condition in Model.Conditions)
+                {
+                    <button type="button" class="creature-condition" disabled="@Busy" aria-label="@($"Clear {condition}")" @onclick='() => OnAction.InvokeAsync(new("condition", Key: condition, Active: false))'>@condition ×</button>
+                }
+                @if (Model.Conditions.Count == 0) { <span class="creature-muted">No conditions</span> }
+            </div>
+            <label>Add condition<select value="" @onchange="AddCondition" disabled="@Busy">
+                <option value="">Choose a condition</option>
+                @foreach (string condition in Model.AvailableConditions.Where(c => !Model.Conditions.Contains(c)))
+                {
+                    <option value="@condition">@condition</option>
+                }
+            </select></label>
+            <label>Exhaustion<input type="number" value="@Model.Exhaustion" @onchange="SetExhaustion" min="0" max="6" disabled="@Busy" /></label>
+            <p class="creature-muted">Track conditions here; apply their effects when resolving rolls.</p>
+        </div>
+        <div class="creature-section">
+            <h4>Spell slots</h4>
+            <p class="creature-muted">Recovery: @Model.SlotRecovery</p>
+            @if (Model.SlotError != null) { <p role="alert">@Model.SlotError</p> }
+            else if (Model.Slots.Count == 0) { <p class="creature-muted">No slots configured. Add them in Edit profile.</p> }
+            @foreach (var slot in Model.Slots)
+            {
+                <div class="creature-counter">
+                    <span>Level @slot.Level · @Math.Max(0, slot.Maximum - slot.Used) / @slot.Maximum remaining</span>
+                    <div class="creature-actions">
+                        <button type="button" @onclick='() => OnAction.InvokeAsync(new("spend-slot", Key: slot.Level.ToString()))' disabled="@(Busy || slot.Used >= slot.Maximum)" aria-label="@($"Spend level {slot.Level} slot")">Spend</button>
+                        <button type="button" @onclick='() => OnAction.InvokeAsync(new("recover-slot", Key: slot.Level.ToString()))' disabled="@(Busy || slot.Used <= 0)" aria-label="@($"Recover level {slot.Level} slot")">Recover</button>
+                    </div>
+                </div>
+            }
+        </div>
+        <div class="creature-section">
+            <div class="creature-header"><h4>Limited-use abilities</h4><button type="button" disabled="@Busy" @onclick='() => OnEditResource.InvokeAsync("")'>Add resource</button></div>
+            @if (Model.Resources.Count == 0) { <p class="creature-muted">Add any ability that has a limited number of uses.</p> }
+            @foreach (var resource in Model.Resources)
+            {
+                <div class="creature-counter">
+                    <div><strong>@resource.Name</strong><div>@Math.Max(0, resource.Maximum - resource.Used) / @resource.Maximum remaining · @resource.Recovery</div></div>
+                    <div class="creature-actions">
+                        <button type="button" @onclick='() => OnAction.InvokeAsync(new("use-resource", Key: resource.Id))' disabled="@(Busy || resource.Used >= resource.Maximum)">Use</button>
+                        <button type="button" @onclick='() => OnAction.InvokeAsync(new("recover-resource", Key: resource.Id))' disabled="@(Busy || resource.Used <= 0)">Recover</button>
+                        <button type="button" disabled="@Busy" @onclick="() => OnEditResource.InvokeAsync(resource.Id)">Edit</button>
+                        @if (resource.CanRemove)
+                        {
+                            <button type="button" disabled="@Busy" @onclick='() => OnAction.InvokeAsync(new("remove-resource", Key: resource.Id))'>@(resource.IsOverride ? "Use level default" : "Remove")</button>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+    <div class="creature-rest">
+        <h4>Rest recovery</h4>
+        @if (Model.HitDice > 0)
+        {
+            <div>@Math.Max(0, Model.HitDice - Model.HitDiceUsed) / @Model.HitDice hit dice available</div>
+            <div class="creature-actions">
+                <label>Rolled healing (including CON)<input type="number" @bind="_hitDieHealing" @bind:event="oninput" min="0" max="999999" disabled="@Busy" /></label>
+                <button type="button" data-action="hit-die" disabled="@(Busy || Model.MaximumHp is null || Model.HitDiceUsed >= Model.HitDice || _hitDieHealing < 0)" @onclick='() => Send("hit-die", _hitDieHealing)'>Spend 1 hit die</button>
+            </div>
+        }
+        else { <p class="creature-muted">Enter hit dice in Edit profile (for example, 4d8) to track short-rest healing.</p> }
+        <div class="creature-actions">
+            <button type="button" data-action="short-rest" disabled="@Busy" @onclick='() => Send("short-rest")'>Short rest</button>
+            <button type="button" data-action="long-rest" disabled="@(Busy || Model.MaximumHp is null)" @onclick='() => Send("long-rest")'>Long rest</button>
+        </div>
+        <p class="creature-muted">Apply after an eligible rest. Short rests recover eligible resources; spend hit dice for healing. Long rests restore HP, clear temporary HP, recover eligible slots and resources, recover half the total hit dice (minimum one), and reduce exhaustion by one. Conditions stay until cleared.</p>
+    </div>
+    <div class="creature-notes">
+        <label>Notes<textarea rows="4" @bind="_notes" @bind:event="oninput" disabled="@Busy" placeholder="Personality, reminders, or anything else about this creature"></textarea></label>
+        <button type="button" class="creature-save-notes" @onclick="() => OnSaveNotes.InvokeAsync(_notes)" disabled="@(Busy || _notes == Model.Notes)">Save notes</button>
+    </div>
+    <details class="creature-details">
+        <summary>Statistics and features</summary>
+        <div class="creature-details-grid">
+            @foreach (var field in Model.Details)
+            {
+                <div class="@(field.Wide ? "creature-wide" : "")"><div class="creature-muted">@field.Label</div><div class="creature-text">@field.Value</div></div>
+            }
+        </div>
+    </details>
+</section>
+
+@code {
+    [Parameter, EditorRequired] public CreatureManagementModel Model { get; set; } = new();
+    [Parameter] public bool Busy { get; set; }
+    [Parameter] public EventCallback<CreatureAction> OnAction { get; set; }
+    [Parameter] public EventCallback OnEdit { get; set; }
+    [Parameter] public EventCallback<string> OnResolveChoices { get; set; }
+    [Parameter] public EventCallback<string> OnEditResource { get; set; }
+    [Parameter] public EventCallback<string> OnSaveNotes { get; set; }
+    private string _notes = "";
+    private string? _lastNotes;
+    private string? _creatureId;
+    protected override void OnParametersSet()
+    {
+        if (_creatureId != Model.Id || _lastNotes != Model.Notes) _notes = Model.Notes;
+        _creatureId = Model.Id;
+        _lastNotes = Model.Notes;
+    }
+    private int _amount = 1;
+    private int _hitDieHealing;
+    private Task Send(string action, int amount = 0) => OnAction.InvokeAsync(new(action, amount));
+    private Task AddCondition(ChangeEventArgs args) => args.Value is string value && Model.AvailableConditions.Contains(value)
+        ? OnAction.InvokeAsync(new("condition", Key: value, Active: true)) : Task.CompletedTask;
+    private Task SetExhaustion(ChangeEventArgs args) => int.TryParse(args.Value?.ToString(), out int value)
+        ? Send("exhaustion", value) : Task.CompletedTask;
+}

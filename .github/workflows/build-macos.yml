@@ -3,7 +3,7 @@ name: Build macOS MAUI (unsigned)
 on:
   # push:
   #   paths:
-  #     - 'Aurora.App/**'
+  #     - 'Aurora.Reflections/**'
   #     - 'Aurora.Logic/**'
   #     - 'Aurora.Components/**'
   #     - 'Aurora.DataIntegration/**'
@@ -20,7 +20,7 @@ jobs:
     name: Build macOS x64
     runs-on: macos-26-intel
     env:
-      PROJECT: Aurora.App/Aurora.App.csproj
+      PROJECT: Aurora.Reflections/Aurora.Reflections.csproj
     steps:
       - uses: actions/checkout@v4
 
@@ -84,7 +84,7 @@ jobs:
     name: Build macOS arm64
     runs-on: macos-26-intel
     env:
-      PROJECT: Aurora.App/Aurora.App.csproj
+      PROJECT: Aurora.Reflections/Aurora.Reflections.csproj
     steps:
       - uses: actions/checkout@v4
 

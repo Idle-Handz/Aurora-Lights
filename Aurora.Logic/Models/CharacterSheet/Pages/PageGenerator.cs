@@ -109,9 +109,10 @@ public abstract class PageGenerator : IDisposable
 
   public virtual void Dispose()
   {
-    this.Stream?.Dispose();
+    // The document/writer may still need the stream when finalizing a page.
     this.Document?.Dispose();
     this.Writer?.Dispose();
+    this.Stream?.Dispose();
     foreach (KeyValuePair<string, PdfReader> resourceReader in this.ResourceReaders)
       resourceReader.Value?.Dispose();
   }

@@ -109,7 +109,7 @@ public sealed class GoogleDriveCharacterDocumentStoreTests
     }
 
     [Fact]
-    public async Task SaveAsync_WhenDriveVersionChanged_RejectsOverwriteBeforeUpload()
+    public async Task SaveAsync_WhenDriveContentChanged_RejectsOverwriteBeforeUpload()
     {
         var handler = new QueueHandler();
         handler.Enqueue((_, _) => JsonResponse(MetadataJson(version: "8", checksum: "remote-change")));
@@ -126,6 +126,67 @@ public sealed class GoogleDriveCharacterDocumentStoreTests
         conflict.Actual.ProviderVersion.Should().Be("8");
         conflict.Message.Should().Contain("changed in cloud storage");
         handler.Remaining.Should().Be(0, "a conflicting character must not be uploaded");
+    }
+
+    [Fact]
+    public async Task SaveAsync_RepeatedMetadataOnlyRevisions_KeepSavingWithLatestConditionalToken()
+    {
+        var handler = new QueueHandler();
+        var store = CreateStore(handler);
+        var expected = ExpectedMetadata("7");
+        for (int version = 8; version <= 12; version += 2)
+        {
+            string payload = $"<Character level='{version}' />";
+            handler.Enqueue((_, _) => JsonResponse(MetadataJson(version.ToString(),
+                expected.ContentHash!.ToLowerInvariant(), (int)expected.Size!.Value)));
+            handler.Enqueue(async (request, ct) =>
+            {
+                request.Method.Should().Be(HttpMethod.Put);
+                request.Headers.IfMatch.Should().ContainSingle().Which.Tag.Should().Be($"\"etag-{version}\"");
+                (await request.Content!.ReadAsStringAsync(ct)).Should().Be(payload);
+                return JsonResponse(MetadataJson((version + 1).ToString(), Hash(payload), payload.Length));
+            });
+            expected = await store.SaveAsync(expected, Encoding.UTF8.GetBytes(payload));
+            expected.ProviderVersion.Should().Be((version + 1).ToString());
+        }
+        handler.Remaining.Should().Be(0);
+    }
+
+    [Theory]
+    [InlineData("missing-hash")]
+    [InlineData("missing-size")]
+    [InlineData("different-size")]
+    [InlineData("different-content")]
+    public async Task SaveAsync_WithoutMatchingBaselineContent_NeverUploads(string issue)
+    {
+        var handler = new QueueHandler();
+        var expected = ExpectedMetadata("7");
+        expected = issue switch
+        {
+            "missing-hash" => expected with { ContentHash = null },
+            "missing-size" => expected with { Size = null },
+            "different-size" => expected with { Size = 14 },
+            _ => expected with { ContentHash = Hash("<Changed />") }
+        };
+        handler.Enqueue((_, _) => JsonResponse(MetadataJson("8")));
+        var action = () => CreateStore(handler).SaveAsync(expected, "<Character />"u8.ToArray());
+        await action.Should().ThrowAsync<CharacterDocumentConflictException>();
+        handler.Remaining.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task OpenAsync_MetadataOnlyRevisionDuringDownload_ReturnsContentAndLatestMetadata()
+    {
+        var handler = new QueueHandler();
+        handler.Enqueue((_, _) => JsonResponse(MetadataJson("7")));
+        handler.Enqueue((_, _) => new HttpResponseMessage(HttpStatusCode.OK)
+            { Content = new ByteArrayContent("<Character />"u8.ToArray()) });
+        handler.Enqueue((_, _) => JsonResponse(MetadataJson("8")));
+        var document = await CreateStore(handler).OpenAsync(new("drive-file-1"));
+        document.Content.Should().Equal("<Character />"u8.ToArray());
+        document.Metadata.ProviderVersion.Should().Be("8");
+        document.Metadata.EntityTag.Should().Be("\"etag-8\"");
+        handler.Remaining.Should().Be(0);
     }
 
     [Fact]
@@ -189,13 +250,13 @@ public sealed class GoogleDriveCharacterDocumentStoreTests
     }
 
     [Fact]
-    public async Task OpenAsync_WhenRevisionChangesDuringDownload_RejectsMixedSnapshot()
+    public async Task OpenAsync_WhenContentChangesDuringDownload_RejectsMixedSnapshot()
     {
         var handler = new QueueHandler();
         handler.Enqueue((_, _) => JsonResponse(MetadataJson("7")));
         handler.Enqueue((_, _) => new HttpResponseMessage(HttpStatusCode.OK)
             { Content = new ByteArrayContent("<Character />"u8.ToArray()) });
-        handler.Enqueue((_, _) => JsonResponse(MetadataJson("8")));
+        handler.Enqueue((_, _) => JsonResponse(MetadataJson("8", Hash("<Changed />"), 11)));
         var action = () => CreateStore(handler).OpenAsync(new("drive-file-1"));
         await action.Should().ThrowAsync<CharacterDocumentConflictException>();
     }
@@ -244,8 +305,8 @@ public sealed class GoogleDriveCharacterDocumentStoreTests
             new CharacterDocumentReference("drive-file-1", "resource-key-1"),
             "Aria.dnd5e",
             version,
-            $"md5-{version}",
-            42,
+            Hash("<Character />"),
+            13,
             DateTimeOffset.Parse("2026-08-29T12:00:00Z"));
 
     private static HttpResponseMessage JsonResponse(string json) =>

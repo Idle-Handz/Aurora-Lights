@@ -1,25 +1,8 @@
-<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8"?>
 <elements>
 
 	<element name="Cleric" type="Class" source="System Reference Document" id="ID_WOTC_PHB_CLASS_CLERIC">
 		<description>
-			<p>Arms and eyes upraised toward the sun and a prayer on his lips, an elf begins to glow with an inner light that spills out to heal his battle-worn companions.</p>
-			<p class="indent">Chanting a song of glory, a dwarf swings his axe in wide swaths to cut through the ranks of orcs arrayed against him, shouting praise to the gods with every foe’s fall.</p>
-			<p class="indent">Calling down a curse upon the forces of undeath, a human lifts her holy symbol as light pours from it to drive back the zombies crowding in on her companions.</p>
-			<p class="indent">Clerics are intermediaries between the mortal world and the distant planes of the gods. As varied as the gods they serve, clerics strive to embody the handiwork of their deities. No ordinary priest, a cleric is imbued with divine magic.</p>
-			<h4>HEALERS AND WARRIORS</h4>
-			<p>Divine magic, as the name suggests, is the power of the gods, flowing from them into the world. Clerics are conduits for that power, manifesting it as miraculous effects. The gods don’t grant this power to everyone who seeks it, but only to those chosen to fulfill a high calling.</p>
-			<p class="indent">Harnessing divine magic doesn’t rely on study or training. A cleric might learn formulaic prayers and ancient rites, but the ability to cast cleric spells relies on devotion and an intuitive sense of a deity’s wishes.</p>
-			<p class="indent">Clerics combine the helpful magic of healing and inspiring their allies with spells that harm and hinder foes. They can provoke awe and dread, lay curses of plague or poison, and even call down flames from heaven to consume their enemies. For those evildoers who will benefit most from a mace to the head, clerics depend on their combat training to let them wade into melee with the power of the gods on their side.</p>
-			<h4>DIVINE AGENTS</h4>
-			<p>Not every acolyte or officiant at a temple or shrine is a cleric. Some priests are called to a simple life of temple service, carrying out their gods’ will through prayer and sacrifice, not by magic and strength of arms. In some cities, priesthood amounts to a political office, viewed as a stepping stone to higher positions of authority and involving no communion with a god at all. True clerics are rare in most hierarchies.</p>
-			<p class="indent">When a cleric takes up an adventuring life, it is usually because his or her god demands it. Pursuing the goals of the gods often involves braving dangers beyond the walls of civilization, smiting evil or seeking holy relics in ancient tombs. Many clerics are also expected to protect their deities’ worshipers, which can mean fighting rampaging orcs, negotiating peace between warring nations, or sealing a portal that would allow a demon prince to enter the world.</p>
-			<p class="indent">Most adventuring clerics maintain some connection to established temples and orders of their faiths. A temple might ask for a cleric’s aid, or a high priest might be in a position to demand it.</p>
-			<h4>CREATING A CLERIC</h4>
-			<p>As you create a cleric, the most important question to consider is which deity to serve and what principles you want your character to embody. The Player’s Handbook includes lists of many of the gods of the multiverse. Check with your DM to learn which deities are in your campaign.</p>
-			<p class="indent">Once you’ve chosen a deity, consider your cleric’s relationship to that god. Did you enter this service willingly? Or did the god choose you, impelling you into service with no regard for your wishes? How do the temple priests of your faith regard you: as a champion or a troublemaker? What are your ultimate goals? Does your deity have a special task in mind for you? Or are you striving to prove yourself worthy of a great quest?</p>
-			<h5 class="caption">QUICK BUILD</h5>
-			<p>You can make a cleric quickly by following these suggestions. First, Wisdom should be your highest ability score, followed by Strength or Constitution. Second, choose the acolyte background.</p>
 			<h3>CLASS FEATURES</h3>
 			<p>As a cleric, you gain the following class features.</p>
 			<h5 class="caption">HIT POINTS</h5>
@@ -73,12 +56,12 @@
 				<tr><td>19th</td><td class="left">Ability Score Improvement</td><td>5</td><td>4</td><td>3</td><td>3</td><td>3</td><td>3</td><td>2</td><td>1</td><td>1</td><td>1</td></tr>
 				<tr><td>20th</td><td class="left">Divine Intervention Improvement</td><td>5</td><td>4</td><td>3</td><td>3</td><td>3</td><td>3</td><td>2</td><td>2</td><td>1</td><td>1</td></tr>
 			</table>
-			<div element="ID_WOTC_PHB_CLASS_FEATURE_CLERIC_SPELLCASTING_CLERIC" />
-			<div element="ID_WOTC_PHB_CLASS_FEATURE_CLERIC_DIVINEDOMAIN" />
-			<div element="ID_WOTC_PHB_CLASS_FEATURE_CLERIC_CHANNELDIVINITY" />
-			<div element="ID_WOTC_PHB_CLASS_FEATURE_CLERIC_ABILITYSCOREIMPROVEMENT_CLERIC" />
-			<div element="ID_WOTC_PHB_CLASS_FEATURE_CLERIC_DESTROYUNDEAD" />
-			<div element="ID_WOTC_PHB_CLASS_FEATURE_CLERIC_DIVINEINTERVENTION" />
+			<div element="ID_WOTC_PHB_CLASS_FEATURE_CLERIC_SPELLCASTING_CLERIC"/>
+			<div element="ID_WOTC_PHB_CLASS_FEATURE_CLERIC_DIVINEDOMAIN"/>
+			<div element="ID_WOTC_PHB_CLASS_FEATURE_CLERIC_CHANNELDIVINITY"/>
+			<div element="ID_WOTC_PHB_CLASS_FEATURE_CLERIC_ABILITYSCOREIMPROVEMENT_CLERIC"/>
+			<div element="ID_WOTC_PHB_CLASS_FEATURE_CLERIC_DESTROYUNDEAD"/>
+			<div element="ID_WOTC_PHB_CLASS_FEATURE_CLERIC_DIVINEINTERVENTION"/>
 		</description>
 		<sheet display="false">
 			<description>A priestly champion who wields divine magic in service of a higher power.</description>
@@ -96,12 +79,12 @@
 			<grant type="Proficiency" id="ID_PROFICIENCY_SAVINGTHROW_CHARISMA" requirements="!ID_WOTC_PHB_MULTICLASS_CLERIC"/>
 			<select type="Proficiency" name="Skill Proficiency (Cleric)" supports="Skill,Cleric" number="2" requirements="!ID_WOTC_PHB_MULTICLASS_CLERIC"/>
 
-			<grant type="Class Feature" id="ID_WOTC_PHB_CLASS_FEATURE_CLERIC_SPELLCASTING_CLERIC" level="1" />
-			<grant type="Class Feature" id="ID_WOTC_PHB_CLASS_FEATURE_CLERIC_DIVINEDOMAIN" level="1" />
-			<grant type="Class Feature" id="ID_WOTC_PHB_CLASS_FEATURE_CLERIC_CHANNELDIVINITY" level="2" />
-			<grant type="Class Feature" id="ID_WOTC_PHB_CLASS_FEATURE_CLERIC_ABILITYSCOREIMPROVEMENT_CLERIC" level="4" />
-			<grant type="Class Feature" id="ID_WOTC_PHB_CLASS_FEATURE_CLERIC_DESTROYUNDEAD" level="5" />
-			<grant type="Class Feature" id="ID_WOTC_PHB_CLASS_FEATURE_CLERIC_DIVINEINTERVENTION" level="10" />
+			<grant type="Class Feature" id="ID_WOTC_PHB_CLASS_FEATURE_CLERIC_SPELLCASTING_CLERIC" level="1"/>
+			<grant type="Class Feature" id="ID_WOTC_PHB_CLASS_FEATURE_CLERIC_DIVINEDOMAIN" level="1"/>
+			<grant type="Class Feature" id="ID_WOTC_PHB_CLASS_FEATURE_CLERIC_CHANNELDIVINITY" level="2"/>
+			<grant type="Class Feature" id="ID_WOTC_PHB_CLASS_FEATURE_CLERIC_ABILITYSCOREIMPROVEMENT_CLERIC" level="4"/>
+			<grant type="Class Feature" id="ID_WOTC_PHB_CLASS_FEATURE_CLERIC_DESTROYUNDEAD" level="5"/>
+			<grant type="Class Feature" id="ID_WOTC_PHB_CLASS_FEATURE_CLERIC_DIVINEINTERVENTION" level="10"/>
 		</rules>
 		<multiclass id="ID_WOTC_PHB_MULTICLASS_CLERIC">
 			<prerequisite>Wisdom 13</prerequisite>
@@ -110,10 +93,10 @@
 				<set name="multiclass proficiencies">Light armor, medium armor, shields</set>
 			</setters>
 			<rules>
-				<grant type="Grants" id="ID_INTERNAL_GRANT_MULTICLASS" />
-				<grant type="Proficiency" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_LIGHT_ARMOR" />
-				<grant type="Proficiency" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_MEDIUM_ARMOR" />
-				<grant type="Proficiency" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_SHIELD" />
+				<grant type="Grants" id="ID_INTERNAL_GRANT_MULTICLASS"/>
+				<grant type="Proficiency" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_LIGHT_ARMOR"/>
+				<grant type="Proficiency" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_MEDIUM_ARMOR"/>
+				<grant type="Proficiency" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_SHIELD"/>
 			</rules>
 		</multiclass>
 	</element>
@@ -145,48 +128,48 @@
 			<list known="true">Cleric</list>
 		</spellcasting>
 		<rules>
-			<grant type="Grants" id="ID_INTERNAL_GRANT_MULTICLASS_SPELLCASTING_SLOTS_FULL" requirements="ID_INTERNAL_GRANT_MULTICLASS" />
-			<grant type="Grants" id="ID_INTERNAL_RITUAL_CASTING" />
-			<grant type="Proficiency" id="ID_INTERNAL_PROFICIENCY_SPELLFOCUS_GROUP_HOLY_SYMBOL" />
+			<grant type="Grants" id="ID_INTERNAL_GRANT_MULTICLASS_SPELLCASTING_SLOTS_FULL" requirements="ID_INTERNAL_GRANT_MULTICLASS"/>
+			<grant type="Grants" id="ID_INTERNAL_RITUAL_CASTING"/>
+			<grant type="Proficiency" id="ID_INTERNAL_PROFICIENCY_SPELLFOCUS_GROUP_HOLY_SYMBOL"/>
 
-			<stat name="cleric:spellcasting:slots:1" value="2" level="1" />
-			<stat name="cleric:spellcasting:slots:1" value="1" level="2" />
-			<stat name="cleric:spellcasting:slots:1" value="1" level="3" />
-			<stat name="cleric:spellcasting:slots:2" value="2" level="3" />
-			<stat name="cleric:spellcasting:slots:2" value="1" level="4" />
-			<stat name="cleric:spellcasting:slots:3" value="2" level="5" />
-			<stat name="cleric:spellcasting:slots:3" value="1" level="6" />
-			<stat name="cleric:spellcasting:slots:4" value="1" level="7" />
-			<stat name="cleric:spellcasting:slots:4" value="1" level="8" />
-			<stat name="cleric:spellcasting:slots:4" value="1" level="9" />
-			<stat name="cleric:spellcasting:slots:5" value="1" level="9" />
-			<stat name="cleric:spellcasting:slots:5" value="1" level="10" />
-			<stat name="cleric:spellcasting:slots:5" value="1" level="18" />
-			<stat name="cleric:spellcasting:slots:6" value="1" level="11" />
-			<stat name="cleric:spellcasting:slots:6" value="1" level="19" />
-			<stat name="cleric:spellcasting:slots:7" value="1" level="13" />
-			<stat name="cleric:spellcasting:slots:7" value="1" level="20" />
-			<stat name="cleric:spellcasting:slots:8" value="1" level="15" />
-			<stat name="cleric:spellcasting:slots:9" value="1" level="17" />
+			<stat name="cleric:spellcasting:slots:1" value="2" level="1"/>
+			<stat name="cleric:spellcasting:slots:1" value="1" level="2"/>
+			<stat name="cleric:spellcasting:slots:1" value="1" level="3"/>
+			<stat name="cleric:spellcasting:slots:2" value="2" level="3"/>
+			<stat name="cleric:spellcasting:slots:2" value="1" level="4"/>
+			<stat name="cleric:spellcasting:slots:3" value="2" level="5"/>
+			<stat name="cleric:spellcasting:slots:3" value="1" level="6"/>
+			<stat name="cleric:spellcasting:slots:4" value="1" level="7"/>
+			<stat name="cleric:spellcasting:slots:4" value="1" level="8"/>
+			<stat name="cleric:spellcasting:slots:4" value="1" level="9"/>
+			<stat name="cleric:spellcasting:slots:5" value="1" level="9"/>
+			<stat name="cleric:spellcasting:slots:5" value="1" level="10"/>
+			<stat name="cleric:spellcasting:slots:5" value="1" level="18"/>
+			<stat name="cleric:spellcasting:slots:6" value="1" level="11"/>
+			<stat name="cleric:spellcasting:slots:6" value="1" level="19"/>
+			<stat name="cleric:spellcasting:slots:7" value="1" level="13"/>
+			<stat name="cleric:spellcasting:slots:7" value="1" level="20"/>
+			<stat name="cleric:spellcasting:slots:8" value="1" level="15"/>
+			<stat name="cleric:spellcasting:slots:9" value="1" level="17"/>
 
-			<stat name="cleric:spellcasting:prepare" value="wisdom:modifier" />
-			<stat name="cleric:spellcasting:prepare" value="level:cleric" />
+			<stat name="cleric:spellcasting:prepare" value="wisdom:modifier"/>
+			<stat name="cleric:spellcasting:prepare" value="level:cleric"/>
 
-			<select type="Spell" name="Cantrip (Cleric)" supports="$(spellcasting:list), 0" level="1" number="3" spellcasting="Cleric" />
-			<select type="Spell" name="Cantrip (Cleric)" supports="$(spellcasting:list), 0" level="4" number="1" spellcasting="Cleric" />
-			<select type="Spell" name="Cantrip (Cleric)" supports="$(spellcasting:list), 0" level="10" number="1" spellcasting="Cleric" />
+			<select type="Spell" name="Cantrip (Cleric)" supports="$(spellcasting:list), 0" level="1" number="3" spellcasting="Cleric"/>
+			<select type="Spell" name="Cantrip (Cleric)" supports="$(spellcasting:list), 0" level="4" number="1" spellcasting="Cleric"/>
+			<select type="Spell" name="Cantrip (Cleric)" supports="$(spellcasting:list), 0" level="10" number="1" spellcasting="Cleric"/>
 		</rules>
 	</element>
 	<element name="Divine Domain" type="Class Feature" source="System Reference Document" id="ID_WOTC_PHB_CLASS_FEATURE_CLERIC_DIVINEDOMAIN">
 		<description>
-			<p>Choose one domain related to your deity: Knowledge, Life, Light, Nature, Tempest, Trickery, or War. Each domain is detailed at the end of the class description, and each one provides examples of gods associated with it. Your choice grants you domain spells and other features when you choose it at 1st level. It also grants you additional ways to use Channel Divinity when you gain that feature at 2nd level, and additional benefits at 6th, 8th, and 17th levels.</p>
+			<p>Choose one domain related to your deity, such as Life. Each domain is detailed at the end of the class description, and each one provides examples of gods associated with it. Your choice grants you domain spells and other features when you choose it at 1st level. It also grants you additional ways to use Channel Divinity when you gain that feature at 2nd level, and additional benefits at 6th, 8th, and 17th levels.</p>
 			<h5 class="caption">DOMAIN SPELLS</h5>
 			<p>Each domain has a list of spells—its domain spells—that you gain at the cleric levels noted in the domain description. Once you gain a domain spell, you always have it prepared, and it doesn’t count against the number of spells you can prepare each day.</p>
 			<p class="indent">If you have a domain spell that doesn’t appear on the cleric spell list, the spell is nonetheless a cleric spell for you.</p>
 		</description>
-		<sheet display="false" />
+		<sheet display="false"/>
 		<rules>
-			<select type="Archetype" name="Divine Domain" supports="Divine Domain" />
+			<select type="Archetype" name="Divine Domain" supports="Divine Domain"/>
 		</rules>
 	</element>
 	<element name="Channel Divinity" type="Class Feature" source="System Reference Document" id="ID_WOTC_PHB_CLASS_FEATURE_CLERIC_CHANNELDIVINITY">
@@ -195,14 +178,14 @@
 			<p class="indent">When you use your Channel Divinity, you choose which effect to create. You must then finish a short or long rest to use your Channel Divinity again.</p>
 			<p class="indent">Some Channel Divinity effects require saving throws. When you use such an effect from this class, the DC equals your cleric spell save DC.</p>
 			<p class="indent">Beginning at 6th level, you can use your Channel Divinity twice between rests, and beginning at 18th level, you can use it three times between rests. When you finish a short or long rest, you regain your expended uses.</p>
-			<div element="ID_WOTC_PHB_CLASS_FEATURE_CLERIC_CHANNELDIVINITY_TURN_UNDEAD" />
+			<div element="ID_WOTC_PHB_CLASS_FEATURE_CLERIC_CHANNELDIVINITY_TURN_UNDEAD"/>
 		</description>
-		<sheet usage="{{channel divinity:count}}/Short Rest" />
+		<sheet usage="{{channel divinity:count}}/Short Rest"/>
 		<rules>
-			<stat name="channel divinity:count" value="1" bonus="base" />
-			<stat name="channel divinity:count" value="2" level="6" bonus="base" />
-			<stat name="channel divinity:count" value="3" level="18" bonus="base" />
-			<grant type="Class Feature" id="ID_WOTC_PHB_CLASS_FEATURE_CLERIC_CHANNELDIVINITY_TURN_UNDEAD" />
+			<stat name="channel divinity:count" value="1" bonus="base"/>
+			<stat name="channel divinity:count" value="2" level="6" bonus="base"/>
+			<stat name="channel divinity:count" value="3" level="18" bonus="base"/>
+			<grant type="Class Feature" id="ID_WOTC_PHB_CLASS_FEATURE_CLERIC_CHANNELDIVINITY_TURN_UNDEAD"/>
 		</rules>
 	</element>
 	<element name="Channel Divinity: Turn Undead" type="Class Feature" source="System Reference Document" id="ID_WOTC_PHB_CLASS_FEATURE_CLERIC_CHANNELDIVINITY_TURN_UNDEAD">
@@ -216,17 +199,17 @@
 		</sheet>
 	</element>
 	<element name="Ability Score Improvement" type="Class Feature" source="System Reference Document" id="ID_WOTC_PHB_CLASS_FEATURE_CLERIC_ABILITYSCOREIMPROVEMENT_CLERIC">
-		<compendium display="false" />
+		<compendium display="false"/>
 		<description>
 			<p>When you reach 4th level, and again at 8th, 12th, 16th, and 19th level, you can increase one ability score of your choice by 2, or you can increase two ability scores of your choice by 1. As normal, you can’t increase an ability score above 20 using this feature.</p>
 		</description>
-		<sheet display="false" />
+		<sheet display="false"/>
 		<rules>
-			<select type="Class Feature" name="Improvement Option (Cleric 4)" supports="Improvement Option,Cleric,4" level="4" />
-			<select type="Class Feature" name="Improvement Option (Cleric 8)" supports="Improvement Option,Cleric,8" level="8" />
-			<select type="Class Feature" name="Improvement Option (Cleric 12)" supports="Improvement Option,Cleric,12" level="12" />
-			<select type="Class Feature" name="Improvement Option (Cleric 16)" supports="Improvement Option,Cleric,16" level="16" />
-			<select type="Class Feature" name="Improvement Option (Cleric 19)" supports="Improvement Option,Cleric,19" level="19" />
+			<select type="Class Feature" name="Improvement Option (Cleric 4)" supports="Improvement Option,Cleric,4" level="4"/>
+			<select type="Class Feature" name="Improvement Option (Cleric 8)" supports="Improvement Option,Cleric,8" level="8"/>
+			<select type="Class Feature" name="Improvement Option (Cleric 12)" supports="Improvement Option,Cleric,12" level="12"/>
+			<select type="Class Feature" name="Improvement Option (Cleric 16)" supports="Improvement Option,Cleric,16" level="16"/>
+			<select type="Class Feature" name="Improvement Option (Cleric 19)" supports="Improvement Option,Cleric,19" level="19"/>
 		</rules>
 	</element>
 	<element name="Destroy Undead" type="Class Feature" source="System Reference Document" id="ID_WOTC_PHB_CLASS_FEATURE_CLERIC_DESTROYUNDEAD">
@@ -282,27 +265,27 @@
 				<tr><td>7th</td><td><em>death ward, guardian of faith</em></td></tr>
 				<tr><td>9th</td><td><em>mass cure wounds, raise dead</em></td></tr>
 			</table>
-			<div element="ID_WOTC_PHB_ARCHETYPE_FEATURE_LIFE_BONUSPROFICIENCY" />
-			<div element="ID_WOTC_PHB_ARCHETYPE_FEATURE_LIFE_DISCIPLEOFLIFE" />
-			<div element="ID_WOTC_PHB_ARCHETYPE_FEATURE_LIFE_CHANNELDIVINITY_PRESERVELIFE" />
-			<div element="ID_WOTC_PHB_ARCHETYPE_FEATURE_LIFE_BLESSEDHEALER" />
-			<div element="ID_WOTC_PHB_ARCHETYPE_FEATURE_LIFE_DIVINESTRIKE" />
-			<div element="ID_WOTC_PHB_ARCHETYPE_FEATURE_LIFE_SUPREMEHEALING" />
+			<div element="ID_WOTC_PHB_ARCHETYPE_FEATURE_LIFE_BONUSPROFICIENCY"/>
+			<div element="ID_WOTC_PHB_ARCHETYPE_FEATURE_LIFE_DISCIPLEOFLIFE"/>
+			<div element="ID_WOTC_PHB_ARCHETYPE_FEATURE_LIFE_CHANNELDIVINITY_PRESERVELIFE"/>
+			<div element="ID_WOTC_PHB_ARCHETYPE_FEATURE_LIFE_BLESSEDHEALER"/>
+			<div element="ID_WOTC_PHB_ARCHETYPE_FEATURE_LIFE_DIVINESTRIKE"/>
+			<div element="ID_WOTC_PHB_ARCHETYPE_FEATURE_LIFE_SUPREMEHEALING"/>
 		</description>
 		<sheet display="false">
 			<description>The Life domain focuses on the vibrant positive energy— one of the fundamental forces of the universe—that sustains all life.</description>
 		</sheet>
 		<rules>
-			<grant type="Spell" id="ID_PHB_SPELL_BLESS" level="1" spellcasting="Cleric" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_CURE_WOUNDS" level="1" spellcasting="Cleric" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_LESSER_RESTORATION" level="3" spellcasting="Cleric" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_SPIRITUAL_WEAPON" level="3" spellcasting="Cleric" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_BEACON_OF_HOPE" level="5" spellcasting="Cleric" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_REVIVIFY" level="5" spellcasting="Cleric" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_DEATH_WARD" level="7" spellcasting="Cleric" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_GUARDIAN_OF_FAITH" level="7" spellcasting="Cleric" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_MASS_CURE_WOUNDS" level="9" spellcasting="Cleric" prepared="true" />
-			<grant type="Spell" id="ID_PHB_SPELL_RAISE_DEAD" level="9" spellcasting="Cleric" prepared="true" />
+			<grant type="Spell" id="ID_PHB_SPELL_BLESS" level="1" spellcasting="Cleric" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_CURE_WOUNDS" level="1" spellcasting="Cleric" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_LESSER_RESTORATION" level="3" spellcasting="Cleric" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_SPIRITUAL_WEAPON" level="3" spellcasting="Cleric" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_BEACON_OF_HOPE" level="5" spellcasting="Cleric" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_REVIVIFY" level="5" spellcasting="Cleric" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_DEATH_WARD" level="7" spellcasting="Cleric" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_GUARDIAN_OF_FAITH" level="7" spellcasting="Cleric" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_MASS_CURE_WOUNDS" level="9" spellcasting="Cleric" prepared="true"/>
+			<grant type="Spell" id="ID_PHB_SPELL_RAISE_DEAD" level="9" spellcasting="Cleric" prepared="true"/>
 			<grant type="Archetype Feature" id="ID_WOTC_PHB_ARCHETYPE_FEATURE_LIFE_BONUSPROFICIENCY" level="1"/>
 			<grant type="Archetype Feature" id="ID_WOTC_PHB_ARCHETYPE_FEATURE_LIFE_DISCIPLEOFLIFE" level="1"/>
 			<grant type="Archetype Feature" id="ID_WOTC_PHB_ARCHETYPE_FEATURE_LIFE_CHANNELDIVINITY_PRESERVELIFE" level="2"/>
@@ -315,9 +298,9 @@
 		<description>
 			<p>When you choose this domain at 1st level, you gain proficiency with heavy armor.</p>
 		</description>
-		<sheet display="false" />
+		<sheet display="false"/>
 		<rules>
-			<grant type="Proficiency" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_HEAVY_ARMOR" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_HEAVY_ARMOR"/>
 		</rules>
 	</element>
 	<element name="Disciple of Life" type="Archetype Feature" source="System Reference Document" id="ID_WOTC_PHB_ARCHETYPE_FEATURE_LIFE_DISCIPLEOFLIFE">
@@ -337,11 +320,11 @@
 			<description>You present your holy symbol and evoke healing energy that can restore {{preserve life:hp}} hp. Choose any creatures within 30 feet of you, and divide those hit points among them. This feature can restore a creature to no more than half of its hp maximum. You can’t use this feature on an undead or a construct.</description>
 		</sheet>
 		<rules>
-			<stat name="preserve life:hp" value="level:cleric" />
-			<stat name="preserve life:hp" value="level:cleric" />
-			<stat name="preserve life:hp" value="level:cleric" />
-			<stat name="preserve life:hp" value="level:cleric" />
-			<stat name="preserve life:hp" value="level:cleric" />
+			<stat name="preserve life:hp" value="level:cleric"/>
+			<stat name="preserve life:hp" value="level:cleric"/>
+			<stat name="preserve life:hp" value="level:cleric"/>
+			<stat name="preserve life:hp" value="level:cleric"/>
+			<stat name="preserve life:hp" value="level:cleric"/>
 		</rules>
 	</element>
 	<element name="Blessed Healer" type="Archetype Feature" source="System Reference Document" id="ID_WOTC_PHB_ARCHETYPE_FEATURE_LIFE_BLESSEDHEALER">

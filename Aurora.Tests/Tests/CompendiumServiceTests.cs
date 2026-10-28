@@ -1,6 +1,6 @@
 namespace Aurora.Tests.Tests
 {
-    using Aurora.App.Services;
+    using Aurora.Reflections.Services;
     using Aurora.Components.Models;
 
     public sealed class CompendiumServiceTests

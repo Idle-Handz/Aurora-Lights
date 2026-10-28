@@ -107,6 +107,25 @@ jobs:
           echo "Suggested next release: $SUGGESTED_TAG"
           echo "Publishing: $RESOLVED_TAG (semver=$RAW assembly=$ASM)"
 
+      - name: Check out release source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Require release-note fragments before building
+        env:
+          PREVIOUS_TAG: ${{ steps.parse.outputs.latest }}
+        run: |
+          node tools/build-release-notes.mjs \
+            --from "$PREVIOUS_TAG" \
+            --to "$GITHUB_SHA" \
+            --require-fragments >> "$GITHUB_STEP_SUMMARY"
+
   test:
     uses: ./.github/workflows/test.yml
 
@@ -114,7 +133,7 @@ jobs:
     needs: prep_version
     runs-on: windows-latest
     env:
-      PROJECT: Aurora.App/Aurora.App.csproj
+      PROJECT: Aurora.Reflections/Aurora.Reflections.csproj
       VERSION_SEMVER:   ${{ needs.prep_version.outputs.semver }}
       VERSION_ASSEMBLY: ${{ needs.prep_version.outputs.assembly }}
       VERSION_INFO:     ${{ needs.prep_version.outputs.info }}
@@ -176,6 +195,10 @@ jobs:
             -p:ApplicationDisplayVersion=$VERSION_ASSEMBLY \
             -o publish/win-x64
 
+      - name: Validate licensing and notices (win-x64)
+        shell: bash
+        run: python tools/licensing/build_notices.py --check --platform windows --dependencies publish/win-x64/Aurora.Reflections.deps.json --require-resolved
+
       - name: Download previous release for delta (win-x64)
         # Best-effort: skipped silently on first release or if GitHub rate-limits.
         # vpk pack still produces a full nupkg; only the delta is missing.
@@ -218,7 +241,7 @@ jobs:
     needs: prep_version
     runs-on: windows-latest
     env:
-      PROJECT: Aurora.App/Aurora.App.csproj
+      PROJECT: Aurora.Reflections/Aurora.Reflections.csproj
       VERSION_SEMVER:   ${{ needs.prep_version.outputs.semver }}
       VERSION_ASSEMBLY: ${{ needs.prep_version.outputs.assembly }}
       VERSION_INFO:     ${{ needs.prep_version.outputs.info }}
@@ -280,6 +303,10 @@ jobs:
             -p:ApplicationDisplayVersion=$VERSION_ASSEMBLY \
             -o publish/win-arm64
 
+      - name: Validate licensing and notices (win-arm64)
+        shell: bash
+        run: python tools/licensing/build_notices.py --check --platform windows --dependencies publish/win-arm64/Aurora.Reflections.deps.json --require-resolved
+
       - name: Download previous release for delta (win-arm64)
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -320,7 +347,7 @@ jobs:
     needs: prep_version
     runs-on: ubuntu-latest
     env:
-      PROJECT: Aurora.App/Aurora.App.csproj
+      PROJECT: Aurora.Reflections/Aurora.Reflections.csproj
       VERSION_SEMVER:   ${{ needs.prep_version.outputs.semver }}
       VERSION_ASSEMBLY: ${{ needs.prep_version.outputs.assembly }}
       VERSION_INFO:     ${{ needs.prep_version.outputs.info }}
@@ -340,6 +367,9 @@ jobs:
 
       - name: Install MAUI Android workload
         run: dotnet workload install maui-android
+
+      - name: Validate licensing and notices (android-arm64)
+        run: python tools/licensing/build_notices.py --check --platform android --dependencies Aurora.Reflections/obj/project.assets.json --require-resolved
 
       - name: Prepare signing keystore
         env:
@@ -422,7 +452,7 @@ jobs:
     needs: prep_version
     runs-on: macos-26-intel
     env:
-      PROJECT: Aurora.App/Aurora.App.csproj
+      PROJECT: Aurora.Reflections/Aurora.Reflections.csproj
       VERSION_SEMVER:   ${{ needs.prep_version.outputs.semver }}
       VERSION_ASSEMBLY: ${{ needs.prep_version.outputs.assembly }}
       VERSION_INFO:     ${{ needs.prep_version.outputs.info }}
@@ -488,7 +518,7 @@ jobs:
     needs: prep_version
     runs-on: macos-26-intel
     env:
-      PROJECT: Aurora.App/Aurora.App.csproj
+      PROJECT: Aurora.Reflections/Aurora.Reflections.csproj
       VERSION_SEMVER:   ${{ needs.prep_version.outputs.semver }}
       VERSION_ASSEMBLY: ${{ needs.prep_version.outputs.assembly }}
       VERSION_INFO:     ${{ needs.prep_version.outputs.info }}
@@ -578,17 +608,17 @@ jobs:
           node tools/build-release-notes.mjs \
             --from "$PREVIOUS_TAG" \
             --to "$GITHUB_SHA" \
+            --require-fragments \
             --output release-notes.md
-          if [[ -s release-notes.md ]]; then
-            cat release-notes.md >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "No release-note fragments were added since $PREVIOUS_TAG; GitHub-generated notes will be used."
-          fi
+          cat release-notes.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
+
+      - name: Bundle corresponding source for LGPL relinking
+        run: python3 tools/licensing/build_source_bundle.py --output artifacts/aurora-corresponding-source.zip --require-resolved
 
       - name: Create draft release
         env:
@@ -601,19 +631,16 @@ jobs:
           # Glob expansion handles both first-release (no delta) and subsequent (full + delta).
           VELO_X64=$(ls artifacts/velopack-win-x64/ | xargs -I{} echo "artifacts/velopack-win-x64/{}")
           VELO_ARM64=$(ls artifacts/velopack-win-arm64/ | xargs -I{} echo "artifacts/velopack-win-arm64/{}")
-          RELEASE_FLAGS=(--draft --generate-notes)
+          RELEASE_FLAGS=(--draft --generate-notes --notes "$(cat release-notes.md)")
           if [[ "${VERSION#v}" == *-* ]]; then
             RELEASE_FLAGS+=(--prerelease)
           fi
-          if [[ -s release-notes.md ]]; then
-            RELEASE_FLAGS+=(--notes "$(cat release-notes.md)")
-          fi
-
           gh release create "$VERSION" \
             --repo "$REPO" \
             --target "$GITHUB_SHA" \
             --title "Aurora Lights $VERSION" \
             "${RELEASE_FLAGS[@]}" \
+            "artifacts/aurora-corresponding-source.zip" \
             "artifacts/android-arm64/aurora-android-arm64.apk" \
             "artifacts/macos-x64/aurora-maccatalyst-x64.zip" \
             "artifacts/macos-arm64/aurora-maccatalyst-arm64.zip" \

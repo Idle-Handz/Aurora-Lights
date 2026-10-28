@@ -1,0 +1,289 @@
+@inject IDialogService DialogService
+@inject IJSRuntime JS
+
+<MudDialog Class="picker-dialog picker-form-dialog" Style="--picker-initial-width: 900px;">
+    <TitleContent><MudText Typo="Typo.h6">@(Profile.IsCompanion ? "Edit Companion" : IsNew ? "Add Sidekick" : "Edit Sidekick")</MudText></TitleContent>
+    <DialogContent>
+        <div @ref="_editorRoot">
+        <div class="creature-portrait-editor">
+            @if (CreaturePortrait.DisplaySource(_draft.Get("portrait")) is { } portrait)
+            {
+                <img src="@portrait" alt="@($"Portrait of {_draft.Name}")" style="width:120px;height:120px;object-fit:cover;border-radius:8px;" />
+            }
+            <MudButton OnClick="PickPortraitAsync" Disabled="@_saving">@(_draft.Get("portrait").Length == 0 ? "Upload portrait" : "Change portrait")</MudButton>
+            @if (_draft.Get("portrait").Length > 0)
+            {
+                <MudButton OnClick="RemovePortrait" Disabled="@_saving">Remove portrait</MudButton>
+            }
+            <MudText Typo="Typo.caption">PNG, JPEG, GIF, BMP, or WebP, up to 5 MB. Portrait changes are applied when you save.</MudText>
+        </div>
+        @if (_draft.IsCompanion)
+        {
+            <MudText Typo="Typo.body2" Class="mb-3">Customize this companion independently. Untouched fields follow its creature definition and class bonuses. Use creature default to resume following those values.</MudText>
+        }
+        else
+        {
+        <MudText Typo="Typo.body2" Class="mb-3">
+            Class features, proficiency, and spellcasting follow the selected level. You can override any
+            generated field or add your own text under Custom features and descriptions.
+        </MudText>
+        <MudSelect T="string" Label="Class progression" Value="@_draft.ProgressionClass" ValueChanged="ChangeProgression"
+                   Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@_saving">
+            @foreach (var progression in SidekickProgression.Classes)
+            {
+                <MudSelectItem Value="@progression">@(progression == "Custom" ? "Custom (manual)" : progression)</MudSelectItem>
+            }
+        </MudSelect>
+        }
+        @if (SidekickProgression.IsAutomatic(_draft))
+        {
+            <MudText Typo="Typo.caption" Class="mt-2">@SidekickProgression.Source</MudText>
+            <MudText Typo="Typo.body2" Class="mt-2">
+                Start with a creature of challenge rating 1/2 or less. Experts and Spellcasters must speak a language.
+                Choose its ability improvements, proficiencies, and spells below. The resulting statistics update automatically.
+                You can still override individual totals in the profile.
+            </MudText>
+        }
+        @if (!_draft.IsCompanion)
+        {
+            <MudSelect T="bool" Label="Sidekick level mode" Value="@_draft.FollowOwnerLevel" ValueChanged="ChangeLevelMode"
+                       Disabled="@_saving" Variant="Variant.Outlined" Margin="Margin.Dense">
+                <MudSelectItem Value="@true">Match owner's level</MudSelectItem>
+                <MudSelectItem Value="@false">Set manually</MudSelectItem>
+            </MudSelect>
+            @if (_draft.FollowOwnerLevel)
+            {
+                <MudText Typo="Typo.body2" Class="mt-2">Level @SidekickChoices.Level(_draft) — follows the owner's total character level.</MudText>
+            }
+            else
+            {
+                <MudSelect T="int" Label="Sidekick level" Value="@SidekickChoices.Level(_draft)" ValueChanged='value => UpdateField("level", value.ToString())' Disabled="@_saving" Variant="Variant.Outlined" Margin="Margin.Dense">
+                    @foreach (int level in Enumerable.Range(1, 20)) { <MudSelectItem Value="@level">@level</MudSelectItem> }
+                </MudSelect>
+            }
+        }
+        @if (SidekickProgression.IsAutomatic(_draft))
+        {
+            @foreach (string key in new[] { "martial-role", "spellcasting-role", "empowered-school" })
+            {
+                var field = SidekickService.Fields.First(f => f.Key == key);
+                if (SidekickProgression.IsVisible(_draft, field) && Choices(key) is { } options)
+                {
+                    <div data-sidekick-choice="@("field:" + key)">
+                    <MudSelect T="string" Label="@field.Label" Value="@_draft.Get(key)" ValueChanged="value => UpdateField(key, value)" Disabled="@_saving" Variant="Variant.Outlined" Margin="Margin.Dense">
+                        @foreach (string option in options) { <MudSelectItem Value="@option">@option</MudSelectItem> }
+                    </MudSelect>
+                    </div>
+                }
+            }
+            <SidekickChoicesPanel Model="@SidekickChoices.Model(_draft)" Busy="@_saving" OnChange="ChangeChoice" OnPickSpell="PickSpellAsync" OnJumpToChoice="FocusChoiceAsync" />
+        }
+        @foreach (var group in SidekickService.Fields.Where(f => SidekickProgression.IsVisible(_draft, f)
+            && (_draft.IsCompanion || f.Key != "level")
+            && (!SidekickProgression.IsAutomatic(_draft) || f.Key is not ("martial-role" or "spellcasting-role" or "empowered-school"))).GroupBy(f => f.Group))
+        {
+            <div class="section-label" style="margin: 16px 0 8px;">@group.Key</div>
+            <div class="sidekick-field-grid">
+                @foreach (var field in group)
+                {
+                    <div class="@(field.Lines > 1 ? "sidekick-field-wide" : "")">
+                        @if (Choices(field.Key) is { } choices)
+                        {
+                            <MudSelect T="string" Label="@field.Label" Value="@_draft.Get(field.Key)"
+                                       ValueChanged="value => UpdateField(field.Key, value)"
+                                       Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@_saving">
+                                @foreach (var choice in choices)
+                                {
+                                    <MudSelectItem Value="@choice">@choice</MudSelectItem>
+                                }
+                            </MudSelect>
+                        }
+                        else
+                        {
+                            <MudTextField T="string" Label="@field.Label" Value="@_draft.Get(field.Key)"
+                                          ValueChanged="value => UpdateField(field.Key, value)" HelperText="@FieldHelp(field.Key)"
+                                          Variant="Variant.Outlined" Margin="Margin.Dense" Lines="@field.Lines"
+                                          Immediate="true" Disabled="@_saving" />
+                            @if ((_draft.IsCompanion || SidekickProgression.IsAutomatic(_draft)) && SidekickProgression.IsCustomized(_draft, field.Key) && _draft.LevelDefaults.ContainsKey(field.Key))
+                            {
+                                <MudButton Size="Size.Small" Disabled="@_saving"
+                                           OnClick="() => RestoreDefault(field.Key)">@(_draft.IsCompanion ? "Use creature default" : "Use level default")</MudButton>
+                            }
+                        }
+                    </div>
+                }
+            </div>
+            @if (group.Key == "Combat")
+            {
+                <MudNumericField T="int" Label="Spent hit dice" @bind-Value="_draft.Combat.HitDiceUsed" Min="0" Disabled="_saving" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            }
+        }
+        </div>
+    </DialogContent>
+    <DialogActions>
+        @if (_error != null)
+        {
+            <MudText Color="Color.Error" role="alert" Style="margin-right:auto;">@_error</MudText>
+        }
+        else
+        {
+            <span class="picker-resize-hint">Drag the bottom-right corner to resize</span>
+        }
+        <MudButton Disabled="@_saving" OnClick="Cancel">Cancel</MudButton>
+        <MudButton Disabled="@_saving" OnClick="SaveAsync" Variant="Variant.Filled" Color="Color.Primary">
+            @(IsNew ? "Add Sidekick" : "Save")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter, EditorRequired] public CharacterTab Tab { get; set; } = null!;
+    [Parameter, EditorRequired] public SidekickProfile Profile { get; set; } = null!;
+    [Parameter] public bool IsNew { get; set; }
+    [Parameter] public string? InitialChoiceKey { get; set; }
+    private ElementReference _editorRoot;
+    private SidekickProfile _draft = new();
+    private bool _saving;
+    private string? _error;
+
+    protected override void OnInitialized()
+    {
+        _draft = Profile.Copy();
+        SidekickChoices.Initialize(_draft);
+        SidekickService.MatchOwnerLevel(_draft, Tab.Character?.Level ?? Tab.Snapshot?.Level ?? 0);
+        SidekickProgression.Refresh(_draft);
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || InitialChoiceKey == null) return;
+        var pending = SidekickChoices.Pending(_draft);
+        var target = pending.FirstOrDefault(c => c.Key == InitialChoiceKey) ?? pending.FirstOrDefault();
+        if (target != null) await FocusChoiceAsync(target.Key);
+    }
+    private async Task FocusChoiceAsync(string key)
+    {
+        if (_saving) return;
+        try { await JS.InvokeAsync<bool>("sidekickChoices.focus", _editorRoot, key); }
+        catch (JSException ex) { DebugLogService.Instance.LogException(ex, "SidekickEditDialog.FocusChoice"); }
+    }
+    private static IReadOnlyList<string>? Choices(string key) => key switch
+    {
+        "martial-role" => SidekickProgression.MartialRoles,
+        "spellcasting-role" => SidekickProgression.SpellcasterRoles,
+        "empowered-school" => SidekickProgression.Schools,
+        "slot-recovery" => ["Long rest", "Short or long rest", "Manual"],
+        _ => null
+    };
+    private string? FieldHelp(string key) => key == "spell-slots" ? "Counts by level, for example: 1st: 4; 2nd: 2. Leave blank if none."
+        : !(_draft.IsCompanion || SidekickProgression.IsAutomatic(_draft)) || !_draft.LevelDefaults.ContainsKey(key)
+        ? null : SidekickProgression.IsCustomized(_draft, key)
+            ? "Customized. Choices and level changes keep your text or value."
+            : _draft.IsCompanion ? "Follows the creature definition and class bonuses." : "Follows the selected class and level.";
+    private void RestoreDefault(string key)
+    {
+        if (!_draft.IsCompanion) { SidekickProgression.UseLevelDefault(_draft, key); return; }
+        _draft.Fields[key] = _draft.LevelDefaults[key];
+        _draft.Overrides.Remove(key);
+    }
+    private void UpdateField(string key, string? value)
+    {
+        _draft.Set(key, value);
+        SidekickProgression.Refresh(_draft);
+    }
+    private void ChangeLevelMode(bool followOwner)
+    {
+        _draft.FollowOwnerLevel = followOwner;
+        SidekickService.MatchOwnerLevel(_draft, Tab.Character?.Level ?? Tab.Snapshot?.Level ?? 0);
+        _error = null;
+    }
+    private void ChangeProgression(string value)
+    {
+        if (_draft.Get("role") == _draft.ProgressionClass) _draft.Set("role", value);
+        _draft.ProgressionClass = value;
+        SidekickChoices.Initialize(_draft);
+        SidekickProgression.Refresh(_draft);
+    }
+    private void ChangeChoice(SidekickChoiceChange change)
+    {
+        SidekickChoices.Change(_draft, change);
+        _error = null;
+    }
+    private async Task PickSpellAsync(string key)
+    {
+        if (_saving) return;
+        _saving = true;
+        _error = null;
+        try
+        {
+            var parts = key.Split(':');
+            bool cantrip = parts[0] == "cantrip";
+            int slot = int.Parse(parts[1]);
+            IReadOnlyList<ElementOption> options;
+            using (var scope = await CharacterContext.EnterAsync(Tab))
+                options = SidekickChoices.SpellOptions(_draft, cantrip, slot);
+            var rule = new Builder.Data.Rules.SelectRule(new Builder.Data.ElementHeader("Sidekick spell choice", "Sidekick", SidekickProgression.Source, _draft.Id));
+            rule.Attributes.Type = "Spell";
+            string title = cantrip ? "Choose sidekick cantrip" : "Choose sidekick spell";
+            var parameters = new DialogParameters
+            {
+                [nameof(SelectionPickerDialog.Entry)] = new SelectionRuleEntry(rule, 1, title, null, 1),
+                [nameof(SelectionPickerDialog.Options)] = options
+            };
+            var dialog = await DialogService.ShowAsync<SelectionPickerDialog>(title, parameters,
+                new DialogOptions { MaxWidth = MaxWidth.Large, FullWidth = true, CloseOnEscapeKey = true });
+            if (await dialog.Result is { Canceled: false, Data: string id })
+            {
+                if (!options.Any(o => o.Id == id && !o.IsDisabled)) return;
+                ChangeChoice(new(key, id));
+            }
+        }
+        catch (Exception ex) { _error = DebugLogService.Catch(ex, "SidekickEditDialog.Spells"); }
+        finally { _saving = false; }
+    }
+    private async Task PickPortraitAsync()
+    {
+        if (_saving) return;
+        _saving = true;
+        _error = null;
+        try
+        {
+            var pick = await Microsoft.Maui.Storage.FilePicker.Default.PickAsync(new Microsoft.Maui.Storage.PickOptions
+            {
+                PickerTitle = "Choose creature portrait",
+                FileTypes = new Microsoft.Maui.Storage.FilePickerFileType(new Dictionary<Microsoft.Maui.Devices.DevicePlatform, IEnumerable<string>>
+                {
+                    [Microsoft.Maui.Devices.DevicePlatform.WinUI] = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"],
+                    [Microsoft.Maui.Devices.DevicePlatform.MacCatalyst] = ["public.image"],
+                    [Microsoft.Maui.Devices.DevicePlatform.iOS] = ["public.image"],
+                    [Microsoft.Maui.Devices.DevicePlatform.Android] = ["image/*"]
+                })
+            });
+            if (pick == null) return;
+            await using var stream = await pick.OpenReadAsync();
+            _draft.Set("portrait", await CreaturePortrait.ReadAsync(stream));
+            _draft.Overrides.Add("portrait");
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _saving = false; }
+    }
+    private void RemovePortrait()
+    {
+        _draft.Set("portrait", "");
+        _draft.Overrides.Add("portrait");
+    }
+    private void Cancel() => MudDialog.Cancel();
+    private async Task SaveAsync()
+    {
+        if (_saving) return;
+        _saving = true;
+        try
+        {
+            var result = await SidekickService.SaveAsync(Tab, _draft, IsNew);
+            if (result.Succeeded) MudDialog.Close(DialogResult.Ok(true));
+            else _error = result.Message;
+        }
+        catch (Exception ex) { _error = DebugLogService.Catch(ex, "SidekickEditDialog.Save"); }
+        finally { _saving = false; }
+    }
+}

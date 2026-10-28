@@ -4,7 +4,7 @@
 
 # Local OAuth client credentials and Codex attachments
 /client_secret_*.apps.googleusercontent.com.json
-/Aurora.App/Configuration/google-drive-client.json
+/Aurora.Reflections/Configuration/google-drive-client.json
 /.codex-remote-attachments/
 
 # Build outputs
@@ -57,6 +57,9 @@ test-results/
 **/publish/
 
 # Local diagnostics and scratch output
+/artifacts/
+__pycache__/
+*.py[cod]
 /%TEMP%/
 /buildtmp/
 /tmp/
@@ -99,5 +102,5 @@ $RECYCLE.BIN/
 TestResults/
 
 # Retired bundled Translator copy; the app imports content in process.
-Aurora.App/BundledTools/
+Aurora.Reflections/BundledTools/
 tools/translator-artifacts/

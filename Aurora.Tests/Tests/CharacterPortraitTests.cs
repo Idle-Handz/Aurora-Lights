@@ -11,7 +11,7 @@ namespace Aurora.Tests.Tests;
 
 public sealed class CharacterPortraitTests : IAsyncLifetime
 {
-    // SHA256 of Aurora.Lights/resources/default-portrait.png, the actual Legacy asset.
+    // SHA256 of Aurora.Legacy/resources/default-portrait.png, the actual Legacy asset.
     private const string LegacyPortraitHash = "FE88524168DC8953AF6B8BEAE33D89A7C5002F446BD55732B599F15E67272DC5";
     private const string CustomImage = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aX1sAAAAASUVORK5CYII=";
     private readonly string _directory = Path.Combine(Path.GetTempPath(), $"aurora-portraits-{Guid.NewGuid():N}");

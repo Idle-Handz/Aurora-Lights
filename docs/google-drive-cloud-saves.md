@@ -1,5 +1,14 @@
 # Google Drive cloud saves
 
+Public sign-in and consent have been verified by the maintainer and external
+testers, confirmed October 28, 2026. Official native builds provide their own
+Google configuration; users do not need to create a Google Cloud project or be
+added as development test users. The setup sections below are for maintainers
+and developers building their own configured client.
+
+Windows x64 and Android ARM64 are the stable 1.0 targets. Windows ARM64 and
+macOS remain experimental; Web is deferred. See the [current release status](v1.0-release-status.md).
+
 ## User behavior
 
 Characters has a **Cloud Saves** section. Connect Google Drive, upload a .dnd5e
@@ -10,9 +19,23 @@ character library remains separate.
 To upload a character saved inside the app, open its **Overview** and choose
 **Upload to Drive**. This saves current character edits and includes the session
 state (HP, spell slots and resources), without opening a native file picker.
-The local character remains on the device; open the new copy from **Cloud Saves**
-to continue saving to Drive. **Upload external file** remains available for files
-accessible through the system picker.
+After Drive confirms the upload and the managed working copy is ready, the same
+open tab becomes cloud-linked and the standalone character/session files leave
+the local library. Subsequent saves update that Drive document. A failed upload
+or local handoff preserves the standalone save and reports the failure.
+**Upload external file** remains a copy operation for files selected through the
+system picker; it does not delete the original external file.
+
+Cloud Saves uses the same portrait tiles as the local character groups, with a
+cloud badge at the upper left of the portrait. Previews read the saved name,
+build details and embedded portrait without loading the character engine. They
+load progressively and are cached by account and Drive revision. The Characters
+search filters both sections, including when the local library is empty.
+
+Choose **Disconnect character** in the cloud banner to return the current draft
+and its session data to the local library, including unsent changes while offline.
+This does not delete or update the Drive file. Local filename collisions receive
+a numeric suffix. This is separate from disconnecting the Google account.
 
 Drive is authoritative. Opening or explicitly reloading a cloud character reads
 Drive and updates the managed local copy. If Drive changed after the character
@@ -97,7 +120,7 @@ keep their client configuration confidential after distribution.
    **GOOGLE_DRIVE_DESKTOP_CLIENT_JSON**. Do not commit the downloaded JSON.
 3. The Windows and macOS workflows run `tools/prepare-google-drive-client.ps1`.
    It validates the desktop download and writes only ClientId and ClientSecret
-   to the ignored `Aurora.App/Configuration/google-drive-client.json`. The app
+   to the ignored `Aurora.Reflections/Configuration/google-drive-client.json`. The app
    embeds that file as `Aurora.GoogleDriveClient.json` on desktop only.
 4. The release workflow requires this secret and fails if it is missing or
    invalid. Other desktop build workflows can omit it for source/fork builds
@@ -121,8 +144,10 @@ requires an External/In production audience and the applicable public website,
 privacy disclosures, and branding setup in Google Auth Platform.
 
 The drive.file grant lists files created by or explicitly authorized for this
-app. It does not browse every arbitrary file in a user's Drive. Upload creates
-a new cloud character without deleting the local original. Disconnect removes
+app. It does not browse every arbitrary file in a user's Drive. **Upload to
+Drive** in Overview converts the local character into a cloud-linked save after
+a successful upload and local handoff. **Upload external file** copies a chosen
+file without deleting its original. Disconnecting the Google account removes
 the stored credential on this installation; close cloud tabs first. The user
 can revoke the app's Google grant separately in Google account settings.
 Reconnect renews authorization for the same account. Choosing a different

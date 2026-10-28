@@ -2,7 +2,7 @@ using Aurora.Content;
 using Aurora.Content.Preparation;
 using Microsoft.Data.Sqlite;
 
-namespace Aurora.App.Services;
+namespace Aurora.Reflections.Services;
 
 /// <summary>Reads complete actionable diagnostics and their owner files from one database snapshot.</summary>
 internal static class ContentDatabaseHealthReader

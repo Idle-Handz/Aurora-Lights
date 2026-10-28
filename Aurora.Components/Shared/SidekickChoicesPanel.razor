@@ -1,0 +1,133 @@
+@using Aurora.Components.Models
+
+<section class="sidekick-choices" aria-label="Sidekick choices">
+    @if (Model.PendingChoices.Count > 0)
+    {
+        <div class="sidekick-pending" role="status">
+            <strong>Choices needed (@Model.PendingChoices.Count)</strong>
+            <p>Jump to an unfinished choice. You can save your progress and finish later.</p>
+            <div class="choice-actions">
+                @foreach (var group in Model.PendingChoices.GroupBy(c => c.Group))
+                {
+                    <button type="button" disabled="@Busy" data-sidekick-jump="@group.First().Key"
+                            @onclick="() => OnJumpToChoice.InvokeAsync(group.First().Key)">@group.Key (@group.Count())</button>
+                }
+            </div>
+        </div>
+    }
+    <details class="sidekick-base">
+        <summary>Base creature statistics</summary>
+        <p>Use the creature's starting statistics before sidekick bonuses and ability improvements. Existing values are used as the starting point. Previously entered totals stay as overrides until you use their level defaults. Set how Dexterity affects its armor and which ability its weapon attacks use.</p>
+        <div class="choice-grid">
+            @foreach (var field in Model.BaseFields)
+            {
+                <label class="@(field.Key is "base:actions" or "base:skills" or "base:saves" ? "choice-wide" : "")">@field.Label
+                    @if (field.Key is "base:actions" or "base:skills" or "base:saves")
+                    {
+                        <textarea rows="3" value="@field.Value" @onchange="e => Change(field.Key, e)" disabled="@Busy"></textarea>
+                    }
+                    else
+                    {
+                        <input value="@field.Value" @onchange="e => Change(field.Key, e)" disabled="@Busy" />
+                    }
+                </label>
+            }
+            @foreach (var row in Model.Rows.Where(r => r.Group == "Base creature"))
+            {
+                @Choice(row)
+            }
+        </div>
+        <p>Base Maximum HP and Base Hit dice are your starting totals at the level selected below. Later levels and Constitution changes are added automatically.</p>
+    </details>
+    @if (Model.HitPoints is { } hp)
+    {
+        <h4>Hit points on level up</h4>
+        <p>@hp.Help</p>
+        <div class="choice-grid">
+            <label>Base HP already includes level
+                <select value="@hp.BaseLevel" disabled="@Busy" @onchange='e => Change("hp:base-level", e)'>
+                    @foreach (int level in Enumerable.Range(1, 20)) { <option value="@level">@level</option> }
+                </select>
+            </label>
+            <label>HP for new levels
+                <select value="@hp.Method" disabled="@Busy" @onchange='e => Change("hp:method", e)'>
+                    <option value="Average">Take average (rounded up)</option><option value="Roll">Roll</option>
+                </select>
+            </label>
+        </div>
+        <p>New levels use your chosen method. You can change individual levels below. Rolls are saved, including when you lower and restore the level. You can also enter a physical die roll.</p>
+        <div class="choice-grid">
+            @foreach (var gain in hp.Gains)
+            {
+                <div class="sidekick-spell-choice" @key="gain.Level">
+                    <label>Level @gain.Level HP method
+                        <select value="@gain.Method" disabled="@Busy" @onchange='e => Change($"hp:level:{gain.Level}:method", e)'>
+                            <option value="Average">Take average</option><option value="Roll">Roll</option>
+                        </select>
+                    </label>
+                    @if (gain.Method == "Roll")
+                    {
+                        <label>@($"Level {gain.Level} roll (d{hp.DieSize})")
+                            <input type="number" min="1" max="@hp.DieSize" value="@gain.Roll" disabled="@Busy" @onchange='e => Change($"hp:level:{gain.Level}:roll", e)' />
+                        </label>
+                    }
+                    <p class="choice-caption">@gain.Summary</p>
+                </div>
+            }
+        </div>
+    }
+    @foreach (var group in Model.Rows.Where(r => r.Group != "Base creature").GroupBy(r => r.Group))
+    {
+        <h4>@group.Key</h4>
+        @if (group.Key == "Ability improvements")
+        {
+            <p>Choose the same ability twice for +2, or two different abilities for +1 each. Improvements cannot raise a score above 20.</p>
+        }
+        <div class="choice-grid">
+            @foreach (var row in group) { @Choice(row) }
+        </div>
+    }
+    @if (Model.Spells.Count > 0)
+    {
+        <h4>Cantrips and known spells</h4>
+        <p>Choose spells from the selected Spellcaster role and available spell levels. These choices belong only to this sidekick.</p>
+        <div class="choice-grid">
+            @foreach (var spell in Model.Spells)
+            {
+                <div class="sidekick-spell-choice" data-sidekick-choice="@spell.Key" data-choice-pending="@IsPending(spell.Key)">
+                    <div class="choice-caption">@spell.Label</div><strong>@spell.Name</strong>
+                    <div class="choice-caption">@spell.Description</div>
+                    <div class="choice-actions">
+                        <button type="button" disabled="@Busy" @onclick="() => OnPickSpell.InvokeAsync(spell.Key)" aria-label="@($"Choose {spell.Label.ToLowerInvariant()}")">@(spell.HasSelection ? "Change" : "Choose")</button>
+                        @if (spell.HasSelection)
+                        {
+                            <button type="button" disabled="@Busy" @onclick='() => OnChange.InvokeAsync(new(spell.Key, ""))' aria-label="@($"Clear {spell.Label.ToLowerInvariant()}")">Clear</button>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    <p class="choice-summary" aria-live="polite">@Model.Summary</p>
+    <p>Choices above the current level are kept for later. Manual overrides in the profile below stay in effect until you choose “Use level default.”</p>
+    @foreach (string notice in Model.Notices) { <p class="choice-error" role="alert">@notice</p> }
+</section>
+
+@code {
+    [Parameter, EditorRequired] public SidekickChoicesModel Model { get; set; } = new();
+    [Parameter] public bool Busy { get; set; }
+    [Parameter] public EventCallback<SidekickChoiceChange> OnChange { get; set; }
+    [Parameter] public EventCallback<string> OnPickSpell { get; set; }
+    [Parameter] public EventCallback<string> OnJumpToChoice { get; set; }
+    private string IsPending(string key) => Model.PendingChoices.Any(c => c.Key == key) ? "true" : "false";
+    private Task Change(string key, ChangeEventArgs e) => OnChange.InvokeAsync(new(key, e.Value?.ToString() ?? ""));
+    private RenderFragment Choice(SidekickChoiceRow row) => @<label data-sidekick-choice="@row.Key" data-choice-pending="@IsPending(row.Key)">@row.Label
+        <select value="@row.Value" disabled="@Busy" @onchange="e => Change(row.Key, e)">
+            @if (row.Value.Length > 0 && !row.Options.Any(o => o.Value == row.Value))
+            {
+                <option value="@row.Value">@row.Value — choose another option</option>
+            }
+            @foreach (var option in row.Options) { <option value="@option.Value">@option.Label</option> }
+        </select>
+    </label>;
+}

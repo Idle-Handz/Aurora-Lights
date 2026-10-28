@@ -10,7 +10,7 @@ using System.Text.Json;
 using System.Xml;
 using System.Xml.Linq;
 
-namespace Aurora.App.Services.ContentReview;
+namespace Aurora.Reflections.Services.ContentReview;
 
 /// <summary>Read-only review contract v1; not a database schema or an authorization API.</summary>
 public static class ContentReviewContract

@@ -100,6 +100,7 @@
 }
 
 .character-browser-portrait {
+    position: relative;
     width: 72px;
     height: 72px;
     border-radius: 0.9rem;
@@ -112,6 +113,23 @@
     font-size: 1.35rem;
     font-weight: 700;
 }
+
+.character-browser-cloud {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 23px;
+    height: 23px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--mud-palette-primary, #1f6feb);
+    color: var(--mud-palette-primary-text, #fff);
+    box-shadow: 0 1px 4px #0006;
+}
+
+.character-browser-cloud svg { width: 16px; height: 16px; fill: currentColor; }
+.character-browser-card:disabled { cursor: wait; opacity: 0.7; transform: none; }
 
 .character-browser-portrait img {
     width: 100%;

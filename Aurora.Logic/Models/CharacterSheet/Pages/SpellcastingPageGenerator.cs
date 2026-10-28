@@ -1,4 +1,4 @@
-﻿// Decompiled with JetBrains decompiler
+// Decompiled with JetBrains decompiler
 // Type: Builder.Presentation.Models.CharacterSheet.Pages.SpellcastingPageGenerator
 // Assembly: Aurora Builder, Version=1.0.166.7407, Culture=neutral, PublicKeyToken=null
 // MVID: 09D35420-8FA0-4A71-9A21-FF952C48F8A3
@@ -149,7 +149,7 @@ public class SpellcastingPageGenerator : PageGenerator
     this.GetArea(x - 4f, y + 5f, 8f, 10f);
     for (int index2 = 0; index2 < spells.AvailableSlots; ++index2)
     {
-      this.Writer.DirectContentUnder.SetColorFill(BaseColor.WHITE);
+      this.Writer.DirectContentUnder.SetColorFill(BaseColor.White);
       this.Writer.DirectContentUnder.Circle(x, y, 3f);
       this.Writer.DirectContentUnder.Fill();
       Rectangle area4 = this.GetArea(x - 4f, y + 5f, 8f, 10f);
@@ -159,7 +159,7 @@ public class SpellcastingPageGenerator : PageGenerator
     if (spells.AvailableSlots > 0)
     {
       contentGenerator.SetBold();
-      contentGenerator.SetColor(BaseColor.WHITE);
+      contentGenerator.SetColor(BaseColor.White);
       string currentFieldName = this.GenerateCurrentFieldName($"slots_{spells.Level}:{index1}_", className);
       contentGenerator.AddText(this.GetArea(area1.Left + 35f, area1.Top, 40f, area1.Height), currentFieldName, $"{spells.AvailableSlots} SPELL SLOTS", 5f);
       this.PartialFlatteningNames.Add(currentFieldName);

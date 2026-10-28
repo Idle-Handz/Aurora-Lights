@@ -26,31 +26,37 @@ public class FontsHelper
 
 	public Font GetRegular(float size = 12f)
 	{
-		return GetFont(_font.Regular.Name, _font.Regular.Filename, size) ?? FontFactory.GetFont("Helvetica", size);
+		return GetFont(_font.Regular.Name, _font.Regular.Filename, size) ?? PortablePdfFonts.GetFont(size);
 	}
 
 	public Font GetBold(float size = 12f)
 	{
-		return GetFont(_font.Bold.Name, _font.Bold.Filename, size) ?? FontFactory.GetFont("Helvetica-Bold", size);
+		return GetFont(_font.Bold.Name, _font.Bold.Filename, size) ?? PortablePdfFonts.GetFont(size, Font.BOLD);
 	}
 
 	public Font GetItalic(float size = 12f)
 	{
-		return GetFont(_font.Italic.Name, _font.Italic.Filename, size) ?? FontFactory.GetFont("Helvetica-Oblique", size);
+		return GetFont(_font.Italic.Name, _font.Italic.Filename, size) ?? PortablePdfFonts.GetFont(size, Font.ITALIC);
 	}
 
 	public Font GetBoldItalic(float size = 12f)
 	{
-		return GetFont(_font.BoldItalic.Name, _font.BoldItalic.Filename, size) ?? FontFactory.GetFont("Helvetica-BoldOblique", size);
+		return GetFont(_font.BoldItalic.Name, _font.BoldItalic.Filename, size) ?? PortablePdfFonts.GetFont(size, Font.BOLDITALIC);
 	}
 
 	private static Font GetFont(string fontName, string filename, float size = 0f)
 	{
-		if (FontFactory.IsRegistered(filename))
+		// Android has no desktop Calibri installation. Never depend on a font registry
+		// populated by another export or fail before reaching the embedded fallback.
+		if (OperatingSystem.IsAndroid()) return null;
+		try
 		{
-			return FontFactory.GetFont(fontName, "Identity-H", embedded: true, size);
+			string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Fonts), filename);
+			if (!File.Exists(path)) return null;
+			if (!FontFactory.IsRegistered(fontName)) FontFactory.Register(path);
+			var font = FontFactory.GetFont(fontName, "Identity-H", embedded: true, size);
+			return font?.BaseFont is not null ? font : null;
 		}
-		FontFactory.Register(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Fonts), filename));
-		return FontFactory.GetFont(fontName, "Identity-H", embedded: true, size);
+		catch (Exception) { return null; }
 	}
 }
