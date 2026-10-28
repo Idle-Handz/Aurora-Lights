@@ -1,24 +1,114 @@
-Continue the existing Aurora Reflections homepage project. Add public Terms of Service and Privacy Policy pages that match its design, and add clearly visible links to both in the homepage/footer. Preserve the homepage work already in progress.
+RETURN HANDOFF: Aurora: Reflections Google Drive public pages
+Updated October 14, 2026 (America/Los_Angeles)
 
-Purpose: Aurora Reflections, an Idle Handz character-building application, is preparing Google Drive cloud saves for general availability on Windows and Android, with desktop authorization also implemented for macOS. These pages will be linked from Google Auth Platform and the application. Use stable HTTPS URLs on the same controlled domain as the homepage, accessible without sign-in. Return the final canonical homepage, privacy, and terms URLs for the Google configuration and future in-app links. Do not invent URLs or claim that Google has approved the app.
+The Aurora Galaxy website work is published. Continue the Google Auth Platform configuration and in-app disclosure work in Aurora-Lights using the URLs and facts below. Do not recreate the website. Website publication does not establish Google approval, production OAuth status, or completion of the application work.
 
-Before drafting, inspect the website's actual hosting, forms, cookies, analytics, and third-party integrations. If available, inspect the application repository at C:\Users\Ralla\source\repos\Aurora-Lights, especially docs\google-drive-cloud-saves.md and the Drive storage/authentication services. Distinguish the desktop/mobile application's practices from the website's practices. Ask for unresolved factual details such as the legal operator's name, support/privacy contact, jurisdiction, intended age audience, and any paid services. Do not fabricate those details or silently choose legal terms such as arbitration or governing law.
+1. PUBLISHED CANONICAL URLS
 
-Verified Drive feature behavior to use and recheck against the code:
-- Users authorize their own Google account. Aurora requests only https://www.googleapis.com/auth/drive.file, allowing access to files created by or explicitly authorized for the app, rather than general access to the user's whole Drive.
-- Aurora retrieves the connected Drive account identifier and email/display name to identify and bind the account.
-- Character XML and session data, including HP, spell slots and resources, are uploaded directly from the device to Google Drive. The Drive feature does not send these saves through an Idle Handz storage backend.
-- The device keeps local working copies, session sidecars, and recovery copies. Recovery copies are not automatically pruned. Cloud saves are explicit; this is not continuous background synchronization.
-- Desktop refresh tokens are stored using the platform's MAUI SecureStorage. Android uses Google Play services authorization and stores its account binding through SecureStorage. The bundled desktop client configuration identifies the app; it is not a user's account credential.
-- Disconnect removes the connection credentials/account binding for that installation. It does not delete Drive files, local/recovery files, or revoke access on other devices. Users can separately revoke Aurora's permission in their Google Account and delete their Drive files and local copies.
+Google Auth Platform application homepage (recommended for Reflections):
+https://aurora.idlehandz.com/reflections/
 
-The Privacy Policy should accurately explain data access, purpose, storage, sharing, retention/deletion, Google permissions, user controls, contact details, and the website's verified practices. Check Google's current API Services User Data Policy and Limited Use requirements and include applicable disclosures. Do not assert that the whole product has no analytics, data sharing, ads, AI use, or server processing without checking.
+Privacy Policy:
+https://aurora.idlehandz.com/privacy/
 
-The Terms should cover the actual application/service, user responsibilities, ownership and permitted use of user-provided characters/content, third-party Google services, save/backup expectations, applicable software/content licenses, and appropriate warranty/liability and change/contact provisions. Preserve existing open-source license rights and do not imply ownership of third-party tabletop content. Flag jurisdiction-dependent provisions for review rather than presenting the draft as guaranteed legal compliance.
+Terms of Service:
+https://aurora.idlehandz.com/terms/
 
-Check current official Google guidance:
-https://support.google.com/cloud/answer/15549049
-https://support.google.com/cloud/answer/13464321
-https://developers.google.com/terms/api-services-user-data-policy
+Suite homepage:
+https://aurora.idlehandz.com/
 
-Implement the pages in the existing website, verify mobile/desktop readability and all footer links, and list any unresolved facts before calling the drafts final. Include an effective/updated date appropriate to actual publication. Do not create a new homepage or change Google Cloud settings. Prepare the pages for review; use the existing website's authorized deployment process for publication.
+Useful in-app destinations:
+- Google Drive privacy disclosure: https://aurora.idlehandz.com/privacy/#google-drive
+- Disconnect, revocation and deletion controls: https://aurora.idlehandz.com/privacy/#controls
+- Support: https://aurora.idlehandz.com/support/
+- Google account connection management: https://myaccount.google.com/connections
+
+All pages are public HTTPS pages without sign-in, on the same controlled domain. Privacy and Terms links appear in every website footer, including the Reflections page. Both policies have an October 14, 2026 effective date. Desktop/mobile readability, canonical links, internal links and the live deployment were checked. The existing homepage was preserved.
+
+Website source: C:\Users\Ralla\source\repos\Aurora Galaxy
+GitHub repository: https://github.com/Idle-Handz/Aurora-Galaxy (private)
+Policy source: site/src/legal.mjs
+Detailed evidence and remaining review notes: C:\Users\Ralla\source\repos\Aurora Galaxy\docs\LEGAL-REVIEW.md
+
+Publication evidence as of this handoff:
+- Policy commit: ea1f941ae9fe8e1701a7086ef27682058f318eb2
+- Latest verified source commit: 5f132edc164cf4ccbd6dc52c142956c7f12d14ce (also fixes stylesheet caching for returning visitors).
+- Successful deployment build: https://github.com/Idle-Handz/Aurora-Galaxy/actions/runs/38682284505
+- Live https://aurora.idlehandz.com/deployment.json reported that latest source commit; generated pages and assets were checked against the deploy branch.
+- Future website changes follow main -> GitHub Actions build -> deploy branch -> Hostinger auto-deployment. Hostinger serves the static site; Aurora Web hosting remains separate future work.
+
+2. OPERATOR AND POLICY FACTS ALREADY RESOLVED
+
+- Legal operator: Idle Handz LLC, a registered business operating in Simi Valley, California, United States.
+- Published privacy/support contact: idlehandzonline@gmail.com. The user also suggested help@idlehandz.com, but that mailbox was not confirmed or used. Do not silently substitute it.
+- Intended audience: ages 13 and older. No current paid features or paid cloud saves; support is through optional donations.
+- The policies cover the website and official Aurora: Reflections desktop/Android application. They are not a blanket audit of Legacy, Constellations, Transpositions, forks or a future hosted Aurora Web service.
+- Terms preserve existing software licenses and third-party content rights. No arbitration, class-action waiver, exclusive court, governing-law election or fixed liability cap was chosen on the user's behalf.
+- The inspected website is static, without visitor login, forms, upload endpoints, analytics scripts or embedded third-party widgets. Hostinger still processes requests and hosting logs. Exact hosting-log retention and account-level settings remain unverified.
+
+3. REMAINING GOOGLE AUTH PLATFORM WORK — NOT DONE HERE
+
+Inspect the existing Google project and current configuration before changing anything. Keep existing Desktop and Android clients in the same project where possible; replacing the project can disrupt access to files previously authorized for the app. This handoff is not evidence that settings or credentials have been changed.
+
+- Branding: check the app name against Aurora: Reflections and the publisher against Idle Handz LLC. Enter the Reflections homepage, Privacy Policy and Terms URLs from section 1.
+- User support/developer contacts: use a monitored, authorized address. The published contact is idlehandzonline@gmail.com; Google's support-email picker may require the signed-in account or an eligible managed group. Inspect the available choices rather than silently selecting an unrelated address.
+- Authorized domains: check idlehandz.com as the registrable root domain for aurora.idlehandz.com. Complete any required ownership verification using the appropriate project owner and Google Search Console account. A reachable website does not prove Google domain verification.
+- Data Access: verify that the configured scope matches the implementation: https://www.googleapis.com/auth/drive.file only. Google currently classifies it as non-sensitive; that does not remove applicable branding, audience or verification requirements. Do not broaden permissions to all of Drive.
+- API/clients: confirm Drive API is enabled and existing Desktop/Android clients are correct. Android must match package com.auroralights.app and the signing certificate for the actual build being distributed; debug, release and Play signing certificates can differ. Do not invent client IDs or fingerprints, or commit downloaded credentials/tokens.
+- Audience: inspect External/testing/test-user/production status and any applicable review requirements. Document remaining restrictions before general availability. Branding verification and publishing approved branding are separate from the Audience publishing status; verify both as applicable.
+- Record the actual settings/status and any Google review result. Do not call the integration Google-approved because the public pages exist or because a test account can connect.
+
+4. REMAINING IN-APP LINKS AND DISCLOSURE — NOT IMPLEMENTED HERE
+
+Use shared constants for the canonical URLs. Add accessible Privacy Policy, Terms of Service and support/contact links in a persistent About, Help or Settings location on Windows and Android (and macOS where supported).
+
+Add a contextual disclosure at the Cloud Saves connect entry point before starting the existing system-browser or Android Google authorization flow. Include policy/terms links and the deletion-controls link. The user must be able to cancel without starting authorization; local character use must remain available without Google. A clear action such as "Continue to Google" can acknowledge the notice before the separate Google permission grant. Do not treat opening a link, closing a notice or pressing Back as consent. Avoid repeatedly interrupting silent token refresh; show the notice again when material changes require it.
+
+Suggested concise disclosure to adapt to the app's layout:
+
+"Connect your Google account to open and save Aurora characters in Drive. Aurora: Reflections accesses files it creates or you authorize, and uses your account identifier and email/display name to identify the connection. Character and session data move directly between your device and Google Drive. Local working and recovery copies remain on your device. Cloud saves are explicit. Disconnecting does not delete files or revoke access on other devices. Read the Privacy Policy and Terms of Service for details and deletion controls."
+
+The linked full policy explains token storage, sharing, retention and revocation. Make the notice accurate for connect/reconnect without changing the existing account-binding, authorization or storage protections. If behavior changes materially, update the public policy and obtain any required renewed consent before the new use.
+
+Focused acceptance checks for this work:
+- Privacy/Terms/support links open the exact published HTTPS destinations on desktop and Android, including the disclosure's section links.
+- The notice is readable, keyboard/screen-reader accessible and usable on a small screen.
+- Cancel/Back does not launch Google authorization or alter the existing connection; Continue starts the existing authorization flow.
+- A denied or failed authorization is not shown as a successful connection. Reconnect/account binding still behaves correctly.
+- Run targeted checks appropriate to the changed flow; avoid unrelated full-repository validation. Record which live platform checks actually ran.
+
+5. IMPLEMENTATION FACTS TO PRESERVE AND RECHECK
+
+Start with docs/google-drive-cloud-saves.md, then the current connect/reconnect UI entry points and these services:
+- Aurora.App/Services/CloudCharacterService.cs
+- Aurora.App/Services/GoogleDriveClientConfiguration.cs
+- Aurora.App/Platforms/Android/AndroidGoogleDriveAuthorization.cs
+- Aurora.Logic/Services/Storage/GoogleDriveAuthorization.cs
+- Aurora.Logic/Services/Storage/GoogleDriveNativeAuthorization.cs
+- Aurora.Logic/Services/Storage/GoogleDriveCharacterDocumentStore.cs
+- Aurora.Logic/Services/Storage/CloudCharacterSession.cs
+
+Verified during the website policy review:
+- Only drive.file is requested: app-created or explicitly authorized files, not general access to the user's whole Drive.
+- Drive account permissionId, emailAddress and displayName identify/bind the account. File metadata supports opening, saving and conflict checks.
+- Character XML and session data, including HP, spell slots and resources, travel directly between device and Google Drive. This feature has no Idle Handz save-storage backend.
+- The device keeps local working copies, session sidecars and recovery copies. Recovery copies are not automatically pruned. Cloud saves are explicit; this is not continuous background synchronization or a guaranteed backup/recovery service.
+- Desktop uses system-browser authorization with PKCE/loopback and stores refresh tokens using MAUI SecureStorage. Android uses Google Play services authorization and stores its account binding through SecureStorage. Bundled desktop client configuration identifies the app; it is not a user's account credential.
+- Disconnect removes credentials/account binding for that installation. It does not delete Drive/local/recovery files, revoke other devices or globally revoke Google's permission. Users separately manage Google connections and delete their files/copies.
+- Reflections can also contact update/content sources and keep local diagnostics. Do not extend the Drive-specific statements into a claim that the entire suite has no network activity, analytics or sharing.
+- Desktop authorization is implemented for macOS; platform verification remains separate. Existing docs record an October 8 Windows/Android live roundtrip on version 0.9.4, which does not validate the future disclosure/configuration changes or all conflict/revocation/recovery cases.
+
+6. REMAINING REVIEW AND RELEASE BOUNDARIES
+
+- Confirm the public contact is monitored and operational; this chat did not test email deliverability. Confirm actual hosting-log retention and support-message handling without inventing retention periods.
+- Published legal text is not a guarantee of legal compliance. Jurisdiction-dependent terms and privacy obligations remain appropriate for qualified legal review.
+- Evaluate the feature against Google's current Drive permitted-use rules separately from URL/branding work. Google distinguishes user-directed file editing from prohibited backup uses; this handoff does not establish Google's acceptance of the implementation.
+- Audit future hosted Aurora Web and materially different applications before extending these policy claims to them.
+- Report website publication, Google project configuration/review, and in-app implementation/testing as separate completion states. Only website publication is completed by this handoff.
+
+Official references checked during this work (recheck current requirements before release):
+- Google Auth Platform branding and app-domain setup: https://support.google.com/cloud/answer/15549049
+- OAuth app verification guidance: https://support.google.com/cloud/answer/13464321
+- Google API Services User Data Policy / Limited Use: https://developers.google.com/terms/api-services-user-data-policy
+- Workspace API user-data and Drive permitted-use rules: https://developers.google.com/workspace/workspace-api-user-data-developer-policy
+- Drive scopes and drive.file: https://developers.google.com/workspace/drive/api/guides/api-specific-auth
