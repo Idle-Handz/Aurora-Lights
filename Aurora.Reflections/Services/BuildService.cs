@@ -369,7 +369,7 @@ public static partial class BuildService
 
             // 1. Register the new selection (handler also unregisters the previous one).
             EnsureSelectionCandidateIsAvailable(rule, elementId, number);
-            var clericSpells = CaptureClericSpellSelections(rule, elementId, number);
+            var casterSpells = CaptureCasterSpellSelections(rule, elementId, number);
             selectionMutationStarted = true;
             SelectionRuleExpanderContext.Current?.SetRegisteredElement(rule, elementId, number);
             ClearConflictingOriginAbilityScoreSelections(rule, invalidated);
@@ -475,7 +475,7 @@ public static partial class BuildService
             if (invalidated.Count > 0)
                 cm.ReprocessCharacter();
 
-            RestoreClericSpellSelections(clericSpells, invalidated);
+            RestoreCasterSpellSelections(casterSpells, invalidated);
 
             // 4.5. For background list selections (Bond, Ideal, Flaw, Personality Trait),
             //      CharacterManager.SetCharacterDetails has now populated
@@ -507,8 +507,8 @@ public static partial class BuildService
                 FlushSnapshotToCharacter(tab.Snapshot, tab.Character);
 
             // SaveTextEdits must use the new profile's validated preparation state,
-            // rather than patching the outgoing Cleric snapshot back into the save.
-            if (clericSpells is not null)
+            // rather than patching the outgoing caster snapshot back into the save.
+            if (casterSpells is not null)
                 ResnapTab(tab);
 
             // 6. Full save — rebuilds entire XML from CharacterManager.Current state.
