@@ -2,6 +2,10 @@
 
 # Aurora Lights v1.0 release readiness review
 
+> Historical audit. For the October 28 RC5 acceptance, public Drive confirmation,
+> and remaining stable-release steps, see [current release status](v1.0-release-status.md).
+> Findings and intermediate statuses below retain their original dates.
+
 Reviewed on October 21, 2026 against commit `53d7a8d7905d18f88ffcdadc62df9aeadf441f50`.
 The working tree was clean at the start of the audit. The implementation update below records subsequent local changes; the original audit findings and evidence are preserved.
 

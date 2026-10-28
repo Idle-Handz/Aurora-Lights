@@ -1,5 +1,14 @@
 # Google Drive cloud saves
 
+Public sign-in and consent have been verified by the maintainer and external
+testers, confirmed October 28, 2026. Official native builds provide their own
+Google configuration; users do not need to create a Google Cloud project or be
+added as development test users. The setup sections below are for maintainers
+and developers building their own configured client.
+
+Windows x64 and Android ARM64 are the stable 1.0 targets. Windows ARM64 and
+macOS remain experimental; Web is deferred. See the [current release status](v1.0-release-status.md).
+
 ## User behavior
 
 Characters has a **Cloud Saves** section. Connect Google Drive, upload a .dnd5e
@@ -135,8 +144,10 @@ requires an External/In production audience and the applicable public website,
 privacy disclosures, and branding setup in Google Auth Platform.
 
 The drive.file grant lists files created by or explicitly authorized for this
-app. It does not browse every arbitrary file in a user's Drive. Upload creates
-a new cloud character without deleting the local original. Disconnect removes
+app. It does not browse every arbitrary file in a user's Drive. **Upload to
+Drive** in Overview converts the local character into a cloud-linked save after
+a successful upload and local handoff. **Upload external file** copies a chosen
+file without deleting its original. Disconnecting the Google account removes
 the stored credential on this installation; close cloud tabs first. The user
 can revoke the app's Google grant separately in Google account settings.
 Reconnect renews authorization for the same account. Choosing a different

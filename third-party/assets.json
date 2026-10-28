@@ -82,7 +82,7 @@
     },
     {
       "id": "native-branding",
-      "name": "App icons and Reflections branding",
+      "name": "App icons and Aurora Lights branding",
       "state": "recorded",
       "license": "MIT",
       "evidence": [
@@ -90,7 +90,7 @@
         "LICENSE",
         "docs/branding/working-titles/README.md"
       ],
-      "reason": "Maintainer confirmed creating Reflections and both companion working-title logos with assistant help; original project vector/documentation covered by project terms. Unused MAUI starter SVGs excluded."
+      "reason": "Maintainer confirmed creating Reflections and both companion working-title logos with assistant help. The original suite-mark SVG introduced by maintainer commit 33b3bc8 and project vector/documentation are covered by project MIT terms. Unused MAUI starter SVGs excluded."
     },
     {
       "id": "legacy-source-assets",
@@ -5952,6 +5952,14 @@
       "distributions": [
         "windows",
         "android",
+        "source"
+      ]
+    },
+    {
+      "path": "docs/branding/aurora-lights-suite-mark.svg",
+      "sha256": "a6a1470079a2177c24c35a6645626db465b51ee3d26d86b85870c8de6fd932f0",
+      "group": "native-branding",
+      "distributions": [
         "source"
       ]
     },

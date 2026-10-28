@@ -41,5 +41,6 @@ notices**. Release downloads must be accompanied by the matching corresponding
 source and LGPL rebuild/relink materials.
 
 Windows x64 and Android ARM64 are the stable targets. Windows ARM64 and macOS
-remain experimental; Web is deferred. These source changes require a new
-release candidate and package acceptance before public distribution.
+remain experimental; Web is deferred. This baseline is included in the accepted
+RC5 packages and the published Windows x64 prerelease. See the
+[current release status](v1.0-release-status.md) for the remaining stable steps.

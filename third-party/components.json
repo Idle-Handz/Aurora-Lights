@@ -5061,7 +5061,7 @@
       "license": "MIT",
       "texts": [
         {
-          "sha256": "9b87c84f8f95324025cb7c82001c70e2967be1cb9e4c541ff74b57177d1b32b3",
+          "sha256": "029c953f9c69beb000f16cb276e3a2383d8c25b94971bc8be0bc458fd6820b1b",
           "origin": "third-party/BRANDING-PROVENANCE.md"
         },
         {
@@ -5074,7 +5074,7 @@
       ],
       "state": "recorded",
       "noticePath": "third-party/BRANDING-PROVENANCE.md",
-      "noticeSha256": "9b87c84f8f95324025cb7c82001c70e2967be1cb9e4c541ff74b57177d1b32b3",
+      "noticeSha256": "029c953f9c69beb000f16cb276e3a2383d8c25b94971bc8be0bc458fd6820b1b",
       "authors": "Project maintainer; assistant-assisted artwork"
     }
   ],

@@ -16,5 +16,14 @@ Transpositions working-title logos on 2026-10-23. These two files are included
 only with the source documentation. The small `aurora-mark.svg` vector and
 branding README are original project material in the maintainer's source history.
 
+The Aurora Lights suite mark at `docs/branding/aurora-lights-suite-mark.svg`
+was introduced by maintainer commit `33b3bc8e637265cd55b47605f1696fb5fc130734`
+on 2026-10-27 under the repository's MIT terms. It is original SVG source made
+from paths, gradients, and a rounded rectangle, with no embedded fonts, images,
+or external resources. Its reviewed SHA-256 is
+`a6a1470079a2177c24c35a6645626db465b51ee3d26d86b85870c8de6fd932f0`.
+It appears in the root README and is included in corresponding source only;
+it does not replace the installed Reflections icon or splash screen.
+
 The unused .NET MAUI starter icon SVGs have been removed from the release
 preparation source. The active PNG icon and splash references are unchanged.

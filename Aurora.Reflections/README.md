@@ -28,9 +28,15 @@ The project targets:
 - `net10.0-maccatalyst`
 - `net10.0-android`
 
-Windows remains the most exercised platform and is the recommended beta-preview
-target. Mac Catalyst and Android builds are produced by CI but still need
-broader runtime validation.
+Windows x64 and Android ARM64 are the stable 1.0 targets. RC5 has passed native
+package acceptance on both, including installed Android PDF Save, Share, and
+Open actions. Windows ARM64 and Mac Catalyst remain experimental; Web is deferred.
+
+The public RC5 release is an unsigned Windows x64 prerelease with matching
+source. Android was validated separately and was not uploaded to that release.
+Stable package preparation is pending SignPath approval and integration. See
+the [current release status](../docs/v1.0-release-status.md) and the
+[installation and backup guidance](../README.md#install-aurora-reflections).
 
 ## Relationship To Other Projects
 
@@ -46,7 +52,7 @@ Examples of MAUI-specific concerns include:
 - session-tracker UX
 - local preferences
 - app and content update UX
-- browser-like PDF preview hosted in a MAUI window
+- desktop PDF preview and Android PDF Save, Share, and Open actions
 
 ## Future Direction
 

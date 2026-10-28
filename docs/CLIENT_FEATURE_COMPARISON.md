@@ -1,10 +1,17 @@
 # Aurora Client Feature Comparison
 
-Last reviewed: June 17, 2026
+Release status, platform, cloud-save, and PDF entries updated: October 28, 2026.
+The remaining feature descriptions retain the earlier June 17 comparison.
 
 This is a living comparison of the three Aurora clients in this repository. It is
 intended to help players choose the right client and help contributors understand
 where a feature belongs.
+
+Windows x64 and Android ARM64 are the stable 1.0 targets. The public RC5 release
+is currently an unsigned Windows x64 prerelease; stable publication is pending
+code signing and final package validation. Windows ARM64 and macOS remain
+experimental. Web is deferred: its entries describe development functionality,
+not a supported public hosted service. See the [current release status](v1.0-release-status.md).
 
 The table is deliberately conservative. A feature marked `Partial` is real and
 usable, but it should not be read as a claim of complete desktop parity.
@@ -14,7 +21,7 @@ usable, but it should not be read as a claim of complete desktop parity.
 | Client | Project | Primary role | Current audience |
 | --- | --- | --- | --- |
 | Aurora Legacy | `Aurora.Legacy` | Keep the familiar legacy Windows application alive on updated frameworks while preserving its established workflows. | Existing Aurora users and contributors working close to the legacy application. |
-| Aurora Reflections | `Aurora.Reflections` | The primary modern desktop evolution, with a more session-friendly interface and a SQLite-backed content cache. | Players who want the actively developed modern desktop experience. |
+| Aurora Reflections | `Aurora.Reflections` | The primary modern desktop and mobile client, with a session workspace and a SQLite-backed content cache. | Players using Windows x64 or Android ARM64. |
 | Aurora.Web | `Aurora.Web` | A first step toward a browser-hosted builder. It currently provides temporary session workspaces and focused editing flows. | Contributors, testers, and players exploring an early online direction. |
 
 ## Status Legend
@@ -32,13 +39,13 @@ usable, but it should not be read as a claim of complete desktop parity.
 
 | Feature | Aurora Legacy | Aurora Reflections | Aurora.Web |
 | --- | --- | --- | --- |
-| Primary platform | Established: Windows desktop. | Available: Windows desktop is the recommended build. Mac Catalyst and Android builds are experimental. | Available: modern web browser. |
-| Installation | Build or run the Windows application directly. | Velopack installer is the preferred Windows installation path. Portable builds can run without the full update experience. | No local install when hosted. |
+| Primary platform | Established: Windows desktop. | Windows x64 and Android ARM64 are the stable 1.0 targets. Windows ARM64 and Mac Catalyst are experimental. | Deferred: browser client remains in development. |
+| Installation | Build or run the Windows application directly. | Windows: Velopack Setup installs WebView2 if needed; portable copies require an existing runtime and cannot apply in-place updates. Android: install the signed ARM64 APK when provided by a release. | No public hosted service is available. |
 | Character persistence | Available: local `.dnd5e` character files. | Available: local `.dnd5e` character files. | Partial: characters live in a temporary anonymous session workspace until downloaded. |
-| Legacy data directory | Available: uses the familiar `Documents\5e Character Builder` directory. | Available: intentionally shares the legacy directory by default so existing characters and custom content remain visible. | Not applicable: uses temporary server-side session storage. |
+| Legacy data directory | Available: uses the familiar `Documents\5e Character Builder` directory. | Available on Windows: shares the legacy directory by default so existing characters and custom content remain visible. Android has its own storage. | Not applicable: uses temporary server-side session storage. |
 | Custom content source of truth | Established: Aurora XML content. | Available: Aurora XML remains authoritative. `custom\aurora-elements.sqlite` is a rebuildable cache. | Experimental: temporary `.xml`, `.zip`, and `.dnd5e` uploads can be indexed for the current session. |
-| User accounts or cloud saves | Not yet. | Not yet. | Not yet: the current browser workspace is intentionally anonymous and temporary. |
-| Backups | User-managed local backups remain important. | User-managed local backups remain important, especially while sharing a directory with the legacy app. | Download the `.dnd5e` file before the session expires. |
+| User accounts or cloud saves | Not yet. | Available: optional Google Drive character saves on Windows and Android, with per-file access, explicit saves, conflict recovery, and disconnect-to-local. No background two-way sync or automatic merge. | Not yet: the current browser workspace is intentionally anonymous and temporary. |
+| Backups | User-managed local backups remain important. | Keep independent character, session-sidecar, portrait, and custom-content copies. Drive drafts need a confirmed Save to Drive before switching devices. See the [backup guide](../README.md#back-up-and-recover-characters). | Download the `.dnd5e` file before the session expires. |
 
 ## Character Library And Files
 
@@ -119,8 +126,8 @@ usable, but it should not be read as a claim of complete desktop parity.
 
 | Feature | Aurora Legacy | Aurora Reflections | Aurora.Web |
 | --- | --- | --- | --- |
-| Character sheet preview | Established. | Available on supported desktop targets. | Not yet. |
-| Full sheet PDF export | Established. | Available: sheet settings include fillable form, formatting, page, and card options. | Not yet. |
+| Character sheet preview | Established. | Available: desktop preview; Android Open PDF uses an installed PDF viewer. Save PDF and Share PDF remain available when no viewer is installed. | Not yet. |
+| Full sheet PDF export | Established. | Available on Windows x64 and Android ARM64: fillable or flattened forms, formatting, page, and card options with bundled portable fonts. Android provides Save PDF, Share PDF, and Open PDF. | Not yet. |
 | Lightweight summary PDF | Not applicable. | Full sheet export is preferred. | Available: intended as a useful temporary-workspace summary, not desktop sheet parity. |
 | Feature, spell, item, and attack cards | Established. | Available as configurable sheet export options. | Not yet. |
 | Background and equipment sheet pages | Established. | Available as configurable sheet export options. | Not yet. |
@@ -129,7 +136,7 @@ usable, but it should not be read as a claim of complete desktop parity.
 
 | Feature | Aurora Legacy | Aurora Reflections | Aurora.Web |
 | --- | --- | --- | --- |
-| Application update checks | Partial: legacy update and release information workflow. | Available for Velopack-installed Windows builds; portable builds can still check but do not have the same install path. | Not applicable: deployments update the hosted application. |
+| Application update checks | Partial: legacy update and release information workflow. | Windows: Velopack-installed builds can download and apply updates; portable copies can check releases. Android package updates are installed through the platform, not the Windows updater. | Deferred: a hosted deployment would update the server application. |
 | Content update controls | Established. | Available: settings expose content checks, downloads, synchronization, and reload actions. | Not applicable to the anonymous session model. |
 | Developer diagnostics | Established legacy tooling. | Available: Developer Mode enables the in-app console and diagnostic surface. | Server and browser diagnostics remain deployment-oriented. |
 | Themes | Established: legacy theme and accent controls. | Partial: modern light-mode preference exists; broader visual customization is intentionally narrower. | Partial: follows the browser client styling. |
