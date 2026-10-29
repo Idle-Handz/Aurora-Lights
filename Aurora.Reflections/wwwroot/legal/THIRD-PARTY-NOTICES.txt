@@ -452,6 +452,13 @@ Authors: Microsoft
 Source: nuget:Microsoft.NET.ILLink.Tasks/10.0.13/THIRD-PARTY-NOTICES.TXT
 Text SHA-256: 6d15e10a101c6bfff2ab4429ed061bf76c456fc4b23ad6b03e0d0f8377148a21
 
+Microsoft.NET.ILLink.Tasks 10.0.14
+License: MIT
+© Microsoft Corporation. All rights reserved.
+Authors: Microsoft
+Source: nuget:Microsoft.NET.ILLink.Tasks/10.0.14/THIRD-PARTY-NOTICES.TXT
+Text SHA-256: 6d15e10a101c6bfff2ab4429ed061bf76c456fc4b23ad6b03e0d0f8377148a21
+
 Microsoft.NETCore.App.Runtime.Mono.android-arm64 10.0.13
 License: MIT and included third-party licenses
 Source: runtime-pack:Microsoft.NETCore.App.Runtime.Mono.android-arm64/10.0.13/LICENSE.TXT
