@@ -455,30 +455,39 @@ public sealed class CharacterInferenceEngine
 
     /// <summary>
     /// Resolves the character's species against the content DB, handling both top-level
-    /// Race elements (Human, Half-Elf, Dragonborn) and Sub Race elements (High Elf, Hill
-    /// Dwarf) where D&D Beyond reports the subrace name rather than the parent race name.
-    /// When a Sub Race match is found, the parent Race element is looked up automatically
-    /// via the Sub Race's element_supports entry so that both are added to the result.
+    /// Race elements (Human, Half-Elf, Dragonborn), Sub Race elements (High Elf, Hill
+    /// Dwarf), and Race Variant elements where D&D Beyond reports the option as the species.
+    /// The parent Race is looked up through the option's supports so both are imported.
     /// </summary>
     private void ResolveRaceWithSubrace(SqliteConnection conn, string species, ImportResult result)
     {
+        // Normalize the variant label before generic name cleanup can strip "(Variant)".
+        string raceName = species.Trim();
+        if (raceName.Equals("Variant Human", StringComparison.OrdinalIgnoreCase)
+            || raceName.Equals("Human (Variant)", StringComparison.OrdinalIgnoreCase)) raceName = "Human Variant";
+
         // First: try as a top-level Race element.
         int elementsBefore   = result.Elements.Count;
         int ambigsBefore     = result.Ambiguities.Count;
-        ResolveByName(conn, "Race", species, result, level: 1, warnIfMissing: false);
+        ResolveByName(conn, "Race", raceName, result, level: 1, warnIfMissing: false);
         bool foundAsRace = result.Elements.Count > elementsBefore
                         || result.Ambiguities.Count > ambigsBefore;
         if (foundAsRace) return;
 
         // Second: try as a Sub Race element (e.g., "High Elf", "Hill Dwarf").
-        var subRaceMatches = QueryByNameAndType(conn, "Sub Race", species);
+        var subRaceMatches = QueryByNameAndType(conn, "Sub Race", raceName);
+        if (subRaceMatches.Count == 0)
+        {
+            // D&D Beyond's species label differs from the Player's Handbook content name/type.
+            subRaceMatches = QueryByNameAndType(conn, "Race Variant", raceName);
+        }
         if (subRaceMatches.Count == 0)
         {
             result.Warnings.Add(new ImportWarning
             {
                 Category = "Race",
                 Item     = species,
-                Reason   = "No matching Race or Sub Race element found in installed content packages.",
+                Reason   = "No matching Race, Sub Race, or Race Variant element found in installed content packages.",
             });
             return;
         }
@@ -493,7 +502,7 @@ public sealed class CharacterInferenceEngine
         {
             var amb = new ImportAmbiguity
             {
-                Category   = "Sub Race",
+                Category   = subRaceMatches[0].TypeName,
                 Item       = species,
                 Candidates = subRaceMatches.Select(m => m with { Level = 1 }).ToList(),
             };
@@ -502,8 +511,8 @@ public sealed class CharacterInferenceEngine
             subRace = amb.Chosen;
         }
 
-        // Look up the parent Race element via the sub race's element_supports entry
-        // (the <supports> tag in the XML, e.g., "Elf" for High Elf).
+        // Look up the parent Race via the option's supports (e.g., Elf for High Elf,
+        // or Human for Human Variant).
         var parentRace = QueryParentRaceForSubRace(conn, subRace.AuroraId);
         if (parentRace != null)
         {
@@ -515,7 +524,7 @@ public sealed class CharacterInferenceEngine
             {
                 Category = "Race",
                 Item     = species,
-                Reason   = $"Resolved as Sub Race '{subRace.Name}' but could not locate the parent Race element.",
+                Reason   = $"Resolved as {subRace.TypeName} '{subRace.Name}' but could not locate the parent Race element.",
             });
         }
     }

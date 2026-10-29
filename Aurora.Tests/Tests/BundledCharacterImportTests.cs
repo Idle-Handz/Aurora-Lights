@@ -72,6 +72,31 @@ public sealed class BundledCharacterImportTests : IAsyncLifetime
         result.Warnings.Should().NotContain(warning => warning.Category == "Race");
     }
 
+    [Theory]
+    [InlineData("Variant Human", true)]
+    [InlineData("Human Variant", true)]
+    [InlineData("Human (Variant)", true)]
+    [InlineData("Variant Human", false)]
+    [InlineData("Human Variant", false)]
+    [InlineData("Human (Variant)", false)]
+    public async Task InstalledHumanVariantResolvesExportedSpeciesAndParent(string species, bool composedCatalog)
+    {
+        await File.WriteAllTextAsync(Path.Combine(Custom, "human.xml"), """
+            <elements>
+              <element id="ID_RACE_HUMAN" name="Human" type="Race" source="Test" />
+              <element id="ID_RACE_VARIANT_HUMAN_VARIANT" name="Human Variant" type="Race Variant" source="Test">
+                <supports>Human</supports>
+              </element>
+            </elements>
+            """);
+        await ContentImport.ImportAsync(Custom, Database);
+        var engine = composedCatalog ? PdfImportService.CreateInferenceEngine(Database) : new CharacterInferenceEngine(Database);
+        var result = engine.Infer(new ParsedCharacterSheet { Species = species });
+        result.Elements.Select(element => element.AuroraId).Should()
+            .BeEquivalentTo("ID_RACE_HUMAN", "ID_RACE_VARIANT_HUMAN_VARIANT");
+        result.Warnings.Should().NotContain(warning => warning.Category == "Race");
+    }
+
     [Fact]
     public async Task ImportHonorsEffectiveOverridesAndDoesNotRestoreUnavailableBundledIds()
     {
