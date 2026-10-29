@@ -46,6 +46,125 @@ public sealed class ReplacementProposalServiceTests : IDisposable
     }
 
     [Fact]
+    public void UnmatchedProposalIsHiddenUntilItsSourceIsInstalled()
+    {
+        File.Delete(Origin);
+        service.Scan(root).Should().BeEmpty();
+        File.Exists(ProposalPath).Should().BeTrue("the downloaded proposal can match content installed later");
+
+        File.WriteAllText(Origin, Baseline);
+        service.Scan(root).Should().ContainSingle().Which.Status.Should().Be(ReplacementProposalStatus.Ready);
+
+        File.Delete(Origin);
+        service.Scan(root).Should().BeEmpty();
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void RemovingSourceHidesHistoryWithoutLosingItsReceipt(bool applied)
+    {
+        var reviewed = service.Scan(root).Single();
+        if (applied) service.Apply(root, reviewed).Success.Should().BeTrue();
+        else service.Dismiss(root, reviewed);
+
+        File.Delete(Origin);
+        service.Scan(root).Should().BeEmpty();
+
+        File.WriteAllText(Origin, Baseline);
+        service.Scan(root).Should().ContainSingle().Which.Status.Should().Be(
+            applied ? ReplacementProposalStatus.Applied : ReplacementProposalStatus.Dismissed);
+    }
+
+    [Fact]
+    public void MatchingSourceThatNeedsReviewRemainsVisible()
+    {
+        File.WriteAllText(Origin, Baseline.Replace("old", "changed upstream"));
+        var proposal = service.Scan(root).Should().ContainSingle().Subject;
+        proposal.Status.Should().Be(ReplacementProposalStatus.NeedsReview);
+        proposal.SourcePath.Should().Be("core/items.xml");
+    }
+
+    [Fact]
+    public void ProposalValidationDoesNotWalkThroughUnrelatedTemporaryDirectoryLinks()
+    {
+        string target = Path.Combine(root, "cache-target");
+        string link = Path.Combine(root, "cache-link");
+        Directory.CreateDirectory(target);
+        CreateDirectoryLink(link, target);
+        string variable = OperatingSystem.IsWindows() ? "TMP" : "TMPDIR";
+        string? previous = Environment.GetEnvironmentVariable(variable);
+        try
+        {
+            Environment.SetEnvironmentVariable(variable, link + Path.DirectorySeparatorChar);
+            Path.TrimEndingDirectorySeparator(Path.GetTempPath()).Should().Be(link);
+            var reviewed = service.Scan(root).Single();
+            reviewed.Status.Should().Be(ReplacementProposalStatus.Ready, reviewed.Detail);
+            service.Apply(root, reviewed).Success.Should().BeTrue();
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(variable, previous);
+            Directory.Delete(link);
+        }
+    }
+
+    [Fact]
+    public void ContentRootWithTrailingSeparatorStaysWithinItsBoundaryBelowALink()
+    {
+        string link = root + "-link";
+        CreateDirectoryLink(link, root);
+        try
+        {
+            // Use a regular child as the content root; the link is its system/storage ancestor.
+            string child = Path.Combine(root, "content");
+            Directory.CreateDirectory(Path.Combine(child, "core"));
+            Directory.CreateDirectory(Path.Combine(child, "reflections-replacements"));
+            File.Copy(Origin, Path.Combine(child, "core", "items.xml"));
+            File.Copy(ProposalPath, Path.Combine(child, "reflections-replacements", "items.aurora-correction"));
+            string contentRoot = Path.Combine(link, "content") + Path.DirectorySeparatorChar;
+            var reviewed = service.Scan(contentRoot).Single();
+            reviewed.Status.Should().Be(ReplacementProposalStatus.Ready, reviewed.Detail);
+            service.Apply(contentRoot, reviewed).Success.Should().BeTrue();
+        }
+        finally { Directory.Delete(link); }
+    }
+
+    [Fact]
+    public void ProposalStillRejectsASourceLinkInsideTheContentRoot()
+    {
+        string link = Path.Combine(root, "linked-source");
+        CreateDirectoryLink(link, Path.GetDirectoryName(Origin)!);
+        try
+        {
+            WriteProposal(source: "linked-source/items.xml");
+            var proposal = service.Scan(root).Single();
+            proposal.Status.Should().Be(ReplacementProposalStatus.NeedsReview);
+            proposal.Detail.Should().Contain("symbolic links or junctions");
+            service.Apply(root, proposal).Success.Should().BeFalse();
+        }
+        finally { Directory.Delete(link); }
+    }
+
+    private static void CreateDirectoryLink(string link, string target)
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            Directory.CreateSymbolicLink(link, target);
+            return;
+        }
+        // Junctions require no developer-mode/symlink privilege on the Windows test host.
+        using var process = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = "cmd.exe", Arguments = $"/c mklink /J \"{link}\" \"{target}\"",
+            UseShellExecute = false, CreateNoWindow = true,
+            RedirectStandardOutput = true, RedirectStandardError = true
+        })!;
+        process.WaitForExit();
+        process.ExitCode.Should().Be(0, process.StandardError.ReadToEnd());
+    }
+
+    [Fact]
     public void DismissalPersistsAcrossServiceInstancesButARevisedProposalCanBeOffered()
     {
         service.Dismiss(root, service.Scan(root).Single());

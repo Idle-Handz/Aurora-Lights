@@ -1,3 +1,4 @@
+using Aurora.Content.Preparation;
 using Aurora.PdfImport;
 using Builder.Data;
 using Builder.Data.Elements;
@@ -48,7 +49,7 @@ public sealed class PdfImportService
 
         var result = await Task.Run(() =>
         {
-            var engine = new CharacterInferenceEngine(dbPath);
+            var engine = CreateInferenceEngine(dbPath);
             return engine.Infer(sheet);
         });
 
@@ -74,7 +75,7 @@ public sealed class PdfImportService
         var (sheet, result) = await Task.Run(() =>
         {
             var s  = DndBeyondJsonImporter.Parse(jsonPath);
-            var engine = new CharacterInferenceEngine(dbPath);
+            var engine = CreateInferenceEngine(dbPath);
             return (s, engine.Infer(s));
         });
 
@@ -84,6 +85,24 @@ public sealed class PdfImportService
         sheet.PortraitLocalPath = sheet.StagedPortrait?.Path;
 
         return (sheet, result);
+    }
+
+    internal static CharacterInferenceEngine CreateInferenceEngine(string dbPath)
+    {
+        using var connection = ContentDatabase.OpenReadableConnection(dbPath);
+        var projection = DbElementLoader.ReadPreparedProjection(connection);
+        var packages = new Dictionary<string, (string Name, int Rank)>(StringComparer.Ordinal);
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText = "SELECT package_key, package_name, precedence_rank FROM content_packages";
+            using var reader = command.ExecuteReader();
+            while (reader.Read()) packages[reader.GetString(0)] = (reader.GetString(1), reader.GetInt32(2));
+        }
+        return new CharacterInferenceEngine(dbPath, projection.Elements.Select(element =>
+        {
+            var package = packages.GetValueOrDefault(element.Source.PackageKey, ("Bundled content", int.MinValue));
+            return new InferenceCatalogElement(element.Xml, package.Item1, element.Source.PackageKind, package.Item2);
+        }));
     }
 
     private static async Task<StagedImportPortrait?> TryDownloadPortraitAsync(string url)

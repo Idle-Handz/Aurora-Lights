@@ -34,7 +34,7 @@ public sealed class ReplacementProposalService
 
     public IReadOnlyList<ReplacementProposal> Scan(string contentRoot, IReadOnlyList<string>? additionalRoots = null)
     {
-        string root = Path.GetFullPath(contentRoot);
+        string root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(contentRoot));
         lock (Gates.GetOrAdd(root, _ => new object()))
         {
             if (!Directory.Exists(root)) return [];
@@ -45,7 +45,7 @@ public sealed class ReplacementProposalService
 
     public ReplacementProposalApplyResult Apply(string contentRoot, ReplacementProposal reviewed, IReadOnlyList<string>? additionalRoots = null)
     {
-        string root = Path.GetFullPath(contentRoot);
+        string root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(contentRoot));
         lock (Gates.GetOrAdd(root, _ => new object()))
         {
             string? created = null;
@@ -92,7 +92,7 @@ public sealed class ReplacementProposalService
 
     public void Dismiss(string contentRoot, ReplacementProposal reviewed)
     {
-        string root = Path.GetFullPath(contentRoot);
+        string root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(contentRoot));
         lock (Gates.GetOrAdd(root, _ => new object()))
         {
             EnsureRegularPath(root, root);
@@ -105,7 +105,7 @@ public sealed class ReplacementProposalService
 
     public void Reconsider(string contentRoot, ReplacementProposal reviewed)
     {
-        string root = Path.GetFullPath(contentRoot);
+        string root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(contentRoot));
         lock (Gates.GetOrAdd(root, _ => new object()))
         {
             EnsureRegularPath(root, root);
@@ -146,7 +146,10 @@ public sealed class ReplacementProposalService
             {
                 byte[] bytes = ReadBytes(path, DocumentLimit);
                 hash = Hash(bytes);
-                document = ReadProposal(DecodeXml(bytes));
+                document = ReadProposal(DecodeXml(bytes), root);
+                // Keep downloaded proposals cached, but only offer corrections for installed
+                // content. Check before receipts so removed sources also hide old history rows.
+                if (!document.Variants.Any(variant => IsInstalledSource(root, variant))) continue;
                 var basic = new ReplacementProposal(document.Id, document.Revision, document.Title, document.Summary,
                     path, hash, ReplacementProposalStatus.Unavailable, "");
                 if (stateError is not null)
@@ -189,8 +192,7 @@ public sealed class ReplacementProposalService
 
     private static Candidate Assess(string root, ReplacementProposal basic, ProposalDocument document, Lazy<Inventory> inventory)
     {
-        var installed = document.Variants.Where(v => !v.SourcePath.StartsWith("ignore/", StringComparison.OrdinalIgnoreCase) &&
-            File.Exists(LocalCorrectionDocument.ResolveSourcePath(root, v.SourcePath))).ToArray();
+        var installed = document.Variants.Where(variant => IsInstalledSource(root, variant)).ToArray();
         if (installed.Length == 0)
             return new(basic with { Detail = "The source file is not installed: " + string.Join(" or ", document.Variants.Select(v => v.SourcePath)) }, null);
         if (installed.Length != 1)
@@ -231,6 +233,10 @@ public sealed class ReplacementProposalService
         return new(basic with { Status = ReplacementProposalStatus.Ready, Detail = "Ready to create a local correction for " + variant.SourcePath }, variant, inventory.Value.LocalSignature);
     }
 
+    private static bool IsInstalledSource(string root, Variant variant) =>
+        !variant.SourcePath.StartsWith("ignore/", StringComparison.OrdinalIgnoreCase) &&
+        File.Exists(LocalCorrectionDocument.ResolveSourcePath(root, variant.SourcePath));
+
     private static bool Equivalent(string existing, string proposal, string upstream)
     {
         try
@@ -246,7 +252,7 @@ public sealed class ReplacementProposalService
         catch (Exception ex) when (IsContentException(ex)) { return false; }
     }
 
-    private static ProposalDocument ReadProposal(string xml)
+    private static ProposalDocument ReadProposal(string xml, string contentRoot)
     {
         var root = ParseXml(xml).Root!;
         if (root.Name != "elements" || root.Elements().Any(e => e.Name != "info" && e.Name != Ns + "proposal") ||
@@ -274,8 +280,9 @@ public sealed class ReplacementProposalService
             string source = Required(v, "source-path");
             if (source.Contains('\\') || source.Split('/').Any(p => p is "" or "." or ".." || p.Contains(':')) || Path.IsPathRooted(source))
                 throw new InvalidDataException("Proposal source-path must be a canonical relative path without traversal.");
-            // ResolveSourcePath applies authoritative-source rules even if the source is absent.
-            LocalCorrectionDocument.ResolveSourcePath(Path.GetTempPath(), source);
+            // Validate against the actual content boundary. Android's temporary path ends in a
+            // separator and can sit below system symlinks unrelated to the installed content.
+            LocalCorrectionDocument.ResolveSourcePath(contentRoot, source);
             string sourceHash = RequiredHash(v, "source-sha256");
             if (v.Elements().Any(e => e.Name != Ns + "requires" && e.Name != Ns + "payload") || v.Elements(Ns + "payload").Count() != 1)
                 throw new InvalidDataException("Invalid proposal variant.");

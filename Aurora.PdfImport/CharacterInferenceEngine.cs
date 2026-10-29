@@ -10,6 +10,7 @@ namespace Aurora.PdfImport;
 public sealed class CharacterInferenceEngine
 {
     private readonly string _dbPath;
+    private readonly CharacterInferenceCatalog? _catalog;
 
     // Primary stat used for ASI inference when unclear.
     // Keyed by normalised class name (lowercase, no "(archived)", no spaces).
@@ -40,6 +41,10 @@ public sealed class CharacterInferenceEngine
     };
 
     public CharacterInferenceEngine(string sqliteDbPath) => _dbPath = sqliteDbPath;
+
+    /// <summary>Uses the host's composed catalog, including bundled definitions and runtime overrides.</summary>
+    public CharacterInferenceEngine(string sqliteDbPath, IEnumerable<InferenceCatalogElement> catalog)
+        : this(sqliteDbPath) => _catalog = new CharacterInferenceCatalog(catalog);
 
     // ── Main entry point ─────────────────────────────────────────────────────
 
@@ -288,6 +293,8 @@ public sealed class CharacterInferenceEngine
 
     private List<ResolvedElement> QueryByNameAndType(SqliteConnection conn, string typeName, string name)
     {
+        if (_catalog is not null) return _catalog.Find(typeName, name);
+
         const string sql = """
             WITH candidate_matches AS (
                 SELECT
@@ -515,6 +522,8 @@ public sealed class CharacterInferenceEngine
 
     private ResolvedElement? QueryParentRaceForSubRace(SqliteConnection conn, string subRaceAuroraId)
     {
+        if (_catalog is not null) return _catalog.FindParentRace(subRaceAuroraId);
+
         const string sql = """
             SELECT parent.aurora_id, parent_et.type_name, parent.name,
                    cp.package_name
@@ -695,6 +704,8 @@ public sealed class CharacterInferenceEngine
     /// </summary>
     private int CountAutoGrantedFeats(SqliteConnection conn, List<string> resolvedAuroraIds)
     {
+        if (_catalog is not null) return _catalog.CountAutoGrantedFeats(resolvedAuroraIds);
+
         if (resolvedAuroraIds.Count == 0) return 0;
 
         using var cmd = conn.CreateCommand();
