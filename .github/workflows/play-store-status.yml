@@ -1,0 +1,115 @@
+name: Check Google Play releases
+
+on:
+  workflow_dispatch:
+    inputs:
+      track:
+        description: Google Play API track identifier
+        required: true
+        default: internal
+        type: string
+      expected_version_code:
+        description: Optional Android version code that must have a published release
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: google-play-status
+  cancel-in-progress: false
+
+jobs:
+  check-play:
+    name: Read Play releases (main only)
+    if: github.repository_id == '1184656614' && github.repository_owner_id == '273737674' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      AURORA_PLAY_PACKAGE: com.auroralights.app
+
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Check Google connection configuration
+        shell: bash
+        env:
+          GOOGLE_PLAY_WIF_PROVIDER: ${{ vars.GOOGLE_PLAY_WIF_PROVIDER }}
+        run: |
+          if [[ -z "$GOOGLE_PLAY_WIF_PROVIDER" ]]; then
+            echo "::error::Set repository variable GOOGLE_PLAY_WIF_PROVIDER. See docs/google-play-github-actions.md."
+            exit 1
+          fi
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+
+      - name: Test the Play connection
+        run: node --test tools/play-console/tests/connection.test.mjs
+
+      - name: Authenticate the Play reader with GitHub OIDC
+        id: auth
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          project_id: aurora-reflections
+          workload_identity_provider: ${{ vars.GOOGLE_PLAY_WIF_PROVIDER }}
+          service_account: aurora-play-reader@aurora-reflections.iam.gserviceaccount.com
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/androidpublisher
+          access_token_lifetime: 300s
+          create_credentials_file: false
+          export_environment_variables: false
+
+      - name: Read Google Play release status
+        id: read
+        shell: bash
+        env:
+          GOOGLE_OAUTH_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+          PLAY_TRACK: ${{ inputs.track }}
+          EXPECTED_VERSION_CODE: ${{ inputs.expected_version_code }}
+        run: |
+          if [[ -n "$EXPECTED_VERSION_CODE" ]]; then
+            node --use-system-ca --use-env-proxy tools/play-console/server.mjs verify \
+              --track "$PLAY_TRACK" --version-code "$EXPECTED_VERSION_CODE" \
+              > "$RUNNER_TEMP/google-play-status.json"
+          else
+            node --use-system-ca --use-env-proxy tools/play-console/server.mjs releases \
+              --track "$PLAY_TRACK" > "$RUNNER_TEMP/google-play-status.json"
+          fi
+
+      - name: Write release-check summary
+        if: always()
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFile, appendFile } from 'node:fs/promises';
+          import { join } from 'node:path';
+          const raw = await readFile(join(process.env.RUNNER_TEMP, 'google-play-status.json'), 'utf8').catch(() => '');
+          let summary = '## Google Play release check\n\n';
+          if (raw.trim()) {
+            const report = JSON.parse(raw);
+            const tick = String.fromCharCode(96);
+            const safeJson = JSON.stringify(report, null, 2).replaceAll(tick, '\\u0060');
+            summary += tick.repeat(3) + 'json\n' + safeJson + '\n' + tick.repeat(3) + '\n';
+          } else {
+            summary += 'No release report was produced. Check the configuration, authentication, or read step above.\n';
+          }
+          await appendFile(process.env.GITHUB_STEP_SUMMARY, summary);
+          NODE
+
+      - name: Save release-check report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: google-play-release-status
+          path: ${{ runner.temp }}/google-play-status.json
+          if-no-files-found: ignore
+          retention-days: 14
