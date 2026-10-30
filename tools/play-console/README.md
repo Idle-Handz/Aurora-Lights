@@ -4,9 +4,15 @@ A local MCP connection and CLI for Aurora's Google Play release checks. Runs on
 Node.js 24.5 or newer using its built-in HTTPS, RSA signing and JSON support.
 No package installation or browser session is required.
 
-The only Play operation is GET applications/{package}/tracks/{track}/releases.
+The MCP/reader's only Play operation is GET applications/{package}/tracks/{track}/releases.
 Authentication exchanges a signed service-account JWT for a short-lived Google
-access token. There are no publishing edits, uploads, updates, or commits.
+access token. The MCP exposes no publishing edits, uploads, updates, or commits.
+
+A separate manual Actions workflow uses `build-internal.mjs` and
+`publish-internal.mjs` for signed AABs and internal-track publishing with its own
+keyless publisher identity. See [publishing setup](../../docs/google-play-publishing.md).
+Its CLI requires a short-lived access token and a verified build manifest; it
+does not fall back to the local reader key.
 
 ## Google setup
 

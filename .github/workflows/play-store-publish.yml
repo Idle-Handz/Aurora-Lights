@@ -1,0 +1,177 @@
+name: Publish Google Play internal release
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: Trusted source branch, tag, or commit (current Play source is the release-preparation branch)
+        type: string
+        required: true
+        default: feature_public-v1.0-build-preparation
+      version_name:
+        description: New display version, for example 1.0.0-internal.3
+        type: string
+        required: true
+      operation:
+        description: Build and verify only, or submit to internal testers
+        type: choice
+        required: true
+        default: build-only
+        options:
+          - build-only
+          - publish-internal
+      release_notes:
+        description: Optional en-US release notes (maximum 500 characters)
+        type: string
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: google-play-internal-publish
+  cancel-in-progress: false
+
+jobs:
+  publish-internal:
+    name: Signed AAB and internal release
+    if: github.repository_id == '1184656614' && github.repository_owner_id == '273737674' && github.ref == 'refs/heads/main'
+    environment: google-play-internal
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      RELEASE_SOURCE: ${{ github.workspace }}/release-source
+      RELEASE_OUTPUT: ${{ github.workspace }}/play-release
+      RELEASE_VERSION: ${{ inputs.version_name }}
+      BUNDLETOOL_PATH: ${{ github.workspace }}/bundletool.jar
+
+    steps:
+      - name: Check out trusted publishing tools from the workflow commit
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          path: automation
+          persist-credentials: false
+
+      - name: Check out the selected app source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ inputs.source_ref }}
+          path: release-source
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+
+      - name: Check configuration and publishing tools
+        env:
+          PUBLISH_PROVIDER: ${{ vars.GOOGLE_PLAY_PUBLISH_WIF_PROVIDER }}
+          PLAY_OPERATION: ${{ inputs.operation }}
+          RELEASE_NOTES: ${{ inputs.release_notes }}
+        run: |
+          node --input-type=module <<'NODE'
+          if (process.env.PLAY_OPERATION === 'publish-internal' && !process.env.PUBLISH_PROVIDER) {
+            throw new Error('Set environment variable GOOGLE_PLAY_PUBLISH_WIF_PROVIDER; see docs/google-play-publishing.md.');
+          }
+          if ([...process.env.RELEASE_NOTES].length > 500) throw new Error('Release notes exceed 500 characters.');
+          NODE
+          node --test automation/tools/play-console/tests/*.test.mjs
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Setup Java 17
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: microsoft
+          java-version: '17'
+
+      - name: Install MAUI Android workload
+        run: dotnet workload install maui-android
+
+      - name: Download pinned Google bundle inspector
+        run: |
+          curl --fail --location --retry 3 \
+            https://github.com/google/bundletool/releases/download/1.18.3/bundletool-all-1.18.3.jar \
+            --output "$BUNDLETOOL_PATH"
+          echo "a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29  $BUNDLETOOL_PATH" | sha256sum --check
+
+      - name: Build, sign, and verify AAB and matching source
+        env:
+          ANDROID_UPLOAD_KEYSTORE_BASE64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_BASE64 }}
+          ANDROID_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
+          ANDROID_UPLOAD_KEY_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
+          ANDROID_UPLOAD_STORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_STORE_PASSWORD }}
+          GOOGLE_PLAY_UPLOAD_CERT_SHA256: ${{ vars.GOOGLE_PLAY_UPLOAD_CERT_SHA256 }}
+        run: node automation/tools/play-console/build-internal.mjs
+
+      # Save the verified bundle before any Play write, including on a later API failure.
+      - name: Save verified signed bundle and matching source
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: google-play-internal-signed-bundle
+          path: |
+            ${{ env.RELEASE_OUTPUT }}/aurora-internal.aab
+            ${{ env.RELEASE_OUTPUT }}/aurora-corresponding-source.zip
+            ${{ env.RELEASE_OUTPUT }}/build-manifest.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Authenticate publisher with GitHub OIDC
+        if: inputs.operation == 'publish-internal'
+        id: auth
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          project_id: aurora-reflections
+          workload_identity_provider: ${{ vars.GOOGLE_PLAY_PUBLISH_WIF_PROVIDER }}
+          service_account: aurora-play-publisher@aurora-reflections.iam.gserviceaccount.com
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/androidpublisher
+          access_token_lifetime: 1800s
+          create_credentials_file: false
+          export_environment_variables: false
+
+      - name: Submit verified bundle to internal testing
+        if: inputs.operation == 'publish-internal'
+        env:
+          GOOGLE_OAUTH_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+          AAB_PATH: ${{ env.RELEASE_OUTPUT }}/aurora-internal.aab
+          PLAY_BUILD_MANIFEST: ${{ env.RELEASE_OUTPUT }}/build-manifest.json
+          PLAY_REPORT_PATH: ${{ env.RELEASE_OUTPUT }}/play-publish-report.json
+          RELEASE_NOTES: ${{ inputs.release_notes }}
+        run: node --use-system-ca --use-env-proxy automation/tools/play-console/publish-internal.mjs
+
+      - name: Write publishing summary
+        if: always()
+        env:
+          PLAY_OPERATION: ${{ inputs.operation }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFile, appendFile } from 'node:fs/promises';
+          const dir = process.env.RELEASE_OUTPUT;
+          const report = await readFile(dir + '/play-publish-report.json', 'utf8').catch(() => '');
+          const build = await readFile(dir + '/build-manifest.json', 'utf8').catch(() => '');
+          const tick = String.fromCharCode(96);
+          let text = '## Google Play internal release\n\nOperation: ' + process.env.PLAY_OPERATION + '\n\n';
+          const raw = report || build;
+          if (raw) text += tick.repeat(3) + 'json\n' + JSON.stringify(JSON.parse(raw), null, 2).replaceAll(tick, '\\u0060') + '\n' + tick.repeat(3) + '\n';
+          else text += 'No verified bundle was produced. Check the failed step.\n';
+          if (!report && build) text += '\nThe signed bundle was built; no Play submission is confirmed.\n';
+          text += '\nSubmitted means Google accepted the edit. Only publishedReleaseFound confirms a published release; processing or review may delay availability.\n';
+          await appendFile(process.env.GITHUB_STEP_SUMMARY, text);
+          NODE
+
+      - name: Save Play submission report
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: google-play-internal-publish-report
+          path: ${{ env.RELEASE_OUTPUT }}/play-publish-report.json
+          if-no-files-found: ignore
+          retention-days: 90
