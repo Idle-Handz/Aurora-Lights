@@ -148,10 +148,9 @@ Keep the build's source/digest record when verifying which fixes a version conta
 
 ## Later publishing
 
-This workflow checks release status. Play upload and rollout should use a
-separate publisher identity and an explicit approved publishing job. The existing
-Android build workflow produces APKs; Play publishing also needs signed AAB
-output, upload-key verification, increasing version codes and build provenance.
+For signed AAB builds and manual internal-track uploads, use the separate
+[publishing workflow and setup guide](google-play-publishing.md). It uses its own
+publisher identity and GitHub environment; this check stays read-only.
 
 ## References
 
