@@ -1,0 +1,13 @@
+# Merge into personal MCP configuration. Only paths and public app metadata belong here.
+[mcp_servers.aurora_play]
+command = 'C:\Users\Ralla\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe'
+args = ['--use-system-ca', '--use-env-proxy', 'C:\Users\Ralla\source\repos\Aurora-Lights\tools\play-console\server.mjs']
+startup_timeout_sec = 15
+tool_timeout_sec = 60
+default_tools_approval_mode = "writes"
+
+[mcp_servers.aurora_play.env]
+GOOGLE_APPLICATION_CREDENTIALS = 'C:\Users\Ralla\.config\aurora-play\reader.json'
+AURORA_PLAY_PACKAGE = "com.auroralights.app"
+# Confirmed against Aurora's live Google API response.
+AURORA_PLAY_TRACK = "internal"
