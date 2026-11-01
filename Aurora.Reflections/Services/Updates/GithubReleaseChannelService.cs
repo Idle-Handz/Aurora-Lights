@@ -43,6 +43,9 @@ public abstract class GithubReleaseChannelService
     /// <summary>Convenience: true when we have a confirmed-newer release waiting.</summary>
     public bool UpdateAvailable => Latest?.IsNewer == true;
 
+    /// <summary>Store distributions can opt out of the GitHub binary update channel.</summary>
+    public virtual bool SupportsReleaseChecks => true;
+
     /// <summary>
     /// Hits GitHub, parses the eligible releases on this channel, picks the highest version that the
     /// caller's pre-release preference allows, and updates state. Safe to call concurrently — checks
@@ -50,6 +53,9 @@ public abstract class GithubReleaseChannelService
     /// </summary>
     public async Task<UpdateAvailability?> CheckAsync(bool includePreReleases, CancellationToken ct = default)
     {
+        if (!SupportsReleaseChecks)
+            return null;
+
         IsChecking = true; LastError = null;
         Changed?.Invoke();
         try

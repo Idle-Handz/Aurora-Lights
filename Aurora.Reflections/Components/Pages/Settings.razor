@@ -798,6 +798,22 @@
                 </div>
             </div>
 
+            @if (AppUpdates.UsesGooglePlay)
+            {
+                <div class="pref-row" style="margin-top: 16px;">
+                    <div class="pref-row-text">
+                        <div class="pref-row-title">App updates</div>
+                        <div class="pref-row-desc">Google Play manages updates for this installation.</div>
+                    </div>
+                    <MudButton Variant="Variant.Outlined"
+                               StartIcon="@Icons.Material.Filled.OpenInNew"
+                               OnClick="@(() => OpenReleaseAsync(AppUpdates.GooglePlayUrl))">
+                        Open Google Play
+                    </MudButton>
+                </div>
+            }
+            else
+            {
             <div class="pref-row" style="margin-top: 16px;">
                 <div class="pref-row-text">
                     <div class="pref-row-title">Check for app updates on startup</div>
@@ -966,6 +982,7 @@
                     </MudButton>
                 </div>
 #endif
+            }
             }
         </div>
 
