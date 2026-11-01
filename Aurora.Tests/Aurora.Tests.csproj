@@ -90,6 +90,7 @@
     <Compile Include="..\Aurora.Reflections\Services\CloudCharacterPreview.cs" Link="Linked\CloudCharacterPreview.cs" />
     <Compile Include="..\Aurora.Reflections\Services\GoogleDriveClientConfiguration.cs" Link="Linked\GoogleDriveClientConfiguration.cs" />
     <Compile Include="..\Aurora.Reflections\Services\GoogleDriveSignInFlow.cs" Link="Linked\GoogleDriveSignInFlow.cs" />
+    <Compile Include="..\Aurora.Reflections\Services\GoogleDriveErrorReporting.cs" Link="Linked\GoogleDriveErrorReporting.cs" />
     <!-- Exercise the app's actual refresh/preload lifecycle without a MAUI window. -->
     <Compile Include="..\Aurora.Reflections\Services\CharacterService.cs" Link="Linked\CharacterService.cs" />
     <Compile Include="..\Aurora.Reflections\Services\CharacterContext.cs" Link="Linked\CharacterContext.cs" />

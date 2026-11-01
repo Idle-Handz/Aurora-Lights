@@ -109,7 +109,12 @@
             {
                 try { await Cloud.RestoreConnectionAsync(ct); }
                 catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
-                catch { return; }
+                catch (Exception ex)
+                {
+                    DebugLogService.Instance.Info("Google Drive connection was not restored.",
+                        GoogleDriveErrorReporting.DescribeFailure(ex));
+                    return;
+                }
                 await LoadFiles(ct);
             });
         }
@@ -156,8 +161,13 @@
             {
                 CharacterBrowserEntry entry;
                 try { entry = await Cloud.GetBrowserEntryAsync(file, ct); }
-                catch (OperationCanceledException) { throw; }
-                catch { entry = CloudCharacterPreview.Placeholder(file) with { CaptionText = "Preview unavailable. Open to retry." }; }
+                catch (OperationCanceledException ex) when (!GoogleDriveErrorReporting.IsRequestTimeout(ex, ct)) { throw; }
+                catch (Exception ex)
+                {
+                    DebugLogService.Instance.Warn("Google Drive character preview failed.",
+                        GoogleDriveErrorReporting.DescribeFailure(ex));
+                    entry = CloudCharacterPreview.Placeholder(file) with { CaptionText = "Preview unavailable. Open to retry." };
+                }
                 await InvokeAsync(() =>
                 {
                     if (_disposed || ct.IsCancellationRequested) return;
@@ -208,12 +218,21 @@
             await Task.Yield();
             await operation(cancellation.Token);
         }
+        catch (Exception ex) when (GoogleDriveErrorReporting.IsRequestTimeout(ex, cancellation.Token))
+        {
+            DebugLogService.Instance.Warn($"Google Drive operation timed out ({status}).",
+                GoogleDriveErrorReporting.DescribeFailure(ex));
+            if (!_disposed) _error = GoogleDriveErrorReporting.RequestTimeoutMessage;
+        }
         catch (OperationCanceledException)
         {
+            DebugLogService.Instance.Info($"Google Drive operation cancelled ({status}).");
             if (!_disposed) _error = "Cancelled. Any unsent changes remain on this device.";
         }
         catch (Exception ex)
         {
+            DebugLogService.Instance.Warn($"Google Drive operation failed ({status}).",
+                GoogleDriveErrorReporting.DescribeFailure(ex));
             if (!_disposed) _error = ex.Message;
         }
         finally { _busy = false; _operation = null; }

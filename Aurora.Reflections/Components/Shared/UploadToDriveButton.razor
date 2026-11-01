@@ -53,12 +53,21 @@
                 Snackbar.Add("Character moved to Google Drive. This open character now uses the cloud save.", Severity.Success);
             }
         }
+        catch (Exception ex) when (GoogleDriveErrorReporting.IsRequestTimeout(ex, cancellation.Token))
+        {
+            DebugLogService.Instance.Warn("Google Drive character upload timed out.",
+                GoogleDriveErrorReporting.DescribeFailure(ex));
+            if (!_disposed) Snackbar.Add($"{GoogleDriveErrorReporting.RequestTimeoutMessage} Your local character is still on this device.", Severity.Warning);
+        }
         catch (OperationCanceledException)
         {
+            DebugLogService.Instance.Info("Google Drive character upload cancelled.");
             if (!_disposed) Snackbar.Add("Upload cancelled. Your local character is still on this device.", Severity.Info);
         }
         catch (Exception ex)
         {
+            DebugLogService.Instance.Warn("Google Drive character upload failed.",
+                GoogleDriveErrorReporting.DescribeFailure(ex));
             if (!_disposed) Snackbar.Add($"Could not upload to Drive: {ex.Message}", Severity.Error);
         }
         finally { _busy = false; _operation = null; }
