@@ -376,7 +376,9 @@ public sealed class CloudCharacterSessionTests : IDisposable
                 tab.CloudSavedEditVersion.Should().BeLessThan(tab.EditVersion);
                 if (issue == "missing-pick")
                 {
-                    error.Should().Contain("1 saved pick could not be restored");
+                    error.Should().Contain("Required content is missing; its sources are unknown.")
+                        .And.Contain("See Console for details.")
+                        .And.Contain("Unsent edits were kept in the recovery folder.");
                     tab.Character!.Name.Should().Be("Drive Newer");
                     tab.Snapshot!.Name.Should().Be("Drive Newer");
                     tab.Session.CurrentHp.Should().Be(7);
