@@ -176,6 +176,11 @@
 
 /* ── Search, sort, filters ───────────────────────────────────────────────── */
 
+.shop-discovery-toggle,
+.shop .shop-show-results {
+    display: none;
+}
+
 .shop-toolbar {
     display: flex;
     flex-wrap: wrap;
@@ -468,6 +473,7 @@
 .shop-list {
     display: flex;
     flex-direction: column;
+    flex: 0 0 auto;
     gap: 0.4rem;
     margin: 0;
     padding: 0;
@@ -1215,5 +1221,160 @@
             border: 0;
             background: rgba(0, 0, 0, 0.45);
         }
+    }
+}
+
+/* Phone browsing has one compact entry point for search, sort and facets. Keep
+   this viewport fallback shared with older Android WebViews, too. The result
+   pane owns its minimum height; department/type controls cannot consume it. */
+@media (max-width: 900px) {
+    .shop-host,
+    .shop {
+        height: auto;
+        flex: 1 0 auto;
+    }
+
+    .shop-header,
+    .shop-discovery-toggle {
+        flex-shrink: 0;
+    }
+
+    .shop-discovery-toggle {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        width: 100%;
+        min-height: 2.75rem;
+        padding: 0.5rem 0.75rem;
+        border: 1px solid var(--shop-border);
+        border-radius: var(--shop-radius);
+        background: var(--shop-surface);
+        color: var(--shop-text);
+        text-align: left;
+        cursor: pointer;
+    }
+
+    .shop-discovery-toggle > svg {
+        width: 1.25rem;
+        height: 1.25rem;
+        flex: 0 0 auto;
+        fill: currentColor;
+    }
+
+    .shop-discovery-label {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-width: 0;
+        font-weight: 600;
+    }
+
+    .shop-discovery-summary {
+        overflow-wrap: anywhere;
+        font-size: 0.8rem;
+        font-weight: 400;
+        color: var(--shop-muted);
+    }
+
+    .shop--discovery-open .shop-discovery-chevron {
+        transform: rotate(180deg);
+    }
+
+    .shop:not(.shop--discovery-open) .shop-toolbar,
+    .shop:not(.shop--discovery-open) .shop-filters,
+    .shop:not(.shop--discovery-open) .shop-rail,
+    .shop:not(.shop--discovery-open) .shop-chip-row,
+    .shop:not(.shop--discovery-open) .shop-crumb-path,
+    .shop-filter-toggle {
+        display: none;
+    }
+
+    .shop--discovery-open .shop-filters {
+        display: flex;
+    }
+
+    .shop-body {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: minmax(24rem, 1fr);
+        grid-template-areas: "list";
+        min-height: 24rem;
+        flex: 1 0 24rem;
+    }
+
+    .shop-list-pane {
+        min-height: 24rem;
+        max-height: none;
+        padding-bottom: 0.5rem;
+        scroll-padding-block: 0.5rem;
+    }
+
+    .shop-row,
+    .shop-actions .shop-button {
+        scroll-margin-block: 0.5rem;
+    }
+
+    .shop-crumbs {
+        flex: 0 0 auto;
+    }
+
+    .shop--discovery-open .shop-body {
+        display: flex;
+        flex-direction: column;
+        flex: 0 0 auto;
+        min-height: 0;
+    }
+
+    .shop--discovery-open .shop-list-pane {
+        flex: 0 0 auto;
+        min-height: 0;
+        overflow: visible;
+    }
+
+    .shop--discovery-open .shop-list,
+    .shop--discovery-open .shop-more,
+    .shop--discovery-open .shop-state {
+        display: none;
+    }
+
+    .shop--discovery-open .shop-show-results {
+        display: inline-flex;
+        justify-content: center;
+        min-height: 2.75rem;
+    }
+
+    /* Keep checkout attached to the viewport even if the page was scrolled
+       to make room for the catalog or a large set of filters. */
+    .shop-detail {
+        display: none;
+    }
+
+    .shop--selected .shop-detail {
+        display: flex;
+        position: fixed;
+        left: 10px;
+        right: 10px;
+        bottom: calc(58px + env(safe-area-inset-bottom, 0px));
+        max-height: calc(100vh - 80px - env(safe-area-inset-bottom, 0px));
+        max-height: calc(100dvh - 80px - env(safe-area-inset-bottom, 0px));
+        border-width: 1px;
+        border-radius: 1.1rem 1.1rem 0 0;
+        transform: none;
+        visibility: visible;
+        scroll-padding-block: 0.5rem;
+        z-index: var(--mud-zindex-dialog, 1400);
+    }
+
+    .shop-detail-close {
+        display: inline-flex;
+    }
+
+    .shop--selected .shop-backdrop {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: calc(var(--mud-zindex-dialog, 1400) - 1);
+        border: 0;
+        background: rgba(0, 0, 0, 0.45);
     }
 }

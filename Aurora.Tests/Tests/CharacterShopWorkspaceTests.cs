@@ -169,6 +169,51 @@ public sealed class CharacterShopWorkspaceTests : BunitContext
     }
 
     [Fact]
+    public void Browsing_keeps_the_search_and_facets_when_controls_are_folded_away()
+    {
+        var cut = RenderShop();
+        var toggle = cut.Find(".shop-discovery-toggle");
+        toggle.GetAttribute("aria-expanded").Should().Be("false");
+        toggle.Click();
+
+        Rail(cut, "Weapons & Armor").Click();
+        Rail(cut, "Weapons").Click();
+        cut.FindAll(".shop-filters .shop-toggle input")[0].Change(true);
+        cut.Find("input[type=search]").Input("dag");
+        cut.Find(".shop-show-results").Click();
+
+        cut.WaitForAssertion(() =>
+        {
+            cut.Find(".shop-discovery-toggle").GetAttribute("aria-expanded").Should().Be("false");
+            Normalised(cut.Find(".shop-discovery-summary")).Should().Be("Weapons · “dag” · 1 filter");
+            RowNames(cut).Should().Equal("Dagger");
+        });
+        cut.Find(".shop-discovery-toggle").Click();
+        cut.Find("input[type=search]").GetAttribute("value").Should().Be("dag");
+        cut.FindAll(".shop-filters .shop-toggle input")[0].HasAttribute("checked").Should().BeTrue();
+        Rail(cut, "Weapons").GetAttribute("aria-pressed").Should().Be("true");
+    }
+
+    [Fact]
+    public async Task Submitting_search_flushes_pending_input_before_returning_to_results()
+    {
+        var cut = RenderShop();
+        cut.Find(".shop-discovery-toggle").Click();
+        var pendingInput = cut.Find("input[type=search]").InputAsync(new ChangeEventArgs { Value = "long" });
+
+        cut.Find("form.shop-toolbar").Submit();
+
+        cut.WaitForAssertion(() =>
+        {
+            RowNames(cut).Should().Equal("Longbow", "Longsword");
+            cut.Find(".shop-discovery-toggle").GetAttribute("aria-expanded").Should().Be("false");
+            cut.Find(".shop-discovery-summary").TextContent.Should().Contain("“long”");
+        });
+        await pendingInput;
+        RowNames(cut).Should().Equal("Longbow", "Longsword");
+    }
+
+    [Fact]
     public void A_search_with_no_matches_explains_itself_and_can_be_cleared()
     {
         var cut = RenderShop();

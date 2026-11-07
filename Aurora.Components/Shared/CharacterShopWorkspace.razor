@@ -1,7 +1,7 @@
 @implements IDisposable
 
 <div class="shop-host">
-    <section class="shop @(HasSelection ? "shop--selected" : null)" aria-label="Shop">
+    <section class="shop @(HasSelection ? "shop--selected" : null) @(_discoveryOpen ? "shop--discovery-open" : null)" aria-label="Shop">
 
         <header class="shop-header">
             <div class="shop-heading">
@@ -52,11 +52,24 @@
             </div>
         </header>
 
-        <div class="shop-toolbar">
+        <button type="button" class="shop-discovery-toggle"
+                aria-expanded="@(_discoveryOpen ? "true" : "false")"
+                aria-controls="shop-toolbar shop-filters shop-departments"
+                @onclick="ToggleDiscovery">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" /></svg>
+            <span class="shop-discovery-label">
+                <span>Search &amp; filter</span>
+                <span class="shop-discovery-summary">@DiscoverySummary</span>
+            </span>
+            <svg class="shop-discovery-chevron" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m7 10 5 5 5-5z" /></svg>
+        </button>
+
+        <form class="shop-toolbar" id="shop-toolbar" @onsubmit="ShowResults" @onsubmit:preventDefault>
             <label class="shop-search">
                 <span class="shop-visually-hidden">Search the shop</span>
                 <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" /></svg>
                 <input type="search"
+                       enterkeyhint="search"
                        value="@_queryText"
                        @oninput="OnSearchInput"
                        placeholder="@(_mode == ShopMode.Buy ? "Search items, e.g. longsword, rope, potion" : "Search your pack")"
@@ -92,7 +105,7 @@
                     <span class="shop-badge">@ActiveFilterCount</span>
                 }
             </button>
-        </div>
+        </form>
 
         <div class="shop-filters @(_filtersOpen ? "is-open" : null)" id="shop-filters">
             @if (_rarities.Count > 1)
@@ -125,7 +138,7 @@
             {
                 <label class="shop-toggle">
                     <input type="checkbox" checked="@_filter.AffordableOnly" @onchange="e => ToggleAffordable(IsChecked(e))" />
-                    <span>I can afford it</span>
+                    <span>Show affordable only</span>
                 </label>
             }
             <label class="shop-toggle">
@@ -139,7 +152,7 @@
         </div>
 
         <div class="shop-body">
-            <nav class="shop-rail" aria-label="Shop departments">
+            <nav class="shop-rail" id="shop-departments" aria-label="Shop departments">
                 <div class="shop-rail-section">
                     <h3 class="shop-rail-title">Departments</h3>
                     <div class="shop-rail-list">
@@ -192,7 +205,7 @@
                 }
             </nav>
 
-            <div class="shop-list-pane">
+            <div class="shop-list-pane" role="region" aria-label="Shop results" tabindex="-1" @ref="_resultsPane">
                 <div class="shop-crumbs">
                     <span class="shop-crumb-path">@CrumbText</span>
                     <span class="shop-result-count" role="status" aria-live="polite">
@@ -221,6 +234,10 @@
                         }
                     </div>
                 }
+
+                <button type="button" class="shop-button shop-button--primary shop-show-results" @onclick="ShowResults">
+                    Show @ResultCount.ToString("N0") @(ResultCount == 1 ? "item" : "items")
+                </button>
 
                 @if (Loading)
                 {
@@ -428,6 +445,9 @@
     private string _queryText = string.Empty;
     private CancellationTokenSource? _debounce;
     private bool _filtersOpen;
+    private bool _discoveryOpen;
+    private bool _focusResults;
+    private ElementReference _resultsPane;
     private int _visible = PageSize;
 
     private string? _selectedItemId;
@@ -495,6 +515,14 @@
         + (string.IsNullOrWhiteSpace(_filter.Source) ? 0 : 1)
         + (_filter.AffordableOnly ? 1 : 0)
         + (_filter.PricedOnly ? 1 : 0);
+
+    private string DiscoverySummary => string.Join(" · ", new[]
+    {
+        _filter.Subtype ?? _filter.Category ?? _filter.Department ?? (_mode == ShopMode.Buy ? "All items" : "Your pack"),
+        string.IsNullOrWhiteSpace(_filter.Query) ? null : $"“{_filter.Query}”",
+        ActiveFilterCount > 0 ? $"{ActiveFilterCount} {(ActiveFilterCount == 1 ? "filter" : "filters")}" : null,
+        _filter.Sort != ShopSort.Name ? SortOptions.First(option => option.Sort == _filter.Sort).Label : null,
+    }.Where(part => part is not null));
 
     private string CrumbText
     {
@@ -574,6 +602,17 @@
     {
         _debounce?.Cancel();
         _debounce?.Dispose();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_focusResults)
+        {
+            _focusResults = false;
+            // Leave the search field (and dismiss its mobile keyboard), and bring the
+            // first results back into view after a tall set of filters collapses.
+            await _resultsPane.FocusAsync();
+        }
     }
 
     // ── Filtering ────────────────────────────────────────────────────────────
@@ -688,6 +727,25 @@
     private void ResetPaging() => _visible = PageSize;
 
     // ── Handlers: search, filters, navigation ────────────────────────────────
+
+    private void ToggleDiscovery()
+    {
+        if (_discoveryOpen)
+            ShowResults();
+        else
+            _discoveryOpen = true;
+    }
+
+    private void ShowResults()
+    {
+        // Enter can arrive before the debounced input handler finishes.
+        _debounce?.Cancel();
+        _filter = _filter with { Query = _queryText };
+        _discoveryOpen = false;
+        _focusResults = true;
+        ResetPaging();
+        Recompute();
+    }
 
     private async Task OnSearchInput(ChangeEventArgs args)
     {
@@ -817,6 +875,7 @@
         _queryText = string.Empty;
         _filter = new ShopFilterState { Sort = _filter.Sort };
         _filtersOpen = false;
+        _discoveryOpen = false;
         _selectedItemId = null;
         _selectedEntryId = null;
         ResetOrder();

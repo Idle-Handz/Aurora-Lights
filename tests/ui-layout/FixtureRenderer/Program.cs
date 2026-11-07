@@ -33,6 +33,24 @@ foreach (var longDescription in new[] { false, true })
 using var cloudStatus = context.Render<CloudStatusFixture>();
 File.WriteAllText(Path.Combine(AppContext.BaseDirectory, "cloud-status.html"), cloudStatus.Markup);
 
+// Exercise all three levels of weapon facets: these used to consume the list's
+// minimum height, leaving only a couple of cramped rows on phones.
+var weaponTypes = new[] { "Simple Melee", "Simple Ranged", "Martial Melee", "Martial Ranged" };
+var weapons = Enumerable.Range(0, 120).Select(i => new ShopItemModel(
+    "weapon" + i, $"Training Weapon {i:000}", "Weapon", "Test source", "Weapons", "Weapons & Armor",
+    weaponTypes[i % weaponTypes.Length], "", 1500, "3 lb.", 3, "1d8 slashing · Versatile", false, true, false, false, $"weapon {i}")).ToArray();
+using (var shop = context.Render<CharacterShopWorkspace>(p => p
+    .Add(c => c.Catalog, weapons)
+    .Add(c => c.Wallet, new CoinPurse(5, 4, 0, 76, 0))))
+{
+    shop.Find(".shop-discovery-toggle").Click();
+    shop.FindAll(".shop-rail-item").Single(b => b.TextContent.Contains("Weapons & Armor")).Click();
+    shop.FindAll(".shop-rail-item").Single(b => b.QuerySelector(".shop-rail-name")!.TextContent == "Weapons").Click();
+    File.WriteAllText(Path.Combine(AppContext.BaseDirectory, "shop-weapons-expanded.html"), shop.Markup);
+    shop.Find(".shop-show-results").Click();
+    File.WriteAllText(Path.Combine(AppContext.BaseDirectory, "shop-weapons.html"), shop.Markup);
+}
+
 var equipment = new EquipmentOverviewModel
 {
     InventoryItems = new[] { "Sword", "Staff of Flowers from the Dungeon Master's Guide", "LongswordoftheVeryLongUnbrokenInventoryName" }

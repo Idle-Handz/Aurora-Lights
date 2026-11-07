@@ -5,12 +5,12 @@ import path from 'node:path';
 const read = (file: string) => readFileSync(path.resolve(file), 'utf8');
 const output = 'tests/ui-layout/FixtureRenderer/bin/Debug/net10.0';
 
-async function showWorkspace(page: Page, component: 'shop' | 'equipment' | 'characters' | 'magic-all' | 'magic-prepared', options: { long?: boolean; cloud?: boolean; selected?: boolean; cloudExpanded?: boolean } = {}) {
+async function showWorkspace(page: Page, component: 'shop' | 'equipment' | 'characters' | 'magic-all' | 'magic-prepared', options: { long?: boolean; cloud?: boolean; selected?: boolean; cloudExpanded?: boolean; weapons?: boolean; discovery?: boolean } = {}) {
   const componentNames = component === 'shop' ? ['CharacterShopWorkspace']
     : component === 'equipment' ? ['CharacterEquipmentWorkspace']
       : component.startsWith('magic-') ? ['CharacterMagicWorkspace', 'RichDescription']
         : ['CharacterBrowser', 'CharacterBrowserCard', 'CharacterLibraryShell'];
-  const markup = read(`${output}/${component === 'shop' ? `shop-${options.selected === false ? 'browse' : options.long ? 'long' : 'short'}` : component}.html`);
+  const markup = read(`${output}/${component === 'shop' ? options.weapons ? `shop-weapons${options.discovery ? '-expanded' : ''}` : `shop-${options.selected === false ? 'browse' : options.long ? 'long' : 'short'}` : component}.html`);
   const css = componentNames.map(name => read(`${output}/${name}.css`)).join('\n');
 
   // Use the App's actual Body wrapper, whose extra layout box caused the shop regression.
@@ -19,6 +19,10 @@ async function showWorkspace(page: Page, component: 'shop' | 'equipment' | 'char
     .match(/(<div\b[^>]*\binert="[^"]*"[^>]*>)\s*(?:<AppErrorBoundary\b[^>]*>)?@Body/)?.[1]
     .replace(/\binert="[^"]*"/, 'data-page-wrapper');
   if (!wrapper) throw new Error('MainLayout Body wrapper changed; update the App shell fixture.');
+
+  // Start expanded when requested: the preselected mobile checkout sheet should
+  // block clicks on the underlying Drive controls, just as it does in the app.
+  const cloudMarkup = options.cloud ? read(`${output}/cloud-status.html`) : '';
 
   await page.setContent(`<!doctype html><html><head>
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -35,14 +39,12 @@ async function showWorkspace(page: Page, component: 'shop' | 'equipment' | 'char
       <main class="mud-main-content app-main-content">
         <div class="char-tab-bar"><div class="char-tab">Layout fixture</div></div>
         <div class="mud-container mud-container-maxwidth-false app-content-container pa-4" style="--character-tabs-height:34px">
-          ${options.cloud ? read(`${output}/cloud-status.html`) : ''}
+          ${options.cloudExpanded ? cloudMarkup.replace('<details ', '<details open ') : cloudMarkup}
           ${wrapper}${component.startsWith('magic-') ? '<div class="page-save-bar">Auto-save off <button class="mud-button-root">Save</button></div>' : ''}${markup}</div>
         </div>
       </main>
     </div><nav class="mobile-bottom-nav">${['Chars', 'Build', 'Gear', 'Magic', 'More'].map(name => `<a class="mobile-bottom-link"><span>${name}</span></a>`).join('')}</nav>
     <div class="app-status-bar">Ready</div></div></body></html>`);
-  if (options.cloud && options.cloudExpanded)
-    await page.locator('.cloud-save-summary').click();
 }
 
 async function expectNoHorizontalOverflow(page: Page) {
@@ -146,6 +148,8 @@ for (const scenario of [
     await page.setViewportSize(scenario);
     // The compact default leaves checkout visible without scrolling the detail pane.
     await showWorkspace(page, 'shop', scenario);
+    await expect(page.locator('.shop-discovery-toggle')).not.toBeVisible();
+    await expect(page.locator('.shop-show-results')).not.toBeVisible();
     expect(await page.locator('button.shop-row').count(), 'The fixture must contain a long results list').toBeGreaterThan(50);
     const checkout = page.locator('.shop-actions');
     await expect(checkout).toBeInViewport({ ratio: 1 });
@@ -166,6 +170,48 @@ for (const scenario of [
     // Trial clicks check visibility and hit testing without moving a clipped button into place.
     await page.locator('.shop-actions .shop-button').first().click({ trial: true });
     await expectNoHorizontalOverflow(page);
+  });
+}
+
+for (const viewport of [{ width: 360, height: 640 }, { width: 384, height: 832 }]) {
+  test(`mobile weapon browsing shows at least four readable rows at ${viewport.width}px`, async ({ browser }) => {
+    const context = await browser.newContext({ viewport, isMobile: true, hasTouch: true });
+    const page = await context.newPage();
+    try {
+      await showWorkspace(page, 'shop', { weapons: true, cloud: true });
+      await expect(page.locator('.shop-discovery-toggle')).toHaveAttribute('aria-expanded', 'false');
+      await expect(page.locator('.shop-discovery-summary')).toHaveText('Weapons');
+      for (const selector of ['.shop-toolbar', '.shop-rail', '.shop-chip-row', '.shop-filters', '.shop-show-results'])
+        await expect(page.locator(selector)).not.toBeVisible();
+      const list = page.locator('.shop-list-pane');
+      expect((await list.boundingBox())!.height).toBeGreaterThanOrEqual(384);
+      await list.scrollIntoViewIfNeeded();
+      const rows = page.locator('.shop-row');
+      await rows.first().scrollIntoViewIfNeeded();
+      const listBounds = (await list.boundingBox())!;
+      for (const row of (await rows.all()).slice(0, 4)) {
+        const bounds = (await row.boundingBox())!;
+        expect(bounds.height, 'Item names and descriptions must retain readable row height').toBeGreaterThanOrEqual(60);
+        expect(bounds.y + bounds.height, 'Four complete rows must fit inside the results pane').toBeLessThanOrEqual(listBounds.y + listBounds.height);
+        await expect(row).toBeInViewport({ ratio: 1 });
+      }
+      await page.screenshot({ path: `test-results/shop-weapons-${viewport.width}.png` });
+      await rows.last().scrollIntoViewIfNeeded();
+      await rows.last().tap({ trial: true });
+      await expectNoHorizontalOverflow(page);
+
+      await showWorkspace(page, 'shop', { weapons: true, cloud: true, discovery: true });
+      await expect(page.locator('.shop-discovery-toggle')).toHaveAttribute('aria-expanded', 'true');
+      await expect(page.locator('.shop-search input')).toBeVisible();
+      await expect(page.locator('.shop-rail-section')).toHaveCount(2);
+      await expect(page.locator('.shop-chip-row')).toBeVisible();
+      const show = page.getByRole('button', { name: 'Show 120 items', exact: true });
+      await show.scrollIntoViewIfNeeded();
+      await show.tap({ trial: true });
+      await expectNoHorizontalOverflow(page);
+    } finally {
+      await context.close();
+    }
   });
 }
 

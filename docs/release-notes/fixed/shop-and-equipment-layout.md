@@ -8,4 +8,6 @@ Use a compact shop layout on older Android WebViews that do not support containe
 
 Android Back now dismisses the shop item sheet before navigating away from the shop.
 
+On phones, fold search, sort, departments, and weapon-type filters into a single Search & filter control. Keep the current search and category visible while browsing, and use the keyboard's Search action or Show items to return to a taller, independently scrolling item list. Keep checkout above the page when browsing further down the list.
+
 Keep the selected app theme consistent when Android reports system-theme changes, preventing light controls and dark backgrounds from being mixed.
