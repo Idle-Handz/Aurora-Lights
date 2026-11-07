@@ -24,9 +24,14 @@ foreach (var longDescription in new[] { false, true })
         .Add(c => c.Detail, new ShopItemDetailModel("item0", "Supply 000",
             string.Concat(Enumerable.Repeat("<p>Supplies for the journey, packed for safe travel and everyday use.</p>", longDescription ? 30 : 1)),
             "", [], [])));
+    if (!longDescription)
+        File.WriteAllText(Path.Combine(AppContext.BaseDirectory, "shop-browse.html"), shop.Markup);
     shop.Find("button.shop-row").Click();
     File.WriteAllText(Path.Combine(AppContext.BaseDirectory, longDescription ? "shop-long.html" : "shop-short.html"), shop.Markup);
 }
+
+using var cloudStatus = context.Render<CloudStatusFixture>();
+File.WriteAllText(Path.Combine(AppContext.BaseDirectory, "cloud-status.html"), cloudStatus.Markup);
 
 var equipment = new EquipmentOverviewModel
 {

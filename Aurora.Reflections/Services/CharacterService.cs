@@ -468,7 +468,7 @@ public sealed class CharacterService :
                     DebugLogService.Instance.Warn($"Partial character load: {file.FileName}",
                         $"{result.Message}\n\nElements loaded: {ElementCount}\n{_initDiagnostic}\nCustom dir: {CustomElementsDirectory}");
                 }
-                return (result.Success, result.Success ? string.Empty : PartialLoadReport.Describe(result));
+                return (result.Success, result.Success ? string.Empty : PartialLoadReport.Describe(result, DataManager.Current.ElementsCollection));
             }
             catch (Exception ex)
             {
@@ -588,6 +588,7 @@ public sealed class CharacterService :
             try
             {
                 file.Save(character);
+                file.InitializeDisplayPropertiesFromCharacter(character);
             }
             catch
             {

@@ -1,73 +1,116 @@
 using Aurora.Reflections.Services;
+using Builder.Data;
 using Builder.Presentation.Models;
 using Builder.Presentation.Services;
 
 namespace Aurora.Tests.Tests;
 
-/// <summary>
-/// A character that loses a saved pick used to be reported in a toast carrying every element id with
-/// its full saved path, followed by the startup diagnostics — several hundred characters the user
-/// had to scroll past to learn that three proficiencies were gone. The toast now says how much was
-/// lost and what it was called; the log keeps the rest.
-/// </summary>
 public sealed class PartialLoadReportTests
 {
     private static CharacterFile.LoadResult Partial(params CharacterLoadValidation.MissingElement[] missing) =>
         new(false, "Saved character elements could not be restored: " + string.Join("; ", missing.Select(m => m.Id)), missing);
 
-    private static CharacterLoadValidation.MissingElement Missing(string id, string path) => new(id, 1, path);
+    private static CharacterLoadValidation.MissingElement Missing(string id, string? book = null, bool local = false) =>
+        new(id, 1, "Class > Weapon Proficiency (Claw)")
+        {
+            SavedSource = book is null && !local ? null : new(book, "items-weapons.xml", local)
+        };
 
     [Fact]
-    public void ItNamesWhatWasLostRatherThanItsIds()
+    public void NamesSourcesOnceAndKeepsElementDetailsOutOfTheToast()
     {
         string message = PartialLoadReport.Describe(Partial(
-            Missing("ID_PROFICIENCY_SKILL_ARCANA", "Additional Proficiency, Skill Proficiency (Arcana) > Arcana"),
-            Missing("ID_WOTC_DMG_PROFICIENCY_WEAPON_MODERN_FIREARMS_RIFLE",
-                "1 > Class > Weapon Proficiency (Martial Weapons) > Weapon Proficiency (Rifle)")));
+            Missing("ID_CLAW", "Ryoko's Guide"), Missing("ID_SAI", "Ryoko's Guide"),
+            Missing("ID_OTHER", "Another Book")), []);
 
-        message.Should().Contain("2 saved picks could not be restored");
-        message.Should().Contain("Arcana").And.Contain("Weapon Proficiency (Rifle)");
-        message.Should().NotContain("ID_", "an element id means nothing to the person reading it");
-        message.Should().Contain("Console");
-        message.Length.Should().BeLessThan(220, "it has to be readable at a glance");
+        message.Should().Be("⚠ Missing content from: Another Book, Ryoko's Guide. See Console for details.");
+        message.Should().NotContain("ID_").And.NotContain("Claw").And.NotContain("saved picks")
+            .And.NotContain("items-weapons.xml").And.NotContain("re-pick");
     }
 
     [Fact]
-    public void OneLostPickIsCountedInTheSingular()
-    {
-        PartialLoadReport.Describe(Partial(Missing("ID_X", "1 > Class > Weapon Proficiency (Laster Pistol)")))
-            .Should().Contain("1 saved pick could not be restored")
-            .And.Contain("Weapon Proficiency (Laster Pistol)");
-    }
-
-    [Fact]
-    public void ALongListIsCutShortWithACount()
+    public void LocalCustomizationIsNotPresentedAsAMissingPublishedBook()
     {
         var message = PartialLoadReport.Describe(Partial(
-            Missing("ID_A", "a > Alpha"), Missing("ID_B", "b > Bravo"),
-            Missing("ID_C", "c > Charlie"), Missing("ID_D", "d > Delta"),
-            Missing("ID_E", "e > Echo")));
+            Missing("ORIGIN_TOUGH", "Player's Handbook (2024)", local: true)), []);
 
-        message.Should().Contain("5 saved picks");
-        message.Should().Contain("Alpha, Bravo, Charlie, and 2 more");
-        message.Should().NotContain("Echo");
+        message.Should().Contain("Player's Handbook (2024) (local customization)")
+            .And.NotContain("Origin Feat");
     }
 
     [Fact]
-    public void APathWithNoUsableNameFallsBackToTheCount()
+    public void KnownLocalContentWithoutABookNameStillHasAnActionableLabel()
     {
-        // The validator writes this when a character's summary records no origin for the pick.
+        PartialLoadReport.Describe(Partial(Missing("LOCAL", local: true)), [])
+            .Should().Contain("Missing content from: Local customizations.");
+    }
+
+    [Fact]
+    public void OldSavesWithoutSourceMetadataUseAnHonestFallback()
+    {
+        PartialLoadReport.Describe(Partial(Missing("ID_WOTC_PHB24_UNKNOWN")), [])
+            .Should().Be("⚠ Required content is missing; its sources are unknown. See Console for details.");
+    }
+
+    [Fact]
+    public void UnknownSourcesAreNotHiddenWhenOtherSourcesAreKnown()
+    {
+        PartialLoadReport.Describe(Partial(Missing("KNOWN", "Known Book"), Missing("UNKNOWN")), [])
+            .Should().Contain("Missing content from: Known Book. Other sources are unknown.");
+    }
+
+    [Fact]
+    public void InstalledDefinitionsAreNotCalledMissingSources()
+    {
+        var installed = new ElementBase("Background with a Feat", "Grants", "Internal", "MARKER");
+        PartialLoadReport.Describe(Partial(Missing("MARKER", "Old Book")), [installed])
+            .Should().Be("⚠ Some installed content could not be restored. See Console for details.");
+    }
+
+    [Fact]
+    public void InstalledAliasTargetsAreNotCalledMissingSources()
+    {
+        using var scope = ElementIdAliases.BeginScope();
+        ElementIdAliases.Set([new("OLD", "NEW")]);
+        var installed = new ElementBase("Renamed feat", "Feat", "Installed Book", "NEW");
+        PartialLoadReport.Describe(Partial(Missing("OLD", "Old Book")), [installed])
+            .Should().Be("⚠ Some installed content could not be restored. See Console for details.");
+    }
+
+    [Fact]
+    public void MixedFailuresShowOnlyMissingSourcesAndMentionRemainingRestoreIssues()
+    {
+        var installed = new ElementBase("Background with a Feat", "Grants", "Installed Book", "MARKER");
+        PartialLoadReport.Describe(Partial(Missing("CLAW", "Ryoko's Guide"), Missing("MARKER")), [installed])
+            .Should().Contain("Missing content from: Ryoko's Guide. Other restore issues remain.")
+            .And.NotContain("Installed Book");
+    }
+
+    [Fact]
+    public void LongListsCountAdditionalSourcesInsteadOfAdditionalElements()
+    {
         var message = PartialLoadReport.Describe(Partial(
-            Missing("ID_A", "saved character summary (origin unavailable)")));
+            Missing("A", "Alpha"), Missing("B", "Bravo"), Missing("B2", "Bravo"),
+            Missing("C", "Charlie"), Missing("D", "Delta"), Missing("E", "Echo")), []);
 
-        message.Should().Contain("1 saved pick could not be restored.");
-        message.Should().NotContain("origin unavailable");
+        message.Should().Contain("Alpha, Bravo, Charlie, and 2 more").And.NotContain("Echo");
     }
 
     [Fact]
-    public void AFailureWithNothingStructuredStillReportsItsMessage()
+    public void LongSourceTitlesStayShortEnoughForMobile()
     {
-        PartialLoadReport.Describe(new CharacterFile.LoadResult(false, "Something else went wrong"))
-            .Should().Contain("Something else went wrong");
+        var message = PartialLoadReport.Describe(Partial(
+            Missing("A", new string('A', 300)), Missing("B", new string('B', 300)),
+            Missing("C", new string('C', 300)), Missing("UNKNOWN")), []);
+
+        message.Length.Should().BeLessThan(260);
+        message.Should().Contain("…").And.Contain("more").And.Contain("Other sources are unknown.");
+    }
+
+    [Fact]
+    public void FailureWithoutStructuredMissingElementsKeepsItsMessage()
+    {
+        PartialLoadReport.Describe(new CharacterFile.LoadResult(false, "Something else went wrong"), [])
+            .Should().Be("⚠ Partial load: Something else went wrong");
     }
 }

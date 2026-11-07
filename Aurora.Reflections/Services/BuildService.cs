@@ -547,8 +547,9 @@ public static partial class BuildService
             }
         }
 
-        // 7. Rebuild the in-memory snapshot and progression list.
-        ResnapTab(tab);
+        // 7. Snapshotting resolves spells, features, and the advancement timeline. Keep
+        // that work off the caller's UI context too, while still holding CharacterContext.
+        await Task.Run(() => ResnapTab(tab));
 
         return invalidated;
     }
@@ -724,7 +725,7 @@ public static partial class BuildService
         {
             DebugLogService.Instance.Warn($"Partial Drive reload: {tab.File.FileName}", loaded.Message);
             tab.IsDirty = true;
-            return PartialLoadReport.Describe(loaded) + " Unsent edits were kept in the recovery folder.";
+            return PartialLoadReport.Describe(loaded, DataManager.Current.ElementsCollection) + " Unsent edits were kept in the recovery folder.";
         }
         tab.CloudSavedEditVersion = tab.EditVersion;
         tab.IsDirty = false;

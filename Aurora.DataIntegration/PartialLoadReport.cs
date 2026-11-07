@@ -1,38 +1,52 @@
+using Builder.Data;
 using Builder.Presentation.Models;
+using Builder.Presentation.Services;
 
 namespace Aurora.Reflections.Services;
 
 /// <summary>
-/// Turns a partial character load into something short enough to read in a toast. The full list of
-/// ids with their saved paths, and the load diagnostics, belong in the log where they can be read
-/// and copied.
+/// Shows actionable source names in the toast. Element identities and restore paths stay in the log.
 /// </summary>
 public static class PartialLoadReport
 {
     private const string Warning = "⚠ Partial load: ";
 
-    public static string Describe(CharacterFile.LoadResult result)
+    public static string Describe(CharacterFile.LoadResult result, IEnumerable<ElementBase> catalog)
     {
         if (result.Missing.Count == 0) return Warning + result.Message;
 
-        string what = result.Missing.Count == 1 ? "1 saved pick" : $"{result.Missing.Count} saved picks";
-        var names = Names(result);
-        string listed = names.Count == 0
-            ? string.Empty
-            : " — " + string.Join(", ", names.Take(3))
-              + (names.Count > 3 ? $", and {names.Count - 3} more" : string.Empty);
+        var entries = CharacterLoadDiagnostics.Analyze(result.Missing, catalog);
+        var unavailable = entries.Where(e => e.Definition is null).ToArray();
+        if (unavailable.Length == 0)
+            return "⚠ Some installed content could not be restored. See Console for details.";
 
-        return Warning + $"{what} could not be restored{listed}. "
-             + "The Console lists them in full; re-pick them and save to clear this.";
+        var sources = unavailable.Select(e => SourceName(e.Source))
+            .Where(name => name is not null).Cast<string>()
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(name => name, StringComparer.OrdinalIgnoreCase).ToArray();
+        bool unknown = unavailable.Any(e => SourceName(e.Source) is null);
+        string message = sources.Length == 0
+            ? "⚠ Required content is missing; its sources are unknown."
+            : "⚠ Missing content from: " + ListSources(sources) + "."
+              + (unknown ? " Other sources are unknown." : "");
+        if (entries.Any(e => e.Definition is not null)) message += " Other restore issues remain.";
+        return message + " See Console for details.";
     }
 
-    /// <summary>
-    /// The last step of a saved path is what the user picked; everything before it is how the
-    /// character reached it, which is detail for the log rather than for a toast.
-    /// </summary>
-    private static List<string> Names(CharacterFile.LoadResult result) => result.Missing
-        .Select(missing => missing.SavedPath.Split('>').Last().Trim())
-        .Where(name => name.Length > 0 && !name.StartsWith("saved character summary", StringComparison.Ordinal))
-        .Distinct(StringComparer.Ordinal)
-        .ToList();
+    private static string? SourceName(SavedElementSource? source)
+    {
+        string? book = string.IsNullOrWhiteSpace(source?.Book) ? null : source.Book;
+        return source?.IsLocalCustomization == true
+            ? (book is null ? "Local customizations" : book + " (local customization)")
+            : book;
+    }
+
+    private static string ListSources(string[] sources)
+    {
+        var shown = sources.Take(3).Select(name => name.Length > 70 ? name[..69] + "…" : name).ToList();
+        string Remaining() => sources.Length > shown.Count ? $", and {sources.Length - shown.Count} more" : "";
+        while (shown.Count > 1 && string.Join(", ", shown).Length + Remaining().Length > 160)
+            shown.RemoveAt(shown.Count - 1);
+        return string.Join(", ", shown) + Remaining();
+    }
 }

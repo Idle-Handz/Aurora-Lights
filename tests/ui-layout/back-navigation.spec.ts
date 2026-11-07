@@ -13,7 +13,7 @@ async function showOverlayHost(page: Page, content: string) {
   // dispatch and rendered MudBlazor overlays are checked separately on-device.
   await page.setContent(`<!doctype html><html><head><style>
     body { margin:0 }
-    .mud-overlay, .mobile-more-backdrop { position:fixed; inset:0 }
+    .mud-overlay, .mobile-more-backdrop, .shop-backdrop { position:fixed; inset:0 }
     .backdrop { position:absolute; inset:0 }
     .mud-dialog { position:fixed; inset:25%; background:white; z-index:20 }
   </style></head><body>${content}</body></html>`);
@@ -21,6 +21,20 @@ async function showOverlayHost(page: Page, content: string) {
 }
 
 const dismissOverlay = (page: Page) => page.evaluate(() => window.AuroraBack.dismissOverlay());
+
+test('Back dismisses shop item details before leaving the shop page', async ({ page }) => {
+  await showOverlayHost(page, `
+    <button class="shop-backdrop" style="z-index:10" aria-label="Close details"></button>
+    <aside class="shop-detail" style="position:fixed;inset:25%;z-index:20;background:white">Club checkout</aside>`);
+  await page.locator('.shop-backdrop').evaluate(el => el.addEventListener('click', () => {
+    document.querySelector('.shop-detail')!.remove();
+    el.remove();
+  }));
+
+  expect(await dismissOverlay(page)).toBe(true);
+  await expect(page.locator('.shop-detail')).toHaveCount(0);
+  expect(await dismissOverlay(page)).toBe(false);
+});
 
 test('Back closes the top menu before the dialog beneath it', async ({ page }) => {
   await showOverlayHost(page, `

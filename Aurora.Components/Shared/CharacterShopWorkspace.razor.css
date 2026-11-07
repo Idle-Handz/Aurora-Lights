@@ -324,7 +324,9 @@
     grid-template-areas: "rail list detail";
     gap: 1rem;
     flex: 1 1 auto;
-    min-height: 0;
+    /* The Drive panel and wrapped controls can consume a portrait screen too.
+       Keep room for the catalog and let the containing page scroll when needed. */
+    min-height: 16rem;
 }
 
 .shop-rail {
@@ -825,6 +827,13 @@
     background: color-mix(in srgb, var(--shop-accent) 85%, white);
 }
 
+@supports not (background: color-mix(in srgb, red, blue)) {
+    .shop-button--primary:hover:not(:disabled) {
+        /* Older WebViews otherwise compute the variable-based mix as transparent. */
+        background: var(--shop-accent);
+    }
+}
+
 .shop-icon-button {
     display: inline-flex;
     align-items: center;
@@ -1103,14 +1112,6 @@
     }
 }
 
-/* In phone landscape or with the keyboard open, the header can consume the
-   available height. Let the page scroll instead of collapsing the item panes. */
-@media (max-height: 500px) {
-    .shop-body {
-        min-height: 16rem;
-    }
-}
-
 @media (pointer: coarse) {
     .shop-rail-item,
     .shop-chip-button {
@@ -1129,5 +1130,90 @@
     .shop-spinner {
         transition: none;
         animation: none;
+    }
+}
+
+/* Older Android WebViews ignore container queries. Keep a usable single-column
+   shop there instead of squeezing the desktop grid into the phone's width. */
+@supports not (container-type: inline-size) {
+    @media (max-width: 1100px) {
+        .shop-host,
+        .shop {
+            height: auto;
+            flex: 0 0 auto;
+        }
+
+        .shop-header {
+            grid-template-columns: minmax(0, 1fr) auto;
+        }
+
+        .shop-wallet {
+            grid-column: 1 / -1;
+            grid-row: 2;
+            justify-content: flex-start;
+        }
+
+        .shop-tagline,
+        .shop-row-weight,
+        .shop-detail,
+        .shop-filters {
+            display: none;
+        }
+
+        .shop-filter-toggle,
+        .shop-filters.is-open,
+        .shop-detail-close {
+            display: inline-flex;
+        }
+
+        .shop-body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .shop-rail {
+            overflow: visible;
+        }
+
+        .shop-rail-list {
+            flex-direction: row;
+            overflow-x: auto;
+        }
+
+        .shop-rail-item {
+            flex: 0 0 auto;
+            white-space: nowrap;
+        }
+
+        .shop-list-pane {
+            flex: 0 0 auto;
+            min-height: 12rem;
+            max-height: 55vh;
+        }
+
+        .shop-row {
+            grid-template-columns: minmax(0, 1fr) auto;
+        }
+
+        .shop--selected .shop-detail {
+            display: flex;
+            position: fixed;
+            left: 10px;
+            right: 10px;
+            bottom: calc(58px + env(safe-area-inset-bottom, 0px));
+            max-height: 75vh;
+            /* This fallback sheet is viewport-fixed, so it must clear the app
+               header and character tabs even in short landscape windows. */
+            z-index: var(--mud-zindex-dialog, 1400);
+        }
+
+        .shop--selected .shop-backdrop {
+            display: block;
+            position: fixed;
+            inset: 0;
+            z-index: calc(var(--mud-zindex-dialog, 1400) - 1);
+            border: 0;
+            background: rgba(0, 0, 0, 0.45);
+        }
     }
 }

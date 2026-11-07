@@ -6,8 +6,9 @@ namespace Builder.Presentation.Services;
 /// <summary>
 /// Where an element's definition was loaded from, kept beside the element rather than on it. It is
 /// loading bookkeeping — used to decide which file a correction supersedes and to report provenance —
-/// not part of the element's data, and it never reaches a character file. Entries disappear with the
-/// element they describe.
+/// not part of the element's identity. The absolute path never reaches a character file; diagnostic
+/// save metadata may carry its filename and local-customization classification. Entries disappear
+/// with the element they describe.
 /// </summary>
 public static class ElementProvenance
 {

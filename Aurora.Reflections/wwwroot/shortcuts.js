@@ -6,7 +6,7 @@ window.AuroraBack = {
         // Use the existing backdrop handler: dialogs that forbid dismissal keep
         // their policy and consume Back instead of losing the underlying page.
         const overlay = document.elementsFromPoint(innerWidth / 2, innerHeight / 2)
-            .map(el => el.closest('.mud-overlay, .mobile-more-backdrop'))
+            .map(el => el.closest('.mud-overlay, .mobile-more-backdrop, .shop-backdrop'))
             .find(el => el !== null);
         if (overlay) {
             overlay.click();

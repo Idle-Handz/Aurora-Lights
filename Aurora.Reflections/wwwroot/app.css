@@ -943,6 +943,57 @@ html, body {
     display: contents;
 }
 
+.cloud-save-panel {
+    flex: 0 0 auto;
+    min-width: 0;
+    margin-bottom: 12px;
+    border: 1px solid var(--mud-palette-lines-default, var(--aurora-surface-raised, #45475a));
+    border-radius: 6px;
+    background: var(--mud-palette-surface, var(--aurora-surface, #313244));
+}
+
+.cloud-save-summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 8px 12px;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    list-style: none;
+    cursor: pointer;
+}
+
+.cloud-save-summary::-webkit-details-marker {
+    display: none;
+}
+
+.cloud-save-summary:focus-visible {
+    outline: 2px solid var(--mud-palette-primary, var(--aurora-primary, #89b4fa));
+    outline-offset: -2px;
+    border-radius: 6px;
+}
+
+.cloud-save-summary .mud-icon-root {
+    flex: 0 0 20px;
+    width: 20px;
+    height: 20px;
+}
+
+.cloud-save-status {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.cloud-save-panel[open] .cloud-save-chevron {
+    transform: rotate(180deg);
+}
+
+.cloud-save-details {
+    padding: 0 12px 12px;
+}
+
 .app-status-bar {
     position: fixed;
     bottom: 0;

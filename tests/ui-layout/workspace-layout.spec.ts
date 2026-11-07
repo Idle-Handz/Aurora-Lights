@@ -5,12 +5,12 @@ import path from 'node:path';
 const read = (file: string) => readFileSync(path.resolve(file), 'utf8');
 const output = 'tests/ui-layout/FixtureRenderer/bin/Debug/net10.0';
 
-async function showWorkspace(page: Page, component: 'shop' | 'equipment' | 'characters' | 'magic-all' | 'magic-prepared', options = { long: false, cloud: false }) {
+async function showWorkspace(page: Page, component: 'shop' | 'equipment' | 'characters' | 'magic-all' | 'magic-prepared', options: { long?: boolean; cloud?: boolean; selected?: boolean; cloudExpanded?: boolean } = {}) {
   const componentNames = component === 'shop' ? ['CharacterShopWorkspace']
     : component === 'equipment' ? ['CharacterEquipmentWorkspace']
       : component.startsWith('magic-') ? ['CharacterMagicWorkspace', 'RichDescription']
         : ['CharacterBrowser', 'CharacterBrowserCard', 'CharacterLibraryShell'];
-  const markup = read(`${output}/${component === 'shop' ? `shop-${options.long ? 'long' : 'short'}` : component}.html`);
+  const markup = read(`${output}/${component === 'shop' ? `shop-${options.selected === false ? 'browse' : options.long ? 'long' : 'short'}` : component}.html`);
   const css = componentNames.map(name => read(`${output}/${name}.css`)).join('\n');
 
   // Use the App's actual Body wrapper, whose extra layout box caused the shop regression.
@@ -35,12 +35,14 @@ async function showWorkspace(page: Page, component: 'shop' | 'equipment' | 'char
       <main class="mud-main-content app-main-content">
         <div class="char-tab-bar"><div class="char-tab">Layout fixture</div></div>
         <div class="mud-container mud-container-maxwidth-false app-content-container pa-4" style="--character-tabs-height:34px">
-          ${options.cloud ? '<div class="mud-paper pa-3 mb-3"><div class="d-flex align-center flex-wrap gap-2"><span>Google Drive — Cloud save loaded</span><button class="mud-button-root">Save to Drive</button><button class="mud-button-root">Load Drive Save</button><button class="mud-button-root">Recovery Files</button></div></div>' : ''}
+          ${options.cloud ? read(`${output}/cloud-status.html`) : ''}
           ${wrapper}${component.startsWith('magic-') ? '<div class="page-save-bar">Auto-save off <button class="mud-button-root">Save</button></div>' : ''}${markup}</div>
         </div>
       </main>
     </div><nav class="mobile-bottom-nav">${['Chars', 'Build', 'Gear', 'Magic', 'More'].map(name => `<a class="mobile-bottom-link"><span>${name}</span></a>`).join('')}</nav>
     <div class="app-status-bar">Ready</div></div></body></html>`);
+  if (options.cloud && options.cloudExpanded)
+    await page.locator('.cloud-save-summary').click();
 }
 
 async function expectNoHorizontalOverflow(page: Page) {
@@ -142,6 +144,7 @@ for (const scenario of [
 ]) {
   test(`desktop checkout stays visible while ${scenario.width}px shop results scroll`, async ({ page }) => {
     await page.setViewportSize(scenario);
+    // The compact default leaves checkout visible without scrolling the detail pane.
     await showWorkspace(page, 'shop', scenario);
     expect(await page.locator('button.shop-row').count(), 'The fixture must contain a long results list').toBeGreaterThan(50);
     const checkout = page.locator('.shop-actions');
@@ -166,16 +169,75 @@ for (const scenario of [
   });
 }
 
-for (const viewport of [{ width: 360, height: 640 }, { width: 844, height: 390 }]) {
-  test(`checkout remains reachable in a ${viewport.width}x${viewport.height} viewport`, async ({ page }) => {
+for (const viewport of [{ width: 360, height: 640 }, { width: 390, height: 844 }, { width: 844, height: 390 }]) {
+  for (const cloud of [false, true]) {
+    test(`shop items remain reachable for ${cloud ? 'cloud' : 'local'} saves at ${viewport.width}x${viewport.height}`, async ({ browser }) => {
+      const context = await browser.newContext({ viewport, isMobile: true, hasTouch: true });
+      const page = await context.newPage();
+      try {
+        await showWorkspace(page, 'shop', { cloud, selected: false, cloudExpanded: true });
+        const list = page.locator('.shop-list-pane');
+        expect(await page.locator('button.shop-row').count()).toBeGreaterThan(50);
+        expect(await list.evaluate(el => el.clientHeight), 'The catalog needs usable height below the controls and Drive panel')
+          .toBeGreaterThan(100);
+        const first = page.locator('button.shop-row').first();
+        await first.scrollIntoViewIfNeeded();
+        await first.tap({ trial: true });
+        await expect(first).toBeInViewport({ ratio: 1 });
+        const last = page.locator('button.shop-row').last();
+        await last.scrollIntoViewIfNeeded();
+        await last.tap({ trial: true });
+        await expect(last).toBeInViewport({ ratio: 1 });
+        await expectNoHorizontalOverflow(page);
+      } finally {
+        await context.close();
+      }
+    });
+  }
+}
+
+for (const viewport of [{ width: 360, height: 640 }, { width: 844, height: 390 }, { width: 1280, height: 720 }]) {
+  test(`checkout remains reachable with Drive expanded at ${viewport.width}x${viewport.height}`, async ({ page }) => {
     await page.setViewportSize(viewport);
-    await showWorkspace(page, 'shop', { long: true, cloud: true });
-    // Short screens may scroll the detail pane or page, but must retain usable pane height.
+    await showWorkspace(page, 'shop', { long: true, cloud: true, cloudExpanded: true });
+    // Expanding the Drive controls may require scrolling the detail pane or page.
+    // Checkout must remain reachable even when the controls leave less room.
     expect(await page.locator('.shop-body').evaluate(el => el.clientHeight)).toBeGreaterThan(100);
     const buy = page.locator('.shop-actions .shop-button').first();
     await buy.scrollIntoViewIfNeeded();
     await buy.click({ trial: true });
     await expect(buy).toBeInViewport({ ratio: 1 });
+    await expectNoHorizontalOverflow(page);
+  });
+}
+
+for (const width of [360, 1280]) {
+  test(`Drive panel collapses without hiding its status at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 720 });
+    await showWorkspace(page, 'shop', { cloud: true, selected: false });
+    const panel = page.locator('.cloud-save-panel');
+    const summary = panel.locator('summary');
+    const save = panel.getByRole('button', { name: 'Save to Drive', exact: true });
+    await expect(panel).not.toHaveAttribute('open');
+    await expect(summary).toHaveText('Google Drive — Saved');
+    await expect(save).not.toBeVisible();
+    expect((await panel.boundingBox())!.height).toBeLessThan(60);
+    await page.screenshot({ path: `test-results/cloud-panel-${width}-collapsed.png` });
+
+    await summary.click();
+    await expect(panel).toHaveAttribute('open');
+    for (const action of ['Save to Drive', 'Load Drive Save', 'Disconnect character', 'Recovery Files'])
+      await expect(panel.getByRole('button', { name: action, exact: true })).toBeVisible();
+    await expect(panel.locator('.cloud-save-details')).toContainText('Saved to Google Drive.');
+    await page.screenshot({ path: `test-results/cloud-panel-${width}-expanded.png` });
+
+    await summary.focus();
+    await page.keyboard.press('Space');
+    await expect(panel).not.toHaveAttribute('open');
+    await expect(save).not.toBeVisible();
+    await expect(summary).toBeVisible();
+    await page.keyboard.press('Enter');
+    await expect(save).toBeVisible();
     await expectNoHorizontalOverflow(page);
   });
 }

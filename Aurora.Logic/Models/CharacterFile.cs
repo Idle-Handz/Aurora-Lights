@@ -847,11 +847,11 @@ public class CharacterFile : ObservableObject
             missing.Select(e => e.Id).Concat(unavailableItems), CharacterManager.Current.GetElements().Select(e => e.Id));
         if (missing.Count > 0)
         {
-            string details = string.Join("; ", missing.Select(e => $"{e.Id} (missing {e.Count}; {e.SavedPath})"));
-            Logger.Warning("{0} is missing saved character elements after loading: {1}", this.FileName, details);
+            string details = CharacterLoadDiagnostics.Describe(missing, DataManager.Current.ElementsCollection);
+            Logger.Warning("Partial character load: {0}\n{1}", this.FileName, details);
             await this.SendCharacterLoadingScreenProgressUpdate(100);
             await this.SendCharacterLoadingScreenStatusUpdate("E10A", false);
-            return new CharacterFile.LoadResult(false, "Saved character elements could not be restored: " + details, missing);
+            return new CharacterFile.LoadResult(false, details, missing);
         }
         await this.SendCharacterLoadingScreenProgressUpdate(100);
         await this.SendCharacterLoadingScreenStatusUpdate("E10B");
@@ -1527,6 +1527,9 @@ public class CharacterFile : ObservableObject
     {
         XmlNode node1 = this._document.CreateNode(XmlNodeType.Element, "sum", (string)null);
         List<ElementBase> list = CharacterManager.Current.GetElements().ToList<ElementBase>();
+        var savedIds = list.Select(e => e.Id).ToHashSet(StringComparer.Ordinal);
+        var sourceDefinitions = DataManager.Current.ElementsCollection.Where(e => savedIds.Contains(e.Id))
+            .GroupBy(e => e.Id, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
         this.AppendAttribute(node1, "element-count", list.Count.ToString());
         foreach (ElementBase elementBase in list)
         {
@@ -1543,6 +1546,7 @@ public class CharacterFile : ObservableObject
         }
       };
             this.AppendAttributes(node2, attributesDictionary);
+            SavedElementSource.Capture(elementBase, sourceDefinitions.GetValueOrDefault(elementBase.Id)).WriteTo(node2);
             node1.AppendChild(node2);
         }
         return node1;

@@ -5,7 +5,10 @@ namespace Builder.Presentation.Services;
 /// <summary>Checks saved character usage after reconstruction, never net catalog/count differences.</summary>
 public static class CharacterLoadValidation
 {
-    public sealed record MissingElement(string Id, int Count, string SavedPath);
+    public sealed record MissingElement(string Id, int Count, string SavedPath)
+    {
+        public SavedElementSource? SavedSource { get; init; }
+    }
 
     public static IReadOnlyList<MissingElement> FindMissing(XElement build, IEnumerable<string> loadedIds,
         IEnumerable<string>? beforeNormalization = null, IEnumerable<string>? afterNormalization = null)
@@ -41,6 +44,16 @@ public static class CharacterLoadValidation
         // An explicit saved choice is still significant in older/incomplete sums.
         foreach (string id in used.Keys) expected.TryAdd(id, 1);
 
+        // Summary metadata belongs to this exact identity, never to its parent or an ID prefix.
+        // Conflicting origins are left unknown rather than choosing an arbitrary supplier.
+        var savedSources = (build.Element("sum")?.Elements("element") ?? [])
+            .Where(e => !string.IsNullOrWhiteSpace((string?)e.Attribute("id")))
+            .GroupBy(e => (string)e.Attribute("id")!, StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g =>
+            {
+                var sources = g.Select(SavedElementSource.Read).Where(s => s is not null).Distinct().ToArray();
+                return sources.Length == 1 ? sources[0] : null;
+            }, StringComparer.Ordinal);
         var loaded = Counts(loadedIds);
         var before = Counts(beforeNormalization ?? []);
         var after = Counts(afterNormalization ?? []);
@@ -65,7 +78,10 @@ public static class CharacterLoadValidation
                 unclaimed[forwarded] = unclaimed.GetValueOrDefault(forwarded) - drawn;
                 absent -= drawn;
             }
-            if (absent > 0) missing.Add(new(id, absent, used.GetValueOrDefault(id, "saved character summary (origin unavailable)")));
+            if (absent > 0) missing.Add(new(id, absent, used.GetValueOrDefault(id, "saved character summary (origin unavailable)"))
+            {
+                SavedSource = savedSources.GetValueOrDefault(id)
+            });
         }
         return missing;
     }

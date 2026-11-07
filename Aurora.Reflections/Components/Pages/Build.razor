@@ -729,7 +729,11 @@ else if (_workflowSuggestion != null)
         {
             using (await CharacterContext.EnterAsync(tab))
             {
-                (_buildTabs, _asiEntries, _nextStep) = BuildService.GetBuildData(PreferClassFirst);
+                if (_disposed || !ReferenceEquals(tab, Tabs.ActiveTab)) return;
+                bool preferClassFirst = tab.IsNew != true;
+                var buildData = await Task.Run(() => BuildService.GetBuildData(preferClassFirst));
+                if (_disposed || !ReferenceEquals(tab, Tabs.ActiveTab)) return;
+                (_buildTabs, _asiEntries, _nextStep) = buildData;
                 _highlightedEntryKey = _nextStep?.EntryKey;
                 LoadAbilityRows();
                 _workflowSuggestion = ComputeWorkflowSuggestion();
@@ -969,9 +973,13 @@ else if (_workflowSuggestion != null)
         {
             using var scope = await CharacterContext.EnterAsync(tab);
             if (_disposed || !ReferenceEquals(tab, Tabs.ActiveTab)) return;
-            options = await Task.Run(() => BuildService.GetOptions(entry.Rule, entry.Number));
-            diagnostics = SelectionRuleDiagnosticService.ExplainEmptyOptions(
-                entry.Rule, entry.Number, options.Count);
+            (options, diagnostics) = await Task.Run(() =>
+            {
+                var choices = BuildService.GetOptions(entry.Rule, entry.Number);
+                var explanations = SelectionRuleDiagnosticService.ExplainEmptyOptions(
+                    entry.Rule, entry.Number, choices.Count);
+                return (choices, explanations);
+            });
         }
         finally
         {

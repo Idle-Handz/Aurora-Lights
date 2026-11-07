@@ -132,20 +132,25 @@
             }
             @if (Tabs.ActiveTab is { CloudSession: not null } cloudTab)
             {
-                <MudPaper Class="pa-3 mb-3" Outlined="true">
-                    <div class="d-flex align-center flex-wrap gap-2">
+                <details class="cloud-save-panel" @key="cloudTab">
+                    <summary class="cloud-save-summary">
                         <MudIcon Icon="@Icons.Material.Filled.Cloud" />
-                        <MudText>Google Drive — @(cloudTab.IsLoading ? "Loading..." : cloudTab.IsSaving ? "Saving..." : cloudTab.CloudReloadFailed ? "Could not load Drive save" : cloudTab.IsDirty ? "Changes not yet saved to Drive" : "Cloud save loaded")</MudText>
-                        <MudButton OnClick="SaveActive" Disabled="@(cloudTab.IsSaving || cloudTab.IsLoading || cloudTab.CloudReloadFailed)">Save to Drive</MudButton>
-                        <MudButton OnClick="ReloadCloud" Disabled="@(cloudTab.IsSaving || cloudTab.IsLoading)">Load Drive Save</MudButton>
-                        <MudButton OnClick="DisconnectCloudCharacter" Disabled="@(cloudTab.IsSaving || cloudTab.IsLoading || cloudTab.CloudReloadFailed)">Disconnect character</MudButton>
-                        <MudButton OnClick="OpenCloudRecovery" Disabled="@(cloudTab.IsSaving || cloudTab.IsLoading)">Recovery Files</MudButton>
+                        <span class="cloud-save-status">Google Drive — @(cloudTab.IsLoading ? "Loading..." : cloudTab.IsSaving ? "Saving..." : cloudTab.CloudReloadFailed ? "Could not load Drive save" : cloudTab.IsDirty ? "Unsaved changes" : "Saved")</span>
+                        <MudIcon Icon="@Icons.Material.Filled.ExpandMore" Class="cloud-save-chevron" />
+                    </summary>
+                    <div class="cloud-save-details">
+                        <div class="d-flex align-center flex-wrap gap-2">
+                            <MudButton OnClick="SaveActive" Disabled="@(cloudTab.IsSaving || cloudTab.IsLoading || cloudTab.CloudReloadFailed)">Save to Drive</MudButton>
+                            <MudButton OnClick="ReloadCloud" Disabled="@(cloudTab.IsSaving || cloudTab.IsLoading)">Load Drive Save</MudButton>
+                            <MudButton OnClick="DisconnectCloudCharacter" Disabled="@(cloudTab.IsSaving || cloudTab.IsLoading || cloudTab.CloudReloadFailed)">Disconnect character</MudButton>
+                            <MudButton OnClick="OpenCloudRecovery" Disabled="@(cloudTab.IsSaving || cloudTab.IsLoading)">Recovery Files</MudButton>
+                        </div>
+                        @if (cloudTab.CloudNotice is not null)
+                        {
+                            <MudText Typo="Typo.body2">@cloudTab.CloudNotice</MudText>
+                        }
                     </div>
-                    @if (cloudTab.CloudNotice is not null)
-                    {
-                        <MudText Typo="Typo.body2">@cloudTab.CloudNotice</MudText>
-                    }
-                </MudPaper>
+                </details>
             }
             <div class="app-page-content" @ref="_pageContent" data-focus-context="@PageFocusContext" inert="@(Tabs.ActiveTab is { IsSaving: true } or { CloudReloadFailed: true } ? string.Empty : null)">
                 <AppErrorBoundary @key="PageReloadVersion" @ref="_errorBoundary">@Body</AppErrorBoundary>

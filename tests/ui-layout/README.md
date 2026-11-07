@@ -12,10 +12,16 @@ cloud banner, status bar, and mobile navigation. If that shell changes, update t
 fixture alongside it. These are browser layout and interaction-guard checks, not a
 substitute for native MAUI, business-event, or device smoke tests.
 
-Eight checks cover independent result/description scrolling and visible desktop
+Workspace checks cover independent result/description scrolling and visible desktop
 checkout, reachable checkout on small portrait/landscape screens, long and unbroken
 inventory names at mobile breakpoints, library header/actions and long character/group
 names at 200% text in a narrow viewport, and the wrapper's inert focus/click boundary.
+Shop browsing checks also tap the first and last visible results on touch-sized portrait
+and landscape screens for local and cloud saves. The cloud fixture includes the full
+Drive action panel and save notice so wrapping cannot silently collapse the catalog.
+The panel starts collapsed in the app; shop regression checks expand it to exercise
+the larger layout. Disclosure checks cover the compact default, visible status,
+all expanded actions, and mouse/keyboard toggling on mobile and desktop widths.
 Assertions measure geometry and hit testing rather than pixel snapshots or CSS text.
 Magic checks cover the All and Prepared detail cards on desktop and mobile, including
 reachable attack/damage text and higher-level scaling, mouse/keyboard scrolling, and
